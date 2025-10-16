@@ -8,6 +8,7 @@ import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import {
@@ -32,6 +33,7 @@ interface Override {
   value: string;
   cookie: string;
 }
+
 /**
  * Removes all override cookies from the response.
  */
@@ -53,12 +55,67 @@ const SelectAuthzDataSchema = z.object({
   permissions_course_instance: SprocAuthzCourseInstanceSchema,
 });
 
+type SelectAuthzData = z.infer<typeof SelectAuthzDataSchema>;
+
 const SelectUserSchema = z.object({
   user: UserSchema,
   institution: InstitutionSchema,
   is_administrator: z.boolean(),
   is_instructor: z.boolean(),
 });
+
+interface ResLocalsCourseAuthz {
+  authn_user: ResLocalsAuthnUser['authn_user'];
+  authn_mode: SelectAuthzData['mode'];
+  authn_mode_reason: SelectAuthzData['mode_reason'];
+  authn_is_administrator: ResLocalsAuthnUser['is_administrator'];
+  authn_course_role: SelectAuthzData['permissions_course']['course_role'];
+  authn_has_course_permission_preview: SelectAuthzData['permissions_course']['has_course_permission_preview'];
+  authn_has_course_permission_view: SelectAuthzData['permissions_course']['has_course_permission_view'];
+  authn_has_course_permission_edit: SelectAuthzData['permissions_course']['has_course_permission_edit'];
+  authn_has_course_permission_own: SelectAuthzData['permissions_course']['has_course_permission_own'];
+  user: ResLocalsAuthnUser['authn_user'];
+  mode: SelectAuthzData['mode'];
+  mode_reason: SelectAuthzData['mode_reason'];
+  is_administrator: ResLocalsAuthnUser['is_administrator'];
+  course_role: SelectAuthzData['permissions_course']['course_role'];
+  has_course_permission_preview: SelectAuthzData['permissions_course']['has_course_permission_preview'];
+  has_course_permission_view: SelectAuthzData['permissions_course']['has_course_permission_view'];
+  has_course_permission_edit: SelectAuthzData['permissions_course']['has_course_permission_edit'];
+  has_course_permission_own: SelectAuthzData['permissions_course']['has_course_permission_own'];
+  overrides: Override[];
+}
+
+interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
+  authn_course_instance_role: SelectAuthzData['permissions_course_instance']['course_instance_role'];
+  authn_has_course_instance_permission_view: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
+  authn_has_course_instance_permission_edit: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
+  authn_has_student_access: SelectAuthzData['permissions_course_instance']['has_student_access'];
+  authn_has_student_access_with_enrollment: SelectAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
+  course_instance_role: SelectAuthzData['permissions_course_instance']['course_instance_role'];
+  has_course_instance_permission_view: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
+  has_course_instance_permission_edit: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
+  has_student_access_with_enrollment: SelectAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
+  has_student_access: SelectAuthzData['permissions_course_instance']['has_student_access'];
+  user_with_requested_uid_has_instructor_access_to_course_instance: boolean;
+}
+
+export interface ResLocalsCourse {
+  course: SelectAuthzData['course'];
+  institution: SelectAuthzData['institution'];
+  side_nav_expanded: boolean;
+  authz_data: ResLocalsCourseAuthz;
+  user: ResLocalsCourseAuthz['user'];
+  course_has_course_instances: boolean;
+  has_enhanced_navigation: boolean;
+  question_sharing_enabled: boolean;
+}
+
+export interface ResLocalsCourseInstance extends ResLocalsCourse {
+  course_instance: NonNullable<SelectAuthzData['course_instance']>;
+  authz_data: ResLocalsCourseInstanceAuthz;
+  user: ResLocalsCourseInstanceAuthz['user'];
+}
 
 export async function authzCourseOrInstance(req: Request, res: Response) {
   const isCourseInstance = Boolean(req.params.course_instance_id);
@@ -104,6 +161,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.institution = authzData.institution;
 
   // The side nav is expanded by default.
+  // The session middleware does not run for API requests.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true;
 
   const permissions_course = authzData.permissions_course;
@@ -154,10 +213,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     res.locals.authz_data.has_student_access = permissions_course_instance.has_student_access;
   }
 
-  res.locals.has_enhanced_navigation = await features.enabledFromLocals(
-    'enhanced-navigation',
-    res.locals,
-  );
+  const usesLegacyNavigation = await features.enabledFromLocals('legacy-navigation', res.locals);
+  res.locals.has_enhanced_navigation = !usesLegacyNavigation;
   res.locals.question_sharing_enabled = await features.enabledFromLocals(
     'question-sharing',
     res.locals,

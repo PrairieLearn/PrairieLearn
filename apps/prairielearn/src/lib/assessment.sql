@@ -136,6 +136,14 @@ WHERE
 
 -- BLOCK insert_instance_questions
 WITH
+  existing_instance_questions AS (
+    SELECT
+      *
+    FROM
+      instance_questions
+    WHERE
+      assessment_instance_id IS NOT DISTINCT FROM $assessment_instance_id
+  ),
   -- First assign two random orderings to the list of questions, one for
   -- alternative_group question selection and one for zone question
   -- selection, plus a fixed ordering based on the existing question
@@ -151,14 +159,7 @@ WITH
       random() AS z_rand -- for zone selection
     FROM
       assessment_questions AS aq
-      LEFT JOIN ( -- existing questions if they exist
-        SELECT
-          *
-        FROM
-          instance_questions
-        WHERE
-          assessment_instance_id IS NOT DISTINCT FROM $assessment_instance_id
-      ) AS iq ON (iq.assessment_question_id = aq.id)
+      LEFT JOIN existing_instance_questions AS iq ON (iq.assessment_question_id = aq.id)
     WHERE
       aq.assessment_id = $assessment_id
       AND aq.deleted_at IS NULL
@@ -259,7 +260,7 @@ WITH
       aq.id,
       coalesce(aq.init_points, aq.points_list[1], 0),
       aq.points_list,
-      aq.points_list,
+      aq.points_list AS points_list_original,
       0,
       0 -- These points are updated manually because their default value is set to NULL for migration purposes
     FROM
@@ -506,7 +507,7 @@ FROM
 WHERE
   ai.id = $assessment_instance_id
 ORDER BY
-  iq.id,
+  iq.id ASC,
   v.date DESC;
 
 -- BLOCK unset_grading_needed
@@ -542,7 +543,7 @@ WHERE
   a.id = $assessment_id
 FOR NO KEY UPDATE;
 
--- BLOCK select_assessment_needs_statisics_update
+-- BLOCK select_assessment_needs_statistics_update
 SELECT
   EXISTS (
     SELECT
@@ -558,7 +559,7 @@ FROM
 WHERE
   a.id = $assessment_id;
 
--- BLOCK update_assessment_statisics
+-- BLOCK update_assessment_statistics
 WITH
   student_assessment_scores AS (
     SELECT
@@ -746,8 +747,6 @@ SET
   duration_stat_mean = duration_stats.mean,
   duration_stat_median = duration_stats.median,
   duration_stat_thresholds = duration_stats.thresholds,
-  duration_stat_threshold_seconds = interval_array_to_seconds (duration_stats.thresholds),
-  duration_stat_threshold_labels = interval_array_to_strings (duration_stats.thresholds),
   duration_stat_hist = duration_hist_stats.hist
 FROM
   score_stats,
@@ -869,14 +868,14 @@ WITH
         v.date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
-        q.qid AS qid,
+        q.qid,
         q.id AS question_id,
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
         NULL::integer AS submission_id,
         v.id AS log_id,
-        v.client_fingerprint_id AS client_fingerprint_id,
+        v.client_fingerprint_id,
         jsonb_build_object(
           'variant_seed',
           v.variant_seed,
@@ -908,7 +907,7 @@ WITH
         v.broken_at AS date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
-        q.qid AS qid,
+        q.qid,
         q.id AS question_id,
         iq.id AS instance_question_id,
         v.id AS variant_id,
@@ -943,7 +942,7 @@ WITH
         v.number AS variant_number,
         s.id AS submission_id,
         s.id AS log_id,
-        s.client_fingerprint_id AS client_fingerprint_id,
+        s.client_fingerprint_id,
         jsonb_build_object(
           'submitted_answer',
           CASE
@@ -1248,7 +1247,7 @@ WITH
         NULL::integer AS variant_number,
         NULL::integer AS submission_id,
         asl.id AS log_id,
-        asl.client_fingerprint_id AS client_fingerprint_id,
+        asl.client_fingerprint_id,
         CASE
           WHEN asl.open THEN jsonb_build_object(
             'date_limit',
@@ -1332,14 +1331,14 @@ WITH
         pvl.date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
-        q.qid AS qid,
+        q.qid,
         q.id AS question_id,
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
         NULL::integer AS submission_id,
         pvl.id AS log_id,
-        pvl.client_fingerprint_id AS client_fingerprint_id,
+        pvl.client_fingerprint_id,
         NULL::jsonb AS data
       FROM
         user_page_view_logs AS pvl
@@ -1367,7 +1366,7 @@ WITH
         NULL::integer AS variant_number,
         NULL::integer AS submission_id,
         pvl.id AS log_id,
-        pvl.client_fingerprint_id AS client_fingerprint_id,
+        pvl.client_fingerprint_id,
         NULL::jsonb AS data
       FROM
         user_page_view_logs AS pvl

@@ -64,6 +64,10 @@ WITH
     FROM
       rubric_grading_items AS rgi
       JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
+    WHERE
+      -- Exclude deleted rubric items. They won't show up elsewhere in the UI
+      -- and thus shouldn't be included in comparisons of grading jobs.
+      ri.deleted_at IS NULL
   )
 SELECT
   grading_job_id,

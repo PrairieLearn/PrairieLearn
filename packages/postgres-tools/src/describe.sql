@@ -1,7 +1,7 @@
 -- BLOCK get_tables
 SELECT
   c.relname AS name,
-  c.oid AS oid
+  c.oid
 FROM
   pg_catalog.pg_class c
   JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
@@ -65,13 +65,13 @@ WHERE
 ORDER BY
   i.indisprimary DESC,
   i.indisunique DESC,
-  c2.relname;
+  c2.relname ASC;
 
 -- BLOCK get_references_for_table
 SELECT
   conname AS name,
   conrelid::pg_catalog.regclass AS table,
-  pg_catalog.pg_get_constraintdef (c.oid, TRUE) as condef
+  pg_catalog.pg_get_constraintdef (c.oid, TRUE) AS condef
 FROM
   pg_catalog.pg_constraint c
 WHERE
@@ -83,26 +83,26 @@ ORDER BY
 -- BLOCK get_foreign_key_constraints_for_table
 SELECT
   conname AS name,
-  pg_catalog.pg_get_constraintdef (r.oid, TRUE) as def
+  pg_catalog.pg_get_constraintdef (r.oid, TRUE) AS def
 FROM
   pg_catalog.pg_constraint r
 WHERE
   r.conrelid = $oid
   AND r.contype = 'f'
 ORDER BY
-  1;
+  name;
 
 -- BLOCK get_check_constraints_for_table
 SELECT
   conname AS name,
-  pg_catalog.pg_get_constraintdef (r.oid, TRUE) as def
+  pg_catalog.pg_get_constraintdef (r.oid, TRUE) AS def
 FROM
   pg_catalog.pg_constraint r
 WHERE
   r.conrelid = $oid
   AND r.contype = 'c'
 ORDER BY
-  1;
+  name;
 
 -- BLOCK get_enums
 SELECT

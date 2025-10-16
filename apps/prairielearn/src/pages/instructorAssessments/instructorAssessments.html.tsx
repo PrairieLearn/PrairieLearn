@@ -1,6 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
@@ -13,7 +14,6 @@ import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrors
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import { type AssessmentRow, type AssessmentStatsRow } from '../../models/assessment.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';

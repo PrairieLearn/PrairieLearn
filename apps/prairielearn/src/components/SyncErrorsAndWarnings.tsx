@@ -2,7 +2,7 @@ import clsx from 'clsx';
 
 import { ansiToHtml } from '../lib/chalk.js';
 import type { StaffCourse, StaffCourseInstance } from '../lib/client/safe-db-types.js';
-import { type Assessment, type Question } from '../lib/db-types.js';
+import { type Assessment, type Course, type Question } from '../lib/db-types.js';
 
 export function CourseSyncErrorsAndWarnings({
   authzData,
@@ -10,7 +10,7 @@ export function CourseSyncErrorsAndWarnings({
   urlPrefix,
 }: {
   authzData: { has_course_instance_permission_edit: boolean };
-  course: StaffCourse;
+  course: StaffCourse | Course;
   urlPrefix: string;
 }) {
   return (
@@ -33,7 +33,7 @@ export function QuestionSyncErrorsAndWarnings({
 }: {
   authzData: { has_course_instance_permission_edit: boolean };
   question: Question;
-  course: StaffCourse;
+  course: StaffCourse | Course;
   urlPrefix: string;
 }) {
   return (
@@ -56,7 +56,7 @@ export function CourseInstanceSyncErrorsAndWarnings({
 }: {
   authzData: { has_course_instance_permission_edit: boolean };
   courseInstance: StaffCourseInstance;
-  course: StaffCourse;
+  course: StaffCourse | Course;
   urlPrefix: string;
 }) {
   return (
@@ -81,7 +81,7 @@ export function AssessmentSyncErrorsAndWarnings({
   authzData: { has_course_instance_permission_edit?: boolean };
   assessment: Assessment;
   courseInstance: StaffCourseInstance;
-  course: StaffCourse;
+  course: StaffCourse | Course;
   urlPrefix: string;
 }) {
   // This should never happen, but we are waiting on a better type system for res.locals.authz_data

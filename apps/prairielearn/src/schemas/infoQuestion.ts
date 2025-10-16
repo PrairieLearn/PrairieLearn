@@ -1,28 +1,21 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { z } from 'zod/v4';
+import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 
 export const QuestionDependencyJsonSchema = z
-  .strictObject({
-    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
+  .object({
+    comment: CommentJsonSchema.optional(),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
       .describe(
         '[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.',
       )
-      .meta({
-        deprecated: true,
-      })
       .optional(),
     coreScripts: z
       .array(z.string().describe('A .js file located in /public/javascripts.'))
       .describe(
         '[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.',
       )
-      .meta({
-        deprecated: true,
-      })
       .optional(),
     nodeModulesStyles: z
       .array(z.string().describe('A .css file located in /node_modules.'))
@@ -49,18 +42,47 @@ export const QuestionDependencyJsonSchema = z
       .describe('The scripts required by this question from clientFilesQuestion.')
       .optional(),
   })
-
+  .strict()
   .describe("The question's client-side dependencies.");
 
+export const QuestionAuthorJsonSchema = z
+  .object({
+    name: z
+      .string()
+      .describe('A human-readable name of a question author.')
+      .trim()
+      .min(3)
+      .max(255)
+      .optional(),
+    email: z
+      .string()
+      .describe('An email address to contact a question author.')
+      .max(255)
+      .optional(),
+    orcid: z
+      .string()
+      .describe('An ORCID identifier that uniquely identifies an individual question author.')
+      .regex(/^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$/)
+      .optional(),
+    originCourse: z
+      .string()
+      .describe('The sharing name of a course whose staff is a question author.')
+      .optional(),
+  })
+  .strict()
+  .describe(
+    'An author (individual person, or staff of a course of origin) credited with creating a question.',
+  );
+
 export const WorkspaceOptionsJsonSchema = z
-  .strictObject({
-    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
+  .object({
+    comment: CommentJsonSchema.optional(),
     image: z
       .string()
       .describe(
         'The Docker image that will be used to serve this question. Should be specified as Dockerhub image.',
       ),
-    port: z.int().describe('The port number used in the Docker image.'),
+    port: z.number().int().describe('The port number used in the Docker image.'),
     home: z.string().describe('The home directory of the workspace container.'),
     args: z
       .union([z.string(), z.array(z.string())])
@@ -84,32 +106,37 @@ export const WorkspaceOptionsJsonSchema = z
       .describe(
         'The list of files or directories that will be copied out of the workspace container when saving a submission.',
       )
-      .optional(),
+      .optional()
+      .default([]),
     enableNetworking: z
       .boolean()
       .describe('Whether the workspace should have network access. Access is disabled by default.')
       .optional()
       .default(false),
     environment: z
-      .record(z.string(), z.string())
+      .record(z.string())
       .describe('Environment variables to set inside the workspace container.')
-      .optional(),
+      .optional()
+      .default({}),
     syncIgnore: z
       .array(z.string().describe('A single file or directory that will be excluded from sync.'))
       .describe(
         '[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.',
       )
-      .meta({
-        deprecated: true,
-      })
       .optional(),
   })
-
+  .strict()
   .describe('Options for workspace questions.');
 
+export const defaultWorkspaceOptions = WorkspaceOptionsJsonSchema.extend({
+  image: WorkspaceOptionsJsonSchema.shape.image.optional(),
+  port: WorkspaceOptionsJsonSchema.shape.port.optional(),
+  home: WorkspaceOptionsJsonSchema.shape.home.optional(),
+}).parse({});
+
 export const ExternalGradingOptionsJsonSchema = z
-  .strictObject({
-    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
+  .object({
+    comment: CommentJsonSchema.optional(),
     enabled: z
       .boolean()
       .describe(
@@ -136,7 +163,8 @@ export const ExternalGradingOptionsJsonSchema = z
       .describe(
         'The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/',
       )
-      .optional(),
+      .optional()
+      .default([]),
     timeout: z
       .number()
       .int()
@@ -150,23 +178,30 @@ export const ExternalGradingOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string(), z.string())
+      .record(z.string())
       .describe('Environment variables to set inside the grading container.')
-      .optional(),
+      .optional()
+      .default({}),
   })
-
+  .strict()
   .describe('Options for externally graded questions.');
 
+export type ExternalGradingOptionsJson = z.infer<typeof ExternalGradingOptionsJsonSchema>;
+
+export const defaultExternalGradingOptions = ExternalGradingOptionsJsonSchema.extend({
+  image: ExternalGradingOptionsJsonSchema.shape.image.optional(),
+}).parse({});
+
 export const QuestionJsonSchema = z
-  .strictObject({
-    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
+  .object({
+    comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
       .describe('Unique identifier (UUID v4).'),
     type: z
       .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'])
-      .describe('Type of the question.'),
+      .describe('Type of the question. This should be set to "v3" for new questions.'),
     title: z
       .string()
       .describe(
@@ -176,11 +211,14 @@ export const QuestionJsonSchema = z
     tags: z
       .array(z.string().describe('A tag associated with a question.'))
       .describe("Extra tags associated with the question (e.g., 'Exam Only', 'Broken').")
-      .optional(),
+      .optional()
+      .default([]),
+    authors: z.array(QuestionAuthorJsonSchema).max(10).optional().default([]),
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
-      .describe('The list of question files accessible by the client (defaults to ["client.js"]).')
-      .optional(),
+      .describe('The list of question files accessible by the client.')
+      .optional()
+      .default(['client.js', 'question.html', 'answer.html']),
     clientTemplates: z
       .array(z.string().describe('A single template file accessible by the client.'))
       .describe('List of client-accessible templates to render server-side.')
@@ -192,7 +230,8 @@ export const QuestionJsonSchema = z
     gradingMethod: z
       .enum(['Internal', 'External', 'Manual'])
       .describe('The grading method used for this question.')
-      .optional(),
+      .optional()
+      .default('Internal'),
     singleVariant: z
       .boolean()
       .describe('Whether the question is not randomized and only generates a single variant.')
@@ -216,30 +255,26 @@ export const QuestionJsonSchema = z
         'Options that define how the question will work, specific to the individual question type.',
       )
       .optional(),
-    externalGradingOptions: ExternalGradingOptionsJsonSchema.optional().describe(
-      ExternalGradingOptionsJsonSchema.description!,
-    ),
-    dependencies: QuestionDependencyJsonSchema.optional().describe(
-      QuestionDependencyJsonSchema.description!,
-    ),
-    workspaceOptions: WorkspaceOptionsJsonSchema.optional().describe(
-      WorkspaceOptionsJsonSchema.description!,
-    ),
+    externalGradingOptions: ExternalGradingOptionsJsonSchema.optional(),
+    dependencies: QuestionDependencyJsonSchema.optional().default({}),
+    workspaceOptions: WorkspaceOptionsJsonSchema.optional(),
     sharingSets: z
       .array(z.string().describe('The name of a sharing set'))
       .describe('The list of sharing sets that this question belongs to.')
       .optional(),
-    sharePublicly: z.boolean().describe('Whether this question is publicly shared.').optional(),
+    sharePublicly: z
+      .boolean()
+      .describe('Whether this question is publicly shared.')
+      .optional()
+      .default(false),
     shareSourcePublicly: z
       .boolean()
-      .describe("Whether this questions's source code is publicly shared.")
-      .optional(),
+      .describe("Whether this question's source code is publicly shared.")
+      .optional()
+      .default(false),
   })
-
-  .describe('Info files for questions.')
-  .meta({
-    title: 'Question Info',
-  });
+  .strict()
+  .describe('Info files for questions.');
 
 export type QuestionJson = z.infer<typeof QuestionJsonSchema>;
 export type QuestionJsonInput = z.input<typeof QuestionJsonSchema>;

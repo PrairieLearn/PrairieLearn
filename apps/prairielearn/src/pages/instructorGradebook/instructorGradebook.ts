@@ -7,6 +7,7 @@ import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
 
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
 import {
   checkAssessmentInstanceBelongsToCourseInstance,
@@ -37,8 +38,6 @@ router.get(
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {
-    const csvFilename = buildCsvFilename(res.locals);
-
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       // We don't actually forbid access to this page if the user is not a student
       // data viewer, because we want to allow users to click the gradebook tab and
@@ -46,12 +45,23 @@ router.get(
       // users just wouldn't see the tab at all, and this caused a lot of questions
       // about why staff couldn't see the gradebook tab.
       const courseOwners = await getCourseOwners(res.locals.course.id);
-      res
-        .status(403)
-        .send(InstructorGradebook({ resLocals: res.locals, courseOwners, csvFilename }));
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'instance_admin',
+            subPage: 'gradebook',
+          },
+          courseOwners,
+          pageTitle: 'Gradebook',
+          requiredPermissions: 'Student Data Viewer',
+        }),
+      );
       return;
     }
 
+    const csvFilename = buildCsvFilename(res.locals);
     const courseAssessments = await queryRows(
       sql.course_assessments,
       { course_instance_id: res.locals.course_instance.id },
@@ -60,7 +70,6 @@ router.get(
     res.send(
       InstructorGradebook({
         resLocals: res.locals,
-        courseOwners: [], // Not needed in this context
         csvFilename,
         courseAssessments,
       }),
@@ -113,6 +122,7 @@ router.get(
           record.uin,
           record.user_name,
           record.role,
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           ...assessments.map((a) => record.scores[a.assessment_id]?.score_perc ?? null),
         ],
       });

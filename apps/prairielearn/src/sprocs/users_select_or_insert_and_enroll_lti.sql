@@ -78,9 +78,10 @@ BEGIN
     SELECT check_course_instance_access(lti_course_instance_id, u.uid, u.institution_id, req_date) INTO has_access;
 
     -- if user has access, then ensure enrollment
+    -- This doesn't log an audit event for enrollments if a student was enrolled this way.
     IF has_access THEN
-        INSERT INTO enrollments (course_instance_id, user_id)
-        VALUES (lti_course_instance_id, u.user_id)
+        INSERT INTO enrollments (course_instance_id, user_id, status, first_joined_at)
+        VALUES (lti_course_instance_id, u.user_id, 'joined', now())
         ON CONFLICT DO NOTHING;
     END IF;
 END;

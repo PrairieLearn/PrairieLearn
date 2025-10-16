@@ -29,6 +29,7 @@
   },
   "typescript.preferences.autoImportSpecifierExcludeRegexes": ["^react$"],
   "typescript.tsdk": "node_modules/typescript/lib",
+  "json.schemaDownload.enable": true,
   "json.schemas": [
     {
       "fileMatch": [
@@ -73,5 +74,6 @@
   "[json]": {
     "files.insertFinalNewline": true
   },
-  "vitest.maximumConfigs": 100
+  "vitest.maximumConfigs": 100,
+  "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff"
 }

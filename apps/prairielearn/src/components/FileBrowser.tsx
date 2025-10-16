@@ -9,13 +9,13 @@ import { isBinaryFile } from 'isbinaryfile';
 
 import { type HtmlValue, escapeHtml, html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
 import { compiledScriptTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
 import * as editorUtil from '../lib/editorUtil.js';
 import type { InstructorFilePaths } from '../lib/instructorFiles.js';
-import { renderHtml } from '../lib/preact-html.js';
 import { encodePath } from '../lib/uri-util.js';
 
 import { PageLayout } from './PageLayout.js';
@@ -182,9 +182,9 @@ export async function browseFile({ paths }: { paths: InstructorFilePaths }): Pro
   if (file.isBinary) {
     const type = await fileTypeFromFile(paths.workingPath);
     if (type) {
-      if (type?.mime.startsWith('image')) {
+      if (type.mime.startsWith('image')) {
         file.isImage = true;
-      } else if (type?.mime === 'application/pdf') {
+      } else if (type.mime === 'application/pdf') {
         file.isPDF = true;
       }
     }
@@ -488,7 +488,7 @@ function DirectoryBrowserActions({
   csrfToken: string;
 }) {
   return html`
-    ${paths.specialDirs?.map(
+    ${paths.specialDirs.map(
       (d) => html`
         <button
           type="button"
@@ -580,125 +580,139 @@ function DirectoryBrowserBody({
   csrfToken: string;
 }) {
   return html`
-    <table class="table table-sm table-hover" aria-label="Directories and files">
-      <thead class="visually-hidden">
-        <tr>
-          <th>File</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${directoryListings.files?.map(
-          (f) => html`
-            <tr>
-              <td>
-                ${f.sync_errors
-                  ? SyncProblemButtonHtml({
-                      type: 'error',
-                      output: f.sync_errors,
-                    })
-                  : f.sync_warnings
-                    ? SyncProblemButtonHtml({
-                        type: 'warning',
-                        output: f.sync_warnings,
-                      })
-                    : ''}
-                <span><i class="far fa-file-alt"></i></span>
-                ${f.canView
-                  ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(f.path)}">${f.name}</a>`
-                  : html`<span>${f.name}</span>`}
-              </td>
-              <td>
-                ${isReadOnly
-                  ? ''
-                  : html`
-                      <a
-                        class="btn btn-xs btn-secondary ${f.canEdit ? '' : 'disabled'}"
-                        href="${paths.urlPrefix}/file_edit/${encodePath(f.path)}"
-                      >
-                        <i class="fa fa-edit"></i>
-                        <span>Edit</span>
-                      </a>
-                      <button
-                        type="button"
-                        id="instructorFileUploadForm-${f.id}"
-                        class="btn btn-xs btn-secondary"
-                        data-bs-toggle="popover"
-                        data-bs-container="body"
-                        data-bs-html="true"
-                        data-bs-placement="auto"
-                        data-bs-title="Upload file"
-                        data-bs-content="
+    <div class="table-responsive">
+      <table class="table table-sm table-hover" aria-label="Directories and files">
+        <thead class="visually-hidden">
+          <tr>
+            <th>File</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${directoryListings.files.map(
+            (f) => html`
+              <tr>
+                <td class="align-middle">
+                  <div class="d-flex align-items-center">
+                    <i class="far fa-file-alt"></i>
+                    ${f.sync_errors
+                      ? SyncProblemButtonHtml({
+                          type: 'error',
+                          output: f.sync_errors,
+                        })
+                      : f.sync_warnings
+                        ? SyncProblemButtonHtml({
+                            type: 'warning',
+                            output: f.sync_warnings,
+                          })
+                        : ''}
+                    ${f.canView
+                      ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(f.path)}"
+                          >${f.name}</a
+                        >`
+                      : html`<span>${f.name}</span>`}
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <div class="d-flex gap-2">
+                    ${isReadOnly
+                      ? ''
+                      : html`
+                          <a
+                            class="btn btn-xs btn-secondary text-nowrap ${f.canEdit
+                              ? ''
+                              : 'disabled'}"
+                            href="${paths.urlPrefix}/file_edit/${encodePath(f.path)}"
+                          >
+                            <i class="fa fa-edit"></i>
+                            <span>Edit</span>
+                          </a>
+                          <button
+                            type="button"
+                            id="instructorFileUploadForm-${f.id}"
+                            class="btn btn-xs btn-secondary text-nowrap"
+                            data-bs-toggle="popover"
+                            data-bs-container="body"
+                            data-bs-html="true"
+                            data-bs-placement="auto"
+                            data-bs-title="Upload file"
+                            data-bs-content="
                   ${escapeHtml(FileUploadForm({ file: f, csrfToken }))}"
-                        ${f.canUpload ? '' : 'disabled'}
-                      >
-                        <i class="fa fa-arrow-up"></i>
-                        <span>Upload</span>
-                      </button>
-                    `}
-                <a
-                  class="btn btn-xs btn-secondary ${f.canDownload ? '' : 'disabled'}"
-                  href="${paths.urlPrefix}/file_download/${encodePath(
-                    f.path,
-                  )}?attachment=${encodeURIComponent(f.name)}"
-                >
-                  <i class="fa fa-arrow-down"></i>
-                  <span>Download</span>
-                </a>
-                ${isReadOnly
-                  ? ''
-                  : html`
-                      <button
-                        type="button"
-                        class="btn btn-xs btn-secondary"
-                        data-bs-toggle="popover"
-                        data-bs-container="body"
-                        data-bs-html="true"
-                        data-bs-placement="auto"
-                        data-bs-title="Rename file"
-                        data-bs-content="${escapeHtml(
-                          FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
-                        )}"
-                        data-testid="rename-file-button"
-                        ${f.canRename ? '' : 'disabled'}
-                      >
-                        <i class="fa fa-i-cursor"></i>
-                        <span>Rename</span>
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-xs btn-secondary"
-                        data-bs-toggle="popover"
-                        data-bs-container="body"
-                        data-bs-html="true"
-                        data-bs-placement="auto"
-                        data-bs-title="Confirm delete"
-                        data-bs-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
-                        data-testid="delete-file-button"
-                        ${f.canDelete ? '' : 'disabled'}
-                      >
-                        <i class="far fa-trash-alt"></i>
-                        <span>Delete</span>
-                      </button>
-                    `}
-              </td>
-            </tr>
-          `,
-        )}
-        ${directoryListings.dirs.map(
-          (d) => html`
-            <tr>
-              <td colspan="2">
-                <i class="fa fa-folder"></i>
-                ${d.canView
-                  ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(d.path)}">${d.name}</a>`
-                  : html`<span>${d.name}</span>`}
-              </td>
-            </tr>
-          `,
-        )}
-      </tbody>
-    </table>
+                            ${f.canUpload ? '' : 'disabled'}
+                          >
+                            <i class="fa fa-arrow-up"></i>
+                            <span>Upload</span>
+                          </button>
+                        `}
+                    <a
+                      class="btn btn-xs btn-secondary text-nowrap ${f.canDownload
+                        ? ''
+                        : 'disabled'}"
+                      href="${paths.urlPrefix}/file_download/${encodePath(
+                        f.path,
+                      )}?attachment=${encodeURIComponent(f.name)}"
+                    >
+                      <i class="fa fa-arrow-down"></i>
+                      <span>Download</span>
+                    </a>
+                    ${isReadOnly
+                      ? ''
+                      : html`
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-secondary text-nowrap"
+                            data-bs-toggle="popover"
+                            data-bs-container="body"
+                            data-bs-html="true"
+                            data-bs-placement="auto"
+                            data-bs-title="Rename file"
+                            data-bs-content="${escapeHtml(
+                              FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
+                            )}"
+                            data-testid="rename-file-button"
+                            ${f.canRename ? '' : 'disabled'}
+                          >
+                            <i class="fa fa-i-cursor"></i>
+                            <span>Rename</span>
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-secondary text-nowrap"
+                            data-bs-toggle="popover"
+                            data-bs-container="body"
+                            data-bs-html="true"
+                            data-bs-placement="auto"
+                            data-bs-title="Confirm delete"
+                            data-bs-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
+                            data-testid="delete-file-button"
+                            ${f.canDelete ? '' : 'disabled'}
+                          >
+                            <i class="far fa-trash-alt"></i>
+                            <span>Delete</span>
+                          </button>
+                        `}
+                  </div>
+                </td>
+              </tr>
+            `,
+          )}
+          ${directoryListings.dirs.map(
+            (d) => html`
+              <tr>
+                <td colspan="2">
+                  <i class="fa fa-folder"></i>
+                  ${d.canView
+                    ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(d.path)}"
+                        >${d.name}</a
+                      >`
+                    : html`<span>${d.name}</span>`}
+                </td>
+              </tr>
+            `,
+          )}
+        </tbody>
+      </table>
+    </div>
   `;
 }
 

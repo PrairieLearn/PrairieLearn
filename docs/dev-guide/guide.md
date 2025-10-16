@@ -106,6 +106,29 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 
 - Buttons should use the `<button>` element when they take actions and the `<a>` element when they are simply links to other pages. We should not use `<a role="button">` to fake a button element. Buttons that do not submit a form should always start with `<button type="button" class="btn ...">`, where `type="button"` specifies that they don't submit.
 
+## HTML accessibility
+
+If you are adding anything more complex than a basic form page, the automated accessibility checks are likely not enough for checking accessibility. You should use [VoiceOver (macOS)](https://support.apple.com/guide/voiceover/welcome/mac) or [NVDA (Windows)](https://www.nvaccess.org/download/) to test the page. All our pages must conform to the [Web Content Accessibility Guidelines (WCAG) 2.1 AA standard](https://www.w3.org/TR/WCAG21/). Some common things to check for:
+
+- Are elements announced correctly?
+  - Do elements have appropriate `aria-label` / `alt` attributes?
+  - Are descriptions concise and accurate?
+  - Do menus, toolbars, and other UI elements have appropriate [ARIA roles](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles)?
+- Can a user navigate the page using only the keyboard?
+  - Tab should move between focusable elements.
+  - Space or Enter should activate buttons/links.
+  - Arrow keys should navigate within components like dropdowns and tables.
+  - Actions that require dragging with a mouse should have keyboard alternatives.
+- Is focus managed correctly?
+  - Is focus correctly trapped within modals and other dialogs?
+  - Is focus position retained during re-renders?
+- Are focus indicators visible?
+- Is the page layout logical and easy to understand?
+- Will users with visual impairments be able to use the page?
+  - Is there at least a 4.5:1 contrast ratio between text and background colors?
+  - Is there at least a 3:1 contrast ratio between UI elements and background colors?
+  - Is there appropriate spacing between elements?
+
 ## SQL usage
 
 - [PostgreSQL](https://www.postgresql.org) v16 is used as the database.
@@ -335,7 +358,7 @@ FOR NO KEY UPDATE;
 - To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
   ```javascript
-  await sqldb.queryAsync(sql.insert_assessment_question, {
+  await sqldb.execute(sql.insert_assessment_question, {
     points_list: [10, 5, 1],
   });
   ```
@@ -375,7 +398,7 @@ FOR NO KEY UPDATE;
     { a: 5, b: 'foo' },
     { a: 9, b: 'bar' },
   ];
-  await sqldb.queryAsync(sql.insert_data, {
+  await sqldb.execute(sql.insert_data, {
     data: JSON.stringify(data),
   });
   ```
@@ -455,7 +478,7 @@ FOR NO KEY UPDATE;
     '/',
     asyncHandler(async (req, res) => {
       if (req.body.__action == 'enroll') {
-        await queryAsync(sql.enroll, {
+        await execute(sql.enroll, {
           course_instance_id: req.body.course_instance_id,
           user_id: res.locals.authn_user.user_id,
         });
@@ -566,6 +589,14 @@ To automatically fix lint and formatting errors, run `make format`.
 - The question flow is shown in the diagram below:
 
 ![Question lifecycle flowchart](./question-flow.d2)
+
+## Assertions
+
+Depending on the context, we use different types of assertions.
+
+- In tests, we use the exported helpers from `vitest`, e.g. `assert.ok` or `assert.isDefined`.
+- In server code, to enforce invariants (e.g. something that should never happen), we use `assert` from `node:assert`.
+- For asserting results on the client, or in utility functions, e.g. a `.querySelector`, `.pop`, etc., consider using the `!` operator to assert that a value is not `null` or `undefined`.
 
 ## JavaScript equality operator
 

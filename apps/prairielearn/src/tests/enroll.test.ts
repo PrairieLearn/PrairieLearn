@@ -1,6 +1,6 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { queryAsync } from '@prairielearn/postgres';
+import { execute } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 
@@ -36,8 +36,8 @@ describe('Enroll page (enterprise)', function () {
   afterAll(helperServer.after);
 
   const originalIsEnterprise = config.isEnterprise;
-  beforeAll(async () => (config.isEnterprise = true));
-  afterAll(async () => (config.isEnterprise = originalIsEnterprise));
+  beforeAll(() => (config.isEnterprise = true));
+  afterAll(() => (config.isEnterprise = originalIsEnterprise));
 
   test.sequential('enroll a single student', async () => {
     const res = await enrollUser('1', USER_1);
@@ -64,7 +64,7 @@ describe('Enroll page (enterprise)', function () {
   });
 
   test.sequential('apply a course instance enrollment limit', async () => {
-    await queryAsync('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1', {});
+    await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1');
   });
 
   test.sequential('enroll one student', async () => {
@@ -80,11 +80,8 @@ describe('Enroll page (enterprise)', function () {
   });
 
   test.sequential('apply an institution-level course instance enrollment limit', async () => {
-    await queryAsync('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1', {});
-    await queryAsync(
-      'UPDATE institutions SET course_instance_enrollment_limit = 1 WHERE id = 1',
-      {},
-    );
+    await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1');
+    await execute('UPDATE institutions SET course_instance_enrollment_limit = 1 WHERE id = 1');
   });
 
   test.sequential('fail to enroll a second student', async () => {
@@ -94,7 +91,7 @@ describe('Enroll page (enterprise)', function () {
   });
 
   test.sequential('set a higher course instance enrollment limit', async () => {
-    await queryAsync('UPDATE course_instances SET enrollment_limit = 2 WHERE id = 1', {});
+    await execute('UPDATE course_instances SET enrollment_limit = 2 WHERE id = 1');
   });
 
   test.sequential('enroll a second student', async () => {
@@ -110,8 +107,8 @@ describe('Enroll page (enterprise)', function () {
   });
 
   test.sequential('set a yearly enrollment limit', async () => {
-    await queryAsync('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1', {});
-    await queryAsync(
+    await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1');
+    await execute(
       'UPDATE institutions SET course_instance_enrollment_limit = 100000, yearly_enrollment_limit = 2 WHERE id = 1',
       {},
     );
@@ -130,7 +127,7 @@ describe('Enroll page (non-enterprise)', () => {
   afterAll(helperServer.after);
 
   test.sequential('apply a course instance enrollment limit', async () => {
-    await queryAsync('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1', {});
+    await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1');
   });
 
   test.sequential('enroll one student', async () => {

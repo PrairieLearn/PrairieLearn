@@ -65,7 +65,6 @@ const sideNavPagesTabs = {
       urlSuffix: '/course_admin/questions',
       iconClasses: 'fa fa-question',
       tabLabel: 'Questions',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
     },
     {
       activePages: ['course_admin'],
@@ -100,7 +99,6 @@ const sideNavPagesTabs = {
       iconClasses: 'fa fa-edit',
       tabLabel: 'Course files',
       tabTooltip: 'Course files',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_view,
     },
     {
       activePages: ['course_admin'],
@@ -126,7 +124,6 @@ const sideNavPagesTabs = {
       urlSuffix: '/instance_admin/gradebook',
       iconClasses: 'fas fa-balance-scale',
       tabLabel: 'Gradebook',
-      renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
     },
     {
       activePages: ['instance_admin'],
@@ -134,7 +131,6 @@ const sideNavPagesTabs = {
       urlSuffix: '/instance_admin/students',
       iconClasses: 'fas fa-users-line',
       tabLabel: 'Students',
-      renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
     },
     {
       activePages: ['instance_admin'],
@@ -241,7 +237,7 @@ function CourseNav({
       <div id="course-dropdown" class="dropdown">
         <button
           type="button"
-          class="btn dropdown-toggle border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
+          class="btn dropdown-toggle border bg-white w-100 d-flex justify-content-between align-items-center mb-2"
           aria-label="Change course"
           aria-haspopup="true"
           aria-expanded="false"
@@ -296,12 +292,12 @@ function CourseInstanceNav({
     <div class="side-nav-header">
       <div class="header-text">Course instance</div>
     </div>
-    <div class="side-nav-group mb-3">
+    <div class="side-nav-group mb-0">
       <div>
         <div id="course-instance-dropdown" class="dropdown">
           <button
             type="button"
-            class="btn dropdown-toggle border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
+            class="btn dropdown-toggle border bg-white w-100 d-flex justify-content-between align-items-center mb-2"
             aria-label="Change course instance"
             aria-haspopup="true"
             aria-expanded="false"

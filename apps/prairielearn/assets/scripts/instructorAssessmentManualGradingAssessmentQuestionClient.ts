@@ -4,7 +4,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.js';
 import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
-import { type RubricData } from '../../src/lib/manualGrading.js';
+import { type RubricData } from '../../src/lib/manualGrading.types.js';
 import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
@@ -17,6 +17,7 @@ declare global {
   interface Window {
     gradersList: () => any;
     rubricItemsList: () => any;
+    submissionGroups: () => any;
   }
 }
 
@@ -30,7 +31,15 @@ onDocumentReady(() => {
     aiGradingMode,
     csrfToken,
     rubric_data,
+    instanceQuestionGroups,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
+
+  const instanceQuestionGroupsByName = Object.fromEntries(
+    instanceQuestionGroups.map((group) => [
+      group.instance_question_group_name,
+      group.instance_question_group_description,
+    ]),
+  );
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
     form.addEventListener('submit', ajaxSubmit);
@@ -69,6 +78,16 @@ onDocumentReady(() => {
     const rubricItems = data.flatMap((row) => row.rubric_difference ?? []);
     rubricItems.sort((a, b) => a.number - b.number);
     return Object.fromEntries(rubricItems.map((item) => [item.description, item.description]));
+  };
+
+  window.submissionGroups = function () {
+    return Object.fromEntries([
+      ...instanceQuestionGroups.map((g) => [
+        g.instance_question_group_name,
+        g.instance_question_group_name,
+      ]),
+      ['No Group', 'No Group'],
+    ]);
   };
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
@@ -186,6 +205,7 @@ onDocumentReady(() => {
           searchable: false,
           sortable: true,
           switchable: false,
+          class: 'text-center',
           formatter: (_value: number, row: InstanceQuestionRowWithIndex) =>
             html`
               <a
@@ -221,6 +241,36 @@ onDocumentReady(() => {
                 : ''}
             `.toString(),
         },
+        aiGradingMode && instanceQuestionGroups.length > 0
+          ? {
+              field: 'instance_question_group_name',
+              title: 'Submission Group',
+              visible: aiGradingMode,
+              filterControl: 'select',
+              class: 'text-center',
+              formatter: (value: string | null) => {
+                if (!value) {
+                  return html`<span class="text-secondary">No Group</span>`.toString();
+                }
+                return html`
+                  <span class="d-flex align-items-center justify-content-center gap-2">
+                    ${value}
+                    <div
+                      data-bs-toggle="tooltip"
+                      data-bs-html="true"
+                      data-bs-title="${instanceQuestionGroupsByName[value]}"
+                    >
+                      <i class="fas fa-circle-info text-secondary"></i>
+                    </div>
+                  </span>
+                `.toString();
+              },
+              filterData: 'func:submissionGroups',
+              filterCustomSearch: (text: string, value: string) =>
+                value.toLowerCase().includes(html`${text}`.toString()),
+              sortable: true,
+            }
+          : null,
         {
           field: 'user_or_group_name',
           title: groupWork ? 'Group Name' : 'Name',
@@ -243,6 +293,7 @@ onDocumentReady(() => {
           filterControl: 'select',
           sortable: true,
           class: 'text-center',
+          visible: !aiGradingMode,
           formatter: (value: boolean) => (value ? 'Requires grading' : 'Graded'),
         },
         {
@@ -403,8 +454,22 @@ onDocumentReady(() => {
                     (item) =>
                       html`<div>
                         ${item.false_positive
-                          ? html`<i class="bi bi-plus-square-fill text-danger"></i>`
-                          : html`<i class="bi bi-dash-square-fill text-danger"></i>`}
+                          ? html`
+                              <i
+                                class="bi bi-plus-square-fill text-danger"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                data-bs-title="Selected by AI but not by human"
+                              ></i>
+                            `
+                          : html`
+                              <i
+                                class="bi bi-dash-square-fill text-danger"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                data-bs-title="Selected by human but not by AI"
+                              ></i>
+                            `}
                         <span>${item.description}</span>
                       </div>`,
                   ),
@@ -422,15 +487,15 @@ onDocumentReady(() => {
       const order = sortOrder === 'desc' ? -1 : 1;
       if (sortName === 'rubric_difference') {
         data.sort(function (a, b) {
-          const a_diff = a['point_difference'] === null ? null : Math.abs(a['point_difference']);
-          const b_diff = b['point_difference'] === null ? null : Math.abs(b['point_difference']);
+          const a_diff = a.point_difference === null ? null : Math.abs(a.point_difference);
+          const b_diff = b.point_difference === null ? null : Math.abs(b.point_difference);
           if (a_diff === null && b_diff === null) {
             // Can't compare if both are null
             return 0;
           } else if (a_diff !== null && b_diff !== null) {
             // Actually sorting based on accuracy
-            const a_rubric_diff = a['rubric_difference'] ? a['rubric_difference'].length : null;
-            const b_rubric_diff = b['rubric_difference'] ? b['rubric_difference'].length : null;
+            const a_rubric_diff = a.rubric_difference ? a.rubric_difference.length : null;
+            const b_rubric_diff = b.rubric_difference ? b.rubric_difference.length : null;
             if (
               a_rubric_diff !== null &&
               b_rubric_diff !== null &&
@@ -549,7 +614,12 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
   const action = formData.get('__action');
   const batchAction = formData.get('batch_action');
 
-  if (action === 'batch_action' && batchAction === 'ai_grade_assessment_selected') {
+  const batchActions = new Set([
+    'ai_grade_assessment_selected',
+    'ai_instance_question_group_selected',
+  ]);
+
+  if (action === 'batch_action' && batchAction && batchActions.has(batchAction.toString())) {
     // We'll handle this with a normal form submission since it redirects to another page.
     return;
   }
@@ -616,8 +686,8 @@ function pointsFormatter(
           field,
           instance_question: row,
           assessment_question: row.assessment_question,
-          urlPrefix: urlPrefix ?? '',
-          csrfToken: csrfToken ?? '',
+          urlPrefix,
+          csrfToken,
         })
       : ''}`;
 }
@@ -637,8 +707,8 @@ function scorebarFormatter(
           field: 'score_perc',
           instance_question: row,
           assessment_question: row.assessment_question,
-          urlPrefix: urlPrefix ?? '',
-          csrfToken: csrfToken ?? '',
+          urlPrefix,
+          csrfToken,
         })
       : ''}`.toString();
 }

@@ -10,6 +10,7 @@ import {
   ensureChunksForCourseAsync,
   getRuntimeDirectoryForCourse,
 } from '../../lib/chunks.js';
+import { sendCourseFile } from '../../lib/express/send-file.js';
 
 const router = Router();
 
@@ -29,15 +30,17 @@ router.get(
     };
     await ensureChunksForCourseAsync(res.locals.course.id, chunk);
 
-    const clientFilesDir = path.join(
+    await sendCourseFile(res, {
       coursePath,
-      'courseInstances',
-      res.locals.course_instance.short_name,
-      'assessments',
-      res.locals.assessment.tid,
-      'clientFilesAssessment',
-    );
-    res.sendFile(filename, { root: clientFilesDir });
+      directory: path.join(
+        'courseInstances',
+        res.locals.course_instance.short_name,
+        'assessments',
+        res.locals.assessment.tid,
+        'clientFilesAssessment',
+      ),
+      filename,
+    });
   }),
 );
 

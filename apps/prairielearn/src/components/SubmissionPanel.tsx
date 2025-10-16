@@ -15,7 +15,7 @@ import {
   type RubricGradingItem,
   SubmissionSchema,
 } from '../lib/db-types.js';
-import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
+import type { RubricData, RubricGradingData } from '../lib/manualGrading.types.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
@@ -146,18 +146,18 @@ export function SubmissionPanel({
                                 submission.rubric_grading?.rubric_items?.[item.id] ?? null,
                             }),
                           )}
-                        ${submission.rubric_grading?.adjust_points
+                        ${submission.rubric_grading.adjust_points
                           ? html`
                               <div class="mb-2">
                                 <span class="text-muted"> Manual grading adjustment: </span>
                                 <span
-                                  class="text-${submission.rubric_grading?.adjust_points >= 0
+                                  class="text-${submission.rubric_grading.adjust_points >= 0
                                     ? 'success'
                                     : 'danger'}"
                                 >
                                   <strong data-testid="rubric-adjust-points">
-                                    [${(submission.rubric_grading?.adjust_points >= 0 ? '+' : '') +
-                                    submission.rubric_grading?.adjust_points}]
+                                    [${(submission.rubric_grading.adjust_points >= 0 ? '+' : '') +
+                                    submission.rubric_grading.adjust_points}]
                                   </strong>
                                 </span>
                               </div>
@@ -180,7 +180,7 @@ export function SubmissionPanel({
 
       <div class="card mb-4" data-testid="submission-block">
         <div
-          class="card-header bg-light text-dark d-flex align-items-center collapsible-card-header"
+          class="card-header bg-light text-dark d-flex flex-wrap align-items-center collapsible-card-header"
         >
           <div class="me-2">
             <div>
@@ -196,7 +196,7 @@ export function SubmissionPanel({
                 : `${submission.user_uid} submitted at ${submission.formatted_date}`}
             </span>
           </div>
-          <div class="me-auto" data-testid="submission-status">
+          <div class="me-auto align-self-end" data-testid="submission-status">
             ${SubmissionStatusBadge({
               submission,
               question,

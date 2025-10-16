@@ -3,6 +3,9 @@ import fetch, { FormData } from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+
+import { FileSchema } from '../lib/db-types.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let elemList;
@@ -72,9 +75,7 @@ export function attachFile(locals, textFile) {
       locals.$ = cheerio.load(await res.text());
     });
     it('should create an attached file', async () => {
-      const result = await sqldb.queryAsync(sql.select_files, []);
-      assert.equal(result.rowCount, 1);
-      locals.file = result.rows[0];
+      locals.file = await sqldb.queryRow(sql.select_files, FileSchema);
     });
     it('should have the correct file.display_filename', () => {
       assert.equal(locals.file.display_filename, 'testfile.txt');
@@ -176,8 +177,8 @@ export function deleteAttachedFile(locals) {
       locals.$ = cheerio.load(await res.text());
     });
     it('should result in no attached files', async () => {
-      const result = await sqldb.queryAsync(sql.select_files, []);
-      assert.equal(result.rowCount, 0);
+      const rowCount = await sqldb.execute(sql.select_files);
+      assert.equal(rowCount, 0);
     });
   });
 }
