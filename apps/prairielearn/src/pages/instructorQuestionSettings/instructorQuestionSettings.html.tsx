@@ -353,7 +353,7 @@ export function InstructorQuestionSettings({
                 ${canEdit
                   ? html`<tfoot>
                       <tr>
-                        <td colspan="4">
+                        <td colspan="5">
                           <button id="add-author-button" class="btn btn-primary mb-2" type="button">
                             Add Author
                           </button>
