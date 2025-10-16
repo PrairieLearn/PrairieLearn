@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { selectPublishingExtensionsByEnrollmentId } from '../models/course-instance-publishing-extensions.js';
 
 import {
@@ -55,36 +57,28 @@ export async function evaluateCourseInstanceAccess(
     };
   }
 
-  // Check if course instance has been archived
-  if (
-    courseInstance.publishing_archive_date &&
-    currentDate > courseInstance.publishing_archive_date
-  ) {
+  // Archive date is always set alongside publish date
+  assert(courseInstance.publishing_archive_date != null);
+
+  // Consider the latest enabled date for the enrollment.
+  const publishingExtensions = params.enrollment
+    ? await selectPublishingExtensionsByEnrollmentId(params.enrollment.id)
+    : [];
+
+  const allDates = [
+    courseInstance.publishing_archive_date,
+    ...publishingExtensions.map((extension) => extension.archive_date),
+  ].sort((a, b) => {
+    return b.getTime() - a.getTime();
+  });
+
+  const latestDate = allDates[0];
+
+  if (currentDate > latestDate) {
     return {
       hasAccess: false,
       reason: 'Course instance has been archived',
     };
-  }
-
-  // Consider the latest enabled extensions for the enrollment.
-  const publishingExtensions = params.enrollment
-    ? await selectPublishingExtensionsByEnrollmentId(params.enrollment.id)
-    : [];
-  // const publishingExtensions: any[] = [];
-
-  const possibleArchiveDates = publishingExtensions.map((extension) => extension.archive_date);
-
-  if (possibleArchiveDates.length > 0) {
-    const sortedPossibleArchiveDates = possibleArchiveDates.sort((a, b) => {
-      return b.getTime() - a.getTime();
-    });
-
-    if (currentDate > sortedPossibleArchiveDates[0]) {
-      return {
-        hasAccess: false,
-        reason: 'Course instance has been archived',
-      };
-    }
   }
 
   return { hasAccess: true };
