@@ -91,90 +91,15 @@ class AnswerOptions:
     """
 
     tag: str
-    """
-    Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.
-
-    Default: UUID
-    """
-
     depends: list[str]
-    """
-    Optional attribute when grading-method="dag". Used to specify the directed
-    acyclic graph relation among the blocks, with blocks being referred to by
-    their tag. For example, if depends="1,3" for a particular block, it must
-    appear later in the solution than the block with tag="1" and the block with
-    tag="3".
-
-
-    Default: ""
-    """
-
     correct: bool
-    """
-	Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).
-
-    Default: True
-    """
-
     ranking: int
-    """
-    This attribute is used when grading-method="ranking" and specifies the correct
-    ranking of the answer block. For example, a block with ranking 2 should be
-    placed below a block with ranking 1. The same ranking can be used when the
-    order of certain blocks is not relevant. Blocks that can be placed at any
-    position should not have the ranking attribute.
-
-    Default = -1
-    """
-
     indent: int | None
-    """
-    Specifies the correct indentation level of the block. For example, a value of 2
-    means the block should be indented twice. A value of -1 means the indention of
-    the block does not matter. This attribute can only be used when
-    indentation="true".
-
-    Default: None
-    """
-
     distractor_for: str | None
-    """
-    Optional attribute on blocks where correct=false. Used to visually group a
-    distractor block with a correct block that it is similar to, should match the
-    tag attribute of the block that it should be visually paired with.
-
-    Default: None
-    """
-
     distractor_feedback: str | None
-    """
-    Optional attribute, used when correct=false that indicates why a given block is
-    incorrect or should not be included in the solution. Shown to the student after
-    all attempts at a problem are exhausted, or if feedback="first-wrong" and the
-    first incorrect line in their submission has distractor-feedback.
-
-    Default: None
-    """
-
     ordering_feedback: str | None
-    """
-    Optional attribute used when grading-method="dag" or grading-method="ranking"
-    and correct=true. Used to provide specific feedback when the block is placed in
-    the wrong position relative to other blocks. This feedback is shown to the
-    student after submission to help clarify ordering errors.
-
-    Default: None
-    """
-
     inner_html: str
-    """
-    The inner html that is within the pl-answer tag
-    """
-
     group_info: GroupInfo
-    """
-    Data class that contains the tag and the depends attributes.
-    """
 
     def __init__(
         self,
@@ -298,191 +223,26 @@ class OrderBlocksOptions:
     """
 
     answers_name: str
-    """
-    Variable name to store data in. Note that this attribute has to be unique
-    within a question, i.e., no value for this attribute should be repeated
-    within a question.
-    """
-
     weight: int
-    """
-    Weight to use when computing a weighted average score over all elements
-    in a question.
-
-    Default = `1`
-    """
-
     grading_method: GradingMethodType
-    """
-    The method that will be used to grade the pl-order-blocks question.
-
-    # Options
-    * GradingMethodType.UNORDERED = "unordered"
-    * GradingMethodType.ORDERED = "ordered"
-    * GradingMethodType.RANKING = "ranking"
-    * GradingMethodType.DAG = "dag"
-    * GradingMethodType.EXTERNAL = "external"
-
-    Default: `GradingMethodType.ORDERED`
-    """
-
     allow_blank: bool
-    """
-    Whether an empty solution area is allowed. By default, an empty
-    solution area with no dropped blocks will not be graded (invalid format).
-
-    Default: `False`
-    """
-
     file_name: str
-    """
-    Name of the file where the information from the blocks will be saved,
-    to be used by the external grader.
-
-    Default: '"user_code.py"'
-    """
-
     source_blocks_order: SourceBlocksOrderType
-    """
-    The order of the blocks in the source area.
-
-    # Options
-    * SourceBlocksOrderType.RANDOM = "random"
-    * SourceBlocksOrderType.ALPHABETIZED = "alphabetized"
-    * SourceBlocksOrderType.ORDERED = "ordered"
-
-    Default: `SourceBlocksOrderType.ALPHABETIZED`
-    """
-
     indentation: bool
-    """
-    Enable both the ability for indentation in the solution area and the grading of
-    the expected indentation (set by indent in pl-answer, as described below).
-
-    Default: `False`
-    """
-
     source_header: str
-    """
-    Enable both the ability for indentation in the solution area and the grading of
-    the expected indentation (set by indent in pl-answer, as described below).
-
-    Default: `"Construct your solution here:"`
-    """
-
     solution_header: str
-    """
-    The text that appears at the start of the solution area.
-
-    Default: `SolutionPlacementType.RIGHT`
-    """
-
     solution_placement: SolutionPlacementType
-    """
-    "right" shows the source and solution areas aligned side-by-side. "bottom"
-    shows the solution area below the source area.
-
-    # Options
-    * SolutionPlacementType.RIGHT = "right"
-    * SolutionPlacementType.BOTTOM = "bottom"
-
-    Default: `SolutionPlacementType.RIGHT`
-    """
-
     max_indent: int
-    """
-    Maximum possible indent depth for blocks in the solution area. Note only
-    applied when indentation is enabled.
-
-    Default: `4`
-    """
-
     partial_credit: PartialCreditType
-    """
-    For the "dag", "ordered", and "ranking" grading methods, you may specify
-    "none" for no partial credit or "lcs" for partial credit based on the LCS
-    edit-distance from the student solution to some correct solution.
-
-    # Options
-    * PartialCreditType.NONE = `none`
-    * PartialCreditType.LCS = `lcs`
-
-    Default: `PartialCreditType.NONE`
-    """
-
     feedback: FeedbackType
-    """
-    The level of feedback the student will receive upon giving an incorrect answer.
-    Available with the "dag" or "ranking grading mode. "none" will give no
-    feedback. "first-wrong" will tell the student which block in their answer was
-    the first to be incorrect. If set to "first-wrong-verbose", if the first
-    incorrect block is a distractor any feedback associated with that distractor
-    will be shown as well (see "distractor-feedback" in <pl-answer>)
-
-    # Options
-    * FeedbackType.NONE = "none"
-    * FeedbackType.FIRST_WRONG = "first-wrong"
-    * FeedbackType.FIRST_WRONG_VERBOSE = "first-wrong-verbose"
-
-    Default: `FeedbackType.NONE`
-    """
-
     format: FormatType
-    """
-    If this property is set to "code", then the contents of each of the blocks will
-    be wrapped with a <pl-code> element.
-
-    # Options
-    * FormatType.DEFAULT = "default"
-    * FormatType.CODE = "code"
-
-    Default: `FormatType.DEFAULT`
-    """
-
     code_language: str | None
-    """
-    The programming language syntax highlighting to use. Only available when
-    using format="code".
-    """
-
     inline: bool
-    """
-    Inline set to `false` sets the blocks to be stacked vertically whereas true
-    requires blocks to be placed horizontally.
-    """
-
     answer_options: list[AnswerOptions]
-    """
-    List of AnswerOptions parsed from interior pl-answer tags.
-    """
-
     correct_answers: list[AnswerOptions]
-    """
-    List of correct AnswerOptions parsed from interior pl-answer tags.
-    """
-
     incorrect_answers: list[AnswerOptions]
-    """
-    List of incorrect AnswerOptions parsed from interior pl-answer tags.
-    """
-
     max_incorrect: int
-    """
-    The maximum number of incorrect answers to be displayed in the source area.
-    The incorrect answers are set using <pl-answer correct="false">. Defaults
-    to displaying all incorrect answers.
-
-    Default: len(correct_answers)
-    """
-
     min_incorrect: int
-    """
-    The minimum number of incorrect answers to be displayed in the source area.
-    The incorrect answers are set using <pl-answer correct="false">. Defaults
-    to displaying all incorrect answers.
-
-    Default: len(incorrect_answers)
-    """
 
     def __init__(self, html_element: lxml.html.HtmlElement) -> None:
         self._check_options(html_element)
