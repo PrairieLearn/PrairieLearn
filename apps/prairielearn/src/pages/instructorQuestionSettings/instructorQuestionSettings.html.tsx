@@ -771,7 +771,7 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
         </div>
         ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) || canEdit
           ? html`
-              <div class="card-footer">
+              <div class="card-footer d-flex flex-wrap gap-2">
                 ${editableCourses.length > 0 &&
                 resLocals.authz_data.has_course_permission_view &&
                 resLocals.question.course_id === resLocals.course.id
@@ -919,7 +919,12 @@ function QuestionTestsForm({
   questionTestCsrfToken: string;
 }) {
   return html`
-    <form name="question-tests-form" method="POST" action="${questionTestPath}">
+    <form
+      name="question-tests-form"
+      method="POST"
+      action="${questionTestPath}"
+      class="d-flex flex-wrap gap-2"
+    >
       <input type="hidden" name="__csrf_token" value="${questionTestCsrfToken}" />
       <button
         type="submit"
