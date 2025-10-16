@@ -7,9 +7,9 @@ def build_tag(tag_name: str, options: dict, inner_html: str = "") -> str:
     newline = "\n"
     return f"""<{tag_name}
         {newline.join(f'{n}="{v}"' for (n, v) in options.items())}
-        >
-            {inner_html}
-        </{tag_name}>"""
+    >
+    {inner_html}
+</{tag_name}>"""
 
 
 def assert_order_blocks_options(
@@ -291,7 +291,7 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
 def test_valid_final_tag(
     options: dict, answer_options_list: list[dict], error: str
 ) -> None:
-    """Tests two valid final tag parsing."""
+    """Tests valid final tag parsing."""
     tags_html = "\n".join(
         build_tag("pl-answer", answer_options) for answer_options in answer_options_list
     )
