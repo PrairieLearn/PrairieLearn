@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import clsx from 'clsx';
 import { useState } from 'preact/compat';
-import { Alert, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
 
@@ -502,27 +502,18 @@ function ExtensionTableRow({
         )}
       </td>
       <td class="col-1">
-        <span>
-          {formatDateFriendly(extension.archive_date, timeZone)}
-          {isBeforeInstanceArchiveDate && (
-            <>
-              {' '}
-              <OverlayTrigger
-                placement="top"
-                overlay={
-                  <Tooltip id={`ignored-date-${extension.id}`}>
-                    Warning: This date will be ignored
-                  </Tooltip>
-                }
-              >
-                <i
-                  class="fas fa-exclamation-triangle text-warning"
-                  aria-label="Warning: This date will be ignored"
-                />
-              </OverlayTrigger>
-            </>
-          )}
-        </span>
+        {isBeforeInstanceArchiveDate ? (
+          <span
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title="This date is before the course instance archive date and will be ignored"
+          >
+            {formatDateFriendly(extension.archive_date, timeZone)}
+            <i class="fas fa-exclamation-triangle text-warning" aria-hidden="true" />
+          </span>
+        ) : (
+          <span>{formatDateFriendly(extension.archive_date, timeZone)}</span>
+        )}
       </td>
       <td class="col-3">
         <div>
