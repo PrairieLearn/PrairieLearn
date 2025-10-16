@@ -216,7 +216,7 @@ class OrderBlocksOptions:
         self._validate_order_blocks_options()
         self._validate_answer_options()
 
-        # Check that if it is a multigraph to ensure the final tag exists
+        # If optional lines are used, then there must be a block marked as `final`
         if self.is_optional:
             has_final = False
             for options in self.answer_options:
