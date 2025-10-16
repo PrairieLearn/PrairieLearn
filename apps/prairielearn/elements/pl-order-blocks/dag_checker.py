@@ -7,10 +7,10 @@ from typing import TypeAlias
 import networkx as nx
 from typing_extensions import TypeIs
 
-ColoredEdges: TypeAlias = list[list[str]]
-Edges: TypeAlias = list[str]
-Multigraph: TypeAlias = dict[str, Edges | ColoredEdges]
-Dag: TypeAlias = dict[str, Edges]
+ColoredEdges = list[list[str]]
+Edges = list[str]
+Multigraph = dict[str, Edges | ColoredEdges]
+Dag = dict[str, Edges]
 
 
 def validate_grouping(

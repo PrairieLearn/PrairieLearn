@@ -4,7 +4,7 @@ import math
 import os
 import random
 from copy import deepcopy
-from typing import TypedDict, no_type_check
+from typing import TypedDict
 
 import chevron
 import lxml.html
@@ -244,7 +244,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     inline = order_blocks_options.inline
     dropzone_layout = order_blocks_options.solution_placement
     correct_answers = data["correct_answers"][answer_name]
-    is_multi = order_blocks_options.is_optional
+    is_optional = order_blocks_options.is_optional
 
     block_formatting = (
         "pl-order-blocks-code"
@@ -413,7 +413,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "indent": max(0, (solution["indent"] or 0) * TAB_SIZE_PX),
             }
             for solution in (
-                solve_problem(correct_answers, grading_method, is_multi)
+                solve_problem(correct_answers, grading_method, is_optional)
                 if order_blocks_options.is_optional
                 else correct_answers
             )
@@ -713,7 +713,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     answer_name = order_block_options.answers_name
     answer_name_field = answer_name + "-input"
     correct_answers = data["correct_answers"][answer_name]
-    is_multi = order_block_options.is_optional
+    is_optional = order_block_options.is_optional
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This
@@ -726,7 +726,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # correct answers, we should check them at random instead of just the provided solution
     elif data["test_type"] == "correct":
         answer = (
-            solve_problem(deepcopy(correct_answers), grading_method, is_multi)
+            solve_problem(deepcopy(correct_answers), grading_method, is_optional)
             if order_block_options.is_optional
             else deepcopy(correct_answers)
         )
@@ -741,7 +741,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data["test_type"] == "incorrect":
         answer = (
-            solve_problem(deepcopy(correct_answers), grading_method, is_multi)
+            solve_problem(deepcopy(correct_answers), grading_method, is_optional)
             if order_block_options.is_optional
             else deepcopy(correct_answers)
         )
