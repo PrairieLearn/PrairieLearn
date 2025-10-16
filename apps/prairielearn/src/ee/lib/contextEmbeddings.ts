@@ -124,12 +124,12 @@ export async function syncContextDocuments(model: EmbeddingModel, authnUserId: s
       const filename = path.basename(file.path);
       if (filename !== 'question.html') continue;
 
-      const fileText = await buildContextForQuestion(path.dirname(file.path));
-      if (fileText) {
+      const questionContext = await buildContextForQuestion(path.dirname(file.path));
+      if (questionContext) {
         await insertDocumentChunk(
           model,
           path.relative(REPOSITORY_ROOT_PATH, file.path),
-          { text: fileText, chunkId: '' },
+          { text: questionContext.context, chunkId: '' },
           job,
           openAiUserFromAuthn(authnUserId),
         );

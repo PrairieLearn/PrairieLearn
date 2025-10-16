@@ -108,7 +108,7 @@ function promptPreamble(context: string): string {
   ]);
 }
 
-async function checkRender(
+export async function checkRender(
   status: 'success' | 'error',
   errors: string[],
   courseId: string,
