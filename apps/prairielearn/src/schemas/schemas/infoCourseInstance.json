@@ -1,13 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Course instance information",
   "description": "The specification file for a course instance.",
   "type": "object",
   "additionalProperties": false,
   "required": ["uuid", "longName"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
       "allOf": [
         {
           "$ref": "#/definitions/CommentJsonSchema"
@@ -25,8 +23,7 @@
     },
     "shortName": {
       "description": "DEPRECATED -- do not use.",
-      "type": "string",
-      "deprecated": true
+      "type": "string"
     },
     "timezone": {
       "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.",
@@ -34,11 +31,11 @@
     },
     "allowIssueReporting": {
       "description": "DEPRECATED -- do not use.",
-      "type": "boolean",
-      "deprecated": true
+      "type": "boolean"
     },
     "selfEnrollment": {
       "type": "object",
+      "default": {},
       "properties": {
         "enabled": {
           "description": "If true, self-enrollment access is controlled by the beforeDate and useEnrollmentCode properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.",
@@ -54,8 +51,7 @@
           "type": "boolean",
           "default": false
         }
-      },
-      "default": {}
+      }
     },
     "hideInEnrollPage": {
       "description": "If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.",
@@ -66,19 +62,18 @@
       "description": "DEPRECATED -- do not use.",
       "type": "object",
       "additionalProperties": {},
-      "deprecated": true,
       "properties": {}
     },
     "allowAccess": {
       "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied.",
       "type": "array",
+      "default": [],
       "items": {
         "description": "An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.",
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
             "allOf": [
               {
                 "$ref": "#/definitions/CommentJsonSchema"
@@ -88,7 +83,6 @@
           "role": {
             "description": "DEPRECATED -- do not use.",
             "type": "string",
-            "deprecated": true,
             "enum": ["Student", "TA", "Instructor", "Superuser"]
           },
           "uids": {
@@ -111,8 +105,7 @@
             "type": "string"
           }
         }
-      },
-      "default": []
+      }
     },
     "groupAssessmentsBy": {
       "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
