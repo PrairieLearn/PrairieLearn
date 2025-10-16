@@ -51,4 +51,3 @@ WHERE
 DELETE FROM pl_courses
 WHERE
   id = 100;
-

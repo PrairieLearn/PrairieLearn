@@ -16,5 +16,7 @@ ADD CONSTRAINT course_instance_publishing_extensions_course_instance_id_name_uni
 
 -- Add check constraint to prevent empty string names
 ALTER TABLE course_instance_publishing_extensions
-ADD CONSTRAINT course_instance_publishing_extensions_name_not_empty
-CHECK (name IS NULL OR name != '');
+ADD CONSTRAINT course_instance_publishing_extensions_name_not_empty CHECK (
+  name IS NULL
+  OR name != ''
+);
