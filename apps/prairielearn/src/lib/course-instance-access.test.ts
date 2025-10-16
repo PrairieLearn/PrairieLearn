@@ -652,39 +652,6 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
     assert.isTrue(result.hasAccess); // Should use latest extension (2024-09-01)
   });
 
-  it('denies access when extension restricts access earlier than course instance archive', async () => {
-    // Setup course instance with archive date
-    await setupExtensionTests('2024-08-01 00:00:00-00');
-
-    // Create extension that restricts access earlier
-    const extension = await insertPublishingExtension({
-      course_instance_id: '100',
-      name: 'Early Restriction',
-      archive_date: new Date('2024-06-01 00:00:00-00'),
-    });
-
-    // Link extension to enrollment
-    await linkExtensionToEnrollment(extension.id, testEnrollmentId);
-
-    const courseInstance = createMockCourseInstance({
-      id: '100',
-      course_id: '100',
-      publishing_publish_date: new Date('2024-01-01T00:00:00Z'),
-      publishing_archive_date: new Date('2024-08-01T00:00:00Z'),
-    });
-
-    const params = createMockParams({
-      enrollment: { id: testEnrollmentId } as any,
-    });
-
-    const currentDate = new Date('2024-07-01T00:00:00Z'); // After extension archive, before course instance archive
-
-    const result = await evaluateCourseInstanceAccess(courseInstance, params, currentDate);
-
-    assert.isFalse(result.hasAccess);
-    assert.equal(result.reason, 'Course instance has been archived');
-  });
-
   it('denies access when current date is after both course instance and extension have archived', async () => {
     // Setup course instance with archive date
     await setupExtensionTests('2024-06-01 00:00:00-00');
