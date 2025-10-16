@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 
 const AccessRuleJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     role: z
       .enum(['Student', 'TA', 'Instructor', 'Superuser'])
@@ -19,7 +19,6 @@ const AccessRuleJsonSchema = z
     endDate: z.string().describe('The latest date on which access is permitted.').optional(),
     institution: z.string().describe('The institution from which access is permitted.').optional(),
   })
-  .strict()
   .describe(
     'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
   );
@@ -31,7 +30,7 @@ const AccessControlJsonSchema = z
   );
 
 export const CourseInstanceJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
@@ -95,7 +94,6 @@ export const CourseInstanceJsonSchema = z
       .optional()
       .default(false),
   })
-  .strict()
   .describe('The specification file for a course instance.');
 
 export type CourseInstanceJson = z.infer<typeof CourseInstanceJsonSchema>;
