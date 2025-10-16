@@ -228,7 +228,6 @@ class OrderBlocksOptions:
                         "Two final 'final' attributes are not allowed."
                     )
 
-
             if not has_final:
                 raise ValueError(
                     "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question."
