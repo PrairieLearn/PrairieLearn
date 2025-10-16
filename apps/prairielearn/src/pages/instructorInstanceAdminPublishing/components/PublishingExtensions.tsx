@@ -47,6 +47,7 @@ function ExtensionModal({
   courseInstanceTimezone: string;
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [bypassEnrollmentCheck, setBypassEnrollmentCheck] = useState(false);
 
   const {
     register,
@@ -70,7 +71,7 @@ function ExtensionModal({
     await trigger('archive_date');
   };
 
-  const validateEmails = (value: string) => {
+  const validateEmails = async (value: string) => {
     const uids = value
       .split(/[\n,]+/)
       .map((uid) => uid.trim())
@@ -86,6 +87,17 @@ function ExtensionModal({
       return `The following UIDs were invalid: "${invalidEmails.join('", "')}"`;
     }
 
+    if (bypassEnrollmentCheck) return true;
+
+    const params = new URLSearchParams();
+    for (const uid of uids) params.append('uids', uid);
+    const resp = await fetch(`${window.location.pathname}/extension/check?${params.toString()}`);
+    if (!resp.ok) return 'Failed to validate UIDs';
+    const data = (await resp.json()) as { invalidUids?: string[] };
+    const invalid = Array.isArray(data.invalidUids) ? data.invalidUids : [];
+    if (invalid.length > 0) {
+      return `Not enrolled: "${invalid.join('", ')}"`;
+    }
     return true;
   };
 
@@ -161,7 +173,10 @@ function ExtensionModal({
               class="form-control"
               rows={5}
               placeholder="One UID per line, or comma/space separated"
-              {...register('uids', { validate: validateEmails })}
+              {...register('uids', {
+                validate: validateEmails,
+                onChange: () => setBypassEnrollmentCheck(false),
+              })}
             />
             {errors.uids && <div class="text-danger small">{String(errors.uids.message)}</div>}
           </div>
@@ -175,8 +190,21 @@ function ExtensionModal({
           >
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
-            Save
+          <button
+            type="submit"
+            class="btn btn-primary"
+            disabled={isSubmitting}
+            onClick={() => {
+              const hasEnrollmentError =
+                typeof errors.uids?.message === 'string' &&
+                errors.uids.message.startsWith('Not enrolled');
+              if (hasEnrollmentError) setBypassEnrollmentCheck(true);
+            }}
+          >
+            {typeof errors.uids?.message === 'string' &&
+            errors.uids.message.startsWith('Not enrolled')
+              ? 'Continue Anyway'
+              : 'Save'}
           </button>
         </Modal.Footer>
       </form>

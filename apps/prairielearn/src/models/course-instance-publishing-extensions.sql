@@ -31,16 +31,6 @@ VALUES
 RETURNING
   *;
 
--- BLOCK select_publishing_extensions_by_course_instance
-SELECT
-  ci_extensions.*
-FROM
-  course_instance_publishing_extensions AS ci_extensions
-WHERE
-  ci_extensions.course_instance_id = $course_instance_id
-ORDER BY
-  ci_extensions.id;
-
 -- BLOCK select_publishing_extensions_with_uids_by_course_instance
 SELECT
   ci_extensions.*,

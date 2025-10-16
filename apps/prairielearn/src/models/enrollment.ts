@@ -1,5 +1,7 @@
 import assert from 'node:assert';
 
+import z from 'zod';
+
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
@@ -19,6 +21,7 @@ import {
   type Enrollment,
   EnrollmentSchema,
   type Institution,
+  UserSchema,
 } from '../lib/db-types.js';
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
@@ -281,19 +284,22 @@ export async function generateAndEnrollUsers({
 }
 
 /**
- * Gets enrollments for users with the specified UIDs in a course instance.
+ * Gets enrollments and associated users for the given UIDs in a course instance.
  */
-export async function getEnrollmentsByUidsInCourseInstance({
+export async function selectUsersAndEnrollmentsByUidsInCourseInstance({
   uids,
   course_instance_id,
 }: {
   uids: string[];
   course_instance_id: string;
-}): Promise<Enrollment[]> {
+}) {
   return await queryRows(
     sql.select_enrollments_by_uids_in_course_instance,
     { uids, course_instance_id },
-    EnrollmentSchema,
+    z.object({
+      enrollment: EnrollmentSchema,
+      user: UserSchema,
+    }),
   );
 }
 export async function selectEnrollmentById({ id }: { id: string }) {

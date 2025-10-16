@@ -34,19 +34,6 @@ export async function selectPublishingExtensionsByEnrollmentId(
 }
 
 /**
- * Finds all publishing extensions for a course instance.
- */
-export async function selectPublishingExtensionsByCourseInstance(
-  course_instance_id: string,
-): Promise<CourseInstancePublishingExtension[]> {
-  return await queryRows(
-    sql.select_publishing_extensions_by_course_instance,
-    { course_instance_id },
-    CourseInstancePublishingExtensionSchema,
-  );
-}
-
-/**
  * Finds all publishing extensions for a course instance with user data.
  */
 export async function selectPublishingExtensionsWithUsersByCourseInstance(

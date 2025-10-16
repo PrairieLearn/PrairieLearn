@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 
 import {
   type CourseInstanceAccessParams,
@@ -6,16 +6,7 @@ import {
   evaluateCourseInstanceAccess,
   migrateAccessRuleJsonToPublishingConfiguration,
 } from './course-instance-access.js';
-import {
-  type CourseInstance,
-  type CourseInstancePublishingRule,
-  type Enrollment,
-} from './db-types.js';
-
-// Mock the publishing extensions function
-vi.mock('../models/course-instance-publishing-extensions.js', () => ({
-  selectPublishingExtensionsByEnrollmentId: vi.fn().mockResolvedValue([]),
-}));
+import { type CourseInstance, type CourseInstancePublishingRule } from './db-types.js';
 
 function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): CourseInstance {
   return {
@@ -42,24 +33,6 @@ function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): Cour
     // These are the only fields we care about.
     publishing_publish_date: null,
     publishing_archive_date: null,
-    ...overrides,
-  };
-}
-
-function _createMockEnrollment(overrides: Partial<Enrollment> = {}): Enrollment {
-  return {
-    id: '1',
-    course_instance_id: '1',
-    user_id: '1',
-    created_at: new Date(),
-    first_joined_at: new Date(),
-    lti_managed: false,
-    pending_lti13_email: null,
-    pending_lti13_instance_id: null,
-    pending_lti13_name: null,
-    pending_lti13_sub: null,
-    pending_uid: null,
-    status: 'joined',
     ...overrides,
   };
 }

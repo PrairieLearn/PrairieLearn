@@ -28,13 +28,45 @@ import {
   deletePublishingExtension,
   selectPublishingExtensionsWithUsersByCourseInstance,
 } from '../../models/course-instance-publishing-extensions.js';
-import { getEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
+import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
 import { InstructorInstanceAdminPublishing } from './instructorInstanceAdminPublishing.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
+
+// Validate a list of UIDs against enrollments in this course instance.
+// Returns the list of UIDs that are NOT enrolled (invalidUids).
+router.get(
+  '/extension/check',
+  asyncHandler(async (req, res) => {
+    const {
+      authz_data: { has_course_instance_permission_edit: hasCourseInstancePermissionEdit },
+    } = getPageContext(res.locals);
+
+    if (!hasCourseInstancePermissionEdit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be course instance editor)');
+    }
+
+    // Accept comma-separated UIDs in query parameter
+    const uidsString = typeof req.query.uids === 'string' ? req.query.uids : '';
+    const uids: string[] = uidsString
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    // Verify each UID is enrolled (matches either users.uid or enrollments.pending_uid)
+    const validRecords = await selectUsersAndEnrollmentsByUidsInCourseInstance({
+      uids,
+      course_instance_id: res.locals.course_instance.id,
+    });
+    const validUids = new Set(validRecords.map((record) => record.user.uid));
+    const invalidUids = uids.filter((uid) => !validUids.has(uid));
+
+    res.json({ invalidUids });
+  }),
+);
 
 router.get(
   '/',
@@ -312,17 +344,17 @@ router.post(
         });
         const body = AddExtensionSchema.parse(req.body);
 
-        const enrollments = await getEnrollmentsByUidsInCourseInstance({
+        const records = await selectUsersAndEnrollmentsByUidsInCourseInstance({
           uids: body.uids,
           course_instance_id: res.locals.course_instance.id,
         });
 
-        if (enrollments.length === 0) {
+        if (records.length === 0) {
           res.status(400).json({ message: 'No enrollments found for any of the provided UIDs' });
           return;
         }
 
-        const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
+        const enrollmentIds = records.map(({ enrollment }) => enrollment.id);
 
         await createPublishingExtensionWithEnrollments({
           course_instance_id: res.locals.course_instance.id,
@@ -394,16 +426,16 @@ router.post(
           });
 
           // Desired enrollments for provided UIDs
-          const desiredEnrollments = await getEnrollmentsByUidsInCourseInstance({
+          const desiredRecords = await selectUsersAndEnrollmentsByUidsInCourseInstance({
             uids: body.uids,
             course_instance_id: res.locals.course_instance.id,
           });
 
-          if (desiredEnrollments.length === 0) {
+          if (desiredRecords.length === 0) {
             throw new Error('No enrollments found for provided UIDs');
           }
 
-          const desiredEnrollmentIds = new Set(desiredEnrollments.map((e) => e.id));
+          const desiredEnrollmentIds = new Set(desiredRecords.map((r) => r.enrollment.id));
 
           // Current enrollments on this extension
           const extensions = await selectPublishingExtensionsWithUsersByCourseInstance(

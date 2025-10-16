@@ -76,7 +76,8 @@ RETURNING
 
 -- BLOCK select_enrollments_by_uids_in_course_instance
 SELECT
-  e.*
+  to_jsonb(e) AS enrollment,
+  to_jsonb(u) AS user
 FROM
   enrollments AS e
   JOIN users AS u ON (u.user_id = e.user_id)
