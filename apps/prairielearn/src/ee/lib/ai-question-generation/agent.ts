@@ -1,15 +1,25 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { Experimental_Agent as Agent, type LanguageModel, tool } from 'ai';
+import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
+import {
+  Experimental_Agent as Agent,
+  type LanguageModel,
+  type LanguageModelUsage,
+  stepCountIs,
+  tool,
+} from 'ai';
 import klaw from 'klaw';
 import { z } from 'zod';
 
-import { formatPrompt } from '../../../lib/ai.js';
+import { execute, loadSql, queryRow } from '@prairielearn/postgres';
+
+import { emptyUsage, formatPrompt } from '../../../lib/ai.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import type { Course, Question, User } from '../../../lib/db-types.js';
+import { type Course, IdSchema, type Question, type User } from '../../../lib/db-types.js';
 import { DefaultMap } from '../../../lib/default-map.js';
 import { REPOSITORY_ROOT_PATH } from '../../../lib/paths.js';
+import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectQuestionById } from '../../../models/question.js';
 import { checkRender } from '../aiQuestionGeneration.js';
 import { ALLOWED_ELEMENTS, buildContextForElementDocs } from '../context-parsers/documentation.js';
@@ -18,6 +28,8 @@ import {
   buildContextForQuestion,
 } from '../context-parsers/template-questions.js';
 import { validateHTML } from '../validateHTML.js';
+
+const sql = loadSql(path.join(import.meta.dirname, '..', 'aiQuestionGeneration.sql'));
 
 const SYSTEM_PROMPT = formatPrompt([
   '# Introduction',
@@ -67,24 +79,31 @@ const SYSTEM_PROMPT = formatPrompt([
     "You must generate a `question.html` file that meets the user's requirements.",
     'If necessary, also generate a `server.py` file.',
     'You MUST ONLY use the PrairieLearn elements listed above.',
-    'You MUST use tool calls to explore element documentation and examples to learn how to use them.',
+    'You MUST use tool calls to explore element documentation.',
+    'You MUST review at least one example question before attempting to generate any code.',
+    'You MUST save and validate the question before finishing.',
+    'If validation fails, you MUST fix the errors and re-validate until it passes.',
   ],
 ]);
 
 const ALLOWED_ELEMENT_NAMES = Array.from(ALLOWED_ELEMENTS) as [string, ...string[]];
 
-async function createQuestionGenerationAgent({
+export async function createQuestionGenerationAgent({
   model,
   course,
   user,
   authnUser,
   question,
+  hasCoursePermissionEdit,
+  jobSequenceId,
 }: {
   model: LanguageModel;
   course: Course;
   user: User;
   authnUser: User;
   question?: Question;
+  hasCoursePermissionEdit: boolean;
+  jobSequenceId: string;
 }) {
   const files = {
     'question.html': '',
@@ -130,9 +149,16 @@ async function createQuestionGenerationAgent({
     }
   }
 
-  return new Agent({
+  const agent = new Agent({
     model,
     system: SYSTEM_PROMPT,
+    stopWhen: [
+      // Cap to 20 steps to avoid runaways.
+      stepCountIs(20),
+    ],
+    onStepFinish: (step) => {
+      console.log('Step finished', step.content);
+    },
     tools: {
       readFile: tool({
         description: 'Read a file from the filesystem.',
@@ -170,9 +196,14 @@ async function createQuestionGenerationAgent({
         inputSchema: z.object({
           elementName: z.enum(ALLOWED_ELEMENT_NAMES),
         }),
-        outputSchema: z.array(z.object({ qid: z.string(), description: z.string() })),
+        outputSchema: z.array(
+          z.object({
+            qid: z.string(),
+            description: z.string(),
+          }),
+        ),
         execute: ({ elementName }) => {
-          const examples = exampleQuestions.get(elementName);
+          const examples = exampleQuestionsByElement.get(elementName);
           if (!examples) return [];
 
           return examples.map((ex) => ({
@@ -182,8 +213,10 @@ async function createQuestionGenerationAgent({
         },
       }),
       getExampleQuestions: tool({
-        description: 'Get the files for example questions byt their QIDs.',
-        inputSchema: z.array(z.string()),
+        description: 'Get the files for example questions by their QIDs.',
+        inputSchema: z.object({
+          qids: z.array(z.string()),
+        }),
         outputSchema: z.array(
           z.object({
             qid: z.string(),
@@ -193,7 +226,7 @@ async function createQuestionGenerationAgent({
             }),
           }),
         ),
-        execute: (qids) => {
+        execute: ({ qids }) => {
           return qids.map((qid) => {
             const exampleQuestion = exampleQuestions.get(qid);
             if (!exampleQuestion) return null;
@@ -210,7 +243,7 @@ async function createQuestionGenerationAgent({
       }),
       saveAndValidateQuestion: tool({
         description: 'Save and validate the generated question.',
-        inputSchema: z.void(),
+        inputSchema: z.object({}),
         outputSchema: z.object({
           errors: z.array(z.string()),
         }),
@@ -233,7 +266,7 @@ async function createQuestionGenerationAgent({
               course_id: course.id,
               user_id: user.user_id,
               authn_user_id: authnUser.user_id,
-              has_course_permission_edit: true,
+              has_course_permission_edit: hasCoursePermissionEdit,
               is_draft: true,
               files,
             });
@@ -243,22 +276,62 @@ async function createQuestionGenerationAgent({
               errors.push('Failed to save question. Try again.');
             } else {
               savedQuestion = await selectQuestionById(saveResults.question_id);
+
+              await execute(sql.insert_draft_question_metadata, {
+                question_id: saveResults.question_id,
+                creator_id: authnUser.user_id,
+              });
+
+              console.log('Inserting prompt row!!!');
+              await queryRow(
+                sql.insert_ai_question_generation_prompt,
+                {
+                  question_id: saveResults.question_id,
+                  prompting_user_id: authnUser.user_id,
+                  prompt_type: 'initial',
+
+                  // TODO: these should be something
+                  user_prompt: 'Empty placeholder',
+                  system_prompt: 'Empty placeholder',
+                  response: 'Empty placeholder',
+
+                  html: files['question.html'],
+                  python: files['server.py'] || null,
+                  errors,
+
+                  // TODO: this should be something
+                  completion: {},
+
+                  job_sequence_id: jobSequenceId,
+                },
+                IdSchema,
+              );
             }
           } else {
             // We're updating an existing question.
+            console.log('UPDATING EXISTING QUESTION');
             const result = await courseFilesClient.updateQuestionFiles.mutate({
               course_id: course.id,
               user_id: user.user_id,
               authn_user_id: authnUser.user_id,
-              has_course_permission_edit: true,
+              has_course_permission_edit: hasCoursePermissionEdit,
               question_id: savedQuestion.id,
-              files,
+              // TODO: creation uses plain files, this uses base-64. The different is bad
+              // and should be addressed.
+              files: {
+                'question.html': Buffer.from(files['question.html'], 'utf-8').toString('base64'),
+                'server.py': files['server.py']
+                  ? Buffer.from(files['server.py'], 'utf-8').toString('base64')
+                  : null,
+              },
             });
 
             if (result.status === 'error') {
               // TODO: is this the right thing to do here?
               errors.push('Failed to save question. Try again.');
             }
+
+            // TODO: need to insert prompt history.
           }
 
           // Only attempt rendering if there were no other errors.
@@ -273,4 +346,73 @@ async function createQuestionGenerationAgent({
       }),
     },
   });
+
+  return { agent, getSavedQuestion: () => savedQuestion };
+}
+
+export async function generateQuestionWithAgent({
+  model,
+  course,
+  user,
+  authnUser,
+  hasCoursePermissionEdit,
+  prompt,
+}: {
+  model: LanguageModel;
+  course: Course;
+  user: User;
+  authnUser: User;
+  hasCoursePermissionEdit: boolean;
+  prompt: string;
+}) {
+  const serverJob = await createServerJob({
+    courseId: course.id,
+    type: 'ai_question_generate',
+    description: 'Generate a question with AI',
+    authnUserId: authnUser.user_id,
+  });
+
+  let usage: LanguageModelUsage = emptyUsage();
+  let savedQuestion: Question | null = null;
+
+  const startTime = Date.now();
+  await serverJob.execute(async (job) => {
+    const { agent, getSavedQuestion } = await createQuestionGenerationAgent({
+      model,
+      course,
+      user,
+      authnUser,
+      hasCoursePermissionEdit,
+      jobSequenceId: serverJob.jobSequenceId,
+    });
+
+    const res = await agent.generate({
+      prompt,
+      providerOptions: {
+        openai: {
+          reasoningEffort: 'minimal',
+        } satisfies OpenAIChatLanguageModelOptions,
+      },
+    });
+
+    usage = res.totalUsage;
+    savedQuestion = getSavedQuestion();
+
+    // console.dir(
+    //   res.steps.map((step) => step.content),
+    //   { depth: null },
+    // );
+    console.log('usage', usage);
+    console.log('saved question', savedQuestion);
+
+    // TODO: attach data to `job.data`?
+  });
+  const endTime = Date.now();
+  console.log(`Generation took ${(endTime - startTime) / 1000} seconds`);
+
+  return {
+    jobSequenceId: serverJob.jobSequenceId,
+    usage,
+    question: savedQuestion as Question | null,
+  };
 }

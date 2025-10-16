@@ -42,9 +42,9 @@ export async function buildContextForQuestion(dir: string): Promise<QuestionCont
   }
 
   return {
-    context: context.join('\n');
-    readme: readme,
-    html: html,
-    python: python,
-  }
+    context: context.join('\n'),
+    readme,
+    html,
+    python,
+  };
 }

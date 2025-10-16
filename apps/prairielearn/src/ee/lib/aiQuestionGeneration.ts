@@ -59,7 +59,7 @@ const NUM_TOTAL_ATTEMPTS = 2;
  * @param context Relevant example documents, formatted into one string.
  * @returns A string, the prompt preamble.
  */
-function promptPreamble(context: string): string {
+export function promptPreamble(context: string): string {
   return formatPrompt([
     '# Introduction',
     'You are an assistant that helps instructors write questions for PrairieLearn.',
