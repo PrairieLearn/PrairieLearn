@@ -432,9 +432,6 @@ class AnswerOptions:
                 ],
             )
 
-    def __repr__(self) -> str:
-        return f"{self.tag}: {self.depends}"
-
 
 def collect_answer_options(
     html_element: lxml.html.HtmlElement, order_blocks_options: OrderBlocksOptions
