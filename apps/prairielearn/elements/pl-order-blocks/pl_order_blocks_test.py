@@ -351,7 +351,7 @@ def test_final_tag_failure(
                 {"tag": "2", "depends": r"1", "final": True},
                 {"tag": "3", "depends": r"1|2", "final": True},
             ],
-            "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question.",
+            "Two final 'final' attributes are not allowed.",
         ),
     ],
 )
