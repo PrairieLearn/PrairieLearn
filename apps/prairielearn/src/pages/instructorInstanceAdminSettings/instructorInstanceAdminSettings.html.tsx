@@ -217,6 +217,7 @@ export function InstructorInstanceAdminSettings({
             enrollmentManagementEnabled={enrollmentManagementEnabled}
             studentLink={studentLink}
             selfEnrollLink={selfEnrollLink}
+            enrollmentCode={courseInstance.enrollment_code}
             csrfToken={csrfToken}
           />
 
@@ -273,8 +274,8 @@ export function InstructorInstanceAdminSettings({
           )}
         </form>
       </div>
-      <div class="card-footer d-flex flex-wrap align-items-center">
-        <form name="copy-course-instance-form" class="me-2" method="POST">
+      <div class="card-footer d-flex flex-wrap gap-2">
+        <form name="copy-course-instance-form" method="POST">
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <button
             type="submit"

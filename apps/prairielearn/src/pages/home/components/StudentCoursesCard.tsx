@@ -2,11 +2,12 @@ import { useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
 import z from 'zod';
 
+import { EnrollmentCodeForm } from '../../../components/EnrollmentCodeForm.js';
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   StudentEnrollmentSchema,
-} from '../../lib/client/safe-db-types.js';
+} from '../../../lib/client/safe-db-types.js';
 
 export const StudentHomePageCourseSchema = z.object({
   id: RawStudentCourseInstanceSchema.shape.id,
@@ -24,6 +25,7 @@ interface StudentCoursesCardProps {
   csrfToken: string;
   urlPrefix: string;
   isDevMode: boolean;
+  enrollmentManagementEnabled: boolean;
 }
 
 export function StudentCoursesCard({
@@ -33,9 +35,11 @@ export function StudentCoursesCard({
   csrfToken,
   urlPrefix,
   isDevMode,
+  enrollmentManagementEnabled,
 }: StudentCoursesCardProps) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
   const [rejectingCourseId, setRejectingCourseId] = useState<string | null>(null);
+  const [removingCourseId, setRemovingCourseId] = useState<string | null>(null);
 
   const invited: StudentHomePageCourse[] = studentCourses.filter(
     (ci) => ci.enrollment.status === 'invited',
@@ -44,16 +48,28 @@ export function StudentCoursesCard({
     (ci) => ci.enrollment.status === 'joined',
   );
 
+  const [showEnrollmentCodeModal, setShowEnrollmentCodeModal] = useState(false);
+
   return (
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
         <h2>{heading}</h2>
-        {canAddCourses && (
-          <a href={`${urlPrefix}/enroll`} class="btn btn-light btn-sm ms-auto">
-            <i class="fa fa-edit" aria-hidden="true" />
-            <span class="d-none d-sm-inline">Add or remove courses</span>
-          </a>
-        )}
+        {canAddCourses &&
+          (enrollmentManagementEnabled ? (
+            <button
+              type="button"
+              class="btn btn-light btn-sm ms-auto"
+              onClick={() => setShowEnrollmentCodeModal(true)}
+            >
+              <i class="bi bi-plus-circle me-sm-1" aria-hidden="true" />
+              <span class="d-none d-sm-inline">Add course</span>
+            </button>
+          ) : (
+            <a href={`${urlPrefix}/enroll`} class="btn btn-light btn-sm ms-auto">
+              <i class="bi bi-plus-circle me-sm-1" aria-hidden="true" />
+              <span class="d-none d-sm-inline">Add course</span>
+            </a>
+          ))}
       </div>
 
       {studentCourses.length === 0 ? (
@@ -61,8 +77,7 @@ export function StudentCoursesCard({
           <div class="card-body">
             No courses found with student access. Courses with instructor access are found in the
             list above.
-            {canAddCourses &&
-              ' Use the "Add or remove courses" button to add a course as a student.'}
+            {canAddCourses && ' Use the "Add course" button to add a course as a student.'}
           </div>
         ) : isDevMode ? (
           <div class="card-body">
@@ -72,7 +87,7 @@ export function StudentCoursesCard({
         ) : (
           <div class="card-body">
             No courses found.
-            {canAddCourses && ' Use the "Add or remove courses" button to add one.'}
+            {canAddCourses && ' Use the "Add course" button to add one.'}
           </div>
         )
       ) : (
@@ -117,11 +132,20 @@ export function StudentCoursesCard({
               ))}
               {joined.map((courseInstance) => (
                 <tr key={courseInstance.id}>
-                  <td>
-                    <a href={`${urlPrefix}/course_instance/${courseInstance.id}`}>
-                      {courseInstance.course_short_name}: {courseInstance.course_title},
-                      {courseInstance.long_name}
-                    </a>
+                  <td class="align-middle">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                      <a href={`${urlPrefix}/course_instance/${courseInstance.id}`}>
+                        {courseInstance.course_short_name}: {courseInstance.course_title},
+                        {courseInstance.long_name}
+                      </a>
+                      <button
+                        type="button"
+                        class="btn btn-danger btn-sm"
+                        onClick={() => setRemovingCourseId(courseInstance.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -129,6 +153,12 @@ export function StudentCoursesCard({
           </table>
         </div>
       )}
+
+      <EnrollmentCodeForm
+        style="modal"
+        show={showEnrollmentCodeModal}
+        onHide={() => setShowEnrollmentCodeModal(false)}
+      />
 
       <Modal
         show={rejectingCourseId !== null}
@@ -158,6 +188,36 @@ export function StudentCoursesCard({
             <input type="hidden" name="course_instance_id" value={rejectingCourseId ?? ''} />
             <button type="submit" class="btn btn-danger">
               Reject invitation
+            </button>
+          </form>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={removingCourseId !== null}
+        backdrop="static"
+        onHide={() => setRemovingCourseId(null)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Remove course</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Are you sure you want to remove this course from your PrairieLearn account?</p>
+          <p>
+            Removing courses here only affects what is visible to you on PrairieLearn. This does not
+            change your university course registration.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <button type="button" class="btn btn-secondary" onClick={() => setRemovingCourseId(null)}>
+            Cancel
+          </button>
+          <form method="POST">
+            <input type="hidden" name="__csrf_token" value={csrfToken} />
+            <input type="hidden" name="__action" value="unenroll" />
+            <input type="hidden" name="course_instance_id" value={removingCourseId ?? ''} />
+            <button type="submit" class="btn btn-danger">
+              Remove course
             </button>
           </form>
         </Modal.Footer>

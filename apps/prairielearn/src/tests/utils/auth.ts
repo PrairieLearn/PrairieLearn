@@ -90,19 +90,31 @@ export async function updateCourseInstanceSettings(
   courseInstanceId: string,
   options: {
     selfEnrollmentEnabled: boolean;
-    restrictToInstitution: boolean;
+    restrictToInstitution?: boolean;
+    selfEnrollmentUseEnrollmentCode?: boolean;
   },
 ) {
+  const updates: string[] = ['self_enrollment_enabled = $self_enrollment_enabled'];
+  const params: Record<string, any> = {
+    course_instance_id: courseInstanceId,
+    self_enrollment_enabled: options.selfEnrollmentEnabled,
+  };
+
+  if (options.restrictToInstitution !== undefined) {
+    updates.push('self_enrollment_restrict_to_institution = $restrict_to_institution');
+    params.restrict_to_institution = options.restrictToInstitution;
+  }
+
+  if (options.selfEnrollmentUseEnrollmentCode !== undefined) {
+    updates.push('self_enrollment_use_enrollment_code = $self_enrollment_use_enrollment_code');
+    params.self_enrollment_use_enrollment_code = options.selfEnrollmentUseEnrollmentCode;
+  }
+
   await execute(
     `UPDATE course_instances 
-     SET self_enrollment_enabled = $self_enrollment_enabled,
-         self_enrollment_restrict_to_institution = $restrict_to_institution
+     SET ${updates.join(', ')}
      WHERE id = $course_instance_id`,
-    {
-      course_instance_id: courseInstanceId,
-      self_enrollment_enabled: options.selfEnrollmentEnabled,
-      restrict_to_institution: options.restrictToInstitution,
-    },
+    params,
   );
 }
 
