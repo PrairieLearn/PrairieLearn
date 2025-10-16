@@ -224,9 +224,7 @@ class OrderBlocksOptions:
                 if options.final and not has_final:
                     has_final = True
                 if options.final and has_final:
-                    raise ValueError(
-                        "Two final 'final' attributes are not allowed."
-                    )
+                    raise ValueError("Two final 'final' attributes are not allowed.")
 
             if not has_final:
                 raise ValueError(
