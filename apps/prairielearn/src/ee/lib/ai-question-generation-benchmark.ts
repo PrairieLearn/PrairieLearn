@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { OpenAIProvider } from '@ai-sdk/openai';
+import type { OpenAIChatLanguageModelOptions, OpenAIProvider } from '@ai-sdk/openai';
 import { type LanguageModel, generateObject } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
@@ -384,7 +384,7 @@ async function evaluateGeneratedQuestion({
     providerOptions: {
       openai: {
         reasoningEffort: 'low',
-      },
+      } satisfies OpenAIChatLanguageModelOptions,
     },
   });
 

@@ -1,3 +1,4 @@
+import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
 import type {
   EmbeddingModel,
   GenerateObjectResult,
@@ -312,7 +313,7 @@ export function generateSubmissionMessage({
           image: submitted_answer[fileName],
           providerOptions: {
             openai: {
-              detail: 'auto',
+              imageDetail: 'auto',
             },
           },
         });

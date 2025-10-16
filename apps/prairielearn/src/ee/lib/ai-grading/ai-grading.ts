@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import { createOpenAI } from '@ai-sdk/openai';
+import { type OpenAIChatLanguageModelOptions, createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
@@ -295,9 +295,9 @@ export async function aiGrade({
                 assessment_question_id: assessment_question.id.toString(),
                 instance_question_id: instance_question.id.toString(),
               },
-              prompt_cache_key: `assessment_question_${assessment_question.id}`,
-              safety_identifier: `course_${course.id}`,
-            },
+              promptCacheKey: `assessment_question_${assessment_question.id}`,
+              safetyIdentifier: `course_${course.id}`,
+            } satisfies OpenAIChatLanguageModelOptions,
           },
         });
 

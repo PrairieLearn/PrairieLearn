@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
 import fs from 'fs-extra';
 import klaw from 'klaw';
@@ -54,7 +55,7 @@ export async function createEmbedding(
     providerOptions: {
       openai: {
         user: openAiUser,
-      },
+      } satisfies OpenAIChatLanguageModelOptions,
     },
   });
 

@@ -1,4 +1,8 @@
-import { type OpenAIProvider, createOpenAI } from '@ai-sdk/openai';
+import {
+  type OpenAIChatLanguageModelOptions,
+  type OpenAIProvider,
+  createOpenAI,
+} from '@ai-sdk/openai';
 import { type ModelMessage, generateObject } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
@@ -136,9 +140,9 @@ async function aiEvaluateStudentResponse({
           assessment_question_id: assessment_question.id,
           instance_question_id: instance_question.id,
         },
-        prompt_cache_key: `assessment_question_${instance_question.assessment_question_id}_grouping`,
-        safety_identifier: `course_${course.id}`,
-      },
+        promptCacheKey: `assessment_question_${instance_question.assessment_question_id}_grouping`,
+        safetyIdentifier: `course_${course.id}`,
+      } satisfies OpenAIChatLanguageModelOptions,
     },
   });
 
