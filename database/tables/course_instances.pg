@@ -27,6 +27,9 @@ indexes
     course_instances_enrollment_code_key: UNIQUE (enrollment_code) USING btree (enrollment_code)
     course_instances_course_id_idx: USING btree (course_id)
 
+check constraints
+    course_instances_publishing_dates_consistency_check: CHECK (publishing_publish_date IS NULL AND publishing_archive_date IS NULL OR publishing_publish_date IS NOT NULL AND publishing_archive_date IS NOT NULL)
+
 foreign-key constraints
     course_instances_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instances_sync_job_sequence_id_fkey: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
