@@ -351,7 +351,7 @@ def test_final_tag_failure(
                 {"tag": "2", "depends": r"1", "final": True},
                 {"tag": "3", "depends": r"1|2", "final": True},
             ],
-            "Two final 'final' attributes are not allowed.",
+            "Multiple 'final' attributes are not allowed.",
         ),
     ],
 )
