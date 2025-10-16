@@ -11,8 +11,10 @@ import lxml.html
 import prairielearn as pl
 from dag_checker import (
     ColoredEdges,
+    Dag,
     Edges,
     Multigraph,
+    _is_edges_colored,
     grade_dag,
     grade_multigraph,
     lcs_partial_credit,
@@ -68,11 +70,10 @@ FIRST_WRONG_FEEDBACK = {
 }
 
 
-@no_type_check
 def extract_dag(
     answers_list: list[OrderBlocksAnswerData],
-) -> tuple[dict[str, list[str]], dict[str, str | None]]:
-    depends_graph = {ans["tag"]: ans["depends"] for ans in answers_list}
+) -> tuple[Dag, dict[str, str | None]]:
+    depends_graph = {ans["tag"]: ans["depends"] for ans in answers_list if not _is_edges_colored(ans["depends"])}
     group_belonging = {ans["tag"]: ans["group_info"]["tag"] for ans in answers_list}
     group_depends = {
         ans["group_info"]["tag"]: ans["group_info"]["depends"]
@@ -100,7 +101,7 @@ def extract_multigraph(
 def solve_problem(
     answers_list: list[OrderBlocksAnswerData],
     grading_method: GradingMethodType,
-    is_multi: bool,
+    is_optional: bool,
 ) -> list[OrderBlocksAnswerData]:
     if (
         grading_method is GradingMethodType.EXTERNAL
@@ -110,17 +111,18 @@ def solve_problem(
         return answers_list
     elif grading_method is GradingMethodType.RANKING:
         return sorted(answers_list, key=lambda x: int(x["ranking"]))
-    elif grading_method is GradingMethodType.DAG and not is_multi:
-        depends_graph, group_belonging = extract_dag(answers_list)
-        solution = solve_dag(depends_graph, group_belonging)
-        return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
-    elif grading_method is GradingMethodType.DAG and is_multi:
-        depends_graph, final = extract_multigraph(answers_list)
-        solution = solve_multigraph(depends_graph, final)[0]
-        answers_list = list(filter(lambda x: x["tag"] in solution, answers_list))
-        return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
+    elif grading_method is GradingMethodType.DAG:
+        if not is_optional:
+            depends_graph, group_belonging = extract_dag(answers_list)
+            solution = solve_dag(depends_graph, group_belonging)
+            return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
+        if is_optional:
+            depends_graph, final = extract_multigraph(answers_list)
+            solution = solve_multigraph(depends_graph, final)[0]
+            answers_list = list(filter(lambda x: x["tag"] in solution, answers_list))
+            return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     else:
-        raise AssertionError("Unreachable code.")
+        assert_never(grading_method)
 
 
 def prepare(html: str, data: pl.QuestionData) -> None:
