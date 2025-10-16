@@ -1,9 +1,5 @@
-import {
-  type OpenAIChatLanguageModelOptions,
-  type OpenAIProvider,
-  createOpenAI,
-} from '@ai-sdk/openai';
-import { type ModelMessage, generateObject } from 'ai';
+import { type OpenAIChatLanguageModelOptions, createOpenAI } from '@ai-sdk/openai';
+import { type LanguageModel, type ModelMessage, generateObject } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -48,7 +44,7 @@ async function aiEvaluateStudentResponse({
   assessment_question,
   instance_question,
   urlPrefix,
-  openai,
+  model,
   logger,
 }: {
   course: Course;
@@ -57,7 +53,7 @@ async function aiEvaluateStudentResponse({
   assessment_question: AssessmentQuestion;
   instance_question: InstanceQuestion;
   urlPrefix: string;
-  openai: OpenAIProvider;
+  model: LanguageModel;
   logger: AIGradingLogger;
 }) {
   const { submission, variant } = await selectLastVariantAndSubmission(instance_question.id);
@@ -126,7 +122,7 @@ async function aiEvaluateStudentResponse({
   ];
 
   const response = await generateObject({
-    model: openai.responses(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL),
+    model,
     schema: z.object({
       correct: z.boolean().describe('Whether or not the student submission is correct.'),
     }),
@@ -194,6 +190,7 @@ export async function aiInstanceQuestionGrouping({
     apiKey: config.aiGradingOpenAiApiKey,
     organization: config.aiGradingOpenAiOrganization,
   });
+  const model = openai.responses(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL);
 
   const serverJob = await createServerJob({
     courseId: course.id,
@@ -270,7 +267,7 @@ export async function aiInstanceQuestionGrouping({
         assessment_question,
         instance_question,
         urlPrefix,
-        openai,
+        model,
         logger,
       });
 
