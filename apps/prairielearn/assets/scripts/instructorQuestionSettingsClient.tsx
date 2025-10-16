@@ -200,7 +200,7 @@ onDocumentReady(() => {
     orcidInput.setAttribute('class', 'form-control');
     orcidInput.setAttribute('id', 'author_orcid_' + index);
     orcidInput.setAttribute('name', 'author_orcid_' + index);
-    orcidInput.setAttribute('pattern', '^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}$');
+    orcidInput.setAttribute('pattern', '^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$');
     addORCIDInputListener(orcidInput);
     tableData.append(orcidInput);
     newRow.append(tableData);
