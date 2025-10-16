@@ -1,4 +1,3 @@
-import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
 import type {
   EmbeddingModel,
   GenerateObjectResult,
