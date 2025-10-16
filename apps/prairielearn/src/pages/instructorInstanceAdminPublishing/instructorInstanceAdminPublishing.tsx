@@ -18,7 +18,7 @@ import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-
 import {
   convertAccessRuleToJson,
   migrateAccessRuleJsonToPublishingConfiguration,
-} from '../../lib/course-instance-access.js';
+} from '../../lib/course-instance-access.shared.js';
 import { CourseInstancePublishingRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';

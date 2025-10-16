@@ -49,6 +49,8 @@ function ExtensionModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [bypassEnrollmentCheck, setBypassEnrollmentCheck] = useState(false);
 
+  const someInvalidUidsPrefix = 'The following UIDs were invalid';
+
   const {
     register,
     handleSubmit,
@@ -81,22 +83,33 @@ function ExtensionModal({
       return 'At least one UID is required';
     }
 
-    const invalidEmails = uids.filter((uid) => z.string().email().safeParse(uid).success);
+    const invalidEmails = uids.filter((uid) => !z.string().email().safeParse(uid).success);
 
     if (invalidEmails.length > 0) {
-      return `The following UIDs were invalid: "${invalidEmails.join('", "')}"`;
+      // You can't return errors with a type from validate, so we will use a constant string prefix.
+      return `${someInvalidUidsPrefix}: "${invalidEmails.join('", "')}"`;
     }
 
-    if (bypassEnrollmentCheck) return true;
-
     const params = new URLSearchParams();
-    for (const uid of uids) params.append('uids', uid);
+    params.append('uids', uids.join(','));
     const resp = await fetch(`${window.location.pathname}/extension/check?${params.toString()}`);
     if (!resp.ok) return 'Failed to validate UIDs';
-    const data = (await resp.json()) as { invalidUids?: string[] };
-    const invalid = Array.isArray(data.invalidUids) ? data.invalidUids : [];
-    if (invalid.length > 0) {
-      return `Not enrolled: "${invalid.join('", ')}"`;
+
+    const { success, data } = z
+      .object({ invalidUids: z.array(z.string()) })
+      .safeParse(await resp.json());
+    if (!success) return 'Failed to check UIDs';
+
+    const validCount = uids.length - data.invalidUids.length;
+    if (validCount < 1) {
+      return 'At least one of the UIDs must be enrolled';
+    }
+
+    // We can bypass this final check if needed
+    if (bypassEnrollmentCheck) return true;
+
+    if (data.invalidUids.length > 0) {
+      return `Not enrolled: "${data.invalidUids.join('", ')}". If you hit "Continue Anyway", these users will be ignored.`;
     }
     return true;
   };
@@ -195,16 +208,13 @@ function ExtensionModal({
             class="btn btn-primary"
             disabled={isSubmitting}
             onClick={() => {
-              const hasEnrollmentError =
-                typeof errors.uids?.message === 'string' &&
-                errors.uids.message.startsWith('Not enrolled');
-              if (hasEnrollmentError) setBypassEnrollmentCheck(true);
+              // You can't return errors with a type from validate, so we will use a constant string prefix.
+              if (errors.uids?.message?.startsWith(someInvalidUidsPrefix)) {
+                setBypassEnrollmentCheck(true);
+              }
             }}
           >
-            {typeof errors.uids?.message === 'string' &&
-            errors.uids.message.startsWith('Not enrolled')
-              ? 'Continue Anyway'
-              : 'Save'}
+            {errors.uids?.message?.startsWith(someInvalidUidsPrefix) ? 'Continue Anyway' : 'Save'}
           </button>
         </Modal.Footer>
       </form>

@@ -21,5 +21,8 @@ export function plainDateTimeStringToDate(string: string, timezone: string): Dat
 
 /** Convert a Date object to a datetime-local string */
 export function DateToPlainDateTimeString(date: Date, timezone: string): string {
-  return Temporal.Instant.fromEpochMilliseconds(date.getTime()).toZonedDateTimeISO(timezone).toPlainDateTime().toString();
+  return Temporal.Instant.fromEpochMilliseconds(date.getTime())
+    .toZonedDateTimeISO(timezone)
+    .toPlainDateTime()
+    .toString();
 }

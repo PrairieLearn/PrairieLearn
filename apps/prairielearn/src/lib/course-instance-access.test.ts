@@ -2,10 +2,12 @@ import { assert, describe, expect, it } from 'vitest';
 
 import {
   type CourseInstanceAccessParams,
-  convertAccessRuleToJson,
   evaluateCourseInstanceAccess,
-  migrateAccessRuleJsonToPublishingConfiguration,
 } from './course-instance-access.js';
+import {
+  convertAccessRuleToJson,
+  migrateAccessRuleJsonToPublishingConfiguration,
+} from './course-instance-access.shared.js';
 import { type CourseInstance, type CourseInstancePublishingRule } from './db-types.js';
 
 function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): CourseInstance {

@@ -164,7 +164,6 @@ async function checkCourseOrInstanceAccess(params: {
       course_instance_id: authzData.course_instance.id,
     });
 
-    // TODO: Deal with overrides. this will have to happen outside of this function.
     const result = await evaluateCourseInstanceAccess(authzData.course_instance, {
       course_role: authzData.permissions_course.course_role,
       course_instance_role: authzData.permissions_course_instance.course_instance_role,

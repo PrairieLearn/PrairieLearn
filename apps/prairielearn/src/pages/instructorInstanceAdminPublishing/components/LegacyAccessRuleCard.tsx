@@ -2,7 +2,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { CommentPopover } from '../../../components/CommentPopover.js';
-import { convertAccessRuleToJson } from '../../../lib/course-instance-access.js';
+import { convertAccessRuleToJson } from '../../../lib/course-instance-access.shared.js';
 import type { CourseInstance, CourseInstancePublishingRule } from '../../../lib/db-types.js';
 import type { AccessRuleJson } from '../../../schemas/infoCourseInstance.js';
 
