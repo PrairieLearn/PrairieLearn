@@ -181,9 +181,6 @@ describe('Enrollment transitions', () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
 
-    // Ensure we're not in enterprise mode to avoid enterprise-specific checks
-    config.isEnterprise = false;
-
     const instance = await selectOptionalCourseInstanceById('1');
     assert.isNotNull(instance);
     courseInstanceCode = instance.enrollment_code;
@@ -208,6 +205,7 @@ describe('Enrollment transitions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       restrictToInstitution: true,
+      selfEnrollmentUseEnrollmentCode: false,
     });
 
     // Create user from same institution
@@ -278,6 +276,7 @@ describe('Enrollment transitions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       restrictToInstitution: true,
+      selfEnrollmentUseEnrollmentCode: false,
     });
 
     // Create user from default institution (institution 1)
@@ -326,6 +325,7 @@ describe('Enrollment transitions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: false,
       selfEnrollmentUseEnrollmentCode: false,
+      restrictToInstitution: false,
     });
 
     const studentUser = await getOrCreateUser({
@@ -377,6 +377,7 @@ describe('Enrollment transitions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       restrictToInstitution: false,
+      selfEnrollmentUseEnrollmentCode: false,
     });
 
     // Create user from different institution
@@ -431,6 +432,7 @@ describe('Enrollment transitions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       selfEnrollmentUseEnrollmentCode: false,
+      restrictToInstitution: false,
     });
 
     const studentUser = await getOrCreateUser({
@@ -483,6 +485,7 @@ describe('Enrollment transitions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       restrictToInstitution: true,
+      selfEnrollmentUseEnrollmentCode: false,
     });
 
     // Create user from different institution
@@ -559,6 +562,7 @@ describe('Enrollment transitions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: false,
       selfEnrollmentUseEnrollmentCode: false,
+      restrictToInstitution: false,
     });
 
     const invitedUser = await getOrCreateUser({
@@ -612,6 +616,7 @@ describe('Enrollment transitions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       selfEnrollmentUseEnrollmentCode: false,
+      restrictToInstitution: false,
     });
 
     const blockedUser = await getOrCreateUser({
@@ -659,6 +664,7 @@ describe('Enrollment transitions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
     });
 
     const studentUser = await getOrCreateUser({
@@ -697,6 +703,7 @@ describe('Enrollment transitions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
     });
 
     const studentUser = await getOrCreateUser({
