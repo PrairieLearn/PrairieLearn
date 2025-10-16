@@ -13,7 +13,7 @@ import * as helperDb from '../tests/helperDb.js';
 
 import {
   type CourseInstanceAccessParams,
-  evaluateCourseInstanceAccess,
+  evaluateModernCourseInstanceAccess as evaluateCourseInstanceAccess,
 } from './course-instance-access.js';
 import {
   convertAccessRuleToJson,
@@ -141,8 +141,6 @@ function createMockParams(
   overrides: Partial<CourseInstanceAccessParams> = {},
 ): CourseInstanceAccessParams {
   return {
-    mode_reason: 'Default',
-    mode: 'Public',
     course_instance_role: 'None',
     course_role: 'None',
     enrollment: null,
@@ -155,7 +153,7 @@ describe('evaluateCourseInstanceAccess', () => {
     const courseInstance = createMockCourseInstance();
     const params = createMockParams({ course_role: 'Editor' });
 
-    const result = await evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params, new Date());
 
     assert.isTrue(result.hasAccess);
   });
@@ -164,7 +162,7 @@ describe('evaluateCourseInstanceAccess', () => {
     const courseInstance = createMockCourseInstance();
     const params = createMockParams({ course_instance_role: 'Student Data Viewer' });
 
-    const result = await evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params, new Date());
 
     assert.isTrue(result.hasAccess);
   });
@@ -173,7 +171,7 @@ describe('evaluateCourseInstanceAccess', () => {
     const courseInstance = createMockCourseInstance();
     const params = createMockParams({ course_role: 'Owner' });
 
-    const result = await evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params, new Date());
 
     assert.isTrue(result.hasAccess);
   });
@@ -182,7 +180,7 @@ describe('evaluateCourseInstanceAccess', () => {
     const courseInstance = createMockCourseInstance({});
     const params = createMockParams();
 
-    const result = await evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params, new Date());
 
     assert.isFalse(result.hasAccess);
     assert.equal(result.reason, 'Course instance is not published');
@@ -260,7 +258,7 @@ describe('evaluateCourseInstanceAccess', () => {
     });
     const params = createMockParams({ course_role: 'Viewer' });
 
-    const result = await evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params, new Date());
 
     assert.isTrue(result.hasAccess);
   });
@@ -271,7 +269,7 @@ describe('evaluateCourseInstanceAccess', () => {
     });
     const params = createMockParams();
 
-    const result = await evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params, new Date());
 
     assert.isFalse(result.hasAccess);
     assert.equal(result.reason, 'Course instance is not yet published');

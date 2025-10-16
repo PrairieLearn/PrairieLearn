@@ -7,15 +7,11 @@ import {
   type Enrollment,
   type EnumCourseInstanceRole,
   type EnumCourseRole,
-  type EnumMode,
-  type EnumModeReason,
 } from './db-types.js';
 
 export interface CourseInstanceAccessParams {
   course_instance_role: EnumCourseInstanceRole;
   course_role: EnumCourseRole;
-  mode_reason: EnumModeReason;
-  mode: EnumMode;
   enrollment: Enrollment | null;
 }
 
@@ -23,11 +19,11 @@ export interface CourseInstanceAccessParams {
  * Evaluates whether a user can access a course instance based on the course instance's
  * access control settings and the user's authorization context.
  */
-export async function evaluateCourseInstanceAccess(
+export async function evaluateModernCourseInstanceAccess(
   courseInstance: CourseInstance,
-  params: CourseInstanceAccessParams,
+  { course_role, course_instance_role, enrollment }: CourseInstanceAccessParams,
   // This is done like this for testing purposes.
-  currentDate: Date = new Date(),
+  currentDate: Date,
 ): Promise<
   | {
       hasAccess: true;
@@ -38,7 +34,7 @@ export async function evaluateCourseInstanceAccess(
     }
 > {
   // Staff with course or course instance roles always have access
-  if (params.course_role !== 'None' || params.course_instance_role !== 'None') {
+  if (course_role !== 'None' || course_instance_role !== 'None') {
     return { hasAccess: true };
   }
 
@@ -61,9 +57,8 @@ export async function evaluateCourseInstanceAccess(
   assert(courseInstance.publishing_archive_date != null);
 
   // Consider the latest enabled date for the enrollment.
-  const publishingExtensions = params.enrollment
-    ? await selectPublishingExtensionsByEnrollmentId(params.enrollment.id)
-    : [];
+  const publishingExtensions =
+    enrollment != null ? await selectPublishingExtensionsByEnrollmentId(enrollment.id) : [];
 
   const allDates = [
     courseInstance.publishing_archive_date,

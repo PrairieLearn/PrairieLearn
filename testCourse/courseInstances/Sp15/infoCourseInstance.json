@@ -1,5 +1,7 @@
 {
   "uuid": "31a69dd9-81a1-4b17-b578-2098d20fb57a",
   "longName": "Spring 2015",
-  "publishing": { "publishDate": "2025-10-15T15:32:48", "archiveDate": "2026-02-18T15:32:48" }
+  "allowAccess": [
+    { "institution": "Any", "startDate": "1800-01-19T00:00:01", "endDate": "2400-05-13T23:59:59" }
+  ]
 }

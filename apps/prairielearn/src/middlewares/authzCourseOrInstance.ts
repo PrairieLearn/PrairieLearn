@@ -11,7 +11,7 @@ import * as sqldb from '@prairielearn/postgres';
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
-import { evaluateCourseInstanceAccess } from '../lib/course-instance-access.js';
+import { evaluateModernCourseInstanceAccess } from '../lib/course-instance-access.js';
 import {
   CourseInstanceSchema,
   CourseSchema,
@@ -164,13 +164,15 @@ async function checkCourseOrInstanceAccess(params: {
       course_instance_id: authzData.course_instance.id,
     });
 
-    const result = await evaluateCourseInstanceAccess(authzData.course_instance, {
-      course_role: authzData.permissions_course.course_role,
-      course_instance_role: authzData.permissions_course_instance.course_instance_role,
-      mode_reason: authzData.mode_reason,
-      mode: authzData.mode,
-      enrollment,
-    });
+    const result = await evaluateModernCourseInstanceAccess(
+      authzData.course_instance,
+      {
+        course_role: authzData.permissions_course.course_role,
+        course_instance_role: authzData.permissions_course_instance.course_instance_role,
+        enrollment,
+      },
+      params.req_date,
+    );
     if (!result.hasAccess) {
       return {
         hasAccess: false,

@@ -8,7 +8,6 @@ export default createAuthzMiddleware({
     'has_course_instance_permission_view',
     // Effective user is enrolled in the course instance.
     'has_student_access_with_enrollment',
-    // TODO: Deal with overrides.
   ],
   errorExplanation: 'This page requires course instance access.',
   unauthorizedUsers: 'block',
