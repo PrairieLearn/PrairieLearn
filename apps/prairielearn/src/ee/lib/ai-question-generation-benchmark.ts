@@ -1,7 +1,7 @@
 import path from 'node:path';
 
-import type { OpenAIChatLanguageModelOptions, OpenAIProvider } from '@ai-sdk/openai';
-import { type LanguageModel, generateObject } from 'ai';
+import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
+import { type EmbeddingModel, type LanguageModel, generateObject } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
@@ -9,7 +9,6 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import type { OpenAIModelId } from '../../lib/ai.js';
 import { config } from '../../lib/config.js';
 import { AiQuestionGenerationPromptSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -17,11 +16,9 @@ import { createServerJob } from '../../lib/server-jobs.js';
 import { insertCourse } from '../../models/course.js';
 import { syncDiskToSql } from '../../sync/syncFromDisk.js';
 
-import { QUESTION_GENERATION_OPENAI_MODEL, generateQuestion } from './aiQuestionGeneration.js';
+import { generateQuestion } from './aiQuestionGeneration.js';
 
 const sql = loadSqlEquiv(import.meta.filename);
-
-const MODEL_NAME = 'gpt-5-2025-08-07' satisfies OpenAIModelId;
 
 interface Benchmark {
   prompt: string;
@@ -167,10 +164,14 @@ const QuestionGenerationEvaluationSchema = z.object({
 type QuestionGenerationEvaluation = z.infer<typeof QuestionGenerationEvaluationSchema>;
 
 export async function benchmarkAiQuestionGeneration({
-  openai,
+  embeddingModel,
+  generationModel,
+  evaluationModel,
   authnUserId,
 }: {
-  openai: OpenAIProvider;
+  embeddingModel: EmbeddingModel;
+  generationModel: LanguageModel;
+  evaluationModel: LanguageModel;
   authnUserId: string;
 }): Promise<string> {
   // Safety check: for now, we really only want this to run in dev mode.
@@ -239,8 +240,8 @@ export async function benchmarkAiQuestionGeneration({
     for (const benchmark of BENCHMARKS) {
       // Generate a single question.
       const result = await generateQuestion({
-        model: openai.responses(QUESTION_GENERATION_OPENAI_MODEL),
-        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
+        model: generationModel,
+        embeddingModel,
         courseId: course.id,
         authnUserId,
         prompt: benchmark.prompt,
@@ -277,7 +278,7 @@ export async function benchmarkAiQuestionGeneration({
       }
 
       const evaluationResult = await evaluateGeneratedQuestion({
-        model: openai.responses(MODEL_NAME),
+        model: evaluationModel,
         originalSystemPrompt: prompts[0].system_prompt,
         userPrompt: prompts[0].user_prompt,
         html: result.htmlResult ?? '',
