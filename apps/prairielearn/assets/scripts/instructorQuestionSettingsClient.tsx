@@ -247,9 +247,6 @@ onDocumentReady(() => {
   for (let index = 0; index < numRows; index++) {
     const orcidIDInput = document.querySelector<HTMLInputElement>('#author_orcid_' + index);
     addORCIDInputListener(orcidIDInput);
-  }
-
-  for (let index = 0; index < numRows; index++) {
     const emailInput = document.querySelector<HTMLInputElement>('#author_email_' + index);
     validateEmailInput(emailInput);
   }

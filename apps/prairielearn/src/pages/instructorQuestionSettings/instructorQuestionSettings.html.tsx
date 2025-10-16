@@ -282,7 +282,7 @@ export function InstructorQuestionSettings({
                     <th class="text-center">Name</th>
                     <th class="text-center">Email</th>
                     <th class="text-center">ORCID identifier</th>
-                    <th class="text-center">Reference Course</th>
+                    <th class="text-center">Origin Course</th>
                     ${canEdit ? html`<th class="text-center">Remove</th>` : null}
                   </tr>
                 </thead>
@@ -329,8 +329,8 @@ export function InstructorQuestionSettings({
                             ? html`<input
                                 type="text"
                                 class="form-control"
-                                id="${'author_reference_course_' + index}"
-                                name="${'author_reference_course_' + index}"
+                                id="${'author_origin_course_' + index}"
+                                name="${'author_origin_course_' + index}"
                                 value="${author.origin_course}"
                               />`
                             : html`<small class="text-center">${author.origin_course}</small>`}
