@@ -288,7 +288,7 @@ router.post(
       }
 
       const result = await regenerateQuestion({
-        model: openai.responses(QUESTION_GENERATION_OPENAI_MODEL),
+        model: openai(QUESTION_GENERATION_OPENAI_MODEL),
         embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
         courseId: res.locals.course.id,
         authnUserId: res.locals.authn_user.user_id,

@@ -87,7 +87,7 @@ export async function aiGrade({
     organization: config.aiGradingOpenAiOrganization,
   });
   const embeddingModel = openai.textEmbeddingModel('text-embedding-3-small');
-  const model = openai.responses(AI_GRADING_OPENAI_MODEL);
+  const model = openai(AI_GRADING_OPENAI_MODEL);
 
   const question_course = await getQuestionCourse(question, course);
 

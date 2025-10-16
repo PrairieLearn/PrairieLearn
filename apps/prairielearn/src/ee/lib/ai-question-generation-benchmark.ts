@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import type { OpenAIModelId } from '../../lib/ai.js';
 import { config } from '../../lib/config.js';
 import { AiQuestionGenerationPromptSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -23,6 +24,8 @@ const sql = loadSqlEquiv(import.meta.filename);
 interface Benchmark {
   prompt: string;
 }
+
+export const QUESTION_BENCHMARKING_OPENAI_MODEL = 'gpt-5-2025-08-07' satisfies OpenAIModelId;
 
 const BENCHMARKS: Benchmark[] = [
   // These are high-quality prompts written or reviewed by a PrairieLearn expert.

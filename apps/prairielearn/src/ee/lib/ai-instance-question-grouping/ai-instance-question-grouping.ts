@@ -190,7 +190,7 @@ export async function aiInstanceQuestionGrouping({
     apiKey: config.aiGradingOpenAiApiKey,
     organization: config.aiGradingOpenAiOrganization,
   });
-  const model = openai.responses(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL);
+  const model = openai(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL);
 
   const serverJob = await createServerJob({
     courseId: course.id,
