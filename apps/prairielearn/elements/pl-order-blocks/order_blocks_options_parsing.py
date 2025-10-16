@@ -164,7 +164,7 @@ class OrderBlocksOptions:
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
-        self.is_optional = is_multigraph(html_element)
+        self.has_optional_lines = is_multigraph(html_element)
 
         # All necessary properties are initialized for collect_answer_options
         self.answer_options = collect_answer_options(html_element, self)
@@ -217,7 +217,7 @@ class OrderBlocksOptions:
         self._validate_answer_options()
 
         # Check that if it is a multigraph to ensure the final tag exists
-        if self.is_optional:
+        if self.has_optional_lines:
             has_final = False
             for options in self.answer_options:
                 if options.final and has_final:
@@ -292,7 +292,7 @@ class OrderBlocksOptions:
                     'Block groups only supported in the "dag" grading mode.'
                 )
 
-            if self.is_optional and answer_options.group_info["tag"] is not None:
+            if self.has_optional_lines and answer_options.group_info["tag"] is not None:
                 raise ValueError(
                     "Block groups not supported with the optional-lines feature."
                 )
@@ -355,7 +355,7 @@ class AnswerOptions:
         order_block_options: OrderBlocksOptions,
     ) -> None:
         self._check_options(html_element, order_block_options.grading_method)
-        if order_block_options.is_optional:
+        if order_block_options.has_optional_lines:
             self.tag, self.depends, self.final = get_multigraph_info(html_element)
         else:
             self.tag, self.depends = get_graph_info(html_element)
