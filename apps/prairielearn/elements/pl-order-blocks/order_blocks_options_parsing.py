@@ -86,7 +86,7 @@ def get_graph_info(
 
 class AnswerOptions:
     """
-    A data class that collects and validates pl-answer tag options within a pl-order-block tag
+    Collects and validates <pl-answer> tag options
     For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element)
     """
 
@@ -218,7 +218,7 @@ def collect_answer_options(
 
 class OrderBlocksOptions:
     """
-    A data class that collects and validates pl-order-block question options
+    Collects and validates <pl-order-block> question options.
     For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element)
     """
 
