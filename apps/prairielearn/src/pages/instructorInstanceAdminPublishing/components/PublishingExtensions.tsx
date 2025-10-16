@@ -30,21 +30,21 @@ function ExtensionModal({
   defaultValues,
   currentArchiveText,
   onHide,
-  onSubmit,
-  isSubmitting,
   mode,
   mainArchiveDate,
   courseInstanceTimezone,
+  csrfToken,
+  editExtensionId,
 }: {
   show: boolean;
   defaultValues: ExtensionFormValues;
   currentArchiveText: string;
-  isSubmitting: boolean;
   onHide: () => void;
-  onSubmit: (values: ExtensionFormValues) => Promise<void>;
   mode: 'add' | 'edit';
   mainArchiveDate: Date | null;
   courseInstanceTimezone: string;
+  csrfToken: string;
+  editExtensionId: string | null;
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [bypassEnrollmentCheck, setBypassEnrollmentCheck] = useState(false);
@@ -57,7 +57,7 @@ function ExtensionModal({
     setValue,
     watch,
     trigger,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<ExtensionFormValues>({
     values: defaultValues,
     mode: 'onSubmit',
@@ -109,7 +109,7 @@ function ExtensionModal({
     if (bypassEnrollmentCheck) return true;
 
     if (data.invalidUids.length > 0) {
-      return `Not enrolled: "${data.invalidUids.join('", ')}". If you hit "Continue Anyway", these users will be ignored.`;
+      return `Not enrolled: "${data.invalidUids.join('", ')}". If you hit "Save Anyway", these users will be ignored.`;
     }
     return true;
   };
@@ -124,7 +124,25 @@ function ExtensionModal({
           event.preventDefault();
           setErrorMessage(null);
           try {
-            await onSubmit(data);
+            const body = {
+              __csrf_token: csrfToken,
+              __action: editExtensionId ? 'edit_extension' : 'add_extension',
+              name: data.name.trim(),
+              archive_date: data.archive_date,
+              extension_id: editExtensionId,
+              uids: data.uids.trim(),
+            };
+            const resp = await fetch(window.location.pathname, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            });
+            if (!resp.ok) {
+              const data = await resp.json().catch(() => ({}));
+              setErrorMessage(data.message || 'Failed to save extension');
+            }
+            // On success, reload the page
+            window.location.reload();
           } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Unknown error');
           }
@@ -152,7 +170,9 @@ function ExtensionModal({
                   validate: (value) => {
                     if (!mainArchiveDate) return true;
                     const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
+                    // edit mode has no validation on the archive date
                     return (
+                      mode === 'edit' ||
                       enteredDate > mainArchiveDate ||
                       'Archive date must be after the course archive date'
                     );
@@ -324,72 +344,6 @@ export function PublishingExtensions({
     }
   };
 
-  const submitAdd = async (values: ExtensionFormValues) => {
-    if (!values.archive_date.trim() || !values.uids.trim()) {
-      throw new Error('Archive date and UIDs are required');
-    }
-    setIsSubmitting(true);
-    try {
-      const body = {
-        __csrf_token: csrfToken,
-        __action: 'add_extension',
-        name: values.name.trim(),
-        archive_date: values.archive_date,
-        uids: values.uids.trim(),
-      };
-      const resp = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}));
-        throw new Error(data.message || 'Failed to create extension');
-      }
-      window.location.reload();
-    } catch (err) {
-      console.error('Error creating extension:', err);
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const submitEdit = async (values: ExtensionFormValues) => {
-    if (!values.archive_date.trim() || !values.uids.trim()) {
-      throw new Error('Archive date and UIDs are required');
-    }
-    if (!editExtensionId) {
-      throw new Error('Extension ID is missing');
-    }
-    setIsSubmitting(true);
-    try {
-      const body = {
-        __csrf_token: csrfToken,
-        __action: 'edit_extension',
-        extension_id: editExtensionId,
-        name: values.name.trim(),
-        archive_date: values.archive_date,
-        uids: values.uids.trim(),
-      };
-      const resp = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}));
-        throw new Error(data.message || 'Failed to edit extension');
-      }
-      window.location.reload();
-    } catch (err) {
-      console.error('Error editing extension:', err);
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <>
       <div class="mb-3">
@@ -468,12 +422,12 @@ export function PublishingExtensions({
           show={true}
           defaultValues={modalDefaults}
           currentArchiveText={currentInstanceArchiveDate}
-          isSubmitting={isSubmitting}
           mode={shownModalMode}
           mainArchiveDate={courseInstance.publishing_archive_date}
           courseInstanceTimezone={courseInstance.display_timezone}
+          csrfToken={csrfToken}
+          editExtensionId={editExtensionId}
           onHide={closeModal}
-          onSubmit={shownModalMode === 'add' ? submitAdd : submitEdit}
         />
       )}
 

@@ -112,10 +112,10 @@ export function InstructorCourseAdminInstances({
                       const isLegacyArchiveDate = row.publishing_archive_date === null;
                       const publishDate = row.publishing_publish_date
                         ? `${formatDate(row.publishing_publish_date, row.display_timezone)}`
-                        : row.formatted_access_start_date;
+                        : row.formatted_start_date;
                       const archiveDate = row.publishing_archive_date
                         ? `${formatDate(row.publishing_archive_date, row.display_timezone)}`
-                        : row.formatted_access_end_date;
+                        : row.formatted_end_date;
                       return html`
                         <tr>
                           <td class="align-left">
