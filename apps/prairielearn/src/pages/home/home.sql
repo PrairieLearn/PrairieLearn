@@ -204,13 +204,19 @@ FROM
     AND users_is_instructor_in_course (u.user_id, c.id) IS FALSE
   ),
   LATERAL (
-    SELECT
-      COALESCE(ci.publishing_publish_date, min(ar.start_date)) AS start_date,
-      COALESCE(ci.publishing_archive_date, max(ar.end_date)) AS end_date
+    WITH access_dates AS (
+      SELECT min(ar.start_date) AS start_date,
+      max(ar.end_date) AS end_date
     FROM
       course_instance_access_rules AS ar
     WHERE
       ar.course_instance_id = ci.id
+    )
+    SELECT
+       COALESCE(ci.publishing_publish_date, access_dates.start_date) AS start_date,
+       COALESCE(ci.publishing_archive_date, access_dates.end_date) AS end_date
+    FROM
+      access_dates
   ) AS d
 WHERE
   e.user_id = $user_id
