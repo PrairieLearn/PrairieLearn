@@ -263,7 +263,13 @@ export function PublishingExtensions({
 
   // Delete confirmation modal state
   const [deleteState, setDeleteState] = useState<
-    { show: false } | { show: true; extensionId: string; extensionName: string }
+    | { show: false }
+    | {
+        show: true;
+        extensionId: string;
+        extensionName: string | null;
+        userData: { uid: string; name: string | null; enrollment_id: string }[];
+      }
   >({ show: false });
 
   const currentInstanceArchiveDate = courseInstance.publishing_archive_date
@@ -313,7 +319,8 @@ export function PublishingExtensions({
     setDeleteState({
       show: true,
       extensionId: extension.id,
-      extensionName: extension.name || 'Unnamed',
+      extensionName: extension.name,
+      userData: extension.user_data,
     });
   };
 
@@ -437,7 +444,23 @@ export function PublishingExtensions({
             <Modal.Title>Delete Extension</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            Are you sure you want to delete extension "{deleteState.extensionName}"?
+            {deleteState.userData.length > 0 ? (
+              <>
+                Are you sure you want to delete{' '}
+                {deleteState.extensionName === null
+                  ? 'this extension'
+                  : `the extension "${deleteState.extensionName}"`}{' '}
+                with students: "{deleteState.userData.map((user) => user.uid).join(', ')}"?
+              </>
+            ) : (
+              <>
+                Are you sure you want to delete{' '}
+                {deleteState.extensionName === null
+                  ? 'this extension'
+                  : `the extension "${deleteState.extensionName}"`}
+                ?
+              </>
+            )}
           </Modal.Body>
           <Modal.Footer>
             <button

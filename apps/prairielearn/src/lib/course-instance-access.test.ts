@@ -1,8 +1,14 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  insertPublishingEnrollmentExtension,
+  insertPublishingExtension,
+} from '../models/course-instance-publishing-extensions.js';
+import { insertCourse } from '../models/course.js';
+import { ensureEnrollment } from '../models/enrollment.js';
+import { generateUser } from '../models/user.js';
 import * as helperDb from '../tests/helperDb.js';
 
 import {
@@ -13,9 +19,12 @@ import {
   convertAccessRuleToJson,
   migrateAccessRuleJsonToPublishingConfiguration,
 } from './course-instance-access.shared.js';
-import { type CourseInstance, type CourseInstancePublishingRule, IdSchema } from './db-types.js';
+import { type CourseInstance, type CourseInstancePublishingRule } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+// Global variable to store the test enrollment ID
+let testEnrollmentId: string;
 
 /**
  * Sets up test data for course instance publishing extension tests.
@@ -29,9 +38,43 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @param courseInstanceArchiveDate - The archive date for the course instance
  */
 async function setupExtensionTests(courseInstanceArchiveDate: string): Promise<void> {
-  await sqldb.execute(sql.setup_extension_tests, {
-    course_instance_archive_date: courseInstanceArchiveDate,
+  // Create course using model function
+  const course = await insertCourse({
+    institution_id: '1',
+    short_name: 'TEST100',
+    title: 'Test Course',
+    display_timezone: 'UTC',
+    path: '/path/to/course/100',
+    repository: 'https://github.com/test/course',
+    branch: 'main',
+    authn_user_id: '1',
   });
+
+  // Create course instance using SQL (no model function available)
+  await sqldb.execute(sql.insert_course_instance, {
+    id: '100',
+    uuid: '5159a291-566f-4463-8f11-b07c931ad72a',
+    course_id: course.id,
+    display_timezone: 'UTC',
+    enrollment_code: 'TEST123',
+    publishing_publish_date: '2024-01-01 00:00:00-00',
+    publishing_archive_date: courseInstanceArchiveDate,
+  });
+
+  // Create user using model function
+  const user = await generateUser();
+
+  // Create enrollment using model function
+  const enrollment = await ensureEnrollment({
+    course_instance_id: '100',
+    user_id: user.user_id,
+    agent_user_id: null,
+    agent_authn_user_id: null,
+    action_detail: 'implicit_joined',
+  });
+
+  // Store the enrollment ID for use in tests
+  testEnrollmentId = enrollment?.id || '100';
 }
 
 /**
@@ -52,40 +95,6 @@ async function cleanupExtensionTests(): Promise<void> {
 }
 
 /**
- * Creates a new course instance publishing extension for testing.
- *
- * @param courseInstanceId - The ID of the course instance
- * @param name - The name of the extension (can be null)
- * @param archiveDate - The archive date for the extension
- * @returns The created extension record
- */
-async function insertExtension(
-  courseInstanceId: string,
-  name: string,
-  archiveDate: string,
-): Promise<{
-  id: string;
-  course_instance_id: string;
-  name: string | null;
-  archive_date: Date;
-}> {
-  return await sqldb.queryRow(
-    sql.insert_extension,
-    {
-      course_instance_id: courseInstanceId,
-      name,
-      archive_date: archiveDate,
-    },
-    z.object({
-      id: IdSchema,
-      course_instance_id: IdSchema,
-      name: z.string().nullable(),
-      archive_date: z.date(),
-    }),
-  );
-}
-
-/**
  * Links a course instance publishing extension to a specific enrollment.
  *
  * @param extensionId - The ID of the publishing extension
@@ -93,18 +102,10 @@ async function insertExtension(
  * @returns The created enrollment extension link record
  */
 async function linkExtensionToEnrollment(extensionId: string, enrollmentId: string) {
-  return await sqldb.queryRow(
-    sql.link_extension_to_enrollment,
-    {
-      extension_id: extensionId,
-      enrollment_id: enrollmentId,
-    },
-    z.object({
-      id: IdSchema,
-      course_instance_publishing_extension_id: IdSchema,
-      enrollment_id: IdSchema,
-    }),
-  );
+  return await insertPublishingEnrollmentExtension({
+    course_instance_publishing_extension_id: extensionId,
+    enrollment_id: enrollmentId,
+  });
 }
 
 function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): CourseInstance {
@@ -584,10 +585,14 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
     await setupExtensionTests('2024-06-01 00:00:00-00');
 
     // Create extension that extends access
-    const extension = await insertExtension('100', 'Extended Access', '2024-08-01 00:00:00-00');
+    const extension = await insertPublishingExtension({
+      course_instance_id: '100',
+      name: 'Extended Access',
+      archive_date: new Date('2024-08-01 00:00:00-00'),
+    });
 
     // Link extension to enrollment
-    await linkExtensionToEnrollment(extension.id, '100');
+    await linkExtensionToEnrollment(extension.id, testEnrollmentId);
 
     const courseInstance = createMockCourseInstance({
       id: '100',
@@ -597,7 +602,7 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
     });
 
     const params = createMockParams({
-      enrollment: { id: '100' } as any,
+      enrollment: { id: testEnrollmentId } as any,
     });
 
     const currentDate = new Date('2024-07-01T00:00:00Z'); // After course instance archive, before extension archive
@@ -609,68 +614,25 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
 
   it('uses latest extension archive date when student has multiple extensions', async () => {
     // Setup course instance with archive date
-    await sqldb.execute(sql.setup_extension_tests, {
-      course_instance_archive_date: '2024-06-01 00:00:00-00',
-    });
+    await setupExtensionTests('2024-06-01 00:00:00-00');
 
     // Create first extension
-    const extension1 = await sqldb.queryRow(
-      sql.insert_extension,
-      {
-        course_instance_id: '100',
-        name: 'Extension 1',
-        archive_date: '2024-07-01 00:00:00-00',
-      },
-      z.object({
-        id: z.string(),
-        course_instance_id: z.string(),
-        name: z.string().nullable(),
-        archive_date: z.date(),
-      }),
-    );
+    const extension1 = await insertPublishingExtension({
+      course_instance_id: '100',
+      name: 'Extension 1',
+      archive_date: new Date('2024-07-01 00:00:00-00'),
+    });
 
     // Create second extension with later archive date
-    const extension2 = await sqldb.queryRow(
-      sql.insert_extension,
-      {
-        course_instance_id: '100',
-        name: 'Extension 2',
-        archive_date: '2024-09-01 00:00:00-00',
-      },
-      z.object({
-        id: z.string(),
-        course_instance_id: z.string(),
-        name: z.string().nullable(),
-        archive_date: z.date(),
-      }),
-    );
+    const extension2 = await insertPublishingExtension({
+      course_instance_id: '100',
+      name: 'Extension 2',
+      archive_date: new Date('2024-09-01 00:00:00-00'),
+    });
 
     // Link both extensions to enrollment
-    await sqldb.queryRow(
-      sql.link_extension_to_enrollment,
-      {
-        extension_id: extension1.id,
-        enrollment_id: '100',
-      },
-      z.object({
-        id: z.string(),
-        course_instance_publishing_extension_id: z.string(),
-        enrollment_id: z.string(),
-      }),
-    );
-
-    await sqldb.queryRow(
-      sql.link_extension_to_enrollment,
-      {
-        extension_id: extension2.id,
-        enrollment_id: '100',
-      },
-      z.object({
-        id: z.string(),
-        course_instance_publishing_extension_id: z.string(),
-        enrollment_id: z.string(),
-      }),
-    );
+    await linkExtensionToEnrollment(extension1.id, testEnrollmentId);
+    await linkExtensionToEnrollment(extension2.id, testEnrollmentId);
 
     const courseInstance = createMockCourseInstance({
       id: '100',
@@ -680,7 +642,7 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
     });
 
     const params = createMockParams({
-      enrollment: { id: '100' } as any,
+      enrollment: { id: testEnrollmentId } as any,
     });
 
     const currentDate = new Date('2024-08-01T00:00:00Z'); // After first extension, before second extension
@@ -692,39 +654,17 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
 
   it('denies access when extension restricts access earlier than course instance archive', async () => {
     // Setup course instance with archive date
-    await sqldb.execute(sql.setup_extension_tests, {
-      course_instance_archive_date: '2024-08-01 00:00:00-00',
-    });
+    await setupExtensionTests('2024-08-01 00:00:00-00');
 
     // Create extension that restricts access earlier
-    const extension = await sqldb.queryRow(
-      sql.insert_extension,
-      {
-        course_instance_id: '100',
-        name: 'Early Restriction',
-        archive_date: '2024-06-01 00:00:00-00',
-      },
-      z.object({
-        id: z.string(),
-        course_instance_id: z.string(),
-        name: z.string().nullable(),
-        archive_date: z.date(),
-      }),
-    );
+    const extension = await insertPublishingExtension({
+      course_instance_id: '100',
+      name: 'Early Restriction',
+      archive_date: new Date('2024-06-01 00:00:00-00'),
+    });
 
     // Link extension to enrollment
-    await sqldb.queryRow(
-      sql.link_extension_to_enrollment,
-      {
-        extension_id: extension.id,
-        enrollment_id: '100',
-      },
-      z.object({
-        id: z.string(),
-        course_instance_publishing_extension_id: z.string(),
-        enrollment_id: z.string(),
-      }),
-    );
+    await linkExtensionToEnrollment(extension.id, testEnrollmentId);
 
     const courseInstance = createMockCourseInstance({
       id: '100',
@@ -734,7 +674,7 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
     });
 
     const params = createMockParams({
-      enrollment: { id: '100' } as any,
+      enrollment: { id: testEnrollmentId } as any,
     });
 
     const currentDate = new Date('2024-07-01T00:00:00Z'); // After extension archive, before course instance archive
@@ -747,39 +687,17 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
 
   it('denies access when current date is after both course instance and extension have archived', async () => {
     // Setup course instance with archive date
-    await sqldb.execute(sql.setup_extension_tests, {
-      course_instance_archive_date: '2024-06-01 00:00:00-00',
-    });
+    await setupExtensionTests('2024-06-01 00:00:00-00');
 
     // Create extension that extends access
-    const extension = await sqldb.queryRow(
-      sql.insert_extension,
-      {
-        course_instance_id: '100',
-        name: 'Extended Access',
-        archive_date: '2024-08-01 00:00:00-00',
-      },
-      z.object({
-        id: z.string(),
-        course_instance_id: z.string(),
-        name: z.string().nullable(),
-        archive_date: z.date(),
-      }),
-    );
+    const extension = await insertPublishingExtension({
+      course_instance_id: '100',
+      name: 'Extended Access',
+      archive_date: new Date('2024-08-01 00:00:00-00'),
+    });
 
     // Link extension to enrollment
-    await sqldb.queryRow(
-      sql.link_extension_to_enrollment,
-      {
-        extension_id: extension.id,
-        enrollment_id: '100',
-      },
-      z.object({
-        id: z.string(),
-        course_instance_publishing_extension_id: z.string(),
-        enrollment_id: z.string(),
-      }),
-    );
+    await linkExtensionToEnrollment(extension.id, testEnrollmentId);
 
     const courseInstance = createMockCourseInstance({
       id: '100',
@@ -789,7 +707,7 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
     });
 
     const params = createMockParams({
-      enrollment: { id: '100' } as any,
+      enrollment: { id: testEnrollmentId } as any,
     });
 
     const currentDate = new Date('2024-09-01T00:00:00Z'); // After both course instance and extension have archived
