@@ -10,14 +10,14 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from dag_checker import (
+    ColoredEdges,
+    Edges,
     Multigraph,
     grade_dag,
     grade_multigraph,
     lcs_partial_credit,
     solve_dag,
     solve_multigraph,
-    Edges,
-    ColoredEdges
 )
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
