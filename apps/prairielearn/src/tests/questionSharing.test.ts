@@ -77,6 +77,7 @@ const gitOptionsLive = {
   cwd: sharingCourseLiveDir,
   env: process.env,
 };
+
 async function commitAndPullSharingCourse() {
   await execa('git', ['add', '-A'], gitOptionsOrigin);
   await execa('git', ['commit', '-m', 'Add sharing set'], gitOptionsOrigin);

@@ -440,6 +440,12 @@ export default tseslint.config([
         { exceptAfterSingleLine: true },
       ],
       '@stylistic/no-tabs': 'error',
+      '@stylistic/padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', next: 'function', prev: '*' },
+        { blankLine: 'always', next: '*', prev: 'import' },
+        { blankLine: 'any', next: 'import', prev: 'import' },
+      ],
       // Blocks double-quote strings (unless a single quote is present in the
       // string) and backticks (unless there is a tag or substitution in place).
       '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
@@ -642,17 +648,6 @@ export default tseslint.config([
     },
   },
   {
-    // TODO: enable this rule for all files.
-    files: [
-      'apps/prairielearn/src/middlewares/**/*.ts',
-      'apps/prairielearn/assets/scripts/**/*.ts',
-      'apps/prairielearn/*.config.ts',
-    ],
-    rules: {
-      '@typescript-eslint/no-unnecessary-condition': 'off',
-    },
-  },
-  {
     files: ['apps/prairielearn/assets/scripts/**/*', 'apps/prairielearn/elements/**/*.js'],
     languageOptions: {
       globals: {
@@ -671,6 +666,23 @@ export default tseslint.config([
     files: ['apps/prairielearn/src/tests/**/*', 'scripts/**/*', 'contrib/**/*'],
     rules: {
       'no-console': 'off',
+    },
+  },
+  {
+    files: ['apps/prairielearn/src/models/**/*'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/safe-db-types.js'],
+              message:
+                'Import from db-types instead of safe-db-types in the models directory. Otherwise, this code should live in the lib directory.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

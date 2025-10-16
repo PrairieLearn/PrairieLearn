@@ -34,6 +34,7 @@ const exampleRequest = {
     },
   },
 };
+
 function xmlReplaceResult(sourcedId: string, score: number, identifier: string) {
   const Obj = structuredClone(exampleRequest);
 

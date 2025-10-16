@@ -4,7 +4,7 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import type { StatusMessage } from '../../src/lib/externalImageCaptureSocket.types.js';
 
-const MAX_IMAGE_SIDE_LENGTH = 1000;
+const MAX_IMAGE_SIDE_LENGTH = 2000;
 const SOCKET_TIMEOUT_MS = 10 * 1000; // 10 seconds
 
 onDocumentReady(() => {
@@ -46,7 +46,7 @@ onDocumentReady(() => {
       variant_token: externalImageCaptureForm.dataset.variantToken,
       file_name: externalImageCaptureForm.dataset.fileName,
     },
-    (msg: StatusMessage) => {
+    (msg: StatusMessage | null) => {
       if (!msg) {
         changeState('failed');
         throw new Error('Failed to join external image capture room');
@@ -176,7 +176,7 @@ onDocumentReady(() => {
       socket.disconnect();
     }, SOCKET_TIMEOUT_MS);
 
-    socket.on('externalImageCaptureAck', (msg: StatusMessage) => {
+    socket.on('externalImageCaptureAck', (msg: StatusMessage | null) => {
       clearTimeout(timeout);
       socket.disconnect();
 
