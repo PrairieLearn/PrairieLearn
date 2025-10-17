@@ -502,7 +502,7 @@ const enrollment = await selectEnrollment({
 const enrollment = await dangerouslySelectEnrollment({ id: enrollment_id });
 ```
 
-Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks. For example, in the above example, the `selectEnrollmentById` function requires the caller to pass in the `course_instance` and `authLevel` parameters, so it can throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollmentById`). There also may exist versions of these functions that don't require the caller to pass in the `course_instance` and `authLevel` parameters, like `dangerouslySelectEnrollment`, but these should be avoided if possible.
+Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks. For example, in the above example, the `selectEnrollment` function requires the caller to pass in the `course_instance` and `authLevel` parameters, so it can throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollment`). There also may exist versions of these functions that don't require the caller to pass in the `course_instance` and `authLevel` parameters, like `dangerouslySelectEnrollment`, but these should be avoided if possible.
 
 ## State-modifying POST requests
 
