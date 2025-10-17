@@ -7,6 +7,7 @@ import {
   RawStudentCourseSchema,
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
+import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
 
 export const StudentHomePageCourseSchema = z.object({
   id: RawStudentCourseInstanceSchema.shape.id,
@@ -14,6 +15,7 @@ export const StudentHomePageCourseSchema = z.object({
   course_title: RawStudentCourseSchema.shape.title,
   long_name: RawStudentCourseInstanceSchema.shape.long_name,
   enrollment: StudentEnrollmentSchema,
+  publishing_extensions: z.array(CourseInstancePublishingExtensionSchema).optional(), // Optional for legacy courses
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 
@@ -118,10 +120,23 @@ export function StudentCoursesCard({
               {joined.map((courseInstance) => (
                 <tr key={courseInstance.id}>
                   <td>
-                    <a href={`${urlPrefix}/course_instance/${courseInstance.id}`}>
-                      {courseInstance.course_short_name}: {courseInstance.course_title},
-                      {courseInstance.long_name}
-                    </a>
+                    <div class="d-flex align-items-center justify-content-between">
+                      <a href={`${urlPrefix}/course_instance/${courseInstance.id}`}>
+                        {courseInstance.course_short_name}: {courseInstance.course_title},
+                        {courseInstance.long_name}
+                      </a>
+                      {courseInstance.publishing_extensions &&
+                        courseInstance.publishing_extensions.length > 0 && (
+                          <span
+                            class="badge bg-info text-dark ms-2"
+                            title="Has publishing extensions"
+                          >
+                            <i class="fa fa-clock" aria-hidden="true"></i>
+                            {courseInstance.publishing_extensions.length} extension
+                            {courseInstance.publishing_extensions.length !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -21,7 +21,12 @@ import {
 } from '../../models/enrollment.js';
 import { selectAndLockUserById } from '../../models/user.js';
 
-import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
+import {
+  Home,
+  InstructorHomePageCourseSchema,
+  StudentHomePageCourseSchema,
+  StudentHomePageCourseWithExtensionsSchema,
+} from './home.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -49,23 +54,37 @@ router.get(
       InstructorHomePageCourseSchema,
     );
 
-    const studentCourses = await queryRows(
-      sql.select_student_courses,
-      {
-        // Use the authenticated user, not the authorized user.
-        user_id: res.locals.authn_user.user_id,
-        pending_uid: res.locals.authn_user.uid,
-        req_date: res.locals.req_date,
-        // This is a somewhat ugly escape hatch specifically for load testing. In
-        // general, we don't want to clutter the home page with example course
-        // enrollments, but for load testing we want to enroll a large number of
-        // users in the example course and then have them find the example course
-        // on the home page. So, you'd make a request like this:
-        // `/pl?include_example_course_enrollments=true`
-        include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
-      },
-      StudentHomePageCourseSchema,
-    );
+    // Query parameters for student courses
+    const studentCourseParams = {
+      // Use the authenticated user, not the authorized user.
+      user_id: res.locals.authn_user.user_id,
+      pending_uid: res.locals.authn_user.uid,
+      req_date: res.locals.req_date,
+      // This is a somewhat ugly escape hatch specifically for load testing. In
+      // general, we don't want to clutter the home page with example course
+      // enrollments, but for load testing we want to enroll a large number of
+      // users in the example course and then have them find the example course
+      // on the home page. So, you'd make a request like this:
+      // `/pl?include_example_course_enrollments=true`
+      include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
+    };
+
+    // Run both legacy and modern publishing queries
+    const [legacyStudentCourses, modernStudentCourses] = await Promise.all([
+      queryRows(
+        sql.select_student_courses_legacy_access,
+        studentCourseParams,
+        StudentHomePageCourseSchema,
+      ),
+      queryRows(
+        sql.select_student_courses_modern_publishing,
+        studentCourseParams,
+        StudentHomePageCourseWithExtensionsSchema,
+      ),
+    ]);
+
+    // Merge the results, with modern publishing courses taking precedence
+    const studentCourses = [...legacyStudentCourses, ...modernStudentCourses];
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,

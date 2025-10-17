@@ -209,7 +209,9 @@ export const SprocAuthzCourseInstanceSchema = z.object({
   course_instance_role: EnumCourseInstanceRoleSchema,
   has_course_instance_permission_edit: z.boolean(),
   has_course_instance_permission_view: z.boolean(),
+  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   has_student_access: z.boolean(),
+  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   has_student_access_with_enrollment: z.boolean(),
 });
 export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
@@ -602,6 +604,7 @@ export const CourseInstanceSchema = z.object({
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
+  modern_publishing: z.boolean(),
   publishing_archive_date: DateFromISOString.nullable(),
   publishing_publish_date: DateFromISOString.nullable(),
   self_enrollment_enabled: z.boolean(),

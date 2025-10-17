@@ -27,6 +27,25 @@ export async function evaluateModernCourseInstanceAccess(
 ): Promise<
   | {
       hasAccess: true;
+      // This data structure mirrors the legacy access system.
+      /*
+      With the removal of the enrollment page, there are no such pages that need to consider if an unenrolled student
+      could access the course instance. We only need to consider if a student that is already enrolled in the course instance
+      has access to the course instance.
+
+      However, processes that enroll students in the course instance need to consider this information.
+
+      These fields only apply to students that are already enrolled in the course instance.
+
+      Ehh idk
+      
+      TODO: Discussion with @Matt 10/17 about this.
+      
+      */
+      /** If the student has access to the course instance. */
+      has_student_access: boolean;
+      /** If the student has access to the course instance and is enrolled. */
+      has_student_access_with_enrollment: boolean;
     }
   | {
       hasAccess: false;

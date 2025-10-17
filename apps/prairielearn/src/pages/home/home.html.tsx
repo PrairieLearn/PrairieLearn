@@ -8,6 +8,7 @@ import {
   type StaffInstitution,
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
+import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
 
 import { StudentCoursesCard } from './StudentCoursesCard.js';
 
@@ -34,6 +35,13 @@ export const StudentHomePageCourseSchema = z.object({
   enrollment: StudentEnrollmentSchema,
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+
+export const StudentHomePageCourseWithExtensionsSchema = StudentHomePageCourseSchema.extend({
+  publishing_extensions: z.array(CourseInstancePublishingExtensionSchema),
+});
+export type StudentHomePageCourseWithExtensions = z.infer<
+  typeof StudentHomePageCourseWithExtensionsSchema
+>;
 
 export function Home({
   canAddCourses,

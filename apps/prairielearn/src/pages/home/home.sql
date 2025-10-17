@@ -179,7 +179,7 @@ ORDER BY
   title,
   id;
 
--- BLOCK select_student_courses
+-- BLOCK select_student_courses_legacy_access
 SELECT
   c.short_name AS course_short_name,
   c.title AS course_title,
@@ -193,6 +193,8 @@ FROM
     ci.id = e.course_instance_id
     AND ci.deleted_at IS NULL
     AND check_course_instance_access (ci.id, u.uid, u.institution_id, $req_date)
+    -- We only consider courses using the legacy access system in this query.
+    AND ci.modern_publishing IS FALSE
   )
   JOIN pl_courses AS c ON (
     c.id = ci.course_id
@@ -204,19 +206,12 @@ FROM
     AND users_is_instructor_in_course (u.user_id, c.id) IS FALSE
   ),
   LATERAL (
-    WITH access_dates AS (
       SELECT min(ar.start_date) AS start_date,
       max(ar.end_date) AS end_date
     FROM
       course_instance_access_rules AS ar
     WHERE
       ar.course_instance_id = ci.id
-    )
-    SELECT
-       COALESCE(ci.publishing_publish_date, access_dates.start_date) AS start_date,
-       COALESCE(ci.publishing_archive_date, access_dates.end_date) AS end_date
-    FROM
-      access_dates
   ) AS d
 WHERE
   e.user_id = $user_id
@@ -224,6 +219,66 @@ WHERE
 ORDER BY
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,
+  ci.id DESC;
+
+-- BLOCK select_student_courses_modern_publishing
+SELECT
+  c.short_name AS course_short_name,
+  c.title AS course_title,
+  ci.long_name,
+  ci.id,
+  to_jsonb(e) AS enrollment,
+  COALESCE(
+    jsonb_agg(
+      to_jsonb(cie)
+    ) FILTER (
+      -- Is this filtering necessary?
+      WHERE
+        cie.id IS NOT NULL
+    ),
+    '[]'::jsonb
+  ) AS publishing_extensions
+FROM
+  enrollments AS e
+  LEFT JOIN users AS u ON (u.user_id = e.user_id)
+  JOIN course_instances AS ci ON (
+    ci.id = e.course_instance_id
+    AND ci.deleted_at IS NULL
+    AND check_course_instance_access (ci.id, u.uid, u.institution_id, $req_date)
+    -- We only consider courses using the modern publishing system in this query.
+    AND ci.modern_publishing IS TRUE
+  )
+  JOIN pl_courses AS c ON (
+    c.id = ci.course_id
+    AND c.deleted_at IS NULL
+    AND (
+      c.example_course IS FALSE
+      OR $include_example_course_enrollments
+    )
+    AND users_is_instructor_in_course (u.user_id, c.id) IS FALSE
+  )
+  LEFT JOIN course_instance_publishing_enrollment_extensions AS ciee ON (
+    -- Only consider extensions that affect the current enrollment.
+    ciee.enrollment_id = e.id
+  )
+  LEFT JOIN course_instance_publishing_extensions AS cie ON (
+    cie.id = ciee.course_instance_publishing_extension_id
+    AND cie.enabled = TRUE
+  )
+WHERE
+  e.user_id = $user_id
+  OR e.pending_uid = $pending_uid
+GROUP BY
+  c.short_name,
+  c.title,
+  ci.long_name,
+  ci.id,
+  e.id,
+  ci.publishing_publish_date,
+  ci.publishing_archive_date
+ORDER BY
+  ci.publishing_publish_date DESC NULLS LAST,
+  ci.publishing_archive_date DESC NULLS LAST,
   ci.id DESC;
 
 -- BLOCK select_admin_institutions
