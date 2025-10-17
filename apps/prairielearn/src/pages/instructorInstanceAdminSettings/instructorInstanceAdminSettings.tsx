@@ -133,6 +133,7 @@ router.get(
                 hasEnhancedNavigation={has_enhanced_navigation}
                 canEdit={canEdit}
                 courseInstance={courseInstance}
+                institution={institution}
                 shortNames={shortNames}
                 availableTimezones={availableTimezones}
                 origHash={origHash}

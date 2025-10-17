@@ -5,6 +5,7 @@ import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
 
 import { StudentLinkSharing } from '../../../components/LinkSharing.js';
 import { QRCodeModal } from '../../../components/QRCodeModal.js';
+import type { StaffInstitution } from '../../../lib/client/safe-db-types.js';
 import type { SettingsFormValues } from '../instructorInstanceAdminSettings.types.js';
 
 async function copyToClipboard(text: string) {
@@ -158,6 +159,7 @@ export function SelfEnrollmentSettings({
   selfEnrollLink,
   enrollmentCode,
   csrfToken,
+  institution,
 }: {
   control: Control<SettingsFormValues>;
   trigger: UseFormTrigger<SettingsFormValues>;
@@ -167,6 +169,7 @@ export function SelfEnrollmentSettings({
   selfEnrollLink: string;
   enrollmentCode: string;
   csrfToken: string;
+  institution: StaffInstitution;
 }) {
   const selfEnrollmentEnabled = useWatch({ control, name: 'self_enrollment_enabled' });
   const selfEnrollmentUseEnrollmentCode = useWatch({
@@ -255,7 +258,7 @@ export function SelfEnrollmentSettings({
           Use enrollment code for self-enrollment
         </label>
         <div class="small text-muted">
-          If not checked, any link to the course instance will allow self-enrollment.
+          If not checked, any link to to anything in the course instance will allow self-enrollment.
         </div>
       </div>
 
@@ -274,11 +277,10 @@ export function SelfEnrollmentSettings({
           name="self_enrollment_restrict_to_institution"
         />
         <label class="form-check-label" for="self_enrollment_restrict_to_institution">
-          Restrict self-enrollment to institution
+          Restrict self-enrollment to institution "{institution.long_name}"
         </label>
         <div class="small text-muted">
-          If not checked, users from any institution (not just the institution of the course) can
-          self-enroll.
+          If not checked, users from any institution can self-enroll.
         </div>
       </div>
 

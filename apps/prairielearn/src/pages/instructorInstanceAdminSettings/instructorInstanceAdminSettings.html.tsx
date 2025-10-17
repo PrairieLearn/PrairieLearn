@@ -20,6 +20,7 @@ export function InstructorInstanceAdminSettings({
   hasEnhancedNavigation,
   canEdit,
   courseInstance,
+  institution,
   shortNames,
   availableTimezones,
   origHash,
@@ -36,6 +37,7 @@ export function InstructorInstanceAdminSettings({
   hasEnhancedNavigation: boolean;
   canEdit: boolean;
   courseInstance: StaffCourseInstanceContext['course_instance'];
+  institution: StaffCourseInstanceContext['institution'];
   shortNames: string[];
   availableTimezones: Timezone[];
   origHash: string;
@@ -219,6 +221,7 @@ export function InstructorInstanceAdminSettings({
             selfEnrollLink={selfEnrollLink}
             enrollmentCode={courseInstance.enrollment_code}
             csrfToken={csrfToken}
+            institution={institution}
           />
 
           <h2 class="h4">Sharing</h2>
