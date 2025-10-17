@@ -194,7 +194,6 @@ convention = "google"
   "FBT003",
   # ignore unused parameters in functions
   "ARG",
-  # Docstrings are not required for elements except for pl-order-blocks
   "D100",
   "D103",
   "DOC201", # TODO: remove this once we merge the pl-order-blocks PR

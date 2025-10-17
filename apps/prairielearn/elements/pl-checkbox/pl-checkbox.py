@@ -666,10 +666,6 @@ def _get_min_options_to_select(element, default_val):
 
     Note: this function should only be called from within this file.
 
-    Args:
-        element: The HTML fragment containing the pl-checkbox element
-        default_val: The default value to return if the "min-select" and "min-correct" attributes are not specified
-
     Returns:
         The minimum number of options that must be selected in the checkbox element for a submission to be valid
     """
@@ -696,10 +692,6 @@ def _get_max_options_to_select(element, default_val):
         3. default_val otherwise.
 
     Note: this function should only be called from within this file.
-
-    Args:
-        element: The HTML fragment containing the pl-checkbox element
-        default_val: The default value to return if the "max-select" and "max-correct" attributes are not specified
 
     Returns:
         The maximum number of options that can be selected in the checkbox element for a submission to be valid
