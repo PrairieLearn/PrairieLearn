@@ -473,6 +473,9 @@ def _build_known_tokens(
 
     Returns tokens sorted by length (longest first) to handle prefix matching correctly.
     For example, "acosh" must be checked before "acos" to avoid partial matches.
+
+    Returns:
+        List of all multi-character tokens that should be recognized as single units.
     """
     constants_class = psu._Constants()
     tokens = (
@@ -495,6 +498,9 @@ def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
     Replace space-separated versions of tokens with their unspaced form.
 
     Example: "s i n ( x )" becomes "sin ( x )"
+
+    Returns:
+        The text with spaced tokens merged
     """
     for token in tokens:
         spaced_version = " ".join(token)
@@ -510,6 +516,9 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
 
     However, we preserve tokens that naturally contain digits (like "f2" for
     a custom function) by marking their character positions as protected.
+
+    Returns:
+        The text with multiplication spaces added
     """
     # Find all positions that are part of tokens containing digits
     protected_positions = set()
