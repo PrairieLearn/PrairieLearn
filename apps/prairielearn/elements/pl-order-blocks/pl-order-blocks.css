@@ -154,7 +154,7 @@ div.pl-order-blocks-header {
   outline-offset: -3px;
 }
 
-.pl-order-block-row { 
+.pl-order-block-row {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
@@ -168,7 +168,7 @@ div.pl-order-blocks-header {
   margin-left: -12px;
 }
 
-.pl-order-block-content{
+.pl-order-block-content {
   overflow-x: auto;
   margin-top: 2px;
   white-space: normal;
