@@ -264,12 +264,16 @@ export async function aiGrade({
         return parts.join(' ');
       });
 
-      const providerMetadata = {
-        course_id: course.id,
-        course_instance_id,
-        assessment_id: assessment_question.assessment_id,
-        assessment_question_id: assessment_question.id,
-        instance_question_id: instance_question.id,
+      const openaiProviderOptions: OpenAIChatLanguageModelOptions = {
+        metadata: {
+          course_id: course.id,
+          course_instance_id,
+          assessment_id: assessment_question.assessment_id,
+          assessment_question_id: assessment_question.id,
+          instance_question_id: instance_question.id,
+        },
+        promptCacheKey: `assessment_question_${assessment_question.id}`,
+        safetyIdentifier: `course_${course.id}`,
       };
 
       if (rubric_items.length > 0) {
@@ -295,11 +299,7 @@ export async function aiGrade({
           schema: RubricGradingResultSchema,
           messages: input,
           providerOptions: {
-            openai: {
-              metadata: providerMetadata,
-              promptCacheKey: `assessment_question_${assessment_question.id}`,
-              safetyIdentifier: `course_${course.id}`,
-            } satisfies OpenAIChatLanguageModelOptions,
+            openai: openaiProviderOptions,
           },
         });
 
@@ -416,11 +416,7 @@ export async function aiGrade({
           schema: GradingResultSchema,
           messages: input,
           providerOptions: {
-            openai: {
-              metadata: providerMetadata,
-              promptCacheKey: `assessment_question_${assessment_question.id}`,
-              safetyIdentifier: `course_${course.id}`,
-            } satisfies OpenAIChatLanguageModelOptions,
+            openai: openaiProviderOptions,
           },
         });
         try {
