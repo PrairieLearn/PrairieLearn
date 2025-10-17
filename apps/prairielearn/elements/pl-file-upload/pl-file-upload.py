@@ -37,7 +37,9 @@ def match_regex_with_files(
 ) -> tuple[list[str], list[str]]:
     """
     Take a list of regexes and a list of file names and matches them 1:n or 1:1, depending on limit_1 parameter
-    Returns a tuple of matched file names and unmatched patterns
+
+    Returns:
+        A tuple of matched file names and unmatched patterns
     """
     unmatched_patterns = regex_patterns.copy()
     remaining_files = files_names.copy()
@@ -77,6 +79,9 @@ def get_answer_name(
     """
     Compute the unique identifer of a pl-file-upload element, which is the SHA1 hash of all its
     file name attributes
+
+    Returns:
+        The unique identifer of a pl-file-upload element
     """
     # Using / as separator as the only character guaranteed not to appear in file names
     combined_name = (
