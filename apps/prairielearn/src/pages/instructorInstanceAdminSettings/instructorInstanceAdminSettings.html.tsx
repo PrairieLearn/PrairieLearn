@@ -216,6 +216,7 @@ export function InstructorInstanceAdminSettings({
             enrollmentManagementEnabled={enrollmentManagementEnabled}
             studentLink={studentLink}
             selfEnrollLink={selfEnrollLink}
+            enrollmentCode={courseInstance.enrollment_code}
             csrfToken={csrfToken}
           />
 

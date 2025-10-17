@@ -288,7 +288,6 @@ export function generateSubmissionMessage({
           return options?.submitted_file_name;
         });
 
-        // `submitted_answer` contains the base-64 encoded image URL for the image capture.
         if (!submitted_answer) {
           throw new Error('No submitted answers found.');
         }
@@ -297,7 +296,20 @@ export function generateSubmissionMessage({
           throw new Error('No file name found.');
         }
 
-        if (!submitted_answer[fileName]) {
+        const fileData = submitted_answer._files?.find((file) => file.name === fileName);
+
+        if (fileData) {
+          // fileData.contents does not contain the MIME type header, so we add it.
+          content.push({
+            type: 'image',
+            image: `data:image/jpeg;base64,${fileData.contents}`,
+            providerOptions: {
+              openai: {
+                imageDetail: 'auto',
+              },
+            },
+          });
+        } else {
           // If the submitted answer doesn't contain the image, the student likely
           // didn't capture an image.
           content.push({
@@ -306,16 +318,6 @@ export function generateSubmissionMessage({
           });
           return;
         }
-
-        content.push({
-          type: 'image',
-          image: submitted_answer[fileName],
-          providerOptions: {
-            openai: {
-              imageDetail: 'auto',
-            },
-          },
-        });
       } else {
         submissionTextSegment += $submission_html(node).text();
       }
