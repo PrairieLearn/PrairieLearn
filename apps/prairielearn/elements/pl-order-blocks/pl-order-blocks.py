@@ -12,6 +12,7 @@ import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
+    DistractorOrderType,
     FeedbackType,
     FormatType,
     GradingMethodType,
@@ -71,6 +72,24 @@ def extract_dag(
     }
     depends_graph.update(group_depends)
     return depends_graph, group_belonging
+
+
+def shuffle_distractor_groups(
+    all_blocks: list[OrderBlocksAnswerData],
+) -> list[OrderBlocksAnswerData]:
+    """Shuffle each correct block with its related distractors"""
+    new_block_ordering = []
+    for block in all_blocks:
+        if block.get("distractor_for"):
+            continue
+        tag = block["tag"]
+        group = [
+            block,
+            *(block for block in all_blocks if block.get("distractor_for") == tag),
+        ]
+        random.shuffle(group)
+        new_block_ordering += group
+    return new_block_ordering
 
 
 def solve_problem(
@@ -138,6 +157,12 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         all_blocks.sort(key=lambda a: a["inner_html"])
     else:
         assert_never(order_blocks_options.source_blocks_order)
+
+    if (
+        order_blocks_options.source_blocks_order != SourceBlocksOrderType.RANDOM
+        and order_blocks_options.distractor_order == DistractorOrderType.RANDOM
+    ):
+        all_blocks = shuffle_distractor_groups(all_blocks)
 
     # prep for visual pairing
     correct_tags = {block["tag"] for block in all_blocks}
