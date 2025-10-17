@@ -11,6 +11,47 @@ async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
 }
 
+function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const enrollmentCodeDashed =
+    enrollmentCode.slice(0, 3) + '-' + enrollmentCode.slice(3, 6) + '-' + enrollmentCode.slice(6);
+
+  return (
+    <div class="mb-3">
+      <label class="form-label" for="self_enrollment_code">
+        Self-enrollment code
+      </label>
+      <InputGroup>
+        <Form.Control
+          id="self_enrollment_code"
+          value={enrollmentCodeDashed}
+          style="font-family: monospace; font-size: 1.1em; letter-spacing: 0.1em;"
+          disabled
+        />
+        <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
+          <Button
+            size="sm"
+            variant="outline-secondary"
+            aria-label="Copy self-enrollment code"
+            onClick={async () => {
+              await copyToClipboard(enrollmentCodeDashed);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            }}
+          >
+            <i class="bi bi-clipboard" />
+          </Button>
+        </OverlayTrigger>
+      </InputGroup>
+      <small class="form-text text-muted">
+        Students can use this code to enroll in the course by entering it on the homepage or after
+        clicking on any link to the course instance.
+      </small>
+    </div>
+  );
+}
+
 function SelfEnrollmentLink({
   selfEnrollLink,
   csrfToken,
@@ -27,7 +68,7 @@ function SelfEnrollmentLink({
     <>
       <div class="mb-3">
         <label class="form-label" for="self_enrollment_link">
-          Self-enrollment Link
+          Self-enrollment link
         </label>
         <InputGroup>
           <Form.Control id="self_enrollment_link" value={selfEnrollLink} disabled />
@@ -115,6 +156,7 @@ export function SelfEnrollmentSettings({
   enrollmentManagementEnabled,
   studentLink,
   selfEnrollLink,
+  enrollmentCode,
   csrfToken,
 }: {
   control: Control<SettingsFormValues>;
@@ -123,6 +165,7 @@ export function SelfEnrollmentSettings({
   enrollmentManagementEnabled: boolean;
   studentLink: string;
   selfEnrollLink: string;
+  enrollmentCode: string;
   csrfToken: string;
 }) {
   const selfEnrollmentEnabled = useWatch({ control, name: 'self_enrollment_enabled' });
@@ -261,11 +304,14 @@ export function SelfEnrollmentSettings({
       </div>
 
       {selfEnrollmentEnabled && enrollmentManagementEnabled && selfEnrollmentUseEnrollmentCode ? (
-        <SelfEnrollmentLink
-          selfEnrollLink={selfEnrollLink}
-          csrfToken={csrfToken}
-          canEdit={canEdit}
-        />
+        <>
+          <SelfEnrollmentCode enrollmentCode={enrollmentCode} />
+          <SelfEnrollmentLink
+            selfEnrollLink={selfEnrollLink}
+            csrfToken={csrfToken}
+            canEdit={canEdit}
+          />
+        </>
       ) : (
         <StudentLinkSharing
           studentLink={studentLink}
