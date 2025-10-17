@@ -494,7 +494,7 @@ await updateEnrollmentStatus({
 This is good, because in order to perform an update, you need to pass in a full row object, and a request body won't have enough information for this. It is assumed that the only way to get a full, typed row object is to call a model function that performs the correct authorization checks. For example,
 
 ```typescript
-const enrollment = await selectEnrollmentById({
+const enrollment = await selectEnrollment({
   id: enrollment_id,
   course_instance,
   authLevel: 'student',
