@@ -34,7 +34,7 @@
     'sin',
     'sinh',
     'tan',
-    'tanh'
+    'tanh',
   ];
   /**
    * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
