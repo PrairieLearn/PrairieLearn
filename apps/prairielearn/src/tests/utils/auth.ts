@@ -70,6 +70,11 @@ export async function getOrCreateUser(authUser: AuthUser): Promise<User> {
   );
 }
 
+/** https://stackoverflow.com/a/3561711 */
+function escapeRegex(string: string) {
+  return string.replaceAll(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
 /** Helper function to create institutions for testing */
 export async function createInstitution(id: string, shortName: string, longName: string) {
   await queryOptionalRow(
@@ -78,7 +83,7 @@ export async function createInstitution(id: string, shortName: string, longName:
       id,
       short_name: shortName,
       long_name: longName,
-      uid_regexp: `@${shortName}$`,
+      uid_regexp: `@${escapeRegex(shortName)}$`,
     },
     InstitutionSchema,
   );
