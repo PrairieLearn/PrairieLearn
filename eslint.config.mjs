@@ -648,17 +648,6 @@ export default tseslint.config([
     },
   },
   {
-    // TODO: enable this rule for all files.
-    files: [
-      'apps/prairielearn/src/middlewares/**/*.ts',
-      'apps/prairielearn/vite.config.ts',
-      'apps/prairielearn/vitest.config.ts',
-    ],
-    rules: {
-      '@typescript-eslint/no-unnecessary-condition': 'off',
-    },
-  },
-  {
     files: ['apps/prairielearn/assets/scripts/**/*', 'apps/prairielearn/elements/**/*.js'],
     languageOptions: {
       globals: {
@@ -677,6 +666,23 @@ export default tseslint.config([
     files: ['apps/prairielearn/src/tests/**/*', 'scripts/**/*', 'contrib/**/*'],
     rules: {
       'no-console': 'off',
+    },
+  },
+  {
+    files: ['apps/prairielearn/src/models/**/*'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/safe-db-types.js'],
+              message:
+                'Import from db-types instead of safe-db-types in the models directory. Otherwise, this code should live in the lib directory.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

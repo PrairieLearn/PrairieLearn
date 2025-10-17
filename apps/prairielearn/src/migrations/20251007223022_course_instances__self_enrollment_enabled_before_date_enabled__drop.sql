@@ -1,0 +1,2 @@
+ALTER TABLE course_instances
+DROP COLUMN self_enrollment_enabled_before_date_enabled;

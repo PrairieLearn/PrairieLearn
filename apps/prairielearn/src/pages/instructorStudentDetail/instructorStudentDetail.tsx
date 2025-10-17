@@ -16,7 +16,7 @@ import {
   enrollUserInCourseInstance,
   inviteEnrollmentById,
   selectEnrollmentById,
-  setEnrollmentStatusBlocked,
+  setEnrollmentStatus,
 } from '../../models/enrollment.js';
 
 import { InstructorStudentDetail, UserDetailSchema } from './instructorStudentDetail.html.js';
@@ -136,10 +136,12 @@ router.post(
         if (enrollment.status !== 'joined') {
           throw new HttpStatusError(400, 'Enrollment is not joined');
         }
-        await setEnrollmentStatusBlocked({
+        await setEnrollmentStatus({
+          status: 'blocked',
           enrollment_id,
           agent_user_id: res.locals.authn_user.user_id,
           agent_authn_user_id: res.locals.user.id,
+          required_status: 'joined',
         });
         res.redirect(req.originalUrl);
         break;
