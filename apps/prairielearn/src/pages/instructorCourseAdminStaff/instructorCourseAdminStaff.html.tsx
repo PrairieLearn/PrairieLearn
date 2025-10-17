@@ -510,7 +510,7 @@ function CoursePermissionButton({
       <input type="hidden" name="__action" value="course_permissions_update_role" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
-      <p>
+      <p class="d-none d-sm-block">
         Users with course content access can see aggregate student data (e.g., mean scores), but
         cannot see the names or scores of individual students without also having student data
         access to a particular course instance.
@@ -529,7 +529,7 @@ function CoursePermissionButton({
           for="course-permission-input-${courseUser.user.user_id}-None"
         >
           <h6>None</h6>
-          <p class="small text-muted">Cannot see any course content.</p>
+          <p class="small text-muted d-none d-sm-block">Cannot see any course content.</p>
         </label>
       </div>
       <div class="form-check">
@@ -546,7 +546,7 @@ function CoursePermissionButton({
           for="course-permission-input-${courseUser.user.user_id}-Previewer"
         >
           <h6>Previewer</h6>
-          <p class="small text-muted">
+          <p class="small text-muted d-none d-sm-block">
             Can see all questions, course instances, and assessments. Can see but not close issues.
             Cannot see any code or configuration files.
           </p>
@@ -566,7 +566,7 @@ function CoursePermissionButton({
           for="course-permission-input-${courseUser.user.user_id}-Viewer"
         >
           <h6>Viewer</h6>
-          <p class="small text-muted">
+          <p class="small text-muted d-none d-sm-block">
             Can see all questions, course instances, and assessments. Can see but not close issues.
             Can see and download but not edit all code and configuration files.
           </p>
@@ -586,7 +586,7 @@ function CoursePermissionButton({
           for="course-permission-input-${courseUser.user.user_id}-Editor"
         >
           <h6>Editor</h6>
-          <p class="small text-muted">
+          <p class="small text-muted d-none d-sm-block">
             Can see all questions, course instances, and assessments. Can see and close issues. Can
             see, download, and edit all code and configuration files. Can sync course files to and
             from the GitHub repository.
@@ -607,7 +607,7 @@ function CoursePermissionButton({
           for="course-permission-input-${courseUser.user.user_id}-Owner"
         >
           <h6>Owner</h6>
-          <p class="small text-muted">
+          <p class="small text-muted d-none d-sm-block">
             Can see all questions, course instances, and assessments. Can see and close issues. Can
             see, download, and edit all code and configuration files. Can sync course files to and
             from the GitHub repository. Can add and remove course staff and can change access roles.
@@ -632,6 +632,7 @@ function CoursePermissionButton({
       data-bs-placement="auto"
       data-bs-title="Change course content access"
       data-bs-content="${escapeHtml(popoverContent)}"
+      data-bs-custom-class="popover-wide popover-scrollable"
       aria-haspopup="true"
       aria-expanded="false"
     >
@@ -659,7 +660,7 @@ function CourseInstancePermissionButton({
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
       <input type="hidden" name="course_instance_id" value="${cir.id}" />
-      <p>
+      <p class="d-none d-sm-block">
         Users with student data access can see all assessments in the course instance
         <code>${cir.short_name}</code>, can see all questions, and can see issues. They cannot see
         any code or configuration files, or close issues, without also having course content access.
@@ -677,7 +678,7 @@ function CourseInstancePermissionButton({
           for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-None"
         >
           <h6>None</h6>
-          <p class="small text-muted">
+          <p class="small text-muted d-none d-sm-block">
             Remove permissions for the course instance <code>${cir.short_name}</code>.
           </p>
         </label>
@@ -696,7 +697,7 @@ function CourseInstancePermissionButton({
           for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Viewer"
         >
           <h6>Viewer</h6>
-          <p class="small text-muted">
+          <p class="small text-muted d-none d-sm-block">
             Can see but not edit scores of individual students for the course instance
             <code>${cir.short_name}</code>.
           </p>
@@ -716,7 +717,7 @@ function CourseInstancePermissionButton({
           for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Editor"
         >
           <h6>Editor</h6>
-          <p class="small text-muted">
+          <p class="small text-muted d-none d-sm-block">
             Can see and edit scores of individual students for the course instance
             <code>${cir.short_name}</code>.
           </p>
@@ -754,6 +755,7 @@ function CourseInstancePermissionButton({
             data-bs-placement="auto"
             data-bs-title="Change student data access for ${cir.short_name}"
             data-bs-content="${escapeHtml(popoverContent)}"
+            data-bs-custom-class="popover-wide popover-scrollable"
             aria-haspopup="true"
             aria-expanded="false"
           >
