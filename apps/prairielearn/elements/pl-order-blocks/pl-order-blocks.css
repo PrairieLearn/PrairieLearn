@@ -167,3 +167,12 @@ div.pl-order-blocks-header {
   justify-content: center;
   margin-left: -12px;
 }
+
+.pl-order-block-content{
+  overflow-x: auto;
+  margin-top: 2px;
+  white-space: normal;
+  min-width: 0;
+  width: 100%;
+  padding: 0.25em 0 0.25em 0;
+}
