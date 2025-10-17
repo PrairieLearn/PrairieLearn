@@ -339,13 +339,13 @@ export async function generateSubmissionEmbedding({
   question,
   instance_question,
   urlPrefix,
-  model,
+  embeddingModel,
 }: {
   question: Question;
   course: Course;
   instance_question: InstanceQuestion;
   urlPrefix: string;
-  model: EmbeddingModel;
+  embeddingModel: EmbeddingModel;
 }): Promise<SubmissionGradingContextEmbedding> {
   const question_course = await getQuestionCourse(question, course);
   const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
@@ -364,7 +364,7 @@ export async function generateSubmissionEmbedding({
     locals,
   );
   const submission_text = render_submission_results.data.submissionHtmls[0];
-  const embedding = await createEmbedding(model, submission_text, `course_${course.id}`);
+  const embedding = await createEmbedding(embeddingModel, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
     sql.create_embedding_for_submission,

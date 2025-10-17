@@ -125,7 +125,7 @@ export async function aiGrade({
           question,
           instance_question,
           urlPrefix,
-          model: embeddingModel,
+          embeddingModel,
         });
         newEmbeddingsCount++;
       }
@@ -201,7 +201,7 @@ export async function aiGrade({
           question,
           instance_question,
           urlPrefix,
-          model: embeddingModel,
+          embeddingModel,
         });
       }
       const submission_text = submission_embedding.submission_text;

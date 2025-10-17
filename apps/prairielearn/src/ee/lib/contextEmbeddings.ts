@@ -39,18 +39,18 @@ export function openAiUserFromAuthn(authnUserId: string): string {
 /**
  * Converts text to a semantic embedding.
  *
- * @param model The embedding model to use.
+ * @param embeddingModel The embedding model to use.
  * @param text The document text to embed.
  * @param openAiUser The OpenAI userstring requesting the embeddng.
  * @returns The resultant document embedding.
  */
 export async function createEmbedding(
-  model: EmbeddingModel,
+  embeddingModel: EmbeddingModel,
   text: string,
   openAiUser: string,
 ): Promise<number[]> {
   const { embedding } = await embed({
-    model,
+    model: embeddingModel,
     value: text,
     providerOptions: {
       openai: {
@@ -65,14 +65,14 @@ export async function createEmbedding(
 /**
  * Inserts a document chunk into the vector store.
  *
- * @param model The embedding model to use.
+ * @param embeddingModel The embedding model to use.
  * @param filepath The filepath of the document to add.
  * @param doc The document chunk to add.
  * @param job The server job calling this function.
  * @param openAiUser The OpenAI user string for the user requesting the adding of the document chunk.
  */
 async function insertDocumentChunk(
-  model: EmbeddingModel,
+  embeddingModel: EmbeddingModel,
   filepath: string,
   doc: DocumentChunk,
   job: ServerJob,
@@ -90,7 +90,7 @@ async function insertDocumentChunk(
   }
 
   job.info(`Inserting chunk for ${filepath} (${doc.chunkId}) into the database.`);
-  const embedding = await createEmbedding(model, doc.text, openAiUser);
+  const embedding = await createEmbedding(embeddingModel, doc.text, openAiUser);
   await execute(sql.insert_embedding, {
     doc_path: filepath,
     doc_text: doc.text,
@@ -102,11 +102,11 @@ async function insertDocumentChunk(
 /**
  * Creates a job to synchronize predefined context (consisting of example course questions + element docs) with the vector store.
  *
- * @param model The embedding model to use.
+ * @param embeddingModel The embedding model to use.
  * @param authnUserId The OpenAI user string of the user requesting the sync.
  * @returns The job ID of the synchronization job.
  */
-export async function syncContextDocuments(model: EmbeddingModel, authnUserId: string) {
+export async function syncContextDocuments(embeddingModel: EmbeddingModel, authnUserId: string) {
   const serverJob = await createServerJob({
     type: 'sync_question_generation_context',
     description: 'Generate embeddings for context documents',
@@ -127,7 +127,7 @@ export async function syncContextDocuments(model: EmbeddingModel, authnUserId: s
       const fileText = await buildContextForQuestion(path.dirname(file.path));
       if (fileText) {
         await insertDocumentChunk(
-          model,
+          embeddingModel,
           path.relative(REPOSITORY_ROOT_PATH, file.path),
           { text: fileText, chunkId: '' },
           job,
@@ -143,7 +143,7 @@ export async function syncContextDocuments(model: EmbeddingModel, authnUserId: s
     const files = buildContextForElementDocs(fileText);
     for (const doc of files) {
       await insertDocumentChunk(
-        model,
+        embeddingModel,
         path.relative(REPOSITORY_ROOT_PATH, elementDocsPath),
         doc,
         job,
