@@ -413,7 +413,7 @@ def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None
         # - starts with letter/number/opening paren/plus/minus and ends with letter/number/closing/exclamation mark paren
         # - is a single leter/number
         match = re.search(
-            r"(\|\s*[a-zA-Z0-9(+-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)",
+            r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)",
             sub,
         )
         if not match:
