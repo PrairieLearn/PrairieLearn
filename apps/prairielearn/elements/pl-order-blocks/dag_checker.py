@@ -359,12 +359,25 @@ def collapse_multigraph(
     final: str,
 ) -> Generator[Dag]:
     """
+    This algorithm takes a directed multigraph structure where multiple edges
+    can exist from a any single node to any other single node multiple times.
+    This allows for us to encode multiple DAGs within a single structure. This
+    algorithm with its use of dfs_until allows the parsing of those valid DAGs
+    out of the multigraph. The algorithm functions as follows:
+        1. Iterate through the partially collapsed multigraphs in the
+           collapsing_graphs queue.
+        2. Perform a depth first search on the graph until either the source
+           has been found or a colored edge.
+        3. When a colored edge has been found replace the colored edges with
+           one of the enumerated colored edges in a new copy of the multigraph.
+        4. If the entire graph has been traversed it is a valid DAG and it can
+           be returned.
+    For more details, see the paper: https://arxiv.org/abs/2510.11999
     :param multigraph: a dependency graph that contains nodes with multiple colored
     edges.
     :param final: the sink in the multigraph, necessary to know the sink so that we have
     a starting point for the DFS to search for DAGs through the multigraph.
     :yield dag: yields a "fully collapsed" DAG once a DAG has been found.
-    For more details, see the paper: https://arxiv.org/abs/2510.11999
     """
     collapsing_graphs: list[Multigraph] = [multigraph]
     while collapsing_graphs:
@@ -378,9 +391,9 @@ def collapse_multigraph(
 
         # DFS halted for _is_edges_colored, split graph into their respective partially collapsed graphs
         node, edges = reason
-        for split in edges:
+        for color in edges:
             partially_collapsed = deepcopy(graph)
-            partially_collapsed[node] = split
+            partially_collapsed[node] = color
 
             # Either linked_color is the same or it is assigned once here
             collapsing_graphs.append(partially_collapsed)

@@ -97,7 +97,7 @@ def get_graph_info(
 
 def get_multigraph_info(
     html_tag: lxml.html.HtmlElement,
-) -> tuple[str, Edges | ColoredEdges, bool | None]:
+) -> tuple[str, Edges | ColoredEdges, bool]:
     tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tag, "depends", "")
     final = pl.get_boolean_attrib(html_tag, "final", False)
@@ -123,7 +123,7 @@ class AnswerOptions:
     """
 
     tag: str
-    depends: list[str]
+    depends: Edges | ColoredEdges
     correct: bool
     ranking: int
     indent: int | None
