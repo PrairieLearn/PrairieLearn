@@ -74,9 +74,7 @@ def solve_multigraph(
         dag_to_nx(graph, {})
         for graph in collapse_multigraph(depends_multi_graph, final)
     ]
-
     sort = [list(nx.topological_sort(graph)) for graph in graphs]
-
     return sort
 
 
