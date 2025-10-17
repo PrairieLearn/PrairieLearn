@@ -93,14 +93,12 @@ export async function updateCourseInstanceSettings(
     selfEnrollmentUseEnrollmentCode: boolean;
   },
 ) {
-  await execute(
-    sql.update_course_instance_settings, {
-      course_instance_id: courseInstanceId,
-      self_enrollment_enabled: options.selfEnrollmentEnabled,
-      restrict_to_institution: options.restrictToInstitution,
-      self_enrollment_use_enrollment_code: options.selfEnrollmentUseEnrollmentCode,
-    },
-  );
+  await execute(sql.update_course_instance_settings, {
+    course_instance_id: courseInstanceId,
+    self_enrollment_enabled: options.selfEnrollmentEnabled,
+    restrict_to_institution: options.restrictToInstitution,
+    self_enrollment_use_enrollment_code: options.selfEnrollmentUseEnrollmentCode,
+  });
 }
 
 /** Helper function to delete enrollments in a course instance for testing */

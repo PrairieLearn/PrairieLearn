@@ -22,8 +22,9 @@ export default asyncHandler(async (req, res, next) => {
   });
 
   // Check if the self-enrollment institution restriction is satisfied
-  const institutionRestrictionSatisfied = !courseInstance.self_enrollment_restrict_to_institution ||
-  res.locals.authn_user.institution_id === res.locals.course.institution_id;
+  const institutionRestrictionSatisfied =
+    !courseInstance.self_enrollment_restrict_to_institution ||
+    res.locals.authn_user.institution_id === res.locals.course.institution_id;
 
   // If we have self-enrollment enabled, and it is before the enabled before date,
   // and the institution restriction is satisfied, then we can enroll the user.

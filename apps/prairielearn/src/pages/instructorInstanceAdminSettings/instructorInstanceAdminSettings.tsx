@@ -288,8 +288,10 @@ router.post(
       );
 
       const hasSelfEnrollmentSettings =
-        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode ?? selfEnrollmentRestrictToInstitution ?? selfEnrollmentBeforeDate) !==
-        undefined;
+        (selfEnrollmentEnabled ??
+          selfEnrollmentUseEnrollmentCode ??
+          selfEnrollmentRestrictToInstitution ??
+          selfEnrollmentBeforeDate) !== undefined;
 
       const {
         course_instance: courseInstance,
