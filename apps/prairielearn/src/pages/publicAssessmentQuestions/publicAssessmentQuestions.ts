@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
-import { selectAssessmentQuestions } from '../../models/assessment-question.js';
+import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { selectAssessmentSetById } from '../../models/assessment-set.js';
 import { selectAssessmentById, selectAssessmentIsPublic } from '../../models/assessment.js';
 import { selectCourseByCourseInstanceId } from '../../models/course.js';

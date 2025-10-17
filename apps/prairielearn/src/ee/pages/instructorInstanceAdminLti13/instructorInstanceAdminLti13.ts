@@ -290,9 +290,6 @@ router.post(
         },
         AssessmentSchema,
       );
-      if (assessment === null) {
-        throw new error.HttpStatusError(403, 'Invalid assessment.id');
-      }
 
       serverJobOptions.description = 'LTI 1.3 send assessment grades to LMS';
       const serverJob = await createServerJob(serverJobOptions);

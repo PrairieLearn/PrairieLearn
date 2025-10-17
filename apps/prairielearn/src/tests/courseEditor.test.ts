@@ -7,7 +7,6 @@ import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -476,6 +475,7 @@ async function getFiles(options: { baseDir: string }): Promise<Set<string>> {
 // information about the current page to persist to the next test
 let currentUrl: string;
 let currentPage$: cheerio.CheerioAPI;
+
 function testEdit(params: EditData) {
   let __csrf_token: string;
   describe(`GET to ${params.url}`, () => {
@@ -659,7 +659,8 @@ async function createSharedCourse() {
   sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] = structuredClone(
     sharingCourseData.courseInstances['Fa19'].assessments['test'],
   );
-  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test']['uuid'] = uuidv4();
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test']['uuid'] =
+    crypto.randomUUID();
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }

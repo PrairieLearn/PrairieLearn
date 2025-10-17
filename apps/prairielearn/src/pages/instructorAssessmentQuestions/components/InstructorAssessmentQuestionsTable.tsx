@@ -16,15 +16,16 @@ import { IssueBadge } from '../../../components/IssueBadge.js';
 import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
+import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type { Assessment, AssessmentQuestion, EnumAssessmentType } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 import type {
   QuestionAlternativeJson,
   ZoneAssessmentJson,
   ZoneQuestionJson,
 } from '../../../schemas/infoAssessment.js';
+import { assertNever } from '../../../lib/types.js';
 
 import { EditQuestionModal } from './EditQuestionModal.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';

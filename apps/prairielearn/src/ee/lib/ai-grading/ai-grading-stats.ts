@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString } from '@prairielearn/zod';
 
+import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import {
   type Assessment,
   type AssessmentQuestion,
@@ -12,7 +13,6 @@ import {
   type RubricItem,
   RubricItemSchema,
 } from '../../../lib/db-types.js';
-import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
 import {

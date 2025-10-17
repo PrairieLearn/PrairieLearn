@@ -1,11 +1,12 @@
 import * as async from 'async';
 import { OpenAI } from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod.mjs';
-import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import { zodTextFormat } from 'openai/helpers/zod';
+import type { ResponseInput } from 'openai/resources/responses/responses';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
+import { formatPrompt, logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import type {
   AssessmentQuestion,
@@ -32,55 +33,30 @@ import {
 
 const PARALLEL_INSTANCE_QUESTION_GROUPING_LIMIT = 20;
 
-const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5';
-
-async function renderInstanceQuestionAnswerHtml({
-  question,
-  instance_question,
-  course,
-  urlPrefix,
-}: {
-  question: Question;
-  instance_question: InstanceQuestion;
-  course: Course;
-  urlPrefix: string;
-}) {
-  const { submission, variant } = await selectLastVariantAndSubmission(instance_question.id);
-  const locals = {
-    ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-    questionRenderContext: 'ai_grading',
-  };
-  const questionModule = questionServers.getModule(question.type);
-  const render_submission_results = await questionModule.render(
-    { question: false, submissions: false, answer: true },
-    variant,
-    question,
-    submission,
-    [submission],
-    course,
-    locals,
-  );
-
-  return render_submission_results.data.answerHtml;
-}
+const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL =
+  'gpt-5-mini-2025-08-07' satisfies OpenAI.Chat.ChatModel;
 
 /**
  * Given a question, the AI returns whether or not the student-provided final answer is correct.
  */
 async function aiEvaluateStudentResponse({
-  question,
-  question_answer,
-  instance_question,
   course,
+  course_instance_id,
+  question,
+  assessment_question,
+  instance_question,
   urlPrefix,
   openai,
+  logger,
 }: {
-  question: Question;
-  question_answer: string;
-  instance_question: InstanceQuestion;
   course: Course;
+  course_instance_id: string;
+  question: Question;
+  assessment_question: AssessmentQuestion;
+  instance_question: InstanceQuestion;
   urlPrefix: string;
   openai: OpenAI;
+  logger: AIGradingLogger;
 }) {
   const { submission, variant } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
@@ -89,7 +65,7 @@ async function aiEvaluateStudentResponse({
   };
   const questionModule = questionServers.getModule(question.type);
   const render_submission_results = await questionModule.render(
-    { question: false, submissions: true, answer: false },
+    { question: false, submissions: true, answer: true },
     variant,
     question,
     submission,
@@ -98,61 +74,83 @@ async function aiEvaluateStudentResponse({
     locals,
   );
 
+  const answer_text = render_submission_results.data.answerHtml;
   const submission_text = render_submission_results.data.submissionHtmls[0];
 
   const submissionMessage = generateSubmissionMessage({
     submission_text,
     submitted_answer: submission.submitted_answer,
-    include_ai_grading_prompts: false,
   });
 
   // Prompt the LLM to determine if the submission is correct or not.
-  const messages: ChatCompletionMessageParam[] = [
+  const input: ResponseInput = [
+    {
+      role: 'developer',
+      content: formatPrompt([
+        'Your role is to determine if a student submission is correct or not.',
+        [
+          "Identify the student's final answer.",
+          "Then, identify the student's boxed answer.",
+          'If the boxed answer exists, the response is the boxed answer. Otherwise, the response is the final answer.',
+        ],
+        [
+          "Does the student's response match the correct answer exactly?",
+          'The response must be PRECISELY mathematically equivalent to the correct answer as provided by the instructor.',
+        ],
+        [
+          'Ensure that all parts of the correct answer are included.',
+          'Any error in the response will disqualify it from being a correct answer.',
+        ],
+        [
+          'If the response seems AMBIGUOUS (e.g. a few answers are present, one answer erased out, crossed out), mark it incorrect.',
+        ],
+        'The instructor has provided the following correct answer:',
+      ]),
+    },
     {
       role: 'user',
-      content: 'Start of student submission:',
+      content: answer_text,
+    },
+    {
+      role: 'developer',
+      content: 'Now, consider the following student submission:',
     },
     submissionMessage,
     {
-      role: 'user',
-      content: 'End of student submission.',
-    },
-    {
-      role: 'user',
-      content: `CORRECT ANSWER: \n${question_answer}`,
-    },
-    {
-      role: 'user',
-      content: `
-Identify the student's final answer. Then, identify the student's box answer. Consider the box answer. If the boxed answer exists, response = boxed answer. Else, response = final answer.
-
-Does the student's response match the correct answer exactly? Must be PRECISELY mathematically equivalent to the answer as written.
-
-Ensure that all parts of the correct answer are included. Any error in the response will disqualify it from being a correct answer.
-
-If it seems AMBIGUOUS (e.g. a few answers are present, one answer erased out, crossed out), mark it incorrect.
-
-Return a boolean corresponding to whether or not the student's response is equivalent to the correct answer.
-      `,
+      role: 'developer',
+      content:
+        'Please evaluate whether or not the student submission is correct according to the above instructions.',
     },
   ];
 
-  const completion = await openai.chat.completions.parse({
-    messages,
+  const response = await openai.responses.parse({
     model: INSTANCE_QUESTION_GROUPING_OPENAI_MODEL,
-    user: `course_${course.id}`,
-    response_format: zodResponseFormat(
-      z.object({
-        correct: z.boolean(),
-      }),
-      'response-evaluation',
-    ),
+    input,
+    text: {
+      format: zodTextFormat(
+        z.object({
+          correct: z.boolean().describe('Whether or not the student submission is correct.'),
+        }),
+        'response-evaluation',
+      ),
+    },
+    metadata: {
+      course_id: course.id.toString(),
+      course_instance_id: course_instance_id.toString(),
+      assessment_id: assessment_question.assessment_id,
+      assessment_question_id: assessment_question.id,
+      instance_question_id: instance_question.id,
+    },
+    prompt_cache_key: `assessment_question_${instance_question.assessment_question_id}_grouping`,
+    safety_identifier: `course_${course.id}`,
   });
 
-  const completionContent = completion.choices[0].message.parsed;
+  logResponseUsage({ response, logger });
+
+  const completionContent = response.output_parsed;
 
   if (!completionContent) {
-    throw new Error('No completion content returned from OpenAI.');
+    throw new Error('No response returned from OpenAI.');
   }
 
   return completionContent.correct;
@@ -180,7 +178,7 @@ export async function aiInstanceQuestionGrouping({
 }: {
   question: Question;
   course: Course;
-  course_instance_id?: string;
+  course_instance_id: string;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   authn_user_id: string;
@@ -212,9 +210,7 @@ export async function aiInstanceQuestionGrouping({
     description: 'Perform AI submission grouping',
   });
 
-  const instanceQuestionIdsSet: Set<string> = instance_question_ids
-    ? new Set(instance_question_ids)
-    : new Set();
+  const instanceQuestionIdsSet = new Set<string>(instance_question_ids ?? []);
 
   serverJob.executeInBackground(async (job) => {
     if (!assessment_question.max_manual_points) {
@@ -272,27 +268,15 @@ export async function aiInstanceQuestionGrouping({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ) => {
-      const answerHtml = await renderInstanceQuestionAnswerHtml({
-        question,
-        instance_question,
-        course,
-        urlPrefix,
-      });
-
-      if (!answerHtml) {
-        logger.error(
-          `Instance question ${instance_question.id} has no answer. Ensure that every instance question has an answer in pl-answer-panel.`,
-        );
-        return false;
-      }
-
       const responseIsLikelyCorrect = await aiEvaluateStudentResponse({
-        question,
-        question_answer: answerHtml,
-        instance_question,
         course,
+        course_instance_id,
+        question,
+        assessment_question,
+        instance_question,
         urlPrefix,
         openai,
+        logger,
       });
 
       await updateAiInstanceQuestionGroup({

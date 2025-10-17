@@ -1,5 +1,11 @@
 # @prairielearn/logger
 
+## 2.0.21
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
 ## 2.0.20
 
 ### Patch Changes

@@ -16,10 +16,10 @@ import {
 import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
-import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';

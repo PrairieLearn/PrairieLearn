@@ -135,7 +135,7 @@ jobs:
           sudo systemctl restart postgresql.service
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'yarn'
@@ -148,7 +148,7 @@ jobs:
           YARN_ENABLE_HARDENED_MODE: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'
       - name: Install uv
@@ -200,7 +200,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'yarn'
@@ -218,7 +218,7 @@ jobs:
       - name: Merge reports
         run: yarn vitest --watch=false --merge-reports --coverage
       - name: Upload JavaScript coverage report to Codecov
-        uses: codecov/codecov-action@v5.5.0
+        uses: codecov/codecov-action@v5.5.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript

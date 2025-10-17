@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
 
+import { downloadAsJSON } from '@prairielearn/browser-utils';
+
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
-import { downloadAsJSON } from '../lib/client/downloads.js';
 import type { AssessmentQuestion, RubricItem } from '../lib/db-types.js';
 import type { RubricData } from '../lib/manualGrading.types.js';
 
@@ -103,6 +104,7 @@ export function RubricSettings({
   function onDragStart(idx: number) {
     setDraggedIdx(idx);
   }
+
   function onDragOver(overIdx: number) {
     if (draggedIdx === null || draggedIdx === overIdx) return;
     setRubricItems((items) => {

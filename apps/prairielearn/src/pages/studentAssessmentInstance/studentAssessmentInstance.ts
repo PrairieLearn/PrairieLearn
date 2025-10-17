@@ -230,10 +230,10 @@ router.get(
       );
     }
 
-    res.locals.has_manual_grading_question = instance_question_rows?.some(
+    res.locals.has_manual_grading_question = instance_question_rows.some(
       (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
     );
-    res.locals.has_auto_grading_question = instance_question_rows?.some(
+    res.locals.has_auto_grading_question = instance_question_rows.some(
       (q) => q.max_auto_points || q.auto_points || !q.max_points,
     );
     const assessment_text_templated = assessment.renderText(
@@ -260,7 +260,6 @@ router.get(
     const groupConfig = await getGroupConfig(res.locals.assessment.id);
     const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
     const userCanAssignRoles =
-      groupInfo != null &&
       groupConfig.has_roles &&
       (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
         res.locals.authz_data.has_course_instance_permission_edit);

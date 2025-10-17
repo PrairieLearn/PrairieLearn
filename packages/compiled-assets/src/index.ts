@@ -200,6 +200,7 @@ export function handler() {
 }
 
 let cachedManifest: AssetsManifest | null = null;
+
 function readManifest(): AssetsManifest {
   assertConfigured();
 

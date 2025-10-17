@@ -440,3 +440,21 @@ small .user-output-invalid {
   outline-color: revert;
   outline-width: revert;
 }
+
+/**
+ * Fixes an accessibility issue with Bootstrap's border color on input fields.
+ * https://github.com/twbs/bootstrap/issues/38480
+ * https://github.com/twbs/bootstrap/issues/41414
+ *
+ * This currently only applies to radios and checkboxes. We have a solution for
+ * other inputs, but we decided to delay that for now (see https://github.com/PrairieLearn/PrairieLearn/pull/12967#issuecomment-3366422542).
+ */
+input.form-check-input {
+  --bs-border-width: 1.5px;
+  --bs-border-color: var(--bs-secondary);
+}
+
+input.form-check-input:disabled {
+  --bs-border-color: #aaaaaa;
+  --bs-form-check-bg: var(--bs-secondary-bg);
+}

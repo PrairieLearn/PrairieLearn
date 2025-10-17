@@ -10,6 +10,7 @@ import { getAwsClientNamesFromImportDeclaration } from '../utils.js';
  * we're properly configuring AWS SDK clients.
  */
 export default ESLintUtils.RuleCreator.withoutDocs({
+  name: 'aws-client-mandatory-config',
   meta: {
     type: 'problem',
     messages: {

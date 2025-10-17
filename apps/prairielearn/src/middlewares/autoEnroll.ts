@@ -2,7 +2,7 @@ import asyncHandler from 'express-async-handler';
 
 import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import { ensureCheckedEnrollment, selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
+import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
   // If the user does not currently have access to the course, but could if
@@ -15,8 +15,9 @@ export default asyncHandler(async (req, res, next) => {
 
   const courseInstance: CourseInstance = res.locals.course_instance;
 
-  const existingEnrollment = await selectOptionalEnrollmentByUserId({
-    user_id: res.locals.authn_user.user_id,
+  // We select by user UID so that we can find invited/rejected enrollments as well
+  const existingEnrollment = await selectOptionalEnrollmentByUid({
+    uid: res.locals.authn_user.uid,
     course_instance_id: courseInstance.id,
   });
 
@@ -27,14 +28,20 @@ export default asyncHandler(async (req, res, next) => {
     (courseInstance.self_enrollment_enabled_before_date == null ||
       new Date() < courseInstance.self_enrollment_enabled_before_date);
 
+  // If the user is not enrolled, and self-enrollment is allowed, then they can enroll.
+  // If the user is enrolled and is invited/rejected/joined/removed, then they can join.
+  const canEnroll =
+    (selfEnrollmentAllowed && existingEnrollment == null) ||
+    (existingEnrollment != null &&
+      ['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status));
+
   if (
     idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&
     res.locals.authz_data.authn_course_role === 'None' &&
     res.locals.authz_data.authn_course_instance_role === 'None' &&
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment &&
-    selfEnrollmentAllowed &&
-    (existingEnrollment == null || existingEnrollment.status !== 'blocked')
+    canEnroll
   ) {
     await ensureCheckedEnrollment({
       institution: res.locals.institution,

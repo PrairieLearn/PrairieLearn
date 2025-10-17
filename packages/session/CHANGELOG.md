@@ -1,5 +1,11 @@
 # @prairielearn/session
 
+## 3.0.22
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
 ## 3.0.21
 
 ### Patch Changes

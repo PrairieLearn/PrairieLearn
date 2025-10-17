@@ -21,6 +21,7 @@ SELECT
   q.sync_warnings,
   q.grading_method,
   q.external_grading_image,
+  q.workspace_image,
   CASE
     WHEN q.type = 'Freeform' THEN 'v3'
     ELSE 'v2 (' || q.type || ')'
@@ -70,6 +71,7 @@ SELECT
   q.title,
   q.grading_method,
   q.external_grading_image,
+  q.workspace_image,
   CASE
     WHEN q.type = 'Freeform' THEN 'v3'
     ELSE 'v2 (' || q.type || ')'

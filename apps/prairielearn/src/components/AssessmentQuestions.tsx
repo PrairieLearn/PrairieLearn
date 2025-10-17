@@ -1,3 +1,4 @@
+import type { StaffAssessmentQuestionRow } from '../lib/assessment-question.js';
 import type {
   StaffAlternativeGroup,
   StaffAssessmentQuestion,

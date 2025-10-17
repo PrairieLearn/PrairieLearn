@@ -2,7 +2,6 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import debugfn from 'debug';
 import _ from 'lodash';
-import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -199,6 +198,7 @@ export async function stop() {
 
 function queueJobs(jobsList: CronJob[], intervalSec: number) {
   debug(`queueJobs(): ${intervalSec}`);
+
   function queueRun() {
     debug(`queueJobs(): ${intervalSec}: starting run`);
     jobTimeouts[intervalSec] = 0;
@@ -224,6 +224,7 @@ function queueJobs(jobsList: CronJob[], intervalSec: number) {
 
 function queueDailyJobs(jobsList: CronJob[]) {
   debug('queueDailyJobs()');
+
   function timeToNextMS() {
     const now = Date.now();
     const midnight = new Date(now).setHours(0, 0, 0, 0);
@@ -244,6 +245,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
     }
     return tMS;
   }
+
   function queueRun() {
     debug('queueDailyJobs(): starting run');
     jobTimeouts.daily = 0;
@@ -269,7 +271,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
 
 async function runJobs(jobsList: CronJob[]) {
   debug('runJobs()');
-  const cronUuid = uuidv4();
+  const cronUuid = crypto.randomUUID();
   logger.verbose('cron: jobs starting', { cronUuid });
 
   for (const job of jobsList) {

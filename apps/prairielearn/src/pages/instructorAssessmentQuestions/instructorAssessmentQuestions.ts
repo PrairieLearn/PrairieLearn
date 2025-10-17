@@ -15,7 +15,7 @@ import { FileModifyEditor, MultiEditor, propertyValueWithDefault } from '../../l
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { selectAssessmentQuestions } from '../../models/assessment-question.js';
+import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import {
   ZoneQuestionJsonSchema,
