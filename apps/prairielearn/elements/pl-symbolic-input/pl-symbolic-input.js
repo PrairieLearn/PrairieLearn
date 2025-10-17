@@ -17,6 +17,7 @@
     'atan2',
     'atanh',
     'cos',
+    'cosh',
     'cot',
     'csc',
     'exp',
@@ -31,7 +32,9 @@
     'sgn',
     'sign',
     'sin',
+    'sinh',
     'tan',
+    'tanh'
   ];
   /**
    * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
