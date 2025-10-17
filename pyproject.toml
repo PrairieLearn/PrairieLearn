@@ -194,9 +194,10 @@ convention = "google"
   "FBT003",
   # ignore unused parameters in functions
   "ARG",
-  # ignore docstring linting on functions (has no public API)
-  "D",
-  "DOC201",
+  # Docstrings are not required for elements except for pl-order-blocks
+  "D100",
+  "D103",
+  "DOC201", # TODO: remove this once we merge the pl-order-blocks PR
 ]
 "apps/prairielearn/python/**/*.py" = ["N803"]
 # Do not require self in method params
