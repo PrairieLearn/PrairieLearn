@@ -6,6 +6,8 @@ import {
   type CourseInstance,
   type CourseInstancePermission,
   CourseInstanceSchema,
+  CourseSchema,
+  InstitutionSchema,
   UserSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
@@ -40,6 +42,16 @@ export async function selectCourseInstanceByShortName({
   return queryRow(
     sql.select_course_instance_by_short_name,
     { course_id, short_name },
+    CourseInstanceSchema,
+  );
+}
+
+export async function selectOptionalCourseInstanceByEnrollmentCode(
+  enrollment_code: string,
+): Promise<CourseInstance | null> {
+  return queryOptionalRow(
+    sql.select_course_instance_by_enrollment_code,
+    { enrollment_code },
     CourseInstanceSchema,
   );
 }
@@ -143,5 +155,21 @@ export async function selectCourseInstanceByUuid({
     sql.select_course_instance_by_uuid,
     { uuid, course_id },
     CourseInstanceSchema,
+  );
+}
+
+export async function selectInstanceAndCourseAndInstitution({
+  course_instance_id,
+}: {
+  course_instance_id: string;
+}) {
+  return await queryRow(
+    sql.select_instance_and_course_and_institution,
+    { course_instance_id },
+    z.object({
+      course_instance: CourseInstanceSchema,
+      course: CourseSchema,
+      institution: InstitutionSchema,
+    }),
   );
 }
