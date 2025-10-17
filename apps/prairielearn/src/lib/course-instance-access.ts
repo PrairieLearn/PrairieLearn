@@ -33,18 +33,65 @@ export async function evaluateModernCourseInstanceAccess(
       could access the course instance. We only need to consider if a student that is already enrolled in the course instance
       has access to the course instance.
 
-      However, processes that enroll students in the course instance need to consider this information.
+      However, processes that enroll students in the course instance need to consider this information, such as:
 
-      These fields only apply to students that are already enrolled in the course instance.
+      - invitations (can't invite if course instance is not published)
+        - should not let UI invite
+        - backend check
+      
+      =================
+        - accepting an invitation (can't accept if course instance is not published)
+        - should not show on UI if not published
+        - backend check
+      - all actions -- (removing yourself, rejecting an invitation, etc.)
+      - self-enrollment code (self-enrollment code is not valid if course instance is not published)
+        - should show error like course instance doesn't exist
+      - self-enrollment link (can't self-enroll via link if course instance is not published)
+      - self-enrollment without code (can't self-enroll without code if course instance is not published)
 
-      Ehh idk
+      ** Does this check live in the model code? When I look up a code, do I pass in the current user,
+      and evaluate access to even see if the code is valid?
+
+      `selectCourseInstanceById(id, authzData)`
+          -- no publishing checks if instructor, otherwise must be in range
+
+      `inviteUser(instance, user)`
+          -- instructors can invite students before the course instance is published
+        
+      TODO: add banner to instructor course instance pages if not published
+      -- Tell status in this banner, "not visible to students"
+
+      `selectCourseInstanceByEnrollmentCode(code, authzData)` -- no checks
+          -- do you have permission to read the course instance record? and are not rate limited?
+          -- publishing timing checks?
+
+      -> enrollUser(instance, user)
+          -- do you have permission to enroll this user?
+          -- is this user already enrolled?
+          -- is this user blocked?
+          
+
+      We should probably do this checking at the model layer, since if a student 
+      can be invited depends on the student itself.
+
+      Basically, call this function everywhere on each potential student.
+
+      Scenario:
+      - I add student A, and give them an extension.
+      - They remove themselves from the course instance.
+      - We still want to evaluate the extensions.
+      - So that means that we could have removed -> invited students with existing extensions.
+      - So each invitation needs to consider the student's existing extensions.
       
       TODO: Discussion with @Matt 10/17 about this.
+
+      All these checks are complex. Given that, I want to split up the PR into data model + auth checks first.
       
       */
-      /** If the student has access to the course instance. */
+      /** If this specific student has access within the dates, considering extensions. */
       has_student_access: boolean;
-      /** If the student has access to the course instance and is enrolled. */
+      /** has_student_access && enrollment?.status === 'joined'. */
+      /** Need this for middleware checks */
       has_student_access_with_enrollment: boolean;
     }
   | {
