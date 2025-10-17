@@ -14,7 +14,7 @@ from dag_checker import (
     Dag,
     Edges,
     Multigraph,
-    _is_edges_colored,
+    has_colored_edges,
     grade_dag,
     grade_multigraph,
     lcs_partial_credit,
@@ -73,11 +73,7 @@ FIRST_WRONG_FEEDBACK = {
 def extract_dag(
     answers_list: list[OrderBlocksAnswerData],
 ) -> tuple[Dag, dict[str, str | None]]:
-    depends_graph = {
-        ans["tag"]: ans["depends"]
-        for ans in answers_list
-        if not _is_edges_colored(ans["depends"])
-    }
+    depends_graph = {ans["tag"]: ans["depends"] for ans in answers_list if not has_colored_edges(ans["depends"])}
     group_belonging = {ans["tag"]: ans["group_info"]["tag"] for ans in answers_list}
     group_depends = {
         ans["group_info"]["tag"]: ans["group_info"]["depends"]
@@ -626,8 +622,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 submission, depends_graph, group_belonging
             )
         elif (
-            grading_method is GradingMethodType.DAG
-            and order_blocks_options.has_optional_lines
+            grading_method is GradingMethodType.DAG and order_blocks_options.has_optional_lines
         ):
             # extract multigraph from all blocks not just those in correct_answer
             depends_multigraph, final = extract_multigraph(true_answer_list)

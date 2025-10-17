@@ -321,8 +321,6 @@ def dfs_until(
     """
     Depth-First searches a multigraph until a node meets some specified requirements and then halts
     searching and returns the node or the reason for halting.
-    :param halting_condition: function that takes a node and it's edges and returns a boolean determining
-    if the node fulfills the requirements to halt the search.
     :param graph: the graph being searched.
     :param start: the starting point for the search.
     :return: the reason or node that halted the search with the nodes and their corresponding
@@ -340,7 +338,7 @@ def dfs_until(
 
         edges = multigraph[curr]
 
-        if _is_edges_colored(edges):
+        if has_colored_edges(edges):
             return (curr, edges), traversed
 
         traversed[curr] = edges
@@ -389,7 +387,7 @@ def collapse_multigraph(
             yield dag
             continue
 
-        # DFS halted for _is_edges_colored, split graph into their respective partially collapsed graphs
+        # DFS halted for _has_colored_edges, split graph into their respective partially collapsed graphs
         node, edges = reason
         for color in edges:
             partially_collapsed = deepcopy(graph)
@@ -399,6 +397,6 @@ def collapse_multigraph(
             collapsing_graphs.append(partially_collapsed)
 
 
-def _is_edges_colored(edges: Edges | ColoredEdges) -> TypeIs[ColoredEdges]:
+def has_colored_edges(edges: Edges | ColoredEdges) -> TypeIs[ColoredEdges]:
     """a halting condition function for dfs_until, used to check for colored edges."""
     return any(isinstance(edge, list) for edge in edges)
