@@ -496,7 +496,7 @@ This is good, because in order to perform an update, you need to pass in a full 
 ```typescript
 const enrollment = await selectEnrollment({
   id: enrollment_id,
-  course_instance,
+  courseInstance,
   authLevel: 'student',
 });
 ```
