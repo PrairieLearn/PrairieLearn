@@ -69,7 +69,6 @@ export async function evaluateModernCourseInstanceAccess(
           -- do you have permission to enroll this user?
           -- is this user already enrolled?
           -- is this user blocked?
-          
 
       We should probably do this checking at the model layer, since if a student 
       can be invited depends on the student itself.
