@@ -48,6 +48,7 @@ router.get('/', [
       },
       CourseInstanceRowSchema,
     );
+    // console.log('courseInstances', courseInstances);
     res.send(Enroll({ courseInstances, resLocals: res.locals }));
   }),
 ]);

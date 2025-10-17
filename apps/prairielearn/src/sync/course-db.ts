@@ -1,3 +1,4 @@
+import assert from 'assert';
 import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
@@ -1165,6 +1166,10 @@ function validateAssessment({
   // instances that instructors will never touch again, as they won't benefit
   // from fixing things. So, we'll only show some warnings for course instances
   // which are accessible either now or any time in the future.
+
+  // NOTE (@reteps): We are deprecating `allowAccess` in favor of `publishing`.
+  // So further validation will never be done here.
+
   if (!courseInstanceExpired) {
     assessment.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
@@ -1470,6 +1475,51 @@ function validateCourseInstance({
 
   if (courseInstance.selfEnrollment.useEnrollmentCode !== false) {
     warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
+  }
+
+  const usingLegacyAllowAccess = courseInstance.allowAccess.length > 0;
+  const usingModernPublishing = courseInstance.publishing != null;
+
+  if (usingLegacyAllowAccess && usingModernPublishing) {
+    errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
+  } else if (usingModernPublishing) {
+    assert(courseInstance.publishing != null);
+    const hasArchiveDate = courseInstance.publishing.archiveDate != null;
+    const hasPublishDate = courseInstance.publishing.publishDate != null;
+    if (hasPublishDate && !hasArchiveDate) {
+      errors.push('"publishing.archiveDate" is required if "publishing.publishDate" is specified.');
+    }
+    if (!hasPublishDate && hasArchiveDate) {
+      errors.push('"publishing.publishDate" is required if "publishing.archiveDate" is specified.');
+    }
+
+    const parsedPublishDate =
+      courseInstance.publishing.publishDate == null
+        ? null
+        : parseJsonDate(courseInstance.publishing.publishDate);
+
+    if (hasPublishDate && parsedPublishDate == null) {
+      errors.push('"publishing.publishDate" is not a valid date.');
+    }
+
+    const parsedArchiveDate =
+      courseInstance.publishing.archiveDate == null
+        ? null
+        : parseJsonDate(courseInstance.publishing.archiveDate);
+
+    if (hasArchiveDate && parsedArchiveDate == null) {
+      errors.push('"publishing.archiveDate" is not a valid date.');
+    }
+
+    if (
+      hasPublishDate &&
+      hasArchiveDate &&
+      parsedPublishDate != null &&
+      parsedArchiveDate != null &&
+      isAfter(parsedPublishDate, parsedArchiveDate)
+    ) {
+      errors.push('"publishing.publishDate" must be before "publishing.archiveDate".');
+    }
   }
 
   let accessibleInFuture = false;
