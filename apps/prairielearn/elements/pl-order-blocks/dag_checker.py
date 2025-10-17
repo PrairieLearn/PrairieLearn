@@ -2,7 +2,6 @@ import itertools
 from collections import Counter
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from copy import deepcopy
-from typing import TypeAlias
 
 import networkx as nx
 from typing_extensions import TypeIs

@@ -3,9 +3,8 @@ from typing import TypedDict
 
 import lxml.html
 import prairielearn as pl
+from dag_checker import ColoredEdges, Edges
 from lxml.etree import _Comment
-
-from dag_checker import Edges, ColoredEdges
 
 
 class GroupInfo(TypedDict):
@@ -140,7 +139,7 @@ class AnswerOptions:
         html_element: lxml.html.HtmlElement,
         group_info: GroupInfo,
         grading_method: GradingMethodType,
-        has_optional_lines: bool
+        has_optional_lines: bool,
     ) -> None:
         self._check_options(html_element, grading_method)
         if has_optional_lines:
@@ -220,40 +219,6 @@ class AnswerOptions:
                 ],
             )
 
-
-def collect_answer_options(
-    html_element: lxml.html.HtmlElement, order_blocks_options: OrderBlocksOptions
-) -> list[AnswerOptions]:
-    answer_options = []
-    for inner_element in html_element:
-        if isinstance(inner_element, _Comment):
-            continue
-
-        match inner_element.tag:
-            case "pl-block-group":
-                group_tag, group_depends = get_graph_info(inner_element)
-                for answer_element in inner_element:
-                    if isinstance(answer_element, _Comment):
-                        continue
-                    options = AnswerOptions(
-                        answer_element,
-                        {"tag": group_tag, "depends": group_depends},
-                        order_blocks_options.grading_method,
-                        order_blocks_options.has_optional_lines,
-                    )
-                    answer_options.append(options)
-            case "pl-answer":
-                options = AnswerOptions(
-                    inner_element, {"tag": None, "depends": None}, order_blocks_options.grading_method, order_blocks_options.has_optional_lines
-                )
-                answer_options.append(options)
-            case _:
-                raise ValueError(
-                    """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
-                        Any html tags nested inside <pl-block-group> must be <pl-answer>"""
-                )
-
-    return answer_options
 
 class OrderBlocksOptions:
     """
@@ -512,3 +477,41 @@ class OrderBlocksOptions:
                     + answer_options.inner_html
                     + "</pl-code>"
                 )
+
+
+def collect_answer_options(
+    html_element: lxml.html.HtmlElement, order_blocks_options: OrderBlocksOptions
+) -> list[AnswerOptions]:
+    answer_options = []
+    for inner_element in html_element:
+        if isinstance(inner_element, _Comment):
+            continue
+
+        match inner_element.tag:
+            case "pl-block-group":
+                group_tag, group_depends = get_graph_info(inner_element)
+                for answer_element in inner_element:
+                    if isinstance(answer_element, _Comment):
+                        continue
+                    options = AnswerOptions(
+                        answer_element,
+                        {"tag": group_tag, "depends": group_depends},
+                        order_blocks_options.grading_method,
+                        order_blocks_options.has_optional_lines,
+                    )
+                    answer_options.append(options)
+            case "pl-answer":
+                options = AnswerOptions(
+                    inner_element,
+                    {"tag": None, "depends": None},
+                    order_blocks_options.grading_method,
+                    order_blocks_options.has_optional_lines,
+                )
+                answer_options.append(options)
+            case _:
+                raise ValueError(
+                    """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
+                        Any html tags nested inside <pl-block-group> must be <pl-answer>"""
+                )
+
+    return answer_options
