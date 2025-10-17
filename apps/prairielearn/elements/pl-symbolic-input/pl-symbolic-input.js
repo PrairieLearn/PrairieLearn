@@ -305,6 +305,21 @@
       },
       { capture: true },
     );
+
+    // We can't attach custom CSS with `pl-symbolic-input.css` to points other than ::part from the main page since it lives inside a shadow DOM
+    const customCSS = new CSSStyleSheet();
+    customCSS.replaceSync(`
+    .ML__content-placeholder .ML__text {
+      background: inherit;
+    }
+    @media (pointer: coarse) {
+      .ML__virtual-keyboard-toggle {
+        min-width: 0px;
+        min-height: 0px;
+      }
+    }
+    `);
+    mf.shadowRoot.adoptedStyleSheets.push(customCSS);
   };
 
   /**
