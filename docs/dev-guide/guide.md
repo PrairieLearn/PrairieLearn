@@ -486,9 +486,8 @@ For most API/POST handlers, we want to lookup or modify data based on unvalidate
 
 ```typescript
 await updateEnrollmentStatus({
-  enrollment: Enrollment,
-  user_id: authz_data.user.user_id,
-  status: 'enrolled',
+  enrollment: my_enrollment,
+  status: 'joined',
 });
 ```
 
