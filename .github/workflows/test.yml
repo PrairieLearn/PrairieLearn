@@ -110,6 +110,7 @@ jobs:
       # doesn't require it.
       - name: Install OS packages
         run: |
+          sudo apt-get update
           sudo apt-get purge -y man-db
           sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-16-pgvector
 
