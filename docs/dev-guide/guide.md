@@ -483,7 +483,7 @@ For most API/POST handlers, we want to lookup or modify data based on unvalidate
 // We want to prove that we are authorized to read the course instance.
 const courseInstance = await selectCourseInstance({
   id: course_instance_id,
-  auth: {
+  context: {
     roleNeeded: 'student',
     authzData: res.locals.authz_data,
   },
@@ -491,7 +491,7 @@ const courseInstance = await selectCourseInstance({
 
 const enrollment = await selectEnrollment({
   id: enrollment_id,
-  auth: {
+  context: {
     // What role are we trying to authorize as?
     roleNeeded: 'student',
     // Information to prove we are authorized to read the record.
@@ -511,7 +511,7 @@ Once you have a full row object, you have asserted that the caller is authorized
 await updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
-  auth: {
+  context: {
     // What role are we trying to authorize as?
     roleNeeded: 'student',
     // Information to prove we are authorized to write the record
@@ -529,7 +529,7 @@ In some cases, you may not have access to `authzData`, e.g. if are pulling data 
 const authzData = updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
-  auth: {
+  context: {
     roleNeeded: 'student',
     authzData: dangerousFullAuthzPermissions(),
     courseInstance: myEnrollment.course_instance,

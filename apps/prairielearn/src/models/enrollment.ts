@@ -13,6 +13,7 @@ import {
   PotentialEnterpriseEnrollmentStatus,
   checkPotentialEnterpriseEnrollment,
 } from '../ee/models/enrollment.js';
+import type { AuthzData, DangerousAuthzData } from '../lib/client/page-context.js';
 import {
   type Course,
   type CourseInstance,
@@ -25,10 +26,16 @@ import { HttpRedirect } from '../lib/redirect.js';
 import { assertNever } from '../lib/types.js';
 
 import { type SupportedActionsForTable, insertAuditEvent } from './audit-event.js';
-import { generateUsers, selectAndLockUserById } from './user.js';
+import { generateUsers, selectAndLockUser } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/** This is the authorization context you need to provide to most enrollment functions. */
+interface EnrollmentContext {
+  roleNeeded: 'student';
+  authzData: AuthzData | DangerousAuthzData;
+  courseInstance: CourseInstance;
+}
 /**
  * If the enrollment is not tied to a user, the user_id can be provided to tie it to a user.
  * Otherwise, you should not provide a user_id.
@@ -36,18 +43,16 @@ const sql = loadSqlEquiv(import.meta.url);
 export async function enrollUserInCourseInstance({
   enrollment_id,
   user_id,
-  agent_user_id,
-  agent_authn_user_id,
   action_detail,
+  context,
 }: {
   enrollment_id: string;
   user_id?: string;
-  agent_user_id: string | null;
-  agent_authn_user_id: string | null;
   action_detail: SupportedActionsForTable<'enrollments'>;
+  context: EnrollmentContext;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const enrollment = await selectAndLockEnrollmentById(enrollment_id);
+    const enrollment = await selectAndLockEnrollment(enrollment_id);
     if (user_id && enrollment.user_id) {
       throw new Error('Enrollment is already tied to a user');
     }
@@ -60,9 +65,8 @@ export async function enrollUserInCourseInstance({
     return await dangerouslyEnrollUserInCourseInstance({
       enrollment_id,
       user_id: user_id_to_use,
-      agent_user_id,
-      agent_authn_user_id,
       action_detail,
+      context,
     });
   });
 }
@@ -75,15 +79,13 @@ export async function enrollUserInCourseInstance({
 async function dangerouslyEnrollUserInCourseInstance({
   enrollment_id,
   user_id,
-  agent_user_id,
-  agent_authn_user_id,
   action_detail,
+  context: { authzData },
 }: {
   enrollment_id: string;
   user_id: string;
-  agent_user_id: string | null;
-  agent_authn_user_id: string | null;
   action_detail: SupportedActionsForTable<'enrollments'>;
+  context: EnrollmentContext;
 }): Promise<Enrollment> {
   const oldEnrollment = await selectEnrollmentById({ id: enrollment_id });
   assert(oldEnrollment.status !== 'joined');
@@ -103,8 +105,8 @@ async function dangerouslyEnrollUserInCourseInstance({
     row_id: newEnrollment.id,
     old_row: oldEnrollment,
     new_row: newEnrollment,
-    agent_user_id,
-    agent_authn_user_id,
+    agent_user_id: authzData.user.user_id,
+    agent_authn_user_id: authzData.authn_user.user_id,
   });
 
   return newEnrollment;
@@ -122,21 +124,21 @@ async function dangerouslyEnrollUserInCourseInstance({
 export async function ensureEnrollment({
   course_instance_id,
   user_id,
-  agent_user_id,
-  agent_authn_user_id,
+  context,
   action_detail,
 }: {
   course_instance_id: string;
   user_id: string;
-  agent_user_id: string | null;
-  agent_authn_user_id: string | null;
+  context: EnrollmentContext;
   action_detail: SupportedActionsForTable<'enrollments'>;
 }): Promise<Enrollment | null> {
+  const { authzData } = context;
   const result = await runInTransactionAsync(async () => {
-    const user = await selectAndLockUserById(user_id);
+    const user = await selectAndLockUser(user_id);
     let enrollment = await selectOptionalEnrollmentByPendingUid({
       course_instance_id,
       pending_uid: user.uid,
+      context,
     });
 
     if (enrollment == null) {
@@ -144,20 +146,20 @@ export async function ensureEnrollment({
       enrollment = await selectOptionalEnrollmentByUserId({
         course_instance_id,
         user_id,
+        context,
       });
     }
 
     if (enrollment) {
-      await selectAndLockEnrollmentById(enrollment.id);
+      await selectAndLockEnrollment(enrollment.id);
     }
 
     if (enrollment && ['invited', 'removed', 'rejected'].includes(enrollment.status)) {
       const updated = await dangerouslyEnrollUserInCourseInstance({
         enrollment_id: enrollment.id,
         user_id,
-        agent_user_id,
-        agent_authn_user_id,
         action_detail,
+        context,
       });
       return updated;
     }
@@ -174,8 +176,8 @@ export async function ensureEnrollment({
         action_detail,
         row_id: inserted.id,
         new_row: inserted,
-        agent_user_id,
-        agent_authn_user_id,
+        agent_user_id: authzData.user.user_id,
+        agent_authn_user_id: authzData.authn_user.user_id,
       });
     }
     return inserted;
@@ -206,7 +208,7 @@ export async function ensureCheckedEnrollment({
   institution: Institution;
   course: Course;
   course_instance: CourseInstance;
-  authz_data: any;
+  authz_data: AuthzData;
   action_detail: SupportedActionsForTable<'enrollments'>;
 }) {
   // Safety check: ensure the student would otherwise have access to the course.
@@ -239,8 +241,7 @@ export async function ensureCheckedEnrollment({
   await ensureEnrollment({
     course_instance_id: course_instance.id,
     user_id: authz_data.authn_user.user_id,
-    agent_user_id: authz_data.authn_user.user_id,
-    agent_authn_user_id: authz_data.user.id,
+    context: { roleNeeded: 'student', authzData: authz_data, courseInstance: course_instance },
     action_detail,
   });
 }
@@ -248,6 +249,11 @@ export async function ensureCheckedEnrollment({
 export async function selectOptionalEnrollmentByUserId({
   user_id,
   course_instance_id,
+  context,
+}: {
+  user_id: string;
+  course_instance_id: string;
+  context: EnrollmentContext;
 }): Promise<Enrollment | null> {
   return await queryOptionalRow(
     sql.select_enrollment_by_user_id,
@@ -259,6 +265,11 @@ export async function selectOptionalEnrollmentByUserId({
 export async function selectOptionalEnrollmentByPendingUid({
   pending_uid,
   course_instance_id,
+  context,
+}: {
+  pending_uid: string;
+  course_instance_id: string;
+  context: EnrollmentContext;
 }): Promise<Enrollment | null> {
   return await queryOptionalRow(
     sql.select_enrollment_by_pending_uid,
@@ -270,9 +281,11 @@ export async function selectOptionalEnrollmentByPendingUid({
 export async function generateAndEnrollUsers({
   count,
   course_instance_id,
+  context,
 }: {
   count: number;
   course_instance_id: string;
+  context: EnrollmentContext;
 }) {
   return await runInTransactionAsync(async () => {
     const users = await generateUsers(count);
@@ -281,8 +294,7 @@ export async function generateAndEnrollUsers({
         course_instance_id,
         user_id: user.user_id,
         // This is done by the system
-        agent_user_id: null,
-        agent_authn_user_id: null,
+        context,
         action_detail: 'implicit_joined',
       });
     }
@@ -318,16 +330,14 @@ export async function selectOptionalEnrollmentByUid({
  * All usages of this function should hold a lock on the enrollment.
  * Callers should ensure that the enrollment is not already invited or joined.
  */
-async function dangerouslyInviteExistingEnrollment({
+async function inviteExistingEnrollmentLocked({
   enrollment_id,
-  agent_user_id,
   pending_uid,
-  agent_authn_user_id,
+  context: { authzData },
 }: {
   enrollment_id: string;
-  agent_user_id: string | null;
   pending_uid: string;
-  agent_authn_user_id: string | null;
+  context: EnrollmentContext;
 }): Promise<Enrollment> {
   const oldEnrollment = await selectEnrollmentById({ id: enrollment_id });
 
@@ -348,8 +358,8 @@ async function dangerouslyInviteExistingEnrollment({
     old_row: oldEnrollment,
     new_row: newEnrollment,
     subject_user_id: null,
-    agent_user_id,
-    agent_authn_user_id,
+    agent_user_id: authzData.user.user_id,
+    agent_authn_user_id: authzData.authn_user.user_id,
   });
 
   return newEnrollment;
@@ -358,13 +368,15 @@ async function dangerouslyInviteExistingEnrollment({
 async function inviteNewEnrollment({
   course_instance_id,
   pending_uid,
-  agent_user_id,
-  agent_authn_user_id,
+  context: { authzData },
 }: {
   course_instance_id: string;
   pending_uid: string;
-  agent_user_id: string | null;
-  agent_authn_user_id: string | null;
+  context: {
+    roleNeeded: 'student';
+    authzData: AuthzData;
+    courseInstance: CourseInstance;
+  };
 }) {
   const newEnrollment = await queryRow(
     sql.invite_new_enrollment,
@@ -379,8 +391,8 @@ async function inviteNewEnrollment({
     row_id: newEnrollment.id,
     new_row: newEnrollment,
     subject_user_id: null,
-    agent_user_id,
-    agent_authn_user_id,
+    agent_user_id: authzData.user.user_id,
+    agent_authn_user_id: authzData.authn_user.user_id,
   });
 
   return newEnrollment;
@@ -394,13 +406,15 @@ async function inviteNewEnrollment({
 export async function inviteStudentByUid({
   course_instance_id,
   uid,
-  agent_user_id,
-  agent_authn_user_id,
+  context,
 }: {
   course_instance_id: string;
   uid: string;
-  agent_user_id: string | null;
-  agent_authn_user_id: string | null;
+  context: {
+    roleNeeded: 'student';
+    authzData: AuthzData;
+    courseInstance: CourseInstance;
+  };
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const existingEnrollment = await selectOptionalEnrollmentByUid({
@@ -410,27 +424,26 @@ export async function inviteStudentByUid({
 
     if (existingEnrollment) {
       if (existingEnrollment.user_id) {
-        await selectAndLockUserById(existingEnrollment.user_id);
+        await selectAndLockUser(existingEnrollment.user_id);
       }
-      await selectAndLockEnrollmentById(existingEnrollment.id);
-      return await dangerouslyInviteExistingEnrollment({
+      await selectAndLockEnrollment(existingEnrollment.id);
+      return await inviteExistingEnrollmentLocked({
         enrollment_id: existingEnrollment.id,
-        agent_user_id,
         pending_uid: uid,
-        agent_authn_user_id,
+        context,
       });
     }
 
     return await inviteNewEnrollment({
       course_instance_id,
       pending_uid: uid,
-      agent_user_id,
-      agent_authn_user_id,
+      context,
     });
   });
 }
 
-export async function selectAndLockEnrollmentById(id: string) {
+/** This action requires no authorization checks. */
+export async function selectAndLockEnrollment(id: string) {
   return await queryRow(sql.select_and_lock_enrollment_by_id, { id }, EnrollmentSchema);
 }
 
@@ -443,21 +456,23 @@ export async function selectAndLockEnrollmentById(id: string) {
  */
 export async function setEnrollmentStatus({
   enrollment_id,
-  agent_user_id,
-  agent_authn_user_id,
   status,
   required_status,
+  context: { authzData },
 }: {
   enrollment_id: string;
-  agent_user_id: string | null;
-  agent_authn_user_id: string | null;
   status: 'rejected' | 'blocked' | 'removed';
   required_status: 'invited' | 'joined';
+  context: {
+    roleNeeded: 'student';
+    authzData: AuthzData;
+    courseInstance: CourseInstance;
+  };
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const oldEnrollment = await selectAndLockEnrollmentById(enrollment_id);
+    const oldEnrollment = await selectAndLockEnrollment(enrollment_id);
     if (oldEnrollment.user_id) {
-      await selectAndLockUserById(oldEnrollment.user_id);
+      await selectAndLockUser(oldEnrollment.user_id);
     }
 
     // The enrollment is already in the desired status, so we can return early.
@@ -497,8 +512,8 @@ export async function setEnrollmentStatus({
       row_id: newEnrollment.id,
       old_row: oldEnrollment,
       new_row: newEnrollment,
-      agent_user_id,
-      agent_authn_user_id,
+      agent_user_id: authzData.user.user_id,
+      agent_authn_user_id: authzData.authn_user.user_id,
     });
 
     return newEnrollment;
@@ -508,19 +523,21 @@ export async function setEnrollmentStatus({
 /**
  * Deletes an enrollment.
  */
-export async function deleteEnrollmentById({
+export async function deleteEnrollment({
   enrollment_id,
-  agent_user_id,
   action_detail,
-  agent_authn_user_id,
+  context: { authzData },
 }: {
   enrollment_id: string;
-  agent_user_id: string | null;
   action_detail: SupportedActionsForTable<'enrollments'>;
-  agent_authn_user_id: string | null;
+  context: {
+    roleNeeded: 'student';
+    authzData: AuthzData;
+    courseInstance: CourseInstance;
+  };
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const oldEnrollment = await selectAndLockEnrollmentById(enrollment_id);
+    const oldEnrollment = await selectAndLockEnrollment(enrollment_id);
 
     const deletedEnrollment = await queryRow(
       sql.delete_enrollment_by_id,
@@ -537,8 +554,8 @@ export async function deleteEnrollmentById({
       new_row: null,
       subject_user_id: null,
       course_instance_id: oldEnrollment.course_instance_id,
-      agent_user_id,
-      agent_authn_user_id,
+      agent_user_id: authzData.user.user_id,
+      agent_authn_user_id: authzData.authn_user.user_id,
     });
 
     return deletedEnrollment;
@@ -548,28 +565,25 @@ export async function deleteEnrollmentById({
 /**
  * Invites an enrollment by id, given a pending uid.
  */
-export async function inviteEnrollmentById({
+export async function inviteEnrollment({
   enrollment_id,
-  agent_user_id,
-  agent_authn_user_id,
   pending_uid,
+  context,
 }: {
   enrollment_id: string;
-  agent_user_id: string | null;
-  agent_authn_user_id: string | null;
   pending_uid: string;
+  context: EnrollmentContext;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const enrollment = await selectAndLockEnrollmentById(enrollment_id);
+    const enrollment = await selectAndLockEnrollment(enrollment_id);
     if (enrollment.user_id) {
-      await selectAndLockUserById(enrollment.user_id);
+      await selectAndLockUser(enrollment.user_id);
     }
 
-    return await dangerouslyInviteExistingEnrollment({
+    return await inviteExistingEnrollmentLocked({
       enrollment_id,
-      agent_user_id,
       pending_uid,
-      agent_authn_user_id,
+      context,
     });
   });
 }
