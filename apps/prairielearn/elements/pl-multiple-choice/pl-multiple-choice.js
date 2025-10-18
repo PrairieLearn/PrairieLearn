@@ -8,6 +8,9 @@ window.PLMultipleChoice = function (uuid) {
     plugins: ['no_backspace_delete', 'dropdown_input'],
     allowEmptyOption: true,
 
+    // Append dropdown to body to prevent overflow clipping by parent containers
+    dropdownParent: 'body',
+
     // Search based on the `content` field, which comes from the `data-content`
     // attribute on each option.
     searchField: ['content'],
