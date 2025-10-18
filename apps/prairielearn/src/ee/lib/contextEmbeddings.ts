@@ -65,22 +65,14 @@ export async function createEmbedding(
 /**
  * Inserts a document chunk into the vector store.
  *
-<<<<<<< HEAD
- * @param model The embedding model to use.
-=======
  * @param embeddingModel The embedding model to use.
->>>>>>> master
  * @param filepath The filepath of the document to add.
  * @param doc The document chunk to add.
  * @param job The server job calling this function.
  * @param openAiUser The OpenAI user string for the user requesting the adding of the document chunk.
  */
 async function insertDocumentChunk(
-<<<<<<< HEAD
-  model: EmbeddingModel,
-=======
   embeddingModel: EmbeddingModel,
->>>>>>> master
   filepath: string,
   doc: DocumentChunk,
   job: ServerJob,
@@ -98,11 +90,7 @@ async function insertDocumentChunk(
   }
 
   job.info(`Inserting chunk for ${filepath} (${doc.chunkId}) into the database.`);
-<<<<<<< HEAD
-  const embedding = await createEmbedding(model, doc.text, openAiUser);
-=======
   const embedding = await createEmbedding(embeddingModel, doc.text, openAiUser);
->>>>>>> master
   await execute(sql.insert_embedding, {
     doc_path: filepath,
     doc_text: doc.text,
@@ -114,19 +102,11 @@ async function insertDocumentChunk(
 /**
  * Creates a job to synchronize predefined context (consisting of example course questions + element docs) with the vector store.
  *
-<<<<<<< HEAD
- * @param model The embedding model to use.
- * @param authnUserId The OpenAI user string of the user requesting the sync.
- * @returns The job ID of the synchronization job.
- */
-export async function syncContextDocuments(model: EmbeddingModel, authnUserId: string) {
-=======
  * @param embeddingModel The embedding model to use.
  * @param authnUserId The OpenAI user string of the user requesting the sync.
  * @returns The job ID of the synchronization job.
  */
 export async function syncContextDocuments(embeddingModel: EmbeddingModel, authnUserId: string) {
->>>>>>> master
   const serverJob = await createServerJob({
     type: 'sync_question_generation_context',
     description: 'Generate embeddings for context documents',
@@ -147,11 +127,7 @@ export async function syncContextDocuments(embeddingModel: EmbeddingModel, authn
       const questionContext = await buildContextForQuestion(path.dirname(file.path));
       if (questionContext) {
         await insertDocumentChunk(
-<<<<<<< HEAD
-          model,
-=======
           embeddingModel,
->>>>>>> master
           path.relative(REPOSITORY_ROOT_PATH, file.path),
           { text: questionContext.context, chunkId: '' },
           job,
@@ -167,11 +143,7 @@ export async function syncContextDocuments(embeddingModel: EmbeddingModel, authn
     const files = buildContextForElementDocs(fileText);
     for (const doc of files) {
       await insertDocumentChunk(
-<<<<<<< HEAD
-        model,
-=======
         embeddingModel,
->>>>>>> master
         path.relative(REPOSITORY_ROOT_PATH, elementDocsPath),
         doc,
         job,
