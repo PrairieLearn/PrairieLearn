@@ -24,7 +24,7 @@ const requiredTableFields = {
   assessment_questions: ['assessment_question_id'],
   assessments: ['assessment_id'],
   institutions: ['institution_id'],
-  enrollments: ['course_instance_id', 'subject_user_id', 'action_detail'],
+  enrollments: ['enrollment_id', 'course_instance_id', 'subject_user_id', 'action_detail'],
 } as const satisfies Partial<Record<TableName, readonly string[]>>;
 
 /**
@@ -80,6 +80,21 @@ type SupportedTableActionCombination =
 export type SupportedActionsForTable<T extends TableName> = NonNullable<
   Exclude<Extract<SupportedTableActionCombination, { table_name: T }>['action_detail'], null>
 >;
+
+export async function selectAuditEventsByEnrollmentId({
+  enrollment_id,
+  table_names,
+}: {
+  enrollment_id: string;
+  table_names: (keyof typeof requiredTableFields)[];
+}): Promise<AuditEvent[]> {
+  return await queryRows(
+    sql.select_audit_events_by_enrollment_id_table_names,
+    { enrollment_id, table_names },
+    AuditEventSchema,
+  );
+}
+
 /**
  * Selects audit events by subject user ID, table names, and course instance ID.
  * Exactly one of `subject_user_id` or `agent_authn_user_id` must be provided.
@@ -145,6 +160,7 @@ export type InsertAuditEventParams = SupportedTableActionCombination & {
   assessment_question_id?: string | null;
   course_id?: string | null;
   course_instance_id?: string | null;
+  enrollment_id?: string | null;
   group_id?: string | null;
   institution_id?: string | null;
 };
@@ -161,6 +177,7 @@ export type InsertAuditEventParams = SupportedTableActionCombination & {
  * @param params.course_id - Inferred from `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
  * @param params.course_instance_id - Inferred from `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
  * @param params.group_id - ID of the affected group
+ * @param params.enrollment_id - ID of the affected enrollment
  * @param params.institution_id - Inferred from `subject_user_id`, `course_id`, `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
  * @param params.new_row - The new row data
  * @param params.old_row - The old row data
@@ -183,6 +200,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     context = {},
     course_id,
     course_instance_id,
+    enrollment_id,
     group_id,
     institution_id,
     new_row = null,
@@ -221,6 +239,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     assessment_question_id: inferred_assessment_question_id,
     course_id: inferred_course_id,
     course_instance_id: inferred_course_instance_id,
+    enrollment_id: inferred_enrollment_id,
     group_id: inferred_group_id,
     institution_id: inferred_institution_id,
     user_id: inferred_subject_user_id,
@@ -254,6 +273,10 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
       course_instance_id !== undefined
         ? course_instance_id
         : ((table_name === 'course_instances' ? row_id : null) ?? inferred_course_instance_id),
+    enrollment_id:
+      enrollment_id !== undefined
+        ? enrollment_id
+        : ((table_name === 'enrollments' ? row_id : null) ?? inferred_enrollment_id),
     group_id:
       group_id !== undefined
         ? group_id

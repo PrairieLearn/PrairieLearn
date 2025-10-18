@@ -313,6 +313,7 @@ const minimalStaffAuditEvent: z.input<typeof StaffAuditEventSchema> = {
   course_id: null,
   course_instance_id: null,
   date: new Date(),
+  enrollment_id: null,
   group_id: null,
   id: '5',
   institution_id: null,

@@ -479,6 +479,7 @@ export const AuditEventSchema = z.object({
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString,
+  enrollment_id: IdSchema.nullable(),
   group_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
