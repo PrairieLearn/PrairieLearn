@@ -462,7 +462,7 @@ const InstanceQuestionScoreInputSchema = z.object({
     })
     .nullish(),
 });
-type InstanceQuestionScoreInput = z.infer<typeof InstanceQuestionScoreInputSchema>;
+export type InstanceQuestionScoreInput = z.infer<typeof InstanceQuestionScoreInputSchema>;
 
 /**
  * Manually updates the score of an instance question.
