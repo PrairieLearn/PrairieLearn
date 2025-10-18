@@ -4384,18 +4384,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql":
-  version: 0.0.0-use.local
-  resolution: "@prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql"
-  dependencies:
-    "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.18.8"
-    prettier: "npm:3.6.2"
-    sql-formatter: "npm:^15.6.9"
-    typescript: "npm:^5.9.3"
-  languageName: unknown
-  linkType: soft
-
 "@prairielearn/run@workspace:^, @prairielearn/run@workspace:packages/run":
   version: 0.0.0-use.local
   resolution: "@prairielearn/run@workspace:packages/run"
@@ -17091,7 +17079,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sql-formatter@npm:^15.6.5, sql-formatter@npm:^15.6.9":
+"sql-formatter@npm:^15.6.5":
   version: 15.6.10
   resolution: "sql-formatter@npm:15.6.10"
   dependencies:

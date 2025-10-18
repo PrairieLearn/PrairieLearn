@@ -121,6 +121,9 @@ class TestSympy:
         ("atanh(m)", sympy.atanh(M)),
         ("asinh(m)", sympy.asinh(M)),
         ("acosh(m)", sympy.acosh(M)),
+        ("tanh(m)", sympy.tanh(M)),
+        ("sinh(m)", sympy.sinh(M)),
+        ("cosh(m)", sympy.cosh(M)),
     )
 
     # Using string-based comparisons here to bypass sympy's default simplification behavior

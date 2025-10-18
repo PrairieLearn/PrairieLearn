@@ -25,6 +25,7 @@ FROM
   )
 WHERE
   e.created_at > now() - $created_since::interval
+  AND e.status = 'joined'
   AND i.id = $institution_id;
 
 -- BLOCK select_enrollment_counts_for_course
@@ -54,6 +55,7 @@ FROM
   )
 WHERE
   e.created_at > now() - $created_since::interval
+  AND e.status = 'joined'
   AND c.id = $course_id;
 
 -- BLOCK select_enrollment_counts_for_course_instance
@@ -82,4 +84,5 @@ FROM
     AND pg.plan_name = 'basic'
   )
 WHERE
-  ci.id = $course_instance_id;
+  e.status = 'joined'
+  AND ci.id = $course_instance_id;

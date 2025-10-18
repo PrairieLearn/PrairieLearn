@@ -130,8 +130,8 @@ async function aiEvaluateStudentResponse({
     providerOptions: {
       openai: {
         metadata: {
-          course_id: course.id.toString(),
-          course_instance_id: course_instance_id.toString(),
+          course_id: course.id,
+          course_instance_id,
           assessment_id: assessment_question.assessment_id,
           assessment_question_id: assessment_question.id,
           instance_question_id: instance_question.id,

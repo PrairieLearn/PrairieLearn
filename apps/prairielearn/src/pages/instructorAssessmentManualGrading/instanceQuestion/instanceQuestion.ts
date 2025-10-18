@@ -172,7 +172,9 @@ router.get(
         // time, the explanation wasn't included in the completion at all, so it
         // may legitimately be missing.
         //
-        // We need to handle multiple response formats, which are documented below.
+        // Over the lifetime of this feature, we've changed which APIs/libraries we
+        // use to generate the completion, so we need to handle all formats we've ever
+        // used for backwards-compatibility. Each one is documented below.
         const explanation = run(() => {
           const completion = ai_grading_job_data.completion;
           if (!completion) return null;

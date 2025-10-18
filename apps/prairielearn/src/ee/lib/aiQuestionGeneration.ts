@@ -149,19 +149,19 @@ export async function checkRender(
 /**
  * Builds the context string, consisting of relevant documents.
  *
- * @param model The embedding model to use.
+ * @param embeddingModel The embedding model to use.
  * @param prompt The user's question generation prompt.
  * @param mandatoryElementNames Elements that we must pull documentation for.
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
  */
 export async function makeContext(
-  model: EmbeddingModel,
+  embeddingModel: EmbeddingModel,
   prompt: string,
   mandatoryElementNames: string[],
   authnUserId: string,
 ): Promise<string> {
-  const embedding = await createEmbedding(model, prompt, openAiUserFromAuthn(authnUserId));
+  const embedding = await createEmbedding(embeddingModel, prompt, openAiUserFromAuthn(authnUserId));
 
   // Identify all elements that we are using *and* have documentation document chunks.
   const mandatoryElements =
