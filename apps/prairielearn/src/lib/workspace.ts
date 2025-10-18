@@ -59,6 +59,7 @@ interface DiskWorkspaceFile {
 interface BufferWorkspaceFile {
   name: string;
   buffer: Buffer | string;
+  mode?: number;
 }
 
 type WorkspaceFile = DiskWorkspaceFile | BufferWorkspaceFile;
@@ -69,6 +70,7 @@ interface DynamicWorkspaceFile {
   encoding?: BufferEncoding;
   questionFile?: string;
   serverFilesCourseFile?: string;
+  mode?: number;
 }
 
 interface InitializeResult {
@@ -473,6 +475,7 @@ export async function generateWorkspaceFiles({
               await fsPromises.readFile(file.path, { encoding: 'utf-8' }),
               mustacheParams,
             ),
+            mode: file.stats.mode,
           };
         } catch (err) {
           fileGenerationErrors.push({
@@ -547,6 +550,16 @@ export async function generateWorkspaceFiles({
             return null;
           }
 
+          // Validate mode if provided
+          if (file.mode !== undefined && file.mode !== 0o644 && file.mode !== 0o755) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: `Dynamic workspace file has unsupported mode (${file.mode.toString(8)}). Only 0o644 and 0o755 are supported. File ignored.`,
+              data: file,
+            });
+            return null;
+          }
+
           if (!('contents' in file)) {
             fileGenerationErrors.push({
               file: file.name,
@@ -558,6 +571,7 @@ export async function generateWorkspaceFiles({
           return {
             name: normalizedFilename,
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
+            mode: file.mode,
           };
         } catch (err) {
           // Error retrieving contents of dynamic file. Ignoring file.
@@ -584,7 +598,16 @@ export async function generateWorkspaceFiles({
         if ('localPath' in workspaceFile) {
           await fs.copy(workspaceFile.localPath, targetFile);
         } else {
-          await fs.writeFile(targetFile, workspaceFile.buffer);
+          // Preserve executable bits if they were captured by setting mode during writeFile
+          if (workspaceFile.mode !== undefined) {
+            // Only preserve executable bits, use 644 or 755 based on whether source was executable
+            const isExecutable = (workspaceFile.mode & 0o111) !== 0;
+            await fs.writeFile(targetFile, workspaceFile.buffer, {
+              mode: isExecutable ? 0o755 : 0o644,
+            });
+          } else {
+            await fs.writeFile(targetFile, workspaceFile.buffer);
+          }
         }
       } catch (err) {
         fileGenerationErrors.push({

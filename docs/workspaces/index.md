@@ -152,7 +152,7 @@ A minimal `question.html` for an externally graded workspace should look somethi
 
 Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question/index.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
 
-Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using Mustache-based template files or using [the `server.py` file in the question directory](../question/index.md#custom-generation-and-grading-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, files within this directory may include Mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. File names may optionally include the `.mustache` extension, and the file will be renamed before being presented to the student. For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py.mustache` inside `workspaceTemplates` has the following content:
+Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using Mustache-based template files or using [the `server.py` file in the question directory](../question/index.md#custom-generation-and-grading-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, files within this directory may include Mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. File names may optionally include the `.mustache` extension, and the file will be renamed before being presented to the student. Files in `workspaceTemplates/` will preserve their execute permissions (e.g., if you `chmod +x script.sh` in your course repository, it will remain executable in the workspace). For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py.mustache` inside `workspaceTemplates` has the following content:
 
 ```txt
 # ...
@@ -172,6 +172,10 @@ For more fine-tuned randomized files, the `_workspace_files` parameter can also 
 
 - a `contents` property, containing the contents of the file.
 - a `questionFile` or `serverFilesCourseFile` property, pointing to an existing file in the question directory or the course's `serverFilesCourse` directory, respectively.
+
+Additionally, each element may optionally include:
+
+- a `mode` property to set file permissions. Must be either `0o755` (for executable files) or `0o644` (for non-executable files).
 
 For example:
 
@@ -206,7 +210,13 @@ def generate(data):
         # A file can also be added by using its path in serverFilesCourse
         {"name": "course.txt", "serverFilesCourseFile": "data.txt"},
         # To make an empty file, set `contents` to None or an empty string
-        {"name": "empty.txt", "contents": None}
+        {"name": "empty.txt", "contents": None},
+        # To make an executable file, set the mode to 0o755
+        {
+            "name": "run_tests.sh",
+            "contents": "#!/bin/bash\necho 'Running tests...'\n",
+            "mode": 0o755,
+        },
     ]
 ```
 

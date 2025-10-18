@@ -173,6 +173,12 @@ describe('Workspace dynamic files', function () {
             // File without contents or questionFile
             name: 'no_contents.txt',
           },
+          {
+            // File with invalid mode
+            name: 'invalid_mode.sh',
+            contents: '#!/bin/bash\necho "test"\n',
+            mode: 0o777,
+          },
         ],
       },
       correctAnswers: {
@@ -199,6 +205,7 @@ describe('Workspace dynamic files', function () {
         msg: 'has neither "contents" nor "questionFile" nor "serverFilesCourseFile"',
         contents: '',
       },
+      { file: 'invalid_mode.sh', msg: 'unsupported mode' },
     ];
 
     for (const expectedError of expectedErrors) {
@@ -215,6 +222,86 @@ describe('Workspace dynamic files', function () {
       }
     }
 
-    assert.lengthOf(fileGenerationErrors, 8);
+    assert.lengthOf(fileGenerationErrors, 9);
+  });
+
+  it('preserves executable permissions from template files', async () => {
+    const targetPath = await tmp.dir({ unsafeCleanup: true });
+    const { fileGenerationErrors } = await generateWorkspaceFiles({
+      serverFilesCoursePath: join(TEST_COURSE_PATH, 'serverFilesCourse'),
+      questionBasePath: join(TEST_COURSE_PATH, 'questions', 'workspace'),
+      params: {
+        a: 'test',
+      },
+      correctAnswers: {
+        b: 42,
+      },
+      targetPath: targetPath.path,
+    });
+
+    assert.lengthOf(fileGenerationErrors, 0);
+
+    // Check that the rendered template file has executable permissions
+    const renderedScriptPath = join(targetPath.path, 'script.sh');
+    const renderedScriptStats = await fs.stat(renderedScriptPath);
+    assert.equal(renderedScriptStats.mode & 0o755, 0o755);
+
+    // Check that the simple (non-rendered) template file has executable permissions
+    const simpleScriptPath = join(targetPath.path, 'simple_script.sh');
+    const simpleScriptStats = await fs.stat(simpleScriptPath);
+    assert.equal(simpleScriptStats.mode & 0o777, 0o755);
+
+    // Verify the content was correctly rendered
+    const scriptContent = await fs.readFile(renderedScriptPath, 'utf-8');
+    assert.include(scriptContent, 'params: test', 'Template should be rendered with params');
+  });
+
+  it('preserves executable permissions from dynamic files with mode', async () => {
+    const targetPath = await tmp.dir({ unsafeCleanup: true });
+    const { fileGenerationErrors } = await generateWorkspaceFiles({
+      serverFilesCoursePath: join(TEST_COURSE_PATH, 'serverFilesCourse'),
+      questionBasePath: join(TEST_COURSE_PATH, 'questions', 'workspace'),
+      params: {
+        a: 'dynamic',
+        _workspace_files: [
+          {
+            name: 'executable_script.sh',
+            contents: '#!/bin/bash\necho "Executable from params"\n',
+            mode: 0o755,
+          },
+          {
+            name: 'non_executable.txt',
+            contents: 'Not executable\n',
+            mode: 0o644,
+          },
+          {
+            name: 'no_mode_specified.txt',
+            contents: 'Default permissions\n',
+          },
+        ],
+      },
+      correctAnswers: {
+        b: 99,
+      },
+      targetPath: targetPath.path,
+    });
+
+    assert.lengthOf(fileGenerationErrors, 0);
+
+    // Check that dynamic file with mode=0o755 is executable
+    const executableScriptPath = join(targetPath.path, 'executable_script.sh');
+    const executableStats = await fs.stat(executableScriptPath);
+    assert.equal(executableStats.mode & 0o777, 0o755);
+
+    // Check that dynamic file with mode=0o644 is not executable
+    const nonExecutablePath = join(targetPath.path, 'non_executable.txt');
+    const nonExecutableStats = await fs.stat(nonExecutablePath);
+    assert.equal(nonExecutableStats.mode & 0o777, 0o644);
+
+    // Check that dynamic file without mode uses default permissions
+    const noModePath = join(targetPath.path, 'no_mode_specified.txt');
+    const noModeStats = await fs.stat(noModePath);
+    // Default permissions from fs.writeFile (no chmod applied)
+    assert.equal(noModeStats.mode & 0o777, 0o644);
   });
 });
