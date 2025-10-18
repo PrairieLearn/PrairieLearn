@@ -1,10 +1,10 @@
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
 import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
-import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
 import { type ZodSchema, z } from 'zod';

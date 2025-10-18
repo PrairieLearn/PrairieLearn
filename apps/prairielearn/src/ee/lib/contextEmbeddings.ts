@@ -1,6 +1,6 @@
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
-import fs from 'fs-extra';
 import klaw from 'klaw';
 import { type OpenAI } from 'openai';
 

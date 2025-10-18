@@ -1,10 +1,11 @@
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fs from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -83,7 +84,7 @@ router.get(
       'infoCourseInstance.json',
     );
     const fullInfoCourseInstancePath = path.join(course.path, infoCourseInstancePath);
-    const infoCourseInfoPathExists = await fs.pathExists(fullInfoCourseInstancePath);
+    const infoCourseInfoPathExists = await pathExists(fullInfoCourseInstancePath);
     let origHash = '';
     if (infoCourseInfoPathExists) {
       origHash = sha256(
@@ -218,7 +219,7 @@ router.post(
         'infoCourseInstance.json',
       );
 
-      if (!(await fs.pathExists(infoCourseInstancePath))) {
+      if (!(await pathExists(infoCourseInstancePath))) {
         throw new error.HttpStatusError(400, 'infoCourseInstance.json does not exist');
       }
       if (!req.body.ciid) {

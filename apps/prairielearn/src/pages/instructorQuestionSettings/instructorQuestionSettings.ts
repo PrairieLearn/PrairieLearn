@@ -1,9 +1,10 @@
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fs from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 import * as shlex from 'shlex';
 import { z } from 'zod';
 
@@ -135,7 +136,7 @@ router.post(
         res.locals.question.qid,
         'info.json',
       );
-      if (!(await fs.pathExists(infoPath))) {
+      if (!(await pathExists(infoPath))) {
         throw new error.HttpStatusError(400, 'Question info file does not exist');
       }
 
@@ -485,7 +486,7 @@ router.get(
     });
     const infoPath = path.join('questions', res.locals.question.qid, 'info.json');
     const fullInfoPath = path.join(res.locals.course.path, infoPath);
-    const questionInfoExists = await fs.pathExists(fullInfoPath);
+    const questionInfoExists = await pathExists(fullInfoPath);
 
     let origHash = '';
     if (questionInfoExists) {

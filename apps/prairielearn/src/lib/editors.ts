@@ -1,11 +1,12 @@
 import assert from 'node:assert';
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import { type Temporal } from '@js-temporal/polyfill';
 import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
-import fs from 'fs-extra';
+import { move, pathExists } from 'fs-extra/esm';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -515,7 +516,7 @@ export abstract class Editor {
           seenNonemptyFolder = true;
         } else {
           debug('No files, deleting', delPath);
-          await fs.remove(delPath);
+          await fs.rm(delPath, { recursive: true, force: true });
         }
       }
     }
@@ -551,7 +552,7 @@ async function getExistingShortNames(rootDirectory: string, infoFile: string) {
       const subdirPath = path.join(relativeDir, dir);
       // Absolute path to the info file
       const infoPath = path.join(rootDirectory, subdirPath, infoFile);
-      const hasInfoFile = await fs.pathExists(infoPath);
+      const hasInfoFile = await pathExists(infoPath);
       if (hasInfoFile) {
         // Info file exists, we can use this directory
         files.push(subdirPath);
@@ -690,10 +691,12 @@ export class AssessmentCopyEditor extends Editor {
     const toPath = assessmentPath;
 
     debug(`Copy question from ${fromPath} to ${toPath}`);
-    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+    await fs.cp(fromPath, toPath, { recursive: true });
 
     debug('Read infoAssessment.json');
-    const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
+    const infoJson = JSON.parse(
+      await fs.readFile(path.join(assessmentPath, 'infoAssessment.json'), 'utf8'),
+    );
 
     delete infoJson.shareSourcePublicly;
 
@@ -740,7 +743,7 @@ export class AssessmentDeleteEditor extends Editor {
       this.course_instance.short_name,
       'assessments',
     );
-    await fs.remove(path.join(deletePath, this.assessment.tid));
+    await fs.rm(path.join(deletePath, this.assessment.tid), { recursive: true, force: true });
     await this.removeEmptyPrecedingSubfolders(deletePath, this.assessment.tid);
 
     return {
@@ -806,7 +809,7 @@ export class AssessmentRenameEditor extends Editor {
     }
 
     debug(`Move files from ${oldPath} to ${newPath}`);
-    await fs.move(oldPath, newPath, { overwrite: false });
+    await move(oldPath, newPath, { overwrite: true });
     await this.removeEmptyPrecedingSubfolders(assessmentsPath, this.assessment.tid);
 
     return {
@@ -918,13 +921,15 @@ export class AssessmentAddEditor extends Editor {
       zones: [],
     };
 
-    // We use outputJson to create the directory this.assessmentsPath if it
-    // does not exist (which it shouldn't). We use the file system flag 'wx'
+    // We use mkdir and writeFile to create the directory and file if they
+    // do not exist (which they shouldn't). We use the file system flag 'wx'
     // to throw an error if `assessmentPath` already exists.
-    await fs.outputJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
-      spaces: 4,
-      flag: 'wx',
-    });
+    await fs.mkdir(assessmentPath, { recursive: true });
+    await fs.writeFile(
+      path.join(assessmentPath, 'infoAssessment.json'),
+      JSON.stringify(infoJson, null, 4),
+      { flag: 'wx' },
+    );
 
     return {
       pathsToAdd: [assessmentPath],
@@ -998,10 +1003,12 @@ export class CourseInstanceCopyEditor extends Editor {
     const toPath = courseInstancePath;
 
     debug(`Copy course instance from ${this.from_path} to ${toPath}`);
-    await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
+    await fs.cp(this.from_path, toPath, { recursive: true });
 
     debug('Read infoCourseInstance.json');
-    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
+    const infoJson = JSON.parse(
+      await fs.readFile(path.join(courseInstancePath, 'infoCourseInstance.json'), 'utf8'),
+    );
 
     const pathsToAdd: string[] = [];
     if (this.is_transfer) {
@@ -1135,7 +1142,7 @@ async function updateInfoAssessmentFilesForTargetCourse(
       'infoAssessment.json',
     );
 
-    const infoJson = await fs.readJson(infoPath);
+    const infoJson = JSON.parse(await fs.readFile(infoPath, 'utf8'));
 
     // We do not want to preserve certain settings when copying an assessment to another course
     delete infoJson.shareSourcePublicly;
@@ -1166,7 +1173,7 @@ async function updateInfoAssessmentFilesForTargetCourse(
         }
       }
     }
-    await fs.writeJson(infoPath, infoJson, { spaces: 4 });
+    await fs.writeFile(infoPath, JSON.stringify(infoJson, null, 4));
   }
 }
 
@@ -1189,7 +1196,10 @@ export class CourseInstanceDeleteEditor extends Editor {
 
     debug('CourseInstanceDeleteEditor: write()');
     const deletePath = path.join(this.course.path, 'courseInstances');
-    await fs.remove(path.join(deletePath, this.course_instance.short_name));
+    await fs.rm(path.join(deletePath, this.course_instance.short_name), {
+      recursive: true,
+      force: true,
+    });
     await this.removeEmptyPrecedingSubfolders(deletePath, this.course_instance.short_name);
 
     return {
@@ -1248,7 +1258,7 @@ export class CourseInstanceRenameEditor extends Editor {
     }
 
     debug(`Move files from ${oldPath} to ${newPath}`);
-    await fs.move(oldPath, newPath, { overwrite: false });
+    await move(oldPath, newPath, { overwrite: true });
     await this.removeEmptyPrecedingSubfolders(
       path.join(this.course.path, 'courseInstances'),
       this.course_instance.short_name,
@@ -1376,13 +1386,15 @@ export class CourseInstanceAddEditor extends Editor {
       allowAccess: allowAccess !== undefined ? [allowAccess] : [],
     };
 
-    // We use outputJson to create the directory this.courseInstancePath if it
-    // does not exist (which it shouldn't). We use the file system flag 'wx' to
+    // We use mkdir and writeFile to create the directory and file if they
+    // do not exist (which they shouldn't). We use the file system flag 'wx' to
     // throw an error if this.courseInstancePath already exists.
-    await fs.outputJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
-      spaces: 4,
-      flag: 'wx',
-    });
+    await fs.mkdir(courseInstancePath, { recursive: true });
+    await fs.writeFile(
+      path.join(courseInstancePath, 'infoCourseInstance.json'),
+      JSON.stringify(infoJson, null, 4),
+      { flag: 'wx' },
+    );
 
     return {
       pathsToAdd: [courseInstancePath],
@@ -1437,9 +1449,7 @@ export class QuestionAddEditor extends Editor {
           z.number(),
         );
 
-        while (
-          await fs.pathExists(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))
-        ) {
+        while (await pathExists(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))) {
           // increment and sync to postgres
           draftNumber = await sqldb.queryRow(
             sql.update_draft_number,
@@ -1526,10 +1536,12 @@ export class QuestionAddEditor extends Editor {
       }
 
       debug(`Copy question from ${fromPath} to ${newQuestionPath}`);
-      await fs.copy(fromPath, newQuestionPath, { overwrite: false, errorOnExist: true });
+      await fs.cp(fromPath, newQuestionPath, { recursive: true });
 
       debug('Read info.json');
-      const infoJson = await fs.readJson(path.join(newQuestionPath, 'info.json'));
+      const infoJson = JSON.parse(
+        await fs.readFile(path.join(newQuestionPath, 'info.json'), 'utf8'),
+      );
 
       debug('Write info.json with the new title and uuid');
       infoJson.title = this.title;
@@ -1563,19 +1575,29 @@ export class QuestionAddEditor extends Editor {
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(data));
 
-      await fs.ensureDir(newQuestionPath);
+      await fs.mkdir(newQuestionPath, { recursive: true });
       await fs.writeFile(newQuestionInfoFilePath, formattedJson);
-      await fs.ensureFile(newQuestionHtmlFilePath);
-      await fs.ensureFile(newQuestionScriptFilePath);
+      // Create empty files
+      await fs.writeFile(newQuestionHtmlFilePath, '');
+      await fs.writeFile(newQuestionScriptFilePath, '');
     }
 
     if (this.files != null) {
       debug('Remove template files when file texts provided');
-      await fs.remove(path.join(newQuestionPath, 'question.html'));
-      await fs.remove(path.join(newQuestionPath, 'server.py'));
+      await fs.rm(path.join(newQuestionPath, 'question.html'), {
+        recursive: true,
+        force: true,
+      });
+      await fs.rm(path.join(newQuestionPath, 'server.py'), {
+        recursive: true,
+        force: true,
+      });
 
       if ('info.json' in this.files) {
-        await fs.remove(path.join(newQuestionPath, 'info.json'));
+        await fs.rm(path.join(newQuestionPath, 'info.json'), {
+          recursive: true,
+          force: true,
+        });
       }
 
       debug('Load files from text');
@@ -1652,7 +1674,7 @@ export class QuestionModifyEditor extends Editor {
     for (const [filePath, contents] of Object.entries(this.files)) {
       const resolvedPath = path.join(questionPath, filePath);
       if (contents === null) {
-        await fs.remove(resolvedPath);
+        await fs.rm(resolvedPath, { recursive: true, force: true });
       } else {
         await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
       }
@@ -1695,7 +1717,10 @@ export class QuestionDeleteEditor extends Editor {
       // This shouldn't happen in practice; this is just to satisfy TypeScript.
       assert(question.qid, 'question.qid is required');
 
-      await fs.remove(path.join(this.course.path, 'questions', question.qid));
+      await fs.rm(path.join(this.course.path, 'questions', question.qid), {
+        recursive: true,
+        force: true,
+      });
       await this.removeEmptyPrecedingSubfolders(
         path.join(this.course.path, 'questions'),
         question.qid,
@@ -1762,7 +1787,7 @@ export class QuestionRenameEditor extends Editor {
     }
 
     debug(`Move files from ${oldPath} to ${newPath}`);
-    await fs.move(oldPath, newPath, { overwrite: false });
+    await move(oldPath, newPath, { overwrite: true });
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
@@ -1797,7 +1822,7 @@ export class QuestionRenameEditor extends Editor {
       pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
-      const infoJson: any = await fs.readJson(infoPath);
+      const infoJson: any = JSON.parse(await fs.readFile(infoPath, 'utf8'));
 
       debug(`Find/replace QID in ${infoPath}`);
       let found = false as boolean;
@@ -1921,7 +1946,7 @@ async function copyQuestion({
   const questionsPath = path.join(course.path, 'questions');
 
   debug('Get title of question that is being copied');
-  const sourceInfoJson = await fs.readJson(path.join(from_path, 'info.json'));
+  const sourceInfoJson = JSON.parse(await fs.readFile(path.join(from_path, 'info.json'), 'utf8'));
   const from_title = sourceInfoJson.title || 'Empty Title';
 
   debug('Generate qid and title');
@@ -1938,10 +1963,10 @@ async function copyQuestion({
   const toPath = questionPath;
 
   debug(`Copy question from ${fromPath} to ${toPath}`);
-  await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+  await fs.cp(fromPath, toPath, { recursive: true });
 
   debug('Read info.json');
-  const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
+  const infoJson = JSON.parse(await fs.readFile(path.join(questionPath, 'info.json'), 'utf8'));
 
   debug('Write info.json with new title and uuid');
   infoJson.title = questionTitle;
@@ -2031,7 +2056,7 @@ export class FileDeleteEditor extends Editor {
   async write() {
     debug('FileDeleteEditor: write()');
     // This will silently do nothing if deletePath no longer exists.
-    await fs.remove(this.deletePath);
+    await fs.rm(this.deletePath, { recursive: true, force: true });
 
     return {
       pathsToAdd: [this.deletePath],
@@ -2149,11 +2174,8 @@ export class FileRenameEditor extends Editor {
   async write() {
     debug('FileRenameEditor: write()');
 
-    debug('ensure path exists');
-    await fs.ensureDir(path.dirname(this.newPath));
-
     debug('rename file');
-    await fs.rename(this.oldPath, this.newPath);
+    await move(this.oldPath, this.newPath, { overwrite: true });
 
     return {
       pathsToAdd: [this.oldPath, this.newPath],
@@ -2268,7 +2290,7 @@ export class FileUploadEditor extends Editor {
     if (!(await this.shouldEdit())) return null;
 
     debug('ensure path exists');
-    await fs.ensureDir(path.dirname(this.filePath));
+    await fs.mkdir(path.dirname(this.filePath), { recursive: true });
 
     debug('write file');
     await fs.writeFile(this.filePath, this.fileContents);
@@ -2390,7 +2412,7 @@ export class FileModifyEditor extends Editor {
     if (!this.shouldEdit()) return null;
 
     debug('ensure path exists');
-    await fs.ensureDir(path.dirname(this.filePath));
+    await fs.mkdir(path.dirname(this.filePath), { recursive: true });
 
     debug('verify disk hash matches orig hash');
     const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');

@@ -1,4 +1,6 @@
 import { type IncomingMessage } from 'node:http';
+import * as fsSync from 'node:fs';
+import * as fs from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
 
@@ -7,7 +9,6 @@ import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { Upload } from '@aws-sdk/lib-storage';
 import { type NodeJsClient, type SdkStream } from '@smithy/types';
 import debugfn from 'debug';
-import fs from 'fs-extra';
 
 import { makeAwsConfigProvider } from '@prairielearn/aws';
 import { logger } from '@prairielearn/logger';
@@ -62,13 +63,13 @@ export async function uploadToS3(
 ): Promise<CompleteMultipartUploadCommandOutput> {
   const s3 = new S3(makeS3ClientConfig());
 
-  let body: fs.ReadStream | string | Buffer;
+  let body: fsSync.ReadStream | string | Buffer;
   if (isDirectory) {
     body = '';
     s3Path += s3Path.endsWith('/') ? '' : '/';
   } else {
     if (localPath) {
-      body = fs.createReadStream(localPath);
+      body = fsSync.createReadStream(localPath);
     } else if (buffer) {
       body = buffer;
     } else {
@@ -102,12 +103,12 @@ export async function uploadToS3(
 export async function downloadFromS3(s3Bucket: string, s3Path: string, localPath: string) {
   if (localPath.endsWith('/')) {
     debug(`downloadFromS3: bypassing S3 and creating directory localPath=${localPath}`);
-    await fs.promises.mkdir(localPath, { recursive: true });
+    await fs.mkdir(localPath, { recursive: true });
     return;
   }
 
   debug(`downloadFromS3: creating containing directory for file localPath=${localPath}`);
-  await fs.promises.mkdir(path.dirname(localPath), { recursive: true });
+  await fs.mkdir(path.dirname(localPath), { recursive: true });
 
   const s3 = new S3(makeS3ClientConfig()) as NodeJsClient<S3>;
   const res = await s3.getObject({
@@ -118,7 +119,7 @@ export async function downloadFromS3(s3Bucket: string, s3Path: string, localPath
     throw new Error('No data returned from S3');
   }
   const s3Stream = res.Body;
-  const fileStream = fs.createWriteStream(localPath);
+  const fileStream = fsSync.createWriteStream(localPath);
 
   await pipeline(s3Stream, fileStream);
 }

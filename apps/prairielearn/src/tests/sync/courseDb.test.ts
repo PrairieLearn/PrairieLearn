@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/dot-notation */
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
-import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { assert, describe, it } from 'vitest';
 
@@ -32,8 +32,11 @@ async function withTempFile(
 }
 
 async function writeQuestion(courseDir: string, qid: string, question: QuestionJsonInput) {
-  await fs.mkdirs(path.join(courseDir, 'questions', qid));
-  await fs.writeJSON(path.join(courseDir, 'questions', qid, 'info.json'), question);
+  await fs.mkdir(path.join(courseDir, 'questions', qid), { recursive: true });
+  await fs.writeFile(
+    path.join(courseDir, 'questions', qid, 'info.json'),
+    JSON.stringify(question, null, 2),
+  );
 }
 
 function getQuestion() {
@@ -67,7 +70,7 @@ describe('course database', () => {
           uuid: UUID,
           foo: 'bar',
         };
-        await fs.writeJson(file.path, json);
+        await fs.writeFile(file.path, JSON.stringify(json, null, 2));
         const result = await courseDb.loadInfoFile({
           coursePath: file.dirname,
           filePath: file.basename,
@@ -83,7 +86,7 @@ describe('course database', () => {
     it('errors if UUID is missing from valid file', async () => {
       await withTempFile(async (file) => {
         const json = { foo: 'bar' };
-        await fs.writeJson(file.path, json);
+        await fs.writeFile(file.path, JSON.stringify(json, null, 2));
         const result = await courseDb.loadInfoFile({
           coursePath: file.dirname,
           filePath: file.basename,
@@ -96,7 +99,7 @@ describe('course database', () => {
     it('errors if UUID is not valid v4 UUID', async () => {
       await withTempFile(async (file) => {
         const json = { uuid: 'bar' };
-        await fs.writeJson(file.path, json);
+        await fs.writeFile(file.path, JSON.stringify(json, null, 2));
         const result = await courseDb.loadInfoFile({
           coursePath: file.dirname,
           filePath: file.basename,
@@ -141,7 +144,7 @@ describe('course database', () => {
     it('errors if two UUIDs are found in malformed file', async () => {
       await withTempFile(async (file) => {
         const json = `{{malformed, "uuid":"${UUID}","uuid": "${UUID}"}`;
-        await fs.writeJson(file.path, json);
+        await fs.writeFile(file.path, json);
         const result = await courseDb.loadInfoFile({
           coursePath: file.dirname,
           filePath: file.basename,

@@ -1,9 +1,9 @@
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import * as async from 'async';
 import { fileTypeFromFile } from 'file-type';
 import { filesize } from 'filesize';
-import fs from 'fs-extra';
 import hljs from 'highlight.js';
 import { isBinaryFile } from 'isbinaryfile';
 

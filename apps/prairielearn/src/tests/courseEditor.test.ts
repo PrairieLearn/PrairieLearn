@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/dot-notation */
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
-import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
@@ -597,7 +597,7 @@ async function createCourseFiles() {
     cwd: '.',
     env: process.env,
   });
-  await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
+  await fs.cp(courseTemplateDir, courseLiveDir, { force: false, recursive: true });
   await execa('git', ['add', '-A'], {
     cwd: courseLiveDir,
     env: process.env,
@@ -666,7 +666,7 @@ async function createSharedCourse() {
 }
 
 async function deleteCourseFiles() {
-  await fs.remove(courseOriginDir);
-  await fs.remove(courseLiveDir);
-  await fs.remove(courseDevDir);
+  await fs.rm(courseOriginDir, { recursive: true, force: true });
+  await fs.rm(courseLiveDir, { recursive: true, force: true });
+  await fs.rm(courseDevDir, { recursive: true, force: true });
 }
