@@ -17,20 +17,20 @@
         "coreStyles": {
           "description": "[DEPRECATED, DO NOT USE] The styles required by this extension from /public/stylesheets.",
           "type": "array",
+          "deprecated": true,
           "items": {
             "description": "A .css file located in /public/stylesheets.",
             "type": "string"
-          },
-          "deprecated": true
+          }
         },
         "coreScripts": {
           "description": "[DEPRECATED, DO NOT USE] The scripts required by this extension from /public/javascripts.",
           "type": "array",
+          "deprecated": true,
           "items": {
             "description": "A .js file located in /public/javascripts.",
             "type": "string"
-          },
-          "deprecated": true
+          }
         },
         "nodeModulesStyles": {
           "description": "The styles required by this extension from /node_modules.",
@@ -89,12 +89,19 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
         },
         "nodeModulesScripts": {
           "description": "The scripts required by this element from /node_modules as an importmap.",
           "type": "object",
           "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
             "type": "string"
           }
         },
@@ -103,12 +110,18 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
           }
         },
         "extensionScripts": {
           "description": "The scripts required by this extension from the extension's directory.",
           "type": "object",
           "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
             "type": "string"
           }
         }
@@ -123,7 +136,8 @@
           "type": "string"
         },
         {
-          "type": "array"
+          "type": "array",
+          "items": {}
         },
         {
           "type": "object",

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 
 export const QuestionDependencyJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
@@ -42,11 +42,10 @@ export const QuestionDependencyJsonSchema = z
       .describe('The scripts required by this question from clientFilesQuestion.')
       .optional(),
   })
-  .strict()
   .describe("The question's client-side dependencies.");
 
 export const QuestionAuthorJsonSchema = z
-  .object({
+  .strictObject({
     name: z
       .string()
       .describe('A human-readable name of a question author.')
@@ -69,13 +68,12 @@ export const QuestionAuthorJsonSchema = z
       .describe('The sharing name of a course whose staff is a question author.')
       .optional(),
   })
-  .strict()
   .describe(
     'An author (individual person, or staff of a course of origin) credited with creating a question.',
   );
 
 export const WorkspaceOptionsJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     image: z
       .string()
@@ -114,7 +112,7 @@ export const WorkspaceOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe('Environment variables to set inside the workspace container.')
       .optional()
       .default({}),
@@ -125,7 +123,6 @@ export const WorkspaceOptionsJsonSchema = z
       )
       .optional(),
   })
-  .strict()
   .describe('Options for workspace questions.');
 
 export const defaultWorkspaceOptions = WorkspaceOptionsJsonSchema.extend({
@@ -135,7 +132,7 @@ export const defaultWorkspaceOptions = WorkspaceOptionsJsonSchema.extend({
 }).parse({});
 
 export const ExternalGradingOptionsJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     enabled: z
       .boolean()
@@ -178,12 +175,11 @@ export const ExternalGradingOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe('Environment variables to set inside the grading container.')
       .optional()
       .default({}),
   })
-  .strict()
   .describe('Options for externally graded questions.');
 
 export type ExternalGradingOptionsJson = z.infer<typeof ExternalGradingOptionsJsonSchema>;
@@ -193,7 +189,7 @@ export const defaultExternalGradingOptions = ExternalGradingOptionsJsonSchema.ex
 }).parse({});
 
 export const QuestionJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
@@ -273,7 +269,6 @@ export const QuestionJsonSchema = z
       .optional()
       .default(false),
   })
-  .strict()
   .describe('Info files for questions.');
 
 export type QuestionJson = z.infer<typeof QuestionJsonSchema>;

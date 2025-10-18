@@ -6,15 +6,17 @@
 import fs from 'fs';
 import path from 'path';
 
-import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { z } from 'zod/v4';
 
 import { ConfigSchema as GraderHostConfigSchema } from '../apps/grader-host/src/lib/config.js';
 import {
   ConfigSchema as EnvSpecificPrairieLearnConfigSchema,
   STANDARD_COURSE_DIRS,
 } from '../apps/prairielearn/src/lib/config.js';
-import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
+import {
+  ajvSchemas,
+  prairielearnZodToJsonSchema,
+} from '../apps/prairielearn/src/schemas/jsonSchemas.js';
 import { ConfigSchema as WorkspaceHostConfigSchema } from '../apps/workspace-host/src/lib/config.js';
 
 // determine if we are checking or writing
@@ -104,7 +106,7 @@ const PrairieLearnConfigSchema = z.object({
   courseDirs: EnvSpecificPrairieLearnConfigSchema.shape.courseDirs.default(STANDARD_COURSE_DIRS),
 });
 
-const UnifiedConfigJsonSchema = zodToJsonSchema(
+const UnifiedConfigJsonSchema = prairielearnZodToJsonSchema(
   z.object({
     ...GraderHostConfigSchema.shape,
     ...WorkspaceHostConfigSchema.shape,
@@ -118,11 +120,11 @@ const configSchemas = {
   [path.resolve(import.meta.dirname, '../docs/assets/config-unified.schema.json')]:
     UnifiedConfigJsonSchema,
   [path.resolve(import.meta.dirname, '../docs/assets/config-prairielearn.schema.json')]:
-    zodToJsonSchema(PrairieLearnConfigSchema),
+    prairielearnZodToJsonSchema(PrairieLearnConfigSchema),
   [path.resolve(import.meta.dirname, '../docs/assets/config-workspace-host.schema.json')]:
-    zodToJsonSchema(WorkspaceHostConfigSchema),
+    prairielearnZodToJsonSchema(WorkspaceHostConfigSchema),
   [path.resolve(import.meta.dirname, '../docs/assets/config-grader-host.schema.json')]:
-    zodToJsonSchema(GraderHostConfigSchema),
+    prairielearnZodToJsonSchema(GraderHostConfigSchema),
 };
 
 if (check) {

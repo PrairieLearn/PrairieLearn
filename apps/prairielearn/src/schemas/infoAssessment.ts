@@ -34,7 +34,7 @@ export type GroupRoleJson = z.infer<typeof GroupRoleJsonSchema>;
 export type GroupRoleJsonInput = z.input<typeof GroupRoleJsonSchema>;
 
 export const AssessmentAccessRuleJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     mode: z.enum(['Public', 'Exam']).describe('The server mode required for access.').optional(),
     examUuid: z
@@ -88,7 +88,6 @@ export const AssessmentAccessRuleJsonSchema = z
       .optional()
       .default(true),
   })
-  .strict()
   .describe(
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
@@ -275,7 +274,7 @@ export const ZoneAssessmentJsonSchema = z.object({
 });
 
 export const AssessmentJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
@@ -433,7 +432,6 @@ export const AssessmentJsonSchema = z
       .optional()
       .default(false),
   })
-  .strict()
   .describe('Configuration data for an assessment.');
 
 export type AssessmentJson = z.infer<typeof AssessmentJsonSchema>;

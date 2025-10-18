@@ -1,14 +1,16 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Question Info",
   "description": "Info files for questions.",
   "type": "object",
   "additionalProperties": false,
   "required": ["uuid", "type", "title", "topic"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
-      "$ref": "#/definitions/CommentJsonSchema"
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -31,32 +33,31 @@
     "tags": {
       "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken').",
       "type": "array",
+      "default": [],
       "items": {
         "description": "A tag associated with a question.",
         "type": "string"
-      },
-      "default": []
+      }
     },
     "authors": {
       "type": "array",
+      "default": [],
+      "maxItems": 10,
       "items": {
         "description": "An author (individual person, or staff of a course of origin) credited with creating a question.",
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "name": {
-            "description": "A human-readable name of a question author.",
             "type": "string",
             "minLength": 3,
             "maxLength": 255
           },
           "email": {
-            "description": "An email address to contact a question author.",
             "type": "string",
             "maxLength": 255
           },
           "orcid": {
-            "description": "An ORCID identifier that uniquely identifies an individual question author.",
             "type": "string",
             "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$"
           },
@@ -65,18 +66,16 @@
             "type": "string"
           }
         }
-      },
-      "maxItems": 10,
-      "default": []
+      }
     },
     "clientFiles": {
       "description": "The list of question files accessible by the client.",
       "type": "array",
+      "default": ["client.js", "question.html", "answer.html"],
       "items": {
         "description": "A single file accessible by the client.",
         "type": "string"
-      },
-      "default": ["client.js", "question.html", "answer.html"]
+      }
     },
     "clientTemplates": {
       "description": "List of client-accessible templates to render server-side.",
@@ -93,8 +92,8 @@
     "gradingMethod": {
       "description": "The grading method used for this question.",
       "type": "string",
-      "enum": ["Internal", "External", "Manual"],
-      "default": "Internal"
+      "default": "Internal",
+      "enum": ["Internal", "External", "Manual"]
     },
     "singleVariant": {
       "description": "Whether the question is not randomized and only generates a single variant.",
@@ -123,8 +122,11 @@
       "required": ["image"],
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
         },
         "enabled": {
           "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example.",
@@ -151,15 +153,17 @@
         "serverFilesCourse": {
           "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/",
           "type": "array",
+          "default": [],
           "items": {
             "description": "A single file or directory that will be copied to the external grader.",
             "type": "string"
-          },
-          "default": []
+          }
         },
         "timeout": {
           "description": "The number of seconds after which the grading job will timeout.",
-          "type": "integer"
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
         },
         "enableNetworking": {
           "description": "Whether the grading containers should have network access. Access is disabled by default.",
@@ -172,7 +176,10 @@
           "additionalProperties": {
             "type": "string"
           },
-          "default": {}
+          "default": {},
+          "propertyNames": {
+            "type": "string"
+          }
         }
       }
     },
@@ -180,10 +187,14 @@
       "description": "The question's client-side dependencies.",
       "type": "object",
       "additionalProperties": false,
+      "default": {},
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
         },
         "coreStyles": {
           "description": "[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.",
@@ -191,8 +202,7 @@
           "items": {
             "description": "A .css file located in /public/stylesheets.",
             "type": "string"
-          },
-          "deprecated": true
+          }
         },
         "coreScripts": {
           "description": "[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.",
@@ -200,8 +210,7 @@
           "items": {
             "description": "A .js file located in /public/javascripts.",
             "type": "string"
-          },
-          "deprecated": true
+          }
         },
         "nodeModulesStyles": {
           "description": "The styles required by this question from /node_modules.",
@@ -251,8 +260,7 @@
             "type": "string"
           }
         }
-      },
-      "default": {}
+      }
     },
     "workspaceOptions": {
       "description": "Options for workspace questions.",
@@ -261,8 +269,11 @@
       "required": ["image", "port", "home"],
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
         },
         "image": {
           "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",
@@ -270,7 +281,9 @@
         },
         "port": {
           "description": "The port number used in the Docker image.",
-          "type": "integer"
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
         },
         "home": {
           "description": "The home directory of the workspace container.",
@@ -298,11 +311,11 @@
         "gradedFiles": {
           "description": "The list of files or directories that will be copied out of the workspace container when saving a submission.",
           "type": "array",
+          "default": [],
           "items": {
             "description": "A single file or directory that will be copied out of the workspace container when saving a submission.",
             "type": "string"
-          },
-          "default": []
+          }
         },
         "enableNetworking": {
           "description": "Whether the workspace should have network access. Access is disabled by default.",
@@ -315,7 +328,10 @@
           "additionalProperties": {
             "type": "string"
           },
-          "default": {}
+          "default": {},
+          "propertyNames": {
+            "type": "string"
+          }
         },
         "syncIgnore": {
           "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.",
@@ -323,8 +339,7 @@
           "items": {
             "description": "A single file or directory that will be excluded from sync.",
             "type": "string"
-          },
-          "deprecated": true
+          }
         }
       }
     },
@@ -355,7 +370,8 @@
           "type": "string"
         },
         {
-          "type": "array"
+          "type": "array",
+          "items": {}
         },
         {
           "type": "object",

@@ -2,7 +2,7 @@ import { DescribeTagsCommand, EC2Client } from '@aws-sdk/client-ec2';
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import fs from 'fs-extra';
 import _ from 'lodash';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-imds';
 
@@ -100,7 +100,7 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
   }
 
   async loadAndValidate(sources: ConfigSource[] = []) {
-    let config = this.schema.parse({});
+    let config = this.schema.parse({}) as AbstractConfig;
     // If the config setting is an array, override instead of merge
     const mergeRule = (_obj: any, src: any) => (Array.isArray(src) ? src : undefined);
 
