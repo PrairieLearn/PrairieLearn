@@ -19,6 +19,7 @@ const featureNames = [
   // Can be applied to any context.
   'enrollment-management',
   'rich-text-editor',
+  'enhanced-access-control',
   'legacy-navigation',
 ] as const;
 
