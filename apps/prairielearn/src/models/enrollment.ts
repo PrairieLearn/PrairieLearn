@@ -24,7 +24,8 @@ import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 import { assertNever } from '../lib/types.js';
 
-import { type SupportedActionsForTable, insertAuditEvent } from './audit-event.js';
+import { insertAuditEvent } from './audit-event.js';
+import type { SupportedActionsForTable } from './audit-event.types.js';
 import { generateUsers, selectAndLockUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
