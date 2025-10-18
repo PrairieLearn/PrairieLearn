@@ -42,7 +42,7 @@ router.post(
     const authnParams = {
       uid: user.upn,
       name: user.displayName,
-      uin: null,
+      uin: user.oid || null,
       email: user._json.email || null,
       provider: 'Azure',
     };
