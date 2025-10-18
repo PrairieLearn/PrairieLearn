@@ -18,6 +18,7 @@ import {
 
 const RawAuthzDataSchema = z.object({
   // TODO: Type these more accurately into a course instance version.
+  authn_user: StaffUserSchema,
   authn_is_administrator: z.boolean(),
   authn_has_course_permission_preview: z.boolean().optional(),
   authn_has_course_permission_view: z.boolean().optional(),
@@ -154,20 +155,20 @@ export type StaffCourseInstanceContext = z.infer<typeof StaffCourseInstanceConte
 
 export function getCourseInstanceContext(
   resLocals: Record<string, any>,
-  authLevel: 'student',
+  pageType: 'student',
 ): StudentCourseInstanceContext;
 
 export function getCourseInstanceContext(
   resLocals: Record<string, any>,
-  authLevel: 'instructor',
+  pageType: 'instructor',
 ): StaffCourseInstanceContext;
 
 export function getCourseInstanceContext(
   resLocals: Record<string, any>,
-  authLevel: 'student' | 'instructor',
+  pageType: 'student' | 'instructor',
 ): StudentCourseInstanceContext | StaffCourseInstanceContext {
   const schema = run(() => {
-    if (authLevel === 'student') {
+    if (pageType === 'student') {
       return StudentCourseInstanceContextSchema;
     }
     return StaffCourseInstanceContextSchema;
@@ -189,4 +190,23 @@ export type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema
 export function getAssessmentContext(resLocals: Record<string, any>): StaffAssessmentContext {
   const schema = StaffAssessmentContextSchema;
   return schema.parse(resLocals);
+}
+
+export interface DangerousAuthzData {
+  authn_user: {
+    user_id: null;
+  };
+  user: {
+    user_id: null;
+  };
+}
+export function dangerousFullAuthzPermissions(): DangerousAuthzData {
+  return {
+    authn_user: {
+      user_id: null,
+    },
+    user: {
+      user_id: null,
+    },
+  };
 }
