@@ -21,18 +21,14 @@ def generate(data):
 
     data["correct_answers"]["simplify"] = pl.to_json(x**2 + x + 1)
 
-    B = sympy.symbols("B", positive=True)
-    data["correct_answers"]["assumptions"] = pl.to_json(sympy.sqrt(B**2))
+    b = sympy.symbols("B", positive=True)
+    data["correct_answers"]["assumptions"] = pl.to_json(sympy.sqrt(b**2))
 
-    C = sympy.symbols("C", nonpositive=True)
-    data["correct_answers"]["assumptions_2"] = pl.to_json(sympy.Abs(C))
+    c = sympy.symbols("C", nonpositive=True)
+    data["correct_answers"]["assumptions_2"] = pl.to_json(sympy.Abs(c))
 
     the = sympy.Function("the")
     beef = sympy.Function("beef")
 
     ans = the(y) + beef(y)
     data["correct_answers"]["custom_function_2"] = pl.to_json(ans)
-
-    test = sympy.Function("test")
-    ans2 = test(sympy.sqrt(x**2 / sympy.E**x))
-    data["correct_answers"]["formula_editor"] = pl.to_json(ans2)
