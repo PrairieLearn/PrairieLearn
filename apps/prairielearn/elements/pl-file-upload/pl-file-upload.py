@@ -77,11 +77,11 @@ def get_answer_name(
     optional_file_patterns: str | None = None,
 ) -> str:
     """
-    Compute the unique identifer of a pl-file-upload element, which is the SHA1 hash of all its
+    Compute the unique identifier of a pl-file-upload element, which is the SHA1 hash of all its
     file name attributes
 
     Returns:
-        The unique identifer of a pl-file-upload element
+        The unique identifier of a pl-file-upload element
     """
     # Using / as separator as the only character guaranteed not to appear in file names
     combined_name = (
