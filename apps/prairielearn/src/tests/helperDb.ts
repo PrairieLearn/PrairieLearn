@@ -112,7 +112,7 @@ async function databaseExists(dbName: string): Promise<boolean> {
   return existsResult;
 }
 
-async function createTestDatabase() {
+async function setupDatabases(): Promise<void> {
   const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
   const dbName = getDatabaseNameForCurrentWorker();
   if (!templateExists) {
@@ -272,7 +272,7 @@ export async function resetDatabase(): Promise<void> {
 }
 
 export function getDatabaseNameForCurrentWorker(): string {
-  return postgresTestUtils.getDatabaseNameForCurrentTestWorker();
+  return postgresTestUtils.getDatabaseNameForCurrentMochaWorker();
 }
 
 class RollbackTransactionError extends Error {
