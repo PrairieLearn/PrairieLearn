@@ -163,10 +163,11 @@ export class PostgresPool {
    * ultimately lead to a deadlock.
    */
   private alsClient = new AsyncLocalStorage<pg.PoolClient>();
+  /** The latest pgConfig used to initialize the pool. */
+  private pgConfig: PostgresPoolConfig | null = null;
   private searchSchema: string | null = null;
   /** Tracks the total number of queries executed by this pool. */
   private _queryCount = 0;
-  private errorOnUnusedParameters = false;
 
   /**
    * Creates a new connection pool and attempts to connect to the database.
@@ -222,12 +223,21 @@ export class PostgresPool {
   }
 
   /**
+   * Returns the configuration of the currently-initialized pool, or null if the pool is not open.
+   */
+  getConfig() {
+    console.log('getConfig', this.pgConfig);
+    return this.pgConfig;
+  }
+
+  /**
    * Closes the connection pool.
    */
   async closeAsync(): Promise<void> {
     if (!this.pool) return;
     await this.pool.end();
     this.pool = null;
+    this.pgConfig = null;
   }
 
   /**
@@ -290,7 +300,11 @@ export class PostgresPool {
     this._queryCount += 1;
     debug('queryWithClient()', 'sql:', debugString(sql));
     debug('queryWithClient()', 'params:', debugParams(params));
-    const { processedSql, paramsArray } = paramsToArray(sql, params, this.errorOnUnusedParameters);
+    const { processedSql, paramsArray } = paramsToArray(
+      sql,
+      params,
+      this.pgConfig!.errorOnUnusedParameters!,
+    );
     try {
       lastQueryMap.set(client, processedSql);
       const result = await client.query(processedSql, paramsArray);
@@ -829,7 +843,11 @@ export class PostgresPool {
     this._queryCount += 1;
     debug('queryCursorWithClient()', 'sql:', debugString(sql));
     debug('queryCursorWithClient()', 'params:', debugParams(params));
-    const { processedSql, paramsArray } = paramsToArray(sql, params, this.errorOnUnusedParameters);
+    const { processedSql, paramsArray } = paramsToArray(
+      sql,
+      params,
+      this.pgConfig!.errorOnUnusedParameters!,
+    );
     lastQueryMap.set(client, processedSql);
     return client.query(new Cursor(processedSql, paramsArray));
   }
