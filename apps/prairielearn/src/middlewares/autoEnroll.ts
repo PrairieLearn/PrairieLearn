@@ -21,12 +21,18 @@ export default asyncHandler(async (req, res, next) => {
     course_instance_id: courseInstance.id,
   });
 
+  // Check if the self-enrollment institution restriction is satisfied
+  const institutionRestrictionSatisfied =
+    !courseInstance.self_enrollment_restrict_to_institution ||
+    res.locals.authn_user.institution_id === res.locals.course.institution_id;
+
   // If we have self-enrollment enabled, and it is before the enabled before date,
-  // then we can enroll the user.
+  // and the institution restriction is satisfied, then we can enroll the user.
   const selfEnrollmentAllowed =
     courseInstance.self_enrollment_enabled &&
     (courseInstance.self_enrollment_enabled_before_date == null ||
-      new Date() < courseInstance.self_enrollment_enabled_before_date);
+      new Date() < courseInstance.self_enrollment_enabled_before_date) &&
+    institutionRestrictionSatisfied;
 
   // If the user is not enrolled, and self-enrollment is allowed, then they can enroll.
   // If the user is enrolled and is invited/rejected/joined/removed, then they can join.
