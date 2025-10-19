@@ -1,3 +1,27 @@
+-- BLOCK select_next_instance_question_group_id
+SELECT
+  iqg.id AS instance_question_group_id
+FROM
+  instance_question_groups AS iqg
+WHERE
+  iqg.assessment_question_id = $assessment_question_id
+  AND iqg.id > $prior_instance_question_group_id
+ORDER BY
+  iqg.id
+LIMIT
+  1;
+
+-- BLOCK instance_question_group_id_for_instance_question
+SELECT
+  COALESCE(
+    manual_instance_question_group_id,
+    ai_instance_question_group_id
+  )
+FROM
+  instance_questions AS iq
+WHERE
+  id = $instance_question_id;
+
 -- BLOCK select_next_instance_question
 WITH
   instance_questions_to_grade AS (
@@ -12,6 +36,26 @@ WITH
     WHERE
       iq.assessment_question_id = $assessment_question_id
       AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
+      AND (
+        -- When using instance question groups:
+        -- If the previous instance question belongs to an instance question group, the next instance question must be in the same group.
+        -- If the previous instance question has no group, the next must not be in a group as well.
+        -- Otherwise, this filter has no effect.
+        NOT $use_instance_question_groups
+        OR (
+          COALESCE(
+            iq.manual_instance_question_group_id,
+            iq.ai_instance_question_group_id
+          ) = $prior_instance_question_group_id
+          OR (
+            COALESCE(
+              iq.manual_instance_question_group_id,
+              iq.ai_instance_question_group_id
+            ) IS NULL
+            AND $prior_instance_question_group_id IS NULL
+          )
+        )
+      )
       AND (
         $prior_instance_question_id::bigint IS NULL
         OR iq.id != $prior_instance_question_id
@@ -489,7 +533,11 @@ WITH
       score_perc = $score_perc,
       auto_points = COALESCE($auto_points, auto_points),
       manual_points = COALESCE($manual_points, manual_points),
-      status = 'complete',
+      -- If the question was unanswered, the status remains unanswered. Otherwise, it becomes complete.
+      status = CASE
+        WHEN iq.status = 'unanswered' THEN 'unanswered'::enum_instance_question_status
+        ELSE 'complete'::enum_instance_question_status
+      END,
       modified_at = now(),
       -- TODO: this might not be correct. Matt suggested that we might want to
       -- refactor `highest_submission_score` to track only auto points.

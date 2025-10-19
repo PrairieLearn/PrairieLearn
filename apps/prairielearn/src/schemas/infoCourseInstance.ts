@@ -55,10 +55,17 @@ export const CourseInstanceJsonSchema = z
           )
           .optional()
           .default(true),
+        restrictToInstitution: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment is restricted to users from the same institution as the course. If false, any user can self-enroll.',
+          )
+          .optional()
+          .default(true),
         beforeDate: z
           .string()
           .describe(
-            'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on the enabled property.',
+            'If specified, self-enrollment is allowed before this date and forbidden after this date. If not specified, self-enrollment depends on enabled property.',
           )
           .optional(),
         useEnrollmentCode: z

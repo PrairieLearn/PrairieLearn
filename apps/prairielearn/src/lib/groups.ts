@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
-import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
+import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
 import {
@@ -21,6 +21,7 @@ import {
   UserSchema,
 } from './db-types.js';
 import { idsEqual } from './id.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class GroupOperationError extends Error {
@@ -214,7 +215,7 @@ async function selectUserInCourseInstance({
       [user.user_id, course_instance_id],
       z.boolean(),
     )) ||
-    (await getEnrollmentForUserInCourseInstance({
+    (await selectOptionalEnrollmentByUserId({
       course_instance_id,
       user_id: user.user_id,
     }))

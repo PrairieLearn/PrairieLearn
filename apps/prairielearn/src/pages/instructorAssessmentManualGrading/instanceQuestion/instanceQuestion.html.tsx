@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -10,8 +12,7 @@ import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { GradingJobSchema, type User } from '../../../lib/db-types.js';
-import { renderHtml } from '../../../lib/preact-html.js';
+import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
@@ -29,9 +30,11 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  selectedInstanceQuestionGroup,
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
+  instanceQuestionGroups,
   skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
@@ -39,6 +42,7 @@ export function InstanceQuestion({
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  selectedInstanceQuestionGroup: InstanceQuestionGroup | null;
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   /**
@@ -47,8 +51,13 @@ export function InstanceQuestion({
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  instanceQuestionGroups?: InstanceQuestionGroup[];
   skipGradedSubmissions: boolean;
 }) {
+  const instanceQuestionGroupsExist = instanceQuestionGroups
+    ? instanceQuestionGroups.length > 0
+    : false;
+
   return PageLayout({
     resLocals: {
       ...resLocals,
@@ -81,6 +90,13 @@ export function InstanceQuestion({
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
+      ${EncodedData(
+        {
+          instanceQuestionId: resLocals.instance_question.id,
+          instanceQuestionGroupsExist,
+        },
+        'instance-question-data',
+      )}
     `,
     preContent: html`
       <div class="container-fluid">
@@ -176,6 +192,9 @@ export function InstanceQuestion({
                 context: 'main',
                 graders,
                 aiGradingInfo,
+                selectedInstanceQuestionGroup,
+                showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
+                instanceQuestionGroups,
                 skip_graded_submissions: skipGradedSubmissions,
               })}
             </div>
@@ -267,6 +286,7 @@ function ConflictGradingJobModal({
                     disable: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
+                    showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>
@@ -293,6 +313,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
+                    showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>

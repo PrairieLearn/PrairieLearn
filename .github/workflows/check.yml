@@ -38,7 +38,7 @@ jobs:
           sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'yarn'
@@ -80,6 +80,25 @@ jobs:
         run: make typecheck-contrib
       - name: Run the TypeScript typechecker for scripts
         run: make typecheck-scripts
+      - name: Start Postgres
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-16-pgvector
+          sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+
+          sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
+          fsync = off
+          full_page_writes = off
+          synchronous_commit = off
+          EOF
+
+          sudo systemctl restart postgresql.service
+      # We must migrate our database before we can typecheck the SQL.
+      - name: Run the SQL typechecker
+        run: |
+          yarn migrate
+          make typecheck-sql
       # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
@@ -107,7 +126,9 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install OS packages
-        run: sudo apt-get install -y graphviz libgraphviz-dev
+        run: |-
+          sudo apt-get update
+          sudo apt-get install -y graphviz libgraphviz-dev
 
       - name: Install additional dependencies
         run: |-
@@ -115,7 +136,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'
       - name: Install uv
@@ -127,7 +148,7 @@ jobs:
         run: make python-deps
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
       - name: Set up Yarn
@@ -151,7 +172,7 @@ jobs:
       - name: Run the HTML linter
         run: make lint-html
       - name: Upload Python coverage report to Codecov
-        uses: codecov/codecov-action@v5.5.0
+        uses: codecov/codecov-action@v5.5.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
@@ -165,14 +186,15 @@ jobs:
       - name: Install additional dependencies
         run: |-
           sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
-          sudo chmod +x /bin/hadolint && \
-          sudo apt-get install -y shellcheck
+          sudo chmod +x /bin/hadolint
 
       - name: Install OS packages
-        run: sudo apt-get install -y graphviz libgraphviz-dev
+        run: |-
+          sudo apt-get update
+          sudo apt-get install -y graphviz libgraphviz-dev shellcheck
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'
       - name: Install uv

@@ -2,10 +2,10 @@ import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HtmlSafeString, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
-import { renderHtml } from '../lib/preact-html.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
@@ -88,12 +88,12 @@ export function PageLayout({
     if (navContext.page === 'course_admin') {
       const navPageTabs = getNavPageTabs(true);
 
-      const courseAdminSettingsNavSubPages = navPageTabs.course_admin
-        ?.map((tab) => tab.activeSubPage)
-        .flat();
+      const courseAdminSettingsNavSubPages = navPageTabs.course_admin.flatMap(
+        (tab) => tab.activeSubPage,
+      );
 
       // If the user is on a course admin settings subpage, show ContextNavigation
-      if (navContext.subPage && courseAdminSettingsNavSubPages?.includes(navContext.subPage)) {
+      if (navContext.subPage && courseAdminSettingsNavSubPages.includes(navContext.subPage)) {
         showContextNavigation = true;
       } else {
         showContextNavigation = false;
@@ -101,12 +101,12 @@ export function PageLayout({
     } else if (navContext.page === 'instance_admin') {
       const navPageTabs = getNavPageTabs(true);
 
-      const instanceAdminSettingsNavSubPages = navPageTabs.instance_admin
-        ?.map((tab) => tab.activeSubPage)
-        .flat();
+      const instanceAdminSettingsNavSubPages = navPageTabs.instance_admin.flatMap(
+        (tab) => tab.activeSubPage,
+      );
 
       // If the user is on a instance admin settings subpage, show ContextNavigation
-      if (navContext.subPage && instanceAdminSettingsNavSubPages?.includes(navContext.subPage)) {
+      if (navContext.subPage && instanceAdminSettingsNavSubPages.includes(navContext.subPage)) {
         showContextNavigation = true;
       } else {
         showContextNavigation = false;
