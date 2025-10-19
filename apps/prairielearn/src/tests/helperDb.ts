@@ -112,7 +112,7 @@ async function databaseExists(dbName: string): Promise<boolean> {
   return existsResult;
 }
 
-async function createTestDatabase() {
+async function setupDatabases() {
   const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
   const dbName = getDatabaseNameForCurrentWorker();
   if (!templateExists) {

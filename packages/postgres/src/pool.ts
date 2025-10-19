@@ -179,7 +179,6 @@ export class PostgresPool {
     if (this.pool != null) {
       throw new Error('Postgres pool already initialized');
     }
-    this.errorOnUnusedParameters = pgConfig.errorOnUnusedParameters ?? false;
     this.pool = new pg.Pool(pgConfig);
     this.pool.on('error', function (err, client) {
       const lastQuery = lastQueryMap.get(client);
@@ -226,7 +225,6 @@ export class PostgresPool {
    * Returns the configuration of the currently-initialized pool, or null if the pool is not open.
    */
   getConfig() {
-    console.log('getConfig', this.pgConfig);
     return this.pgConfig;
   }
 
