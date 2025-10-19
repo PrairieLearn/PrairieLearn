@@ -50,7 +50,7 @@ export function checkStudentAssessmentAccess(req: Request, res: Response): boole
   // case of an existing assessment instance. This middleware can't handle
   // the intricacies of creating a new assessment instance. We handle those
   // cases on the `studentAssessment` page.
-  if (res.locals?.assessment_instance?.open && !checkPasswordOrRedirect(req, res)) {
+  if (res.locals.assessment_instance?.open && !checkPasswordOrRedirect(req, res)) {
     return false;
   }
 

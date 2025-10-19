@@ -6,7 +6,6 @@ import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -27,7 +26,6 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
-import type { AssessmentJson } from '../schemas/index.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -193,8 +191,16 @@ export function getUniqueNames({
  * `defaultValue` may be either a value to compare directly with `===`, or a function
  * that accepts a value and returns a boolean to indicate if it should be considered
  * a default value.
+ *
+ * You should set `isUIBoolean` to true if the property is a UI boolean that controls whether another field is enabled.
+ * For example, `beforeDateEnabled` is a UI boolean that controls whether the `beforeDate` field is enabled.
  */
-export function propertyValueWithDefault(existingValue: any, newValue: any, defaultValue: any) {
+export function propertyValueWithDefault(
+  existingValue: any,
+  newValue: any,
+  defaultValue: any,
+  { isUIBoolean = false }: { isUIBoolean?: boolean } = {},
+) {
   const isExistingDefault =
     typeof defaultValue === 'function'
       ? defaultValue(existingValue)
@@ -202,10 +208,17 @@ export function propertyValueWithDefault(existingValue: any, newValue: any, defa
   const isNewDefault =
     typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
 
+  // If this is a UI boolean where the default value is false, we want to write that out as false, not as undefined.
+  const writeFalse = isUIBoolean && defaultValue === false && newValue === false;
+  if (writeFalse) {
+    return false;
+  }
+
   if (existingValue === undefined) {
     if (!isNewDefault) {
       return newValue;
     }
+    return undefined;
   } else {
     if (!isExistingDefault && isNewDefault) {
       return undefined;
@@ -640,7 +653,7 @@ export class AssessmentCopyEditor extends Editor {
     this.assessment = assessment;
     this.course_instance = course_instance;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {
@@ -831,7 +844,7 @@ export class AssessmentAddEditor extends Editor {
 
     this.course_instance = course_instance;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.aid = params.aid;
     this.title = params.title;
@@ -945,7 +958,7 @@ export class CourseInstanceCopyEditor extends Editor {
     this.from_path = params.from_path;
     this.is_transfer = is_transfer;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {
@@ -958,8 +971,6 @@ export class CourseInstanceCopyEditor extends Editor {
     const oldNamesLong = await sqldb.queryRows(
       sql.select_course_instances_with_course,
       { course_id: this.course.id },
-      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
-      // course instances, which should always have a non-null long name.
       z.string(),
     );
 
@@ -1047,7 +1058,7 @@ export class CourseInstanceCopyEditor extends Editor {
           // All non-deleted questions should have a UUID.
           assert(question.uuid, 'question.uuid is required');
 
-          if (existingQuestionUuids.has(question.uuid)) return uuidv4();
+          if (existingQuestionUuids.has(question.uuid)) return crypto.randomUUID();
 
           return question.uuid;
         });
@@ -1270,7 +1281,7 @@ export class CourseInstanceAddEditor extends Editor {
       description: 'Add course instance',
     });
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.short_name = params.short_name;
     this.long_name = params.long_name;
@@ -1405,7 +1416,7 @@ export class QuestionAddEditor extends Editor {
       description: 'Add question',
     });
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
     this.qid = params.qid;
     this.title = params.title;
     this.template_source = params.template_source;
@@ -1426,8 +1437,10 @@ export class QuestionAddEditor extends Editor {
           z.number(),
         );
 
-        while (fs.existsSync(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))) {
-          //increment and sync to postgres
+        while (
+          await fs.pathExists(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))
+        ) {
+          // increment and sync to postgres
           draftNumber = await sqldb.queryRow(
             sql.update_draft_number,
             { course_id: this.course.id },
@@ -1439,8 +1452,7 @@ export class QuestionAddEditor extends Editor {
       }
 
       debug('Get all existing long names');
-      const questionMetadata = await selectQuestionTitlesForCourse(this.course);
-      const oldNamesLong = questionMetadata.filter((title) => title !== null);
+      const oldNamesLong = await selectQuestionTitlesForCourse(this.course);
 
       debug('Get all existing short names');
       const oldNamesShort = await getExistingShortNames(questionsPath, 'info.json');
@@ -1785,14 +1797,14 @@ export class QuestionRenameEditor extends Editor {
       pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
-      const infoJson: AssessmentJson = await fs.readJson(infoPath);
+      const infoJson: any = await fs.readJson(infoPath);
 
       debug(`Find/replace QID in ${infoPath}`);
-      let found = false;
-      infoJson.zones?.forEach((zone) => {
-        zone.questions.forEach((question) => {
+      let found = false as boolean;
+      infoJson.zones?.forEach((zone: any) => {
+        zone.questions?.forEach((question: any) => {
           if (question.alternatives) {
-            question.alternatives.forEach((alternative: any) => {
+            question.alternatives?.forEach((alternative: any) => {
               if (alternative.id === this.question.qid) {
                 alternative.id = this.qid_new;
                 found = true;
@@ -1850,7 +1862,7 @@ export class QuestionCopyEditor extends Editor {
     this.from_course = from_course;
     this.is_transfer = is_transfer;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {

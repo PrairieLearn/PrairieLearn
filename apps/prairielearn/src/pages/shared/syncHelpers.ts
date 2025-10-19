@@ -220,7 +220,7 @@ export async function ecrUpdate(
   });
 
   serverJob.executeInBackground(async (job) => {
-    await async.eachOfSeries(images ?? [], async (image) => {
+    await async.eachOfSeries(images, async (image) => {
       job.info(`Pull image from Docker Hub and push to PL registry: ${image.image}`);
       await pullAndPushToECR(image.image, auth, job);
     });

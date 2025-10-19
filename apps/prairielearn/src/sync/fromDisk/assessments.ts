@@ -4,7 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { assertNever } from '../../lib/types.js';
 import {
@@ -93,6 +93,7 @@ function getParamsForAssessment(
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
+      allow_real_time_grading: zone.allowRealTimeGrading,
       grade_rate_minutes: zone.gradeRateMinutes,
       json_can_view: zone.canView,
       json_can_submit: zone.canSubmit,
@@ -107,6 +108,7 @@ function getParamsForAssessment(
   const assessmentCanSubmit = assessment.canSubmit.length > 0 ? assessment.canSubmit : allRoleNames;
   const alternativeGroups = assessment.zones.map((zone) => {
     const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
+    const zoneAllowRealTimeGrading = zone.allowRealTimeGrading ?? assessment.allowRealTimeGrading;
     const zoneCanView = zone.canView.length > 0 ? zone.canView : assessmentCanView;
     const zoneCanSubmit = zone.canSubmit.length > 0 ? zone.canSubmit : assessmentCanSubmit;
     return zone.questions.map((question) => {
@@ -119,7 +121,7 @@ function getParamsForAssessment(
           'id' | 'maxPoints' | 'points' | 'maxAutoPoints' | 'autoPoints' | 'manualPoints'
         > & {
           qid: QuestionAlternativeJson['id'];
-          jsonGradeRateMinutes: QuestionAlternativeJson['gradeRateMinutes'];
+          allowRealTimeGrading: boolean;
           canView: ZoneQuestionJson['canView'];
           canSubmit: ZoneQuestionJson['canSubmit'];
           maxPoints: number | null;
@@ -127,8 +129,19 @@ function getParamsForAssessment(
           maxAutoPoints: number | null;
           autoPoints: number | number[] | null;
           manualPoints: number | null;
+          jsonAllowRealTimeGrading: boolean | undefined;
+          jsonAutoPoints: number | number[] | null;
+          jsonForceMaxPoints: boolean | null;
+          jsonGradeRateMinutes: QuestionAlternativeJson['gradeRateMinutes'];
+          jsonManualPoints: number | null;
+          jsonMaxPoints: number | null;
+          jsonMaxAutoPoints: number | null;
+          jsonPoints: number | number[] | null;
+          jsonTriesPerVariant: number | null;
         })[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
+      const questionAllowRealTimeGrading =
+        question.allowRealTimeGrading ?? zoneAllowRealTimeGrading;
       const questionCanView = question.canView.length > 0 ? question.canView : zoneCanView;
       const questionCanSubmit = question.canSubmit.length > 0 ? question.canSubmit : zoneCanSubmit;
       if (question.alternatives) {
@@ -144,10 +157,20 @@ function getParamsForAssessment(
             triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant,
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
-            jsonGradeRateMinutes: alternative.gradeRateMinutes,
+            allowRealTimeGrading:
+              alternative.allowRealTimeGrading ?? questionAllowRealTimeGrading ?? true,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             comment: alternative.comment,
+            jsonAllowRealTimeGrading: alternative.allowRealTimeGrading,
+            jsonAutoPoints: alternative.autoPoints ?? null,
+            jsonForceMaxPoints: alternative.forceMaxPoints ?? null,
+            jsonGradeRateMinutes: alternative.gradeRateMinutes,
+            jsonManualPoints: alternative.manualPoints ?? null,
+            jsonMaxAutoPoints: alternative.maxAutoPoints ?? null,
+            jsonMaxPoints: alternative.maxPoints ?? null,
+            jsonPoints: alternative.points ?? null,
+            jsonTriesPerVariant: alternative.triesPerVariant ?? null,
           };
         });
       } else if (question.id) {
@@ -163,14 +186,23 @@ function getParamsForAssessment(
             triesPerVariant: question.triesPerVariant,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
-            jsonGradeRateMinutes: question.gradeRateMinutes,
+            allowRealTimeGrading: questionAllowRealTimeGrading ?? true,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             // If a question has alternatives, the comment is stored on the alternative
             // group, since each alternative can have its own comment. If this is
             // just a single question with no alternatives, the comment is stored on
             // the assessment question itself.
-            comment: question.alternatives ? undefined : question.comment,
+            comment: question.comment,
+            jsonAllowRealTimeGrading: question.allowRealTimeGrading,
+            jsonAutoPoints: question.autoPoints ?? null,
+            jsonForceMaxPoints: question.forceMaxPoints ?? null,
+            jsonGradeRateMinutes: question.gradeRateMinutes,
+            jsonManualPoints: question.manualPoints ?? null,
+            jsonMaxPoints: question.maxPoints ?? null,
+            jsonMaxAutoPoints: question.maxAutoPoints ?? null,
+            jsonPoints: question.points ?? null,
+            jsonTriesPerVariant: question.triesPerVariant ?? null,
           },
         ];
       }
@@ -183,31 +215,35 @@ function getParamsForAssessment(
         const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
         const manualPoints = (hasSplitPoints ? alternative.manualPoints : 0) ?? 0;
 
-        if (assessment.type === 'Exam') {
-          const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
-          const maxPoints = Math.max(...pointsList);
+        switch (assessment.type) {
+          case 'Exam': {
+            const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+            const maxPoints = Math.max(...pointsList);
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints: undefined,
-            pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
-          };
-        } else if (assessment.type === 'Homework') {
-          const initPoints =
-            (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
-          const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
+            return {
+              ...alternative,
+              hasSplitPoints,
+              maxPoints,
+              initPoints: undefined,
+              pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
+            };
+          }
+          case 'Homework': {
+            const initPoints =
+              (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
+            const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints,
-            pointsList: undefined,
-          };
-        } else {
-          assertNever(assessment.type);
+            return {
+              ...alternative,
+              hasSplitPoints,
+              maxPoints,
+              initPoints,
+              pointsList: undefined,
+            };
+          }
+          default: {
+            assertNever(assessment.type);
+          }
         }
       });
 
@@ -223,10 +259,13 @@ function getParamsForAssessment(
           init_points: alternative.initPoints,
           max_points: alternative.maxPoints,
           manual_points: alternative.manualPoints,
-          force_max_points: alternative.forceMaxPoints,
-          tries_per_variant: alternative.triesPerVariant,
+          force_max_points: alternative.forceMaxPoints ?? false,
+          tries_per_variant: alternative.triesPerVariant ?? 1,
           grade_rate_minutes: alternative.gradeRateMinutes,
-          json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
+          // This is the "resolved" setting that takes into account configuration at
+          // all levels of the assessment hierarchy, with lower levels overriding
+          // higher ones.
+          allow_real_time_grading: alternative.allowRealTimeGrading,
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
@@ -239,6 +278,15 @@ function getParamsForAssessment(
             assessment.advanceScorePerc ??
             0,
           comment: alternative.comment,
+          json_allow_real_time_grading: alternative.jsonAllowRealTimeGrading,
+          json_auto_points: alternative.jsonAutoPoints,
+          json_force_max_points: alternative.jsonForceMaxPoints,
+          json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
+          json_points: alternative.jsonPoints,
+          json_manual_points: alternative.jsonManualPoints,
+          json_max_points: alternative.jsonMaxPoints,
+          json_max_auto_points: alternative.jsonMaxAutoPoints,
+          json_tries_per_variant: alternative.jsonTriesPerVariant,
         };
       });
 
@@ -246,14 +294,22 @@ function getParamsForAssessment(
         number: alternativeGroupNumber,
         number_choose: question.numberChoose ?? null,
         advance_score_perc: question.advanceScorePerc,
-        json_grade_rate_minutes: question.gradeRateMinutes,
-        json_can_view: question.canView,
-        json_can_submit: question.canSubmit,
-        json_has_alternatives: !!question.alternatives,
         questions,
         // If the question doesn't have any alternatives, we store the comment
         // on the assessment question itself, not the alternative group.
         comment: question.alternatives ? question.comment : undefined,
+        json_allow_real_time_grading: question.allowRealTimeGrading,
+        json_auto_points: question.autoPoints ?? null,
+        json_can_view: question.canView,
+        json_can_submit: question.canSubmit,
+        json_force_max_points: question.forceMaxPoints ?? null,
+        json_grade_rate_minutes: question.gradeRateMinutes,
+        json_has_alternatives: !!question.alternatives,
+        json_manual_points: question.manualPoints ?? null,
+        json_max_points: question.maxPoints ?? null,
+        json_max_auto_points: question.maxAutoPoints ?? null,
+        json_points: question.points ?? null,
+        json_tries_per_variant: question.triesPerVariant ?? null,
       };
     });
   });
@@ -276,7 +332,7 @@ function getParamsForAssessment(
         ? assessment.type === 'Exam'
         : assessment.shuffleQuestions,
     allow_issue_reporting: assessment.allowIssueReporting,
-    allow_real_time_grading: assessment.allowRealTimeGrading,
+    json_allow_real_time_grading: assessment.allowRealTimeGrading,
     allow_personal_notes: assessment.allowPersonalNotes,
     // If requireHonorCode is not set, it's implicitly false for Homework and true for Exams.
     // NOTE: There are various homeworks with requireHonorCode set to true in the database (see #12675 for more details)
@@ -415,12 +471,11 @@ export async function sync(
     ]);
   });
 
-  await sqldb.callAsync('sync_assessments', [
-    assessmentParams,
-    courseId,
-    courseInstanceId,
-    config.checkSharingOnSync,
-  ]);
+  await sqldb.callRow(
+    'sync_assessments',
+    [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
+    SprocSyncAssessmentsSchema,
+  );
 }
 
 export async function validateAssessmentSharedQuestions(

@@ -5,6 +5,7 @@ import type z from 'zod';
 
 import {
   RawStaffEnrollmentSchema,
+  RawStudentEnrollmentSchema,
   StaffAlternativeGroupSchema,
   StaffAssessmentInstanceSchema,
   StaffAssessmentQuestionSchema,
@@ -73,12 +74,16 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   course_id: '1',
   deleted_at: null,
   display_timezone: 'UTC',
-  enrollment_code: 'aaaaaaaaaaa',
+  enrollment_code: 'AAABBBCCCC',
   enrollment_limit: null,
   hide_in_enroll_page: null,
   id: '3',
   json_comment: null,
   long_name: null,
+  self_enrollment_enabled: true,
+  self_enrollment_enabled_before_date: null,
+  self_enrollment_restrict_to_institution: true,
+  self_enrollment_use_enrollment_code: false,
   share_source_publicly: false,
   short_name: null,
   sync_errors: null,
@@ -122,7 +127,6 @@ const minimalStaffAssessment: z.input<typeof StaffAssessmentSchema> = {
   advance_score_perc: null,
   allow_issue_reporting: null,
   allow_personal_notes: false,
-  allow_real_time_grading: null,
   assessment_module_id: null,
   assessment_set_id: null,
   auto_close: null,
@@ -139,6 +143,7 @@ const minimalStaffAssessment: z.input<typeof StaffAssessmentSchema> = {
   group_work: null,
   honor_code: null,
   id: '2',
+  json_allow_real_time_grading: null,
   json_can_submit: null,
   json_can_view: null,
   json_comment: null,
@@ -179,7 +184,6 @@ const minimalStudentAssessment: z.input<typeof StudentAssessmentSchema> = {
   advance_score_perc: null,
   allow_issue_reporting: null,
   allow_personal_notes: false,
-  allow_real_time_grading: null,
   assessment_module_id: null,
   assessment_set_id: null,
   auto_close: null,
@@ -274,8 +278,8 @@ const minimalStudentAssessmentSet: z.input<typeof StudentAssessmentSetSchema> = 
 const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   course_instance_id: '10',
   created_at: new Date(),
+  first_joined_at: new Date(),
   id: '1',
-  joined_at: new Date(),
   lti_managed: false,
   pending_lti13_email: null,
   pending_lti13_instance_id: null,
@@ -284,6 +288,17 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   pending_uid: null,
   status: 'joined',
   user_id: '1',
+};
+
+const minimalStudentEnrollment: z.input<typeof RawStudentEnrollmentSchema> = {
+  course_instance_id: '10',
+  created_at: new Date(),
+  first_joined_at: new Date(),
+  id: '1',
+  lti_managed: false,
+  pending_uid: null,
+  status: 'joined',
+  user_id: null,
 };
 
 const minimalStaffAuditEvent: z.input<typeof StaffAuditEventSchema> = {
@@ -312,11 +327,19 @@ const minimalStaffAlternativeGroup: z.input<typeof StaffAlternativeGroupSchema> 
   advance_score_perc: null,
   assessment_id: '2',
   id: '5',
+  json_allow_real_time_grading: null,
+  json_auto_points: null,
   json_can_submit: null,
   json_can_view: null,
   json_comment: null,
+  json_force_max_points: null,
   json_grade_rate_minutes: null,
   json_has_alternatives: null,
+  json_manual_points: null,
+  json_max_auto_points: null,
+  json_max_points: null,
+  json_points: null,
+  json_tries_per_variant: null,
   number: null,
   number_choose: null,
   zone_id: '6',
@@ -325,6 +348,7 @@ const minimalStaffAlternativeGroup: z.input<typeof StaffAlternativeGroupSchema> 
 const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSchema> = {
   advance_score_perc: null,
   ai_grading_mode: false,
+  allow_real_time_grading: true,
   alternative_group_id: null,
   assessment_id: '2',
   average_average_submission_score: null,
@@ -347,8 +371,16 @@ const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSche
   incremental_submission_score_array_averages: null,
   incremental_submission_score_array_variances: null,
   init_points: null,
+  json_allow_real_time_grading: null,
+  json_auto_points: null,
   json_comment: null,
+  json_force_max_points: null,
   json_grade_rate_minutes: null,
+  json_manual_points: null,
+  json_max_auto_points: null,
+  json_max_points: null,
+  json_points: null,
+  json_tries_per_variant: null,
   last_submission_score_hist: null,
   last_submission_score_variance: null,
   manual_rubric_id: null,
@@ -378,8 +410,8 @@ const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSche
 const minimalStaffEnrollment: z.input<typeof StaffEnrollmentSchema> = {
   course_instance_id: '3',
   created_at: null,
+  first_joined_at: null,
   id: '9',
-  joined_at: null,
   lti_managed: false,
   pending_lti13_email: null,
   pending_lti13_instance_id: null,
@@ -470,6 +502,7 @@ const minimalStaffZone: z.input<typeof StaffZoneSchema> = {
   assessment_id: '2',
   best_questions: null,
   id: '6',
+  json_allow_real_time_grading: null,
   json_can_submit: null,
   json_can_view: null,
   json_comment: null,
@@ -524,6 +557,12 @@ describe('safe-db-types schemas', () => {
     const parsed = RawStaffEnrollmentSchema.parse({ ...minimalRawStaffEnrollment, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalRawStaffEnrollment);
+  });
+
+  it('parses valid RawStudentEnrollment and drops extra fields', () => {
+    const parsed = RawStudentEnrollmentSchema.parse({ ...minimalStudentEnrollment, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStudentEnrollment);
   });
 
   it('rejects invalid RawStaffEnrollment status', () => {

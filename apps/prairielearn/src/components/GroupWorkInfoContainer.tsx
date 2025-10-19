@@ -193,11 +193,14 @@ function GroupRoleTable({
                                   !userCanAssignRoles
                                     ? 'disabled'
                                     : ''}
-                                  ${rolesInfo.roleAssignments[user.uid]?.some((a) =>
-                                    idsEqual(a.group_role_id, role.id),
-                                  )
-                                    ? 'checked'
-                                    : ''}
+                                  ${
+                                    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                                    rolesInfo.roleAssignments[user.uid]?.some((a) =>
+                                      idsEqual(a.group_role_id, role.id),
+                                    )
+                                      ? 'checked'
+                                      : ''
+                                  }
                                 />
                                 ${role.role_name}
                               </label>
@@ -271,7 +274,7 @@ function GroupRoleErrors({
           </div>
         `
       : ''}
-    ${rolesInfo.validationErrors?.map(
+    ${rolesInfo.validationErrors.map(
       ({ role_name, count, minimum, maximum }) => html`
         <div class="alert alert-danger" role="alert">
           ${minimum != null && count < minimum
@@ -294,7 +297,7 @@ function GroupRoleErrors({
         </div>
       `,
     )}
-    ${rolesInfo.usersWithoutRoles?.length > 0
+    ${rolesInfo.usersWithoutRoles.length > 0
       ? html`
           <div class="alert alert-danger" role="alert">
             At least one user does not have a role. All users must have a role.

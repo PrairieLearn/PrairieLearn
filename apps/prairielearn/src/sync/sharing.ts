@@ -7,6 +7,7 @@ import { type ServerJobLogger } from '../lib/server-jobs.js';
 
 import { type CourseData } from './course-db.js';
 import { isDraftQid } from './question.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface SharedQuestion {
@@ -34,7 +35,7 @@ export function getInvalidRenames(
 ): boolean {
   const invalidRenames: string[] = [];
   sharedQuestions.forEach((question) => {
-    if (!courseData.questions[question.qid]) {
+    if (!(question.qid in courseData.questions)) {
       invalidRenames.push(question.qid);
     }
   });
@@ -115,7 +116,7 @@ export function checkInvalidSharingSetAdditions(
     const questionSharingSets = question.data?.sharingSets || [];
     questionSharingSets.forEach((sharingSet) => {
       if (!sharingSetNames.has(sharingSet)) {
-        if (!invalidSharingSetAdditions[qid]) {
+        if (!(qid in invalidSharingSetAdditions)) {
           invalidSharingSetAdditions[qid] = [];
         }
         invalidSharingSetAdditions[qid].push(sharingSet);
@@ -154,7 +155,7 @@ export async function checkInvalidSharingSetRemovals(
 
   const invalidSharingSetRemovals: Record<string, string[]> = {};
   sharedQuestions.forEach((question) => {
-    if (!courseData.questions[question.qid]) {
+    if (!(question.qid in courseData.questions)) {
       // this case is handled by the checks for shared questions being
       // renamed or deleted
       return;
@@ -167,7 +168,7 @@ export async function checkInvalidSharingSetRemovals(
     question.sharing_sets.forEach((sharingSet) => {
       // TODO: allow if the sharing set hasn't been shared to a course
       if (!courseData.questions[question.qid].data?.sharingSets?.includes(sharingSet)) {
-        if (!invalidSharingSetRemovals[question.qid]) {
+        if (!(question.qid in invalidSharingSetRemovals)) {
           invalidSharingSetRemovals[question.qid] = [];
         }
         invalidSharingSetRemovals[question.qid].push(sharingSet);
@@ -201,7 +202,7 @@ export function checkInvalidSharedAssessments(
       if (!assessment.data?.shareSourcePublicly) {
         continue;
       }
-      for (const zone of assessment.data?.zones ?? []) {
+      for (const zone of assessment.data.zones) {
         for (const question of zone.questions) {
           if (!question.id) {
             continue;

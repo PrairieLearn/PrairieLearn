@@ -1,5 +1,17 @@
 # @prairielearn/aws
 
+## 2.0.20
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 2.0.19
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
 ## 2.0.18
 
 ### Patch Changes
