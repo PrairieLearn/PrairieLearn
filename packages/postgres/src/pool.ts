@@ -179,6 +179,7 @@ export class PostgresPool {
     if (this.pool != null) {
       throw new Error('Postgres pool already initialized');
     }
+    this.pgConfig = pgConfig;
     this.pool = new pg.Pool(pgConfig);
     this.pool.on('error', function (err, client) {
       const lastQuery = lastQueryMap.get(client);
