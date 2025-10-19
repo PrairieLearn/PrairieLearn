@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 
+import { compiledScriptTag } from '../../lib/assets.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -142,6 +143,7 @@ export function InstructorCourseAdminSharing({
     options: {
       fullWidth: true,
     },
+    headContent: html`${compiledScriptTag('instructorCourseAdminSharingClient.ts')}`,
     content: html`
       ${renderHtml(
         <CourseSyncErrorsAndWarnings
@@ -190,8 +192,9 @@ export function InstructorCourseAdminSharing({
                   ${sharingToken}
                   <button
                     type="button"
-                    class="btn btn-xs btn-secondary mx-2"
-                    onclick="navigator.clipboard.writeText('${sharingToken}');"
+                    class="btn btn-copy btn-xs btn-secondary mx-2"
+                    data-clipboard-text="${sharingToken}"
+                    aria-label="Copy"
                   >
                     <i class="fa fa-copy"></i>
                     <span>Copy</span>
@@ -220,8 +223,8 @@ export function InstructorCourseAdminSharing({
                   <a href="${publicSharingLink}" target="_blank">${publicSharingLink}</a>
                   <button
                     type="button"
-                    class="btn btn-xs btn-secondary mx-2"
-                    onclick="navigator.clipboard.writeText('${publicSharingLink}');"
+                    class="btn btn-copy btn-xs btn-secondary mx-2"
+                    data-clipboard-text="${publicSharingLink}"
                   >
                     <i class="fa fa-copy"></i>
                     <span>Copy</span>
