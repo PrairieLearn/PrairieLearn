@@ -93,6 +93,7 @@ router.post('/', [
         course,
         courseInstance: course_instance,
         authzData: res.locals.authz_data,
+        requiredRoleOptions: 'Student',
         actionDetail: 'explicit_joined',
       });
 

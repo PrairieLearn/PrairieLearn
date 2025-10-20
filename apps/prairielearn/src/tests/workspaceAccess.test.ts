@@ -53,7 +53,7 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
       userId: studentOneUser.user_id,
       courseInstance,
       authzData: dangerousFullAuthzPermissions(),
-      roleNeeded: 'student',
+      requiredRoleOptions: 'Student',
       actionDetail: 'implicit_joined',
     });
 
@@ -62,7 +62,7 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
       userId: studentTwoUser.user_id,
       courseInstance,
       authzData: dangerousFullAuthzPermissions(),
-      roleNeeded: 'student',
+      requiredRoleOptions: 'Student',
       actionDetail: 'implicit_joined',
     });
 

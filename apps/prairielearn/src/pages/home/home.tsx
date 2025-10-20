@@ -145,7 +145,7 @@ router.post(
           courseInstance,
           userId,
           authzData: dangerousFullAuthzPermissions(),
-          roleNeeded: 'student',
+          requiredRoleOptions: 'Student',
           actionDetail: 'invitation_accepted',
         });
         break;
@@ -154,7 +154,7 @@ router.post(
         const enrollment = await selectOptionalEnrollmentByPendingUid({
           courseInstance,
           pendingUid: uid,
-          roleNeeded: 'student',
+          requiredRoleOptions: 'Student',
           authzData: dangerousFullAuthzPermissions(),
         });
 
@@ -169,7 +169,7 @@ router.post(
         await setEnrollmentStatus({
           enrollment,
           status: 'rejected',
-          roleNeeded: 'student',
+          requiredRoleOptions: 'Student',
           authzData: dangerousFullAuthzPermissions(),
         });
         break;
@@ -178,7 +178,7 @@ router.post(
         const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
           uid,
-          roleNeeded: 'student',
+          requiredRoleOptions: 'Student',
           authzData: dangerousFullAuthzPermissions(),
         });
 
@@ -189,7 +189,7 @@ router.post(
         await setEnrollmentStatus({
           enrollment,
           status: 'removed',
-          roleNeeded: 'student',
+          requiredRoleOptions: 'Student',
           authzData: dangerousFullAuthzPermissions(),
         });
         break;

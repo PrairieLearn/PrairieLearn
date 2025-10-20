@@ -3,7 +3,6 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import * as groupUpdate from '../lib/group-update.js';
 import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -31,8 +30,6 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
     const result = await generateAndEnrollUsers({
       count: 500,
       courseInstance,
-      roleNeeded: 'instructor',
-      authzData: dangerousFullAuthzPermissions(),
     });
     assert.equal(result.length, 500);
   });

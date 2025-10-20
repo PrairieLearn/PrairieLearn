@@ -3,7 +3,6 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { config } from '../lib/config.js';
 import { IdSchema, type User } from '../lib/db-types.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
@@ -44,8 +43,6 @@ describe('Instructor group controls', () => {
     users = await generateAndEnrollUsers({
       count: 5,
       courseInstance,
-      roleNeeded: 'instructor',
-      authzData: dangerousFullAuthzPermissions(),
     });
   });
 

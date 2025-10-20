@@ -6,7 +6,6 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema, GroupConfigSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -133,8 +132,6 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       const result = await generateAndEnrollUsers({
         count: 5,
         courseInstance,
-        roleNeeded: 'instructor',
-        authzData: dangerousFullAuthzPermissions(),
       });
       assert.lengthOf(result, 5);
       locals.studentUsers = result.slice(0, 3);

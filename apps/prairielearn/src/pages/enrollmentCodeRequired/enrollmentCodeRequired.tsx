@@ -29,8 +29,8 @@ router.get(
     // Lookup if they have an existing enrollment
     const existingEnrollment = await selectOptionalEnrollmentByUserId({
       userId: res.locals.authn_user.user_id,
-      courseInstance: courseInstance,
-      roleNeeded: 'student',
+      courseInstance,
+      requiredRoleOptions: 'Student',
       authzData: res.locals.authz_data,
     });
 
@@ -62,6 +62,7 @@ router.get(
           course: res.locals.course,
           courseInstance: res.locals.course_instance,
           authzData: res.locals.authz_data,
+          requiredRoleOptions: 'Student',
           actionDetail: 'implicit_joined',
         });
       }

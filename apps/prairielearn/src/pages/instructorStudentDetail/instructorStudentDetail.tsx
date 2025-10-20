@@ -119,6 +119,8 @@ router.post(
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
+    const { authz_data: authzData } = getPageContext(res.locals);
+
     const { course_instance } = getCourseInstanceContext(res.locals, 'instructor');
 
     const action = req.body.__action;
@@ -128,6 +130,8 @@ router.post(
     const enrollment = await selectEnrollmentById({
       id: enrollment_id,
       courseInstance: course_instance,
+      requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
+      authzData,
     });
     if (enrollment.course_instance_id !== course_instance.id) {
       throw new HttpStatusError(400, 'Enrollment does not belong to the course instance');
@@ -141,7 +145,7 @@ router.post(
         await setEnrollmentStatus({
           enrollment,
           status: 'blocked',
-          roleNeeded: 'instructor',
+          requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
           authzData: res.locals.authz_data,
         });
         res.redirect(req.originalUrl);
@@ -154,7 +158,7 @@ router.post(
         await setEnrollmentStatus({
           enrollment,
           status: 'joined',
-          roleNeeded: 'instructor',
+          requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
           authzData: res.locals.authz_data,
         });
         res.redirect(req.originalUrl);
@@ -167,7 +171,7 @@ router.post(
         await deleteEnrollment({
           enrollment,
           actionDetail: 'invitation_deleted',
-          roleNeeded: 'instructor',
+          requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
           authzData: res.locals.authz_data,
         });
         res.redirect(
@@ -185,7 +189,7 @@ router.post(
         await inviteEnrollment({
           enrollment,
           pendingUid: enrollment.pending_uid,
-          roleNeeded: 'instructor',
+          requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
           authzData: res.locals.authz_data,
         });
         res.redirect(req.originalUrl);

@@ -10,7 +10,6 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { config } from '../lib/config.js';
 import {
   AssessmentSchema,
@@ -253,8 +252,6 @@ describe(
       locals.studentUsers = await generateAndEnrollUsers({
         count: 5,
         courseInstance,
-        roleNeeded: 'instructor',
-        authzData: dangerousFullAuthzPermissions(),
       });
       assert.lengthOf(locals.studentUsers, 5);
     });
@@ -1287,8 +1284,6 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     locals.studentUsers = await generateAndEnrollUsers({
       count: 5,
       courseInstance,
-      roleNeeded: 'instructor',
-      authzData: dangerousFullAuthzPermissions(),
     });
     assert.lengthOf(locals.studentUsers, 5);
 
@@ -1814,8 +1809,6 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     locals.studentUsers = await generateAndEnrollUsers({
       count: 5,
       courseInstance,
-      roleNeeded: 'instructor',
-      authzData: dangerousFullAuthzPermissions(),
     });
     assert.lengthOf(locals.studentUsers, 5);
   });

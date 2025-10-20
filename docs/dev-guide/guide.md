@@ -483,23 +483,19 @@ For most API/POST handlers, we want to lookup or modify data based on unvalidate
 // We want to prove that we are authorized to read the course instance.
 const courseInstance = await selectCourseInstance({
   id: course_instance_id,
-  context: {
-    roleNeeded: 'student',
-    authzData: res.locals.authz_data,
-  },
+  requiredRoleOptions: 'Student',
+  authzData: res.locals.authz_data,
 });
 
 const enrollment = await selectEnrollment({
   id: enrollment_id,
-  context: {
-    // What role are we trying to authorize as?
-    roleNeeded: 'student',
-    // Information to prove we are authorized to read the record.
-    // E.g. we need to prove that we have access to the course instance it's in,
-    // and that we have the correct permissions to read the enrollment record.
-    courseInstance,
-    authzData: res.locals.authz_data,
-  },
+  // What role are we trying to authorize as?
+  requiredRoleOptions: 'Student',
+  // Information to prove we are authorized to read the record.
+  // E.g. we need to prove that we have access to the course instance it's in,
+  // and that we have the correct permissions to read the enrollment record.
+  courseInstance,
+  authzData: res.locals.authz_data,
 });
 ```
 
@@ -511,17 +507,14 @@ Once you have a full row object, you have asserted that the caller is authorized
 await updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
-  context: {
-    // What role are we trying to authorize as?
-    roleNeeded: 'student',
-    // Information to prove we are authorized to write the record
-    authzData: res.locals.authz_data,
-    courseInstance: myEnrollment.course_instance,
-  },
+  // What role are we trying to authorize as?
+  requiredRoleOptions: 'Student',
+  // Information to prove we are authorized to write the record
+  authzData: res.locals.authz_data,
 });
 ```
 
-In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `roleNeeded` parameter is `'student'`, but the current user is an instructor, so it would throw an error.
+In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `requiredRoleOptions` parameter is `'student'`, but the current user is an instructor, so it would throw an error.
 
 In some cases, you may not have access to `authzData`, e.g. if are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullAuthzPermissions` function to build a dummy `authzData` object that allows you to perform the action.
 
@@ -529,11 +522,8 @@ In some cases, you may not have access to `authzData`, e.g. if are pulling data 
 const authzData = updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
-  context: {
-    roleNeeded: 'student',
-    authzData: dangerousFullAuthzPermissions(),
-    courseInstance: myEnrollment.course_instance,
-  },
+  requiredRoleOptions: 'Student',
+  authzData: dangerousFullAuthzPermissions(),
 });
 ```
 

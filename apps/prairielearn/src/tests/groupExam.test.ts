@@ -6,7 +6,6 @@ import z from 'zod';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -35,8 +34,6 @@ async function generateThreeStudentUsers() {
   const rows = await generateAndEnrollUsers({
     count: 3,
     courseInstance,
-    roleNeeded: 'instructor',
-    authzData: dangerousFullAuthzPermissions(),
   });
   assert.lengthOf(rows, 3);
   return rows;

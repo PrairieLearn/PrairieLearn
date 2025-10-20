@@ -5,7 +5,6 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { config } from '../lib/config.js';
 import {
   AssessmentInstanceSchema,
@@ -83,8 +82,6 @@ describe('assessment instance group synchronization test', function () {
       locals.studentUsers = await generateAndEnrollUsers({
         count: 3,
         courseInstance,
-        roleNeeded: 'instructor',
-        authzData: dangerousFullAuthzPermissions(),
       });
       assert.lengthOf(locals.studentUsers, 3);
       locals.groupCreator = locals.studentUsers[0];

@@ -62,7 +62,7 @@ describe(
         courseInstance,
         authzData: dangerousFullAuthzPermissions(),
         actionDetail: 'implicit_joined',
-        roleNeeded: 'student',
+        requiredRoleOptions: 'Student',
       });
     });
 

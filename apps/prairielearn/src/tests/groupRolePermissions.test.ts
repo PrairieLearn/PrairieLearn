@@ -4,7 +4,6 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema, GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -34,8 +33,6 @@ async function generateThreeStudentUsers() {
   const rows = await generateAndEnrollUsers({
     count: 3,
     courseInstance,
-    roleNeeded: 'instructor',
-    authzData: dangerousFullAuthzPermissions(),
   });
   assert.lengthOf(rows, 3);
   return rows;
