@@ -1,7 +1,6 @@
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
-import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import type { RawAuthzData } from './client/page-context.js';
@@ -261,8 +260,5 @@ export function assertHasRole(
   }
 
   // This suggests that the user is not authorized to perform the action.
-  logger.error(
-    `Access denied -- requestedRole: "${requestedRole}", courseInstanceRole: "${authzData.course_instance_role}", allowedRoles: "${allowedRoles.join('", "')}"`,
-  );
   throw new error.HttpStatusError(403, 'Access denied');
 }
