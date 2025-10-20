@@ -1,7 +1,10 @@
 import fetch from 'node-fetch';
-import { afterEach, assert, beforeEach, describe, it } from 'vitest';
+import { afterEach, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
+import { dangerousFullAuthzPermissions } from '../../../lib/client/page-context.js';
 import { config } from '../../../lib/config.js';
+import type { CourseInstance } from '../../../lib/db-types.js';
+import { selectCourseInstanceById } from '../../../models/course-instances.js';
 import { ensureEnrollment } from '../../../models/enrollment.js';
 import * as helperServer from '../../../tests/helperServer.js';
 import {
@@ -29,6 +32,11 @@ const studentUser: AuthUser = {
 
 describe('studentCourseInstanceUpgrade', () => {
   enableEnterpriseEdition();
+
+  let courseInstance: CourseInstance;
+  beforeAll(async () => {
+    courseInstance = await selectCourseInstanceById('1');
+  });
 
   beforeEach(helperServer.before());
   afterEach(helperServer.after);
@@ -82,9 +90,9 @@ describe('studentCourseInstanceUpgrade', () => {
     const user = await getOrCreateUser(studentUser);
     await ensureEnrollment({
       userId: user.user_id,
-      courseInstance: { id: '1' } as any,
+      courseInstance,
       roleNeeded: 'student',
-      authzData: { authn_user: { user_id: null } } as any,
+      authzData: dangerousFullAuthzPermissions(),
       actionDetail: 'implicit_joined',
     });
 
@@ -104,9 +112,9 @@ describe('studentCourseInstanceUpgrade', () => {
     const user = await getOrCreateUser(studentUser);
     await ensureEnrollment({
       userId: user.user_id,
-      courseInstance: { id: '1' } as any,
+      courseInstance,
       roleNeeded: 'student',
-      authzData: { authn_user: { user_id: null } } as any,
+      authzData: dangerousFullAuthzPermissions(),
       actionDetail: 'implicit_joined',
     });
 

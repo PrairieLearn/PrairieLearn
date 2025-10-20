@@ -208,32 +208,19 @@ async function selectUserInCourseInstance({
   const user = await selectOptionalUserByUid(uid);
   if (!user) return null;
 
+  const courseInstance = await selectOptionalCourseInstanceById(course_instance_id);
+  if (!courseInstance) return null;
+
   // To be part of a group, the user needs to either be enrolled in the course
   // instance, or be an instructor
   if (
     (await sqldb.callRow(
       'users_is_instructor_in_course_instance',
-      [user.user_id, course_instance_id],
+      [user.user_id, courseInstance.id],
       z.boolean(),
     )) ||
     (await selectOptionalEnrollmentByUserId({
-      courseInstance: {
-        id: course_instance_id,
-        deleted_at: null,
-        assessments_group_by: 'Set',
-        course_id: '',
-        display_timezone: 'America/Chicago',
-        enrollment_code: '',
-        enrollment_limit: null,
-        hide_in_enroll_page: false,
-        lti13_instance_id: null,
-        long_name: '',
-        short_name: '',
-        sync_enrollments: false,
-        sync_enrollments_display_name: null,
-        sync_enrollments_lti_advantage: false,
-        uuid: null,
-      } as any,
+      courseInstance,
       userId: user.user_id,
       roleNeeded: 'student',
       authzData: dangerousFullAuthzPermissions(),
@@ -244,12 +231,9 @@ async function selectUserInCourseInstance({
 
   // In the example course, any user with instructor access in any other
   // course should have access and thus be allowed to be added to a group.
-  const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
-  if (course_instance) {
-    const course = await selectCourseById(course_instance.course_id);
-    if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
-      return user;
-    }
+  const course = await selectCourseById(courseInstance.course_id);
+  if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+    return user;
   }
 
   // We do not distinguish between an invalid user and a user that is not in the course instance

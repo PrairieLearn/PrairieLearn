@@ -190,7 +190,7 @@ export async function ensureEnrollment({
 
     const inserted = await queryOptionalRow(
       sql.ensure_enrollment,
-      { course_instance_id: courseInstance.id, userId },
+      { course_instance_id: courseInstance.id, user_id: userId },
       EnrollmentSchema,
     );
     if (inserted) {

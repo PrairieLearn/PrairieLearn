@@ -201,6 +201,7 @@ export interface DangerousAuthzData {
     user_id: null;
   };
 }
+
 export function dangerousFullAuthzPermissions(): DangerousAuthzData {
   return {
     authn_user: {

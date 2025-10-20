@@ -1,5 +1,6 @@
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
+import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import type { Course, CourseInstance } from '../lib/db-types.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
@@ -57,7 +58,7 @@ export default async function ({
           count: Number(count),
           courseInstance: course_instance,
           roleNeeded: 'instructor',
-          authzData: { authn_user: { user_id: null } } as any,
+          authzData: dangerousFullAuthzPermissions(),
         });
   return {
     rows: users.map(({ user_id, uid, name }) => ({
