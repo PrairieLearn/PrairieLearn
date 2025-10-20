@@ -4,7 +4,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
@@ -208,8 +208,7 @@ async function selectUserInCourseInstance({
   const user = await selectOptionalUserByUid(uid);
   if (!user) return null;
 
-  const courseInstance = await selectOptionalCourseInstanceById(course_instance_id);
-  if (!courseInstance) return null;
+  const courseInstance = await selectCourseInstanceById(course_instance_id);
 
   // To be part of a group, the user needs to either be enrolled in the course
   // instance, or be an instructor

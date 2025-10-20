@@ -53,10 +53,7 @@ export default async function ({
   const users =
     course_instance == null
       ? await runInTransactionAsync(() => generateUsers(Number(count)))
-      : await generateAndEnrollUsers({
-          count: Number(count),
-          course_instance_id: course_instance.id,
-        });
+      : await generateAndEnrollUsers({ count: Number(count), course_instance_id });
   return {
     rows: users.map(({ user_id, uid, name }) => ({
       user_id,
