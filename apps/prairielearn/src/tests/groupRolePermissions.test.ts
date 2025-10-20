@@ -4,9 +4,11 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
+import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema, GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
@@ -28,11 +30,12 @@ const QUESTION_ID_3 = 'addNumbers';
 const GROUP_NAME = 'groupBB';
 
 async function generateThreeStudentUsers() {
+  const courseInstance = await selectCourseInstanceById('1');
   const rows = await generateAndEnrollUsers({
     count: 3,
-    courseInstance: { id: '1' } as any,
+    courseInstance,
     roleNeeded: 'instructor',
-    authzData: { authn_user: { user_id: null } } as any,
+    authzData: dangerousFullAuthzPermissions(),
   });
   assert.lengthOf(rows, 3);
   return rows;

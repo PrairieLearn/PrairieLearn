@@ -3,9 +3,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import * as groupUpdate from '../lib/group-update.js';
 import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -25,11 +27,12 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
   });
 
   test.sequential('create 500 users', async () => {
+    const courseInstance = await selectCourseInstanceById('1');
     const result = await generateAndEnrollUsers({
       count: 500,
-      courseInstance: { id: '1' } as any,
+      courseInstance,
       roleNeeded: 'instructor',
-      authzData: { authn_user: { user_id: null } } as any,
+      authzData: dangerousFullAuthzPermissions(),
     });
     assert.equal(result.length, 500);
   });

@@ -153,8 +153,8 @@ describe('effective user', { timeout: 60_000 }, function () {
 
   test.sequential('instructor can override date and does not become enrolled', async () => {
     let rowCount = await sqldb.execute(sql.select_enrollment, {
-      userId: instructorId,
-      courseInstance: 1,
+      user_id: instructorId,
+      course_instance_id: 1,
     });
     assert.equal(rowCount, 0);
     const headers = {
@@ -163,8 +163,8 @@ describe('effective user', { timeout: 60_000 }, function () {
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 200);
     rowCount = await sqldb.execute(sql.select_enrollment, {
-      userId: instructorId,
-      courseInstance: 1,
+      user_id: instructorId,
+      course_instance_id: 1,
     });
     assert.equal(rowCount, 0);
   });
@@ -284,7 +284,7 @@ describe('effective user', { timeout: 60_000 }, function () {
   });
 
   test.sequential('can request uid of administrator when administrator', async () => {
-    await sqldb.execute(sql.insert_administrator, { userId: instructorId });
+    await sqldb.execute(sql.insert_administrator, { user_id: instructorId });
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=dev@example.com',
     };
