@@ -36,7 +36,7 @@ window.PLMultipleChoice = function (uuid) {
       const content = dropdown.querySelector('.ts-dropdown-content');
       content.style.maxHeight = `${window.innerHeight - content.getBoundingClientRect().top}px`;
 
-      // The first time the dropdown is opened, this even is fired before the
+      // The first time the dropdown is opened, this event is fired before the
       // options are actually present in the DOM. We'll wait for the next tick
       // to ensure that the options are present.
       setTimeout(() => MathJax.typesetPromise([dropdown]), 0);
