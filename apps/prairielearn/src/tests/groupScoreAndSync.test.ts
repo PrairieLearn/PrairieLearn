@@ -13,7 +13,6 @@ import {
   VariantSchema,
 } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -78,11 +77,7 @@ describe('assessment instance group synchronization test', function () {
   });
   describe('3. user and group initialization', function () {
     it('create 3 users', async () => {
-      const courseInstance = await selectCourseInstanceById('1');
-      locals.studentUsers = await generateAndEnrollUsers({
-        count: 3,
-        courseInstance,
-      });
+      locals.studentUsers = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
       assert.lengthOf(locals.studentUsers, 3);
       locals.groupCreator = locals.studentUsers[0];
     });

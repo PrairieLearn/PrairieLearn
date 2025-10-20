@@ -5,7 +5,6 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { IdSchema, type User } from '../lib/db-types.js';
-import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import {
@@ -39,11 +38,7 @@ describe('Instructor group controls', () => {
   });
 
   test.sequential('enroll random users', async () => {
-    const courseInstance = await selectCourseInstanceById('1');
-    users = await generateAndEnrollUsers({
-      count: 5,
-      courseInstance,
-    });
+    users = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
   });
 
   test.sequential('can create a new group', async () => {

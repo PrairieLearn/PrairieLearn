@@ -19,7 +19,6 @@ import {
 } from '../lib/db-types.js';
 import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { type GroupRoleJsonInput } from '../schemas/index.js';
 
@@ -248,11 +247,7 @@ describe(
     });
 
     test.sequential('can insert/get 5 users into/from the DB', async function () {
-      const courseInstance = await selectCourseInstanceById('1');
-      locals.studentUsers = await generateAndEnrollUsers({
-        count: 5,
-        courseInstance,
-      });
+      locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
       assert.lengthOf(locals.studentUsers, 5);
     });
 
@@ -1280,11 +1275,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     locals.contributor = contributor;
 
     // Insert/get 5 users into/from the DB
-    const courseInstance = await selectCourseInstanceById('1');
-    locals.studentUsers = await generateAndEnrollUsers({
-      count: 5,
-      courseInstance,
-    });
+    locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
     assert.lengthOf(locals.studentUsers, 5);
 
     // Switch current user to the group creator and load assessment
@@ -1804,12 +1795,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
   });
 
   test.sequential('should insert/get 5 users into/from the DB', async function () {
-    const courseInstance = await selectCourseInstanceById('1');
-
-    locals.studentUsers = await generateAndEnrollUsers({
-      count: 5,
-      courseInstance,
-    });
+    locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
     assert.lengthOf(locals.studentUsers, 5);
   });
 

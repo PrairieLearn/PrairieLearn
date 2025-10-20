@@ -6,7 +6,6 @@ import { IdSchema } from '@prairielearn/zod';
 import * as groupUpdate from '../lib/group-update.js';
 import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -26,11 +25,7 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
   });
 
   test.sequential('create 500 users', async () => {
-    const courseInstance = await selectCourseInstanceById('1');
-    const result = await generateAndEnrollUsers({
-      count: 500,
-      courseInstance,
-    });
+    const result = await generateAndEnrollUsers({ count: 500, course_instance_id: '1' });
     assert.equal(result.length, 500);
   });
 

@@ -32,6 +32,7 @@ import { HttpRedirect } from '../lib/redirect.js';
 import { assertNever } from '../lib/types.js';
 
 import { type SupportedActionsForTable, insertAuditEvent } from './audit-event.js';
+import { selectCourseInstanceById } from './course-instances.js';
 import { generateUsers, selectAndLockUser } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -318,12 +319,13 @@ export async function selectOptionalEnrollmentByPendingUid({
 
 export async function generateAndEnrollUsers({
   count,
-  courseInstance,
+  course_instance_id,
 }: {
   count: number;
-  courseInstance: CourseInstanceContext;
+  course_instance_id: string;
 }) {
   return await runInTransactionAsync(async () => {
+    const courseInstance = await selectCourseInstanceById(course_instance_id);
     const users = await generateUsers(count);
     for (const user of users) {
       await ensureEnrollment({
