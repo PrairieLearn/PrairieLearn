@@ -629,7 +629,7 @@ export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSc
 
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
-  course_instance_role: EnumCourseInstanceRoleSchema,
+  course_instance_role: EnumCourseInstanceRoleSchema.nullable(),
   course_permission_id: IdSchema,
   id: IdSchema,
 });

@@ -14,6 +14,7 @@ import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { assertNever } from '../../lib/types.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByPendingUid,
@@ -134,7 +135,9 @@ router.post(
       authn_user: { uid, user_id: userId },
     } = getPageContext(res.locals, { withAuthzData: false });
 
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'student');
+    // TODO: Authenticate this access better.
+    const courseInstance = await selectCourseInstanceById(body.course_instance_id);
+
     const { authzData } = await buildAuthzData({
       authn_user: res.locals.authn_user,
       course_id: courseInstance.course_id,
