@@ -2,7 +2,7 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
+import { dangerousFullAuthzPermissions } from '../lib/authzData.js';
 import { type CourseInstance, type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';

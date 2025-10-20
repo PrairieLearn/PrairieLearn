@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import { afterEach, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { dangerousFullAuthzPermissions } from '../../../lib/client/page-context.js';
+import { dangerousFullAuthzPermissions } from '../../../lib/authzData.js';
 import { config } from '../../../lib/config.js';
 import type { CourseInstance } from '../../../lib/db-types.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';

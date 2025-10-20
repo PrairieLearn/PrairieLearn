@@ -14,6 +14,7 @@ router.get(
   '/',
   logPageView('studentAssessments'),
   asyncHandler(async (req, res) => {
+    console.log('studentAssessments');
     const rows = await queryRows(
       sql.select_assessments,
       {

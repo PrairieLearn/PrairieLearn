@@ -1,7 +1,10 @@
 import z from 'zod';
 
+import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { RawAuthzData } from './client/page-context.js';
 import {
   CourseInstanceSchema,
   CourseSchema,
@@ -186,4 +189,80 @@ export async function buildAuthzData({
     authzInstitution: rawAuthzData.institution,
     authzCourseInstance: rawAuthzData.course_instance,
   };
+}
+
+export type CourseInstanceRole = EnumCourseInstanceRole | 'Student';
+
+export interface DangerousAuthzData {
+  authn_user: {
+    user_id: null;
+  };
+  user: {
+    user_id: null;
+  };
+}
+
+export function dangerousFullAuthzPermissions(): DangerousAuthzData {
+  return {
+    authn_user: {
+      user_id: null,
+    },
+    user: {
+      user_id: null,
+    },
+  };
+}
+
+function isDangerousFullAuthzPermissions(
+  authzData: RawAuthzData | DangerousAuthzData,
+): authzData is DangerousAuthzData {
+  if (authzData.authn_user.user_id === null) {
+    return true;
+  }
+  return false;
+}
+
+export function hasRole(
+  authzData: RawAuthzData | DangerousAuthzData,
+  requestedRole: CourseInstanceRole,
+): boolean {
+  if (isDangerousFullAuthzPermissions(authzData)) {
+    return true;
+  }
+  if (requestedRole === 'Student' && authzData.has_student_access) {
+    return true;
+  }
+
+  return authzData.course_instance_role === requestedRole;
+}
+
+export function assertHasRole(
+  authzData: RawAuthzData | DangerousAuthzData,
+  requestedRole: CourseInstanceRole,
+  allowedRoles: CourseInstanceRole[],
+): void {
+  if (isDangerousFullAuthzPermissions(authzData)) {
+    return;
+  }
+
+  if (!allowedRoles.includes(requestedRole)) {
+    // This suggests the code was called incorrectly (internal error).
+    throw new Error(
+      `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
+    );
+  }
+
+  if (requestedRole === 'Student' && authzData.has_student_access) {
+    return;
+  }
+
+  if (authzData.course_instance_role === requestedRole) {
+    return;
+  }
+
+  // This suggests that the user is not authorized to perform the action.
+  logger.error(
+    `Access denied -- requestedRole: "${requestedRole}", courseInstanceRole: "${authzData.course_instance_role}", allowedRoles: "${allowedRoles.join('", "')}"`,
+  );
+  throw new error.HttpStatusError(403, 'Access denied');
 }

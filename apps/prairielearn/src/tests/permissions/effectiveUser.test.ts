@@ -7,7 +7,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
-import { dangerousFullAuthzPermissions } from '../../lib/client/page-context.js';
+import { dangerousFullAuthzPermissions } from '../../lib/authzData.js';
 import { config } from '../../lib/config.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
@@ -160,6 +160,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_date=1700-01-19T00:00:01',
     };
+    console.log(context.pageUrlStudent);
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 200);
     rowCount = await sqldb.execute(sql.select_enrollment, {

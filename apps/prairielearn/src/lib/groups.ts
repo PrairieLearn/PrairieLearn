@@ -10,7 +10,7 @@ import { selectCourseById } from '../models/course.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
-import { dangerousFullAuthzPermissions } from './client/page-context.js';
+import { dangerousFullAuthzPermissions } from './authzData.js';
 import {
   type GroupConfig,
   GroupConfigSchema,

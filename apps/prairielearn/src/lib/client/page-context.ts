@@ -198,23 +198,3 @@ export function getAssessmentContext(resLocals: Record<string, any>): StaffAsses
   const schema = StaffAssessmentContextSchema;
   return schema.parse(resLocals);
 }
-
-export interface DangerousAuthzData {
-  authn_user: {
-    user_id: null;
-  };
-  user: {
-    user_id: null;
-  };
-}
-
-export function dangerousFullAuthzPermissions(): DangerousAuthzData {
-  return {
-    authn_user: {
-      user_id: null,
-    },
-    user: {
-      user_id: null,
-    },
-  };
-}

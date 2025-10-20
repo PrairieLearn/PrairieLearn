@@ -12,18 +12,21 @@ import {
   checkPotentialEnterpriseEnrollment,
 } from '../ee/models/enrollment.js';
 import {
+  type CourseInstanceRole,
   type DangerousAuthzData,
+  assertHasRole,
+  dangerousFullAuthzPermissions,
+} from '../lib/authzData.js';
+import {
   type RawAuthzData,
   type StaffCourseInstanceContext,
   type StudentCourseInstanceContext,
-  dangerousFullAuthzPermissions,
 } from '../lib/client/page-context.js';
 import {
   type Course,
   type CourseInstance,
   type Enrollment,
   EnrollmentSchema,
-  type EnumCourseInstanceRole,
   type EnumEnrollmentStatus,
   type Institution,
 } from '../lib/db-types.js';
@@ -41,44 +44,6 @@ type CourseInstanceContext =
   | CourseInstance
   | StudentCourseInstanceContext['course_instance']
   | StaffCourseInstanceContext['course_instance'];
-type CourseInstanceRole = EnumCourseInstanceRole | 'Student';
-
-function isDangerousFullAuthzPermissions(
-  authzData: RawAuthzData | DangerousAuthzData,
-): authzData is DangerousAuthzData {
-  if (authzData.authn_user.user_id === null) {
-    return true;
-  }
-  return false;
-}
-
-function assertHasRole(
-  authzData: RawAuthzData | DangerousAuthzData,
-  requestedRole: CourseInstanceRole,
-  allowedRoles: CourseInstanceRole[],
-): void {
-  if (isDangerousFullAuthzPermissions(authzData)) {
-    return;
-  }
-
-  if (!allowedRoles.includes(requestedRole)) {
-    // This suggests the code was called incorrectly (internal error).
-    throw new Error(
-      `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
-    );
-  }
-
-  if (requestedRole === 'Student' && authzData.has_student_access) {
-    return;
-  }
-
-  if (authzData.course_instance_role === requestedRole) {
-    return;
-  }
-
-  // This suggests that the user is not authorized to perform the action.
-  throw new error.HttpStatusError(403, 'Access denied');
-}
 
 function assertEnrollmentStatus(
   enrollment: Enrollment,
