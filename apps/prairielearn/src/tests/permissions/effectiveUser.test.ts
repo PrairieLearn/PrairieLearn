@@ -160,7 +160,6 @@ describe('effective user', { timeout: 60_000 }, function () {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_date=1700-01-19T00:00:01',
     };
-    console.log(context.pageUrlStudent);
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 200);
     rowCount = await sqldb.execute(sql.select_enrollment, {
