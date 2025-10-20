@@ -30,7 +30,7 @@ router.get(
     const existingEnrollment = await selectOptionalEnrollmentByUserId({
       userId: res.locals.authn_user.user_id,
       courseInstance,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: res.locals.authz_data,
     });
 
@@ -62,7 +62,7 @@ router.get(
           course: res.locals.course,
           courseInstance: res.locals.course_instance,
           authzData: res.locals.authz_data,
-          requiredRoleOptions: 'Student',
+          requestedRole: 'Student',
           actionDetail: 'implicit_joined',
         });
       }

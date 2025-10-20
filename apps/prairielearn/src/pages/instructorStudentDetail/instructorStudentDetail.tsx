@@ -130,7 +130,7 @@ router.post(
     const enrollment = await selectEnrollmentById({
       id: enrollment_id,
       courseInstance: course_instance,
-      requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
+      requestedRole: 'Student Data Editor',
       authzData,
     });
     if (enrollment.course_instance_id !== course_instance.id) {
@@ -145,8 +145,8 @@ router.post(
         await setEnrollmentStatus({
           enrollment,
           status: 'blocked',
-          requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
-          authzData: res.locals.authz_data,
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
         res.redirect(req.originalUrl);
         break;
@@ -158,8 +158,8 @@ router.post(
         await setEnrollmentStatus({
           enrollment,
           status: 'joined',
-          requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
-          authzData: res.locals.authz_data,
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
         res.redirect(req.originalUrl);
         break;
@@ -171,8 +171,8 @@ router.post(
         await deleteEnrollment({
           enrollment,
           actionDetail: 'invitation_deleted',
-          requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
-          authzData: res.locals.authz_data,
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
         res.redirect(
           `/pl/course_instance/${course_instance.id}/instructor/instance_admin/students`,
@@ -189,8 +189,8 @@ router.post(
         await inviteEnrollment({
           enrollment,
           pendingUid: enrollment.pending_uid,
-          requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
-          authzData: res.locals.authz_data,
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
         res.redirect(req.originalUrl);
         break;

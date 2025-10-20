@@ -19,7 +19,7 @@ export default asyncHandler(async (req, res, next) => {
   const existingEnrollment = await selectOptionalEnrollmentByUid({
     uid: res.locals.authn_user.uid,
     courseInstance,
-    requiredRoleOptions: 'Student',
+    requestedRole: 'Student',
     authzData: res.locals.authz_data,
   });
 
@@ -56,7 +56,7 @@ export default asyncHandler(async (req, res, next) => {
       course: res.locals.course,
       courseInstance,
       authzData: res.locals.authz_data,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       actionDetail: 'implicit_joined',
     });
 

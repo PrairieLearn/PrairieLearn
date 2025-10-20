@@ -435,7 +435,7 @@ describe('accessibility', () => {
     const enrollment = await ensureEnrollment({
       courseInstance,
       userId: user_id,
-      requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
       actionDetail: 'implicit_joined',
     });

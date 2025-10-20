@@ -80,7 +80,7 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
       courseInstance,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(initialEnrollment);
@@ -91,7 +91,7 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       courseInstance,
       userId: user.user_id,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
       actionDetail: 'implicit_joined',
     });
@@ -99,7 +99,7 @@ describe('ensureEnrollment', () => {
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       courseInstance,
       userId: user.user_id,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(finalEnrollment);
@@ -111,7 +111,7 @@ describe('ensureEnrollment', () => {
     const invitedEnrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
       courseInstance,
-      requiredRoleOptions: ['Student Data Editor', 'Student Data Viewer'],
+      requestedRole: 'Student Data Editor',
       authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNull(invitedEnrollment);
@@ -136,7 +136,7 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(initialEnrollment);
@@ -146,7 +146,7 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       courseInstance,
       userId: user.user_id,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
       actionDetail: 'implicit_joined',
     });
@@ -154,7 +154,7 @@ describe('ensureEnrollment', () => {
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(finalEnrollment);
@@ -173,7 +173,7 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNull(initialEnrollment);
@@ -181,7 +181,7 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       courseInstance,
       userId: user.user_id,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
       actionDetail: 'implicit_joined',
     });
@@ -189,7 +189,7 @@ describe('ensureEnrollment', () => {
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(finalEnrollment);
@@ -217,7 +217,7 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(initialEnrollment);
@@ -227,7 +227,7 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       courseInstance,
       userId: user.user_id,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
       actionDetail: 'implicit_joined',
     });
@@ -235,7 +235,7 @@ describe('ensureEnrollment', () => {
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(finalEnrollment);

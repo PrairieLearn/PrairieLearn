@@ -118,7 +118,7 @@ describe('Access control', { timeout: 20000 }, function () {
       await ensureEnrollment({
         userId: user.user_id,
         courseInstance,
-        requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
+        requestedRole: 'Student',
         authzData: dangerousFullAuthzPermissions(),
         actionDetail: 'implicit_joined',
       });

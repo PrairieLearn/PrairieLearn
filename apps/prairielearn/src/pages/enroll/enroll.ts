@@ -92,8 +92,8 @@ router.post('/', [
         institution,
         course,
         courseInstance: course_instance,
+        requestedRole: 'Student',
         authzData: res.locals.authz_data,
-        requiredRoleOptions: 'Student',
         actionDetail: 'explicit_joined',
       });
 

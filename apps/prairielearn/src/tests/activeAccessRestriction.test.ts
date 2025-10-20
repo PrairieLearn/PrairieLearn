@@ -79,7 +79,7 @@ describe(
       await ensureEnrollment({
         userId: user.user_id,
         courseInstance,
-        requiredRoleOptions: 'Student',
+        requestedRole: 'Student',
         authzData: dangerousFullAuthzPermissions(),
         actionDetail: 'implicit_joined',
       });

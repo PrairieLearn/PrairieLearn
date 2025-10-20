@@ -221,7 +221,7 @@ async function selectUserInCourseInstance({
     (await selectOptionalEnrollmentByUserId({
       courseInstance,
       userId: user.user_id,
-      requiredRoleOptions: 'Student',
+      requestedRole: 'Student',
       authzData: dangerousFullAuthzPermissions(),
     }))
   ) {

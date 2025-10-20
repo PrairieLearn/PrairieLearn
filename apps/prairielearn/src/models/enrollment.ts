@@ -42,7 +42,6 @@ type CourseInstanceContext =
   | StudentCourseInstanceContext['course_instance']
   | StaffCourseInstanceContext['course_instance'];
 type CourseInstanceRole = EnumCourseInstanceRole | 'Student';
-type CourseInstanceRoles = CourseInstanceRole | CourseInstanceRole[];
 
 function isDangerousFullAuthzPermissions(
   authzData: RawAuthzData | DangerousAuthzData,
@@ -53,23 +52,31 @@ function isDangerousFullAuthzPermissions(
   return false;
 }
 
-function assertRequiredRoles(
-  requiredRoleOptions: CourseInstanceRoles,
+function assertHasRole(
   authzData: RawAuthzData | DangerousAuthzData,
+  requestedRole: CourseInstanceRole,
+  allowedRoles: CourseInstanceRole[],
 ): void {
   if (isDangerousFullAuthzPermissions(authzData)) {
     return;
   }
-  const roles = Array.isArray(requiredRoleOptions) ? requiredRoleOptions : [requiredRoleOptions];
-  for (const role of roles) {
-    if (role === 'Student' && authzData.has_student_access) {
-      return;
-    }
-    if (authzData.course_instance_role === role) {
-      return;
-    }
+
+  if (!allowedRoles.includes(requestedRole)) {
+    // This suggests the code was called incorrectly (internal error).
+    throw new Error(
+      `Requested role ${requestedRole} is not allowed for this action. Allowed roles: ${allowedRoles.join(', ')}`,
+    );
   }
 
+  if (requestedRole === 'Student' && authzData.has_student_access) {
+    return;
+  }
+
+  if (authzData.course_instance_role === requestedRole) {
+    return;
+  }
+
+  // This suggests that the user is not authorized to perform the action.
   throw new error.HttpStatusError(403, 'Access denied');
 }
 
@@ -101,16 +108,16 @@ async function _enrollUserInCourseInstanceWithLock({
   enrollment,
   userId,
   actionDetail,
-  requiredRoleOptions,
+  requestedRole,
   authzData,
 }: {
   enrollment: Enrollment;
   userId: string;
   actionDetail: SupportedActionsForTable<'enrollments'>;
-  requiredRoleOptions: CourseInstanceRoles;
+  requestedRole: CourseInstanceRole;
   authzData: RawAuthzData | DangerousAuthzData;
 }): Promise<Enrollment> {
-  assertRequiredRoles(requiredRoleOptions, authzData);
+  assertHasRole(authzData, requestedRole, ['Student Data Editor']);
 
   const newEnrollment = await queryRow(
     sql.enroll_user,
@@ -146,22 +153,23 @@ async function _enrollUserInCourseInstanceWithLock({
  */
 export async function ensureEnrollment({
   userId,
-  requiredRoleOptions,
   authzData,
   courseInstance,
   actionDetail,
+  requestedRole,
 }: {
   userId: string;
-  requiredRoleOptions: CourseInstanceRoles;
+  requestedRole: CourseInstanceRole;
   authzData: RawAuthzData | DangerousAuthzData;
   courseInstance: CourseInstanceContext;
   actionDetail: SupportedActionsForTable<'enrollments'>;
 }): Promise<Enrollment | null> {
+  assertHasRole(authzData, requestedRole, ['Student']);
   const result = await runInTransactionAsync(async () => {
     const user = await selectAndLockUser(userId);
     let enrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
-      requiredRoleOptions,
+      requestedRole,
       authzData,
       courseInstance,
     });
@@ -171,7 +179,7 @@ export async function ensureEnrollment({
       enrollment = await selectOptionalEnrollmentByUserId({
         courseInstance,
         userId,
-        requiredRoleOptions,
+        requestedRole,
         authzData,
       });
     }
@@ -185,7 +193,7 @@ export async function ensureEnrollment({
         enrollment,
         userId,
         actionDetail,
-        requiredRoleOptions,
+        requestedRole,
         authzData,
       });
       return updated;
@@ -230,17 +238,17 @@ export async function ensureCheckedEnrollment({
   course,
   courseInstance,
   authzData,
+  requestedRole,
   actionDetail,
-  requiredRoleOptions,
 }: {
   institution: Institution;
   course: Course;
   courseInstance: CourseInstance;
   authzData: RawAuthzData;
+  requestedRole: CourseInstanceRole;
   actionDetail: SupportedActionsForTable<'enrollments'>;
-  requiredRoleOptions: CourseInstanceRoles;
 }) {
-  assertRequiredRoles(requiredRoleOptions, authzData);
+  assertHasRole(authzData, requestedRole, ['Student']);
 
   if (isEnterprise()) {
     const status = await checkPotentialEnterpriseEnrollment({
@@ -265,7 +273,7 @@ export async function ensureCheckedEnrollment({
   await ensureEnrollment({
     courseInstance,
     userId: authzData.authn_user.user_id,
-    requiredRoleOptions: 'Student',
+    requestedRole,
     authzData,
     actionDetail,
   });
@@ -273,16 +281,20 @@ export async function ensureCheckedEnrollment({
 
 export async function selectOptionalEnrollmentByUserId({
   userId,
-  requiredRoleOptions,
+  requestedRole,
   authzData,
   courseInstance,
 }: {
   userId: string;
-  requiredRoleOptions: CourseInstanceRoles;
+  requestedRole: CourseInstanceRole;
   authzData: RawAuthzData | DangerousAuthzData;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment | null> {
-  assertRequiredRoles(requiredRoleOptions, authzData);
+  assertHasRole(authzData, requestedRole, [
+    'Student',
+    'Student Data Viewer',
+    'Student Data Editor',
+  ]);
   const enrollment = await queryOptionalRow(
     sql.select_enrollment_by_user_id,
     { user_id: userId, course_instance_id: courseInstance.id },
@@ -296,16 +308,20 @@ export async function selectOptionalEnrollmentByUserId({
 
 export async function selectOptionalEnrollmentByPendingUid({
   pendingUid,
-  requiredRoleOptions,
+  requestedRole,
   authzData,
   courseInstance,
 }: {
   pendingUid: string;
-  requiredRoleOptions: CourseInstanceRoles;
+  requestedRole: CourseInstanceRole;
   authzData: RawAuthzData | DangerousAuthzData;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment | null> {
-  assertRequiredRoles(requiredRoleOptions, authzData);
+  assertHasRole(authzData, requestedRole, [
+    'Student',
+    'Student Data Viewer',
+    'Student Data Editor',
+  ]);
   const enrollment = await queryOptionalRow(
     sql.select_enrollment_by_pending_uid,
     { pending_uid: pendingUid, course_instance_id: courseInstance.id },
@@ -331,7 +347,10 @@ export async function generateAndEnrollUsers({
       await ensureEnrollment({
         courseInstance,
         userId: user.user_id,
-        requiredRoleOptions: 'Student Data Editor',
+        // Typically, model code should never set requestedRole,
+        // but this function is only used in test code where we don't care about
+        // the role the caller requests.
+        requestedRole: 'Student',
         authzData: dangerousFullAuthzPermissions(),
         actionDetail: 'implicit_joined',
       });
@@ -343,15 +362,19 @@ export async function generateAndEnrollUsers({
 export async function selectEnrollmentById({
   id,
   courseInstance,
-  requiredRoleOptions,
+  requestedRole,
   authzData,
 }: {
   id: string;
   courseInstance: CourseInstanceContext;
-  requiredRoleOptions: CourseInstanceRoles;
+  requestedRole: CourseInstanceRole;
   authzData: RawAuthzData | DangerousAuthzData;
 }) {
-  assertRequiredRoles(requiredRoleOptions, authzData);
+  assertHasRole(authzData, requestedRole, [
+    'Student',
+    'Student Data Viewer',
+    'Student Data Editor',
+  ]);
   const enrollment = await queryRow(sql.select_enrollment_by_id, { id }, EnrollmentSchema);
   assertEnrollmentInCourseInstance(enrollment, courseInstance);
   return enrollment;
@@ -364,16 +387,20 @@ export async function selectEnrollmentById({
  */
 export async function selectOptionalEnrollmentByUid({
   uid,
-  requiredRoleOptions,
+  requestedRole,
   authzData,
   courseInstance,
 }: {
   uid: string;
-  requiredRoleOptions: CourseInstanceRoles;
+  requestedRole: CourseInstanceRole;
   authzData: RawAuthzData | DangerousAuthzData;
   courseInstance: CourseInstanceContext;
 }) {
-  assertRequiredRoles(requiredRoleOptions, authzData);
+  assertHasRole(authzData, requestedRole, [
+    'Student',
+    'Student Data Viewer',
+    'Student Data Editor',
+  ]);
   const enrollment = await queryOptionalRow(
     sql.select_enrollment_by_uid,
     { course_instance_id: courseInstance.id, uid },
@@ -393,15 +420,15 @@ export async function selectOptionalEnrollmentByUid({
 async function _inviteExistingEnrollmentLocked({
   enrollment,
   pendingUid,
-  requiredRoleOptions,
   authzData,
+  requestedRole,
 }: {
   enrollment: Enrollment;
   pendingUid: string;
-  requiredRoleOptions: CourseInstanceRoles;
   authzData: RawAuthzData | DangerousAuthzData;
+  requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
-  assertRequiredRoles(requiredRoleOptions, authzData);
+  assertHasRole(authzData, requestedRole, ['Student Data Editor']);
   assertEnrollmentStatus(enrollment, ['rejected', 'removed']);
 
   const newEnrollment = await queryRow(
@@ -427,16 +454,16 @@ async function _inviteExistingEnrollmentLocked({
 
 async function inviteNewEnrollment({
   pendingUid,
-  requiredRoleOptions,
   authzData,
   courseInstance,
+  requestedRole,
 }: {
   pendingUid: string;
-  requiredRoleOptions: CourseInstanceRoles;
   authzData: RawAuthzData | DangerousAuthzData;
   courseInstance: CourseInstanceContext;
+  requestedRole: CourseInstanceRole;
 }) {
-  assertRequiredRoles(requiredRoleOptions, authzData);
+  assertHasRole(authzData, requestedRole, ['Student Data Editor']);
   const newEnrollment = await queryRow(
     sql.invite_new_enrollment,
     { course_instance_id: courseInstance.id, pending_uid: pendingUid },
@@ -464,19 +491,19 @@ async function inviteNewEnrollment({
  */
 export async function inviteStudentByUid({
   uid,
-  requiredRoleOptions,
   authzData,
   courseInstance,
+  requestedRole,
 }: {
   uid: string;
-  requiredRoleOptions: CourseInstanceRoles;
+  requestedRole: CourseInstanceRole;
   authzData: RawAuthzData | DangerousAuthzData;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const existingEnrollment = await selectOptionalEnrollmentByUid({
       uid,
-      requiredRoleOptions,
+      requestedRole,
       authzData,
       courseInstance,
     });
@@ -489,16 +516,16 @@ export async function inviteStudentByUid({
       return await _inviteExistingEnrollmentLocked({
         enrollment: existingEnrollment,
         pendingUid: uid,
-        requiredRoleOptions,
         authzData,
+        requestedRole,
       });
     }
 
     return await inviteNewEnrollment({
       pendingUid: uid,
-      requiredRoleOptions,
       authzData,
       courseInstance,
+      requestedRole,
     });
   });
 }
@@ -517,45 +544,43 @@ async function _selectAndLockEnrollment(id: string) {
 export async function setEnrollmentStatus({
   enrollment,
   status,
-  requiredRoleOptions,
   authzData,
+  requestedRole,
 }: {
   enrollment: Enrollment;
   status: 'rejected' | 'blocked' | 'removed' | 'joined';
-  requiredRoleOptions: CourseInstanceRoles;
   authzData: RawAuthzData | DangerousAuthzData;
+  requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
-  assertRequiredRoles(requiredRoleOptions, authzData);
-
   const transitionInformation: {
     previousStatus: EnumEnrollmentStatus;
     actionDetail: SupportedActionsForTable<'enrollments'>;
-    requiredRole: CourseInstanceRole;
+    allowedRoles: CourseInstanceRole[];
   } = run(() => {
     switch (status) {
       case 'joined':
         return {
           previousStatus: 'blocked',
           actionDetail: 'blocked',
-          requiredRole: 'Student Data Editor',
+          allowedRoles: ['Student Data Viewer', 'Student Data Editor'],
         };
       case 'removed':
         return {
           previousStatus: 'joined',
           actionDetail: 'unblocked',
-          requiredRole: 'Student',
+          allowedRoles: ['Student'],
         };
       case 'rejected':
         return {
           previousStatus: 'invited',
           actionDetail: 'invitation_rejected',
-          requiredRole: 'Student',
+          allowedRoles: ['Student'],
         };
       case 'blocked':
         return {
           previousStatus: 'joined',
           actionDetail: 'unblocked',
-          requiredRole: 'Student Data Editor',
+          allowedRoles: ['Student Data Viewer', 'Student Data Editor'],
         };
       default:
         assertNever(status);
@@ -574,8 +599,9 @@ export async function setEnrollmentStatus({
 
     // Assert that the enrollment is in the previous status.
     assertEnrollmentStatus(enrollment, transitionInformation.previousStatus);
+
     // Assert that the caller is authorized to perform the action.
-    assertRequiredRoles(transitionInformation.requiredRole, authzData);
+    assertHasRole(authzData, requestedRole, transitionInformation.allowedRoles);
 
     const newEnrollment = await queryRow(
       sql.set_enrollment_status,
@@ -604,15 +630,15 @@ export async function setEnrollmentStatus({
 export async function deleteEnrollment({
   enrollment,
   actionDetail,
-  requiredRoleOptions,
   authzData,
+  requestedRole,
 }: {
   enrollment: Enrollment;
   actionDetail: SupportedActionsForTable<'enrollments'>;
-  requiredRoleOptions: CourseInstanceRoles;
   authzData: RawAuthzData | DangerousAuthzData;
+  requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
-  assertRequiredRoles(requiredRoleOptions, authzData);
+  assertHasRole(authzData, requestedRole, ['Student Data Editor']);
 
   return await runInTransactionAsync(async () => {
     const oldEnrollment = await _selectAndLockEnrollment(enrollment.id);
@@ -648,13 +674,13 @@ export async function deleteEnrollment({
 export async function inviteEnrollment({
   enrollment: unlockedEnrollment,
   pendingUid,
-  requiredRoleOptions,
   authzData,
+  requestedRole,
 }: {
   enrollment: Enrollment;
   pendingUid: string;
-  requiredRoleOptions: CourseInstanceRoles;
   authzData: RawAuthzData | DangerousAuthzData;
+  requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const enrollment = await _selectAndLockEnrollment(unlockedEnrollment.id);
@@ -665,8 +691,8 @@ export async function inviteEnrollment({
     return await _inviteExistingEnrollmentLocked({
       enrollment,
       pendingUid,
-      requiredRoleOptions,
       authzData,
+      requestedRole,
     });
   });
 }

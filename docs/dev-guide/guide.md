@@ -483,14 +483,14 @@ For most API/POST handlers, we want to lookup or modify data based on unvalidate
 // We want to prove that we are authorized to read the course instance.
 const courseInstance = await selectCourseInstance({
   id: course_instance_id,
-  requiredRoleOptions: 'Student',
+  requestedRole: 'Student',
   authzData: res.locals.authz_data,
 });
 
 const enrollment = await selectEnrollment({
   id: enrollment_id,
   // What role are we trying to authorize as?
-  requiredRoleOptions: 'Student',
+  requestedRole: 'Student',
   // Information to prove we are authorized to read the record.
   // E.g. we need to prove that we have access to the course instance it's in,
   // and that we have the correct permissions to read the enrollment record.
@@ -508,13 +508,13 @@ await updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
   // What role are we trying to authorize as?
-  requiredRoleOptions: 'Student',
+  requestedRole: 'Student',
   // Information to prove we are authorized to write the record
   authzData: res.locals.authz_data,
 });
 ```
 
-In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `requiredRoleOptions` parameter is `'Student'`, but the current user is an instructor, so it would throw an error.
+In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `requestedRole` parameter is `'Student'`, but the current user is an instructor, so it would throw an error.
 
 In some cases, you may not have access to `authzData`, e.g. if are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullAuthzPermissions` function to build a dummy `authzData` object that allows you to perform the action.
 
@@ -522,7 +522,7 @@ In some cases, you may not have access to `authzData`, e.g. if are pulling data 
 const authzData = updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
-  requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
+  requestedRole: ['Student Data Viewer', 'Student Data Editor'],
   authzData: dangerousFullAuthzPermissions(),
 });
 ```
