@@ -10,6 +10,7 @@ import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
+  AiQuestionGenerationMessageSchema,
   AiQuestionGenerationPromptSchema,
   type Course,
   IdSchema,
@@ -180,25 +181,17 @@ router.get(
 
     assertCanCreateQuestion(res.locals);
 
-    const prompts = await queryRows(
-      sql.select_ai_question_generation_prompts,
-      {
-        question_id: req.params.question_id,
-        course_id: res.locals.course.id,
-      },
-      AiQuestionGenerationPromptSchema,
+    const messages = await queryRows(
+      sql.select_ai_question_generation_messages,
+      { question_id: req.params.question_id },
+      AiQuestionGenerationMessageSchema,
     );
 
-    if (prompts.length === 0) {
-      // This is probably a draft question that was created on a different server
-      // and thus doesn't have any prompt history. We currently rely on the prompt
-      // history to know which HTML and Python to display and adjust, so we can't
-      // render this page.
-      //
-      // TODO: We should pull the HTML and Python off disk instead of relying on
-      // the prompt history.
-      throw new error.HttpStatusError(404, 'No prompt history found');
-    }
+    const courseFilesClient = getCourseFilesClient();
+    const { files: questionFiles } = await courseFilesClient.getQuestionFiles.query({
+      course_id: res.locals.course.id,
+      question_id: req.params.question_id,
+    });
 
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
@@ -217,8 +210,9 @@ router.get(
     res.send(
       InstructorAiGenerateDraftEditor({
         resLocals: res.locals,
-        prompts,
         question: res.locals.question,
+        messages,
+        questionFiles,
         richTextEditorEnabled,
         variantId: typeof req.query.variant_id === 'string' ? req.query.variant_id : undefined,
       }),

@@ -125,8 +125,13 @@ router.post(
         return;
       }
 
+      // const openai2 = createOpenAI({
+      //   baseURL: 'http://127.0.0.1:1234/v1',
+      //   apiKey: 'testing',
+      // });
+
       const result = await generateQuestionWithAgent({
-        model: openai.responses('gpt-5-mini'),
+        model: openai('gpt-5-mini'),
         course: res.locals.course,
         user: res.locals.authn_user,
         authnUser: res.locals.authn_user,

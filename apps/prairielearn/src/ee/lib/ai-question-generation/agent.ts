@@ -12,11 +12,16 @@ import {
 import klaw from 'klaw';
 import { z } from 'zod';
 
-import { execute, loadSql, queryRow } from '@prairielearn/postgres';
+import { execute, loadSql, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { emptyUsage, formatPrompt } from '../../../lib/ai.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { type Course, IdSchema, type Question, type User } from '../../../lib/db-types.js';
+import {
+  AiQuestionGenerationMessageSchema,
+  type Course,
+  type Question,
+  type User,
+} from '../../../lib/db-types.js';
 import { DefaultMap } from '../../../lib/default-map.js';
 import { REPOSITORY_ROOT_PATH } from '../../../lib/paths.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
@@ -29,7 +34,8 @@ import {
 } from '../context-parsers/template-questions.js';
 import { validateHTML } from '../validateHTML.js';
 
-const sql = loadSql(path.join(import.meta.dirname, '..', 'aiQuestionGeneration.sql'));
+const sql = loadSqlEquiv(import.meta.url);
+const otherSql = loadSql(path.join(import.meta.dirname, '..', 'aiQuestionGeneration.sql'));
 
 const SYSTEM_PROMPT = formatPrompt([
   '# Introduction',
@@ -95,22 +101,18 @@ export async function createQuestionGenerationAgent({
   authnUser,
   question,
   hasCoursePermissionEdit,
-  jobSequenceId,
 }: {
   model: LanguageModel;
   course: Course;
   user: User;
   authnUser: User;
-  question?: Question;
+  question: Question;
   hasCoursePermissionEdit: boolean;
-  jobSequenceId: string;
 }) {
   const files = {
     'question.html': '',
     'server.py': '',
   };
-
-  let savedQuestion: Question | null = question ?? null;
 
   // TODO: global cache or TTL cache of these?
   const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
@@ -260,84 +262,31 @@ export async function createQuestionGenerationAgent({
           errors.push(...validateHTML(files['question.html'], !!files['server.py']));
 
           const courseFilesClient = getCourseFilesClient();
-          if (!savedQuestion) {
-            // We're creating a brand-new question.
-            const saveResults = await courseFilesClient.createQuestion.mutate({
-              course_id: course.id,
-              user_id: user.user_id,
-              authn_user_id: authnUser.user_id,
-              has_course_permission_edit: hasCoursePermissionEdit,
-              is_draft: true,
-              files,
-            });
+          const result = await courseFilesClient.updateQuestionFiles.mutate({
+            course_id: course.id,
+            user_id: user.user_id,
+            authn_user_id: authnUser.user_id,
+            has_course_permission_edit: hasCoursePermissionEdit,
+            question_id: question.id,
+            // TODO: creation uses plain files, this uses base-64. The different is bad
+            // and should be addressed.
+            files: {
+              'question.html': Buffer.from(files['question.html'], 'utf-8').toString('base64'),
+              'server.py': files['server.py']
+                ? Buffer.from(files['server.py'], 'utf-8').toString('base64')
+                : null,
+            },
+          });
 
-            if (saveResults.status === 'error') {
-              // TODO: is this the right thing to do here?
-              errors.push('Failed to save question. Try again.');
-            } else {
-              savedQuestion = await selectQuestionById(saveResults.question_id);
-
-              await execute(sql.insert_draft_question_metadata, {
-                question_id: saveResults.question_id,
-                creator_id: authnUser.user_id,
-              });
-
-              console.log('Inserting prompt row!!!');
-              await queryRow(
-                sql.insert_ai_question_generation_prompt,
-                {
-                  question_id: saveResults.question_id,
-                  prompting_user_id: authnUser.user_id,
-                  prompt_type: 'initial',
-
-                  // TODO: these should be something
-                  user_prompt: 'Empty placeholder',
-                  system_prompt: 'Empty placeholder',
-                  response: 'Empty placeholder',
-
-                  html: files['question.html'],
-                  python: files['server.py'] || null,
-                  errors,
-
-                  // TODO: this should be something
-                  completion: {},
-
-                  job_sequence_id: jobSequenceId,
-                },
-                IdSchema,
-              );
-            }
-          } else {
-            // We're updating an existing question.
-            console.log('UPDATING EXISTING QUESTION');
-            const result = await courseFilesClient.updateQuestionFiles.mutate({
-              course_id: course.id,
-              user_id: user.user_id,
-              authn_user_id: authnUser.user_id,
-              has_course_permission_edit: hasCoursePermissionEdit,
-              question_id: savedQuestion.id,
-              // TODO: creation uses plain files, this uses base-64. The different is bad
-              // and should be addressed.
-              files: {
-                'question.html': Buffer.from(files['question.html'], 'utf-8').toString('base64'),
-                'server.py': files['server.py']
-                  ? Buffer.from(files['server.py'], 'utf-8').toString('base64')
-                  : null,
-              },
-            });
-
-            if (result.status === 'error') {
-              // TODO: is this the right thing to do here?
-              errors.push('Failed to save question. Try again.');
-            }
-
-            // TODO: need to insert prompt history.
+          if (result.status === 'error') {
+            // TODO: is this the right thing to do here?
+            errors.push('Failed to save question. Try again.');
           }
 
           // Only attempt rendering if there were no other errors.
-          if (errors.length === 0 && savedQuestion) {
+          if (errors.length === 0) {
             errors.push(
-              ...(await checkRender('success', [], course.id, user.user_id, savedQuestion.id)),
+              ...(await checkRender('success', [], course.id, user.user_id, question.id)),
             );
           }
 
@@ -347,7 +296,7 @@ export async function createQuestionGenerationAgent({
     },
   });
 
-  return { agent, getSavedQuestion: () => savedQuestion };
+  return { agent };
 }
 
 export async function generateQuestionWithAgent({
@@ -377,16 +326,50 @@ export async function generateQuestionWithAgent({
 
   const startTime = Date.now();
   await serverJob.execute(async (job) => {
-    const { agent, getSavedQuestion } = await createQuestionGenerationAgent({
+    // Create the initial question so we can get a question ID. This also simplifies
+    // the agent logic since we don't need to handle the "create new question" vs
+    // "update existing question" case - we're just always updating.
+    const courseFilesClient = getCourseFilesClient();
+    const saveResults = await courseFilesClient.createQuestion.mutate({
+      course_id: course.id,
+      user_id: user.user_id,
+      authn_user_id: authnUser.user_id,
+      has_course_permission_edit: hasCoursePermissionEdit,
+      is_draft: true,
+      files: {
+        'question.html': '',
+        'server.py': '',
+      },
+    });
+
+    if (saveResults.status === 'error') {
+      throw new Error('Failed to create initial question for AI generation.');
+    }
+
+    await execute(otherSql.insert_draft_question_metadata, {
+      question_id: saveResults.question_id,
+      creator_id: authnUser.user_id,
+    });
+
+    savedQuestion = await selectQuestionById(saveResults.question_id);
+
+    const { agent } = await createQuestionGenerationAgent({
       model,
       course,
+      question: savedQuestion,
       user,
       authnUser,
       hasCoursePermissionEdit,
-      jobSequenceId: serverJob.jobSequenceId,
     });
 
-    const res = await agent.generate({
+    // Insert the agent's message into the `messages` table.
+    const messageRow = await queryRow(
+      sql.insert_initial_assistant_message,
+      { question_id: saveResults.question_id },
+      AiQuestionGenerationMessageSchema,
+    );
+
+    const res = agent.stream({
       prompt,
       providerOptions: {
         openai: {
@@ -395,8 +378,29 @@ export async function generateQuestionWithAgent({
       },
     });
 
-    usage = res.totalUsage;
-    savedQuestion = getSavedQuestion();
+    const resStream = res.toUIMessageStream({
+      onFinish: async ({ responseMessage }) => {
+        // Save message?
+        console.log('-----------------');
+        console.log('DONE:');
+        console.log(responseMessage);
+        await execute(sql.update_message, {
+          id: messageRow.id,
+          parts: responseMessage.parts,
+          usage_input_tokens: usage.inputTokens,
+          usage_output_tokens: usage.outputTokens,
+          usage_total_tokens: usage.totalTokens,
+        });
+      },
+    });
+
+    for await (const chunk of resStream) {
+      console.log(chunk);
+    }
+
+    console.log(res.steps);
+
+    usage = await res.totalUsage;
 
     // console.dir(
     //   res.steps.map((step) => step.content),

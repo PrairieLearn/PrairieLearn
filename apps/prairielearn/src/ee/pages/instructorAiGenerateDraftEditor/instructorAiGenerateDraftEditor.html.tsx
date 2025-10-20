@@ -15,20 +15,26 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
-import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
+import {
+  type AiQuestionGenerationMessage,
+  type AiQuestionGenerationPrompt,
+  type Question,
+} from '../../../lib/db-types.js';
 
 import RichTextEditor from './RichTextEditor/index.js';
 
 export function InstructorAiGenerateDraftEditor({
   resLocals,
-  prompts,
   question,
+  messages,
+  questionFiles,
   richTextEditorEnabled,
   variantId,
 }: {
   resLocals: Record<string, any>;
-  prompts: AiQuestionGenerationPrompt[];
   question: Question;
+  messages: AiQuestionGenerationMessage[];
+  questionFiles: Record<string, string>;
   richTextEditorEnabled: boolean;
   variantId?: string | undefined;
 }) {
@@ -75,8 +81,8 @@ export function InstructorAiGenerateDraftEditor({
               </div>
               <div class="app-chat p-2 bg-light border-end">
                 <div class="app-chat-history">
-                  ${PromptHistory({
-                    prompts,
+                  ${MessageHistory({
+                    messages,
                     urlPrefix: resLocals.urlPrefix,
                     csrfToken: resLocals.__csrf_token,
                     showJobLogs: resLocals.is_administrator,
@@ -163,7 +169,7 @@ export function InstructorAiGenerateDraftEditor({
                   </span>
                 </div>
               </div>
-              <div class="app-preview">${QuestionAndFilePreview({ resLocals, prompts })}</div>
+              <div class="app-preview">${QuestionAndFilePreview({ resLocals, questionFiles })}</div>
             </main>
           </div>
         </div>
@@ -196,6 +202,12 @@ function findLatestRevisionIndexForPrompt(
   }
 
   return targetIndex;
+}
+
+function MessageHistory({ messages }: { messages: AiQuestionGenerationMessage[] }) {
+  return messages.map((message) => {
+    return html`<pre><code>${JSON.stringify(message)}</code></pre>`;
+  });
 }
 
 function PromptHistory({
@@ -293,11 +305,11 @@ function PromptHistory({
 }
 
 function QuestionAndFilePreview({
-  prompts,
   resLocals,
+  questionFiles,
 }: {
-  prompts: AiQuestionGenerationPrompt[];
   resLocals: Record<string, any>;
+  questionFiles: Record<string, string>;
 }) {
   return html`
     <div class="tab-content" style="height: 100%">
@@ -308,8 +320,8 @@ function QuestionAndFilePreview({
       </div>
       <div role="tabpanel" id="question-code" class="tab-pane" style="height: 100%">
         ${QuestionCodeEditors({
-          htmlContents: prompts[prompts.length - 1].html,
-          pythonContents: prompts[prompts.length - 1].python,
+          htmlContents: questionFiles['question.html'],
+          pythonContents: questionFiles['server.py'],
           csrfToken: resLocals.__csrf_token,
         })}
       </div>
@@ -317,7 +329,7 @@ function QuestionAndFilePreview({
         ${renderHtml(
           <Hydrate>
             <RichTextEditor
-              htmlContents={prompts[prompts.length - 1].html}
+              htmlContents={questionFiles['question.html']}
               csrfToken={resLocals.__csrf_token}
             />
           </Hydrate>,
