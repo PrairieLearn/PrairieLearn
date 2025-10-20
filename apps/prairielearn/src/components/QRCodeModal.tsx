@@ -15,7 +15,9 @@ export function QRCodeModalHtml({
   title: string;
   content: string;
 }) {
-  const qrCodeSvg = new QR({ content, container: 'svg-viewbox' }).svg();
+  const qrCodeSvg = new QR({ content, container: 'svg-viewbox' })
+    .svg()
+    .replace('<svg ', '<svg style="width:100%;height:100%;" ');
 
   return HtmlModal({
     id,
@@ -38,7 +40,10 @@ export function QRCodeModal({
   show: boolean;
   onHide: () => void;
 }) {
-  const svg = useMemo(() => new QR({ content, container: 'svg-viewbox' }).svg(), [content]);
+  const svg = useMemo(() => new QR({ content, container: 'svg-viewbox' }).svg(), [content]).replace(
+    '<svg ',
+    '<svg style="width:100%;height:100%;" ',
+  );
   return (
     <Modal show={show} size="lg" aria-labelledby={`${id}-title`} backdrop="static" onHide={onHide}>
       <Modal.Header closeButton>
