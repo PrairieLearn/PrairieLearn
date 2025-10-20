@@ -228,6 +228,9 @@ export function hasRole(
   if (isDangerousFullAuthzPermissions(authzData)) {
     return true;
   }
+
+  // If the user is an instructor, and the requestedRole is student, this should fail.
+  // We want to prevent instructors from calling functions that are only meant for students.
   if (requestedRole === 'Student' && authzData.has_student_access) {
     return true;
   }
