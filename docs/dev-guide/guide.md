@@ -514,7 +514,7 @@ await updateEnrollmentStatus({
 });
 ```
 
-In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `requiredRoleOptions` parameter is `'student'`, but the current user is an instructor, so it would throw an error.
+In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `requiredRoleOptions` parameter is `'Student'`, but the current user is an instructor, so it would throw an error.
 
 In some cases, you may not have access to `authzData`, e.g. if are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullAuthzPermissions` function to build a dummy `authzData` object that allows you to perform the action.
 
@@ -522,7 +522,7 @@ In some cases, you may not have access to `authzData`, e.g. if are pulling data 
 const authzData = updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
-  requiredRoleOptions: 'Student',
+  requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
   authzData: dangerousFullAuthzPermissions(),
 });
 ```
