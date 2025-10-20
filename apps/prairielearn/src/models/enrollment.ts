@@ -595,7 +595,7 @@ export async function deleteEnrollment({
 }: {
   enrollment: Enrollment;
   actionDetail: SupportedActionsForTable<'enrollments'>;
-  roleNeeded: 'student' | 'instructor';
+  roleNeeded: 'instructor';
   authzData: AuthzData | DangerousAuthzData;
 }): Promise<Enrollment> {
   assertRequiredRole(roleNeeded, authzData);
@@ -639,7 +639,7 @@ export async function inviteEnrollment({
 }: {
   enrollment: Enrollment;
   pendingUid: string;
-  roleNeeded: 'student' | 'instructor';
+  roleNeeded: 'instructor';
   authzData: AuthzData | DangerousAuthzData;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
@@ -656,4 +656,3 @@ export async function inviteEnrollment({
     });
   });
 }
-

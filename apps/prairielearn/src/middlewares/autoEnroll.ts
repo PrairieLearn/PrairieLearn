@@ -18,7 +18,9 @@ export default asyncHandler(async (req, res, next) => {
   // We select by user UID so that we can find invited/rejected enrollments as well
   const existingEnrollment = await selectOptionalEnrollmentByUid({
     uid: res.locals.authn_user.uid,
-    course_instance_id: courseInstance.id,
+    courseInstance,
+    roleNeeded: 'student',
+    authzData: res.locals.authz_data,
   });
 
   // Check if the self-enrollment institution restriction is satisfied
@@ -52,9 +54,9 @@ export default asyncHandler(async (req, res, next) => {
     await ensureCheckedEnrollment({
       institution: res.locals.institution,
       course: res.locals.course,
-      course_instance: res.locals.course_instance,
-      authz_data: res.locals.authz_data,
-      action_detail: 'implicit_joined',
+      courseInstance,
+      authzData: res.locals.authz_data,
+      actionDetail: 'implicit_joined',
     });
 
     // This is the only part of the `authz_data` that would change as a

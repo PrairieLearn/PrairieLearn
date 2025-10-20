@@ -4,6 +4,7 @@ import { run } from '@prairielearn/run';
 
 import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 import { SelectUserSchema } from '../authn.types.js';
+import { EnumCourseInstanceRoleSchema, EnumCourseRoleSchema } from '../db-types.js';
 
 import {
   RawStaffAssessmentSchema,
@@ -37,8 +38,8 @@ const RawAuthzDataSchema = z.object({
   has_course_permission_view: z.boolean(),
   has_course_permission_edit: z.boolean(),
   has_course_permission_own: z.boolean(),
-  course_role: z.string().optional(),
-  course_instance_role: z.string().optional(),
+  course_role: EnumCourseRoleSchema.optional(),
+  course_instance_role: EnumCourseInstanceRoleSchema.optional(),
   mode: z.string().optional(),
   has_student_access: z.boolean().optional(),
   has_student_access_with_enrollment: z.boolean().optional(),

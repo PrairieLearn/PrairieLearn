@@ -12,9 +12,8 @@ import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 import {
-  deleteEnrollmentById,
-  enrollUserInCourseInstance,
-  inviteEnrollmentById,
+  deleteEnrollment,
+  inviteEnrollment,
   selectEnrollmentById,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
@@ -126,7 +125,7 @@ router.post(
     const enrollment_id = req.params.enrollment_id;
 
     // assert that the enrollment belongs to the course instance
-    const enrollment = await selectEnrollmentById({ id: enrollment_id });
+    const enrollment = await selectEnrollmentById({ id: enrollment_id, courseInstance: course_instance });
     if (enrollment.course_instance_id !== course_instance.id) {
       throw new HttpStatusError(400, 'Enrollment does not belong to the course instance');
     }
@@ -137,11 +136,10 @@ router.post(
           throw new HttpStatusError(400, 'Enrollment is not joined');
         }
         await setEnrollmentStatus({
+          enrollment,
           status: 'blocked',
-          enrollment_id,
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
-          required_status: 'joined',
+          roleNeeded: 'instructor',
+          authzData: res.locals.authz_data,
         });
         res.redirect(req.originalUrl);
         break;
@@ -150,11 +148,11 @@ router.post(
         if (enrollment.status !== 'blocked') {
           throw new HttpStatusError(400, 'Enrollment is not blocked');
         }
-        await enrollUserInCourseInstance({
-          enrollment_id,
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
-          action_detail: 'unblocked',
+        await setEnrollmentStatus({
+          enrollment,
+          status: 'joined',
+          roleNeeded: 'instructor',
+          authzData: res.locals.authz_data,
         });
         res.redirect(req.originalUrl);
         break;
@@ -163,11 +161,11 @@ router.post(
         if (enrollment.status !== 'invited') {
           throw new HttpStatusError(400, 'Enrollment is not invited');
         }
-        await deleteEnrollmentById({
-          enrollment_id,
-          action_detail: 'invitation_deleted',
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
+        await deleteEnrollment({
+          enrollment,
+          actionDetail: 'invitation_deleted',
+          roleNeeded: 'instructor',
+          authzData: res.locals.authz_data,
         });
         res.redirect(
           `/pl/course_instance/${course_instance.id}/instructor/instance_admin/students`,
@@ -181,11 +179,11 @@ router.post(
         if (enrollment.status !== 'rejected') {
           throw new HttpStatusError(400, 'Enrollment is not rejected');
         }
-        await inviteEnrollmentById({
-          enrollment_id,
-          pending_uid: enrollment.pending_uid,
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
+        await inviteEnrollment({
+          enrollment,
+          pendingUid: enrollment.pending_uid,
+          roleNeeded: 'instructor',
+          authzData: res.locals.authz_data,
         });
         res.redirect(req.originalUrl);
         break;

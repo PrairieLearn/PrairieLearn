@@ -7,7 +7,11 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
-import { getPageContext } from '../../lib/client/page-context.js';
+import {
+  dangerousFullAuthzPermissions,
+  getCourseInstanceContext,
+  getPageContext,
+} from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
@@ -130,24 +134,28 @@ router.post(
     const body = BodySchema.parse(req.body);
 
     const {
-      authn_user: { uid, user_id },
+      authn_user: { uid, user_id: userId },
     } = getPageContext(res.locals, { withAuthzData: false });
+
+    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'student');
 
     switch (body.__action) {
       case 'accept_invitation': {
         await ensureEnrollment({
-          course_instance_id: body.course_instance_id,
-          user_id,
-          agent_user_id: user_id,
-          agent_authn_user_id: user_id,
-          action_detail: 'invitation_accepted',
+          courseInstance,
+          userId,
+          authzData: dangerousFullAuthzPermissions(),
+          roleNeeded: 'student',
+          actionDetail: 'invitation_accepted',
         });
         break;
       }
       case 'reject_invitation': {
         const enrollment = await selectOptionalEnrollmentByPendingUid({
-          course_instance_id: body.course_instance_id,
-          pending_uid: uid,
+          courseInstance,
+          pendingUid: uid,
+          roleNeeded: 'student',
+          authzData: dangerousFullAuthzPermissions(),
         });
 
         if (!enrollment) {
@@ -159,18 +167,19 @@ router.post(
         }
 
         await setEnrollmentStatus({
-          enrollment_id: enrollment.id,
+          enrollment,
           status: 'rejected',
-          agent_user_id: user_id,
-          agent_authn_user_id: user_id,
-          required_status: 'invited',
+          roleNeeded: 'student',
+          authzData: dangerousFullAuthzPermissions(),
         });
         break;
       }
       case 'unenroll': {
         const enrollment = await selectOptionalEnrollmentByUid({
-          course_instance_id: body.course_instance_id,
+          courseInstance,
           uid,
+          roleNeeded: 'student',
+          authzData: dangerousFullAuthzPermissions(),
         });
 
         if (!enrollment) {
@@ -178,11 +187,10 @@ router.post(
         }
 
         await setEnrollmentStatus({
-          enrollment_id: enrollment.id,
+          enrollment,
           status: 'removed',
-          agent_user_id: user_id,
-          agent_authn_user_id: user_id,
-          required_status: 'joined',
+          roleNeeded: 'student',
+          authzData: dangerousFullAuthzPermissions(),
         });
         break;
       }
