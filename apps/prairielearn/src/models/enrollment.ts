@@ -543,7 +543,7 @@ export async function setEnrollmentStatus({
         return {
           previousStatus: 'joined',
           actionDetail: 'unblocked',
-          requiredRole: 'Student Data Editor',
+          requiredRole: 'Student',
         };
       case 'rejected':
         return {
@@ -563,17 +563,17 @@ export async function setEnrollmentStatus({
   });
 
   return await runInTransactionAsync(async () => {
-    const oldEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (oldEnrollment.user_id) {
-      await selectAndLockUser(oldEnrollment.user_id);
+    await _selectAndLockEnrollment(enrollment.id);
+    if (enrollment.user_id) {
+      await selectAndLockUser(enrollment.user_id);
     }
     // The enrollment is already in the desired status, so we can return early.
-    if (oldEnrollment.status === status) {
-      return oldEnrollment;
+    if (enrollment.status === status) {
+      return enrollment;
     }
 
     // Assert that the enrollment is in the previous status.
-    assertEnrollmentStatus(oldEnrollment, transitionInformation.previousStatus);
+    assertEnrollmentStatus(enrollment, transitionInformation.previousStatus);
     // Assert that the caller is authorized to perform the action.
     assertRequiredRoles(transitionInformation.requiredRole, authzData);
 
@@ -588,7 +588,7 @@ export async function setEnrollmentStatus({
       action: 'update',
       actionDetail: transitionInformation.actionDetail,
       rowId: newEnrollment.id,
-      oldRow: oldEnrollment,
+      oldRow: enrollment,
       newRow: newEnrollment,
       agentUserId: authzData.user.user_id,
       agentAuthnUserId: authzData.authn_user.user_id,

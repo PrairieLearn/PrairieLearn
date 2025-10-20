@@ -315,7 +315,7 @@ describe('Self-enrollment settings transitions', () => {
        VALUES ($course_instance_id, 'invited', $pending_uid)`,
       {
         course_instance_id: '1',
-        pendingUid: invitedUser.uid,
+        pending_uid: invitedUser.uid,
       },
     );
 

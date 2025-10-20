@@ -2,6 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
@@ -148,7 +149,7 @@ router.post(
     });
 
     if (authzData === null) {
-      throw new Error('Access denied');
+      throw new HttpStatusError(403, 'Access denied');
     }
 
     switch (body.__action) {
@@ -171,11 +172,11 @@ router.post(
         });
 
         if (!enrollment) {
-          throw new Error('Could not find enrollment to reject');
+          throw new HttpStatusError(404, 'Could not find enrollment to reject');
         }
 
         if (enrollment.status !== 'invited') {
-          throw new Error('User does not have access to the course instance');
+          throw new HttpStatusError(403, 'User does not have access to the course instance');
         }
 
         await setEnrollmentStatus({
@@ -195,7 +196,7 @@ router.post(
         });
 
         if (!enrollment) {
-          throw new Error('Could not find enrollment to unenroll');
+          throw new HttpStatusError(404, 'Could not find enrollment to unenroll');
         }
 
         await setEnrollmentStatus({
