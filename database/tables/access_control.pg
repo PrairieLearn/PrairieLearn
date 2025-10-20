@@ -1,34 +1,34 @@
 columns
     after_complete_hide_questions: boolean
-    after_complete_hide_questions_date_control_hide_again_date: timestamp with time zone
-    after_complete_hide_questions_date_control_hide_again_date_enab: boolean
-    after_complete_hide_questions_date_control_show_again_date: timestamp with time zone
-    after_complete_hide_questions_date_control_show_again_date_enab: boolean
+    after_complete_hide_questions_hide_again_date: timestamp with time zone
+    after_complete_hide_questions_hide_again_date_overridden: boolean
+    after_complete_hide_questions_show_again_date: timestamp with time zone
+    after_complete_hide_questions_show_again_date_overridden: boolean
     after_complete_hide_score: boolean
-    after_complete_hide_score_date_control_show_again_date: timestamp with time zone
-    after_complete_hide_score_date_control_show_again_date_enabled: boolean
+    after_complete_hide_score_show_again_date: timestamp with time zone
+    after_complete_hide_score_show_again_date_overridden: boolean
     assessment_id: bigint not null
     block_access: boolean
     course_instance_id: bigint not null
     date_control_after_last_deadline_allow_submissions: boolean
     date_control_after_last_deadline_credit: integer
-    date_control_after_last_deadline_credit_enable: boolean
+    date_control_after_last_deadline_credit_overridden: boolean
     date_control_due_date: timestamp with time zone
-    date_control_due_date_enabled: boolean
+    date_control_due_date_overridden: boolean
     date_control_duration_minutes: integer
-    date_control_duration_minutes_enabled: boolean
-    date_control_early_deadlines_enabled: boolean
-    date_control_enabled: boolean
-    date_control_late_deadlines_enabled: boolean
+    date_control_duration_minutes_overridden: boolean
+    date_control_early_deadlines_overridden: boolean
+    date_control_late_deadlines_overridden: boolean
+    date_control_overridden: boolean
     date_control_password: text
-    date_control_password_enabled: boolean
+    date_control_password_overridden: boolean
     date_control_release_date: timestamp with time zone
-    date_control_release_date_enabled: boolean
+    date_control_release_date_overridden: boolean
     enabled: boolean
     id: bigint not null default nextval('access_control_id_seq'::regclass)
     list_before_release: boolean
     order: integer
-    prairietest_control_enabled: boolean
+    prairietest_control_overridden: boolean
 
 indexes
     access_control_pkey: PRIMARY KEY (id) USING btree (id)

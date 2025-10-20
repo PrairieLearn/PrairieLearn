@@ -1484,7 +1484,7 @@ export function validateAccessControlArray({
   warnings: string[];
   errors: string[];
 }[] {
-  return accessControlJsonArray.map((accessControlJson, index) => {
+  const results = accessControlJsonArray.map((accessControlJson, index) => {
     const { warnings, errors } = validateAccessControl({ accessControlJson });
 
     return {
@@ -1493,6 +1493,27 @@ export function validateAccessControlArray({
       errors,
     };
   });
+
+  // count assignment-level rules (rules with no targets or empty targets array)
+  const assignmentLevelRules = accessControlJsonArray.filter(
+    (rule) => !rule.targets || rule.targets.length === 0,
+  );
+
+  // require exactly one assignment-level rule, add error to all rules if this check fails
+  if (assignmentLevelRules.length === 0) {
+    const errorMessage =
+      'No assignment-level rule found. Exactly one assignment-level rule (without targets) is required per assessment.';
+    results.forEach((result) => {
+      result.errors.push(errorMessage);
+    });
+  } else if (assignmentLevelRules.length > 1) {
+    const errorMessage = `Found ${assignmentLevelRules.length} assignment-level rules (rules without targets). Exactly one assignment-level rule is required per assessment.`;
+    results.forEach((result) => {
+      result.errors.push(errorMessage);
+    });
+  }
+
+  return results;
 }
 
 export function validateAccessControl({
@@ -1756,28 +1777,53 @@ export async function loadAccessControl({
       ];
     }
 
-    return json.map((ruleJson, index) => {
-      // parse with Zod schema
-      const result = schemas.AccessControlJsonSchema.safeParse(ruleJson);
-      if (!result.success) {
+    // Parse all rules with Zod schema
+    const parsedRules: { result: z.SafeParseReturnType<any, AccessControlJson>; index: number }[] =
+      json.map((ruleJson, index) => ({
+        result: schemas.AccessControlJsonSchema.safeParse(ruleJson),
+        index,
+      }));
+
+    // Separate successfully parsed rules from those with parse errors
+    const successfullyParsedRules: AccessControlJson[] = [];
+    const infoFiles: InfoFile<AccessControlJson>[] = [];
+
+    parsedRules.forEach(({ result, index }) => {
+      if (result.success) {
+        successfullyParsedRules.push(result.data);
+        infoFiles.push(
+          infofile.makeInfoFile<AccessControlJson>({
+            data: result.data,
+          }),
+        );
+      } else {
         const errors = result.error.issues.map(
           (e) => `Rule ${index + 1}: ${e.path.join('.')}: ${e.message}`,
         );
-        return infofile.makeError(errors.join('\n'));
+        infoFiles.push(infofile.makeError(errors.join('\n')));
       }
+    });
 
-      // run validation
-      const validationResult = validateAccessControl({ accessControlJson: result.data });
-
-      const infoFile = infofile.makeInfoFile<AccessControlJson>({
-        data: result.data,
+    // Run validation on successfully parsed rules (includes multi-rule validation)
+    if (successfullyParsedRules.length > 0) {
+      const validationResults = validateAccessControlArray({
+        accessControlJsonArray: successfullyParsedRules,
       });
 
-      infofile.addErrors(infoFile, validationResult.errors);
-      infofile.addWarnings(infoFile, validationResult.warnings);
+      // Apply validation results to corresponding infoFiles
+      let successfulRuleIndex = 0;
+      infoFiles.forEach((infoFile, _) => {
+        // Only apply validation to successfully parsed rules
+        if (infoFile.data) {
+          const validationResult = validationResults[successfulRuleIndex];
+          infofile.addErrors(infoFile, validationResult.errors);
+          infofile.addWarnings(infoFile, validationResult.warnings);
+          successfulRuleIndex++;
+        }
+      });
+    }
 
-      return infoFile;
-    });
+    return infoFiles;
   } catch (err) {
     if (err.code === 'ENOENT') {
       // file doesn't exist, return empty array (access control is optional)

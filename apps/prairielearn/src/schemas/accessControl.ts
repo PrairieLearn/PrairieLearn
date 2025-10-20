@@ -7,24 +7,19 @@ export const DeadlineEntryJsonSchema = z.object({
 
 const AfterLastDeadlineJsonSchema = z.object({
   allowSubmissions: z.boolean().optional(),
-  creditEnabled: z.boolean().optional(),
   credit: z.number().optional(),
 });
 
 const DateControlJsonSchema = z
   .object({
-    enabled: z.boolean().optional(),
-    releaseDateEnabled: z.boolean().optional().describe('Whether to enable release date'),
+    enabled: z.boolean().optional().describe('Whether dateControl is enabled or not'),
     releaseDate: z.string().optional().describe('Deadline date as ISO String'),
-    dueDateEnabled: z.boolean().optional().describe('Whether to enable due date'),
     dueDate: z.string().nullable().optional().describe('Due date as ISO String'),
-    earlyDeadlinesEnabled: z.boolean().optional().describe('Whether to enable early deadlines'),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
       .nullable()
       .optional()
       .describe('Array of early deadlines with credit as percentages'),
-    lateDeadlinesEnabled: z.boolean().optional().describe('Whether to enable late deadlines'),
     lateDeadlines: z
       .array(DeadlineEntryJsonSchema)
       .nullable()
@@ -33,14 +28,12 @@ const DateControlJsonSchema = z
     afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
       'Controls for assessment behaviour after last deadline',
     ).optional(),
-    durationMinutesEnabled: z.boolean().optional().describe('Whether to enable duration minutes'),
     durationMinutes: z
       .number()
       .int()
       .positive()
       .optional()
       .describe('Desired duration limit for assessment'),
-    passwordEnabled: z.boolean().optional().describe('Whether to enable password'),
     password: z.string().nullable().optional().describe('Password for assessment'),
   })
   .optional();
@@ -52,7 +45,7 @@ const ExamJsonSchema = z.object({
 
 const PrairieTestControlJsonSchema = z
   .object({
-    enabled: z.boolean().optional().describe('Whether to enable PrairieTest controls'),
+    enabled: z.boolean().optional().describe('Whether praireTestControl is enabled or not'),
     exams: z
       .array(ExamJsonSchema)
       .optional()
@@ -62,23 +55,11 @@ const PrairieTestControlJsonSchema = z
 
 const HideQuestionsDateControlJsonSchema = z
   .object({
-    showAgainDateEnabled: z
-      .boolean()
-      .optional()
-      .describe(
-        'Whether to enable the ability for revealing hidden questions after assessment completion',
-      ),
     showAgainDate: z
       .string()
       .optional()
       .describe(
         'Date as ISO String for when to unhide questions to students after assessment completion',
-      ),
-    hideAgainDateEnabled: z
-      .boolean()
-      .optional()
-      .describe(
-        'Whether to enable the ability for re-hiding revealed questions after assessment completion',
       ),
     hideAgainDate: z
       .string()
@@ -91,10 +72,6 @@ const HideQuestionsDateControlJsonSchema = z
 
 const HideScoreDateControlJsonSchema = z
   .object({
-    showAgainDateEnabled: z
-      .boolean()
-      .optional()
-      .describe('Whether to enable the ability to show hidden scores after assessment completion'),
     showAgainDate: z
       .string()
       .optional()
@@ -145,7 +122,9 @@ export const AccessControlJsonSchema = z.object({
   listBeforeRelease: z
     .boolean()
     .optional()
-    .describe('Whether students can see the title and click into the assessment before release'),
+    .describe('Whether students can see the title and click into the assessment before release')
+    .default(true),
+
   dateControl: DateControlJsonSchema,
   prairieTestControl: PrairieTestControlJsonSchema,
   afterComplete: AfterCompleteJsonSchema,

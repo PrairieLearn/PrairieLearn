@@ -16,6 +16,25 @@ WHERE
 ORDER BY
   "order";
 
+-- BLOCK select_access_control_with_targets
+SELECT
+  ac.id,
+  ac."order",
+  COALESCE(
+    (
+      SELECT array_agg(target_type::text)
+      FROM access_control_target
+      WHERE access_control_id = ac.id
+    ),
+    ARRAY[]::text[]
+  ) AS target_types
+FROM
+  access_control ac
+WHERE
+  ac.assessment_id = $assessment_id
+ORDER BY
+  ac."order";
+
 -- BLOCK insert_access_control
 INSERT INTO
   access_control (
@@ -25,29 +44,29 @@ INSERT INTO
     block_access,
     list_before_release,
     "order",
-    date_control_enabled,
-    date_control_release_date_enabled,
+    date_control_overridden,
+    date_control_release_date_overridden,
     date_control_release_date,
-    date_control_due_date_enabled,
+    date_control_due_date_overridden,
     date_control_due_date,
-    date_control_early_deadlines_enabled,
-    date_control_late_deadlines_enabled,
+    date_control_early_deadlines_overridden,
+    date_control_late_deadlines_overridden,
     date_control_after_last_deadline_allow_submissions,
-    date_control_after_last_deadline_credit_enable,
+    date_control_after_last_deadline_credit_overridden,
     date_control_after_last_deadline_credit,
-    date_control_duration_minutes_enabled,
+    date_control_duration_minutes_overridden,
     date_control_duration_minutes,
-    date_control_password_enabled,
+    date_control_password_overridden,
     date_control_password,
-    prairietest_control_enabled,
-    after_complete_hide_questions, 
-    after_complete_hide_questions_date_control_show_again_date_enabled,
-    after_complete_hide_questions_date_control_show_again_date,
-    after_complete_hide_questions_date_control_hide_again_date_enabled,
-    after_complete_hide_questions_date_control_hide_again_date,
+    prairietest_control_overridden,
+    after_complete_hide_questions,
+    after_complete_hide_questions_show_again_date_overridden,
+    after_complete_hide_questions_show_again_date,
+    after_complete_hide_questions_hide_again_date_overridden,
+    after_complete_hide_questions_hide_again_date,
     after_complete_hide_score,
-    after_complete_hide_score_date_control_show_again_date_enabled,
-    after_complete_hide_score_date_control_show_again_date
+    after_complete_hide_score_show_again_date_overridden,
+    after_complete_hide_score_show_again_date
   )
 VALUES
   (
@@ -57,27 +76,29 @@ VALUES
     $block_access,
     $list_before_release,
     $order,
-    $date_control_enabled,
-    $date_control_release_date_enabled,
+    $date_control_overridden,
+    $date_control_release_date_overridden,
     $date_control_release_date,
-    $date_control_due_date_enabled,
+    $date_control_due_date_overridden,
     $date_control_due_date,
-    $date_control_early_deadlines_enabled,
-    $date_control_late_deadlines_enabled,
+    $date_control_early_deadlines_overridden,
+    $date_control_late_deadlines_overridden,
     $date_control_after_last_deadline_allow_submissions,
-    $date_control_after_last_deadline_credit_enable,
+    $date_control_after_last_deadline_credit_overridden,
     $date_control_after_last_deadline_credit,
-    $date_control_duration_minutes_enabled,
+    $date_control_duration_minutes_overridden,
     $date_control_duration_minutes,
-    $date_control_password_enabled,
+    $date_control_password_overridden,
     $date_control_password,
-    $prairietest_control_enabled,
-    $after_complete_hide_questions_before_date_enabled,
-    $after_complete_hide_questions_before_date,
-    $after_complete_hide_questions_after_date_enabled,
-    $after_complete_hide_questions_after_date,
-    $after_complete_hide_score_before_date_enabled,
-    $after_complete_hide_score_before_date
+    $prairietest_control_overridden,
+    $after_complete_hide_questions,
+    $after_complete_hide_questions_show_again_date_overridden,
+    $after_complete_hide_questions_show_again_date,
+    $after_complete_hide_questions_hide_again_date_overridden,
+    $after_complete_hide_questions_hide_again_date,
+    $after_complete_hide_score,
+    $after_complete_hide_score_show_again_date_overridden,
+    $after_complete_hide_score_show_again_date
   )
 RETURNING
   *;
@@ -86,6 +107,11 @@ RETURNING
 DELETE FROM access_control
 WHERE
   assessment_id = $assessment_id;
+
+-- BLOCK delete_access_control_by_ids
+DELETE FROM access_control
+WHERE
+  id = ANY ($ids::bigint[]);
 
 -- BLOCK insert_access_control_targets
 INSERT INTO
@@ -98,17 +124,6 @@ FROM
   UNNEST($targets::jsonb[]) AS t
 RETURNING
   *;
-/*
-TODO: Do we want to unpolymorphise this for better integrity?
-assessment_id BIGINT REFERENCES assessments(id) ON DELETE CASCADE,
-group_id BIGINT REFERENCES access_control_groups(id) ON DELETE CASCADE,
-user_id BIGINT REFERENCES users(user_id) ON DELETE CASCADE,
-CHECK (
-  (target_type = 'assessment' AND assessment_id IS NOT NULL AND group_id IS NULL AND user_id IS NULL) OR
-  (target_type = 'group' AND group_id IS NOT NULL AND assessment_id IS NULL AND user_id IS NULL) OR
-  (target_type = 'individual' AND user_id IS NOT NULL AND assessment_id IS NULL AND group_id IS NULL)
-)
-*/
 
 -- BLOCK delete_access_control_targets
 DELETE FROM access_control_target
@@ -175,3 +190,23 @@ FROM
 WHERE
   uuid = ANY ($exam_uuids::uuid[])
   AND course_id = $course_id;
+
+
+-- BLOCK update_individual_rule_orders
+WITH individual_rules AS (
+  SELECT 
+    ac.id,
+    ROW_NUMBER() OVER (ORDER BY ac."order") + $start_order - 1 AS new_order
+  FROM access_control ac
+  WHERE ac.assessment_id = $assessment_id
+    AND EXISTS (
+      SELECT 1
+      FROM access_control_target act
+      WHERE act.access_control_id = ac.id
+        AND act.target_type = 'individual'
+    )
+)
+UPDATE access_control
+SET "order" = individual_rules.new_order
+FROM individual_rules
+WHERE access_control.id = individual_rules.id;

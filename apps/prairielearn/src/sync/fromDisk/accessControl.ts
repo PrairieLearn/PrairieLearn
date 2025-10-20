@@ -10,6 +10,25 @@ import * as infofile from '../infofile.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
+ * Maps a JSON field value to database overridden/value pair.
+ * - undefined → overridden: false, value: null (inherit from previous rule)
+ * - null → overridden: true, value: null (override and unset)
+ * - value → overridden: true, value: value (override and set)
+ */
+function mapField<T>(jsonValue: T | null | undefined): {
+  overridden: boolean | null;
+  value: T | null;
+} {
+  if (jsonValue === undefined) {
+    return { overridden: false, value: null };
+  } else if (jsonValue === null) {
+    return { overridden: true, value: null };
+  } else {
+    return { overridden: true, value: jsonValue };
+  }
+}
+
+/**
  * Syncs access control rules for an assessment.
  */
 export async function syncAccessControl(
@@ -24,37 +43,84 @@ export async function syncAccessControl(
     { course_instance_id: courseInstanceId },
     AccessControlGroupSchema,
   );
-  const validGroupIds = new Set(existingGroups.map((g) => g.uuid.toString()));
+  const validGroupIds = new Map(existingGroups.map((g) => [g.uuid.toString(), g.id]));
 
+  // First pass: validate all rules and check for errors
+  for (const ruleInfo of accessControlRules) {
+    if (infofile.hasErrors(ruleInfo) || !ruleInfo.data) continue;
+
+    const rule = ruleInfo.data;
+
+    // Validate group targets
+    const invalidGroups: string[] = [];
+    (rule.targets ?? []).forEach((target) => {
+      if (!validGroupIds.has(target)) {
+        invalidGroups.push(target);
+      }
+    });
+
+    if (invalidGroups.length > 0) {
+      infofile.addError(
+        ruleInfo,
+        `The following group IDs do not exist: ${invalidGroups.join(', ')}. Create these groups in the UI first.`,
+      );
+    }
+  }
+
+  // check if any rule has errors
+  const hasAnyErrors = accessControlRules.some((ruleInfo) => infofile.hasErrors(ruleInfo));
+  if (hasAnyErrors) {
+    // don't sync any rules if any rule has errors
+    return;
+  }
+
+  // get all existing rules with their targets
   const existingRules = await queryRows(
-    sql.select_access_control,
+    sql.select_access_control_with_targets,
     { assessment_id: assessmentId },
-    AccessControlSchema,
+    z.object({
+      id: IdSchema,
+      order: z.number(),
+      target_types: z.array(z.enum(['assessment', 'group', 'individual'])).nullable(),
+    }),
   );
 
   await runInTransactionAsync(async () => {
-    // delete existing rules and related data
-    // TODO: probably should make this an upsert if possible.
-    if (existingRules.length > 0) {
+    // For allowing temporary unique violations for reordering.
+    await execute(
+      'SET CONSTRAINTS access_control_course_instance_id_assessment_id_order_key DEFERRED',
+    );
+
+    // Find individual-level rules; these should not be deleted in sync
+    const individualRuleIds = existingRules
+      .filter((rule) => rule.target_types?.includes('individual'))
+      .map((rule) => rule.id);
+
+    // Identify rules to delete (assignment and group level only)
+    const rulesToDelete = existingRules.filter((rule) => !individualRuleIds.includes(rule.id));
+
+    // Delete assessment and group-level rules
+    if (rulesToDelete.length > 0) {
+      const idsToDelete = rulesToDelete.map((r) => r.id);
+
       await execute(sql.delete_access_control_targets, {
-        access_control_ids: existingRules.map((r) => r.id),
+        access_control_ids: idsToDelete,
       });
       await execute(sql.delete_access_control_early_deadlines, {
-        access_control_ids: existingRules.map((r) => r.id),
+        access_control_ids: idsToDelete,
       });
       await execute(sql.delete_access_control_late_deadlines, {
-        access_control_ids: existingRules.map((r) => r.id),
+        access_control_ids: idsToDelete,
       });
       await execute(sql.delete_access_control_prairietest_exams, {
-        access_control_ids: existingRules.map((r) => r.id),
+        access_control_ids: idsToDelete,
       });
-      await execute(sql.delete_access_control, {
-        assessment_id: assessmentId,
+      await execute(sql.delete_access_control_by_ids, {
+        ids: idsToDelete,
       });
     }
 
-    // For each rule, insert
-    // TODO: For efficiency, we could save on some writes by coalescing all desired inserts for all rules and then insert all in one go.
+    // Insert new assessment-level and group-level rules from JSON
     for (let i = 0; i < accessControlRules.length; i++) {
       const ruleInfo = accessControlRules[i];
       if (infofile.hasErrors(ruleInfo) || !ruleInfo.data) continue;
@@ -62,114 +128,145 @@ export async function syncAccessControl(
       const rule = ruleInfo.data;
       const order = i + 1;
 
-      // parse targets as group IDs
+      // Find valid group targets
       const groupTargets: string[] = [];
-      const missingGroups: string[] = [];
-
       (rule.targets ?? []).forEach((target) => {
-        // targets are access_control_group.uuid values
         if (validGroupIds.has(target)) {
           groupTargets.push(target);
-        } else {
-          missingGroups.push(target);
         }
       });
 
-      // warn about groups that don't exist
-      if (missingGroups.length > 0) {
-        infofile.addWarning(
-          ruleInfo,
-          `The following group IDs do not exist and will be ignored: ${missingGroups.join(', ')}. Create these groups in the UI first.`,
-        );
-      }
-
-      // insert main access control rule
+      // Extract nested objects or {}
       const dateControl = rule.dateControl ?? {};
       const afterComplete = rule.afterComplete ?? {};
+      const afterLastDeadline = dateControl.afterLastDeadline ?? {};
+      const hideQuestionsDateControl = afterComplete.hideQuestionsDateControl ?? {};
+      const hideScoreDateControl = afterComplete.hideScoreDateControl ?? {};
 
+      // Map JSON -> DB override representation
+      const enabled = mapField(rule.enabled);
+      const blockAccess = mapField(rule.blockAccess);
+      const listBeforeRelease = mapField(rule.listBeforeRelease);
+
+      // Date control fields
+      const dateControlOverridden = mapField(dateControl.enabled);
+      const releaseDateOverridden = mapField(dateControl.releaseDate);
+      const dueDateOverridden = mapField(dateControl.dueDate);
+      const earlyDeadlinesOverridden = mapField(dateControl.earlyDeadlines);
+      const lateDeadlinesOverridden = mapField(dateControl.lateDeadlines);
+      const durationMinutesOverridden = mapField(dateControl.durationMinutes);
+      const passwordOverridden = mapField(dateControl.password);
+
+      // After Last Deadline
+      const afterLastDeadlineAllowSubmissions = mapField(afterLastDeadline.allowSubmissions);
+      const afterLastDeadlineCreditOverridden = mapField(afterLastDeadline.credit);
+
+      // PrairieTestControl
+      const prairietestControlOverridden = mapField(rule.prairieTestControl?.enabled);
+
+      // After Complete
+      const hideQuestions = mapField(afterComplete.hideQuestions);
+      const hideQuestionsShowAgainDateOverridden = mapField(hideQuestionsDateControl.showAgainDate);
+      const hideQuestionsHideAgainDateOverridden = mapField(hideQuestionsDateControl.hideAgainDate);
+      const hideScore = mapField(afterComplete.hideScore);
+      const hideScoreShowAgainDateOverridden = mapField(hideScoreDateControl.showAgainDate);
+
+      // Insert main rule
       const insertedRule = await queryRows(
         sql.insert_access_control,
         {
           course_instance_id: courseInstanceId,
           assessment_id: assessmentId,
-          enabled: rule.enabled,
-          block_access: rule.blockAccess,
-          list_before_release: rule.listBeforeRelease ?? null,
+          enabled: enabled.value ?? true,
+          block_access: blockAccess.value ?? false,
+          list_before_release: listBeforeRelease.value ?? true,
           order,
-          // Date control fields
-          date_control_enabled: dateControl.enabled ?? null,
-          date_control_release_date_enabled: dateControl.releaseDateEnabled ?? null,
-          date_control_release_date: dateControl.releaseDate ?? null,
-          date_control_due_date_enabled: dateControl.dueDateEnabled ?? null,
-          date_control_due_date: dateControl.dueDate ?? null,
-          date_control_early_deadlines_enabled: dateControl.earlyDeadlinesEnabled ?? null,
-          date_control_late_deadlines_enabled: dateControl.lateDeadlinesEnabled ?? null,
+
+          // Date control
+          date_control_overridden: dateControlOverridden.overridden,
+          date_control_release_date_overridden: releaseDateOverridden.overridden,
+          date_control_release_date: releaseDateOverridden.value,
+          date_control_due_date_overridden: dueDateOverridden.overridden,
+          date_control_due_date: dueDateOverridden.value,
+          date_control_early_deadlines_overridden: earlyDeadlinesOverridden.overridden,
+          date_control_late_deadlines_overridden: lateDeadlinesOverridden.overridden,
           date_control_after_last_deadline_allow_submissions:
-            dateControl.afterLastDeadline?.allowSubmissions ?? null,
-          date_control_after_last_deadline_credit_enable:
-            dateControl.afterLastDeadline?.creditEnabled ?? null,
-          date_control_after_last_deadline_credit: dateControl.afterLastDeadline?.credit ?? null,
-          date_control_duration_minutes_enabled: dateControl.durationMinutesEnabled ?? null,
-          date_control_duration_minutes: dateControl.durationMinutes ?? null,
-          date_control_password_enabled: dateControl.passwordEnabled ?? null,
-          date_control_password: dateControl.password ?? null,
+            afterLastDeadlineAllowSubmissions.value,
+          date_control_after_last_deadline_credit_overridden:
+            afterLastDeadlineCreditOverridden.overridden,
+          date_control_after_last_deadline_credit: afterLastDeadlineCreditOverridden.value,
+          date_control_duration_minutes_overridden: durationMinutesOverridden.overridden,
+          date_control_duration_minutes: durationMinutesOverridden.value,
+          date_control_password_overridden: passwordOverridden.overridden,
+          date_control_password: passwordOverridden.value,
+
           // PrairieTest control
-          prairietest_control_enabled: rule.prairieTestControl?.enabled ?? null,
-          after_complete_hide_questions: afterComplete.hideQuestions ?? null,
-          after_complete_hide_questions_date_control_show_again_date_enabled:
-            afterComplete.hideQuestionsDateControl?.showAgainDateEnabled ?? null,
-          after_complete_hide_questions_date_control_show_again_date:
-            afterComplete.hideQuestionsDateControl?.showAgainDate ?? null,
-          after_complete_hide_questions_date_control_hide_again_date_enabled:
-            afterComplete.hideQuestionsDateControl?.hideAgainDateEnabled ?? null,
-          after_complete_hide_questions_date_control_hide_again_date:
-            afterComplete.hideQuestionsDateControl?.hideAgainDate ?? null,
-          after_complete_hide_score: afterComplete.hideScore ?? null,
-          after_complete_hide_score_date_control_show_again_date_enabled:
-            afterComplete.hideScoreDateControl?.showAgainDateEnabled ?? null,
-          after_complete_hide_score_date_control_show_again_date:
-            afterComplete.hideScoreDateControl?.showAgainDate ?? null,
+          prairietest_control_overridden: prairietestControlOverridden.overridden,
+
+          // After complete
+          after_complete_hide_questions: hideQuestions.value,
+          after_complete_hide_questions_show_again_date_overridden:
+            hideQuestionsShowAgainDateOverridden.overridden,
+          after_complete_hide_questions_show_again_date: hideQuestionsShowAgainDateOverridden.value,
+          after_complete_hide_questions_hide_again_date_overridden:
+            hideQuestionsHideAgainDateOverridden.overridden,
+          after_complete_hide_questions_hide_again_date: hideQuestionsHideAgainDateOverridden.value,
+          after_complete_hide_score: hideScore.value,
+          after_complete_hide_score_show_again_date_overridden:
+            hideScoreShowAgainDateOverridden.overridden,
+          after_complete_hide_score_show_again_date: hideScoreShowAgainDateOverridden.value,
         },
         AccessControlSchema,
       );
 
       const accessControlId = insertedRule[0].id;
 
-      // insert targets (group references)
+      // Insert targets
       if (groupTargets.length > 0) {
-        // get db id for each group
-        const groupIdMap = new Map(existingGroups.map((g) => [g.uuid.toString(), g.id]));
-
+        // Target is group
         await execute(sql.insert_access_control_targets, {
-          targets: groupTargets.map((groupId) =>
-            JSON.stringify([accessControlId, 'group', groupIdMap.get(groupId)]),
+          targets: groupTargets.map((groupUuid) =>
+            JSON.stringify([accessControlId, 'group', validGroupIds.get(groupUuid)]),
           ),
+        });
+      } else {
+        // Target is assessment
+        await execute(sql.insert_access_control_targets, {
+          targets: [JSON.stringify([accessControlId, 'assessment', assessmentId])],
         });
       }
 
-      // insert early deadlines
-      if (dateControl.earlyDeadlines && dateControl.earlyDeadlines.length > 0) {
+      // Insert early deadlines if overridden and has values
+      if (
+        earlyDeadlinesOverridden.overridden &&
+        earlyDeadlinesOverridden.value &&
+        earlyDeadlinesOverridden.value.length > 0
+      ) {
         await execute(sql.insert_access_control_early_deadlines, {
-          deadlines: dateControl.earlyDeadlines.map((d) =>
+          deadlines: earlyDeadlinesOverridden.value.map((d) =>
             JSON.stringify([accessControlId, d.date, d.credit]),
           ),
         });
       }
 
-      // insert late deadlines
-      if (dateControl.lateDeadlines && dateControl.lateDeadlines.length > 0) {
+      // Insert late deadlines if overridden and has values
+      if (
+        lateDeadlinesOverridden.overridden &&
+        lateDeadlinesOverridden.value &&
+        lateDeadlinesOverridden.value.length > 0
+      ) {
         await execute(sql.insert_access_control_late_deadlines, {
-          deadlines: dateControl.lateDeadlines.map((d) =>
+          deadlines: lateDeadlinesOverridden.value.map((d) =>
             JSON.stringify([accessControlId, d.date, d.credit]),
           ),
         });
       }
 
-      // insert PrairieTest exams
+      // Insert PrairieTest exams if present
       if (rule.prairieTestControl?.exams && rule.prairieTestControl.exams.length > 0) {
         const examUuids = rule.prairieTestControl.exams.map((e) => e.examUuid);
 
-        // uuid => exams(id)
+        // lookup exam IDs by UUIDs
         const examResults = await queryRows(
           sql.get_exam_ids_by_uuids,
           {
@@ -181,7 +278,7 @@ export async function syncAccessControl(
 
         const uuidToExamIdMap = new Map(examResults.map((r) => [r.uuid, r.exam_id]));
 
-        // check for missing exam UUIDs and add warnings
+        // warn about missing exam UUIDs
         const missingUuids = examUuids.filter((uuid) => !uuidToExamIdMap.has(uuid));
         if (missingUuids.length > 0) {
           infofile.addWarning(
@@ -190,7 +287,8 @@ export async function syncAccessControl(
           );
         }
 
-        // insert only exams that were found
+        // TODO: is this the behaviour we want? Should we just fail instead?
+        // insert only found exams
         const validExams = rule.prairieTestControl.exams.filter((e) =>
           uuidToExamIdMap.has(e.examUuid),
         );
@@ -208,11 +306,18 @@ export async function syncAccessControl(
         }
       }
     }
+
+    // Update order numbers for individual-level rules
+    if (individualRuleIds.length > 0) {
+      const newMaxOrder = accessControlRules.length;
+      await execute(sql.update_individual_rule_orders, {
+        assessment_id: assessmentId,
+        start_order: newMaxOrder + 1,
+      });
+    }
   });
 }
 
-/** todo: make syncfromdisk call this */
-/** TODO: Can coalesce inserts every further */
 export async function sync(
   courseId: string,
   courseInstanceId: string,

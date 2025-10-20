@@ -228,33 +228,33 @@ export const AccessControlSchema = z.object({
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
-  date_control_after_last_deadline_credit_enable: z.boolean().nullable(),
+  date_control_after_last_deadline_credit_overridden: z.boolean().nullable(),
   date_control_due_date: DateFromISOString.nullable(),
-  date_control_due_date_enabled: z.boolean().nullable(),
+  date_control_due_date_overridden: z.boolean().nullable(),
   date_control_duration_minutes: z.number().nullable(),
-  date_control_duration_minutes_enabled: z.boolean().nullable(),
-  date_control_early_deadlines_enabled: z.boolean().nullable(),
-  date_control_enabled: z.boolean().nullable(),
-  date_control_late_deadlines_enabled: z.boolean().nullable(),
+  date_control_duration_minutes_overridden: z.boolean().nullable(),
+  date_control_early_deadlines_overridden: z.boolean().nullable(),
+  date_control_late_deadlines_overridden: z.boolean().nullable(),
+  date_control_overridden: z.boolean().nullable(),
   date_control_password: z.string().nullable(),
-  date_control_password_enabled: z.boolean().nullable(),
+  date_control_password_overridden: z.boolean().nullable(),
   date_control_release_date: DateFromISOString.nullable(),
-  date_control_release_date_enabled: z.boolean().nullable(),
+  date_control_release_date_overridden: z.boolean().nullable(),
 
   // Prairie test control
   after_complete_hide_questions: z.boolean().nullable(),
 
-  after_complete_hide_questions_date_control_hide_again_date: DateFromISOString.nullable(),
-  after_complete_hide_questions_date_control_hide_again_date_enabled: z.boolean().nullable(),
-  after_complete_hide_questions_date_control_show_again_date: DateFromISOString.nullable(),
-  after_complete_hide_questions_date_control_show_again_date_enabled: z.boolean().nullable(),
+  after_complete_hide_questions_hide_again_date: DateFromISOString.nullable(),
+  after_complete_hide_questions_hide_again_date_overridden: z.boolean().nullable(),
+  after_complete_hide_questions_show_again_date: DateFromISOString.nullable(),
+  after_complete_hide_questions_show_again_date_overridden: z.boolean().nullable(),
 
   after_complete_hide_score: z.boolean().nullable(),
-  after_complete_hide_score_date_control_show_again_date: DateFromISOString.nullable(),
-  after_complete_hide_score_date_control_show_again_date_enabled: z.boolean().nullable(),
+  after_complete_hide_score_show_again_date: DateFromISOString.nullable(),
+  after_complete_hide_score_show_again_date_overridden: z.boolean().nullable(),
   order: z.number().int(),
 
-  prairietest_control_enabled: z.boolean().nullable(),
+  prairietest_control_overridden: z.boolean().nullable(),
 });
 
 export const AccessControlEarlyDeadlineSchema = z.object({

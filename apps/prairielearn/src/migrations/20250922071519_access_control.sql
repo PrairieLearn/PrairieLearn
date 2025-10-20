@@ -10,31 +10,31 @@ CREATE TABLE IF NOT EXISTS access_control (
   list_before_release boolean,
   "order" INTEGER, -- precedence, lower is higher priority
   -- dateControl fields
-  date_control_enabled boolean,
-  date_control_release_date_enabled boolean,
+  date_control_overridden boolean,
+  date_control_release_date_overridden boolean,
   date_control_release_date TIMESTAMP WITH TIME ZONE,
-  date_control_due_date_enabled boolean,
+  date_control_due_date_overridden boolean,
   date_control_due_date TIMESTAMP WITH TIME ZONE,
-  date_control_early_deadlines_enabled boolean,
-  date_control_late_deadlines_enabled boolean,
+  date_control_early_deadlines_overridden boolean,
+  date_control_late_deadlines_overridden boolean,
   date_control_after_last_deadline_allow_submissions boolean,
-  date_control_after_last_deadline_credit_enable boolean,
+  date_control_after_last_deadline_credit_overridden boolean,
   date_control_after_last_deadline_credit int,
-  date_control_duration_minutes_enabled boolean,
+  date_control_duration_minutes_overridden boolean,
   date_control_duration_minutes int,
-  date_control_password_enabled boolean,
+  date_control_password_overridden boolean,
   date_control_password text,
-  prairietest_control_enabled boolean,
+  prairietest_control_overridden boolean,
   -- afterComplete fields
   after_complete_hide_questions boolean,
-  after_complete_hide_questions_date_control_show_again_date_enabled boolean,
-  after_complete_hide_questions_date_control_show_again_date TIMESTAMP WITH TIME ZONE,
-  after_complete_hide_questions_date_control_hide_again_date_enabled boolean,
-  after_complete_hide_questions_date_control_hide_again_date TIMESTAMP WITH TIME ZONE,
+  after_complete_hide_questions_show_again_date_overridden boolean,
+  after_complete_hide_questions_show_again_date TIMESTAMP WITH TIME ZONE,
+  after_complete_hide_questions_hide_again_date_overridden boolean,
+  after_complete_hide_questions_hide_again_date TIMESTAMP WITH TIME ZONE,
   after_complete_hide_score boolean,
-  after_complete_hide_score_date_control_show_again_date_enabled boolean,
-  after_complete_hide_score_date_control_show_again_date TIMESTAMP WITH TIME ZONE,
-  UNIQUE(course_instance_id, assessment_id, "order")
+  after_complete_hide_score_show_again_date_overridden boolean,
+  after_complete_hide_score_show_again_date TIMESTAMP WITH TIME ZONE,
+  UNIQUE(course_instance_id, assessment_id, "order") DEFERRABLE INITIALLY IMMEDIATE -- we allow for this to be deferred as reordering rules can cause temporary 
 );
 
 CREATE TABLE IF NOT EXISTS access_control_groups (
@@ -81,6 +81,6 @@ CREATE TABLE IF NOT EXISTS access_control_late_deadline (
 CREATE TABLE IF NOT EXISTS access_control_prairietest_exam (
   id BIGSERIAL PRIMARY KEY,
   access_control_id BIGINT NOT NULL REFERENCES access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  exam_id BIGINT NOT NULL REFERENCES exams (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  exam_id BIGINT NOT NULL REFERENCES exams (exam_id) ON DELETE CASCADE ON UPDATE CASCADE,
   read_only boolean
 );
