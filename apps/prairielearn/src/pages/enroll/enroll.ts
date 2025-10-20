@@ -91,9 +91,9 @@ router.post('/', [
       await ensureCheckedEnrollment({
         institution,
         course,
-        course_instance,
-        authz_data: res.locals.authz_data,
-        action_detail: 'explicit_joined',
+        courseInstance: course_instance,
+        authzData: res.locals.authz_data,
+        actionDetail: 'explicit_joined',
       });
 
       flash('success', `You have joined ${courseDisplayName}.`);

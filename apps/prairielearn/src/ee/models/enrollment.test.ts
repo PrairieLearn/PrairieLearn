@@ -69,21 +69,21 @@ describe('getEnrollmentCountsForInstitution', () => {
     });
 
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: freeUser.user_id,
+      courseInstance: { id: '1' } as any,
+      userId: freeUser.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
       action_detail: 'implicit_joined',
     });
     await ensureEnrollment({
-      course_instance_id: '1',
+      courseInstance: { id: '1' } as any,
       user_id: paidUser1.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
       action_detail: 'implicit_joined',
     });
     await ensureEnrollment({
-      course_instance_id: courseInstance.id,
+      courseInstance: courseInstance.id,
       user_id: paidUser2.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
@@ -94,7 +94,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        user_id: freeUser.user_id,
+        userId: freeUser.user_id,
         // This plan grant should not make this user count as a paid enrollment.
         plan_name: 'compute',
         type: 'stripe',
@@ -116,7 +116,7 @@ describe('getEnrollmentCountsForInstitution', () => {
     await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
-        course_instance_id: courseInstance.id,
+        courseInstance: courseInstance.id,
         user_id: paidUser2.user_id,
         plan_name: 'basic',
         type: 'stripe',
@@ -159,7 +159,7 @@ describe('getEnrollmentCountsForCourse', () => {
       email: 'student@example.com',
     });
     await ensureEnrollment({
-      course_instance_id: '1',
+      courseInstance: { id: '1' } as any,
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
@@ -181,7 +181,7 @@ describe('getEnrollmentCountsForCourse', () => {
     });
 
     await ensureEnrollment({
-      course_instance_id: '1',
+      courseInstance: { id: '1' } as any,
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
@@ -213,7 +213,7 @@ describe('getEnrollmentCountsForCourse', () => {
     });
 
     await ensureEnrollment({
-      course_instance_id: '1',
+      courseInstance: { id: '1' } as any,
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
@@ -262,7 +262,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       email: 'student@example.com',
     });
     await ensureEnrollment({
-      course_instance_id: '1',
+      courseInstance: { id: '1' } as any,
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
@@ -284,7 +284,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     });
 
     await ensureEnrollment({
-      course_instance_id: '1',
+      courseInstance: { id: '1' } as any,
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
@@ -316,7 +316,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     });
 
     await ensureEnrollment({
-      course_instance_id: '1',
+      courseInstance: { id: '1' } as any,
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,

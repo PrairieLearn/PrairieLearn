@@ -77,7 +77,7 @@ describe('assessment instance group synchronization test', function () {
   });
   describe('3. user and group initialization', function () {
     it('create 3 users', async () => {
-      locals.studentUsers = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
+      locals.studentUsers = await generateAndEnrollUsers({ count: 3, courseInstance: '1' });
       assert.lengthOf(locals.studentUsers, 3);
       locals.groupCreator = locals.studentUsers[0];
     });

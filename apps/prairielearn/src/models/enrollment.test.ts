@@ -37,15 +37,15 @@ describe('ensureEnrollment', () => {
        VALUES (NULL, $course_instance_id, 'invited', $pending_uid)
        RETURNING *`,
       {
-        course_instance_id: '1',
-        pending_uid: user.uid,
+        courseInstance: '1',
+        pendingUid: user.uid,
       },
       EnrollmentSchema,
     );
 
     const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
-      pending_uid: user.uid,
-      course_instance_id: '1',
+      pendingUid: user.uid,
+      courseInstance: '1',
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'invited');
@@ -53,16 +53,16 @@ describe('ensureEnrollment', () => {
     assert.isNull(initialEnrollment.user_id);
 
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
+      courseInstance: '1',
+      userId: user.user_id,
+      agent_userId: null,
+      agent_authn_userId: null,
       action_detail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
-      course_instance_id: '1',
-      user_id: user.user_id,
+      courseInstance: '1',
+      userId: user.user_id,
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -71,8 +71,8 @@ describe('ensureEnrollment', () => {
     assert.equal(finalEnrollment.user_id, user.user_id);
 
     const invitedEnrollment = await selectOptionalEnrollmentByPendingUid({
-      pending_uid: user.uid,
-      course_instance_id: '1',
+      pendingUid: user.uid,
+      courseInstance: '1',
     });
     assert.isNull(invitedEnrollment);
   });
@@ -90,32 +90,32 @@ describe('ensureEnrollment', () => {
        VALUES ($user_id, $course_instance_id, 'blocked', $first_joined_at)
        RETURNING *`,
       {
-        user_id: user.user_id,
-        course_instance_id: '1',
+        userId: user.user_id,
+        courseInstance: '1',
         first_joined_at: new Date(),
       },
       EnrollmentSchema,
     );
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
-      user_id: user.user_id,
-      course_instance_id: '1',
+      userId: user.user_id,
+      courseInstance: '1',
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'blocked');
     assert.isNotNull(initialEnrollment.first_joined_at);
 
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
+      courseInstance: '1',
+      userId: user.user_id,
+      agent_userId: null,
+      agent_authn_userId: null,
       action_detail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
-      user_id: user.user_id,
-      course_instance_id: '1',
+      userId: user.user_id,
+      courseInstance: '1',
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'blocked');
@@ -131,22 +131,22 @@ describe('ensureEnrollment', () => {
     });
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
-      user_id: user.user_id,
-      course_instance_id: '1',
+      userId: user.user_id,
+      courseInstance: '1',
     });
     assert.isNull(initialEnrollment);
 
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
+      courseInstance: '1',
+      userId: user.user_id,
+      agent_userId: null,
+      agent_authn_userId: null,
       action_detail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
-      user_id: user.user_id,
-      course_instance_id: '1',
+      userId: user.user_id,
+      courseInstance: '1',
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -167,32 +167,32 @@ describe('ensureEnrollment', () => {
        VALUES ($user_id, $course_instance_id, 'joined', $first_joined_at)
        RETURNING *`,
       {
-        user_id: user.user_id,
-        course_instance_id: '1',
+        userId: user.user_id,
+        courseInstance: '1',
         first_joined_at: originalJoinedAt,
       },
       EnrollmentSchema,
     );
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
-      user_id: user.user_id,
-      course_instance_id: '1',
+      userId: user.user_id,
+      courseInstance: '1',
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'joined');
     assert.equal(initialEnrollment.first_joined_at?.getTime(), originalJoinedAt.getTime());
 
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
+      courseInstance: '1',
+      userId: user.user_id,
+      agent_userId: null,
+      agent_authn_userId: null,
       action_detail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
-      user_id: user.user_id,
-      course_instance_id: '1',
+      userId: user.user_id,
+      courseInstance: '1',
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -224,11 +224,11 @@ describe('DB validation of enrollment', () => {
       pending_lti13_instance_id,
       lti_managed,
     }: {
-      user_id: string | null;
+      userId: string | null;
       status: string;
       created_at: string | null;
       first_joined_at: string | null;
-      pending_uid: string | null;
+      pendingUid: string | null;
       pending_lti13_sub?: string | null;
       pending_lti13_instance_id?: number | null;
       lti_managed?: boolean;
@@ -239,7 +239,7 @@ describe('DB validation of enrollment', () => {
          RETURNING *`,
         {
           user_id,
-          course_instance_id: courseInstanceId,
+          courseInstance: courseInstanceId,
           status,
           created_at,
           first_joined_at,
@@ -288,72 +288,72 @@ describe('DB validation of enrollment', () => {
     const validStates = [
       // created_at is null (old enrollments), constraint doesn't apply
       {
-        user_id: user1.user_id,
+        userId: user1.user_id,
         status: 'joined',
         created_at: null,
         first_joined_at: null,
-        pending_uid: null,
+        pendingUid: null,
       },
       {
-        user_id: user2.user_id,
+        userId: user2.user_id,
         status: 'removed',
         created_at: null,
         first_joined_at: null,
-        pending_uid: null,
+        pendingUid: null,
       },
       // status is 'invited', first_joined_at can be null or not null
       {
-        user_id: null,
+        userId: null,
         status: 'invited',
         created_at: null,
         first_joined_at: '2025-01-01',
-        pending_uid: 'invited_1@example.com',
+        pendingUid: 'invited_1@example.com',
       },
       {
-        user_id: null,
+        userId: null,
         status: 'invited',
         created_at: '2025-01-01',
         first_joined_at: null,
-        pending_uid: 'invited_2@example.com',
+        pendingUid: 'invited_2@example.com',
       },
       // status is 'rejected', first_joined_at can be null or not null
       {
-        user_id: null,
+        userId: null,
         status: 'rejected',
         created_at: '2025-01-01',
         first_joined_at: null,
-        pending_uid: 'rejected_1@example.com',
+        pendingUid: 'rejected_1@example.com',
       },
       {
-        user_id: null,
+        userId: null,
         status: 'rejected',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
-        pending_uid: 'rejected_2@example.com',
+        pendingUid: 'rejected_2@example.com',
       },
       // status is 'joined', first_joined_at must not be null
       {
-        user_id: user3.user_id,
+        userId: user3.user_id,
         status: 'joined',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
-        pending_uid: null,
+        pendingUid: null,
       },
       // status is 'removed', first_joined_at must not be null
       {
-        user_id: user4.user_id,
+        userId: user4.user_id,
         status: 'removed',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
-        pending_uid: null,
+        pendingUid: null,
       },
       // status is 'blocked', first_joined_at must not be null
       {
-        user_id: user5.user_id,
+        userId: user5.user_id,
         status: 'blocked',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
-        pending_uid: null,
+        pendingUid: null,
       },
     ];
 
@@ -382,19 +382,19 @@ describe('DB validation of enrollment', () => {
     const invalidStates = [
       // status is 'joined', first_joined_at is null
       {
-        user_id: invalidUser1.user_id,
+        userId: invalidUser1.user_id,
         status: 'joined',
         created_at: '2025-01-01',
         first_joined_at: null,
-        pending_uid: null,
+        pendingUid: null,
       },
       // status is 'removed', first_joined_at is null
       {
-        user_id: invalidUser2.user_id,
+        userId: invalidUser2.user_id,
         status: 'removed',
         created_at: '2025-01-01',
         first_joined_at: null,
-        pending_uid: null,
+        pendingUid: null,
       },
     ];
 

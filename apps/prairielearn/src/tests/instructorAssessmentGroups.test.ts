@@ -38,7 +38,7 @@ describe('Instructor group controls', () => {
   });
 
   test.sequential('enroll random users', async () => {
-    users = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+    users = await generateAndEnrollUsers({ count: 5, courseInstance: '1' });
   });
 
   test.sequential('can create a new group', async () => {

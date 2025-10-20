@@ -10,6 +10,7 @@ import { selectCourseById } from '../models/course.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
+import { dangerousFullAuthzPermissions } from './client/page-context.js';
 import {
   type GroupConfig,
   GroupConfigSchema,
@@ -216,8 +217,26 @@ async function selectUserInCourseInstance({
       z.boolean(),
     )) ||
     (await selectOptionalEnrollmentByUserId({
-      course_instance_id,
-      user_id: user.user_id,
+      courseInstance: { 
+        id: course_instance_id,
+        deleted_at: null,
+        assessments_group_by: 'Set',
+        course_id: '',
+        display_timezone: 'America/Chicago',
+        enrollment_code: '',
+        enrollment_limit: null,
+        hide_in_enroll_page: false,
+        lti13_instance_id: null,
+        long_name: '',
+        short_name: '',
+        sync_enrollments: false,
+        sync_enrollments_display_name: null,
+        sync_enrollments_lti_advantage: false,
+        uuid: null,
+      } as any,
+      userId: user.user_id,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
     }))
   ) {
     return user;

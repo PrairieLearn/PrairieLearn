@@ -32,7 +32,7 @@ describe('getPageContext', () => {
         has_course_permission_view: true,
         has_course_permission_edit: true,
         has_course_permission_own: true,
-        course_role: 'Instructor',
+        course_role: 'Owner',
         course_instance_role: 'Instructor',
         mode: 'edit',
         has_student_access: false,
@@ -82,6 +82,14 @@ describe('getPageContext', () => {
 
     const expected: z.infer<typeof RawPageContextWithAuthzDataSchema> = {
       authz_data: {
+        authn_user: {
+          name: 'Test User',
+          uid: 'test@illinois.edu',
+          email: 'test@illinois.edu',
+          institution_id: '1',
+          uin: '123456789',
+          user_id: '1',
+        } as StaffUser,
         authn_is_administrator: false,
         authn_has_course_permission_preview: true,
         authn_has_course_permission_view: true,
@@ -99,7 +107,7 @@ describe('getPageContext', () => {
         has_course_permission_view: true,
         has_course_permission_edit: true,
         has_course_permission_own: true,
-        course_role: 'Instructor',
+        course_role: 'Owner',
         course_instance_role: 'Instructor',
         mode: 'edit',
         has_student_access: false,

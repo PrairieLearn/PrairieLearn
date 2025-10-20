@@ -125,7 +125,10 @@ router.post(
     const enrollment_id = req.params.enrollment_id;
 
     // assert that the enrollment belongs to the course instance
-    const enrollment = await selectEnrollmentById({ id: enrollment_id, courseInstance: course_instance });
+    const enrollment = await selectEnrollmentById({
+      id: enrollment_id,
+      courseInstance: course_instance,
+    });
     if (enrollment.course_instance_id !== course_instance.id) {
       throw new HttpStatusError(400, 'Enrollment does not belong to the course instance');
     }

@@ -247,7 +247,7 @@ describe(
     });
 
     test.sequential('can insert/get 5 users into/from the DB', async function () {
-      locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+      locals.studentUsers = await generateAndEnrollUsers({ count: 5, courseInstance: '1' });
       assert.lengthOf(locals.studentUsers, 5);
     });
 
@@ -1275,7 +1275,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     locals.contributor = contributor;
 
     // Insert/get 5 users into/from the DB
-    locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+    locals.studentUsers = await generateAndEnrollUsers({ count: 5, courseInstance: '1' });
     assert.lengthOf(locals.studentUsers, 5);
 
     // Switch current user to the group creator and load assessment
@@ -1795,7 +1795,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
   });
 
   test.sequential('should insert/get 5 users into/from the DB', async function () {
-    locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+    locals.studentUsers = await generateAndEnrollUsers({ count: 5, courseInstance: '1' });
     assert.lengthOf(locals.studentUsers, 5);
   });
 

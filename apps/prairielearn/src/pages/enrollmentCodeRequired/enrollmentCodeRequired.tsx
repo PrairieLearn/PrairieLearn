@@ -28,8 +28,10 @@ router.get(
       typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url : null;
     // Lookup if they have an existing enrollment
     const existingEnrollment = await selectOptionalEnrollmentByUserId({
-      user_id: res.locals.authn_user.user_id,
-      course_instance_id: courseInstance.id,
+      userId: res.locals.authn_user.user_id,
+      courseInstance: courseInstance,
+      roleNeeded: 'student',
+      authzData: res.locals.authz_data,
     });
 
     if (
@@ -58,9 +60,9 @@ router.get(
         await ensureCheckedEnrollment({
           institution: res.locals.institution,
           course: res.locals.course,
-          course_instance: res.locals.course_instance,
-          authz_data: res.locals.authz_data,
-          action_detail: 'implicit_joined',
+          courseInstance: res.locals.course_instance,
+          authzData: res.locals.authz_data,
+          actionDetail: 'implicit_joined',
         });
       }
       // redirect to a different page, which will have proper authorization.

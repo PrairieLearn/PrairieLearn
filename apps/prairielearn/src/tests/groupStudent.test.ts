@@ -127,7 +127,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   describe('6. get 5 student user', function () {
     it('should insert/get 5 users into/from the DB', async () => {
-      const result = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+      const result = await generateAndEnrollUsers({ count: 5, courseInstance: '1' });
       assert.lengthOf(result, 5);
       locals.studentUsers = result.slice(0, 3);
       locals.studentUserNotGrouped = result[3];

@@ -74,10 +74,10 @@ describe(
     test.sequential('enroll the test student user in the course', async () => {
       const user = await selectUserByUid('student@example.com');
       await ensureEnrollment({
-        user_id: user.user_id,
+        userId: user.user_id,
         course_instance_id: '1',
-        agent_user_id: null,
-        agent_authn_user_id: null,
+        agent_userId: null,
+        agent_authn_userId: null,
         action_detail: 'implicit_joined',
       });
     });

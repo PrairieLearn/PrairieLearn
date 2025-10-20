@@ -28,7 +28,7 @@ const QUESTION_ID_3 = 'addNumbers';
 const GROUP_NAME = 'groupBB';
 
 async function generateThreeStudentUsers() {
-  const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
+  const rows = await generateAndEnrollUsers({ count: 3, courseInstance: '1' });
   assert.lengthOf(rows, 3);
   return rows;
 }

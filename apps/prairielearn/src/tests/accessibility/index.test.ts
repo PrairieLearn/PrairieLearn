@@ -159,7 +159,7 @@ const STATIC_ROUTE_PARAMS = {
   // These are trivially known because there will only be one course and course
   // instance in the database after syncing the test course.
   course_id: '1',
-  course_instance_id: '1',
+  courseInstance: '1',
 };
 
 function getRouteParams(url: string) {
@@ -432,7 +432,7 @@ describe('accessibility', () => {
     assert.isNotNull(courseInstance);
 
     const enrollment = await ensureEnrollment({
-      course_instance_id: courseInstance.id,
+      courseInstance: courseInstance.id,
       user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
@@ -463,12 +463,12 @@ describe('accessibility', () => {
 
     await sqldb.executeRow(
       'UPDATE course_instances SET share_source_publicly = true WHERE id = $course_instance_id',
-      { course_instance_id: routeParams.course_instance_id },
+      { courseInstance: routeParams.course_instance_id },
     );
 
     const course_id = await sqldb.queryRow(
       'SELECT course_id FROM course_instances WHERE id = $course_instance_id',
-      { course_instance_id: routeParams.course_instance_id },
+      { courseInstance: routeParams.course_instance_id },
       IdSchema,
     );
 

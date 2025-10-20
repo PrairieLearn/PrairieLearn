@@ -59,13 +59,13 @@ describe('student data access', { timeout: 60_000 }, function () {
       course_id: '1',
       uid: 'instructor@example.com',
       course_role: 'Owner',
-      authn_user_id: '1',
+      authn_userId: '1',
     });
     await ensureEnrollment({
-      user_id: '3',
+      userId: '3',
       course_instance_id: '1',
-      agent_user_id: null,
-      agent_authn_user_id: null,
+      agent_userId: null,
+      agent_authn_userId: null,
       action_detail: 'implicit_joined',
     });
   });
@@ -185,10 +185,10 @@ describe('student data access', { timeout: 60_000 }, function () {
   test.sequential('instructor (student data viewer) can view HW1 instance of student', async () => {
     await insertCourseInstancePermissions({
       course_id: '1',
-      user_id: '2',
+      userId: '2',
       course_instance_id: '1',
       course_instance_role: 'Student Data Viewer',
-      authn_user_id: '2',
+      authn_userId: '2',
     });
     const headers = { cookie: 'pl_test_user=test_instructor' };
     const response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
@@ -337,9 +337,9 @@ describe('student data access', { timeout: 60_000 }, function () {
       await updateCourseInstancePermissionsRole({
         course_id: '1',
         course_instance_id: '1',
-        user_id: '2',
+        userId: '2',
         course_instance_role: 'Student Data Editor',
-        authn_user_id: '2',
+        authn_userId: '2',
       });
       const headers = { cookie: 'pl_test_user=test_instructor' };
       let response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
