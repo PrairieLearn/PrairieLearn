@@ -43,7 +43,7 @@ const SubmissionCsvRowSchema = z.object({
     .transform((val) => parseISO(val))
     .pipe(z.date()),
   'Submitted answer': ZodStringToJson,
-  'Rubric Grading': ZodStringToJson
+  'Rubric Grading': ZodStringToJson,
 });
 
 /**
@@ -200,15 +200,15 @@ export async function uploadSubmissions(
         );
 
         const rubric_items = await sqldb.queryRows(
-            sql.select_rubric_items,
-            { rubric_id: assessmentQuestion.manual_rubric_id },
-            RubricItemSchema
+          sql.select_rubric_items,
+          { rubric_id: assessmentQuestion.manual_rubric_id },
+          RubricItemSchema,
         );
 
         const selected_rubric_item_ids: string[] = [];
         if (row['Rubric Grading']?.items) {
-          for (const {description} of row['Rubric Grading'].items) {
-            const rubric_item = rubric_items.find(ri => ri.description === description);
+          for (const { description } of row['Rubric Grading'].items) {
+            const rubric_item = rubric_items.find((ri) => ri.description === description);
             if (!rubric_item) {
               continue;
             }
@@ -223,23 +223,22 @@ export async function uploadSubmissions(
             submission_id,
             null,
             {
-                manual_score_perc: null,
-                manual_points: row['Rubric Grading']?.computed_points ?? null,
-                auto_score_perc: null,
-                auto_points: null,
-                feedback: { manual: '' },
-                manual_rubric_data: {
-                    rubric_id: assessmentQuestion.manual_rubric_id,
-                    applied_rubric_items: selected_rubric_item_ids.map(id => ({
-                        rubric_item_id: id,
-                    })),
-                    adjust_points: null
-                },
+              manual_score_perc: null,
+              manual_points: row['Rubric Grading']?.computed_points ?? null,
+              auto_score_perc: null,
+              auto_points: null,
+              feedback: { manual: '' },
+              manual_rubric_data: {
+                rubric_id: assessmentQuestion.manual_rubric_id,
+                applied_rubric_items: selected_rubric_item_ids.map((id) => ({
+                  rubric_item_id: id,
+                })),
+                adjust_points: null,
+              },
             },
-            authn_user_id
+            authn_user_id,
           );
         }
-
 
         successCount++;
       } catch (err) {

@@ -96,9 +96,9 @@ RETURNING
 
 -- BLOCK select_rubric_items
 SELECT
-    *
-FROM 
-    rubric_items as ri
+  *
+FROM
+  rubric_items as ri
 WHERE
-    ri.rubric_id = $rubric_id
-    AND ri.deleted_at IS NULL;
+  ri.rubric_id = $rubric_id
+  AND ri.deleted_at IS NULL;

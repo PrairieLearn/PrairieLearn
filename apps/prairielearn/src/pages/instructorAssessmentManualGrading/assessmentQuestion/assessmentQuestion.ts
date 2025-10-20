@@ -12,7 +12,7 @@ import {
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
-  toggleAiGradingMode
+  toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade, tuneRubric } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {

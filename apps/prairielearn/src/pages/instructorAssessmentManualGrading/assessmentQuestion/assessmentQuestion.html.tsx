@@ -224,7 +224,6 @@ export function AssessmentQuestion({
                           class="dropdown-item"
                           type="button"
                           onclick="$('#tune-rubric').submit();"
-
                           data-bs-toggle="tooltip"
                           data-bs-placement="top"
                           title="Tune the rubric based on AI grading results, and acquire comparative statistics. Assumes that the rubric is in its original state."
