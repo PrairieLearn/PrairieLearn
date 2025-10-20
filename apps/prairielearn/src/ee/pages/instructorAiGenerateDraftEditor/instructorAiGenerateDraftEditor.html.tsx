@@ -1,11 +1,8 @@
-import assert from 'node:assert';
-
 import type { UIMessage } from 'ai';
 
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { Hydrate, hydrateHtml } from '@prairielearn/preact/server';
-import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../../components/HeadContents.js';
 import { Modal } from '../../../components/Modal.js';
@@ -17,11 +14,8 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
-import {
-  type AiQuestionGenerationMessage,
-  type AiQuestionGenerationPrompt,
-  type Question,
-} from '../../../lib/db-types.js';
+import { type AiQuestionGenerationMessage, type Question } from '../../../lib/db-types.js';
+import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 
 import RichTextEditor from './RichTextEditor/index.js';
 import { AiQuestionGenerationChat } from './components/AiQuestionGenerationChat.js';
@@ -32,14 +26,12 @@ export function InstructorAiGenerateDraftEditor({
   messages,
   questionFiles,
   richTextEditorEnabled,
-  variantId,
 }: {
   resLocals: Record<string, any>;
   question: Question;
   messages: AiQuestionGenerationMessage[];
   questionFiles: Record<string, string>;
   richTextEditorEnabled: boolean;
-  variantId?: string | undefined;
 }) {
   const initialMessages = messages.map((message): UIMessage => {
     return {
@@ -93,51 +85,17 @@ export function InstructorAiGenerateDraftEditor({
                   Back to AI questions
                 </a>
               </div>
-              <div class="app-chat p-2 bg-light border-end">
-                <div class="app-chat-history">
-                  ${hydrateHtml(
-                    <AiQuestionGenerationChat
-                      initialMessages={initialMessages}
-                      questionId={question.id}
-                      urlPrefix={resLocals.urlPrefix}
-                    />,
-                  )}
-                </div>
-                <div class="app-chat-prompt mt-2">
-                  <form
-                    class="js-revision-form"
-                    hx-post="${variantId
-                      ? html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}?variant_id=${variantId}`
-                      : html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}`}"
-                    hx-swap="outerHTML"
-                    hx-disabled-elt="button"
-                  >
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <input type="hidden" name="__action" value="regenerate_question" />
-                    <textarea
-                      name="prompt"
-                      id="user-prompt-llm"
-                      class="form-control mb-2"
-                      placeholder="What would you like to revise?"
-                      aria-label="Modification instructions"
-                      required
-                    ></textarea>
-                    <button type="submit" class="btn btn-dark w-100">
-                      <span
-                        class="spinner-grow spinner-grow-sm d-none me-1"
-                        role="status"
-                        aria-hidden="true"
-                        data-loading-class-remove="d-none"
-                      ></span>
-                      Revise question
-                    </button>
-                    <div class="text-muted small text-center mt-1">
-                      AI can make mistakes. Review the generated question.
-                    </div>
-                  </form>
-                </div>
-                <div class="app-chat-resizer" aria-label="Resize chat" role="separator"></div>
-              </div>
+              ${hydrateHtml(
+                <AiQuestionGenerationChat
+                  initialMessages={initialMessages}
+                  questionId={question.id}
+                  urlPrefix={resLocals.urlPrefix}
+                  csrfToken={generateCsrfToken({
+                    url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/chat`,
+                    authn_user_id: resLocals.authn_user?.user_id,
+                  })}
+                />,
+              )}
 
               <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs">
                 <ul class="nav nav-tabs me-auto ps-2 pt-2">
@@ -192,125 +150,6 @@ export function InstructorAiGenerateDraftEditor({
       </body>
     </html>
   `.toString();
-}
-
-/**
- * Returns the index of the prompt that represents the latest revision that would have been shown
- * to the user after the prompt at the specified index. This specifically addresses the case where
- * one or more `auto_revision` prompts follow an `initial` or `human_revision` prompt.
- */
-function findLatestRevisionIndexForPrompt(
-  prompts: AiQuestionGenerationPrompt[],
-  currentIndex: number,
-): number {
-  // This should never happen, but we'll be extra safe here.
-  assert(prompts[currentIndex].prompt_type !== 'auto_revision');
-
-  let targetIndex = currentIndex;
-
-  for (let nextIndex = currentIndex + 1; nextIndex < prompts.length; nextIndex += 1) {
-    if (prompts[nextIndex].prompt_type !== 'auto_revision') {
-      break;
-    }
-
-    targetIndex = nextIndex;
-  }
-
-  return targetIndex;
-}
-
-function PromptHistory({
-  prompts,
-  urlPrefix,
-  csrfToken,
-  showJobLogs,
-}: {
-  prompts: AiQuestionGenerationPrompt[];
-  urlPrefix: string;
-  csrfToken: string;
-  showJobLogs: boolean;
-}) {
-  return prompts.map((prompt, index) => {
-    // Exclude auto-revision prompts from the visible history (we still use them internally to
-    // determine what to revert to).
-    if (prompt.prompt_type === 'auto_revision') return '';
-
-    return html`
-      <div class="d-flex flex-row-reverse">
-        <div class="p-3 mb-2 rounded bg-secondary-subtle" style="max-width: 90%">
-          ${run(() => {
-            // We'll special-case these two "prompts" and show a custom italic
-            // message
-            // Differentiate between actual text typed by the user and the
-            // system-generated prompts.
-            if (prompt.prompt_type === 'manual_revert') {
-              return html`<i>Revert to an earlier revision.</i>`;
-            }
-
-            if (prompt.prompt_type === 'manual_change') {
-              return html`<i>Edit the question files.</i>`;
-            }
-
-            return prompt.user_prompt;
-          })}
-        </div>
-      </div>
-      <div
-        class="d-flex flex-row justify-content-start align-items-start py-3 ps-3 mb-2 prompt-response"
-      >
-        <div>
-          ${run(() => {
-            if (prompt.prompt_type === 'initial') {
-              return "A new question has been generated. Review the preview and prompt for any necessary revisions. Once you're happy with the question, finalize it to use it on an assessment.";
-            }
-
-            if (prompt.prompt_type === 'manual_revert') {
-              return 'The question has been reverted to an earlier revision. Make further revisions or finalize the question.';
-            }
-
-            if (prompt.prompt_type === 'manual_change') {
-              return 'Your manual edits have been applied. Make further revisions or finalize the question.';
-            }
-
-            return 'The question has been revised. Make further revisions or finalize the question.';
-          })}
-          <div>
-            ${run(() => {
-              if (!showJobLogs || !prompt.job_sequence_id) return '';
-
-              const jobLogsUrl = urlPrefix + '/jobSequence/' + prompt.job_sequence_id;
-
-              return html`<a class="small" href="${jobLogsUrl}" target="_blank">
-                View job logs
-              </a>`;
-            })}
-          </div>
-        </div>
-        ${run(() => {
-          const revertTargetIndex = findLatestRevisionIndexForPrompt(prompts, index);
-          const revertTargetPrompt = prompts[revertTargetIndex];
-
-          if (revertTargetIndex === prompts.length - 1) return '';
-
-          return html`
-            <form method="post">
-              <input type="hidden" name="__action" value="revert_edit_version" />
-              <input type="hidden" name="unsafe_prompt_id" value="${revertTargetPrompt.id}" />
-              <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-              <button
-                type="submit"
-                class="btn btn-sm btn-ghost revert-to-revision-button"
-                data-bs-toggle="tooltip"
-                data-bs-title="Revert to this revision"
-              >
-                <i class="fa fa-undo" aria-hidden="true"></i>
-              </button>
-            </form>
-          `;
-        })}
-      </div>
-    `;
-  });
 }
 
 function QuestionAndFilePreview({

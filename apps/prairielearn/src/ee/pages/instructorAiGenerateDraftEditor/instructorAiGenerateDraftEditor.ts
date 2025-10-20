@@ -1,6 +1,7 @@
 import { Readable } from 'node:stream';
 
 import { createOpenAI } from '@ai-sdk/openai';
+import { UI_MESSAGE_STREAM_HEADERS } from 'ai';
 import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -27,18 +28,14 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
+import { editQuestionWithAgent } from '../../lib/ai-question-generation/agent.js';
 import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-generation/redis.js';
 import {
   QUESTION_GENERATION_OPENAI_MODEL,
-  addCompletionCostToIntervalUsage,
   approximatePromptCost,
   getIntervalUsage,
-  regenerateQuestion,
 } from '../../lib/aiQuestionGeneration.js';
-import {
-  GenerationFailure,
-  RateLimitExceeded,
-} from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
+import { RateLimitExceeded } from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
@@ -217,7 +214,6 @@ router.get(
         messages,
         questionFiles,
         richTextEditorEnabled,
-        variantId: typeof req.query.variant_id === 'string' ? req.query.variant_id : undefined,
       }),
     );
   }),
@@ -225,7 +221,7 @@ router.get(
 
 // TODO: `instance-question` is probably the wrong type here.
 router.get(
-  '/stream',
+  '/chat/stream',
   typedAsyncHandler<'instance-question'>(async (req, res) => {
     res.locals.question = await selectQuestionById(req.params.question_id);
 
@@ -247,12 +243,15 @@ router.get(
       return;
     }
 
+    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
     Readable.fromWeb(stream as any).pipe(res);
   }),
 );
 
 router.post(
-  '/',
+  '/chat',
   asyncHandler(async (req, res) => {
     if (
       !config.aiQuestionGenerationOpenAiApiKey ||
@@ -275,20 +274,8 @@ router.post(
       organization: config.aiQuestionGenerationOpenAiOrganization,
     });
 
-    if (req.body.__action === 'regenerate_question') {
-      const prompts = await queryRows(
-        sql.select_ai_question_generation_prompts,
-        {
-          question_id: req.params.question_id,
-          course_id: res.locals.course.id,
-        },
-        AiQuestionGenerationPromptSchema,
-      );
-
-      if (prompts.length === 0) {
-        throw new error.HttpStatusError(403, 'Prompt history not found.');
-      }
-
+    // TODO: figure out how cost tracking will work here.
+    if (false) {
       const intervalCost = await getIntervalUsage({
         userId: res.locals.authn_user.user_id,
       });
@@ -311,40 +298,46 @@ router.post(
         );
         return;
       }
+    }
 
-      const result = await regenerateQuestion({
-        model: openai(QUESTION_GENERATION_OPENAI_MODEL),
-        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
-        courseId: res.locals.course.id,
-        authnUserId: res.locals.authn_user.user_id,
-        originalPrompt: prompts[0]?.user_prompt,
-        revisionPrompt: req.body.prompt,
-        originalHTML: prompts[prompts.length - 1].html || '',
-        originalPython: prompts[prompts.length - 1].python || '',
-        questionQid: question.qid,
-        userId: res.locals.authn_user.user_id,
-        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
-      });
+    const { message } = await editQuestionWithAgent({
+      model: openai('gpt-5-mini'),
+      course: res.locals.course,
+      question,
+      user: res.locals.user,
+      authnUser: res.locals.authn_user,
+      hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      messages: req.body.messages,
+    });
 
-      await addCompletionCostToIntervalUsage({
-        userId: res.locals.authn_user.user_id,
-        usage: result.usage,
-      });
+    const streamContext = await getAiQuestionGenerationStreamContext();
 
-      if (result.htmlResult) {
-        res.set({
-          'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_editor/${question.id}`,
-        });
-        res.send();
-      } else {
-        res.send(
-          GenerationFailure({
-            urlPrefix: res.locals.urlPrefix,
-            jobSequenceId: result.jobSequenceId,
-          }),
-        );
-      }
-    } else if (req.body.__action === 'save_question') {
+    const stream = await streamContext.resumeExistingStream(message.id);
+    if (!stream) {
+      res.status(204).send();
+      return;
+    }
+
+    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+    Readable.fromWeb(stream as any).pipe(res);
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const question = await selectQuestionById(req.params.question_id);
+
+    // Ensure the question belongs to this course and that it's a draft question.
+    if (!idsEqual(question.course_id, res.locals.course.id) || !question.draft || !question.qid) {
+      throw new error.HttpStatusError(404, 'Draft question not found');
+    }
+
+    assertCanCreateQuestion(res.locals);
+
+    if (req.body.__action === 'save_question') {
       const prompts = await queryRows(
         sql.select_ai_question_generation_prompts,
         {

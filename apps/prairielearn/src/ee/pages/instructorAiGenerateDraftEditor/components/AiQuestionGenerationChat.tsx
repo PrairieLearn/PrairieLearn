@@ -1,5 +1,6 @@
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
+import { useState } from 'preact/hooks';
 
 import { run } from '@prairielearn/run';
 
@@ -45,30 +46,7 @@ function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
   });
 }
 
-export function AiQuestionGenerationChat({
-  initialMessages,
-  questionId,
-  urlPrefix,
-}: {
-  initialMessages: UIMessage[];
-  questionId: string;
-  urlPrefix: string;
-}) {
-  const { messages, sendMessage, status } = useChat({
-    // Currently, we assume one chat per question. This should change in the future.
-    id: questionId,
-    messages: initialMessages,
-    resume: true,
-    transport: new DefaultChatTransport({
-      prepareReconnectToStreamRequest: ({ id }) => {
-        return {
-          api: `${urlPrefix}/ai_generate_editor/${id}/stream`,
-          credentials: 'include',
-        };
-      },
-    }),
-  });
-
+function Messages({ messages, urlPrefix }: { messages: UIMessage[]; urlPrefix: string }) {
   return messages.map((message) => {
     if (message.role === 'user') {
       return (
@@ -104,6 +82,75 @@ export function AiQuestionGenerationChat({
       </div>
     );
   });
+}
+
+export function AiQuestionGenerationChat({
+  initialMessages,
+  questionId,
+  urlPrefix,
+  csrfToken,
+}: {
+  initialMessages: UIMessage[];
+  questionId: string;
+  urlPrefix: string;
+  csrfToken: string;
+}) {
+  const { messages, sendMessage, status } = useChat({
+    // Currently, we assume one chat per question. This should change in the future.
+    id: questionId,
+    messages: initialMessages,
+    resume: true,
+    transport: new DefaultChatTransport({
+      api: `${urlPrefix}/ai_generate_editor/${questionId}/chat`,
+      headers: { 'X-CSRF-Token': csrfToken },
+      prepareReconnectToStreamRequest: ({ id }) => {
+        return {
+          api: `${urlPrefix}/ai_generate_editor/${id}/chat/stream`,
+          credentials: 'include',
+        };
+      },
+    }),
+  });
+
+  const [input, setInput] = useState('');
+
+  return (
+    <div class="app-chat p-2 bg-light border-end">
+      <div class="app-chat-history">
+        <Messages messages={messages} urlPrefix={urlPrefix} />
+      </div>
+      <div class="app-chat-prompt mt-2">
+        <form
+          class="js-revision-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const trimmedInput = input.trim();
+            if (trimmedInput) {
+              sendMessage({ text: trimmedInput });
+              setInput('');
+            }
+          }}
+        >
+          <textarea
+            id="user-prompt-llm"
+            class="form-control mb-2"
+            placeholder="What would you like to revise?"
+            aria-label="Modification instructions"
+            value={input}
+            required
+            onInput={(e) => setInput((e.target as HTMLTextAreaElement).value)}
+          />
+          <button type="submit" class="btn btn-dark w-100" disabled={status !== 'ready'}>
+            Revise question
+          </button>
+          <div class="text-muted small text-center mt-1">
+            AI can make mistakes. Review the generated question.
+          </div>
+        </form>
+      </div>
+      <div class="app-chat-resizer" aria-label="Resize chat" role="separator" />
+    </div>
+  );
 }
 
 AiQuestionGenerationChat.displayName = 'AiQuestionGenerationChat';

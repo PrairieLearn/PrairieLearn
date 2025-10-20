@@ -26,3 +26,13 @@ export default asyncHandler(async (req, res, next) => {
   }
   next();
 });
+
+export function generateCsrfToken({
+  url,
+  authn_user_id,
+}: {
+  url: string;
+  authn_user_id: string;
+}): string {
+  return generateSignedToken({ url, authn_user_id: authn_user_id.toString() }, config.secretKey);
+}

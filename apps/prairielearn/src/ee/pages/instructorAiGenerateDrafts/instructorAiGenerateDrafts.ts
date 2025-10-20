@@ -9,7 +9,7 @@ import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
-import { generateQuestionWithAgent } from '../../lib/ai-question-generation/agent.js';
+import { editQuestionWithAgent } from '../../lib/ai-question-generation/agent.js';
 import {
   QUESTION_GENERATION_OPENAI_MODEL,
   approximatePromptCost,
@@ -128,7 +128,7 @@ router.post(
       //   apiKey: 'testing',
       // });
 
-      const result = await generateQuestionWithAgent({
+      const result = await editQuestionWithAgent({
         model: openai('gpt-5-mini'),
         course: res.locals.course,
         user: res.locals.authn_user,

@@ -1,12 +1,22 @@
+import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
-import { Experimental_Agent as Agent, type LanguageModel, stepCountIs, tool } from 'ai';
+import {
+  Experimental_Agent as Agent,
+  JsonToSseTransformStream,
+  type LanguageModel,
+  type UIMessage,
+  convertToModelMessages,
+  stepCountIs,
+  tool,
+} from 'ai';
 import klaw from 'klaw';
 import { z } from 'zod';
 
 import { execute, loadSql, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { formatPrompt } from '../../../lib/ai.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
@@ -27,6 +37,8 @@ import {
   buildContextForQuestion,
 } from '../context-parsers/template-questions.js';
 import { validateHTML } from '../validateHTML.js';
+
+import { getAiQuestionGenerationStreamContext } from './redis.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const otherSql = loadSql(path.join(import.meta.dirname, '..', 'aiQuestionGeneration.sql'));
@@ -302,55 +314,93 @@ export async function createQuestionGenerationAgent({
   return { agent };
 }
 
-export async function generateQuestionWithAgent({
+export async function editQuestionWithAgent({
   model,
   course,
+  question,
   user,
   authnUser,
   hasCoursePermissionEdit,
   prompt,
+  messages,
 }: {
   model: LanguageModel;
   course: Course;
+  question?: Question;
   user: User;
   authnUser: User;
   hasCoursePermissionEdit: boolean;
-  prompt: string;
+  prompt?: string;
+  messages?: UIMessage[];
 }) {
+  if (prompt && messages) throw new Error('Cannot provide both prompt and messages');
+  if (!prompt && !messages) throw new Error('Either prompt or messages must be provided');
+
   const serverJob = await createServerJob({
     courseId: course.id,
     type: 'ai_question_generate',
-    description: 'Generate a question with AI',
+    description: `${question ? 'Edit' : 'Generate'} a question with AI`,
     authnUserId: authnUser.user_id,
   });
 
-  // Create the initial question so we can get a question ID. This also simplifies
-  // the agent logic since we don't need to handle the "create new question" vs
-  // "update existing question" case - we're just always updating.
-  const courseFilesClient = getCourseFilesClient();
-  const saveResults = await courseFilesClient.createQuestion.mutate({
-    course_id: course.id,
-    user_id: user.user_id,
-    authn_user_id: authnUser.user_id,
-    has_course_permission_edit: hasCoursePermissionEdit,
-    is_draft: true,
-    files: {
-      'question.html': '',
-      'server.py': '',
-    },
-  });
+  if (!question) {
+    // Create the initial question so we can get a question ID. This also simplifies
+    // the agent logic since we don't need to handle the "create new question" vs
+    // "update existing question" case - we're just always updating.
+    const courseFilesClient = getCourseFilesClient();
+    const saveResults = await courseFilesClient.createQuestion.mutate({
+      course_id: course.id,
+      user_id: user.user_id,
+      authn_user_id: authnUser.user_id,
+      has_course_permission_edit: hasCoursePermissionEdit,
+      is_draft: true,
+      files: {
+        'question.html': '',
+        'server.py': '',
+      },
+    });
 
-  if (saveResults.status === 'error') {
-    console.error('Failed to create initial question');
-    throw new Error('Failed to create initial question for AI generation.');
+    if (saveResults.status === 'error') {
+      console.error('Failed to create initial question');
+      throw new Error('Failed to create initial question for AI generation.');
+    }
+
+    await execute(otherSql.insert_draft_question_metadata, {
+      question_id: saveResults.question_id,
+      creator_id: authnUser.user_id,
+    });
+
+    question = await selectQuestionById(saveResults.question_id);
   }
 
-  await execute(otherSql.insert_draft_question_metadata, {
-    question_id: saveResults.question_id,
-    creator_id: authnUser.user_id,
+  // Insert the prompt as a message.
+  await execute(sql.insert_user_message, {
+    question_id: question.id,
+    // TODO: use `UIMessage` always, instead of sometimes a string.
+    parts: run(() => {
+      if (typeof prompt === 'string') {
+        return JSON.stringify([{ type: 'text', text: prompt }]);
+      } else {
+        const parts = messages?.at(-1)?.parts;
+        assert(parts, 'No parts in last message');
+        return JSON.stringify(parts);
+      }
+    }),
   });
 
-  const question = await selectQuestionById(saveResults.question_id);
+  // Insert the agent's message into the `messages` table.
+  const messageRow = await queryRow(
+    sql.insert_initial_assistant_message,
+    { question_id: question.id, job_sequence_id: serverJob.jobSequenceId },
+    AiQuestionGenerationMessageSchema,
+  );
+
+  // Create SSE transform stream before starting background job
+  const sseStream = new JsonToSseTransformStream();
+
+  // Create new resumable stream - the caller will need this.
+  const streamContext = await getAiQuestionGenerationStreamContext();
+  await streamContext.createNewResumableStream(messageRow.id, () => sseStream.readable);
 
   serverJob.executeInBackground(async () => {
     const { agent } = await createQuestionGenerationAgent({
@@ -362,23 +412,18 @@ export async function generateQuestionWithAgent({
       hasCoursePermissionEdit,
     });
 
-    // Insert the prompt as a message.
-    await execute(sql.insert_user_message, {
-      question_id: question.id,
-      // TODO: this should be handled by an API endpoint? Ideally we want `ai` to handle the
-      // shape of this `parts` object.
-      parts: JSON.stringify([{ type: 'text', text: prompt }]),
+    const args = run(() => {
+      if (messages) {
+        return { messages: convertToModelMessages(messages) };
+      } else if (prompt) {
+        return { prompt };
+      } else {
+        throw new Error('Either prompt or messages must be provided');
+      }
     });
 
-    // Insert the agent's message into the `messages` table.
-    const messageRow = await queryRow(
-      sql.insert_initial_assistant_message,
-      { question_id: saveResults.question_id, job_sequence_id: serverJob.jobSequenceId },
-      AiQuestionGenerationMessageSchema,
-    );
-
     const res = agent.stream({
-      prompt,
+      ...args,
       providerOptions: {
         openai: {
           reasoningEffort: 'low',
@@ -387,7 +432,7 @@ export async function generateQuestionWithAgent({
       },
     });
 
-    const resStream = res.toUIMessageStream({
+    const stream = res.toUIMessageStream({
       generateMessageId: () => messageRow.id,
       onFinish: async ({ responseMessage }) => {
         const usage = await res.totalUsage;
@@ -401,11 +446,7 @@ export async function generateQuestionWithAgent({
       },
     });
 
-    for await (const chunk of resStream) {
-      // TODO: this loop seems to somehow be necessary to trigger `onFinish`.
-      // TODO: we should actually stream back result as they're happening.
-      console.log(chunk);
-    }
+    await stream.pipeTo(sseStream.writable);
 
     await addCompletionCostToIntervalUsage({
       userId: authnUser.user_id,
@@ -415,6 +456,7 @@ export async function generateQuestionWithAgent({
 
   return {
     question,
+    message: messageRow,
     jobSequenceId: serverJob.jobSequenceId,
   };
 }
