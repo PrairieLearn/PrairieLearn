@@ -37,5 +37,7 @@ export default defineConfig({
     command: 'yarn run dev:no-watch',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 });
