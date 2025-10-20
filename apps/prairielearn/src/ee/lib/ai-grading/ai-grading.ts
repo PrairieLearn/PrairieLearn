@@ -799,7 +799,7 @@ export async function tuneRubric({
       }),
     });
 
-    const model = openai(AI_GRADING_OPENAI_MODEL);
+    const model = openai('gpt-5');
     const response = await generateObject({
       model,
       schema: TunedRubricResponseSchema,
@@ -809,6 +809,7 @@ export async function tuneRubric({
     logResponseUsage({ response, logger });
 
     const generatedRubricItem = response.object.rubric_item;
+
     await executeRow(sql.update_rubric_item, {
       id: generatedRubricItem.id,
       rubric_id: assessment_question.manual_rubric_id,
