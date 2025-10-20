@@ -1,9 +1,8 @@
 import fetch from 'node-fetch';
-import { afterEach, assert, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { dangerousFullAuthzPermissions } from '../../../lib/authzData.js';
 import { config } from '../../../lib/config.js';
-import type { CourseInstance } from '../../../lib/db-types.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';
 import { ensureEnrollment } from '../../../models/enrollment.js';
 import * as helperServer from '../../../tests/helperServer.js';
@@ -32,12 +31,6 @@ const studentUser: AuthUser = {
 
 describe('studentCourseInstanceUpgrade', () => {
   enableEnterpriseEdition();
-
-  let courseInstance: CourseInstance;
-  beforeAll(async () => {
-    courseInstance = await selectCourseInstanceById('1');
-  });
-
   beforeEach(helperServer.before());
   afterEach(helperServer.after);
 
@@ -88,6 +81,7 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
+    const courseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,
@@ -110,6 +104,7 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
+    const courseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,

@@ -1,9 +1,9 @@
-import { afterEach, assert, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
 import { dangerousFullAuthzPermissions } from '../../lib/authzData.js';
-import { type CourseInstance, CourseInstanceSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
@@ -19,12 +19,6 @@ import {
 import { ensurePlanGrant } from './plan-grants.js';
 
 describe('getEnrollmentCountsForInstitution', () => {
-  let firstCourseInstance: CourseInstance;
-
-  beforeAll(async function () {
-    firstCourseInstance = await selectCourseInstanceById('1');
-  });
-
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse();
@@ -56,6 +50,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       },
       CourseInstanceSchema,
     );
+    const firstCourseInstance = await selectCourseInstanceById('1');
 
     const freeUser = await getOrCreateUser({
       uid: 'free@example.com',
@@ -143,12 +138,6 @@ describe('getEnrollmentCountsForInstitution', () => {
 });
 
 describe('getEnrollmentCountsForCourse', () => {
-  let firstCourseInstance: CourseInstance;
-
-  beforeAll(async function () {
-    firstCourseInstance = await selectCourseInstanceById('1');
-  });
-
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse();
@@ -172,6 +161,7 @@ describe('getEnrollmentCountsForCourse', () => {
       uin: 'student',
       email: 'student@example.com',
     });
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -194,6 +184,7 @@ describe('getEnrollmentCountsForCourse', () => {
       email: 'student@example.com',
     });
 
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -226,6 +217,7 @@ describe('getEnrollmentCountsForCourse', () => {
       email: 'student@example.com',
     });
 
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -252,11 +244,6 @@ describe('getEnrollmentCountsForCourse', () => {
 });
 
 describe('getEnrollmentCountsForCourseInstance', () => {
-  let firstCourseInstance: CourseInstance;
-
-  beforeAll(async function () {
-    firstCourseInstance = await selectCourseInstanceById('1');
-  });
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse();
@@ -280,6 +267,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uin: 'student',
       email: 'student@example.com',
     });
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -302,6 +290,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       email: 'student@example.com',
     });
 
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -334,6 +323,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       email: 'student@example.com',
     });
 
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
