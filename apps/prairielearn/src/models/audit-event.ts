@@ -71,6 +71,7 @@ type SupportedTableActionCombination =
         | 'invited'
         | 'invitation_accepted'
         | 'invitation_rejected'
+        | 'removed'
         | 'blocked'
         | 'unblocked'
         | 'invitation_deleted'
