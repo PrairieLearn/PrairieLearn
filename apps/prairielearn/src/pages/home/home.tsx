@@ -7,11 +7,8 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
-import {
-  dangerousFullAuthzPermissions,
-  getCourseInstanceContext,
-  getPageContext,
-} from '../../lib/client/page-context.js';
+import { buildAuthzData } from '../../lib/authzData.js';
+import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
@@ -138,13 +135,25 @@ router.post(
     } = getPageContext(res.locals, { withAuthzData: false });
 
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'student');
+    const { authzData } = await buildAuthzData({
+      authn_user: res.locals.authn_user,
+      course_id: courseInstance.course_id,
+      course_instance_id: courseInstance.id,
+      is_administrator: res.locals.is_administrator,
+      ip: req.ip ?? null,
+      req_date: res.locals.req_date,
+    });
+
+    if (authzData === null) {
+      throw new Error('Access denied');
+    }
 
     switch (body.__action) {
       case 'accept_invitation': {
         await ensureEnrollment({
           courseInstance,
           userId,
-          authzData: dangerousFullAuthzPermissions(),
+          authzData,
           requiredRoleOptions: 'Student',
           actionDetail: 'invitation_accepted',
         });
@@ -155,7 +164,7 @@ router.post(
           courseInstance,
           pendingUid: uid,
           requiredRoleOptions: 'Student',
-          authzData: dangerousFullAuthzPermissions(),
+          authzData,
         });
 
         if (!enrollment) {
@@ -170,7 +179,7 @@ router.post(
           enrollment,
           status: 'rejected',
           requiredRoleOptions: 'Student',
-          authzData: dangerousFullAuthzPermissions(),
+          authzData,
         });
         break;
       }
@@ -179,7 +188,7 @@ router.post(
           courseInstance,
           uid,
           requiredRoleOptions: 'Student',
-          authzData: dangerousFullAuthzPermissions(),
+          authzData,
         });
 
         if (!enrollment) {
@@ -190,7 +199,7 @@ router.post(
           enrollment,
           status: 'removed',
           requiredRoleOptions: 'Student',
-          authzData: dangerousFullAuthzPermissions(),
+          authzData,
         });
         break;
       }

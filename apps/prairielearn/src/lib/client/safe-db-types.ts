@@ -252,7 +252,6 @@ export const StaffTagSchema = RawTagSchema.brand<'StaffTag'>();
 export type StaffTag = z.infer<typeof StaffTagSchema>;
 
 /** Users */
-
 const RawStaffUserSchema = RawUserSchema.pick({
   email: true,
   institution_id: true,
@@ -261,6 +260,7 @@ const RawStaffUserSchema = RawUserSchema.pick({
   uin: true,
   user_id: true,
 });
+export type RawStaffUser = z.infer<typeof RawStaffUserSchema>;
 export const StaffUserSchema = RawStaffUserSchema.brand<'StaffUser'>();
 export type StaffUser = z.infer<typeof StaffUserSchema>;
 

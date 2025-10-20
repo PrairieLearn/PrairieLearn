@@ -11,6 +11,7 @@ import {
   RawStaffAssessmentSetSchema,
   RawStaffCourseInstanceSchema,
   RawStaffCourseSchema,
+  type RawStaffUser,
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   StaffInstitutionSchema,
@@ -48,6 +49,11 @@ const RawAuthzDataSchema = z.object({
 
   user: StaffUserSchema,
 });
+
+export type RawAuthzData = Omit<z.infer<typeof RawAuthzDataSchema>, 'user' | 'authn_user'> & {
+  user: RawStaffUser;
+  authn_user: RawStaffUser;
+};
 const AuthzDataSchema = RawAuthzDataSchema.brand<'AuthzData'>();
 export type AuthzData = z.infer<typeof AuthzDataSchema>;
 
