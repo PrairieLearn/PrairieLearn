@@ -249,6 +249,7 @@ export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
 export const AiQuestionGenerationMessageSchema = z.object({
   created_at: DateFromISOString,
   id: IdSchema,
+  job_sequence_id: IdSchema.nullable(),
   parts: z.array(z.any()),
   question_id: IdSchema,
   role: EnumAiQuestionGenerationMessageRoleSchema,

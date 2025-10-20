@@ -1,4 +1,4 @@
-import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import {
   type EmbeddingModel,
   type GenerateTextResult,
@@ -291,7 +291,7 @@ export function approximatePromptCost({
 /**
  * Retrieve the Redis key for a user's current AI question generation interval usage
  */
-function getIntervalUsageKey(userId: number) {
+function getIntervalUsageKey(userId: string) {
   const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
   return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
 }
@@ -302,7 +302,7 @@ const intervalLengthMs = 3600 * 1000;
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({ userId }: { userId: number }) {
+export async function getIntervalUsage({ userId }: { userId: string }) {
   const cache = await getAiQuestionGenerationCache();
   return (await cache.get<number>(getIntervalUsageKey(userId))) ?? 0;
 }
@@ -313,11 +313,9 @@ export async function getIntervalUsage({ userId }: { userId: number }) {
 export async function addCompletionCostToIntervalUsage({
   userId,
   usage,
-  intervalCost,
 }: {
-  userId: number;
+  userId: string;
   usage: LanguageModelUsage | undefined;
-  intervalCost: number;
 }) {
   const cache = await getAiQuestionGenerationCache();
 
@@ -325,6 +323,8 @@ export async function addCompletionCostToIntervalUsage({
     model: QUESTION_GENERATION_OPENAI_MODEL,
     usage,
   });
+
+  const intervalCost = await getIntervalUsage({ userId });
 
   // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
   const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
@@ -419,7 +419,7 @@ export async function generateQuestion({
       providerOptions: {
         openai: {
           safetyIdentifier: openAiUserFromAuthn(authnUserId),
-        } satisfies OpenAIChatLanguageModelOptions,
+        } satisfies OpenAIResponsesProviderOptions,
       },
     });
 
@@ -646,7 +646,7 @@ async function regenInternal({
     providerOptions: {
       openai: {
         safetyIdentifier: openAiUserFromAuthn(authnUserId),
-      } satisfies OpenAIChatLanguageModelOptions,
+      } satisfies OpenAIResponsesProviderOptions,
     },
   });
 

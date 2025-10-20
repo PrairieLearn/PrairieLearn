@@ -1,20 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
-import {
-  Experimental_Agent as Agent,
-  type LanguageModel,
-  type LanguageModelUsage,
-  stepCountIs,
-  tool,
-} from 'ai';
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
+import { Experimental_Agent as Agent, type LanguageModel, stepCountIs, tool } from 'ai';
 import klaw from 'klaw';
 import { z } from 'zod';
 
 import { execute, loadSql, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { emptyUsage, formatPrompt } from '../../../lib/ai.js';
+import { formatPrompt } from '../../../lib/ai.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationMessageSchema,
@@ -26,7 +20,7 @@ import { DefaultMap } from '../../../lib/default-map.js';
 import { REPOSITORY_ROOT_PATH } from '../../../lib/paths.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectQuestionById } from '../../../models/question.js';
-import { checkRender } from '../aiQuestionGeneration.js';
+import { addCompletionCostToIntervalUsage, checkRender } from '../aiQuestionGeneration.js';
 import { ALLOWED_ELEMENTS, buildContextForElementDocs } from '../context-parsers/documentation.js';
 import {
   type QuestionContext,
@@ -158,8 +152,17 @@ export async function createQuestionGenerationAgent({
       // Cap to 20 steps to avoid runaways.
       stepCountIs(20),
     ],
-    onStepFinish: (step) => {
-      console.log('Step finished', step.content);
+    prepareStep: async ({ steps }) => {
+      const didListExamples = steps
+        .at(-1)
+        ?.toolCalls.some(({ toolName }) => toolName === 'listElementExamples');
+      if (didListExamples) {
+        // Force the model to use the `getExampleQuestions` tool next.
+        return {
+          activeTools: ['getExampleQuestions'],
+          toolChoice: 'required',
+        };
+      }
     },
     tools: {
       readFile: tool({
@@ -321,51 +324,56 @@ export async function generateQuestionWithAgent({
     authnUserId: authnUser.user_id,
   });
 
-  let usage: LanguageModelUsage = emptyUsage();
-  let savedQuestion: Question | null = null;
+  // Create the initial question so we can get a question ID. This also simplifies
+  // the agent logic since we don't need to handle the "create new question" vs
+  // "update existing question" case - we're just always updating.
+  const courseFilesClient = getCourseFilesClient();
+  const saveResults = await courseFilesClient.createQuestion.mutate({
+    course_id: course.id,
+    user_id: user.user_id,
+    authn_user_id: authnUser.user_id,
+    has_course_permission_edit: hasCoursePermissionEdit,
+    is_draft: true,
+    files: {
+      'question.html': '',
+      'server.py': '',
+    },
+  });
 
-  const startTime = Date.now();
-  await serverJob.execute(async (job) => {
-    // Create the initial question so we can get a question ID. This also simplifies
-    // the agent logic since we don't need to handle the "create new question" vs
-    // "update existing question" case - we're just always updating.
-    const courseFilesClient = getCourseFilesClient();
-    const saveResults = await courseFilesClient.createQuestion.mutate({
-      course_id: course.id,
-      user_id: user.user_id,
-      authn_user_id: authnUser.user_id,
-      has_course_permission_edit: hasCoursePermissionEdit,
-      is_draft: true,
-      files: {
-        'question.html': '',
-        'server.py': '',
-      },
-    });
+  if (saveResults.status === 'error') {
+    console.error('Failed to create initial question');
+    throw new Error('Failed to create initial question for AI generation.');
+  }
 
-    if (saveResults.status === 'error') {
-      throw new Error('Failed to create initial question for AI generation.');
-    }
+  await execute(otherSql.insert_draft_question_metadata, {
+    question_id: saveResults.question_id,
+    creator_id: authnUser.user_id,
+  });
 
-    await execute(otherSql.insert_draft_question_metadata, {
-      question_id: saveResults.question_id,
-      creator_id: authnUser.user_id,
-    });
+  const question = await selectQuestionById(saveResults.question_id);
 
-    savedQuestion = await selectQuestionById(saveResults.question_id);
-
+  serverJob.executeInBackground(async () => {
     const { agent } = await createQuestionGenerationAgent({
       model,
       course,
-      question: savedQuestion,
+      question,
       user,
       authnUser,
       hasCoursePermissionEdit,
     });
 
+    // Insert the prompt as a message.
+    await execute(sql.insert_user_message, {
+      question_id: question.id,
+      // TODO: this should be handled by an API endpoint? Ideally we want `ai` to handle the
+      // shape of this `parts` object.
+      parts: JSON.stringify([{ type: 'text', text: prompt }]),
+    });
+
     // Insert the agent's message into the `messages` table.
     const messageRow = await queryRow(
       sql.insert_initial_assistant_message,
-      { question_id: saveResults.question_id },
+      { question_id: saveResults.question_id, job_sequence_id: serverJob.jobSequenceId },
       AiQuestionGenerationMessageSchema,
     );
 
@@ -373,20 +381,19 @@ export async function generateQuestionWithAgent({
       prompt,
       providerOptions: {
         openai: {
-          reasoningEffort: 'minimal',
-        } satisfies OpenAIChatLanguageModelOptions,
+          reasoningEffort: 'low',
+          reasoningSummary: 'auto',
+        } satisfies OpenAIResponsesProviderOptions,
       },
     });
 
     const resStream = res.toUIMessageStream({
+      generateMessageId: () => messageRow.id,
       onFinish: async ({ responseMessage }) => {
-        // Save message?
-        console.log('-----------------');
-        console.log('DONE:');
-        console.log(responseMessage);
+        const usage = await res.totalUsage;
         await execute(sql.update_message, {
           id: messageRow.id,
-          parts: responseMessage.parts,
+          parts: JSON.stringify(responseMessage.parts),
           usage_input_tokens: usage.inputTokens,
           usage_output_tokens: usage.outputTokens,
           usage_total_tokens: usage.totalTokens,
@@ -395,28 +402,19 @@ export async function generateQuestionWithAgent({
     });
 
     for await (const chunk of resStream) {
+      // TODO: this loop seems to somehow be necessary to trigger `onFinish`.
+      // TODO: we should actually stream back result as they're happening.
       console.log(chunk);
     }
 
-    console.log(res.steps);
-
-    usage = await res.totalUsage;
-
-    // console.dir(
-    //   res.steps.map((step) => step.content),
-    //   { depth: null },
-    // );
-    console.log('usage', usage);
-    console.log('saved question', savedQuestion);
-
-    // TODO: attach data to `job.data`?
+    await addCompletionCostToIntervalUsage({
+      userId: authnUser.user_id,
+      usage: await res.totalUsage,
+    });
   });
-  const endTime = Date.now();
-  console.log(`Generation took ${(endTime - startTime) / 1000} seconds`);
 
   return {
+    question,
     jobSequenceId: serverJob.jobSequenceId,
-    usage,
-    question: savedQuestion as Question | null,
   };
 }

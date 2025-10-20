@@ -1,3 +1,5 @@
+import { Readable } from 'node:stream';
+
 import { createOpenAI } from '@ai-sdk/openai';
 import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -25,6 +27,7 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
+import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-generation/redis.js';
 import {
   QUESTION_GENERATION_OPENAI_MODEL,
   addCompletionCostToIntervalUsage,
@@ -220,6 +223,34 @@ router.get(
   }),
 );
 
+// TODO: `instance-question` is probably the wrong type here.
+router.get(
+  '/stream',
+  typedAsyncHandler<'instance-question'>(async (req, res) => {
+    res.locals.question = await selectQuestionById(req.params.question_id);
+
+    // Ensure the question belongs to this course and that it's a draft question.
+    if (
+      !idsEqual(res.locals.question.course_id, res.locals.course.id) ||
+      !res.locals.question.draft
+    ) {
+      throw new error.HttpStatusError(404, 'Draft question not found');
+    }
+
+    assertCanCreateQuestion(res.locals);
+
+    const streamContext = await getAiQuestionGenerationStreamContext();
+
+    const stream = await streamContext.resumeExistingStream('testing');
+    if (!stream) {
+      res.status(204).send();
+      return;
+    }
+
+    Readable.fromWeb(stream as any).pipe(res);
+  }),
+);
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -298,7 +329,6 @@ router.post(
       await addCompletionCostToIntervalUsage({
         userId: res.locals.authn_user.user_id,
         usage: result.usage,
-        intervalCost,
       });
 
       if (result.htmlResult) {

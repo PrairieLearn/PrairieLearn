@@ -12,14 +12,12 @@ import { features } from '../../../lib/features/index.js';
 import { generateQuestionWithAgent } from '../../lib/ai-question-generation/agent.js';
 import {
   QUESTION_GENERATION_OPENAI_MODEL,
-  addCompletionCostToIntervalUsage,
   approximatePromptCost,
   getIntervalUsage,
 } from '../../lib/aiQuestionGeneration.js';
 
 import {
   DraftMetadataWithQidSchema,
-  GenerationFailure,
   InstructorAIGenerateDrafts,
   RateLimitExceeded,
 } from './instructorAiGenerateDrafts.html.js';
@@ -139,25 +137,10 @@ router.post(
         prompt: req.body.prompt,
       });
 
-      await addCompletionCostToIntervalUsage({
-        userId: res.locals.authn_user.user_id,
-        usage: result.usage,
-        intervalCost,
+      res.set({
+        'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_editor/${result.question.id}`,
       });
-
-      if (result.question) {
-        res.set({
-          'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_editor/${result.question.id}`,
-        });
-        res.send();
-      } else {
-        res.send(
-          GenerationFailure({
-            urlPrefix: res.locals.urlPrefix,
-            jobSequenceId: result.jobSequenceId,
-          }),
-        );
-      }
+      res.send();
     } else if (req.body.__action === 'delete_drafts') {
       const questions = await queryRows(
         sql.select_draft_questions_by_course_id,
