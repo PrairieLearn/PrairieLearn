@@ -64,7 +64,7 @@ function assertHasRole(
   if (!allowedRoles.includes(requestedRole)) {
     // This suggests the code was called incorrectly (internal error).
     throw new Error(
-      `Requested role ${requestedRole} is not allowed for this action. Allowed roles: ${allowedRoles.join(', ')}`,
+      `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
     );
   }
 
@@ -117,7 +117,7 @@ async function _enrollUserInCourseInstanceWithLock({
   requestedRole: CourseInstanceRole;
   authzData: RawAuthzData | DangerousAuthzData;
 }): Promise<Enrollment> {
-  assertHasRole(authzData, requestedRole, ['Student Data Editor']);
+  assertHasRole(authzData, requestedRole, ['Student']);
 
   const newEnrollment = await queryRow(
     sql.enroll_user,
