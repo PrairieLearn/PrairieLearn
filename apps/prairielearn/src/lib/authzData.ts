@@ -190,7 +190,7 @@ export async function buildAuthzData({
   };
 }
 
-export type CourseInstanceRole = EnumCourseInstanceRole | 'Student';
+export type CourseInstanceRole = 'None' | 'Student Data Viewer' | 'Student Data Editor' | 'Student';
 
 export interface DangerousAuthzData {
   authn_user: {
@@ -232,7 +232,19 @@ export function hasRole(
     return true;
   }
 
-  return authzData.course_instance_role === requestedRole;
+  if (requestedRole === 'Student Data Viewer' && authzData.has_course_instance_permission_view) {
+    return true;
+  }
+
+  if (requestedRole === 'Student Data Editor' && authzData.has_course_instance_permission_edit) {
+    return true;
+  }
+
+  if (requestedRole === 'None') {
+    return true;
+  }
+
+  return false;
 }
 
 export function assertHasRole(
