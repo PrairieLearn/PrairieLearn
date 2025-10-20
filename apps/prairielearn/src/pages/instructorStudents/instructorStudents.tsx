@@ -55,7 +55,7 @@ router.get(
       throw new HttpStatusError(400, 'UID must be a string');
     }
     const enrollment = await selectOptionalEnrollmentByUid({
-      courseInstance: courseInstance,
+      courseInstance,
       uid,
       roleNeeded: 'student',
       authzData: res.locals.authz_data,
@@ -85,7 +85,7 @@ router.post(
 
       // Try to find an existing enrollment so we can error gracefully.
       const existingEnrollment = await selectOptionalEnrollmentByUid({
-        courseInstance: courseInstance,
+        courseInstance,
         uid: body.uid,
         roleNeeded: 'student',
         authzData: res.locals.authz_data,
@@ -104,7 +104,7 @@ router.post(
       }
 
       const enrollment = await inviteStudentByUid({
-        courseInstance: courseInstance,
+        courseInstance,
         uid: body.uid,
         roleNeeded: 'instructor',
         authzData: res.locals.authz_data,

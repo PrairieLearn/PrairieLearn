@@ -4,9 +4,11 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 import { selectUserByUid } from '../models/user.js';
 
@@ -73,11 +75,12 @@ describe(
 
     test.sequential('enroll the test student user in the course', async () => {
       const user = await selectUserByUid('student@example.com');
+      const courseInstance = await selectCourseInstanceById('1');
       await ensureEnrollment({
         userId: user.user_id,
-        courseInstance: { id: '1' } as any,
+        courseInstance,
         roleNeeded: 'student',
-        authzData: { authn_user: { user_id: null } } as any,
+        authzData: dangerousFullAuthzPermissions(),
         actionDetail: 'implicit_joined',
       });
     });

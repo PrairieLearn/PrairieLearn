@@ -464,12 +464,12 @@ describe('accessibility', () => {
 
     await sqldb.executeRow(
       'UPDATE course_instances SET share_source_publicly = true WHERE id = $course_instance_id',
-      { courseInstance: routeParams.course_instance_id },
+      { course_instance_id: routeParams.course_instance_id },
     );
 
     const course_id = await sqldb.queryRow(
       'SELECT course_id FROM course_instances WHERE id = $course_instance_id',
-      { courseInstance: routeParams.course_instance_id },
+      { course_instance_id: routeParams.course_instance_id },
       IdSchema,
     );
 
