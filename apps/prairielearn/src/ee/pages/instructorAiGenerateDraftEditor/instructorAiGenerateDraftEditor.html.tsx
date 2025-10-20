@@ -1,5 +1,7 @@
 import assert from 'node:assert';
 
+import type { UIMessage } from 'ai';
+
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { Hydrate, hydrateHtml } from '@prairielearn/preact/server';
@@ -39,6 +41,17 @@ export function InstructorAiGenerateDraftEditor({
   richTextEditorEnabled: boolean;
   variantId?: string | undefined;
 }) {
+  const initialMessages = messages.map((message): UIMessage => {
+    return {
+      id: message.id,
+      role: message.role,
+      parts: message.parts,
+      metadata: {
+        job_sequence_id: message.job_sequence_id,
+      },
+    };
+  });
+
   // This page has a very custom layout, so we don't use the usual `PageLayout`
   // component here. If we start building other similar pages, we might want to
   // teach `PageLayout` how to render this kind of layout.
@@ -84,7 +97,7 @@ export function InstructorAiGenerateDraftEditor({
                 <div class="app-chat-history">
                   ${hydrateHtml(
                     <AiQuestionGenerationChat
-                      initialMessages={messages}
+                      initialMessages={initialMessages}
                       questionId={question.id}
                       urlPrefix={resLocals.urlPrefix}
                     />,
@@ -204,68 +217,6 @@ function findLatestRevisionIndexForPrompt(
   }
 
   return targetIndex;
-}
-
-function MessageHistory({
-  messages,
-  urlPrefix,
-  showJobLogs,
-}: {
-  messages: AiQuestionGenerationMessage[];
-  urlPrefix: string;
-  showJobLogs: boolean;
-}) {
-  return messages.map((message) => {
-    if (message.role === 'user') {
-      return html`
-        <div class="d-flex flex-row-reverse">
-          <div class="p-3 mb-2 rounded bg-secondary-subtle" style="max-width: 90%">
-            <p class="mb-0" style="white-space: pre-wrap;">${message.parts[0].text}</p>
-          </div>
-        </div>
-      `;
-    }
-
-    return html`
-      <div class="d-flex flex-column gap-2">
-        ${message.parts.map((part) => {
-          if (part.type.startsWith('tool-')) {
-            const toolName = part.type.slice('tool-'.length);
-            return html`
-              <div class="border rounded p-2">
-                <i class="bi bi-tools me-2" aria-hidden="true"></i>
-                <span class="font-monospace">${toolName}</span>
-              </div>
-            `;
-          } else if (part.type === 'text') {
-            return html`<p class="mb-0" style="white-space: pre-wrap;">${part.text}</p>`;
-          } else if (part.type === 'reasoning') {
-            if (!part.text) return '';
-            return html`
-              <div class="d-flex flex-column gap-2 border rounded p-2">
-                <div class="d-flex flex-row gap-2 mb-1">
-                  <i class="bi bi-lightbulb" aria-hidden="true"></i>
-                  <span>Thinking...</span>
-                </div>
-                <p class="small mb-0" style="white-space: pre-wrap;">${part.text}</p>
-              </div>
-            `;
-          } else if (['reasoning', 'step-start'].includes(part.type)) {
-            return '';
-          } else {
-            return html`<pre><code>${JSON.stringify(part, null, 2)}</code></pre>`;
-          }
-        })}
-        ${run(() => {
-          if (!showJobLogs || !message.job_sequence_id) return '';
-
-          const jobLogsUrl = urlPrefix + '/jobSequence/' + message.job_sequence_id;
-
-          return html`<a class="small" href="${jobLogsUrl}" target="_blank"> View job logs </a>`;
-        })}
-      </div>
-    `;
-  });
 }
 
 function PromptHistory({
