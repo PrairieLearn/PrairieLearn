@@ -15,6 +15,15 @@ describe('getPageContext', () => {
   it('strips extra fields from the data', () => {
     const mockData = {
       authz_data: {
+        authn_user: {
+          name: 'Test User',
+          uid: 'test@illinois.edu',
+          email: 'test@illinois.edu',
+          institution_id: '1',
+          uin: '123456789',
+          user_id: '1',
+          foo: 'bar',
+        },
         authn_is_administrator: false,
         authn_has_course_permission_preview: true,
         authn_has_course_permission_view: true,
