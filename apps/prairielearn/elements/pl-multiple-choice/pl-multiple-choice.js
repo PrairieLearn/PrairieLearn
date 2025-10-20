@@ -30,17 +30,24 @@ window.PLMultipleChoice = function (uuid) {
         return `<div class="${data.disabled ? 'text-muted' : ''}">${data.content}</div>`;
       },
     },
-  });
 
-  // In case the dropdown items contain math, render it when the
-  // dropdown is opened or closed.
-  select.on('dropdown_open', () => {
-    // The first time the dropdown is opened, this even is fired before the
-    // options are actually present in the DOM. We'll wait for the next tick
-    // to ensure that the options are present.
-    setTimeout(() => MathJax.typesetPromise([container]), 0);
+    onDropdownOpen: (dropdown) => {
+      // Ensure the height of the dropdown is constrained to the viewport.
+      const content = dropdown.querySelector('.ts-dropdown-content');
+      content.style.maxHeight = `${window.innerHeight - content.getBoundingClientRect().top}px`;
+
+      // The first time the dropdown is opened, this even is fired before the
+      // options are actually present in the DOM. We'll wait for the next tick
+      // to ensure that the options are present.
+      setTimeout(() => MathJax.typesetPromise([dropdown]), 0);
+    },
+
+    onDropdownClose: () => {
+      // In case the dropdown items contain math, render it when the
+      // dropdown is opened or closed.
+      MathJax.typesetPromise([container]);
+    },
   });
-  select.on('dropdown_close', () => MathJax.typesetPromise([container]));
 
   // By default, `tom-select` will set the placeholder as the "active" option,
   // but this means that the active option can't be changed with the up/down keys
