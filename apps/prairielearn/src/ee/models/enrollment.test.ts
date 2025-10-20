@@ -1,8 +1,10 @@
-import { afterEach, assert, beforeEach, describe, it } from 'vitest';
+import { afterEach, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { CourseInstanceSchema } from '../../lib/db-types.js';
+import { dangerousFullAuthzPermissions } from '../../lib/client/page-context.js';
+import { type CourseInstance, CourseInstanceSchema } from '../../lib/db-types.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
@@ -17,6 +19,12 @@ import {
 import { ensurePlanGrant } from './plan-grants.js';
 
 describe('getEnrollmentCountsForInstitution', () => {
+  let firstCourseInstance: CourseInstance;
+
+  beforeAll(async function () {
+    firstCourseInstance = await selectCourseInstanceById('1');
+  });
+
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse();
@@ -69,32 +77,32 @@ describe('getEnrollmentCountsForInstitution', () => {
     });
 
     await ensureEnrollment({
-      courseInstance: { id: '1' } as any,
+      courseInstance: firstCourseInstance,
       userId: freeUser.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
     await ensureEnrollment({
-      courseInstance: { id: '1' } as any,
-      user_id: paidUser1.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: paidUser1.user_id,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
     await ensureEnrollment({
-      courseInstance: courseInstance.id,
-      user_id: paidUser2.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance,
+      userId: paidUser2.user_id,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        userId: freeUser.user_id,
+        user_id: freeUser.user_id,
         // This plan grant should not make this user count as a paid enrollment.
         plan_name: 'compute',
         type: 'stripe',
@@ -116,7 +124,7 @@ describe('getEnrollmentCountsForInstitution', () => {
     await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
-        courseInstance: courseInstance.id,
+        course_instance_id: courseInstance.id,
         user_id: paidUser2.user_id,
         plan_name: 'basic',
         type: 'stripe',
@@ -135,6 +143,12 @@ describe('getEnrollmentCountsForInstitution', () => {
 });
 
 describe('getEnrollmentCountsForCourse', () => {
+  let firstCourseInstance: CourseInstance;
+
+  beforeAll(async function () {
+    firstCourseInstance = await selectCourseInstanceById('1');
+  });
+
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse();
@@ -159,11 +173,11 @@ describe('getEnrollmentCountsForCourse', () => {
       email: 'student@example.com',
     });
     await ensureEnrollment({
-      courseInstance: { id: '1' } as any,
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
 
     const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
@@ -181,11 +195,11 @@ describe('getEnrollmentCountsForCourse', () => {
     });
 
     await ensureEnrollment({
-      courseInstance: { id: '1' } as any,
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
@@ -213,11 +227,11 @@ describe('getEnrollmentCountsForCourse', () => {
     });
 
     await ensureEnrollment({
-      courseInstance: { id: '1' } as any,
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
@@ -238,6 +252,11 @@ describe('getEnrollmentCountsForCourse', () => {
 });
 
 describe('getEnrollmentCountsForCourseInstance', () => {
+  let firstCourseInstance: CourseInstance;
+
+  beforeAll(async function () {
+    firstCourseInstance = await selectCourseInstanceById('1');
+  });
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse();
@@ -262,11 +281,11 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       email: 'student@example.com',
     });
     await ensureEnrollment({
-      courseInstance: { id: '1' } as any,
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
 
     const result = await getEnrollmentCountsForCourseInstance('1');
@@ -284,11 +303,11 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     });
 
     await ensureEnrollment({
-      courseInstance: { id: '1' } as any,
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
@@ -316,11 +335,11 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     });
 
     await ensureEnrollment({
-      courseInstance: { id: '1' } as any,
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
 
     await ensurePlanGrant({

@@ -5,9 +5,11 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { config } from '../lib/config.js';
 import { InstanceQuestionSchema, UserSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -112,12 +114,13 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('3. Enroll student user into testCourse', function () {
     it('should succeed', async () => {
+      const courseInstance = await selectCourseInstanceById('1');
       await ensureEnrollment({
         userId: user.user_id,
-        course_instance_id: '1',
-        agent_userId: null,
-        agent_authn_userId: null,
-        action_detail: 'implicit_joined',
+        courseInstance,
+        roleNeeded: 'instructor',
+        authzData: dangerousFullAuthzPermissions(),
+        actionDetail: 'implicit_joined',
       });
     });
   });

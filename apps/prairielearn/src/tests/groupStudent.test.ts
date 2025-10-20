@@ -6,9 +6,11 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema, GroupConfigSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert, fetchCheerio } from './helperClient.js';
@@ -127,7 +129,13 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   describe('6. get 5 student user', function () {
     it('should insert/get 5 users into/from the DB', async () => {
-      const result = await generateAndEnrollUsers({ count: 5, courseInstance: '1' });
+      const courseInstance = await selectCourseInstanceById('1');
+      const result = await generateAndEnrollUsers({
+        count: 5,
+        courseInstance,
+        roleNeeded: 'instructor',
+        authzData: dangerousFullAuthzPermissions(),
+      });
       assert.lengthOf(result, 5);
       locals.studentUsers = result.slice(0, 3);
       locals.studentUserNotGrouped = result[3];

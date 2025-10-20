@@ -75,10 +75,10 @@ describe(
       const user = await selectUserByUid('student@example.com');
       await ensureEnrollment({
         userId: user.user_id,
-        course_instance_id: '1',
-        agent_userId: null,
-        agent_authn_userId: null,
-        action_detail: 'implicit_joined',
+        courseInstance: { id: '1' } as any,
+        roleNeeded: 'student',
+        authzData: { authn_user: { user_id: null } } as any,
+        actionDetail: 'implicit_joined',
       });
     });
 

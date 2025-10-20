@@ -55,7 +55,7 @@ describe('studentCourseInstanceUpgrade', () => {
       // Grant `basic` to student in course instance.
       const user = await getConfiguredUser();
       await reconcilePlanGrantsForCourseInstanceUser(
-        { institution_id: '1', course_instance_id: '1', userId: user.user_id },
+        { institution_id: '1', course_instance_id: '1', user_id: user.user_id },
         [{ plan: 'basic', grantType: 'stripe' }],
         '1',
       );
@@ -82,10 +82,10 @@ describe('studentCourseInstanceUpgrade', () => {
     const user = await getOrCreateUser(studentUser);
     await ensureEnrollment({
       userId: user.user_id,
-      course_instance_id: '1',
-      agent_userId: null,
-      agent_authn_userId: null,
-      action_detail: 'implicit_joined',
+      courseInstance: { id: '1' } as any,
+      roleNeeded: 'student',
+      authzData: { authn_user: { user_id: null } } as any,
+      actionDetail: 'implicit_joined',
     });
 
     // Simulates the dev user (an instructor) using "Student view" for themselves.
@@ -104,10 +104,10 @@ describe('studentCourseInstanceUpgrade', () => {
     const user = await getOrCreateUser(studentUser);
     await ensureEnrollment({
       userId: user.user_id,
-      course_instance_id: '1',
-      agent_userId: null,
-      agent_authn_userId: null,
-      action_detail: 'implicit_joined',
+      courseInstance: { id: '1' } as any,
+      roleNeeded: 'student',
+      authzData: { authn_user: { user_id: null } } as any,
+      actionDetail: 'implicit_joined',
     });
 
     // Simulates the dev user (an instructor) using "Student view" for an

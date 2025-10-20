@@ -324,8 +324,8 @@ export async function generateAndEnrollUsers({
   courseInstance,
 }: {
   count: number;
-  roleNeeded: 'student' | 'instructor';
-  authzData: AuthzData | DangerousAuthzData;
+  roleNeeded: 'instructor';
+  authzData: DangerousAuthzData;
   courseInstance: CourseInstanceContext;
 }) {
   return await runInTransactionAsync(async () => {

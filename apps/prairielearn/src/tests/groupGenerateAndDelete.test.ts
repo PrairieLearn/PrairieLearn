@@ -25,7 +25,12 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
   });
 
   test.sequential('create 500 users', async () => {
-    const result = await generateAndEnrollUsers({ count: 500, courseInstance: '1' });
+    const result = await generateAndEnrollUsers({
+      count: 500,
+      courseInstance: { id: '1' } as any,
+      roleNeeded: 'instructor',
+      authzData: { authn_user: { user_id: null } } as any,
+    });
     assert.equal(result.length, 500);
   });
 

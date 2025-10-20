@@ -217,7 +217,7 @@ async function selectUserInCourseInstance({
       z.boolean(),
     )) ||
     (await selectOptionalEnrollmentByUserId({
-      courseInstance: { 
+      courseInstance: {
         id: course_instance_id,
         deleted_at: null,
         assessments_group_by: 'Set',

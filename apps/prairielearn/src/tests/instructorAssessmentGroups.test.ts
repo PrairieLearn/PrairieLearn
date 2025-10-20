@@ -3,8 +3,10 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
+import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { config } from '../lib/config.js';
 import { IdSchema, type User } from '../lib/db-types.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import {
@@ -38,7 +40,13 @@ describe('Instructor group controls', () => {
   });
 
   test.sequential('enroll random users', async () => {
-    users = await generateAndEnrollUsers({ count: 5, courseInstance: '1' });
+    const courseInstance = await selectCourseInstanceById('1');
+    users = await generateAndEnrollUsers({
+      count: 5,
+      courseInstance,
+      roleNeeded: 'instructor',
+      authzData: dangerousFullAuthzPermissions(),
+    });
   });
 
   test.sequential('can create a new group', async () => {

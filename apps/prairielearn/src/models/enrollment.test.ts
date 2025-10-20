@@ -2,22 +2,59 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { EnrollmentSchema } from '../lib/db-types.js';
+import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
+import { type CourseInstance, type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
+import { selectCourseInstanceById } from './course-instances.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUserId,
 } from './enrollment.js';
 
+/** Helper function to create enrollments with specific statuses for testing */
+async function createEnrollmentWithStatus({
+  userId,
+  courseInstance,
+  status,
+  firstJoinedAt,
+  pendingUid,
+}: {
+  userId: string | null;
+  courseInstance: CourseInstance;
+  status: 'invited' | 'joined' | 'blocked' | 'removed' | 'rejected';
+  firstJoinedAt?: Date | null;
+  pendingUid?: string | null;
+}): Promise<Enrollment> {
+  // First create a basic enrollment
+  const enrollment = await queryRow(
+    `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at, pending_uid)
+     VALUES ($user_id, $course_instance_id, $status, $first_joined_at, $pending_uid)
+     RETURNING *`,
+    {
+      user_id: userId,
+      course_instance_id: courseInstance.id,
+      status,
+      first_joined_at: firstJoinedAt,
+      pending_uid: pendingUid,
+    },
+    EnrollmentSchema,
+  );
+
+  return enrollment;
+}
+
 describe('ensureEnrollment', () => {
+  let courseInstance: CourseInstance;
+
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
+    courseInstance = await selectCourseInstanceById('1');
   });
 
   afterEach(async function () {
@@ -32,20 +69,19 @@ describe('ensureEnrollment', () => {
       email: 'invited@example.com',
     });
 
-    await queryRow(
-      `INSERT INTO enrollments (user_id, course_instance_id, status, pending_uid)
-       VALUES (NULL, $course_instance_id, 'invited', $pending_uid)
-       RETURNING *`,
-      {
-        courseInstance: '1',
-        pendingUid: user.uid,
-      },
-      EnrollmentSchema,
-    );
+    // Create an invited enrollment using the helper function
+    await createEnrollmentWithStatus({
+      userId: null,
+      courseInstance,
+      status: 'invited',
+      pendingUid: user.uid,
+    });
 
     const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
-      courseInstance: '1',
+      courseInstance,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'invited');
@@ -53,16 +89,18 @@ describe('ensureEnrollment', () => {
     assert.isNull(initialEnrollment.user_id);
 
     await ensureEnrollment({
-      courseInstance: '1',
+      courseInstance,
       userId: user.user_id,
-      agent_userId: null,
-      agent_authn_userId: null,
-      action_detail: 'implicit_joined',
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
-      courseInstance: '1',
+      courseInstance,
       userId: user.user_id,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -72,7 +110,9 @@ describe('ensureEnrollment', () => {
 
     const invitedEnrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
-      courseInstance: '1',
+      courseInstance,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNull(invitedEnrollment);
   });
@@ -85,37 +125,37 @@ describe('ensureEnrollment', () => {
       email: 'blocked@example.com',
     });
 
-    await queryRow(
-      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
-       VALUES ($user_id, $course_instance_id, 'blocked', $first_joined_at)
-       RETURNING *`,
-      {
-        userId: user.user_id,
-        courseInstance: '1',
-        first_joined_at: new Date(),
-      },
-      EnrollmentSchema,
-    );
+    // Create a blocked enrollment using the helper function
+    await createEnrollmentWithStatus({
+      userId: user.user_id,
+      courseInstance,
+      status: 'blocked',
+      firstJoinedAt: new Date(),
+    });
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
-      courseInstance: '1',
+      courseInstance,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'blocked');
     assert.isNotNull(initialEnrollment.first_joined_at);
 
     await ensureEnrollment({
-      courseInstance: '1',
+      courseInstance,
       userId: user.user_id,
-      agent_userId: null,
-      agent_authn_userId: null,
-      action_detail: 'implicit_joined',
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
-      courseInstance: '1',
+      courseInstance,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'blocked');
@@ -132,21 +172,25 @@ describe('ensureEnrollment', () => {
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
-      courseInstance: '1',
+      courseInstance,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNull(initialEnrollment);
 
     await ensureEnrollment({
-      courseInstance: '1',
+      courseInstance,
       userId: user.user_id,
-      agent_userId: null,
-      agent_authn_userId: null,
-      action_detail: 'implicit_joined',
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
-      courseInstance: '1',
+      courseInstance,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -162,37 +206,37 @@ describe('ensureEnrollment', () => {
     });
 
     const originalJoinedAt = new Date('2023-01-01T00:00:00Z');
-    await queryRow(
-      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
-       VALUES ($user_id, $course_instance_id, 'joined', $first_joined_at)
-       RETURNING *`,
-      {
-        userId: user.user_id,
-        courseInstance: '1',
-        first_joined_at: originalJoinedAt,
-      },
-      EnrollmentSchema,
-    );
+    // Create an already enrolled user using the helper function
+    await createEnrollmentWithStatus({
+      userId: user.user_id,
+      courseInstance,
+      status: 'joined',
+      firstJoinedAt: originalJoinedAt,
+    });
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
-      courseInstance: '1',
+      courseInstance,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'joined');
     assert.equal(initialEnrollment.first_joined_at?.getTime(), originalJoinedAt.getTime());
 
     await ensureEnrollment({
-      courseInstance: '1',
+      courseInstance,
       userId: user.user_id,
-      agent_userId: null,
-      agent_authn_userId: null,
-      action_detail: 'implicit_joined',
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
+      actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
-      courseInstance: '1',
+      courseInstance,
+      roleNeeded: 'student',
+      authzData: dangerousFullAuthzPermissions(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -201,9 +245,12 @@ describe('ensureEnrollment', () => {
 });
 
 describe('DB validation of enrollment', () => {
+  let courseInstance: CourseInstance;
+
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
+    courseInstance = await selectCourseInstanceById('1');
   });
 
   afterEach(async function () {
@@ -211,15 +258,13 @@ describe('DB validation of enrollment', () => {
   });
 
   it('correctly validates various states of enrollments', async () => {
-    const courseInstanceId = '1';
-
     // Helper function to create enrollment with specific state for constraint testing
     const createEnrollmentWithState = async ({
-      user_id,
+      userId,
       status,
       created_at,
       first_joined_at,
-      pending_uid,
+      pendingUid,
       pending_lti13_sub,
       pending_lti13_instance_id,
       lti_managed,
@@ -238,12 +283,12 @@ describe('DB validation of enrollment', () => {
          VALUES ($user_id, $course_instance_id, $status, $created_at, $first_joined_at, $pending_uid, $pending_lti13_sub, $pending_lti13_instance_id, $lti_managed)
          RETURNING *`,
         {
-          user_id,
-          courseInstance: courseInstanceId,
+          user_id: userId,
+          course_instance_id: courseInstance.id,
           status,
           created_at,
           first_joined_at,
-          pending_uid,
+          pending_uid: pendingUid,
           pending_lti13_sub: pending_lti13_sub ?? null,
           pending_lti13_instance_id: pending_lti13_instance_id ?? null,
           lti_managed: lti_managed ?? false,

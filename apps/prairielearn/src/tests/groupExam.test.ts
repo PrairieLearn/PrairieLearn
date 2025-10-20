@@ -29,7 +29,12 @@ const GROUP_NAME = 'groupBB';
 const GROUP_NAME_ALTERNATIVE = 'groupCC';
 
 async function generateThreeStudentUsers() {
-  const rows = await generateAndEnrollUsers({ count: 3, courseInstance: '1' });
+  const rows = await generateAndEnrollUsers({
+    count: 3,
+    courseInstance: { id: '1' } as any,
+    roleNeeded: 'instructor',
+    authzData: { authn_user: { user_id: null } } as any,
+  });
   assert.lengthOf(rows, 3);
   return rows;
 }

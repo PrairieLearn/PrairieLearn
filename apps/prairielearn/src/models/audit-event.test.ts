@@ -139,7 +139,7 @@ describe('audit-event', () => {
         agentAuthnUserId: '1',
         agentUserId: '1',
         subjectUserId: user.user_id,
-        assessment_id: assessment.id,
+        assessmentId: assessment.id,
         newRow: { title: 'Midterm 1' },
       });
       assert.equal(auditEvent.course_id, '1');
@@ -166,7 +166,7 @@ describe('audit-event', () => {
         agentAuthnUserId: '1',
         agentUserId: '1',
         subjectUserId: user.user_id,
-        assessment_question_id: assessmentQuestion.id,
+        assessmentQuestionId: assessmentQuestion.id,
         newRow: { status: 'active' },
       });
       assert.equal(auditEvent.course_id, '1');
@@ -181,10 +181,10 @@ describe('audit-event', () => {
     it('throws error when both subject_user_id and agent_authn_user_id are provided', async () => {
       try {
         await selectAuditEvents({
-          subjectUserId: '1',
-          agentAuthnUserId: '1',
+          subject_user_id: '1',
+          agent_authn_user_id: '1',
           table_names: ['users'],
-          courseInstanceId: '1',
+          course_instance_id: '1',
         });
         assert.fail('Expected error to be thrown');
       } catch (error) {
@@ -199,7 +199,7 @@ describe('audit-event', () => {
       try {
         await selectAuditEvents({
           table_names: ['users'],
-          courseInstanceId: '1',
+          course_instance_id: '1',
         });
         assert.fail('Expected error to be thrown');
       } catch (error) {
@@ -216,9 +216,9 @@ describe('audit-event', () => {
       });
 
       const result = await selectAuditEvents({
-        subjectUserId: user.user_id,
+        subject_user_id: user.user_id,
         table_names: ['users'],
-        courseInstanceId: '1',
+        course_instance_id: '1',
       });
 
       assert.deepEqual(result, []);
@@ -259,9 +259,9 @@ describe('audit-event', () => {
       });
 
       const result = await selectAuditEvents({
-        subjectUserId: user.user_id,
+        subject_user_id: user.user_id,
         table_names: ['users'],
-        courseInstanceId: '1',
+        course_instance_id: '1',
       });
 
       assert.equal(result.length, 2);
@@ -313,15 +313,15 @@ describe('audit-event', () => {
         agentUserId: '1',
         subjectUserId: user.user_id,
         courseInstanceId: '1',
-        assessment_id: '1',
+        assessmentId: '1',
         newRow: { test: 'new assessment data' },
         context: { test: 'assessments' },
       });
 
       const result = await selectAuditEvents({
-        subjectUserId: user.user_id,
+        subject_user_id: user.user_id,
         table_names: ['users', 'enrollments'],
-        courseInstanceId: '1',
+        course_instance_id: '1',
       });
 
       assert.equal(result.length, 2);
@@ -364,9 +364,9 @@ describe('audit-event', () => {
       });
 
       const result = await selectAuditEvents({
-        subjectUserId: user.user_id,
+        subject_user_id: user.user_id,
         table_names: ['users'],
-        courseInstanceId: '1',
+        course_instance_id: '1',
       });
 
       assert.equal(result.length, 1);
@@ -414,9 +414,9 @@ describe('audit-event', () => {
       });
 
       const result = await selectAuditEvents({
-        subjectUserId: user1.user_id,
+        subject_user_id: user1.user_id,
         table_names: ['users'],
-        courseInstanceId: '1',
+        course_instance_id: '1',
       });
 
       assert.equal(result.length, 1);
@@ -457,9 +457,9 @@ describe('audit-event', () => {
       });
 
       const result = await selectAuditEvents({
-        subjectUserId: user.user_id,
+        subject_user_id: user.user_id,
         table_names: ['users'],
-        courseInstanceId: '1',
+        course_instance_id: '1',
       });
 
       assert.equal(result.length, 2);
@@ -490,9 +490,9 @@ describe('audit-event', () => {
       });
 
       const result = await selectAuditEvents({
-        agentAuthnUserId: '1',
+        agent_authn_user_id: '1',
         table_names: ['users'],
-        courseInstanceId: '1',
+        course_instance_id: '1',
       });
 
       assert.equal(result.length, 1);
@@ -518,17 +518,17 @@ describe('audit-event', () => {
         newRow: { name: 'New Name' },
         agentAuthnUserId: '1',
         agentUserId: '1',
-        institution_id: '1',
-        course_id: '1',
-        assessment_id: '1',
-        assessment_instance_id: '1',
-        assessment_question_id: '1',
-        group_id: '1',
+        institutionId: '1',
+        courseId: '1',
+        assessmentId: '1',
+        assessmentInstanceId: '1',
+        assessmentQuestionId: '1',
+        groupId: '1',
       });
       const result = await selectAuditEvents({
-        subjectUserId: user.user_id,
+        subject_user_id: user.user_id,
         table_names: ['users'],
-        courseInstanceId: '1',
+        course_instance_id: '1',
       });
 
       assert.equal(result[0].id, auditEvent.id);

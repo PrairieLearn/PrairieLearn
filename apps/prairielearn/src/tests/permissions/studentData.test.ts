@@ -2,6 +2,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { dangerousFullAuthzPermissions } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import {
   InstanceQuestionSchema,
@@ -9,6 +10,7 @@ import {
   VariantSchema,
 } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -59,14 +61,16 @@ describe('student data access', { timeout: 60_000 }, function () {
       course_id: '1',
       uid: 'instructor@example.com',
       course_role: 'Owner',
-      authn_userId: '1',
+      authn_user_id: '1',
     });
+    const courseInstance = await selectCourseInstanceById('1');
+
     await ensureEnrollment({
       userId: '3',
-      course_instance_id: '1',
-      agent_userId: null,
-      agent_authn_userId: null,
-      action_detail: 'implicit_joined',
+      courseInstance,
+      authzData: dangerousFullAuthzPermissions(),
+      roleNeeded: 'student',
+      actionDetail: 'implicit_joined',
     });
   });
 
@@ -185,10 +189,10 @@ describe('student data access', { timeout: 60_000 }, function () {
   test.sequential('instructor (student data viewer) can view HW1 instance of student', async () => {
     await insertCourseInstancePermissions({
       course_id: '1',
-      userId: '2',
+      user_id: '2',
       course_instance_id: '1',
       course_instance_role: 'Student Data Viewer',
-      authn_userId: '2',
+      authn_user_id: '2',
     });
     const headers = { cookie: 'pl_test_user=test_instructor' };
     const response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
@@ -337,9 +341,9 @@ describe('student data access', { timeout: 60_000 }, function () {
       await updateCourseInstancePermissionsRole({
         course_id: '1',
         course_instance_id: '1',
-        userId: '2',
+        user_id: '2',
         course_instance_role: 'Student Data Editor',
-        authn_userId: '2',
+        authn_user_id: '2',
       });
       const headers = { cookie: 'pl_test_user=test_instructor' };
       let response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {

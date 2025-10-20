@@ -2,11 +2,15 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
+import { dangerousFullAuthzPermissions } from '../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
-import { EnrollmentSchema } from '../lib/db-types.js';
+import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
-import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
+import {
+  selectCourseInstanceById,
+  selectOptionalCourseInstanceById,
+} from '../models/course-instances.js';
 import {
   selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUserId,
@@ -172,7 +176,7 @@ describe('Enroll page (non-enterprise)', () => {
 });
 
 describe('Self-enrollment settings transitions', () => {
-  let courseInstanceCode: string | null = null;
+  let courseInstance: CourseInstance;
 
   const courseInstanceUrl = baseUrl + '/course_instance/1';
   const assessmentsUrl = courseInstanceUrl + '/assessments';
@@ -181,9 +185,7 @@ describe('Self-enrollment settings transitions', () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
 
-    const instance = await selectOptionalCourseInstanceById('1');
-    assert.isNotNull(instance);
-    courseInstanceCode = instance.enrollment_code;
+    courseInstance = await selectCourseInstanceById('1');
 
     // Set uid_regexp for the default institution to allow @example.com UIDs
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
@@ -220,7 +222,9 @@ describe('Self-enrollment settings transitions', () => {
         // Check that user is not enrolled initially
         const initialEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
-          course_instance_id: '1',
+          courseInstance,
+          authzData: dangerousFullAuthzPermissions(),
+          roleNeeded: 'student',
         });
         assert.isNull(initialEnrollment);
 
@@ -231,7 +235,9 @@ describe('Self-enrollment settings transitions', () => {
         // Check that user is now enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
-          course_instance_id: '1',
+          courseInstance,
+          authzData: dangerousFullAuthzPermissions(),
+          roleNeeded: 'student',
         });
         assert.isNull(finalEnrollment);
       },
@@ -265,7 +271,9 @@ describe('Self-enrollment settings transitions', () => {
         // Check that user is not enrolled initially
         const initialEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
-          course_instance_id: '1',
+          courseInstance,
+          authzData: dangerousFullAuthzPermissions(),
+          roleNeeded: 'student',
         });
         assert.isNull(initialEnrollment);
 
@@ -276,7 +284,9 @@ describe('Self-enrollment settings transitions', () => {
         // Check that user is now enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
-          course_instance_id: '1',
+          courseInstance,
+          authzData: dangerousFullAuthzPermissions(),
+          roleNeeded: 'student',
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
@@ -319,7 +329,9 @@ describe('Self-enrollment settings transitions', () => {
       async () => {
         const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
           pendingUid: invitedUser.uid,
-          course_instance_id: '1',
+          courseInstance,
+          authzData: dangerousFullAuthzPermissions(),
+          roleNeeded: 'student',
         });
         assert.isNotNull(initialEnrollment);
         assert.equal(initialEnrollment.status, 'invited');
@@ -329,7 +341,9 @@ describe('Self-enrollment settings transitions', () => {
 
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: invitedUser.user_id,
-          course_instance_id: '1',
+          courseInstance,
+          authzData: dangerousFullAuthzPermissions(),
+          roleNeeded: 'student',
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
@@ -378,7 +392,9 @@ describe('Self-enrollment settings transitions', () => {
 
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: blockedUser.user_id,
-          course_instance_id: '1',
+          courseInstance,
+          authzData: dangerousFullAuthzPermissions(),
+          roleNeeded: 'student',
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'blocked');
@@ -418,7 +434,9 @@ describe('Self-enrollment settings transitions', () => {
         // Check that user is still not enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
-          course_instance_id: '1',
+          courseInstance,
+          authzData: dangerousFullAuthzPermissions(),
+          roleNeeded: 'student',
         });
         assert.isNull(finalEnrollment);
       },
@@ -454,7 +472,7 @@ describe('Self-enrollment settings transitions', () => {
           siteUrl +
             getSelfEnrollmentLinkUrl({
               courseInstanceId: '1',
-              enrollmentCode: courseInstanceCode!,
+              enrollmentCode: courseInstance.enrollment_code,
             }),
           { redirect: 'manual' },
         );
@@ -464,7 +482,9 @@ describe('Self-enrollment settings transitions', () => {
         // Check that user is now enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
-          course_instance_id: '1',
+          courseInstance,
+          authzData: dangerousFullAuthzPermissions(),
+          roleNeeded: 'student',
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');

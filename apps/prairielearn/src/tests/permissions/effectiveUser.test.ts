@@ -7,8 +7,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
+import { dangerousFullAuthzPermissions } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
+import type { CourseInstance } from '../../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -23,6 +26,8 @@ import { getOrCreateUser } from '../utils/auth.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('effective user', { timeout: 60_000 }, function () {
+  let courseInstance: CourseInstance;
+
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
@@ -62,8 +67,8 @@ describe('effective user', { timeout: 60_000 }, function () {
     institutionAdminId = institutionAdmin.user_id;
     await ensureInstitutionAdministrator({
       institution_id: '1',
-      userId: institutionAdminId,
-      authn_userId: '1',
+      user_id: institutionAdminId,
+      authn_user_id: '1',
     });
 
     const instructor = await getOrCreateUser({
@@ -77,7 +82,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       course_id: '1',
       uid: 'instructor@example.com',
       course_role: 'Owner',
-      authn_userId: '1',
+      authn_user_id: '1',
     });
 
     const staff = await getOrCreateUser({
@@ -91,7 +96,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       course_id: '1',
       uid: 'staff@example.com',
       course_role: 'Editor',
-      authn_userId: '2',
+      authn_user_id: '2',
     });
 
     const student = await getOrCreateUser({
@@ -101,12 +106,13 @@ describe('effective user', { timeout: 60_000 }, function () {
       email: 'student@example.com',
     });
     studentId = student.user_id;
+    courseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
       userId: studentId,
-      courseInstance: '1',
-      agent_userId: null,
-      agent_authn_userId: null,
-      action_detail: 'implicit_joined',
+      courseInstance,
+      authzData: dangerousFullAuthzPermissions(),
+      roleNeeded: 'student',
+      actionDetail: 'implicit_joined',
     });
   });
 
@@ -180,10 +186,10 @@ describe('effective user', { timeout: 60_000 }, function () {
   test.sequential('instructor (student data viewer) cannot emulate student', async () => {
     await insertCourseInstancePermissions({
       course_id: '1',
-      userId: instructorId,
-      courseInstance: '1',
+      user_id: instructorId,
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
-      authn_userId: '2',
+      authn_user_id: '2',
     });
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
@@ -195,10 +201,10 @@ describe('effective user', { timeout: 60_000 }, function () {
   test.sequential('instructor (student data editor) can emulate student', async () => {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
-      userId: instructorId,
-      courseInstance: '1',
+      user_id: instructorId,
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
-      authn_userId: '2',
+      authn_user_id: '2',
     });
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
@@ -310,9 +316,9 @@ describe('effective user', { timeout: 60_000 }, function () {
   test.sequential('cannot request uid of course editor as course viewer', async () => {
     await updateCoursePermissionsRole({
       course_id: '1',
-      userId: instructorId,
+      user_id: instructorId,
       course_role: 'Viewer',
-      authn_userId: '1',
+      authn_user_id: '1',
     });
     const headers = {
       cookie:
@@ -325,16 +331,16 @@ describe('effective user', { timeout: 60_000 }, function () {
   test.sequential('can request uid of student data viewer as student data editor', async () => {
     await updateCoursePermissionsRole({
       course_id: '1',
-      userId: instructorId,
+      user_id: instructorId,
       course_role: 'Owner',
-      authn_userId: '1',
+      authn_user_id: '1',
     });
     await insertCourseInstancePermissions({
       course_id: '1',
-      userId: staffId,
-      courseInstance: '1',
+      user_id: staffId,
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
-      authn_userId: '2',
+      authn_user_id: '2',
     });
     const headers = {
       cookie:
@@ -347,17 +353,17 @@ describe('effective user', { timeout: 60_000 }, function () {
   test.sequential('cannot request uid of student data editor as student data viewer', async () => {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
-      userId: instructorId,
-      courseInstance: '1',
+      user_id: instructorId,
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
-      authn_userId: '2',
+      authn_user_id: '2',
     });
     await updateCourseInstancePermissionsRole({
       course_id: '1',
-      userId: staffId,
-      courseInstance: '1',
+      user_id: staffId,
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
-      authn_userId: '2',
+      authn_user_id: '2',
     });
     const headers = {
       cookie:
@@ -370,9 +376,9 @@ describe('effective user', { timeout: 60_000 }, function () {
   test.sequential('instructor can request lower course role', async () => {
     await updateCoursePermissionsRole({
       course_id: '1',
-      userId: instructorId,
+      user_id: instructorId,
       course_role: 'Viewer',
-      authn_userId: '1',
+      authn_user_id: '1',
     });
     const headers = {
       cookie:
@@ -394,10 +400,10 @@ describe('effective user', { timeout: 60_000 }, function () {
   test.sequential('instructor can request lower course instance role', async () => {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
-      userId: instructorId,
-      courseInstance: '1',
+      user_id: instructorId,
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
-      authn_userId: '2',
+      authn_user_id: '2',
     });
     const headers = {
       cookie:
@@ -410,10 +416,10 @@ describe('effective user', { timeout: 60_000 }, function () {
   test.sequential('instructor cannot request higher course instance role', async () => {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
-      userId: instructorId,
-      courseInstance: '1',
+      user_id: instructorId,
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
-      authn_userId: '2',
+      authn_user_id: '2',
     });
     const headers = {
       cookie:
@@ -486,16 +492,16 @@ describe('effective user', { timeout: 60_000 }, function () {
   test.sequential('reset instructor course role to maximum permissions', async () => {
     await updateCoursePermissionsRole({
       course_id: '1',
-      userId: instructorId,
+      user_id: instructorId,
       course_role: 'Owner',
-      authn_userId: '1',
+      authn_user_id: '1',
     });
     await updateCourseInstancePermissionsRole({
       course_id: '1',
-      userId: instructorId,
-      courseInstance: '1',
+      user_id: instructorId,
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
-      authn_userId: '2',
+      authn_user_id: '2',
     });
   });
 
@@ -582,11 +588,11 @@ describe('effective user', { timeout: 60_000 }, function () {
         email: 'student@example.com',
       });
       await ensureEnrollment({
-        courseInstance: courseInstanceId,
-        agent_userId: null,
-        agent_authn_userId: null,
+        courseInstance,
         userId: user.user_id,
-        action_detail: 'implicit_joined',
+        authzData: dangerousFullAuthzPermissions(),
+        roleNeeded: 'student',
+        actionDetail: 'implicit_joined',
       });
 
       const headers = {
