@@ -41,7 +41,6 @@ export async function init() {
       'authz_course.sql',
       'authz_course_instance.sql',
       'courses_update_column.sql',
-      'assessment_instances_grade.sql',
       'instance_questions_points_homework.sql',
       'instance_questions_points_exam.sql',
       'instance_questions_points.sql',
