@@ -5,10 +5,52 @@ import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
 
 import { StudentLinkSharing } from '../../../components/LinkSharing.js';
 import { QRCodeModal } from '../../../components/QRCodeModal.js';
+import type { StaffInstitution } from '../../../lib/client/safe-db-types.js';
 import type { SettingsFormValues } from '../instructorInstanceAdminSettings.types.js';
 
 async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
+}
+
+function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const enrollmentCodeDashed =
+    enrollmentCode.slice(0, 3) + '-' + enrollmentCode.slice(3, 6) + '-' + enrollmentCode.slice(6);
+
+  return (
+    <div class="mb-3">
+      <label class="form-label" for="self_enrollment_code">
+        Self-enrollment code
+      </label>
+      <InputGroup>
+        <Form.Control
+          id="self_enrollment_code"
+          value={enrollmentCodeDashed}
+          style="font-family: monospace; font-size: 1.1em; letter-spacing: 0.1em;"
+          disabled
+        />
+        <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
+          <Button
+            size="sm"
+            variant="outline-secondary"
+            aria-label="Copy self-enrollment code"
+            onClick={async () => {
+              await copyToClipboard(enrollmentCodeDashed);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            }}
+          >
+            <i class="bi bi-clipboard" />
+          </Button>
+        </OverlayTrigger>
+      </InputGroup>
+      <small class="form-text text-muted">
+        Students can use this code to enroll in the course by entering it on the homepage or after
+        clicking on any link to the course instance.
+      </small>
+    </div>
+  );
 }
 
 function SelfEnrollmentLink({
@@ -27,7 +69,7 @@ function SelfEnrollmentLink({
     <>
       <div class="mb-3">
         <label class="form-label" for="self_enrollment_link">
-          Self-enrollment Link
+          Self-enrollment link
         </label>
         <InputGroup>
           <Form.Control id="self_enrollment_link" value={selfEnrollLink} disabled />
@@ -115,7 +157,9 @@ export function SelfEnrollmentSettings({
   enrollmentManagementEnabled,
   studentLink,
   selfEnrollLink,
+  enrollmentCode,
   csrfToken,
+  institution,
 }: {
   control: Control<SettingsFormValues>;
   trigger: UseFormTrigger<SettingsFormValues>;
@@ -123,17 +167,14 @@ export function SelfEnrollmentSettings({
   enrollmentManagementEnabled: boolean;
   studentLink: string;
   selfEnrollLink: string;
+  enrollmentCode: string;
   csrfToken: string;
+  institution: StaffInstitution;
 }) {
   const selfEnrollmentEnabled = useWatch({ control, name: 'self_enrollment_enabled' });
   const selfEnrollmentUseEnrollmentCode = useWatch({
     control,
     name: 'self_enrollment_use_enrollment_code',
-  });
-
-  const selfEnrollmentEnabledBeforeDate = useWatch({
-    control,
-    name: 'self_enrollment_enabled_before_date',
   });
 
   const selfEnrollmentEnabledBeforeDateEnabled = useWatch({
@@ -217,7 +258,29 @@ export function SelfEnrollmentSettings({
           Use enrollment code for self-enrollment
         </label>
         <div class="small text-muted">
-          If not checked, any link to the course instance will allow self-enrollment.
+          If not checked, any link to to anything in the course instance will allow self-enrollment.
+        </div>
+      </div>
+
+      <div
+        class={clsx(
+          'mb-3 form-check',
+          (!enrollmentManagementEnabled || !selfEnrollmentEnabled) && 'd-none',
+        )}
+      >
+        <input
+          class={clsx('form-check-input')}
+          type="checkbox"
+          id="self_enrollment_restrict_to_institution"
+          disabled={!canEdit || !selfEnrollmentEnabled}
+          {...control.register('self_enrollment_restrict_to_institution')}
+          name="self_enrollment_restrict_to_institution"
+        />
+        <label class="form-check-label" for="self_enrollment_restrict_to_institution">
+          Restrict self-enrollment to institution "{institution.long_name}"
+        </label>
+        <div class="small text-muted">
+          If not checked, users from any institution can self-enroll.
         </div>
       </div>
 
@@ -259,31 +322,21 @@ export function SelfEnrollmentSettings({
               return true;
             },
           })}
-          // HACK: Make the accessibility checker happy
-          // See https://gitlab.com/html-validate/html-validate/-/issues/294
-          {...(!selfEnrollmentEnabledBeforeDateEnabled
-            ? { name: 'self_enrollment_enabled_before_date__IGNORE' }
-            : {})}
         />
-        {/* Disabled inputs are not submitted in a HTTP POST request. However, we still want to send the updated value. */}
-        {!selfEnrollmentEnabledBeforeDateEnabled && (
-          <input
-            type="hidden"
-            name="self_enrollment_enabled_before_date"
-            value={selfEnrollmentEnabledBeforeDate}
-          />
-        )}
         {selfEnrollmentEnabledBeforeDateError && (
           <div class="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
         )}
       </div>
 
       {selfEnrollmentEnabled && enrollmentManagementEnabled && selfEnrollmentUseEnrollmentCode ? (
-        <SelfEnrollmentLink
-          selfEnrollLink={selfEnrollLink}
-          csrfToken={csrfToken}
-          canEdit={canEdit}
-        />
+        <>
+          <SelfEnrollmentCode enrollmentCode={enrollmentCode} />
+          <SelfEnrollmentLink
+            selfEnrollLink={selfEnrollLink}
+            csrfToken={csrfToken}
+            canEdit={canEdit}
+          />
+        </>
       ) : (
         <StudentLinkSharing
           studentLink={studentLink}

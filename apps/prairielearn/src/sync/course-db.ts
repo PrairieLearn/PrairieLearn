@@ -719,12 +719,9 @@ async function loadAndValidateJson<T extends ZodSchema>({
   loadedJson.data = result.data;
 
   const validationResult = validate(loadedJson.data);
-  if (validationResult.errors.length > 0) {
-    infofile.addErrors(loadedJson, validationResult.errors);
-    return loadedJson;
-  }
-
+  infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
+
   return loadedJson;
 }
 
@@ -1471,18 +1468,12 @@ function validateCourseInstance({
     }
   }
 
-  if (courseInstance.selfEnrollment.beforeDateEnabled !== false) {
-    warnings.push('"selfEnrollment.beforeDateEnabled" is not configurable yet.');
-
-    if (courseInstance.selfEnrollment.beforeDate == null) {
-      errors.push(
-        '"selfEnrollment.beforeDate" is required if "selfEnrollment.beforeDateEnabled" is true.',
-      );
-    }
-  }
-
   if (courseInstance.selfEnrollment.useEnrollmentCode !== false) {
     warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
+  }
+
+  if (courseInstance.selfEnrollment.restrictToInstitution !== true) {
+    warnings.push('"selfEnrollment.restrictToInstitution" is not configurable yet.');
   }
 
   let accessibleInFuture = false;

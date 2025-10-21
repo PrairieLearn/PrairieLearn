@@ -604,7 +604,7 @@ export const CourseInstanceSchema = z.object({
   long_name: z.string().nullable(),
   self_enrollment_enabled: z.boolean(),
   self_enrollment_enabled_before_date: DateFromISOString.nullable(),
-  self_enrollment_enabled_before_date_enabled: z.boolean(),
+  self_enrollment_restrict_to_institution: z.boolean(),
   self_enrollment_use_enrollment_code: z.boolean(),
   share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
