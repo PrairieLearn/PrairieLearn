@@ -1,7 +1,6 @@
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 
 import { JobSequenceResults } from '../../components/JobSequenceResults.js';
-import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { ansiToHtml } from '../../lib/chalk.js';
@@ -60,7 +59,7 @@ export function InstructorFileEditor({
         name="ace-base-path"
         content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
       />
-      ${compiledScriptTag('instructorFileEditorClient.ts')}
+      ${compiledScriptTag('instructorFileEditorClient.tsx')}
     `,
     content: html`
       ${editorData.fileMetadata?.syncErrors
@@ -343,22 +342,43 @@ export function InstructorFileEditor({
 }
 
 function SaveConfirmationModal() {
-  return Modal({
-    title: 'Confirm Save',
-    id: 'save-confirmation-modal',
-    body: html`
-      <p><strong>Warning:</strong> The following issues were detected:</p>
-      <ul id="save-confirmation-issues" class="text-danger"></ul>
-      <p>
-        If you click <strong>Confirm Save</strong>, you may need to undo this change manually using
-        Git.
-      </p>
-      <p>Are you sure you want to save these changes?</p>
-    `,
-    footer: html`
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="button" class="btn btn-danger" id="confirm-save-button">Confirm Save</button>
-    `,
-    form: false,
-  });
+  return html`
+    <div
+      class="modal fade"
+      tabindex="-1"
+      role="dialog"
+      id="save-confirmation-modal"
+      aria-labelledby="save-confirmation-modal-title"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h4" id="save-confirmation-modal-title">Confirm Save</h2>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <!-- Content will be dynamically updated by JavaScript -->
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              id="cancel-save-button"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-danger" id="confirm-save-button">
+              Confirm Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }

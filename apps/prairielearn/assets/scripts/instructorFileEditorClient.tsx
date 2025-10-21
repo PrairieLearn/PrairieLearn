@@ -4,15 +4,97 @@ import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
+import { renderHtml } from '@prairielearn/preact';
 
-import {
-  type FileMetadata,
-  FileType,
-  friendlyNameForFileType,
-} from '../../src/lib/editorUtil.types.js';
+import { type FileMetadata, FileType } from '../../src/lib/editorUtil.types.js';
 
 import { configureAceBasePaths } from './lib/ace.js';
 import './lib/verboseToggle.js';
+
+/**
+ * Error codes for save validation issues.
+ */
+enum SaveErrorCode {
+  INVALID_JSON = 'INVALID_JSON',
+  UUID_CHANGED = 'UUID_CHANGED',
+  UUID_REMOVED = 'UUID_REMOVED',
+}
+
+/**
+ * Modal content component for invalid JSON error.
+ */
+function InvalidJsonModalContent() {
+  return (
+    <div class="alert alert-danger d-flex align-items-start mb-0">
+      <i class="bi bi-x-circle-fill fs-4 me-3 flex-shrink-0" />
+      <div>
+        <strong class="d-block mb-1">Invalid JSON</strong>
+        <p class="mb-0">
+          This file contains invalid JSON syntax and cannot be saved. Please fix the errors before
+          saving.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Modal content component for UUID change warning.
+ */
+function UuidChangeModalContent({
+  errorCode,
+  originalUuid,
+  newUuid,
+}: {
+  errorCode: SaveErrorCode.UUID_CHANGED | SaveErrorCode.UUID_REMOVED;
+  originalUuid?: string;
+  newUuid?: string;
+}) {
+  const getMessage = () => {
+    if (errorCode === SaveErrorCode.UUID_CHANGED && originalUuid && newUuid) {
+      return (
+        <>
+          The UUID in this file was changed from <code>"{originalUuid}"</code> to{' '}
+          <code>"{newUuid}"</code>.
+        </>
+      );
+    } else if (errorCode === SaveErrorCode.UUID_REMOVED) {
+      return <>The UUID was removed from this file.</>;
+    }
+    return <>The UUID was modified.</>;
+  };
+
+  return (
+    <>
+      {originalUuid && (
+        <div class="mb-3">
+          <strong>Original UUID:</strong>
+          <div class="font-monospace bg-light p-2 rounded mt-1 user-select-all">{originalUuid}</div>
+        </div>
+      )}
+      <div class="alert alert-warning d-flex align-items-start mb-3">
+        <i class="bi bi-exclamation-triangle-fill fs-4 me-3 flex-shrink-0 mt-1" />
+        <div>
+          <strong class="d-block mb-2">{getMessage()}</strong>
+          <p class="mb-2">Changing or removing the UUID can cause:</p>
+          <ul class="mb-0 ps-3">
+            <li>Loss of student progress and grades</li>
+            <li>Reset of question statistics</li>
+            <li>Broken links to this content</li>
+          </ul>
+        </div>
+      </div>
+      <div class="alert alert-info mb-0">
+        <strong>
+          <i class="bi bi-info-circle-fill me-2" />
+          Good news:
+        </strong>{' '}
+        We will automatically revert the UUID to its original value during sync to prevent data
+        loss.
+      </div>
+    </>
+  );
+}
 
 /**
  * Given an Ace cursor position (consisting of a row and column) and the lines
@@ -126,11 +208,11 @@ class InstructorFileEditor {
       return;
     }
 
-    const issues = this.checkForSaveIssues();
+    const errorResult = this.checkForSaveIssues();
 
-    if (issues.length > 0) {
+    if (errorResult) {
       event.preventDefault();
-      this.showConfirmationModal(issues);
+      this.showConfirmationModal(errorResult);
     }
 
     // Otherwise, continue with the save
@@ -139,10 +221,13 @@ class InstructorFileEditor {
   /**
    * Checks for issues that would require confirmation before saving.
    *
-   * @returns An array of issues that would require confirmation before saving.
+   * @returns An error result object or null if there are no issues.
    */
-  checkForSaveIssues(): string[] {
-    const issues: string[] = [];
+  checkForSaveIssues(): {
+    errorCode: SaveErrorCode;
+    originalUuid?: string;
+    newUuid?: string;
+  } | null {
     const currentContents = this.editor.getValue();
 
     if (this.fileMetadata && this.fileMetadata.type !== FileType.File) {
@@ -150,53 +235,94 @@ class InstructorFileEditor {
         const parsedContent = JSON.parse(currentContents);
 
         if (typeof parsedContent !== 'object') {
-          issues.push(
-            `The ${friendlyNameForFileType(this.fileMetadata.type).toLowerCase()} metadata cannot be parsed as JSON.`,
-          );
+          return { errorCode: SaveErrorCode.INVALID_JSON };
         } else if (this.fileMetadata.uuid) {
           if ('uuid' in parsedContent) {
             if (parsedContent.uuid !== this.fileMetadata.uuid) {
-              issues.push(
-                `The UUID in this ${friendlyNameForFileType(this.fileMetadata.type).toLowerCase()} file should match "${this.fileMetadata.uuid}".`,
-              );
+              return {
+                errorCode: SaveErrorCode.UUID_CHANGED,
+                originalUuid: this.fileMetadata.uuid,
+                newUuid: parsedContent.uuid,
+              };
             }
           } else {
-            issues.push(
-              `This ${friendlyNameForFileType(this.fileMetadata.type).toLowerCase()} file should contain a UUID.`,
-            );
+            return {
+              errorCode: SaveErrorCode.UUID_REMOVED,
+              originalUuid: this.fileMetadata.uuid,
+            };
           }
         }
       } catch {
-        issues.push(
-          `The ${friendlyNameForFileType(this.fileMetadata.type).toLowerCase()} metadata cannot be parsed as JSON.`,
-        );
+        return { errorCode: SaveErrorCode.INVALID_JSON };
       }
     }
 
-    return issues;
+    return null;
   }
 
   /**
-   * Shows a confirmation modal with the given issues.
+   * Shows a confirmation modal based on the error code.
    *
-   * @param issues - The issues to display in the modal.
+   * @param errorResult - The error result containing error code and related data.
+   * @param errorResult.errorCode - The type of save error that occurred.
+   * @param errorResult.originalUuid - The original UUID value (for UUID errors).
+   * @param errorResult.newUuid - The new UUID value (for UUID_CHANGED errors).
    */
-  showConfirmationModal(issues: string[]) {
-    const issuesList = document.getElementById('save-confirmation-issues');
-    issuesList!.innerHTML = issues.map((issue) => `<li>${issue}</li>`).join('');
-
+  showConfirmationModal(errorResult: {
+    errorCode: SaveErrorCode;
+    originalUuid?: string;
+    newUuid?: string;
+  }) {
     const modalElement = document.getElementById('save-confirmation-modal')!;
+    const modalTitle = modalElement.querySelector('.modal-title')!;
+    const modalBody = modalElement.querySelector('.modal-body')!;
+    const confirmButton = modalElement.querySelector<HTMLButtonElement>('#confirm-save-button')!;
+    const cancelButton = modalElement.querySelector<HTMLButtonElement>('#cancel-save-button')!;
+
+    const { errorCode, originalUuid, newUuid } = errorResult;
+
+    // Update modal content based on error code
+    switch (errorCode) {
+      case SaveErrorCode.INVALID_JSON:
+        modalTitle.textContent = 'Cannot Save';
+        modalBody.innerHTML = renderHtml(<InvalidJsonModalContent />).toString();
+        confirmButton.style.display = 'none';
+        cancelButton.textContent = 'OK';
+        cancelButton.className = 'btn btn-primary';
+        break;
+
+      case SaveErrorCode.UUID_CHANGED:
+      case SaveErrorCode.UUID_REMOVED:
+        modalTitle.textContent = 'Confirm UUID Change';
+        modalBody.innerHTML = renderHtml(
+          <UuidChangeModalContent
+            errorCode={errorCode}
+            originalUuid={originalUuid}
+            newUuid={newUuid}
+          />,
+        ).toString();
+        confirmButton.style.display = '';
+        confirmButton.textContent = 'Save Anyway';
+        confirmButton.className = 'btn btn-danger';
+        cancelButton.textContent = 'Cancel';
+        cancelButton.className = 'btn btn-secondary';
+        break;
+    }
 
     const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement);
     modal.show();
 
-    const confirmButton = modalElement.querySelector('#confirm-save-button');
+    // Remove any existing event listeners by cloning the button
+    const newConfirmButton = confirmButton.cloneNode(true) as HTMLButtonElement;
+    confirmButton.parentNode!.replaceChild(newConfirmButton, confirmButton);
 
-    confirmButton!.addEventListener('click', () => {
-      modal.hide();
-      this.confirmedSave = true;
-      this.saveElement!.click();
-    });
+    if (errorCode !== SaveErrorCode.INVALID_JSON) {
+      newConfirmButton.addEventListener('click', () => {
+        modal.hide();
+        this.confirmedSave = true;
+        this.saveElement!.click();
+      });
+    }
   }
 
   setEditorContents(contents: string) {
