@@ -122,7 +122,7 @@ export function AssessmentQuestion({
           </nav>
 
           {aiGradingEnabled && (
-            <form method="POST" class="card px-3 py-2 mb-0">
+            <form method="POST" id="toggle-ai-grading-mode-form" class="card px-3 py-2 mb-0">
               <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
               <input type="hidden" name="__csrf_token" value={__csrf_token} />
               <div class="form-check form-switch mb-0">
@@ -134,7 +134,10 @@ export function AssessmentQuestion({
                   checked={aiGradingMode}
                   onChange={() =>
                     setTimeout(
-                      () => (document.activeElement as HTMLFormElement).form?.submit(),
+                      () =>
+                        (
+                          document.getElementById('toggle-ai-grading-mode-form') as HTMLFormElement
+                        ).submit(),
                       150,
                     )
                   }
