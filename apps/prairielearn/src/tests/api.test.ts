@@ -686,7 +686,7 @@ describe('API', { timeout: 60_000 }, function () {
         email: 'editor@example.com',
       });
 
-      const token = await insertAccessToken(editor.user_id, 'invalidToken');
+      const token = await insertAccessToken(editor.user_id, 'editor-token');
 
       const res = await fetch(locals.apiCourseStaffUrl, {
         headers: {
