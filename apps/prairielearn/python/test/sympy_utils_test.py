@@ -33,7 +33,7 @@ def test_evaluate() -> None:
 
 
 class TestSympy:
-    SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0")
+    SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0", "lambda")
     M, N, ALPHA, MU0, LAMBDA = sympy.symbols("m n alpha mu0 lambda")
 
     FUNCTION_NAMES = ("f", "g", "beef", "\u03c6")
