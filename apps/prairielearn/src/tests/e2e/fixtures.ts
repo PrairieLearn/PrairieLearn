@@ -1,6 +1,8 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { test as base } from '@playwright/test';
 
+export { expect } from '@playwright/test';
+
 interface TestFixtures {
   /** Override baseURL to be the worker-specific URL */
   baseURL: string;
@@ -50,5 +52,3 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await use(`http://localhost:${workerPort}`);
   },
 });
-
-export { expect } from '@playwright/test';
