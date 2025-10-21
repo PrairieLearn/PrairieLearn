@@ -60,7 +60,6 @@ export function InstructorAiGenerateDraftEditor({
         ${[
           HeadContents({ resLocals }),
           compiledScriptTag('question.ts'),
-          compiledScriptTag('instructorAiGenerateDraftEditorClient.ts'),
           compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
         ]}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>

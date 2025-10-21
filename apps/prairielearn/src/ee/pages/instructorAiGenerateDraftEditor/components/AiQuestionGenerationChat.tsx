@@ -1,6 +1,6 @@
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 
 import { run } from '@prairielearn/run';
 
@@ -112,10 +112,64 @@ export function AiQuestionGenerationChat({
   });
 
   const [input, setInput] = useState('');
+  const chatHistoryRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const resizerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom on initial load and when messages change
+  useEffect(() => {
+    if (chatHistoryRef.current) {
+      chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Chat width resizing
+  useEffect(() => {
+    const container = containerRef.current?.closest<HTMLElement>('.app-container');
+    const resizer = resizerRef.current;
+
+    if (!container || !resizer) return;
+
+    const minWidth = 260;
+    const maxWidth = 800;
+    let startX = 0;
+    let startWidth = 0;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - startX;
+      const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidth + dx));
+      container.style.setProperty('--chat-width', `${newWidth}px`);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.classList.remove('user-select-none');
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      startX = e.clientX;
+      const styles = getComputedStyle(container);
+      const current = styles.getPropertyValue('--chat-width').trim() || '400px';
+      startWidth =
+        Number.parseInt(current) || containerRef.current?.getBoundingClientRect().width || 400;
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+      document.body.classList.add('user-select-none');
+    };
+
+    resizer.addEventListener('mousedown', onMouseDown);
+
+    return () => {
+      resizer.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
 
   return (
-    <div class="app-chat p-2 bg-light border-end">
-      <div class="app-chat-history">
+    <div ref={containerRef} class="app-chat p-2 bg-light border-end">
+      <div ref={chatHistoryRef} class="app-chat-history">
         <Messages messages={messages} urlPrefix={urlPrefix} />
       </div>
       <div class="app-chat-prompt mt-2">
@@ -138,6 +192,12 @@ export function AiQuestionGenerationChat({
             value={input}
             required
             onInput={(e) => setInput((e.target as HTMLTextAreaElement).value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                e.currentTarget.closest('form')?.requestSubmit();
+              }
+            }}
           />
           <button type="submit" class="btn btn-dark w-100" disabled={status !== 'ready'}>
             Revise question
@@ -147,7 +207,7 @@ export function AiQuestionGenerationChat({
           </div>
         </form>
       </div>
-      <div class="app-chat-resizer" aria-label="Resize chat" role="separator" />
+      <div ref={resizerRef} class="app-chat-resizer" aria-label="Resize chat" role="separator" />
     </div>
   );
 }

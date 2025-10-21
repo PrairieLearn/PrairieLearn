@@ -11,10 +11,13 @@ import { selectCourseById } from '../../../../models/course.js';
 import { selectQuestionById } from '../../../../models/question.js';
 import { privateProcedure } from '../../trpc.js';
 
-// TODO: is there any security to think through here?
+/**
+ * Returns base64-encoded `question.html` and `server.py` files for a question.
+ */
 export const getQuestionFiles = privateProcedure
   .input(
     z.object({
+      // TODO: is there any security to think through here?
       course_id: IdSchema,
       question_id: IdSchema,
     }),

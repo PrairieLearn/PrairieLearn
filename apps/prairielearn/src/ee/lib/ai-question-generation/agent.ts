@@ -19,6 +19,7 @@ import { execute, loadSql, loadSqlEquiv, queryRow } from '@prairielearn/postgres
 import { run } from '@prairielearn/run';
 
 import { formatPrompt } from '../../../lib/ai.js';
+import { b64DecodeUnicode } from '../../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationMessageSchema,
@@ -132,6 +133,18 @@ export async function createQuestionGenerationAgent({
   hasCoursePermissionEdit: boolean;
 }) {
   const files: Record<string, string> = {};
+
+  // Pre-populate files from disk.
+  const client = getCourseFilesClient();
+  const questionFilesResult = await client.getQuestionFiles.query({
+    course_id: course.id,
+    question_id: question.id,
+  });
+  for (const filename of ['question.html', 'server.py']) {
+    if (questionFilesResult.files[filename]) {
+      files[filename] = b64DecodeUnicode(questionFilesResult.files[filename]);
+    }
+  }
 
   // TODO: global cache or TTL cache of these?
   const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
