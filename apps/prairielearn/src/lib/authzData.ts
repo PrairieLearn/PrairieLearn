@@ -212,7 +212,7 @@ export function dangerousFullAuthzPermissions(): DangerousAuthzData {
   };
 }
 
-function isDangerousFullAuthzPermissions(
+export function isDangerousFullAuthzPermissions(
   authzData: RawAuthzData | DangerousAuthzData,
 ): authzData is DangerousAuthzData {
   if (authzData.authn_user.user_id === null) {

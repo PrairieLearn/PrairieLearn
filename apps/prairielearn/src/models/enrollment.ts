@@ -16,6 +16,7 @@ import {
   type DangerousAuthzData,
   assertHasRole,
   dangerousFullAuthzPermissions,
+  isDangerousFullAuthzPermissions,
 } from '../lib/authzData.js';
 import {
   type RawAuthzData,
@@ -60,6 +61,18 @@ function assertEnrollmentInCourseInstance(
   courseInstance: CourseInstanceContext,
 ) {
   if (enrollment.course_instance_id !== courseInstance.id) {
+    throw new error.HttpStatusError(403, 'Access denied');
+  }
+}
+
+function assertEnrollmentBelongsToUser(
+  enrollment: Enrollment,
+  authzData: RawAuthzData | DangerousAuthzData,
+) {
+  if (isDangerousFullAuthzPermissions(authzData)) {
+    return;
+  }
+  if (enrollment.user_id !== authzData.user.user_id) {
     throw new error.HttpStatusError(403, 'Access denied');
   }
 }
@@ -268,6 +281,9 @@ export async function selectOptionalEnrollmentByUserId({
   if (enrollment) {
     assertEnrollmentInCourseInstance(enrollment, courseInstance);
   }
+  if (requestedRole === 'Student' && enrollment) {
+    assertEnrollmentBelongsToUser(enrollment, authzData);
+  }
   return enrollment;
 }
 
@@ -294,6 +310,9 @@ export async function selectOptionalEnrollmentByPendingUid({
   );
   if (enrollment) {
     assertEnrollmentInCourseInstance(enrollment, courseInstance);
+  }
+  if (requestedRole === 'Student' && enrollment) {
+    assertEnrollmentBelongsToUser(enrollment, authzData);
   }
   return enrollment;
 }
@@ -342,6 +361,9 @@ export async function selectEnrollmentById({
   ]);
   const enrollment = await queryRow(sql.select_enrollment_by_id, { id }, EnrollmentSchema);
   assertEnrollmentInCourseInstance(enrollment, courseInstance);
+  if (requestedRole === 'Student') {
+    assertEnrollmentBelongsToUser(enrollment, authzData);
+  }
   return enrollment;
 }
 
@@ -373,6 +395,9 @@ export async function selectOptionalEnrollmentByUid({
   );
   if (enrollment) {
     assertEnrollmentInCourseInstance(enrollment, courseInstance);
+  }
+  if (requestedRole === 'Student' && enrollment) {
+    assertEnrollmentBelongsToUser(enrollment, authzData);
   }
   return enrollment;
 }
