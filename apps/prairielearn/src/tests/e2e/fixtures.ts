@@ -27,7 +27,8 @@ const BASE_PORT = 3000;
  */
 export const test = base.extend<TestFixtures, WorkerFixtures>({
   workerPort: [
-    async (_, use, workerInfo) => {
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use, workerInfo) => {
       const port = BASE_PORT + workerInfo.workerIndex;
 
       // workerIndex is 0-based, but we want our database names to start at 1.
