@@ -21,7 +21,7 @@ const POSTGRES_INIT_CONNECTION_STRING = 'postgres://postgres@localhost/postgres'
 const POSTGRES_DATABASE = 'pltest';
 const POSTGRES_DATABASE_TEMPLATE = 'pltest_template';
 
-const postgresTestUtils = sqldb.makePostgresTestUtils({
+export const postgresTestUtils = sqldb.makePostgresTestUtils({
   user: POSTGRES_USER,
   host: POSTGRES_HOST,
   defaultDatabase: 'postgres',

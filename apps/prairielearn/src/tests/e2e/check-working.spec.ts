@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
-
 import * as sqldb from '@prairielearn/postgres';
+
+import { expect, test } from './fixtures.js';
 
 test('has title', async ({ page }) => {
   await page.goto('/');

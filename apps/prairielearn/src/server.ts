@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-/* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-import * as opentelemetry from '@prairielearn/opentelemetry';
+/* eslint-disable import-x/order */
 import * as Sentry from '@prairielearn/sentry';
+import * as opentelemetry from '@prairielearn/opentelemetry';
 /* eslint-enable import-x/order */
 
 import * as fs from 'node:fs';
@@ -47,6 +47,7 @@ import {
 import * as namedLocks from '@prairielearn/named-locks';
 import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
@@ -82,6 +83,7 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+import { postgresTestUtils } from './tests/helperDb.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -2301,21 +2303,28 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       passport.use(strategy);
     }
 
-    const pgConfig = {
-      user: config.postgresqlUser,
-      database: config.postgresqlDatabase,
-      host: config.postgresqlHost,
-      password: config.postgresqlPassword ?? undefined,
-      max: config.postgresqlPoolSize,
-      idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
-      ssl: config.postgresqlSsl,
-      errorOnUnusedParameters: config.devMode,
-    };
+    const pgConfig = run(() => {
+      // https://playwright.dev/docs/test-parallel#isolate-test-data-between-parallel-workers
+      // This server was started by a playwright test worker. Ignore the database configuration,
+      // and use the test worker's database configuration instead.
+      if (process.env.TEST_WORKER_INDEX) {
+        return postgresTestUtils.getPoolConfig();
+      }
+
+      return {
+        user: config.postgresqlUser,
+        database: config.postgresqlDatabase,
+        host: config.postgresqlHost,
+        password: config.postgresqlPassword ?? undefined,
+        max: config.postgresqlPoolSize,
+        idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+        ssl: config.postgresqlSsl,
+        errorOnUnusedParameters: config.devMode,
+      };
+    });
 
     logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
 
-    // NOTE: for e2e playwright tests, the default pool is later changed to a test database
-    // and does not use this configuration.
     await sqldb.initAsync(pgConfig, idleErrorHandler);
 
     // Our named locks code maintains a separate pool of database connections.
