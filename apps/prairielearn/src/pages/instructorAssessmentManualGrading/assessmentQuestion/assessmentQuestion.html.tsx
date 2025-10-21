@@ -132,15 +132,8 @@ export function AssessmentQuestion({
                   role="switch"
                   id="switchCheckDefault"
                   checked={aiGradingMode}
-                  onChange={() =>
-                    setTimeout(
-                      () =>
-                        (
-                          document.getElementById('toggle-ai-grading-mode-form') as HTMLFormElement
-                        ).submit(),
-                      150,
-                    )
-                  }
+                  // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                  onchange="setTimeout(() => this.form.submit(), 150)"
                 />
                 <label class="form-check-label" for="switchCheckDefault">
                   <i class="bi bi-stars" />
