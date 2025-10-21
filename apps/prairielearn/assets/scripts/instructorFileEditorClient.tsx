@@ -25,14 +25,14 @@ enum SaveErrorCode {
  */
 function InvalidJsonModalContent() {
   return (
-    <div class="alert alert-danger d-flex align-items-start mb-0">
-      <i class="bi bi-x-circle-fill fs-4 me-3 flex-shrink-0" />
+    <div class="alert alert-danger d-flex flex-column align-items-start mb-0">
+      <div class="d-flex flex-row align-items-start gap-2 mb-1">
+        <i class="bi bi-x-circle-fill fs-6" />
+        <strong>Invalid JSON</strong>
+      </div>
       <div>
-        <strong class="d-block mb-1">Invalid JSON</strong>
-        <p class="mb-0">
-          This file contains invalid JSON syntax and cannot be saved. Please fix the errors before
-          saving.
-        </p>
+        This file contains invalid JSON syntax and cannot be saved. Please fix the errors before
+        saving.
       </div>
     </div>
   );
@@ -66,11 +66,12 @@ function UuidChangeModalContent({
 
   return (
     <>
-      <div class="alert alert-warning d-flex align-items-center mb-3">
-        <i class="bi bi-exclamation-triangle-fill fs-6 me-3 flex-shrink-0" />
-        <div>
-          <strong class="d-block mb-2">{getMessage()}</strong>
+      <div class="alert alert-warning d-flex flex-column mb-3">
+        <div class="d-flex flex-row align-items-start gap-2 mb-1">
+          <i class="bi bi-exclamation-triangle-fill fs-6" />
+          <strong>UUID Change</strong>
         </div>
+        <div>{getMessage()}</div>
       </div>
       <div class="ms-0">Hitting "Confirm Save" will save this file with its original UUID.</div>
     </>
@@ -280,11 +281,17 @@ class InstructorFileEditor {
 
     const { errorCode, originalUuid, newUuid } = errorResult;
 
+    // Restore original modal styles
+    modalTitle.textContent = 'Confirm Save';
+    confirmButton.style.display = '';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.className = 'btn btn-secondary';
+
     // Update modal content based on error code
     switch (errorCode) {
       case SaveErrorCode.INVALID_JSON:
-        modalTitle.textContent = 'Cannot Save';
         modalBody.innerHTML = renderHtml(<InvalidJsonModalContent />).toString();
+        modalTitle.textContent = 'Cannot Save';
         confirmButton.style.display = 'none';
         cancelButton.textContent = 'OK';
         cancelButton.className = 'btn btn-primary';
@@ -299,6 +306,10 @@ class InstructorFileEditor {
             newUuid={newUuid}
           />,
         ).toString();
+        modalTitle.textContent = 'Confirm Save';
+        confirmButton.style.display = '';
+        cancelButton.textContent = 'Cancel';
+        cancelButton.className = 'btn btn-secondary';
         break;
     }
 
@@ -309,13 +320,11 @@ class InstructorFileEditor {
     const newConfirmButton = confirmButton.cloneNode(true) as HTMLButtonElement;
     confirmButton.parentNode!.replaceChild(newConfirmButton, confirmButton);
 
-    if (errorCode !== SaveErrorCode.INVALID_JSON) {
-      newConfirmButton.addEventListener('click', () => {
-        modal.hide();
-        this.confirmedSave = true;
-        this.saveElement!.click();
-      });
-    }
+    newConfirmButton.addEventListener('click', () => {
+      modal.hide();
+      this.confirmedSave = true;
+      this.saveElement!.click();
+    });
   }
 
   setEditorContents(contents: string) {
