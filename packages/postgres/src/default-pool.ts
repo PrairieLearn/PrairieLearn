@@ -128,10 +128,6 @@ export const callWithClientOneRowAsync = defaultPool.callWithClientOneRowAsync.b
 export const callWithClientZeroOrOneRowAsync =
   defaultPool.callWithClientZeroOrOneRowAsync.bind(defaultPool);
 /**
- * Returns the configuration of the currently-initialized pool, or null if the pool is not open.
- */
-export const getConfig = defaultPool.getConfig.bind(defaultPool);
-/**
  * Executes a query with the specified parameters. Returns an array of rows
  * that conform to the given Zod schema.
  *

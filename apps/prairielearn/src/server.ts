@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
+/* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-/* eslint-disable import-x/order */
 import * as Sentry from '@prairielearn/sentry';
 import * as opentelemetry from '@prairielearn/opentelemetry';
 /* eslint-enable import-x/order */
