@@ -10,6 +10,7 @@ export const SettingsFormBodySchema = z.object({
   show_in_enroll_page: BooleanFromCheckboxSchema,
   self_enrollment_enabled: BooleanFromCheckboxSchema,
   self_enrollment_use_enrollment_code: BooleanFromCheckboxSchema,
+  self_enrollment_restrict_to_institution: BooleanFromCheckboxSchema,
   // This isn't ever used by the backend, but it's included here because this
   // type is used to drive the form state on the frontend.
   self_enrollment_enabled_before_date_enabled: BooleanFromCheckboxSchema,

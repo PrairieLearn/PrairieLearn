@@ -1,9 +1,12 @@
+import _ from 'lodash';
 import { z } from 'zod';
 
-import { callRow, execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { callRow, execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
-import { IdSchema, type User, UserSchema } from '../../lib/db-types.js';
+import { IdSchema, InstitutionSchema, type User, UserSchema } from '../../lib/db-types.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export interface AuthUser {
   name: string | null;
@@ -71,17 +74,14 @@ export async function getOrCreateUser(authUser: AuthUser): Promise<User> {
 /** Helper function to create institutions for testing */
 export async function createInstitution(id: string, shortName: string, longName: string) {
   await queryOptionalRow(
-    `INSERT INTO institutions (id, short_name, long_name, uid_regexp)
-     VALUES ($id, $short_name, $long_name, $uid_regexp)
-     ON CONFLICT (id) DO NOTHING
-     RETURNING id`,
+    sql.create_institution,
     {
       id,
       short_name: shortName,
       long_name: longName,
-      uid_regexp: `@${shortName}$`,
+      uid_regexp: `@${_.escapeRegExp(shortName)}$`,
     },
-    z.object({ id: z.string() }),
+    InstitutionSchema,
   );
 }
 
@@ -90,25 +90,21 @@ export async function updateCourseInstanceSettings(
   courseInstanceId: string,
   options: {
     selfEnrollmentEnabled: boolean;
+    restrictToInstitution: boolean;
     selfEnrollmentUseEnrollmentCode: boolean;
   },
 ) {
-  await execute(
-    `UPDATE course_instances 
-     SET self_enrollment_enabled = $self_enrollment_enabled,
-         self_enrollment_use_enrollment_code = $self_enrollment_use_enrollment_code
-     WHERE id = $course_instance_id`,
-    {
-      course_instance_id: courseInstanceId,
-      self_enrollment_enabled: options.selfEnrollmentEnabled,
-      self_enrollment_use_enrollment_code: options.selfEnrollmentUseEnrollmentCode,
-    },
-  );
+  await execute(sql.update_course_instance_settings, {
+    course_instance_id: courseInstanceId,
+    self_enrollment_enabled: options.selfEnrollmentEnabled,
+    restrict_to_institution: options.restrictToInstitution,
+    self_enrollment_use_enrollment_code: options.selfEnrollmentUseEnrollmentCode,
+  });
 }
 
 /** Helper function to delete enrollments in a course instance for testing */
 export async function deleteEnrollmentsInCourseInstance(courseInstanceId: string) {
-  await execute('DELETE FROM enrollments WHERE course_instance_id = $course_instance_id', {
+  await execute(sql.delete_enrollments_in_course_instance, {
     course_instance_id: courseInstanceId,
   });
 }
