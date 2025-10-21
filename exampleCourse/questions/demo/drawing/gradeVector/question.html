@@ -6,7 +6,7 @@ Draw a vector at point $A$ with ${{params.angle}}^o$ orientation.
 <pl-drawing grid-size="20" gradable="true" answers-name="box" width="320" hide-answer-panel="false">
 
     <pl-drawing-answer draw-error-box="true">
-        <pl-vector x1="160" y1="160"  angle={{params.grade_angle}} ></pl-vector>
+        <pl-vector x1="160" y1="160" angle="{{params.grade_angle}}"></pl-vector>
     </pl-drawing-answer>
 
 
@@ -15,7 +15,7 @@ Draw a vector at point $A$ with ${{params.angle}}^o$ orientation.
     </pl-drawing-initial>
 
     <pl-controls>
-        <pl-controls-group label="Graded objects:" >
+        <pl-controls-group label="Graded objects:">
             <pl-drawing-button type="pl-vector"></pl-drawing-button>
         </pl-controls-group>
         <pl-controls-group label="Delete button:">

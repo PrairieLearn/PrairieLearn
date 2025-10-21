@@ -2,6 +2,8 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { SubmissionSchema } from '../lib/db-types.js';
+
 import * as helperAttachFiles from './helperAttachFiles.js';
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -590,7 +592,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
 
   let elemList;
 
-  helperExam.startExam(locals);
+  helperExam.startExam(locals, 'exam1-automaticTestSuite');
 
   describe('6. assessment_instance: set attach files page URL', function () {
     it('should succeed', function () {
@@ -624,7 +626,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     describe('setting up the question data', function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
-        locals.question = helperExam.questions.addVectors;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -662,7 +664,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'save';
-        locals.question = helperExam.questions.addVectors;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
         locals.expectedResult = {
           submission_score: null,
           submission_correct: null,
@@ -671,7 +673,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
           instance_question_auto_points: 0,
           instance_question_manual_points: 0,
           assessment_instance_points: 0,
-          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -692,7 +694,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.addVectors;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
         locals.expectedResult = {
           submission_score: 0,
           submission_correct: false,
@@ -701,7 +703,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
           instance_question_auto_points: 0,
           instance_question_manual_points: 0,
           assessment_instance_points: 0,
-          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
           return {
@@ -722,7 +724,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.addNumbers;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
         locals.expectedResult = {
           submission_score: 0,
           submission_correct: false,
@@ -731,7 +733,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
           instance_question_auto_points: 0,
           instance_question_manual_points: 0,
           assessment_instance_points: 0,
-          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -751,7 +753,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.fossilFuelsRadio;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio;
         locals.expectedResult = {
           submission_score: 0,
           submission_correct: false,
@@ -760,7 +762,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
           instance_question_auto_points: 0,
           instance_question_manual_points: 0,
           assessment_instance_points: 0,
-          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -780,7 +782,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.addNumbers;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
         locals.expectedResult = {
           submission_score: null,
           submission_correct: null,
@@ -789,7 +791,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
           instance_question_auto_points: 0,
           instance_question_manual_points: 0,
           assessment_instance_points: 0,
-          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
           return {
@@ -804,8 +806,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     helperQuestion.checkAssessmentScore(locals);
     describe('check the submission is not gradable', function () {
       it('should succeed', async () => {
-        const result = await sqldb.queryOneRowAsync(sql.select_last_submission, []);
-        const submission = result.rows[0];
+        const submission = await sqldb.queryRow(sql.select_last_submission, SubmissionSchema);
         assert.isFalse(submission.gradable);
       });
     });
@@ -822,7 +823,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'save';
-        locals.question = helperExam.questions.addNumbers;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
         locals.getSubmittedAnswer = function (variant) {
           return {
             c: variant.true_answer.c - 1,
@@ -841,13 +842,13 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['tryAgain'];
         locals.postAction = 'save';
-        locals.question = helperExam.questions.brokenGeneration;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.brokenGeneration;
       });
       it('should result in no variants', async () => {
-        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
+        const rowCount = await sqldb.execute(sql.select_variants_for_qid, {
           qid: locals.question.qid,
         });
-        assert.lengthOf(result.rows, 0);
+        assert.equal(rowCount, 0);
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -857,10 +858,10 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.lengthOf(elemList, 1);
       });
       it('should have created one variant', async () => {
-        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
+        const rowCount = await sqldb.execute(sql.select_variants_for_qid, {
           qid: locals.question.qid,
         });
-        assert.lengthOf(result.rows, 1);
+        assert.equal(rowCount, 1);
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -870,10 +871,10 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.lengthOf(elemList, 1);
       });
       it('should have created two variants', async () => {
-        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
+        const rowCount = await sqldb.execute(sql.select_variants_for_qid, {
           qid: locals.question.qid,
         });
-        assert.lengthOf(result.rows, 2);
+        assert.equal(rowCount, 2);
       });
     });
   });
@@ -882,7 +883,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
-        locals.question = helperExam.questions.addNumbers;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -899,7 +900,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.addNumbers;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
         locals.expectedResult = {
           submission_score: 1,
           submission_correct: true,
@@ -908,7 +909,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
           instance_question_auto_points: 3,
           instance_question_manual_points: 0,
           assessment_instance_points: 3,
-          assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (3 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -926,7 +927,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('25. save correct answer to saved question addNumbers page', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
-        locals.question = helperExam.questions.addNumbers;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
         locals.postAction = 'save';
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -949,7 +950,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'save';
-        locals.question = helperExam.questions.fossilFuelsRadio;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio;
         locals.expectedResult = {
           submission_score: null,
           submission_correct: null,
@@ -958,7 +959,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
           instance_question_auto_points: 0,
           instance_question_manual_points: 0,
           assessment_instance_points: 3,
-          assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (3 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -977,7 +978,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
-        locals.question = helperExam.questions.addVectors;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -994,7 +995,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.addVectors;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
         locals.expectedResult = {
           submission_score: 0,
           submission_correct: false,
@@ -1003,7 +1004,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
           instance_question_auto_points: 0,
           instance_question_manual_points: 0,
           assessment_instance_points: 3,
-          assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (3 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
           return {
@@ -1022,7 +1023,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('29. submit correct answer to saved question addVectors page', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
-        locals.question = helperExam.questions.addVectors;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
         locals.postAction = 'save';
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -1045,7 +1046,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
-        locals.question = helperExam.questions.fossilFuelsRadio;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio;
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -1059,14 +1060,14 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
 
   describe('31. close exam', function () {
     it('should succeed', async () => {
-      await sqldb.queryOneRowAsync(sql.close_all_assessment_instances, []);
+      await sqldb.executeRow(sql.close_all_assessment_instances, []);
     });
   });
 
   describe('32. save correct answer to saved question fossilFuelsRadio page', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
-        locals.question = helperExam.questions.fossilFuelsRadio;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio;
         locals.postAction = 'save';
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -1087,14 +1088,14 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('33. regrading', function () {
     describe('set forceMaxPoints = true for question addVectors', function () {
       it('should succeed', async () => {
-        await sqldb.queryAsync(sql.update_addVectors_force_max_points, []);
+        await sqldb.execute(sql.update_addVectors_force_max_points);
       });
     });
     helperQuestion.regradeAssessment(locals);
     describe('check the regrading succeeded', function () {
       describe('setting up the expected question addNumbers results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addNumbers;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
           locals.expectedResult = {
             submission_score: 1,
             submission_correct: true,
@@ -1108,7 +1109,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question addVectors results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addVectors;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
           locals.expectedResult = {
             submission_score: 0,
             submission_correct: false,
@@ -1122,7 +1123,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question fossilFuelsRadio results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.fossilFuelsRadio;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio;
           locals.expectedResult = {
             submission_score: null,
             submission_correct: null,
@@ -1138,7 +1139,8 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedResult = {
             assessment_instance_points: 24,
-            assessment_instance_score_perc: (24 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_score_perc:
+              (24 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
           };
         });
       });
@@ -1160,7 +1162,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     describe('check the instance question score upload succeeded', function () {
       describe('setting up the expected question addNumbers results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addNumbers;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
           locals.expectedResult = {
             instance_question_points: 2,
             instance_question_score_perc: (2 / 5) * 100,
@@ -1172,7 +1174,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question addVectors results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addVectors;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
           locals.expectedResult = {
             instance_question_points: 10.5,
             instance_question_score_perc: (10.5 / 21) * 100,
@@ -1184,7 +1186,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question fossilFuelsRadio results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.fossilFuelsRadio;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio;
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
@@ -1198,7 +1200,8 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedResult = {
             assessment_instance_points: 12.5,
-            assessment_instance_score_perc: (12.5 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_score_perc:
+              (12.5 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
           };
         });
       });
@@ -1207,7 +1210,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: null,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: { manual: 'feedback numbers' },
           };
         });
@@ -1217,7 +1220,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: null,
-            qid: helperExam.questions.addVectors.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors.qid,
             feedback: { manual: 'feedback vectors' },
           };
         });
@@ -1227,7 +1230,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: null,
-            qid: helperExam.questions.fossilFuelsRadio.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio.qid,
             feedback: null,
           };
         });
@@ -1239,19 +1242,20 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('35. instance question points uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should get the submission_ids for addNumbers', async () => {
-        const params = {
-          qid: helperExam.questions.addNumbers.qid,
-        };
-        const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
-        const rowCount = result.rowCount ?? 0;
+        const result = await sqldb.queryRows(
+          sql.select_submissions_by_qid,
+          { qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid },
+          SubmissionSchema,
+        );
+        const rowCount = result.length;
         // make sure we've got lots of submissions to make the later checks work
         assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
-        locals.submission_id_for_feedback = result.rows[2].id;
+        locals.submission_id_for_feedback = result[2].id;
         // all the the other submissions should not be modified
-        locals.submission_id_preserve0 = result.rows[0].id;
-        locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
+        locals.submission_id_preserve0 = result[0].id;
+        locals.submission_id_preserve1 = result[1].id;
+        locals.submission_id_preserveN = result[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =
@@ -1266,7 +1270,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     describe('check the instance question score upload succeeded', function () {
       describe('setting up the expected question addNumbers results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addNumbers;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
           locals.expectedResult = {
             instance_question_points: 4.7,
             instance_question_score_perc: (4.7 / 5) * 100,
@@ -1278,7 +1282,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question addVectors results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addVectors;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
           locals.expectedResult = {
             instance_question_points: 1.2,
             instance_question_score_perc: (1.2 / 21) * 100,
@@ -1290,7 +1294,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question fossilFuelsRadio results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.fossilFuelsRadio;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio;
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
@@ -1304,7 +1308,8 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedResult = {
             assessment_instance_points: 5.9,
-            assessment_instance_score_perc: (5.9 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_score_perc:
+              (5.9 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
           };
         });
       });
@@ -1313,7 +1318,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_for_feedback,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: { msg: 'feedback numbers 2' },
           };
         });
@@ -1323,7 +1328,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_preserve0,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: {},
           };
         });
@@ -1333,7 +1338,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_preserve1,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: null,
           };
         });
@@ -1343,7 +1348,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_preserveN,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: { manual: 'feedback numbers' },
           };
         });
@@ -1353,7 +1358,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: null,
-            qid: helperExam.questions.addVectors.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors.qid,
             feedback: { manual: 'feedback vectors' },
           };
         });
@@ -1363,7 +1368,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: null,
-            qid: helperExam.questions.fossilFuelsRadio.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio.qid,
             feedback: null,
           };
         });
@@ -1382,7 +1387,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     describe('check the assessment instance score upload succeeded', function () {
       describe('setting up the expected question addNumbers results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addNumbers;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
           locals.expectedResult = {
             instance_question_points: 4.7,
             instance_question_score_perc: (4.7 / 5) * 100,
@@ -1394,7 +1399,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question addVectors results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addVectors;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
           locals.expectedResult = {
             instance_question_points: 1.2,
             instance_question_score_perc: (1.2 / 21) * 100,
@@ -1406,7 +1411,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question fossilFuelsRadio results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.fossilFuelsRadio;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio;
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
@@ -1419,7 +1424,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       describe('setting up the expected assessment results', function () {
         it('should succeed', function () {
           locals.expectedResult = {
-            assessment_instance_points: (43.7 / 100) * helperExam.assessmentMaxPoints,
+            assessment_instance_points: (43.7 / 100) * helperExam.exam1AutomaticTestSuite.maxPoints,
             assessment_instance_score_perc: 43.7,
           };
         });
@@ -1438,7 +1443,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     describe('check the assessment instance score upload succeeded', function () {
       describe('setting up the expected question addNumbers results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addNumbers;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
           locals.expectedResult = {
             instance_question_points: 4.7,
             instance_question_score_perc: (4.7 / 5) * 100,
@@ -1450,7 +1455,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question addVectors results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addVectors;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
           locals.expectedResult = {
             instance_question_points: 1.2,
             instance_question_score_perc: (1.2 / 21) * 100,
@@ -1462,7 +1467,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question fossilFuelsRadio results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.fossilFuelsRadio;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio;
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
@@ -1476,7 +1481,8 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedResult = {
             assessment_instance_points: 29.6,
-            assessment_instance_score_perc: (29.6 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_score_perc:
+              (29.6 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
           };
         });
       });
@@ -1487,19 +1493,20 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('38. instance question split points uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should get the submission_ids for addNumbers', async () => {
-        const params = {
-          qid: helperExam.questions.addNumbers.qid,
-        };
-        const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
-        const rowCount = result.rowCount ?? 0;
+        const result = await sqldb.queryRows(
+          sql.select_submissions_by_qid,
+          { qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid },
+          SubmissionSchema,
+        );
+        const rowCount = result.length;
         // make sure we've got lots of submissions to make the later checks work
         assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
-        locals.submission_id_for_feedback = result.rows[2].id;
+        locals.submission_id_for_feedback = result[2].id;
         // all the the other submissions should not be modified
-        locals.submission_id_preserve0 = result.rows[0].id;
-        locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
+        locals.submission_id_preserve0 = result[0].id;
+        locals.submission_id_preserve1 = result[1].id;
+        locals.submission_id_preserveN = result[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =
@@ -1515,7 +1522,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     describe('check the instance question score upload succeeded', function () {
       describe('setting up the expected question addNumbers results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addNumbers;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
           locals.expectedResult = {
             instance_question_points: 3.5,
             instance_question_score_perc: (3.5 / 5) * 100,
@@ -1527,7 +1534,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question addVectors results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addVectors;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
           locals.expectedResult = {
             instance_question_points: 0.9,
             instance_question_score_perc: (0.9 / 21) * 100,
@@ -1539,7 +1546,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question fossilFuelsRadio results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.fossilFuelsRadio;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio;
           locals.expectedResult = {
             instance_question_points: 2.9,
             instance_question_score_perc: (2.9 / 17) * 100,
@@ -1553,7 +1560,8 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedResult = {
             assessment_instance_points: 7.3,
-            assessment_instance_score_perc: (7.3 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_score_perc:
+              (7.3 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
           };
         });
       });
@@ -1562,7 +1570,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_for_feedback,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: { msg: 'feedback numbers 2' },
           };
         });
@@ -1572,7 +1580,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_preserve0,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: {},
           };
         });
@@ -1582,7 +1590,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_preserve1,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: null,
           };
         });
@@ -1592,7 +1600,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_preserveN,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: { manual: 'feedback numbers' },
           };
         });
@@ -1602,7 +1610,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: null,
-            qid: helperExam.questions.addVectors.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors.qid,
             feedback: { manual: 'feedback vectors' },
           };
         });
@@ -1612,7 +1620,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: null,
-            qid: helperExam.questions.fossilFuelsRadio.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio.qid,
             feedback: null,
           };
         });
@@ -1624,19 +1632,20 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('39. instance question split score_perc uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should get the submission_ids for addNumbers', async () => {
-        const params = {
-          qid: helperExam.questions.addNumbers.qid,
-        };
-        const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
-        const rowCount = result.rowCount ?? 0;
+        const result = await sqldb.queryRows(
+          sql.select_submissions_by_qid,
+          { qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid },
+          SubmissionSchema,
+        );
+        const rowCount = result.length;
         // make sure we've got lots of submissions to make the later checks work
         assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
-        locals.submission_id_for_feedback = result.rows[2].id;
+        locals.submission_id_for_feedback = result[2].id;
         // all the the other submissions should not be modified
-        locals.submission_id_preserve0 = result.rows[0].id;
-        locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
+        locals.submission_id_preserve0 = result[0].id;
+        locals.submission_id_preserve1 = result[1].id;
+        locals.submission_id_preserveN = result[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =
@@ -1652,7 +1661,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     describe('check the instance question score upload succeeded', function () {
       describe('setting up the expected question addNumbers results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addNumbers;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
           locals.expectedResult = {
             instance_question_points: 2.2,
             instance_question_score_perc: (2.2 / 5) * 100,
@@ -1664,7 +1673,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question addVectors results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.addVectors;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
           locals.expectedResult = {
             instance_question_points: 12.7,
             instance_question_score_perc: (12.7 / 21) * 100,
@@ -1676,7 +1685,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       helperQuestion.checkQuestionScore(locals);
       describe('setting up the expected question fossilFuelsRadio results', function () {
         it('should succeed', function () {
-          locals.question = helperExam.questions.fossilFuelsRadio;
+          locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio;
           locals.expectedResult = {
             instance_question_points: 8,
             instance_question_score_perc: (8 / 17) * 100,
@@ -1690,7 +1699,8 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedResult = {
             assessment_instance_points: 22.9,
-            assessment_instance_score_perc: (22.9 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_score_perc:
+              (22.9 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
           };
         });
       });
@@ -1699,7 +1709,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_for_feedback,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: { msg: 'feedback numbers 2' },
           };
         });
@@ -1709,7 +1719,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_preserve0,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: {},
           };
         });
@@ -1719,7 +1729,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_preserve1,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: null,
           };
         });
@@ -1729,7 +1739,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: locals.submission_id_preserveN,
-            qid: helperExam.questions.addNumbers.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.qid,
             feedback: { manual: 'feedback numbers' },
           };
         });
@@ -1739,7 +1749,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: null,
-            qid: helperExam.questions.addVectors.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors.qid,
             feedback: { manual: 'feedback vectors' },
           };
         });
@@ -1749,7 +1759,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         it('should succeed', function () {
           locals.expectedFeedback = {
             submission_id: null,
-            qid: helperExam.questions.fossilFuelsRadio.qid,
+            qid: helperExam.exam1AutomaticTestSuite.keyedQuestions.fossilFuelsRadio.qid,
             feedback: null,
           };
         });
@@ -1769,7 +1779,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         });
       });
 
-      helperExam.startExam(locals);
+      helperExam.startExam(locals, 'exam1-automaticTestSuite');
 
       partialCreditTest.forEach(function (questionTest, iQuestionTest) {
         describe(`${questionTest.action} answer number #${iQuestionTest + 1} for question ${
@@ -1783,7 +1793,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
                 locals.shouldHaveButtons = ['grade', 'save'];
               }
               locals.postAction = questionTest.action;
-              locals.question = helperExam.questions[questionTest.qid];
+              locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions[questionTest.qid];
               locals.question.points += questionTest.sub_points;
               locals.totalPoints += questionTest.sub_points;
               locals.expectedResult = {
@@ -1797,7 +1807,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
                 instance_question_manual_points: 0,
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc:
-                  (locals.totalPoints / helperExam.assessmentMaxPoints) * 100,
+                  (locals.totalPoints / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
                 instance_question_stats: questionTest.stats,
               };
               locals.getSubmittedAnswer = function (_variant) {
@@ -1842,7 +1852,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
             helperQuestion.checkQuestionStats(locals);
             helperQuestion.checkAssessmentScore(locals);
           } else {
-            throw Error('unknown action: ' + questionTest.action);
+            throw new Error('unknown action: ' + questionTest.action);
           }
         });
       });

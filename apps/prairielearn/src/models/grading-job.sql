@@ -27,35 +27,6 @@ WITH
     WHERE
       s.id = $submission_id
   ),
-  canceled_jobs AS (
-    -- Cancel any outstanding grading jobs
-    UPDATE grading_jobs AS gj
-    SET
-      grading_request_canceled_at = now(),
-      grading_request_canceled_by = $authn_user_id
-    FROM
-      grading_job_data AS gjd
-      JOIN variants AS v ON (v.id = gjd.variant_id)
-      JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE
-      gj.submission_id = s.id
-      AND gj.graded_at IS NULL
-      AND gj.grading_requested_at IS NOT NULL
-      AND gj.grading_request_canceled_at IS NULL
-    RETURNING
-      gj.*
-  ),
-  canceled_job_submissions AS (
-    UPDATE submissions AS s
-    SET
-      grading_requested_at = NULL,
-      modified_at = now()
-    FROM
-      canceled_jobs
-    WHERE
-      s.id = canceled_jobs.submission_id
-      AND s.id != $submission_id
-  ),
   updated_submission AS (
     UPDATE submissions AS s
     SET
@@ -96,6 +67,20 @@ WITH
       grading_job_data AS gjd
     RETURNING
       gj.*
+  ),
+  updated_instance_question AS (
+    -- If the variant is associated with an instance question, update its
+    -- status. This is a no-op for instructor and public variants.
+    UPDATE instance_questions AS iq
+    SET
+      status = 'grading',
+      modified_at = now()
+    FROM
+      new_grading_job AS gj
+      JOIN submissions AS s ON (s.id = gj.submission_id)
+      JOIN variants AS v ON (v.id = s.variant_id)
+    WHERE
+      iq.id = v.instance_question_id
   )
 SELECT
   gj.*,
@@ -104,3 +89,96 @@ SELECT
 FROM
   new_grading_job AS gj
   JOIN grading_job_data AS gjd ON TRUE;
+
+-- BLOCK select_variant_for_grading_job_update
+SELECT
+  s.credit,
+  v.id AS variant_id,
+  iq.id AS instance_question_id,
+  ai.id AS assessment_instance_id,
+  EXISTS (
+    SELECT
+      1
+    FROM
+      variants AS vnew
+      JOIN submissions AS snew ON (snew.variant_id = vnew.id)
+    WHERE
+      vnew.instance_question_id = iq.id
+      AND s.id != snew.id
+      AND snew.date > s.date
+  ) AS has_newer_submission
+FROM
+  submissions AS s
+  JOIN variants AS v ON (v.id = s.variant_id)
+  LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+  LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+WHERE
+  s.id = $submission_id;
+
+-- BLOCK update_grading_job_after_grading
+WITH
+  updated_submission AS (
+    UPDATE submissions
+    SET
+      graded_at = now(),
+      modified_at = now(),
+      gradable = $gradable,
+      broken = $broken,
+      params = COALESCE($params::jsonb, params),
+      true_answer = COALESCE($true_answer::jsonb, true_answer),
+      format_errors = $format_errors::jsonb,
+      partial_scores = $partial_scores::jsonb,
+      score = $score,
+      v2_score = $v2_score,
+      correct = $correct,
+      feedback = $feedback::jsonb,
+      submitted_answer = COALESCE($submitted_answer::jsonb, submitted_answer)
+    WHERE
+      id = $submission_id
+    RETURNING
+      *
+  ),
+  updated_variant AS (
+    UPDATE variants AS v
+    SET
+      params = COALESCE($params::jsonb, v.params),
+      true_answer = COALESCE($true_answer::jsonb, v.true_answer),
+      modified_at = now()
+    FROM
+      updated_submission AS s
+    WHERE
+      v.id = s.variant_id
+    RETURNING
+      v.*
+  ),
+  updated_instance_question_status AS (
+    UPDATE instance_questions AS iq
+    SET
+      status = 'invalid'::enum_instance_question_status
+    FROM
+      updated_variant AS v
+    WHERE
+      iq.id = v.instance_question_id
+      -- This is only updated here if the question is not gradable, if it's
+      -- gradable it is updated in a separate step
+      AND NOT $gradable
+  )
+UPDATE grading_jobs
+SET
+  graded_at = now(),
+  -- For internally-graded questions, these three timestamps will be NULL
+  -- in params. For the first two, we'll reuse the existing
+  -- values that were set in `insertGradingJob`, and for the finish
+  -- timestamp, we'll use the current time.
+  grading_received_at = COALESCE($received_time, grading_received_at),
+  grading_started_at = COALESCE($start_time, grading_started_at),
+  grading_finished_at = COALESCE($finish_time, now()),
+  gradable = $gradable,
+  score = $score,
+  -- manual_points and auto_points are not updated for internal/external grading jobs
+  correct = $correct,
+  feedback = $feedback
+WHERE
+  id = $grading_job_id
+RETURNING
+  *;

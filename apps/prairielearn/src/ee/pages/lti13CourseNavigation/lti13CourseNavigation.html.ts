@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
-import { Modal } from '../../../components/Modal.html.js';
-import { Navbar } from '../../../components/Navbar.html.js';
+import { HeadContents } from '../../../components/HeadContents.js';
+import { Modal } from '../../../components/Modal.js';
+import { Navbar } from '../../../components/Navbar.js';
 import { config } from '../../../lib/config.js';
 import { type Course } from '../../../lib/db-types.js';
 import { STUDENT_ROLE } from '../../lib/lti13.js';
@@ -228,7 +228,9 @@ function TerminologyModal() {
 
       <p>
         For more, see the
-        <a href="https://prairielearn.readthedocs.io/" target="_blank">PrairieLearn User Guide</a>
+        <a href="https://prairielearn.readthedocs.io/" target="_blank" rel="noreferrer"
+          >PrairieLearn User Guide</a
+        >
       </p>
     `,
   });

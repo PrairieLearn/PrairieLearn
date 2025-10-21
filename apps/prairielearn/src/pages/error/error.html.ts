@@ -5,7 +5,7 @@ import { formatErrorStack } from '@prairielearn/error';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { formatQueryWithErrorPosition } from '@prairielearn/postgres';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 
 function formatJson(value: any): string {
@@ -63,7 +63,7 @@ export function ErrorPage({
 
           <p><strong>Status:</strong> ${error.status}</p>
 
-          <div>
+          <div class="d-flex flex-column gap-2 align-items-start">
             <a href="${referrer}" class="btn btn-primary" ${!referrer ? 'disabled' : ''}>
               <i class="fa fa-arrow-left" aria-hidden="true"></i>
               Back to previous page

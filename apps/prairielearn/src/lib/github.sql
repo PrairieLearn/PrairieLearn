@@ -1,11 +1,3 @@
--- BLOCK get_course_request
-SELECT
-  *
-FROM
-  course_requests
-WHERE
-  id = $course_request_id;
-
 -- BLOCK set_course_request_status
 UPDATE course_requests AS cr
 SET

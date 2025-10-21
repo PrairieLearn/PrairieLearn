@@ -4,8 +4,8 @@ import path from 'path';
 
 import async from 'async';
 import chalk from 'chalk';
+import { Command } from 'commander';
 import fs from 'fs-extra';
-import yargs from 'yargs';
 
 import {
   type DatabaseDescription,
@@ -13,73 +13,37 @@ import {
   formatDatabaseDescription,
 } from '../describe.js';
 
-const args = yargs(process.argv.slice(2))
-  .usage('Usage: $0 <database name> [options]')
-  .demandCommand(1)
-  .option('output', {
-    alias: 'o',
-    nargs: 1,
-    string: true,
-    description: 'Specify a directory to output files to',
-  })
-  .option('ignore-tables', {
-    array: true,
-    description: 'a list of tables to ignore',
-  })
-  .option('ignore-enums', {
-    array: true,
-    description: 'a list of enums to ignore',
-  })
-  .option('ignore-columns', {
-    array: true,
-    description: 'a list of columns to ignore, formatted like [table].[column]',
-  })
-  .help('h')
-  .alias('h', 'help')
-  .example('$0 postgres', 'Describe the "postgres" database')
-  .example(
-    '$0 userdb -o db_description --ignore-tables a b --ignore-columns a.col1 a.col2',
-    'Describe the "userdb" database; ignore specific tables and columns',
+const program = new Command();
+program
+  .name('pg-describe')
+  .usage('<database name> [options]')
+  .argument('<database>', 'Database name to describe')
+  .option('-o, --output <dir>', 'Specify a directory to output files to')
+  .option('--ignore-tables <tables...>', 'A list of tables to ignore')
+  .option('--ignore-enums <enums...>', 'A list of enums to ignore')
+  .option(
+    '--ignore-columns <columns...>',
+    'A list of columns to ignore, formatted like [table].[column]',
   )
-  .strict();
+  .showHelpAfterError();
 
-const argv = args.parseSync();
+program.parse(process.argv);
+const opts = program.opts();
+const dbName = program.args[0];
 
-if (argv._.length !== 1) {
-  args.showHelp();
-  process.exit(1);
+if (!dbName) {
+  program.help({ error: true });
 }
 
 // Disable color if we're not attached to a tty
-const coloredOutput = !argv.output && process.stdout.isTTY;
-
-const options = {
-  ignoreTables: (argv['ignore-tables'] ?? []).map((table) => table.toString()),
-  ignoreEnums: (argv['ignore-enums'] ?? []).map((enumName) => enumName.toString()),
-  ignoreColumns: (argv['ignore-columns'] ?? []).map((column) => column.toString()),
-};
+const coloredOutput = !opts.output && process.stdout.isTTY;
 
 function formatText(text: string, formatter: (text: string) => string) {
-  if (!argv.output && coloredOutput) {
+  if (!opts.output && coloredOutput) {
     return formatter(text);
   }
   return text;
 }
-
-describeDatabase(argv._[0].toString(), options).then(
-  async (description) => {
-    if (argv.output) {
-      await writeDescriptionToDisk(description, argv.output);
-    } else {
-      printDescription(description);
-    }
-    process.exit(0);
-  },
-  (err) => {
-    console.error(err);
-    process.exit(1);
-  },
-);
 
 function printDescription(description: DatabaseDescription) {
   const formattedDescription = formatDatabaseDescription(description, { coloredOutput });
@@ -109,3 +73,21 @@ async function writeDescriptionToDisk(description: DatabaseDescription, dir: str
     await fs.writeFile(path.join(dir, 'enums', `${key}.pg`), value);
   });
 }
+
+function parseListOption(option: string[]): string[] {
+  return option.flatMap((item: string) => item.split(',').map((part) => part.trim()));
+}
+
+const options = {
+  ignoreTables: parseListOption(opts.ignoreTables ?? []),
+  ignoreEnums: parseListOption(opts.ignoreEnums ?? []),
+  ignoreColumns: parseListOption(opts.ignoreColumns ?? []),
+};
+
+const description = await describeDatabase(dbName, options);
+if (opts.output) {
+  await writeDescriptionToDisk(description, opts.output);
+} else {
+  printDescription(description);
+}
+process.exit(0);

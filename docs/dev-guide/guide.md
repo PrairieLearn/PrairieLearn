@@ -88,7 +88,6 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 - All pages are server-side rendered, and we try and minimize the amount of client-side JavaScript. Client-side JS should use vanilla JavaScript/TypeScript where possible, but third-party libraries may be used when appropriate.
 
 - Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For a real-world example, consider the page where users can accept the PrairieLearn terms and conditions, located at [`apps/prairielearn/src/ee/pages/terms`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms). That directory contains the following files:
-
   - [`terms.ts`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.ts): The main entry point for the page. It runs SQL queries and renders a template.
   - [`terms.sql`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.sql): All SQL queries for the page.
   - [`terms.html.ts`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.html.ts): The template for the page. Exports a function that returns an HTML document.
@@ -106,6 +105,29 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 - Local CSS rules go in `public/stylesheets/local.css`. Try to minimize use of this and use plain Bootstrap styling wherever possible.
 
 - Buttons should use the `<button>` element when they take actions and the `<a>` element when they are simply links to other pages. We should not use `<a role="button">` to fake a button element. Buttons that do not submit a form should always start with `<button type="button" class="btn ...">`, where `type="button"` specifies that they don't submit.
+
+## HTML accessibility
+
+If you are adding anything more complex than a basic form page, the automated accessibility checks are likely not enough for checking accessibility. You should use [VoiceOver (macOS)](https://support.apple.com/guide/voiceover/welcome/mac) or [NVDA (Windows)](https://www.nvaccess.org/download/) to test the page. All our pages must conform to the [Web Content Accessibility Guidelines (WCAG) 2.1 AA standard](https://www.w3.org/TR/WCAG21/). Some common things to check for:
+
+- Are elements announced correctly?
+  - Do elements have appropriate `aria-label` / `alt` attributes?
+  - Are descriptions concise and accurate?
+  - Do menus, toolbars, and other UI elements have appropriate [ARIA roles](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles)?
+- Can a user navigate the page using only the keyboard?
+  - Tab should move between focusable elements.
+  - Space or Enter should activate buttons/links.
+  - Arrow keys should navigate within components like dropdowns and tables.
+  - Actions that require dragging with a mouse should have keyboard alternatives.
+- Is focus managed correctly?
+  - Is focus correctly trapped within modals and other dialogs?
+  - Is focus position retained during re-renders?
+- Are focus indicators visible?
+- Is the page layout logical and easy to understand?
+- Will users with visual impairments be able to use the page?
+  - Is there at least a 4.5:1 contrast ratio between text and background colors?
+  - Is there at least a 3:1 contrast ratio between UI elements and background colors?
+  - Is there appropriate spacing between elements?
 
 ## SQL usage
 
@@ -208,7 +230,6 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 - Detailed descriptions of the format of each table are in the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
 - Each table has an `id` number that is used for cross-referencing. For example, each row in the `questions` table has an `id` and other tables will refer to this as a `question_id`. For legacy reasons, there are two exceptions to this rule:
-
   - Tables that reference the `pl_courses` table use `course_id` instead of `pl_course_id`.
   - The `users` table has a `user_id` primary key instead of `id`.
 
@@ -337,7 +358,7 @@ FOR NO KEY UPDATE;
 - To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
   ```javascript
-  await sqldb.queryAsync(sql.insert_assessment_question, {
+  await sqldb.execute(sql.insert_assessment_question, {
     points_list: [10, 5, 1],
   });
   ```
@@ -377,7 +398,7 @@ FOR NO KEY UPDATE;
     { a: 5, b: 'foo' },
     { a: 9, b: 'bar' },
   ];
-  await sqldb.queryAsync(sql.insert_data, {
+  await sqldb.execute(sql.insert_data, {
     data: JSON.stringify(data),
   });
   ```
@@ -431,7 +452,6 @@ FOR NO KEY UPDATE;
 - We distinguish between [authentication and authorization](https://en.wikipedia.org/wiki/Authentication#Authorization). Authentication occurs as the first stage in server response and the authenticated user data is stored as `res.locals.authn_user`.
 
 - The authentication flow is:
-
   1. We first redirect to a remote authentication service (e.g. SAML SSO, Google, Microsoft).
 
   2. The remote authentication service redirects back to a callback URL, e.g. `/pl/oauth2callback` for Google. These endpoints confirm authentication, create the user in the `users` table if necessary, set a signed `pl_authn` cookie in the browser with the authenticated `user_id`, and then redirect to the main PL homepage. This cookie is set with the `HttpOnly` attribute, which prevents client-side JavaScript from reading the cookie.
@@ -441,7 +461,6 @@ FOR NO KEY UPDATE;
 - Similar to unix, we distinguish between the real and effective user. The real user is stored as `res.locals.authn_user` and is the user that authenticated. The effective user is stored as `res.locals.user`. Only users with `role = TA` or higher can set an effective user that is different from their real user. Moreover, users with `role = TA` or higher can also set an effective `role` and `mode` that is different to the real values.
 
 - Authorization occurs at multiple levels:
-
   - The `course_instance` checks authorization based on the `authn_user`.
 
   - The `course_instance` authorization is checked against the effective `user`.
@@ -450,7 +469,54 @@ FOR NO KEY UPDATE;
 
 - All state-modifying requests must (normally) be POST and all associated data must be in the body. GET requests may use query parameters for viewing options only.
 
+## Safely interacting with the database
+
+??? note
+
+    This pattern is currently being rolled out as a gradual refactor of existing code on a model-by-model basis.
+
+Almost every page is dealing with database data, so it is important to understand how to interact with the database securely. Data in `res.locals` has already been validated and is safe to use. However, it is recommended to type this data using the `page-context` helpers for extra type safety. For example,
+
+```typescript
+const { authz_data } = getPageContext(res.locals);
+const { course_instance: courseInstance } = getCourseInstance(res.locals, 'student');
+```
+
+For most API/POST handlers, we want to lookup or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. To help with this, we are moving to a pattern where model functions should accept full, typed row objects as parameters. For example,
+
+```typescript
+await updateEnrollmentStatus({
+  enrollment: my_enrollment,
+  status: 'joined',
+});
+```
+
+This is good, because in order to perform an update, you need to pass in a full row object, and a request body won't have enough information for this. It is assumed that the only way to get a full, typed row object is to call a model function that performs the correct authorization checks. For example,
+
+```typescript
+const enrollment = await selectEnrollment({
+  id: enrollment_id,
+  courseInstance,
+  authLevel: 'student',
+});
+```
+
+Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks. For example, in the above example, the `selectEnrollment` function requires the caller to pass in the `course_instance` and `authLevel` parameters, so it can throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollment`).
+
+```typescript
+const enrollment = await dangerouslySelectEnrollment({ id: enrollment_id });
+```
+
+There also may exist versions of these functions that don't require the caller to pass in the `course_instance` and `authLevel` parameters, like `dangerouslySelectEnrollment`, but these should be avoided if possible.
+
 ## State-modifying POST requests
+
+??? note
+
+    This section is outdated. It is now preferred to do the following things:
+
+    1. Use a Zod schema to validate the request body.
+    2. Call model functions instead of directly executing SQL (see above).
 
 - Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern for all state modification. This means that the initial GET should render the page with a `<form>` that has no `action` set, so it will submit back to the current page. This should be handled by a POST handler that performs the state modification and then issues a redirect back to the same page as a GET:
 
@@ -459,7 +525,7 @@ FOR NO KEY UPDATE;
     '/',
     asyncHandler(async (req, res) => {
       if (req.body.__action == 'enroll') {
-        await queryAsync(sql.enroll, {
+        await execute(sql.enroll, {
           course_instance_id: req.body.course_instance_id,
           user_id: res.locals.authn_user.user_id,
         });
@@ -514,12 +580,11 @@ To automatically fix lint and formatting errors, run `make format`.
 
 ## Question-rendering control flow
 
-- The core files involved in question rendering are [lib/question-render.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.ts), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [components/QuestionContainer.html.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/components/QuestionContainer.html.ts).
+- The core files involved in question rendering are [lib/question-render.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.ts), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [components/QuestionContainer.tsx](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/components/QuestionContainer.tsx).
 
 - The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestion`, etc.). Unfortunately the control-flow is complicated because we need to call `lib/question-render.ts` during page data load, store the data it generates, and then later include the `components/QuestionContainer.html.ts` template to actually render this data.
 
 - For example, the exact control-flow for `pages/instructorQuestion` is:
-
   1. The top-level page `pages/instructorQuestion/instructorQuestion.js` code calls `lib/question-render.getAndRenderVariant()`.
 
   2. `getAndRenderVariant()` inserts data into `res.locals` for later use by `components/QuestionContainer.html.ts`.
@@ -541,7 +606,6 @@ To automatically fix lint and formatting errors, run `make format`.
 ## Errors in question handling
 
 - We distinguish between two different types of student errors:
-
   1. The answer might be not be gradable (`submission.gradable = false`). This could be due to a missing answer, an invalid format (e.g., entering a string in a numeric input), or a answer that doesn't pass some basic check (e.g., a code submission that didn't compile). This can be discovered during either the parsing or grading phases. In such a case the `submission.format_errors` object should store information on what was wrong to allow the student to correct their answer. A submission with `gradable = false` will not cause any updating of points for the question. That is, it acts like a saved-but-not-graded submission, in that it is recorded but has no impact on the question. If `gradable = false` then the `score` and `feedback` will not be displayed to the student.
 
   2. The answer might be gradable but incorrect. In this case `submission.gradable = true` but `submission.score = 0` (or less than 1 for a partial score). If desired, the `submission.feedback` object can be set to give information to the student on what was wrong with their answer. This is not necessary, however. If `submission.feedback` is set then it will be shown to the student along with their `submission.score` as soon as the question is graded.
@@ -572,6 +636,14 @@ To automatically fix lint and formatting errors, run `make format`.
 - The question flow is shown in the diagram below:
 
 ![Question lifecycle flowchart](./question-flow.d2)
+
+## Assertions
+
+Depending on the context, we use different types of assertions.
+
+- In tests, we use the exported helpers from `vitest`, e.g. `assert.ok` or `assert.isDefined`.
+- In server code, to enforce invariants (e.g. something that should never happen), we use `assert` from `node:assert`.
+- For asserting results on the client, or in utility functions, e.g. a `.querySelector`, `.pop`, etc., consider using the `!` operator to assert that a value is not `null` or `undefined`.
 
 ## JavaScript equality operator
 

@@ -28,7 +28,7 @@ WITH
           variants AS v
           JOIN submissions AS s ON s.variant_id = v.id
         WHERE
-          v.instance_question_id = ANY ($instance_question_ids::BIGINT[])
+          v.instance_question_id = ANY ($instance_question_ids::bigint[])
       ) ranked
     WHERE
       rn = 1
@@ -55,6 +55,7 @@ WITH
       JOIN grading_jobs AS gj ON ls.submission_id = gj.submission_id
     WHERE
       gj.grading_method IN ('Manual', 'AI')
+      AND gj.deleted_at IS NULL
   ),
   rubric_grading_to_items AS (
     SELECT
@@ -63,6 +64,10 @@ WITH
     FROM
       rubric_grading_items AS rgi
       JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
+    WHERE
+      -- Exclude deleted rubric items. They won't show up elsewhere in the UI
+      -- and thus shouldn't be included in comparisons of grading jobs.
+      ri.deleted_at IS NULL
   )
 SELECT
   grading_job_id,

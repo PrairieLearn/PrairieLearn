@@ -2,8 +2,8 @@ import { type z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { type CourseRequestRow } from '../../lib/course-request.js';
 import { CourseSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
@@ -191,7 +191,7 @@ function CourseDeleteForm({
         </label>
         <input type="text" class="form-control" id="inputConfirm${id}" name="confirm_short_name" />
       </div>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete course</button>
       </div>
@@ -284,7 +284,7 @@ function CourseInsertForm({
           value="${config.courseRepoDefaultBranch}"
         />
       </div>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Add course</button>
       </div>
@@ -307,7 +307,7 @@ function CourseUpdateColumn({
 }) {
   return html`
     <td class="align-middle">
-      ${typeof href !== 'undefined'
+      ${href !== undefined
         ? html`<a href="${href}">${course[column_name]}</a>`
         : course[column_name]}
       <button
@@ -359,7 +359,7 @@ function CourseUpdateColumnForm({
           aria-label="${label}"
         />
       </div>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>

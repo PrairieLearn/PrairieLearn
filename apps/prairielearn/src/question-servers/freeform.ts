@@ -12,6 +12,7 @@ import { cache } from '@prairielearn/cache';
 import { logger } from '@prairielearn/logger';
 import { instrumented, instrumentedWithMetrics, metrics } from '@prairielearn/opentelemetry';
 import { run } from '@prairielearn/run';
+import * as Sentry from '@prairielearn/sentry';
 
 import * as assets from '../lib/assets.js';
 import { canonicalLogger } from '../lib/canonical-logger.js';
@@ -23,6 +24,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import { assertNever } from '../lib/types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -38,9 +40,12 @@ import {
   type GenerateResultData,
   type GradeResultData,
   type ParseResultData,
+  type ParseSubmission,
   type PrepareResultData,
+  type PrepareVariant,
   type QuestionServerReturnValue,
   type RenderResultData,
+  type RenderSelection,
   type TestResultData,
 } from './types.js';
 
@@ -119,9 +124,14 @@ export async function init() {
  */
 async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   const elementSchema = run(() => {
-    if (elementType === 'core') return ElementCoreJsonSchema;
-    if (elementType === 'course') return ElementCourseJsonSchema;
-    throw new Error(`Unknown element type ${elementType}`);
+    switch (elementType) {
+      case 'core':
+        return ElementCoreJsonSchema;
+      case 'course':
+        return ElementCourseJsonSchema;
+      default:
+        assertNever(elementType);
+    }
   });
 
   let files: string[];
@@ -169,12 +179,12 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     // For backwards compatibility.
     // TODO remove once everyone is using the new version.
     if (elementType === 'core') {
-      elements[elementName.replace(/-/g, '_')] = elements[elementName];
+      elements[elementName.replaceAll('-', '_')] = elements[elementName];
 
       if ('additionalNames' in elements[elementName]) {
         elements[elementName].additionalNames?.forEach((name) => {
           elements[name] = elements[elementName];
-          elements[name.replace(/-/g, '_')] = elements[elementName];
+          elements[name.replaceAll('-', '_')] = elements[elementName];
         });
       }
     }
@@ -185,8 +195,8 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
 export async function loadElementsForCourse(course: Course) {
   if (
-    courseElementsCache[course.id] !== undefined &&
-    courseElementsCache[course.id].commit_hash &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    courseElementsCache[course.id]?.commit_hash &&
     courseElementsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseElementsCache[course.id].data;
@@ -280,8 +290,8 @@ async function loadExtensionsForCourse({
   course_dir_host: string;
 }) {
   if (
-    courseExtensionsCache[course.id] !== undefined &&
-    courseExtensionsCache[course.id].commit_hash &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    courseExtensionsCache[course.id]?.commit_hash &&
     courseExtensionsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseExtensionsCache[course.id].data;
@@ -393,28 +403,34 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
     if (!Object.prototype.hasOwnProperty.call(data, prop)) {
       return `"${prop}" is missing from "data"`;
     }
-    if (type === 'integer') {
-      if (!Number.isInteger(data[prop])) {
-        return `data.${prop} is not an integer: ${String(data[prop])}`;
-      }
-    } else if (type === 'number') {
-      if (!Number.isFinite(data[prop])) {
-        return `data.${prop} is not a number: ${String(data[prop])}`;
-      }
-    } else if (type === 'string') {
-      if (typeof data[prop] !== 'string') {
-        return `data.${prop} is not a string: ${String(data[prop])}`;
-      }
-    } else if (type === 'boolean') {
-      if (data[prop] !== true && data[prop] !== false) {
-        return `data.${prop} is not a boolean: ${String(data[prop])}`;
-      }
-    } else if (type === 'object') {
-      if (data[prop] == null || typeof data[prop] !== 'object') {
-        return `data.${prop} is not an object: ${String(data[prop])}`;
-      }
-    } else {
-      return `invalid type: ${String(type)}`;
+    switch (type) {
+      case 'integer':
+        if (!Number.isInteger(data[prop])) {
+          return `data.${prop} is not an integer: ${String(data[prop])}`;
+        }
+        break;
+      case 'number':
+        if (!Number.isFinite(data[prop])) {
+          return `data.${prop} is not a number: ${String(data[prop])}`;
+        }
+        break;
+      case 'string':
+        if (typeof data[prop] !== 'string') {
+          return `data.${prop} is not a string: ${String(data[prop])}`;
+        }
+        break;
+      case 'boolean':
+        if (data[prop] !== true && data[prop] !== false) {
+          return `data.${prop} is not a boolean: ${String(data[prop])}`;
+        }
+        break;
+      case 'object':
+        if (data[prop] == null || typeof data[prop] !== 'object') {
+          return `data.${prop} is not an object: ${String(data[prop])}`;
+        }
+        break;
+      default:
+        return `invalid type: ${String(type)}`;
     }
     if (!editPhases.includes(phase)) {
       if (!Object.prototype.hasOwnProperty.call(origData, prop)) {
@@ -454,7 +470,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('manual_grading',        'boolean', ['render'],                           [])
              || checkProp('ai_grading',            'boolean', ['render'],                           [])
              || checkProp('panel',                 'string',  ['render'],                           [])
-             || checkProp('num_valid_submissions','integer',  ['render'],                           [])
+             || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
              || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
              || checkProp('filename',              'string',  ['file'],                             [])
              || checkProp('test_type',             'string',  ['test'],                             [])
@@ -485,7 +501,7 @@ async function processQuestionPhase<T>(
     course_path: config.workersExecutionMode === 'container' ? '/course' : context.course_dir_host,
   };
   const courseIssues: CourseIssueError[] = [];
-  let result: any | null = null;
+  let result: any = null;
   let output: string | null = null;
 
   try {
@@ -693,7 +709,12 @@ async function processQuestionServer<T extends ExecutionData>(
         fatal: true,
       }),
     );
-    return { courseIssues, data };
+    return {
+      courseIssues,
+      // The new `data` failed validation, so we can't safely return it. Return
+      // the original data instead.
+      data: origData,
+    };
   }
 
   return { courseIssues, data, html, fileData };
@@ -785,7 +806,7 @@ export async function generate(
     const data = {
       params: {},
       correct_answers: {},
-      variant_seed: parseInt(variant_seed, 36),
+      variant_seed: Number.parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
     } satisfies ExecutionData;
 
@@ -811,10 +832,10 @@ export async function generate(
 export async function prepare(
   question: Question,
   course: Course,
-  variant: Variant,
+  variant: PrepareVariant,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
-    if (variant.broken_at) throw new Error('attempted to prepare broken variant');
+    if (variant.broken) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
 
@@ -822,8 +843,8 @@ export async function prepare(
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -874,7 +895,7 @@ async function renderPanel(
   // broken submission kills the submission panel, but we can
   // proceed with other panels, treating the submission as
   // missing
-  if (submission && submission.broken) {
+  if (submission?.broken) {
     if (panel === 'submission') {
       return {
         courseIssues: [],
@@ -896,11 +917,11 @@ async function renderPanel(
   // it won't be present in `locals`). This URL will only have meaning if
   // there's a submission, so it will be `null` otherwise.
   const submissionFilesUrl = submission
-    ? locals.questionUrl + `submission/${submission?.id}/file`
+    ? locals.questionUrl + `submission/${submission.id}/file`
     : null;
 
   const options = {
-    ...(variant.options ?? {}),
+    ...variant.options,
     client_files_question_url: locals.clientFilesQuestionUrl,
     client_files_course_url: locals.clientFilesCourseUrl,
     client_files_question_dynamic_url: locals.clientFilesQuestionGeneratedFileUrl,
@@ -913,6 +934,10 @@ async function renderPanel(
       locals.urlPrefix,
     ),
     submission_files_url: submission ? submissionFilesUrl : null,
+
+    variant_id: variant.id,
+    external_image_capture_url: locals.externalImageCaptureUrl,
+
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,
     ...getContextOptions(context),
@@ -930,7 +955,7 @@ async function renderPanel(
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
-    variant_seed: parseInt(variant.variant_seed ?? '0', 36),
+    variant_seed: Number.parseInt(variant.variant_seed, 36),
     options,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
@@ -951,13 +976,17 @@ async function renderPanel(
     }),
     ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
-    num_valid_submissions: variant.num_tries ?? null,
+    num_valid_submissions: variant.num_tries,
   } satisfies ExecutionData;
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
-    course,
-    data,
-    context,
+    {
+      course,
+      variant,
+      submission,
+      data,
+      context,
+    },
     async () => {
       const { courseIssues, html, renderedElementNames } = await processQuestion(
         'render',
@@ -1021,7 +1050,7 @@ async function renderPanelInstrumented(
 }
 
 export async function render(
-  renderSelection: { question: boolean; answer: boolean; submissions: boolean },
+  renderSelection: RenderSelection,
   variant: Variant,
   question: Question,
   submission: Submission | null,
@@ -1109,27 +1138,27 @@ export async function render(
 
       const extensions = context.course_element_extensions;
       const dependencies = {
-        coreStyles: [],
-        coreScripts: [],
-        nodeModulesStyles: [],
-        nodeModulesScripts: [],
-        coreElementStyles: [],
-        coreElementScripts: [],
-        courseElementStyles: [],
-        courseElementScripts: [],
-        extensionStyles: [],
-        extensionScripts: [],
-        clientFilesCourseStyles: [],
-        clientFilesCourseScripts: [],
-        clientFilesQuestionStyles: [],
-        clientFilesQuestionScripts: [],
+        coreStyles: [] as string[],
+        coreScripts: [] as string[],
+        nodeModulesStyles: [] as string[],
+        nodeModulesScripts: [] as string[],
+        coreElementStyles: [] as string[],
+        coreElementScripts: [] as string[],
+        courseElementStyles: [] as string[],
+        courseElementScripts: [] as string[],
+        extensionStyles: [] as string[],
+        extensionScripts: [] as string[],
+        clientFilesCourseStyles: [] as string[],
+        clientFilesCourseScripts: [] as string[],
+        clientFilesQuestionStyles: [] as string[],
+        clientFilesQuestionScripts: [] as string[],
       };
       const dynamicDependencies = {
-        nodeModulesScripts: {},
-        coreElementScripts: {},
-        courseElementScripts: {},
-        extensionScripts: {},
-        clientFilesCourseScripts: {},
+        nodeModulesScripts: {} as Record<string, string>,
+        coreElementScripts: {} as Record<string, string>,
+        courseElementScripts: {} as Record<string, string>,
+        extensionScripts: {} as Record<string, string>,
+        clientFilesCourseScripts: {} as Record<string, string>,
       };
 
       for (const type in question.dependencies) {
@@ -1414,17 +1443,20 @@ export async function file(
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       filename,
     } satisfies ExecutionData;
 
     const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
-      course,
-      data,
-      context,
+      {
+        course,
+        variant,
+        submission: null, // Files aren't associated with any particular submission.
+        data,
+        context,
+      },
       async () => {
-        // function to compute the file data and return the cachedData
         return withCodeCaller(course, async (codeCaller) => {
           const { courseIssues, fileData } = await processQuestion(
             'file',
@@ -1447,7 +1479,7 @@ export async function file(
 }
 
 export async function parse(
-  submission: Submission,
+  submission: ParseSubmission,
   variant: Variant,
   question: Question,
   course: Course,
@@ -1465,8 +1497,8 @@ export async function parse(
       submitted_answers: submission.submitted_answer ?? {},
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1521,8 +1553,8 @@ export async function grade(
       partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1575,8 +1607,8 @@ export async function test(
       partial_scores: {},
       score: 0,
       feedback: {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: {},
       gradable: true as boolean,
       test_type,
@@ -1651,22 +1683,57 @@ async function getContext(question: Question, course: Course): Promise<QuestionP
 
 async function getCacheKey(
   course: Course,
+  variant: Variant,
+  submission: Submission | null,
   data: ExecutionData,
   context: QuestionProcessingContext,
-) {
+): Promise<string | null> {
   try {
     const commitHash = await getOrUpdateCourseCommitHash(course);
-    const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
-    return `question:${commitHash}-${dataHash}`;
+
+    const dataHash = objectHash(
+      [
+        // We deliberately exclude large user-controlled objects from the cache key.
+        // Whenever these change, the `modified_at` column of `variants` and/or
+        // `submissions` will change, which will cause the cache to be invalidated.
+        _.omit(data, [
+          'params',
+          'correct_answers',
+          'submitted_answers',
+          'format_errors',
+          'partial_scores',
+          'feedback',
+          'raw_submitted_answers',
+        ]),
+        context,
+        variant.modified_at,
+        submission?.modified_at,
+      ],
+      { algorithm: 'sha1', encoding: 'base64' },
+    );
+
+    // The variant and submission IDs are included in the cache key to ensure
+    // that data never leaks between variants or submissions.
+    return `variant:${variant.id}:submission:${submission?.id ?? null}:${commitHash}-${dataHash}:cache`;
   } catch {
     return null;
   }
 }
 
 async function getCachedDataOrCompute(
-  course: Course,
-  data: ExecutionData,
-  context: QuestionProcessingContext,
+  {
+    course,
+    variant,
+    submission,
+    data,
+    context,
+  }: {
+    course: Course;
+    variant: Variant;
+    submission: Submission | null;
+    data: ExecutionData;
+    context: QuestionProcessingContext;
+  },
   computeFcn: () => Promise<any>,
 ) {
   // This function will compute the cachedData and cache it if
@@ -1701,7 +1768,7 @@ async function getCachedDataOrCompute(
   // cacheKey and either return the cachedData for a cache hit,
   // or compute the cachedData for a cache miss
   const getFromCacheOrCompute = async (cacheKey: string) => {
-    let cachedData;
+    let cachedData: unknown;
 
     try {
       cachedData = await cache.get(cacheKey);
@@ -1709,42 +1776,32 @@ async function getCachedDataOrCompute(
       // We don't actually want to fail if the cache has an error; we'll
       // just compute the cachedData as normal
       logger.error('Error in cache.get()', err);
+      Sentry.captureException(err);
     }
 
-    // Previously, there was a bug where we would cache operations
-    // that failed with a course issue. We've since fixed that bug,
-    // but so that we can gracefully deploy the fix alongside code
-    // that may still be incorrectly caching errors, we'll ignore
-    // any result from the cache that has course issues and
-    // unconditionally recompute it.
-    //
-    // TODO: once this has been deployed in production for a while,
-    // we can safely remove this check, as we can guarantee that the
-    // cache will no longer contain any entries with `courseIssues`.
-    const hasCachedCourseIssues = cachedData?.courseIssues?.length > 0;
-    if (cachedData && !hasCachedCourseIssues) {
+    if (cachedData) {
       return {
         data: cachedData,
         cacheHit: true,
       };
-    } else {
-      return doCompute(cacheKey);
     }
+
+    return doCompute(cacheKey);
   };
 
   if (config.devMode) {
     // In dev mode, we should skip caching so that we'll immediately
     // pick up new changes from disk
     return doCompute(null);
+  }
+
+  const cacheKey = await getCacheKey(course, variant, submission, data, context);
+  // If for some reason we failed to get a cache key, don't
+  // actually fail the request, just skip the cache entirely
+  // and compute as usual
+  if (!cacheKey) {
+    return await doCompute(null);
   } else {
-    const cacheKey = await getCacheKey(course, data, context);
-    // If for some reason we failed to get a cache key, don't
-    // actually fail the request, just skip the cache entirely
-    // and compute as usual
-    if (!cacheKey) {
-      return doCompute(null);
-    } else {
-      return getFromCacheOrCompute(cacheKey);
-    }
+    return await getFromCacheOrCompute(cacheKey);
   }
 }

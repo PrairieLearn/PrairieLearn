@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { TopicSchema } from '../../lib/db-types.js';
 import type { CommentJson } from '../../schemas/comment.js';
@@ -59,10 +59,10 @@ export async function sync(courseId: string, courseData: CourseData) {
     deleteUnused,
   });
 
-  if (topicsToCreate.length || topicsToUpdate.length || topicsToDelete.length) {
+  if (topicsToCreate.length > 0 || topicsToUpdate.length > 0 || topicsToDelete.length > 0) {
     await runInTransactionAsync(async () => {
       if (topicsToCreate.length > 0) {
-        await queryAsync(sql.insert_topics, {
+        await execute(sql.insert_topics, {
           course_id: courseId,
           topics: topicsToCreate.map((t) =>
             JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
@@ -71,7 +71,7 @@ export async function sync(courseId: string, courseData: CourseData) {
       }
 
       if (topicsToUpdate.length > 0) {
-        await queryAsync(sql.update_topics, {
+        await execute(sql.update_topics, {
           course_id: courseId,
           topics: topicsToUpdate.map((t) =>
             JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
@@ -80,7 +80,7 @@ export async function sync(courseId: string, courseData: CourseData) {
       }
 
       if (topicsToDelete.length > 0) {
-        await queryAsync(sql.delete_topics, { course_id: courseId, topics: topicsToDelete });
+        await execute(sql.delete_topics, { course_id: courseId, topics: topicsToDelete });
       }
     });
   }

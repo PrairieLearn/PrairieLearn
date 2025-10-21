@@ -738,6 +738,9 @@ def _get_min_options_to_select(element: lxml.html.HtmlElement, default_val: int)
         3. default_val otherwise.
 
     Note: this function should only be called from within this file.
+
+    Returns:
+        The minimum number of options that must be selected in the checkbox element for a submission to be valid
     """
     detailed_help_text = pl.get_boolean_attrib(
         element, "detailed-help-text", DETAILED_HELP_TEXT_DEFAULT
@@ -766,6 +769,9 @@ def _get_max_options_to_select(element: lxml.html.HtmlElement, default_val: int)
         3. default_val otherwise.
 
     Note: this function should only be called from within this file.
+
+    Returns:
+        The maximum number of options that can be selected in the checkbox element for a submission to be valid
     """
     detailed_help_text = pl.get_boolean_attrib(
         element, "detailed-help-text", DETAILED_HELP_TEXT_DEFAULT

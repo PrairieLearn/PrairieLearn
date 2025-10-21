@@ -1,6 +1,4 @@
-import csvtojson from 'csvtojson';
 import isPlainObject from 'is-plain-obj';
-import _ from 'lodash';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
@@ -9,6 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
+import { createCsvParser } from './csv.js';
 import { IdSchema } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
@@ -53,7 +52,7 @@ export async function uploadInstanceQuestionScores(
 
     // accumulate output lines in the "output" variable and actually
     // output put them in blocks, to avoid spamming the updates
-    let output: string | null = null;
+    let output = null as string | null;
     let outputCount = 0;
     let outputThreshold = 100;
 
@@ -62,34 +61,27 @@ export async function uploadInstanceQuestionScores(
     let skippedCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvStream = streamifier.createReadStream(csvFile.buffer, {
-      encoding: 'utf8',
-    });
-    const csvConverter = csvtojson({
-      colParser: {
-        instance: 'number',
-        score_perc: 'number',
-        points: 'number',
-        manual_score_perc: 'number',
-        manual_points: 'number',
-        auto_score_perc: 'number',
-        auto_points: 'number',
-        submission_id: 'number',
+    const csvParser = createCsvParser(
+      streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }),
+      {
+        integerColumns: ['instance'],
+        floatColumns: [
+          'score_perc',
+          'points',
+          'manual_score_perc',
+          'manual_points',
+          'auto_score_perc',
+          'auto_points',
+        ],
       },
-      maxRowLength: 10000,
-    });
+    );
 
     try {
-      await csvConverter.fromStream(csvStream).subscribe(async (json, number) => {
-        // Replace all keys with their lower-case values
-        json = _.mapKeys(json, (_v, k) => k.toLowerCase());
+      for await (const { info, record } of csvParser) {
         try {
-          if (await updateInstanceQuestionFromJson(json, assessment_id, authn_user_id)) {
+          if (await updateInstanceQuestionFromCsvRow(record, assessment_id, authn_user_id)) {
             successCount++;
-            // The number refers to a zero-based index of the data entries.
-            // Adding 1 to use 1-based (as is used in Excel et al), and 1 to
-            // account for the header.
-            const msg = `Processed CSV line ${number + 2}: ${JSON.stringify(json)}`;
+            const msg = `Processed CSV line ${info.lines}: ${JSON.stringify(record)}`;
             if (output == null) {
               output = msg;
             } else {
@@ -101,7 +93,7 @@ export async function uploadInstanceQuestionScores(
           }
         } catch (err) {
           errorCount++;
-          const msg = `Error processing CSV line ${number + 2}: ${JSON.stringify(json)}\n${err}`;
+          const msg = `Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`;
           if (output == null) {
             output = msg;
           } else {
@@ -115,7 +107,7 @@ export async function uploadInstanceQuestionScores(
           outputCount = 0;
           outputThreshold *= 2; // exponential backoff
         }
-      });
+      }
     } finally {
       // Log output even in the case of failure.
       if (output != null) {
@@ -174,7 +166,7 @@ export async function uploadAssessmentInstanceScores(
 
     // accumulate output lines in the "output" variable and actually
     // output put them in blocks, to avoid spamming the updates
-    let output: string | null = null;
+    let output = null as string | null;
     let outputCount = 0;
     let outputThreshold = 100;
 
@@ -182,41 +174,26 @@ export async function uploadAssessmentInstanceScores(
     let errorCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvStream = streamifier.createReadStream(csvFile.buffer, {
-      encoding: 'utf8',
-    });
-    const csvConverter = csvtojson({
-      colParser: {
-        instance: 'number',
-        score_perc: 'number',
-        points: 'number',
-      },
-      maxRowLength: 1000,
-    });
+    const csvParser = createCsvParser(
+      streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }),
+      { integerColumns: ['instance'], floatColumns: ['score_perc', 'points'] },
+    );
 
     try {
-      await csvConverter.fromStream(csvStream).subscribe(async (json, number) => {
-        // Replace all keys with their lower-case values
-        json = _.mapKeys(json, (v, k) => {
-          return k.toLowerCase();
-        });
-        const msg = `Processing CSV line ${number + 2}: ${JSON.stringify(json)}`;
+      for await (const { info, record } of csvParser) {
+        const msg = `Processing CSV line ${info.lines}: ${JSON.stringify(record)}`;
         if (output == null) {
           output = msg;
         } else {
           output += '\n' + msg;
         }
         try {
-          await updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id);
+          await updateAssessmentInstanceFromCsvRow(record, assessment_id, authn_user_id);
           successCount++;
         } catch (err) {
           errorCount++;
           const msg = String(err);
-          if (output == null) {
-            output = msg;
-          } else {
-            output += '\n' + msg;
-          }
+          output += '\n' + msg;
         }
         outputCount++;
         if (outputCount >= outputThreshold) {
@@ -225,7 +202,7 @@ export async function uploadAssessmentInstanceScores(
           outputCount = 0;
           outputThreshold *= 2; // exponential backoff
         }
-      });
+      }
     } finally {
       // Log output even in the case of failure.
       if (output != null) {
@@ -246,91 +223,77 @@ export async function uploadAssessmentInstanceScores(
   return serverJob.jobSequenceId;
 }
 
-// missing values and empty strings get mapped to null
-function getJsonPropertyOrNull(json: Record<string, any>, key: string): any {
-  const value = json[key] ?? null;
-  if (value === '') return null;
-  return value;
-}
-
-// missing values and empty strings get mapped to null
-function getNumericJsonPropertyOrNull(json: Record<string, any>, key: string): number | null {
-  const value = getJsonPropertyOrNull(json, key);
-  if (value != null && (typeof value !== 'number' || isNaN(value))) {
+function validateNumericColumn(record: Record<string, any>, key: string): number | null {
+  const value = record[key];
+  if (value != null && (typeof value !== 'number' || Number.isNaN(value))) {
     throw new Error(`Value of ${key} is not a numeric value`);
   }
   return value;
 }
 
-// "feedback" gets mapped to {manual: "XXX"} and overrides the contents of "feedback_json"
-function getFeedbackOrNull(json: Record<string, any>): Record<string, any> | null {
-  const feedback_string = getJsonPropertyOrNull(json, 'feedback');
-  const feedback_json = getJsonPropertyOrNull(json, 'feedback_json');
+/** "feedback" gets mapped to {manual: "XXX"} and overrides the contents of "feedback_json" */
+function getFeedbackOrNull(record: Record<string, any>): Record<string, any> | null {
   let feedback: Record<string, any> | null = null;
-  if (feedback_string != null) {
-    feedback = { manual: feedback_string };
+  if (record.feedback != null) {
+    feedback = { manual: record.feedback };
   }
-  if (feedback_json != null) {
+  if (record.feedback_json != null) {
     let feedback_obj: Record<string, any> | null = null;
     try {
-      feedback_obj = JSON.parse(feedback_json);
+      feedback_obj = JSON.parse(record.feedback_json);
     } catch (e) {
       throw new Error(`Unable to parse "feedback_json" field as JSON: ${e}`);
     }
     if (feedback_obj == null || !isPlainObject(feedback_obj)) {
-      throw new Error(`Parsed "feedback_json" is not a JSON object: ${feedback_json}`);
+      throw new Error(`Parsed "feedback_json" is not a JSON object: ${record.feedback_json}`);
     }
     feedback = feedback_obj;
-    if (feedback_string != null) {
-      feedback.manual = feedback_string;
+    if (record.feedback != null) {
+      feedback.manual = record.feedback;
     }
   }
   return feedback;
 }
 
-function getPartialScoresOrNull(json: Record<string, any>): Record<string, any> | null {
-  const partial_scores_json = getJsonPropertyOrNull(json, 'partial_scores');
+function getPartialScoresOrNull(record: Record<string, any>): Record<string, any> | null {
   let partial_scores: Record<string, any> | null = null;
-  if (partial_scores_json != null) {
+  if (record.partial_scores != null) {
     try {
-      partial_scores = JSON.parse(partial_scores_json);
+      partial_scores = JSON.parse(record.partial_scores);
     } catch (e) {
       throw new Error(`Unable to parse "partial_scores" field as JSON: ${e}`);
     }
     if (partial_scores != null && !isPlainObject(partial_scores)) {
-      throw new Error(`Parsed "partial_scores" is not a JSON object: ${partial_scores_json}`);
+      throw new Error(`Parsed "partial_scores" is not a JSON object: ${record.partial_scores}`);
     }
   }
   return partial_scores;
 }
 
-/** Update the score of an instance question based on a single row from the CSV file.
+/**
+ * Update the score of an instance question based on a single row from the CSV file.
  *
- * @param json Data from the CSV row.
+ * @param record Data from the CSV row.
  * @param assessment_id ID of the assessment being updated.
  * @param authn_user_id User ID currently authenticated.
  * @returns True if the record included an update, or false if the record included no scores or feedback to be changed.
  */
-async function updateInstanceQuestionFromJson(
-  json: Record<string, any>,
+async function updateInstanceQuestionFromCsvRow(
+  record: Record<string, any>,
   assessment_id: string,
   authn_user_id: string,
 ): Promise<boolean> {
-  const submission_id = getJsonPropertyOrNull(json, 'submission_id');
-  const uid_or_group =
-    getJsonPropertyOrNull(json, 'group_name') ?? getJsonPropertyOrNull(json, 'uid');
-  const ai_number = getJsonPropertyOrNull(json, 'instance');
-  const qid = getJsonPropertyOrNull(json, 'qid');
+  const uid_or_group = record.group_name ?? record.uid;
 
   return await sqldb.runInTransactionAsync(async () => {
     const submission_data = await sqldb.queryOptionalRow(
       sql.select_submission_to_update,
       {
         assessment_id,
-        submission_id,
+        submission_id: record.submission_id,
         uid_or_group,
-        ai_number,
-        qid,
+        ai_number: record.instance,
+        qid: record.qid,
       },
       z.object({
         submission_id: IdSchema.nullable(),
@@ -342,34 +305,36 @@ async function updateInstanceQuestionFromJson(
 
     if (submission_data == null) {
       throw new Error(
-        `Could not locate submission with id=${submission_id}, instance=${ai_number}, uid/group=${uid_or_group}, qid=${qid} for this assessment.`,
+        `Could not locate submission with id=${record.submission_id}, instance=${record.instance}, uid/group=${uid_or_group}, qid=${record.qid} for this assessment.`,
       );
     }
     if (uid_or_group !== null && submission_data.uid_or_group !== uid_or_group) {
       throw new Error(
-        `Found submission with id=${submission_id}, but uid/group does not match ${uid_or_group}.`,
+        `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_group}.`,
       );
     }
-    if (qid !== null && submission_data.qid !== qid) {
-      throw new Error(`Found submission with id=${submission_id}, but QID does not match ${qid}.`);
+    if (record.qid !== null && submission_data.qid !== record.qid) {
+      throw new Error(
+        `Found submission with id=${record.submission_id}, but QID does not match ${record.qid}.`,
+      );
     }
 
     const new_score = {
-      score_perc: getNumericJsonPropertyOrNull(json, 'score_perc'),
-      points: getNumericJsonPropertyOrNull(json, 'points'),
-      manual_score_perc: getNumericJsonPropertyOrNull(json, 'manual_score_perc'),
-      manual_points: getNumericJsonPropertyOrNull(json, 'manual_points'),
-      auto_score_perc: getNumericJsonPropertyOrNull(json, 'auto_score_perc'),
-      auto_points: getNumericJsonPropertyOrNull(json, 'auto_points'),
-      feedback: getFeedbackOrNull(json),
-      partial_scores: getPartialScoresOrNull(json),
+      score_perc: validateNumericColumn(record, 'score_perc'),
+      points: validateNumericColumn(record, 'points'),
+      manual_score_perc: validateNumericColumn(record, 'manual_score_perc'),
+      manual_points: validateNumericColumn(record, 'manual_points'),
+      auto_score_perc: validateNumericColumn(record, 'auto_score_perc'),
+      auto_points: validateNumericColumn(record, 'auto_points'),
+      feedback: getFeedbackOrNull(record),
+      partial_scores: getPartialScoresOrNull(record),
     };
     if (Object.values(new_score).some((value) => value != null)) {
       await manualGrading.updateInstanceQuestionScore(
         assessment_id,
         submission_data.instance_question_id,
         submission_data.submission_id,
-        null, // modified_at
+        null, // check_modified_at
         new_score,
         authn_user_id,
       );
@@ -380,29 +345,29 @@ async function updateInstanceQuestionFromJson(
   });
 }
 
-async function getAssessmentInstanceId(json: Record<string, any>, assessment_id: string) {
-  if ('uid' in json) {
+async function getAssessmentInstanceId(record: Record<string, any>, assessment_id: string) {
+  if (record.uid != null) {
     return {
-      id: json.uid,
+      id: record.uid,
       assessment_instance_id: await sqldb.queryOptionalRow(
         sql.select_assessment_instance_uid,
         {
           assessment_id,
-          uid: json.uid,
-          instance_number: json.instance,
+          uid: record.uid,
+          instance_number: record.instance,
         },
         IdSchema,
       ),
     };
-  } else if ('group_name' in json) {
+  } else if (record.group_name != null) {
     return {
-      id: json.group_name,
+      id: record.group_name,
       assessment_instance_id: await sqldb.queryOptionalRow(
         sql.select_assessment_instance_group,
         {
           assessment_id,
-          group_name: json.group_name,
-          instance_number: json.instance,
+          group_name: record.group_name,
+          instance_number: record.instance,
         },
         IdSchema,
       ),
@@ -412,23 +377,26 @@ async function getAssessmentInstanceId(json: Record<string, any>, assessment_id:
   }
 }
 
-async function updateAssessmentInstanceFromJson(
-  json: Record<string, any>,
+async function updateAssessmentInstanceFromCsvRow(
+  record: Record<string, any>,
   assessment_id: string,
   authn_user_id: string,
 ) {
-  if (!('instance' in json)) throw new Error('"instance" not found');
+  // Error if instance is either not a column or is blank
+  if (record.instance == null) throw new Error('"instance" not found');
   await sqldb.runInTransactionAsync(async () => {
-    const { id, assessment_instance_id } = await getAssessmentInstanceId(json, assessment_id);
+    const { id, assessment_instance_id } = await getAssessmentInstanceId(record, assessment_id);
 
     if (assessment_instance_id == null) {
-      throw new Error(`unable to locate instance ${json.instance} for ${id}`);
+      throw new Error(`unable to locate instance ${record.instance} for ${id}`);
     }
 
-    if ('score_perc' in json) {
-      await updateAssessmentInstanceScore(assessment_instance_id, json.score_perc, authn_user_id);
-    } else if ('points' in json) {
-      await updateAssessmentInstancePoints(assessment_instance_id, json.points, authn_user_id);
+    const scorePerc = validateNumericColumn(record, 'score_perc');
+    const points = validateNumericColumn(record, 'points');
+    if (scorePerc != null) {
+      await updateAssessmentInstanceScore(assessment_instance_id, scorePerc, authn_user_id);
+    } else if (points != null) {
+      await updateAssessmentInstancePoints(assessment_instance_id, points, authn_user_id);
     } else {
       throw new Error('must specify either "score_perc" or "points"');
     }

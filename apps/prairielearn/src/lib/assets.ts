@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
@@ -5,10 +6,10 @@ import * as path from 'node:path';
 
 import express, { Router } from 'express';
 import { type HashElementNode, hashElement } from 'folder-hash';
-import { v4 as uuid } from 'uuid';
 
 import * as compiledAssets from '@prairielearn/compiled-assets';
 import { type HtmlSafeString } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import staticNodeModules from '../middlewares/staticNodeModules.js';
 import elementFiles from '../pages/elementFiles/elementFiles.js';
@@ -57,7 +58,7 @@ function getHashForPath(hashes: HashElementNode, assetPath: string): string {
  */
 function getPackageNameForAssetPath(assetPath: string): string {
   const [maybeScope, maybeModule] = assetPath.split('/');
-  if (maybeScope.indexOf('@') === 0) {
+  if (maybeScope.startsWith('@')) {
     // This is a scoped module
     return `${maybeScope}/${maybeModule}`;
   } else {
@@ -84,17 +85,37 @@ function getPackageVersion(packageName: string): string {
 
     // Get the resolved path to the package entrypoint, which will look something
     // like `/absolute/path/to/node_modules/package-name/index.js`.
-    const pkgPath = require.resolve(packageName);
+    const pkgJsonPath = run(() => {
+      try {
+        const pkgPath = require.resolve(packageName);
 
-    // Strip off everything after the last `/node_modules/`, then append the
-    // package name.
-    const nodeModulesToken = '/node_modules/';
-    const lastNodeModulesIndex = pkgPath.lastIndexOf(nodeModulesToken);
-    const pkgJsonPath = path.resolve(
-      pkgPath.slice(0, lastNodeModulesIndex + nodeModulesToken.length),
-      packageName,
-      'package.json',
-    );
+        // Strip off everything after the last `/node_modules/`, then append the
+        // package name.
+        const nodeModulesToken = '/node_modules/';
+        const lastNodeModulesIndex = pkgPath.lastIndexOf(nodeModulesToken);
+        return path.resolve(
+          pkgPath.slice(0, lastNodeModulesIndex + nodeModulesToken.length),
+          packageName,
+          'package.json',
+        );
+      } catch (err) {
+        // Some packages (namely `cropperjs`) have invalid `package.json` files
+        // that refer to non-existent files. In this case, we can still try to
+        // recover from things by using the path that couldn't be resolved.
+        //
+        // In this case, `err.path` should point to the root of the package.
+        if (err.code === 'MODULE_NOT_FOUND' && err.path) {
+          // Check if the path is a directory
+          if (fs.lstatSync(err.path).isDirectory()) {
+            return path.resolve(err.path, 'package.json');
+          } else {
+            return path.resolve(path.dirname(err.path), 'package.json');
+          }
+        }
+
+        throw err;
+      }
+    });
 
     const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
     return pkgJson.version;
@@ -113,7 +134,7 @@ function getNodeModulesAssetHash(assetPath: string): string {
     // a repeatable hash that would cause the browser to cache the asset. This
     // is because we want to be able to change them without changing the package
     // version number.
-    return uuid();
+    return crypto.randomUUID();
   }
 
   // Reading files synchronously and computing cryptographic hashes are both
@@ -218,7 +239,8 @@ export function applyMiddleware(app: express.Application) {
  */
 export function assetPath(assetPath: string): string {
   const assetsPrefix = assertAssetsPrefix();
-  const hash = getHashForPath(publicHash as HashElementNode, assetPath);
+  assert(publicHash !== null);
+  const hash = getHashForPath(publicHash, assetPath);
   return `${assetsPrefix}/public/${hash}/${assetPath}`;
 }
 
@@ -241,7 +263,8 @@ export function nodeModulesAssetPath(assetPath: string): string {
  */
 export function coreElementAssetPath(assetPath: string): string {
   const assetsPrefix = assertAssetsPrefix();
-  const hash = getHashForPath(elementsHash as HashElementNode, assetPath);
+  assert(elementsHash !== null);
+  const hash = getHashForPath(elementsHash, assetPath);
   return `${assetsPrefix}/elements/${hash}/${assetPath}`;
 }
 

@@ -21,6 +21,7 @@ export function stringifyNonblocking(
 
   process.nextTick(function () {
     let j = 0;
+
     function loop() {
       for (let i = 0; i < batchSize; i++) {
         if (j < data.length) {
@@ -39,8 +40,7 @@ export function stringifyNonblocking(
   return stringifier;
 }
 
-interface StringifyOptions<T = any, U = any>
-  extends Pick<StringifierOptions, 'columns' | 'header'> {
+interface StringifyOptions<T, U = any> extends Pick<StringifierOptions, 'columns' | 'header'> {
   transform?: TransformHandler<T, U>;
 }
 
@@ -53,7 +53,7 @@ interface StringifyOptions<T = any, U = any>
  * Works best when combined with the `pipeline` function from
  * `node:stream/promises`, which will help ensure that errors are handled properly.
  */
-export function stringifyStream<T = any, U = any>(
+export function stringifyStream<T, U = any>(
   options: StringifyOptions<T, U> = {},
 ): NodeJS.ReadWriteStream {
   const { transform: _transform, ...stringifierOptions } = options;

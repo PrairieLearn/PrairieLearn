@@ -1,14 +1,15 @@
+import assert from 'node:assert';
+
 import type { Namespace, Socket } from 'socket.io';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
-import { checkSignedToken } from '@prairielearn/signed-token';
 
 import { gradingJobStatus } from '../models/grading-job.js';
 
-import { config } from './config.js';
+import { checkVariantToken } from './checkVariantToken.js';
 import { GradingJobSchema, IdSchema } from './db-types.js';
 import type { StatusMessage } from './externalGradingSocket.types.js';
 import * as socketServer from './socket-server.js';
@@ -28,8 +29,9 @@ const SubmissionForGradingJobSchema = z.object({
 
 let namespace: Namespace;
 
-// This module MUST be initialized after socket-server
+/** This module MUST be initialized after socket-server */
 export function init() {
+  assert(socketServer.io);
   namespace = socketServer.io.of('/external-grading');
   namespace.on('connection', connection);
 }
@@ -39,11 +41,11 @@ export function connection(socket: Socket) {
     if (!ensureProps(msg, ['variant_id', 'variant_token'])) {
       return callback(null);
     }
-    if (!checkToken(msg.variant_token, msg.variant_id)) {
+    if (!checkVariantToken(msg.variant_token, msg.variant_id)) {
       return callback(null);
     }
 
-    socket.join(`variant-${msg.variant_id}`);
+    void socket.join(`variant-${msg.variant_id}`);
 
     getVariantSubmissionsStatus(msg.variant_id).then(
       (submissions) => {
@@ -85,7 +87,7 @@ export async function gradingJobStatusUpdated(grading_job_id: string) {
       submissions: [
         {
           id: submission.id,
-          grading_job_id: submission.grading_job?.id,
+          grading_job_id: submission.grading_job.id,
           grading_job_status: gradingJobStatus(submission.grading_job),
         },
       ],
@@ -108,14 +110,4 @@ function ensureProps(data: Record<string, any>, props: string[]): boolean {
     }
   }
   return true;
-}
-
-function checkToken(token: string, variantId: string): boolean {
-  const data = { variantId };
-  const valid = checkSignedToken(token, data, config.secretKey, { maxAge: 24 * 60 * 60 * 1000 });
-  if (!valid) {
-    logger.error(`Token for variant ${variantId} failed validation.`);
-    Sentry.captureException(new Error(`Token for variant ${variantId} failed validation.`));
-  }
-  return valid;
 }

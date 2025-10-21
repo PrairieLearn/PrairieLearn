@@ -89,7 +89,7 @@ FROM
       grading_jobs
     WHERE
       submission_id = s.id
-      AND grading_method != 'Manual'
+      AND grading_method NOT IN ('Manual', 'AI')
     ORDER BY
       date DESC,
       id DESC
@@ -156,6 +156,7 @@ WITH
       grading_jobs AS gj
     WHERE
       gj.submission_id = $unsafe_submission_id
+      -- TODO: exclude AI grading jobs here too?
       AND grading_method != 'Manual'
     ORDER BY
       gj.date DESC,
@@ -227,8 +228,8 @@ WHERE
   s.id = $unsafe_submission_id
   AND q.id = $question_id
   AND (
-    $instance_question_id::BIGINT IS NULL
-    OR iq.id = $instance_question_id::BIGINT
+    $instance_question_id::bigint IS NULL
+    OR iq.id = $instance_question_id::bigint
   )
   AND v.id = $variant_id;
 

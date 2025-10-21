@@ -1,24 +1,24 @@
 import * as crypto from 'crypto';
 import { URL } from 'url';
-import { callbackify } from 'util';
 
-import { type NextFunction, type Request, type Response, Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { Issuer, Strategy, type TokenSet } from 'openid-client';
-import * as passport from 'passport';
+import * as client from 'openid-client';
 import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
-import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { HttpStatusError } from '@prairielearn/error';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import * as authnLib from '../../../lib/authn.js';
 import { setCookie } from '../../../lib/cookie.js';
+import type { Lti13Instance } from '../../../lib/db-types.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { getCanonicalHost } from '../../../lib/url.js';
-import { selectOptionalUserByUin } from '../../../models/user.js';
-import { Lti13Claim, Lti13ClaimSchema } from '../../lib/lti13.js';
-import { updateLti13UserSub } from '../../models/lti13-user.js';
+import { selectOptionalUserByUin, updateUserUid } from '../../../models/user.js';
+import { Lti13Claim, Lti13ClaimSchema, getOpenidClientConfig } from '../../lib/lti13.js';
+import { selectOptionalUserByLti13Sub, updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
 import { Lti13AuthIframe, Lti13AuthRequired, Lti13Test } from './lti13Auth.html.js';
@@ -28,17 +28,172 @@ const router = Router({ mergeParams: true });
 
 const STATE_TEST = '-StateTest';
 
-// https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
-// Can be POST or GET
+function getClaimUserAttributes({
+  claim,
+  lti13_instance,
+}: {
+  claim: Lti13Claim;
+  lti13_instance: Lti13Instance;
+}) {
+  let uin: string | null = null;
+  let uid: string | null = null;
+  let name: string | null = null;
+  let email: string | null = null;
+
+  if (lti13_instance.uin_attribute) {
+    // Here and below, we use `lodash.get` to expand path representation in text to the object, like 'a[0].b.c'
+    // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
+    uin = claim.get(lti13_instance.uin_attribute);
+  }
+
+  if (lti13_instance.uid_attribute) {
+    // Reasonable default is "email"
+    // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
+    uid = claim.get(lti13_instance.uid_attribute);
+  }
+
+  if (lti13_instance.name_attribute) {
+    // Reasonable default is "name"
+    // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
+    name = claim.get(lti13_instance.name_attribute);
+  }
+
+  if (lti13_instance.email_attribute) {
+    // Reasonable default is "email"
+    // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
+    email = claim.get(lti13_instance.email_attribute);
+  }
+
+  return { uin, uid, name, email };
+}
+
+const OIDCLaunchFlowSchema = z.object({
+  iss: z.string(),
+  login_hint: z.string(),
+  lti_message_hint: z.string().optional(),
+  lti_deployment_id: z.string().optional(),
+  client_id: z.string().optional(),
+  target_link_uri: z.string(),
+  // also has canvas_environment, canvas_region, lti_storage_target
+});
+
 router.get('/login', asyncHandler(launchFlow));
 router.post('/login', asyncHandler(launchFlow));
+
+async function launchFlow(req: Request, res: Response) {
+  // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
+  // Can be POST or GET
+
+  const parameters = OIDCLaunchFlowSchema.passthrough().parse({ ...req.body, ...req.query });
+
+  // If the authentication request is coming from an iframe, intercept the parameters
+  // and offer a small form to open in a new window.
+  // SECURITY NOTE: We intentionally remove security headers CSP and X-Frame-Options
+  // only for this specific response to allow iframe embedding during LTI 1.3 auth to
+  // offer a redirect/POST in a new window.
+  // This is a controlled exception to our security policy for LTI compatibility.
+  if (req.headers['sec-fetch-dest'] === 'iframe') {
+    res.removeHeader('content-security-policy');
+    res.removeHeader('x-frame-options');
+    res.end(Lti13AuthIframe({ parameters }));
+    return;
+  }
+
+  const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
+
+  const openidClientConfig = await getOpenidClientConfig(lti13_instance);
+
+  // Generate our own OIDC state, use it to toggle if testing is happening
+  let state = crypto.randomBytes(28).toString('hex');
+  if ('test' in parameters) {
+    state = state.concat(STATE_TEST);
+  }
+  const nonce = client.randomNonce();
+
+  // Save for later
+  req.session.lti13_state = {
+    state,
+    nonce,
+  };
+
+  // https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request
+  const requestParameters = {
+    scope: 'openid',
+    response_type: 'id_token',
+    client_id: lti13_instance.client_params.client_id,
+    redirect_uri: lti13_instance.client_params.redirect_uris[0],
+    login_hint: parameters.login_hint,
+    state,
+    response_mode: 'form_post',
+    nonce,
+    prompt: 'none',
+  };
+
+  // If these parameters were offered, they must be included back:
+  // https://www.imsglobal.org/spec/lti/v1p3#additional-login-parameters
+  for (const key of ['lti_message_hint', 'lti_deployment_id']) {
+    if (key in parameters) {
+      requestParameters[key] = parameters[key];
+    }
+  }
+
+  const redirectTo = client.buildAuthorizationUrl(openidClientConfig, requestParameters);
+  res.redirect(redirectTo.href);
+}
+
+const OIDCAuthResponseSchema = z.object({
+  state: z.string(),
+  id_token: z.string(),
+  // also has utf8, authenticity_token, lti_storage_target
+});
 
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
+    // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
+    const authResponse = OIDCAuthResponseSchema.parse(req.body);
+
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
-    const lti13_claims = await authenticate(req, res);
+    const openidClientConfig = await getOpenidClientConfig(lti13_instance);
+
+    // Needed for implicit flow
+    client.useIdTokenResponseType(openidClientConfig);
+
+    // URL href doesn't matter, openid-client only uses the url.hash to pass properties
+    // into client.implicitAuthentication
+    const url = new URL('https://example.com/');
+    url.hash = new URLSearchParams({
+      state: authResponse.state,
+      id_token: authResponse.id_token,
+    }).toString();
+
+    const lti13_claims = Lti13ClaimSchema.parse(
+      await client.implicitAuthentication(openidClientConfig, url, req.session.lti13_state.nonce, {
+        expectedState: req.session.lti13_state.state,
+      }),
+    );
+
+    // Check nonce to protect against reuse
+    const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims.nonce}`;
+    const cacheResult = await cache.get(nonceKey);
+    if (cacheResult) {
+      throw new HttpStatusError(500, 'Cannot reuse LTI 1.3 nonce, try login again');
+    }
+    cache.set(nonceKey, true, 60 * 60 * 1000); // 60 minutes
+    // Canvas OIDC logins expire after 3600 seconds
+
+    // Remove auth state from session
+    delete req.session.lti13_state;
+
+    // Save parameters about the platform back to the lti13_instance
+    // https://www.imsglobal.org/spec/lti/v1p3#platform-instance-claim
+    await execute(sql.verify_upsert, {
+      lti13_instance_id: req.params.lti13_instance_id,
+      tool_platform_name:
+        lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform']?.name ?? null,
+    });
+
     // If we get here, auth succeeded and lti13_claims is populated
 
     // Put the LTI 1.3 claims in the session
@@ -49,60 +204,94 @@ router.post(
 
     const inStateTest = req.body.state.endsWith(STATE_TEST);
 
-    // UIN checking, if attribute defined value must be present
-    let uin: string | null = null;
-    if (lti13_instance.uin_attribute) {
-      // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
-      // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
-      uin = ltiClaim.get(lti13_instance.uin_attribute);
+    if (inStateTest) {
+      res.end(
+        Lti13Test({
+          lti13_claims,
+          resLocals: res.locals,
+          userInfo: getClaimUserAttributes({ lti13_instance, claim: ltiClaim }),
+          lti13_instance,
+          url: new URL(`/pl/lti13_instance/${lti13_instance.id}/auth/login`, getCanonicalHost(req)),
+        }),
+      );
+      return;
     }
 
-    // UID checking
-    let uid: string;
-    if (lti13_instance.uid_attribute) {
-      // Reasonable default is "email"
-      // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-      uid = ltiClaim.get(lti13_instance.uid_attribute);
-      if (!uid && !inStateTest) {
-        // Canvas Student View does not include a uid but has a deterministic role, nicer error message
-        if (ltiClaim.isRoleTestUser()) {
-          throw new HttpStatusError(
-            403,
-            'Student View / Test user not supported. Use access modes within PrairieLearn to view as a student.',
-          );
-        } else {
-          // Error about missing UID
+    const { uin, uid, name, email } = getClaimUserAttributes({ lti13_instance, claim: ltiClaim });
+
+    const resolvedUid = await run(async () => {
+      if (lti13_instance.uid_attribute) {
+        if (!uid) {
+          // Canvas Student View does not include a uid but has a deterministic role, nicer error message
+          if (ltiClaim.isRoleTestUser()) {
+            throw new HttpStatusError(
+              403,
+              'Student View / Test user not supported. Use access modes within PrairieLearn to view as a student.',
+            );
+          } else {
+            // Error about missing UID
+            throw new HttpStatusError(
+              500,
+              `Missing UID data from LTI 1.3 login (claim ${lti13_instance.uid_attribute} missing or empty)`,
+            );
+          }
+        }
+
+        // If the `uid_attribute` is present, we must have a claim for it by this point.
+        //
+        // It's possible that the UID for a user may have changed, but we may or may not
+        // have a UIN attribute here. To account for a missing UIN, we'll try to find an
+        // existing user by their `sub` claim. If we do, and the UIDs don't match, we'll
+        // update the UID for that existing user.
+        //
+        // This is trusting that `sub` is immutable for a given user, which the LTI spec
+        // requires. Note that `sub` is scoped to an LTI 1.3 instance.
+        const user = await selectOptionalUserByLti13Sub({
+          lti13_instance_id: lti13_instance.id,
+          sub: ltiClaim.get('sub'),
+        });
+
+        if (user && user.uid !== uid) {
+          await updateUserUid({ user_id: user.user_id, uid });
+        }
+
+        // We still have a valid UID; pass it back.
+        return uid;
+      } else if (lti13_instance.uin_attribute) {
+        if (!uin) {
+          // Error about missing UIN
           throw new HttpStatusError(
             500,
-            `Missing UID data from LTI 1.3 login (claim ${lti13_instance.uid_attribute} missing or empty)`,
+            `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
           );
         }
-      }
-    } else if (!uin) {
-      // If we have neither a UIN or a UID, we're in a weird state and something
-      // is almost certainly misconfigured. We'll just bail.
-      throw new HttpStatusError(500, 'Missing both UID and UIN data from LTI 1.3 login');
-    } else {
-      // If there's no configured `uid_attribute`, we can't use the LTI 1.3
-      // auth flow to create a user. Instead, there are two things that can happen:
-      //
-      // - The user could have already authenticated before via SAML or another
-      //   auth provider. In this case, we'll look them up by UIN/institution_id.
-      //   If we find them, we use that UID and proceed as normal.
-      // - The user has never authed via another auth provider. We'll have to
-      //   force them through another auth provider. We'll shove their UIN and
-      //   LTI 1.3 `sub` into the session so that, after they've authed, we can
-      //   check that the UINs match, create the user, and then add the LTI 1.3
-      //   `sub` to the user.
 
-      const user = await selectOptionalUserByUin({
-        uin,
-        institution_id: lti13_instance.institution_id,
-      });
+        // If the `uin_attribute` is present, we must have a claim for it by this point.
+        //
+        // Without a UIN, we can't use the LTI 1.3 auth flow to create a user directly.
+        // Instead, there are two things that can happen:
+        //
+        // - The user could have already authenticated before via SAML or another
+        //   auth provider. In this case, we'll look them up by UIN/institution_id.
+        //   If we find them, we use that UID and proceed as normal.
+        // - The user has never authed via another auth provider. We'll have to
+        //   force them through another auth provider. We'll shove their UIN and
+        //   LTI 1.3 `sub` into the session so that, after they've authed, we can
+        //   check that the UINs match, create the user, and then add the LTI 1.3
+        //   `sub` to the user.
 
-      if (user) {
-        uid = user.uid;
-      } else {
+        const user = await selectOptionalUserByUin({
+          uin,
+          institution_id: lti13_instance.institution_id,
+        });
+
+        if (user) return user.uid;
+
+        // We couldn't locate the user by their UIN, so they're a new user.
+        //
+        // We'll force them through the normal auth flow to pick up a UID and
+        // associate the user account with this information.
+
         // Remember the user's details for after auth.
         req.session.lti13_pending_uin = uin;
         req.session.lti13_pending_sub = ltiClaim.get('sub');
@@ -114,70 +303,32 @@ router.post(
         }
 
         throw new HttpRedirect(`/pl/lti13_instance/${lti13_instance.id}/auth/auth_required`);
+      } else {
+        throw new HttpStatusError(
+          500,
+          'LTI 1.3 instance must have at least one of uid_attribute or uin_attribute configured',
+        );
       }
-    }
+    });
 
-    // Now that we're clear of UID handling, we'll validate the UIN.
-    if (!uin && !inStateTest) {
-      throw new HttpStatusError(
-        500,
-        `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
-      );
-    }
-
-    // Name checking, not an error
-    // LTI 1.3 spec defines sharing name as a MAY https://www.imsglobal.org/spec/lti/v1p3#users-and-roles
-    // but discourages (MUST NOT) using other attributes for unique identifier
-    let name: string | null = null;
-    if (lti13_instance.name_attribute) {
-      // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
-      // Reasonable default is "name"
-      // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-      name = ltiClaim.get(lti13_instance.name_attribute);
-    }
-
-    let email: string | null = null;
-    if (lti13_instance.email_attribute) {
-      // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
-      // Reasonable default is "email"
-      // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-      email = ltiClaim.get(lti13_instance.email_attribute);
-    }
-
-    const userInfo = {
-      uid,
+    const authedUser = await authnLib.loadUser(req, res, {
       uin,
+      uid: resolvedUid,
       name,
       email,
       provider: 'LTI 1.3',
       institution_id: lti13_instance.institution_id,
-    };
-
-    if (inStateTest) {
-      res.end(
-        Lti13Test({
-          lti13_claims,
-          resLocals: res.locals,
-          userInfo,
-          lti13_instance,
-          url: new URL(`/pl/lti13_instance/${lti13_instance.id}/auth/login`, getCanonicalHost(req)),
-        }),
-      );
-      return;
-    }
-
-    // Authenticate the user.
-    const { user } = await authnLib.loadUser(req, res, userInfo);
+    });
 
     // Record the LTI 1.3 user's subject id.
     await updateLti13UserSub({
-      user_id: user.user_id,
+      user_id: authedUser.user.user_id,
       lti13_instance_id: lti13_instance.id,
       sub: ltiClaim.get('sub'),
     });
 
     // Get the target_link out of the LTI request and redirect.
-    res.redirect(ltiClaim.target_link_uri ?? '/pl');
+    res.redirect(ltiClaim.target_link_uri);
   }),
 );
 
@@ -195,139 +346,3 @@ router.get(
 );
 
 export default router;
-
-//
-// Schema to validate OIDC, LTI
-//
-const OIDCAuthResponseSchema = z.object({
-  state: z.string(),
-  id_token: z.string(),
-  // also has utf8, authenticity_token, lti_storage_target
-});
-
-const OIDCLaunchFlowSchema = z.object({
-  iss: z.string(),
-  login_hint: z.string(),
-  lti_message_hint: z.string().optional(),
-  lti_deployment_id: z.string().optional(),
-  client_id: z.string().optional(),
-  target_link_uri: z.string(),
-  // also has deployment_id, canvas_environment, canvas_region, lti_storage_target
-});
-
-//
-// Helper functions
-//
-async function authenticate(req: Request, res: Response): Promise<any> {
-  // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
-  OIDCAuthResponseSchema.passthrough().parse(req.body);
-
-  const myPassport = await setupPassport(req.params.lti13_instance_id);
-  return new Promise((resolve, reject) => {
-    // Callback arguments described at
-    // https://github.com/jaredhanson/passport/blob/33b92f96616642864844753a481df7c5b823e047/lib/middleware/authenticate.js#L34
-    myPassport.authenticate('lti13', ((err, user, info) => {
-      if (err) {
-        // Replay attack fails here
-        // "did not find expected authorization request details in session, req.session[\"oidc:localhost\"] is undefined"
-        // Passport's cleanup of the session might take care of nonce reuse without us having to
-        reject(err);
-      } else if (!user) {
-        // The authentication libraries under openid-connect will fail (silently) if the key length
-        // is too small, like with the Canvas development keys. It triggers that error in PL here.
-        reject(
-          new AugmentedError('Authentication failed, before user validation.', {
-            status: 400,
-            data: {
-              info_raw: info,
-              info: info?.toString(),
-            },
-          }),
-        );
-      } else {
-        resolve(user);
-      }
-    }) as passport.AuthenticateCallback)(req, res);
-  });
-}
-
-async function launchFlow(req: Request, res: Response, next: NextFunction) {
-  // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
-
-  const parameters = OIDCLaunchFlowSchema.passthrough().parse({ ...req.body, ...req.query });
-
-  // If the authentication request is coming from an iframe, intercept the parameters
-  // and offer a small form to open in a new window.
-  // SECURITY NOTE: We intentionally remove security headers CSP and X-Frame-Options
-  // only for this specific response to allow iframe embedding during LTI 1.3 auth to
-  // offer a redirect/POST in a new window.
-  // This is a controlled exception to our security policy for LTI compatibility.
-  if (req.headers['sec-fetch-dest'] === 'iframe') {
-    res.removeHeader('content-security-policy');
-    res.removeHeader('x-frame-options');
-    res.end(Lti13AuthIframe({ parameters }));
-    return;
-  }
-
-  // Generate our own OIDC state, use it to toggle if testing is happening
-  let state = crypto.randomBytes(28).toString('hex');
-  if ('test' in parameters) {
-    state = state.concat(STATE_TEST);
-  }
-
-  const myPassport = await setupPassport(req.params.lti13_instance_id);
-  myPassport.authenticate('lti13', {
-    response_type: 'id_token',
-    lti_message_hint: parameters.lti_message_hint,
-    login_hint: parameters.login_hint,
-    prompt: 'none',
-    response_mode: 'form_post',
-    failWithError: true,
-    state,
-  } as passport.AuthenticateOptions)(req, res, next);
-}
-
-async function setupPassport(lti13_instance_id: string) {
-  const lti13_instance = await selectLti13Instance(lti13_instance_id);
-
-  const localPassport = new passport.Passport();
-  const issuer = new Issuer(lti13_instance.issuer_params);
-  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
-
-  localPassport.use(
-    'lti13',
-    new Strategy(
-      {
-        client,
-        passReqToCallback: true,
-      },
-      callbackify(verify),
-    ),
-  );
-
-  return localPassport;
-}
-
-async function verify(req: Request, tokenSet: TokenSet) {
-  const lti13_claims = Lti13ClaimSchema.parse(tokenSet.claims());
-
-  // Check nonce to protect against reuse
-  const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
-  const cacheResult = await cache.get(nonceKey);
-  if (cacheResult) {
-    throw new HttpStatusError(500, 'Cannot reuse LTI 1.3 nonce, try login again');
-  }
-  await cache.set(nonceKey, true, 60 * 60 * 1000); // 60 minutes
-  // Canvas OIDC logins expire after 3600 seconds
-
-  // Save parameters about the platform back to the lti13_instance
-  // https://www.imsglobal.org/spec/lti/v1p3#platform-instance-claim
-  const params = {
-    lti13_instance_id: req.params.lti13_instance_id,
-    tool_platform_name:
-      lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform']?.name ?? null,
-  };
-  await queryAsync(sql.verify_upsert, params);
-
-  return lti13_claims;
-}

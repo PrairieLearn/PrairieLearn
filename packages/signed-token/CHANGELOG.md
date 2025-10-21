@@ -1,5 +1,35 @@
 # @prairielearn/signed-token
 
+## 2.0.19
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 2.0.18
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 2.0.17
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 2.0.16
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
+## 2.0.15
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
 ## 2.0.14
 
 ### Patch Changes

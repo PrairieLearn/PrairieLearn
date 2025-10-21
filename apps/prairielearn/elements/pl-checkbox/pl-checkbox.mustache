@@ -39,9 +39,9 @@
 </div>
 {{/helptext}}
 
-{{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-{{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{#correct}}<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 
 {{#inline}}</span>{{/inline}}
 {{^inline}}</fieldset>{{/inline}}
@@ -116,10 +116,10 @@ Otherwise, you will receive a score of 0%.
         {{/display_feedback}}
         {{#display_score_badge}}
             {{#correct}}
-                <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>
+                <span class="ms-1 badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>
             {{/correct}}
             {{#incorrect}}
-                <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
+                <span class="ms-1 badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
             {{/incorrect}}
         {{/display_score_badge}}
         </div>
@@ -129,7 +129,6 @@ Otherwise, you will receive a score of 0%.
 </ul>
 
 {{#display_score_badge}}
-    &nbsp;
     {{#correct}}
         <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
     {{/correct}}

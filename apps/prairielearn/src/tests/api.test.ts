@@ -15,21 +15,22 @@ describe('API', { timeout: 60_000 }, function () {
 
   afterAll(helperServer.after);
 
-  helperExam.startExam(locals);
+  helperExam.startExam(locals, 'exam1-automaticTestSuite');
 
   describe('grade correct answer to question addNumbers', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.addNumbers;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
         locals.expectedResult = {
           submission_score: 1,
           submission_correct: true,
           instance_question_points: assessmentPoints,
           instance_question_score_perc: (assessmentPoints / 5) * 100,
           assessment_instance_points: assessmentPoints,
-          assessment_instance_score_perc: (assessmentPoints / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc:
+            (assessmentPoints / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -186,7 +187,7 @@ describe('API', { timeout: 60_000 }, function () {
       const assessmentInstance = json[0];
       assert.equal(assessmentInstance.user_uid, 'dev@example.com');
       assert.equal(assessmentInstance.points, assessmentPoints);
-      assert.equal(assessmentInstance.max_points, helperExam.assessmentMaxPoints);
+      assert.equal(assessmentInstance.max_points, helperExam.exam1AutomaticTestSuite.maxPoints);
 
       // Persist the assessment instance ID for later requests
       locals.assessment_instance_id = assessmentInstance.assessment_instance_id;
@@ -209,7 +210,7 @@ describe('API', { timeout: 60_000 }, function () {
       assert.equal(json.assessment_id, locals.assessment_id);
       assert.equal(json.user_uid, 'dev@example.com');
       assert.equal(json.points, assessmentPoints);
-      assert.equal(json.max_points, helperExam.assessmentMaxPoints);
+      assert.equal(json.max_points, helperExam.exam1AutomaticTestSuite.maxPoints);
     });
 
     test.sequential('GET to API for assessment submissions succeeds', async function () {
@@ -265,7 +266,7 @@ describe('API', { timeout: 60_000 }, function () {
       const assessment = user.assessments.find((o) => o.assessment_label === 'E1');
       assert.exists(assessment);
       assert.equal(assessment.points, assessmentPoints);
-      assert.equal(assessment.max_points, helperExam.assessmentMaxPoints);
+      assert.equal(assessment.max_points, helperExam.exam1AutomaticTestSuite.maxPoints);
     });
 
     test.sequential('GET to API for assessment instance questions succeeds', async function () {
@@ -282,6 +283,51 @@ describe('API', { timeout: 60_000 }, function () {
       const json = (await res.json()) as any;
       assert.lengthOf(json, 7);
     });
+
+    test.sequential('GET to API for assessment instance log succeeds', async function () {
+      locals.apiAssessmentInstanceLogUrl =
+        locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessment_instance_id}/log`;
+
+      const res = await fetch(locals.apiAssessmentInstanceLogUrl, {
+        headers: {
+          'Private-Token': locals.api_token,
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const json = (await res.json()) as any;
+      assert.isArray(json);
+    });
+
+    test.sequential(
+      'GET to API for non-existent assessment instance returns 404',
+      async function () {
+        const res = await fetch(locals.apiCourseInstanceUrl + '/assessment_instances/999999', {
+          headers: {
+            'Private-Token': locals.api_token,
+          },
+        });
+        assert.equal(res.status, 404);
+
+        const json = (await res.json()) as any;
+        assert.equal(json.message, 'Not Found');
+      },
+    );
+
+    test.sequential(
+      'GET to API for non-existent assessment instance log returns 404',
+      async function () {
+        const res = await fetch(locals.apiCourseInstanceUrl + '/assessment_instances/999999/log', {
+          headers: {
+            'Private-Token': locals.api_token,
+          },
+        });
+        assert.equal(res.status, 404);
+
+        const json = (await res.json()) as any;
+        assert.equal(json.message, 'Not Found');
+      },
+    );
 
     test.sequential('GET to API for assessment access rules succeeds', async function () {
       locals.apiAssessmentAccessRulesUrl =
@@ -335,5 +381,53 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 403);
     });
+
+    test.sequential('POST to API to start a course sync', async function () {
+      locals.apiCourseUrl = locals.apiUrl + '/course/1';
+      locals.apiCourseSyncUrl = locals.apiCourseUrl + '/sync';
+      const res = await fetch(locals.apiCourseSyncUrl, {
+        method: 'POST',
+        headers: {
+          'Private-Token': locals.api_token,
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const json = (await res.json()) as any;
+      assert.exists(json.job_sequence_id);
+      locals.course_sync_job_sequence_id = json.job_sequence_id;
+    });
+
+    test.sequential('GET to API for course sync status info succeeds', async function () {
+      locals.apiCourseSyncJobUrl =
+        locals.apiCourseSyncUrl + '/' + locals.course_sync_job_sequence_id;
+      const res = await fetch(locals.apiCourseSyncJobUrl, {
+        headers: {
+          'Private-Token': locals.api_token,
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const json = (await res.json()) as any;
+      assert.exists(json.job_sequence_id);
+      assert.equal(json.job_sequence_id, locals.course_sync_job_sequence_id);
+      assert.exists(json.status);
+      assert.exists(json.start_date);
+      assert.exists(json.finish_date);
+      assert.exists(json.output);
+    });
+
+    test.sequential(
+      'GET to API for course sync status info fails with invalid job_sequence_id',
+      async function () {
+        locals.apiCourseSyncJobUrl = locals.apiCourseSyncUrl + '/NA';
+        const res = await fetch(locals.apiCourseSyncJobUrl, {
+          headers: {
+            'Private-Token': locals.api_token,
+          },
+        });
+        assert.equal(res.status, 404);
+      },
+    );
   });
 });

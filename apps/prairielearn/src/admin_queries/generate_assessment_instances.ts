@@ -12,7 +12,23 @@ import {
 } from '../lib/db-types.js';
 import { selectOptionalAssessmentById } from '../models/assessment.js';
 
-import { type AdministratorQueryResult } from './util.js';
+import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './lib/util.js';
+
+export const specs: AdministratorQuerySpecs = {
+  description:
+    'Simulates all students enrolled in a course starting an assessment. For group assessments, groups must have been created.',
+  params: [
+    {
+      name: 'assessment_id',
+      description: 'assessment_id to generate instances for (integer)',
+    },
+    {
+      name: 'mode',
+      description: 'mode used for assessment instance (Public or Exam)',
+      default: 'Public',
+    },
+  ],
+};
 
 const sql = loadSqlEquiv(import.meta.url);
 

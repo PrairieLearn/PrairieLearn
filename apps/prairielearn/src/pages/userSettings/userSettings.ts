@@ -2,7 +2,6 @@ import * as crypto from 'crypto';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { v4 as uuidv4 } from 'uuid';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -27,9 +26,7 @@ router.get(
 
     const accessTokens = await sqldb.queryRows(
       sql.select_access_tokens,
-      {
-        user_id: authn_user.user_id,
-      },
+      { user_id: authn_user.user_id },
       AccessTokenSchema,
     );
 
@@ -44,7 +41,7 @@ router.get(
 
     // Now that we've rendered these tokens, remove any tokens from the DB
     if (newAccessTokens.length > 0) {
-      await sqldb.queryAsync(sql.clear_tokens_for_user, {
+      await sqldb.execute(sql.clear_tokens_for_user, {
         user_id: authn_user.user_id,
       });
     }
@@ -57,10 +54,10 @@ router.get(
       authn_user_id: authn_user.user_id,
     });
 
-    const showEnhancedNavigationToggle = await features.enabled('enhanced-navigation-user-toggle', {
+    const showEnhancedNavigationToggle = await features.enabled('legacy-navigation-user-toggle', {
       user_id: authn_user.user_id,
     });
-    const enhancedNavigationEnabled = await features.enabled('enhanced-navigation', {
+    const usesLegacyNavigation = await features.enabled('legacy-navigation', {
       user_id: authn_user.user_id,
     });
 
@@ -74,7 +71,7 @@ router.get(
         purchases,
         isExamMode: mode !== 'Public',
         showEnhancedNavigationToggle,
-        enhancedNavigationEnabled,
+        enhancedNavigationEnabled: !usesLegacyNavigation,
         resLocals: res.locals,
       }),
     );
@@ -87,11 +84,12 @@ router.post(
     if (req.body.__action === 'update_features') {
       const context = { user_id: res.locals.authn_user.user_id };
 
-      if (await features.enabled('enhanced-navigation-user-toggle', context)) {
+      if (await features.enabled('legacy-navigation-user-toggle', context)) {
+        // Checkbox indicates enhanced navigation ON when checked; legacy is inverse
         if (req.body.enhanced_navigation) {
-          await features.enable('enhanced-navigation', context);
+          await features.disable('legacy-navigation', context);
         } else {
-          await features.disable('enhanced-navigation', context);
+          await features.enable('legacy-navigation', context);
         }
       }
 
@@ -108,10 +106,10 @@ router.post(
       }
 
       const name = req.body.token_name;
-      const token = uuidv4();
+      const token = crypto.randomUUID();
       const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
-      await sqldb.queryAsync(sql.insert_access_token, {
+      await sqldb.execute(sql.insert_access_token, {
         user_id: res.locals.authn_user.user_id,
         name,
         // The token will only be persisted until the next page render.
@@ -121,7 +119,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'token_delete') {
-      await sqldb.queryAsync(sql.delete_access_token, {
+      await sqldb.execute(sql.delete_access_token, {
         token_id: req.body.token_id,
         user_id: res.locals.authn_user.user_id,
       });

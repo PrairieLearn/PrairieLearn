@@ -1,6 +1,6 @@
+import { createOpenAI } from '@ai-sdk/openai';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
@@ -9,12 +9,19 @@ import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
-import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
+import {
+  QUESTION_GENERATION_OPENAI_MODEL,
+  addCompletionCostToIntervalUsage,
+  approximatePromptCost,
+  generateQuestion,
+  getIntervalUsage,
+} from '../../lib/aiQuestionGeneration.js';
 
 import {
   DraftMetadataWithQidSchema,
   GenerationFailure,
   InstructorAIGenerateDrafts,
+  RateLimitExceeded,
 } from './instructorAiGenerateDrafts.html.js';
 
 const router = Router();
@@ -89,19 +96,49 @@ router.post(
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
-    const client = new OpenAI({
+    const openai = createOpenAI({
       apiKey: config.aiQuestionGenerationOpenAiApiKey,
       organization: config.aiQuestionGenerationOpenAiOrganization,
     });
 
     if (req.body.__action === 'generate_question') {
+      const intervalCost = await getIntervalUsage({
+        userId: res.locals.authn_user.user_id,
+      });
+
+      const approxPromptCost = approximatePromptCost({
+        model: QUESTION_GENERATION_OPENAI_MODEL,
+        prompt: req.body.prompt,
+      });
+
+      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
+
+        res.send(
+          RateLimitExceeded({
+            // If the user has more tokens than the threshold of 100 tokens,
+            // they can shorten their message to avoid exceeding the rate limit.
+            canShortenMessage:
+              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
+          }),
+        );
+        return;
+      }
+
       const result = await generateQuestion({
-        client,
+        model: openai(QUESTION_GENERATION_OPENAI_MODEL),
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
         courseId: res.locals.course.id,
         authnUserId: res.locals.authn_user.user_id,
         prompt: req.body.prompt,
         userId: res.locals.authn_user.user_id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      });
+
+      await addCompletionCostToIntervalUsage({
+        userId: res.locals.authn_user.user_id,
+        usage: result.usage,
+        intervalCost,
       });
 
       if (result.htmlResult) {

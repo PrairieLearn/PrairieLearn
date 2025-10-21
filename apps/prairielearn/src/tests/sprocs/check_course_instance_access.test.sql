@@ -9,7 +9,7 @@ WITH
         institution_id
       )
     VALUES
-      (100, 'normaluser@host.com', null, 1),
+      (100, 'normaluser@host.com', NULL, 1),
       (101, 'ltiuserci1@host.com', 1, 2),
       (102, 'ltiuserci2@host.com', 2, 2)
   ),
@@ -21,19 +21,27 @@ WITH
   ),
   setup_ci AS (
     INSERT INTO
-      course_instances (id, uuid, course_id, display_timezone)
+      course_instances (
+        id,
+        uuid,
+        course_id,
+        display_timezone,
+        enrollment_code
+      )
     VALUES
       (
         1,
         '5159a291-566f-4463-8f11-b07c931ad72a',
         1,
-        'UTC'
+        'UTC',
+        'KN5Y4HNHXS'
       ),
       (
         2,
         '5159a291-566f-4463-8f11-b07c931ad72b',
         1,
-        'UTC'
+        'UTC',
+        'QDXM3P76AP'
       )
   ),
   setup_ciars AS (
@@ -61,7 +69,7 @@ WITH
         2,
         1,
         2,
-        null,
+        NULL,
         '2011-01-01 00:00:00-00',
         '2011-12-31 23:59:59-00',
         'school'
@@ -70,7 +78,7 @@ WITH
         3,
         1,
         3,
-        null,
+        NULL,
         '2012-01-01 00:00:00-00',
         '2012-12-31 23:59:59-00',
         'notInDb'
@@ -79,16 +87,16 @@ WITH
         4,
         1,
         4,
-        null,
+        NULL,
         '2013-01-01 00:00:00-00',
         '2013-12-31 23:59:59-00',
-        null
+        NULL
       ),
       (
         5,
         1,
         5,
-        null,
+        NULL,
         '2013-01-01 00:00:00-00',
         '2013-12-31 23:59:59-00',
         'LTI'
@@ -113,7 +121,7 @@ WITH
       )
   )
 SELECT
-  true;
+  TRUE;
 
 -- BLOCK ciar_test
 SELECT
@@ -145,17 +153,3 @@ FROM
   ) AS authorized
 WHERE
   ciar.id = $ciar_id;
-
--- BLOCK cia_test
-SELECT
-  *
-FROM
-  (
-    SELECT
-      id
-    FROM
-      institutions
-    WHERE
-      $uid ~ uid_regexp
-  ) AS user_institution (user_institution_id),
-  check_course_instance_access ($ci_id, $uid, user_institution_id, $date) AS authorized;

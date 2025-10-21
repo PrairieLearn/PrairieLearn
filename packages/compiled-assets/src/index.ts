@@ -84,6 +84,9 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
+      define: {
+        'process.env.NODE_ENV': '"development"',
+      },
     });
     esbuildServer = await esbuildContext.serve({ host: '0.0.0.0' });
 
@@ -111,6 +114,9 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
+      define: {
+        'process.env.NODE_ENV': '"development"',
+      },
     });
     splitEsbuildServer = await splitEsbuildContext.serve({ host: '0.0.0.0' });
   }
@@ -194,6 +200,7 @@ export function handler() {
 }
 
 let cachedManifest: AssetsManifest | null = null;
+
 function readManifest(): AssetsManifest {
   assertConfigured();
 
@@ -287,6 +294,9 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     entryNames: '[dir]/[name]-[hash]',
     outbase: sourceDirectory,
     outdir: buildDirectory,
+    define: {
+      'process.env.NODE_ENV': '"production"',
+    },
     metafile: true, // Write metadata about the build
   });
 
@@ -307,6 +317,9 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     entryNames: '[dir]/[name]-[hash]',
     outbase: sourceDirectory,
     outdir: buildDirectory,
+    define: {
+      'process.env.NODE_ENV': '"production"',
+    },
     metafile: true,
   });
 
@@ -336,8 +349,9 @@ function makeManifest(
     // Recursively walk the `imports` dependency tree
     const visit = (entry: (typeof meta)['imports'][number]) => {
       if (!['import-statement', 'dynamic-import'].includes(entry.kind)) return;
-      if (preloads.has(entry.path)) return;
-      preloads.add(entry.path);
+      const preloadPath = path.relative(buildDirectory, entry.path);
+      if (preloads.has(preloadPath)) return;
+      preloads.add(preloadPath);
       for (const imp of metafile.inputs[entry.path]?.imports ?? []) {
         visit(imp);
       }

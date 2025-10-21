@@ -1,5 +1,58 @@
 # @prairielearn/config
 
+## 3.1.9
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/aws-imds@2.0.20
+
+## 3.1.8
+
+### Patch Changes
+
+- 2f5ce1f: Upgrade all JavaScript dependencies
+
+## 3.1.7
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+- Updated dependencies [f571b40]
+  - @prairielearn/aws-imds@2.0.19
+
+## 3.1.6
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
+## 3.1.5
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/aws-imds@2.0.18
+
+## 3.1.4
+
+### Patch Changes
+
+- 0edbdcb: Upgrade more JavaScript dependencies
+- 23adb05: Upgrade all JavaScript dependencies
+- Updated dependencies [23adb05]
+  - @prairielearn/aws-imds@2.0.17
+
+## 3.1.3
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+- Updated dependencies [678b48a]
+  - @prairielearn/aws-imds@2.0.16
+
 ## 3.1.2
 
 ### Patch Changes

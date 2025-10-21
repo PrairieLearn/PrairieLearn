@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -5,8 +6,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -31,23 +32,11 @@ const CourseWithPermissionsSchema = CourseSchema.extend({
 export type CourseWithPermissions = z.infer<typeof CourseWithPermissionsSchema>;
 
 export async function selectCourseById(course_id: string): Promise<Course> {
-  return await queryRow(
-    sql.select_course_by_id,
-    {
-      course_id,
-    },
-    CourseSchema,
-  );
+  return await queryRow(sql.select_course_by_id, { course_id }, CourseSchema);
 }
 
 export async function selectCourseByCourseInstanceId(course_instance_id: string): Promise<Course> {
-  return await queryRow(
-    sql.select_course_by_instance_id,
-    {
-      course_instance_id,
-    },
-    CourseSchema,
-  );
+  return await queryRow(sql.select_course_by_instance_id, { course_instance_id }, CourseSchema);
 }
 
 export function getLockNameForCoursePath(coursePath: string): string {
@@ -80,7 +69,7 @@ export async function updateCourseCommitHash(course: {
   path: string;
 }): Promise<string> {
   const hash = await getCourseCommitHash(course.path);
-  await queryAsync(sql.update_course_commit_hash, {
+  await execute(sql.update_course_commit_hash, {
     course_id: course.id,
     commit_hash: hash,
   });
@@ -227,7 +216,7 @@ export async function updateCourseShowGettingStarted({
   course_id: string;
   show_getting_started: boolean;
 }) {
-  await queryAsync(sql.update_course_show_getting_started, {
+  await execute(sql.update_course_show_getting_started, {
     course_id,
     show_getting_started,
   });
@@ -237,8 +226,30 @@ export async function updateCourseShowGettingStarted({
  * Update the `sharing_name` column for a course.
  */
 export async function updateCourseSharingName({ course_id, sharing_name }): Promise<void> {
-  await queryAsync(sql.update_course_sharing_name, {
+  await execute(sql.update_course_sharing_name, {
     course_id,
     sharing_name,
   });
+}
+
+/**
+ * Look up courses by sharing names (may return null if non-existent)
+ */
+export async function findCoursesBySharingNames(
+  sharing_names: string[],
+): Promise<Map<string, Course | null>> {
+  const rows = await queryRows(sql.find_courses_by_sharing_names, { sharing_names }, CourseSchema);
+
+  const result = new Map<string, Course | null>();
+  for (const name of sharing_names) result.set(name, null);
+
+  for (const row of rows) {
+    // We looked up the courses by sharing name, so this should hold for all courses
+    assert(row.sharing_name);
+
+    if (row.sharing_name) {
+      result.set(row.sharing_name, row);
+    }
+  }
+  return result;
 }

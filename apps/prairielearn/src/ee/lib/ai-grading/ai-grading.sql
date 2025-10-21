@@ -1,13 +1,3 @@
--- BLOCK select_rubric_id_from_grading
-SELECT
-  rubric_id
-FROM
-  rubric_gradings
-WHERE
-  id = $manual_rubric_grading_id
-LIMIT
-  1;
-
 -- BLOCK insert_grading_job
 INSERT INTO
   grading_jobs (

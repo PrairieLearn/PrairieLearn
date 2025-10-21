@@ -1,30 +1,13 @@
-import { z } from 'zod';
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlValue, html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
+import { type CourseRequest } from '../../lib/db-types.js';
+import { assertNever } from '../../lib/types.js';
 
-export const CourseRequestRowSchema = z.object({
-  course_request: CourseRequestSchema,
-  approved_by_user: UserSchema.nullable(),
-});
-type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
-
-export const Lti13CourseRequestInputSchema = z
-  .object({
-    'cr-firstname': z.string(),
-    'cr-lastname': z.string(),
-    'cr-email': z.string(),
-    'cr-shortname': z.string(),
-    'cr-title': z.string(),
-    'cr-institution': z.string(),
-  })
-  .nullable();
-export type Lti13CourseRequestInput = z.infer<typeof Lti13CourseRequestInputSchema>;
+import type { CourseRequestRow, Lti13CourseRequestInput } from './instructorRequestCourse.types.js';
 
 export function RequestCourse({
   rows,
@@ -224,8 +207,29 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             <label class="form-label" for="cr-ghuser">GitHub Username (optional)</label>
             <input type="text" class="form-control" name="cr-ghuser" id="cr-ghuser" />
             <small class="form-text text-muted">
-              Providing your GitHub username will allow you to edit course content offline. You do
-              not need to provide this if you would like to use the online web editor.
+              Providing your GitHub username will grant you access to your course's GitHub
+              repository. This access allows you to edit your code in a
+              <a
+                href="https://prairielearn.readthedocs.io/en/latest/installing/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >local installation of PrairieLearn</a
+              >, and to grant access to other instructors or TAs to do the same. You do not need to
+              provide this if you would like to exclusively use the online web editor. You are
+              encouraged to provide it if you are planning complex questions such as those using
+              <a
+                href="https://prairielearn.readthedocs.io/en/latest/externalGrading/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >code autograding</a
+              >
+              or
+              <a
+                href="https://prairielearn.readthedocs.io/en/latest/workspaces/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >workspaces</a
+              >, even if you don't yet have use for a local installation.
             </small>
           </div>
           <div class="mb-3">
@@ -311,11 +315,18 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
 }
 
 function ApprovalStatusIcon({ status }: { status: CourseRequest['approved_status'] }) {
-  if (status === 'pending' || status === 'creating' || status === 'failed') {
-    return html`<span class="badge text-bg-secondary"> <i class="fa fa-clock"></i> Pending</span>`;
-  } else if (status === 'approved') {
-    return html`<span class="badge text-bg-success"> <i class="fa fa-check"></i> Approved</span>`;
-  } else if (status === 'denied') {
-    return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
+  switch (status) {
+    case 'pending':
+    case 'creating':
+    case 'failed':
+      return html`<span class="badge text-bg-secondary">
+        <i class="fa fa-clock"></i> Pending</span
+      >`;
+    case 'approved':
+      return html`<span class="badge text-bg-success"> <i class="fa fa-check"></i> Approved</span>`;
+    case 'denied':
+      return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
+    default:
+      assertNever(status);
   }
 }

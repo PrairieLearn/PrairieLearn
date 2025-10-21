@@ -1,10 +1,10 @@
+import { createOpenAI } from '@ai-sdk/openai';
 import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
@@ -21,10 +21,20 @@ import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
-import { regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
-import { GenerationFailure } from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
+import {
+  QUESTION_GENERATION_OPENAI_MODEL,
+  addCompletionCostToIntervalUsage,
+  approximatePromptCost,
+  getIntervalUsage,
+  regenerateQuestion,
+} from '../../lib/aiQuestionGeneration.js';
+import {
+  GenerationFailure,
+  RateLimitExceeded,
+} from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
@@ -37,7 +47,7 @@ async function saveGeneratedQuestion(
   pythonFileContents: string | undefined,
   title?: string,
   qid?: string,
-): Promise<string> {
+): Promise<{ question_id: string; qid: string }> {
   const files = {};
 
   if (htmlFileContents) {
@@ -64,7 +74,7 @@ async function saveGeneratedQuestion(
     throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
   }
 
-  return result.question_id;
+  return { question_id: result.question_id, qid: result.question_qid };
 }
 
 async function saveRevisedQuestion({
@@ -122,7 +132,7 @@ async function saveRevisedQuestion({
 
   const response = `\`\`\`html\n${html}\`\`\`\n\`\`\`python\n${python}\`\`\``;
 
-  await queryAsync(sql.insert_ai_question_generation_prompt, {
+  await execute(sql.insert_ai_question_generation_prompt, {
     question_id: question.id,
     prompting_user_id: authn_user.user_id,
     prompt_type: promptType,
@@ -157,7 +167,7 @@ router.use(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instance-question'>(async (req, res) => {
     res.locals.question = await selectQuestionById(req.params.question_id);
 
     // Ensure the question belongs to this course and that it's a draft question.
@@ -192,8 +202,10 @@ router.get(
 
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
+    const richTextEditorEnabled = await features.enabledFromLocals('rich-text-editor', res.locals);
+
     // Render the preview.
-    await getAndRenderVariant(variant_id, null, res.locals as any, {
+    await getAndRenderVariant(variant_id, null, res.locals, {
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.
@@ -207,7 +219,8 @@ router.get(
         resLocals: res.locals,
         prompts,
         question: res.locals.question,
-        variantId: typeof req.query?.variant_id === 'string' ? req.query?.variant_id : undefined,
+        richTextEditorEnabled,
+        variantId: typeof req.query.variant_id === 'string' ? req.query.variant_id : undefined,
       }),
     );
   }),
@@ -232,7 +245,7 @@ router.post(
 
     assertCanCreateQuestion(res.locals);
 
-    const client = new OpenAI({
+    const openai = createOpenAI({
       apiKey: config.aiQuestionGenerationOpenAiApiKey,
       organization: config.aiQuestionGenerationOpenAiOrganization,
     });
@@ -247,22 +260,52 @@ router.post(
         AiQuestionGenerationPromptSchema,
       );
 
-      if (prompts.length < 1) {
+      if (prompts.length === 0) {
         throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 
-      const result = await regenerateQuestion(
-        client,
-        res.locals.course.id,
-        res.locals.authn_user.user_id,
-        prompts[0]?.user_prompt,
-        req.body.prompt,
-        prompts[prompts.length - 1].html || '',
-        prompts[prompts.length - 1].python || '',
-        question.qid,
-        res.locals.authn_user.user_id,
-        res.locals.authz_data.has_course_permission_edit,
-      );
+      const intervalCost = await getIntervalUsage({
+        userId: res.locals.authn_user.user_id,
+      });
+
+      const approxPromptCost = approximatePromptCost({
+        model: QUESTION_GENERATION_OPENAI_MODEL,
+        prompt: req.body.prompt,
+      });
+
+      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
+
+        res.send(
+          RateLimitExceeded({
+            // If the user has more than the threshold of 100 tokens,
+            // they can shorten their message to avoid reaching the rate limit.
+            canShortenMessage:
+              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
+          }),
+        );
+        return;
+      }
+
+      const result = await regenerateQuestion({
+        model: openai(QUESTION_GENERATION_OPENAI_MODEL),
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
+        courseId: res.locals.course.id,
+        authnUserId: res.locals.authn_user.user_id,
+        originalPrompt: prompts[0]?.user_prompt,
+        revisionPrompt: req.body.prompt,
+        originalHTML: prompts[prompts.length - 1].html || '',
+        originalPython: prompts[prompts.length - 1].python || '',
+        questionQid: question.qid,
+        userId: res.locals.authn_user.user_id,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      });
+
+      await addCompletionCostToIntervalUsage({
+        userId: res.locals.authn_user.user_id,
+        usage: result.usage,
+        intervalCost,
+      });
 
       if (result.htmlResult) {
         res.set({
@@ -292,7 +335,7 @@ router.post(
       }
 
       // TODO: any membership checks needed here?
-      const qid = await saveGeneratedQuestion(
+      const { question_id, qid } = await saveGeneratedQuestion(
         res,
         prompts[prompts.length - 1].html || undefined,
         prompts[prompts.length - 1].python || undefined,
@@ -319,7 +362,7 @@ router.post(
 
       flash('success', `Your question is ready for use as ${qid}.`);
 
-      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/preview');
+      res.redirect(res.locals.urlPrefix + '/question/' + question_id + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
       await saveRevisedQuestion({
         course: res.locals.course,

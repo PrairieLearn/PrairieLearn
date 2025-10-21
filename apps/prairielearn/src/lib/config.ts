@@ -12,7 +12,31 @@ import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 export const DEV_MODE = process.env.NODE_ENV !== 'production';
 
-const ConfigSchema = z.object({
+// We don't compare against 'test' since we use the 'MODE' environment variable
+// for running a subset of our tests.
+const IS_VITEST = (import.meta as any).env && (import.meta as any).env.MODE !== 'development';
+const IS_VITE = (import.meta as any).env?.MODE === 'development';
+export const DEV_EXECUTION_MODE = IS_VITEST ? 'test' : IS_VITE ? 'hmr' : 'dev';
+
+const TokenPricingSchema = z.object({
+  input: z.number().nonnegative(),
+  cachedInput: z.number().nonnegative(),
+  output: z.number().nonnegative(),
+});
+
+export const STANDARD_COURSE_DIRS = [
+  '/course',
+  '/course2',
+  '/course3',
+  '/course4',
+  '/course5',
+  '/course6',
+  '/course7',
+  '/course8',
+  '/course9',
+];
+
+export const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
@@ -47,19 +71,7 @@ const ConfigSchema = z.object({
   namedLocksRenewIntervalMs: z.number().default(60_000),
   courseDirs: z
     .array(z.string())
-    .default([
-      '/course',
-      '/course2',
-      '/course3',
-      '/course4',
-      '/course5',
-      '/course6',
-      '/course7',
-      '/course8',
-      '/course9',
-      EXAMPLE_COURSE_PATH,
-      TEST_COURSE_PATH,
-    ]),
+    .default([...STANDARD_COURSE_DIRS, EXAMPLE_COURSE_PATH, TEST_COURSE_PATH]),
   courseRepoDefaultBranch: z.string().default('master'),
   urlPrefix: z.string().default('/pl'),
   homeUrl: z.string().default('/'),
@@ -72,6 +84,13 @@ const ConfigSchema = z.object({
   coursesRoot: z.string().default('/data1/courses'),
   /** Set to null or '' to disable Redis. */
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
+  /**
+   * Used when nonVolatileCacheType is set to redis. If configured, should
+   * not evict data when facing memory pressure. The instance should be
+   * appropriately sized such that it will not run out of memory during
+   * normal usage.
+   */
+  nonVolatileRedisUrl: z.string().nullable().default(null),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
@@ -304,9 +323,9 @@ const ConfigSchema = z.object({
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
+  nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   cacheKeyPrefix: z.string().default('prairielearn-cache:'),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
-  hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
   lti13InstancePlatforms: z
     .array(
@@ -337,7 +356,7 @@ const ConfigSchema = z.object({
    * logs to cheaper storage tiers or evict them entirely after a certain
    * amount of time.
    */
-  workspaceLogsExpirationDays: z.number().default(120),
+  workspaceLogsExpirationDays: z.number().nullable().default(120),
   workspaceAuthzCookieMaxAgeMilliseconds: z.number().default(60 * 1000),
   workspaceJobsDirectoryOwnerUid: z.number().default(0),
   workspaceJobsDirectoryOwnerGid: z.number().default(0),
@@ -551,6 +570,11 @@ const ConfigSchema = z.object({
   aiGradingOpenAiOrganization: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
+  /**
+   * The hourly spending rate limit for AI question generation, in US dollars.
+   * Accounts for both input and output tokens.
+   */
+  aiQuestionGenerationRateLimitDollars: z.number().default(1),
   requireTermsAcceptance: z.boolean().default(false),
   pyroscopeEnabled: z.boolean().default(false),
   pyroscopeServerAddress: z.string().nullable().default(null),
@@ -571,11 +595,19 @@ const ConfigSchema = z.object({
    * Will be resolved relative to the repository root.
    */
   pythonVenvSearchPaths: z.string().array().default(['.venv']),
-  /**
-   * For the GPT-4o model as of 5/1/2025, in US dollars. Prices obtained from https://openai.com/api/pricing/.
-   */
-  costPerMillionPromptTokens: z.number().default(3.75),
-  costPerMillionCompletionTokens: z.number().default(15),
+  costPerMillionTokens: z
+    .object({
+      'gpt-5-2025-08-07': TokenPricingSchema,
+      'gpt-5-mini-2025-08-07': TokenPricingSchema,
+      'gpt-4o-2024-11-20': TokenPricingSchema,
+    })
+    .default({
+      // Prices current as of 2025-09-25. Values obtained from
+      // https://openai.com/api/pricing/
+      'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, output: 10 },
+      'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, output: 2 },
+      'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, output: 10 },
+    }),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -621,7 +653,7 @@ export async function loadConfig(paths: string[]) {
   }
 }
 
-export async function resetConfig() {
+export function resetConfig() {
   loader.reset();
 }
 

@@ -4,14 +4,18 @@ import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import fetch from 'node-fetch';
-import { afterAll, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { assertNever } from '../../lib/types.js';
+import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -26,7 +30,7 @@ const SITE_URL = 'http://localhost:' + config.serverPort;
 async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM }> {
   const text = await fetch(url).then((res) => {
     if (!res.ok) {
-      throw new Error(`Error loading page: ${res.status}`);
+      throw new Error(`Error loading page "${url}": ${res.status}`);
     }
     return res.text();
   });
@@ -99,6 +103,8 @@ async function checkPage(url: string) {
       'unique-landmark': 'off',
       'void-style': 'off',
       'wcag/h63': 'off',
+      // We use `role="radiogroup"` and `role="radio"` for custom radio buttons.
+      'prefer-native-element': ['error', { exclude: ['radiogroup', 'radio'] }],
     },
   });
 
@@ -107,7 +113,7 @@ async function checkPage(url: string) {
     result.messages = result.messages.filter((m) => {
       // This doesn't appear to be an actual issue and isn't flagged by
       // other tools like https://validator.w3.org/nu.
-      if (m.message.match(/<tt> element is not permitted as content under <(small|strong)>/)) {
+      if (/<tt> element is not permitted as content under <(small|strong)>/.test(m.message)) {
         return false;
       }
 
@@ -152,12 +158,12 @@ async function checkPage(url: string) {
 const STATIC_ROUTE_PARAMS = {
   // These are trivially known because there will only be one course and course
   // instance in the database after syncing the test course.
-  course_id: 1,
-  course_instance_id: 1,
+  course_id: '1',
+  course_instance_id: '1',
 };
 
 function getRouteParams(url: string) {
-  const routeParams = url.match(/:([^/]+)/g);
+  const routeParams = url.match(/:([^?/]+)/g);
 
   if (!routeParams) return [];
 
@@ -193,10 +199,7 @@ const SKIP_ROUTES = [
 
   // These routes just render JSON.
   /^\/pl\/api\/v1\//,
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/raw_data.json',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/instances.json',
-  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/generation_logs.json',
-  '/pl/course/:course_id/ai_generate_question_drafts/generation_logs.json',
+  /\.json$/,
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
@@ -289,6 +292,12 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:unsafe_submission_id/file/*',
 
+  // File upload pages for external image capture.
+  '/pl/course/:course_id/question/:question_id/externalImageCapture/variant/:variant_id',
+  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/externalImageCapture/variant/:variant_id',
+  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/externalImageCapture/variant/:variant_id',
+  '/pl/public/course/:course_id/question/:question_id/externalImageCapture/variant/:variant_id',
+
   // Renders partial HTML documents, not a full page.
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/variant/:unsafe_variant_id/submission/:unsafe_submission_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id/variant/:unsafe_variant_id/submission/:unsafe_submission_id',
@@ -333,6 +342,7 @@ const SKIP_ROUTES = [
   // in order to create a workspace.
   // TODO: open a question and create a workspace so we can test this page.
   /^\/pl\/workspace\//,
+  /^\/pl\/public\/workspace\//,
 
   // TODO: run a query so we can test this page.
   '/pl/administrator/query/:query',
@@ -355,6 +365,9 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_editor/:question_id',
   '/pl/course/:course_id/ai_generate_editor/:question_id',
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/:job_id',
+
+  // API routes.
+  '/pl/course_instance/lookup',
 ];
 
 function shouldSkipPath(path) {
@@ -364,7 +377,7 @@ function shouldSkipPath(path) {
     } else if (r instanceof RegExp) {
       return r.test(path);
     } else {
-      throw new Error(`Invalid route: ${r}`);
+      assertNever(r);
     }
   });
 }
@@ -390,53 +403,78 @@ describe('accessibility', () => {
     endpoints = expressListEndpoints(app);
     endpoints.sort((a, b) => a.path.localeCompare(b.path));
 
-    const firstNewsItemResult = await sqldb.queryOneRowAsync(
+    const news_item_id = await sqldb.queryRow(
       'SELECT id FROM news_items ORDER BY id ASC LIMIT 1',
-      {},
+      IdSchema,
     );
 
-    const assessmentResult = await sqldb.queryOneRowAsync(
+    const assessment_id = await sqldb.queryRow(
       'SELECT id FROM assessments WHERE tid = $tid',
       { tid: 'hw1-automaticTestSuite' },
+      IdSchema,
     );
 
-    const questionResult = await sqldb.queryOneRowAsync(
+    const question_id = await sqldb.queryRow(
       'SELECT id FROM questions WHERE qid = $qid',
       { qid: 'downloadFile' },
+      IdSchema,
     );
+
+    const user_id = await sqldb.queryRow(
+      'SELECT user_id FROM users WHERE uid = $uid',
+      { uid: 'dev@example.com' },
+      IdSchema,
+    );
+
+    const courseInstance = await selectOptionalCourseInstanceById(
+      STATIC_ROUTE_PARAMS.course_instance_id,
+    );
+    assert.isNotNull(courseInstance);
+
+    const enrollment = await ensureEnrollment({
+      course_instance_id: courseInstance.id,
+      user_id,
+      agent_user_id: null,
+      agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
+    });
+    assert.isNotNull(enrollment);
 
     await features.enable('question-sharing');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,
-      news_item_id: firstNewsItemResult.rows[0].id,
-      assessment_id: assessmentResult.rows[0].id,
-      question_id: questionResult.rows[0].id,
+      news_item_id,
+      assessment_id,
+      question_id,
+      user_id,
+      enrollment_id: enrollment.id,
+      code: courseInstance.enrollment_code,
     };
 
-    await sqldb.queryOneRowAsync(
-      'UPDATE questions SET share_publicly = true WHERE id = $question_id',
-      { question_id: routeParams.question_id },
-    );
+    await sqldb.executeRow('UPDATE questions SET share_publicly = true WHERE id = $question_id', {
+      question_id: routeParams.question_id,
+    });
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE assessments SET share_source_publicly = true WHERE id = $assessment_id',
       { assessment_id: routeParams.assessment_id },
     );
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE course_instances SET share_source_publicly = true WHERE id = $course_instance_id',
       { course_instance_id: routeParams.course_instance_id },
     );
 
-    const courseId = await sqldb.queryOneRowAsync(
+    const course_id = await sqldb.queryRow(
       'SELECT course_id FROM course_instances WHERE id = $course_instance_id',
       { course_instance_id: routeParams.course_instance_id },
+      IdSchema,
     );
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
-      { sharing_name: 'test', course_id: courseId.rows[0].course_id },
+      { sharing_name: 'test', course_id },
     );
   });
 
