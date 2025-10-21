@@ -33,7 +33,7 @@ export function QuestionAndFilePreview({
       <div role="tabpanel" id="question-rich-text-editor" class="tab-pane" style="height: 100%">
         {richTextEditorEnabled && (
           <RichTextEditor
-            htmlContents={questionFiles['question.html']}
+            htmlContents={b64DecodeUnicode(questionFiles['question.html'])}
             csrfToken={resLocals.__csrf_token}
           />
         )}
