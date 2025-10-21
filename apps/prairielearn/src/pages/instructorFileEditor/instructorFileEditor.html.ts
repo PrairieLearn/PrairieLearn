@@ -373,7 +373,7 @@ function SaveConfirmationModal() {
             >
               Cancel
             </button>
-            <button type="button" class="btn btn-danger" id="confirm-save-button">
+            <button type="button" class="btn btn-primary" id="confirm-save-button">
               Confirm Save
             </button>
           </div>

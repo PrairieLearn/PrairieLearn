@@ -66,32 +66,13 @@ function UuidChangeModalContent({
 
   return (
     <>
-      {originalUuid && (
-        <div class="mb-3">
-          <strong>Original UUID:</strong>
-          <div class="font-monospace bg-light p-2 rounded mt-1 user-select-all">{originalUuid}</div>
-        </div>
-      )}
       <div class="alert alert-warning d-flex align-items-start mb-3">
         <i class="bi bi-exclamation-triangle-fill fs-4 me-3 flex-shrink-0 mt-1" />
         <div>
           <strong class="d-block mb-2">{getMessage()}</strong>
-          <p class="mb-2">Changing or removing the UUID can cause:</p>
-          <ul class="mb-0 ps-3">
-            <li>Loss of student progress and grades</li>
-            <li>Reset of question statistics</li>
-            <li>Broken links to this content</li>
-          </ul>
         </div>
       </div>
-      <div class="alert alert-info mb-0">
-        <strong>
-          <i class="bi bi-info-circle-fill me-2" />
-          Good news:
-        </strong>{' '}
-        We will automatically revert the UUID to its original value during sync to prevent data
-        loss.
-      </div>
+      <div>Hitting "Confirm Save" will save this file with its original UUID.</div>
     </>
   );
 }
@@ -293,7 +274,6 @@ class InstructorFileEditor {
 
       case SaveErrorCode.UUID_CHANGED:
       case SaveErrorCode.UUID_REMOVED:
-        modalTitle.textContent = 'Confirm UUID Change';
         modalBody.innerHTML = renderHtml(
           <UuidChangeModalContent
             errorCode={errorCode}
@@ -301,11 +281,6 @@ class InstructorFileEditor {
             newUuid={newUuid}
           />,
         ).toString();
-        confirmButton.style.display = '';
-        confirmButton.textContent = 'Save Anyway';
-        confirmButton.className = 'btn btn-danger';
-        cancelButton.textContent = 'Cancel';
-        cancelButton.className = 'btn btn-secondary';
         break;
     }
 
