@@ -66,13 +66,13 @@ function UuidChangeModalContent({
 
   return (
     <>
-      <div class="alert alert-warning d-flex align-items-start mb-3">
-        <i class="bi bi-exclamation-triangle-fill fs-4 me-3 flex-shrink-0 mt-1" />
+      <div class="alert alert-warning d-flex align-items-center mb-3">
+        <i class="bi bi-exclamation-triangle-fill fs-6 me-3 flex-shrink-0" />
         <div>
           <strong class="d-block mb-2">{getMessage()}</strong>
         </div>
       </div>
-      <div>Hitting "Confirm Save" will save this file with its original UUID.</div>
+      <div class="ms-0">Hitting "Confirm Save" will save this file with its original UUID.</div>
     </>
   );
 }
@@ -185,6 +185,8 @@ class InstructorFileEditor {
    */
   handleSaveClick(event: MouseEvent) {
     if (this.confirmedSave) {
+      // User has confirmed the save, so we need to restore the original UUID
+      this.restoreOriginalUuid();
       this.confirmedSave = false;
       return;
     }
@@ -197,6 +199,22 @@ class InstructorFileEditor {
     }
 
     // Otherwise, continue with the save
+  }
+
+  /**
+   * Restores the original UUID in the editor contents when the user confirms save.
+   */
+  restoreOriginalUuid() {
+    if (!this.fileMetadata?.uuid) return;
+
+    const currentContents = this.editor.getValue();
+    const parsedContent = JSON.parse(currentContents);
+    if (typeof parsedContent === 'object' && parsedContent !== null) {
+      // Restore the original UUID
+      parsedContent.uuid = this.fileMetadata.uuid;
+      const restoredContents = JSON.stringify(parsedContent, null, 2);
+      this.editor.setValue(restoredContents);
+    }
   }
 
   /**
