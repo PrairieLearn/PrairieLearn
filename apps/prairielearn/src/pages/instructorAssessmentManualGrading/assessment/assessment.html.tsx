@@ -200,14 +200,16 @@ function AssessmentQuestionRow({
           {question.title}
         </a>
         {question.manual_rubric_id != null && (
-          <button
-            type="button"
-            class="btn btn-link ms-2 text-info"
+          // TODO: Fix this
+          // eslint-disable-next-line jsx-a11y-x/anchor-is-valid
+          <a
+            href="#"
+            class="ms-2 text-info"
             data-bs-toggle="tooltip"
             data-bs-title="This question uses a rubric"
           >
             <i class="fas fa-list-check" />
-          </button>
+          </a>
         )}
       </td>
       <td class="align-middle">{question.qid}</td>
