@@ -1,5 +1,10 @@
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { z } from 'zod';
+
+import { Hydrate } from '@prairielearn/preact/server';
+
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { StaffTopicSchema } from '../../lib/client/safe-db-types.js';
 import { type Topic } from '../../lib/db-types.js';
 
 import { InstructorCourseAdminTopicsTable } from './components/InstructorCourseAdminTopicsTable.js';
@@ -7,10 +12,15 @@ import { InstructorCourseAdminTopicsTable } from './components/InstructorCourseA
 export function InstructorCourseAdminTopics({
   resLocals,
   topics,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   topics: Topic[];
+  origHash: string | null;
 }) {
+  const allowEdit =
+    resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course;
+  const StaffTopics = z.array(StaffTopicSchema).parse(topics);
   return PageLayout({
     resLocals,
     pageTitle: 'Topics',
@@ -25,11 +35,18 @@ export function InstructorCourseAdminTopics({
     content: (
       <>
         <CourseSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />
-        <InstructorCourseAdminTopicsTable topics={topics} />
+        <Hydrate>
+          <InstructorCourseAdminTopicsTable
+            topics={StaffTopics}
+            allowEdit={allowEdit}
+            csrfToken={resLocals.__csrf_token}
+            origHash={origHash}
+          />
+        </Hydrate>
       </>
     ),
   });

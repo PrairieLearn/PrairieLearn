@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
-import { selectAssessmentQuestions } from '../../models/assessment-question.js';
+import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { selectAssessmentSetById } from '../../models/assessment-set.js';
 import { selectAssessmentById, selectAssessmentIsPublic } from '../../models/assessment.js';
 import { selectCourseByCourseInstanceId } from '../../models/course.js';
@@ -32,12 +32,16 @@ router.get(
     assert(assessment.assessment_set_id);
     const assessment_set = await selectAssessmentSetById(assessment.assessment_set_id);
 
-    const questions = await selectAssessmentQuestions(assessment_id);
+    const questions = await selectAssessmentQuestions({
+      assessment_id,
+    });
 
     // Filter out non-public assessments
     for (const question of questions) {
       question.other_assessments =
-        question.other_assessments?.filter((assessment) => assessment.share_source_publicly) ?? [];
+        question.other_assessments?.filter(
+          (assessment) => assessment.assessment_share_source_publicly,
+        ) ?? [];
     }
 
     res.send(

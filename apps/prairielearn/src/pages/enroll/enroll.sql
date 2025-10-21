@@ -35,9 +35,9 @@ WHERE
     OR e.id IS NOT NULL
   )
 ORDER BY
-  c.short_name,
-  c.title,
-  c.id,
+  c.short_name ASC,
+  c.title ASC,
+  c.id ASC,
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,
   ci.id DESC;
@@ -53,21 +53,6 @@ FROM
   JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
   ci.id = $course_instance_id;
-
--- BLOCK unenroll
-DELETE FROM enrollments AS e USING users AS u
-WHERE
-  u.user_id = $user_id
-  AND e.user_id = $user_id
-  AND e.course_instance_id = $course_instance_id
-  AND check_course_instance_access (
-    $course_instance_id,
-    u.uid,
-    u.institution_id,
-    $req_date
-  )
-RETURNING
-  e.id;
 
 -- BLOCK lti_course_instance_lookup
 SELECT

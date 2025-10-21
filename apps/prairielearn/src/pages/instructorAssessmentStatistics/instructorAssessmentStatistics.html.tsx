@@ -2,12 +2,12 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type Assessment, AssessmentInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const DurationStatSchema = z.object({
   median_formatted: z.string(),
@@ -18,8 +18,7 @@ export const DurationStatSchema = z.object({
   min_minutes: z.number(),
   max_minutes: z.number(),
   mean_minutes: z.number(),
-  threshold_seconds: AssessmentSchema.shape.duration_stat_threshold_seconds,
-  threshold_labels: AssessmentSchema.shape.duration_stat_threshold_labels,
+  thresholds: AssessmentSchema.shape.duration_stat_thresholds,
   hist: AssessmentSchema.shape.duration_stat_hist,
 });
 export type DurationStat = z.infer<typeof DurationStatSchema>;
@@ -75,7 +74,7 @@ export function InstructorAssessmentStatistics({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
@@ -172,12 +171,14 @@ export function InstructorAssessmentStatistics({
                 <div
                   class="js-histogram"
                   data-histogram="${JSON.stringify(durationStat.hist)}"
-                  data-xgrid="${JSON.stringify(durationStat.threshold_seconds)}"
+                  data-xgrid="${JSON.stringify(
+                    durationStat.thresholds.map((durationMs) => durationMs / 1000),
+                  )}"
                   data-options="${JSON.stringify({
                     ymin: 0,
                     xlabel: 'duration',
                     ylabel: 'number of students',
-                    xTickLabels: durationStat.threshold_labels,
+                    xTickLabels: durationStat.thresholds.map(durationLabel),
                   })}"
                 ></div>
               </div>
@@ -233,11 +234,11 @@ export function InstructorAssessmentStatistics({
                   data-xdata="${JSON.stringify(userScores.map((user) => user.duration_secs))}"
                   data-ydata="${JSON.stringify(userScores.map((user) => user.score_perc))}"
                   data-options="${JSON.stringify({
-                    xgrid: durationStat.threshold_seconds,
+                    xgrid: durationStat.thresholds.map((durationMs) => durationMs / 1000),
                     ygrid: _.range(0, 110, 10),
                     xlabel: 'duration',
                     ylabel: 'score / %',
-                    xTickLabels: durationStat.threshold_labels,
+                    xTickLabels: durationStat.thresholds.map(durationLabel),
                   })}"
                 ></div>
               </div>
@@ -299,4 +300,18 @@ export function InstructorAssessmentStatistics({
       </div>
     `,
   });
+}
+
+function durationLabel(durationMs: number) {
+  const days = Math.floor(durationMs / (24 * 60 * 60 * 1000));
+  const hours = Math.floor(durationMs / (60 * 60 * 1000)) % 24;
+  const mins = Math.floor(durationMs / (60 * 1000)) % 60;
+  const secs = Math.floor(durationMs / 1000) % 60;
+
+  let label = '';
+  if (days > 0) label += `${days}d`;
+  if (hours > 0) label += `${hours}h`;
+  if (mins > 0) label += `${mins}m`;
+  if (secs > 0) label += `${secs}s`;
+  return label || '0';
 }

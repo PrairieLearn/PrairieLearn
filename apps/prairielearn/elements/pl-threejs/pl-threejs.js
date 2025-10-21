@@ -1,7 +1,7 @@
 /* global THREE,async */
 function PLThreeJS(options) {
   // parse options
-  var uuid = options.uuid;
+  const uuid = options.uuid;
   this.uuid = uuid;
   this.startPose = JSON.parse(atob(options.pose));
   if (Object.prototype.hasOwnProperty.call(options, 'pose_default')) {
@@ -137,11 +137,10 @@ function PLThreeJS(options) {
 
   // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
   class Font {
+    isFont = true;
+    type = 'Font';
+
     constructor(data) {
-      this.isFont = true;
-
-      this.type = 'Font';
-
       this.data = data;
     }
 
@@ -258,7 +257,7 @@ function PLThreeJS(options) {
     [
       // Load font
       function (callback) {
-        var loader = new FontLoader();
+        const loader = new FontLoader();
         loader.load(
           '/node_modules/three/examples/fonts/helvetiker_regular.typeface.json',
           function (font) {
@@ -273,16 +272,16 @@ function PLThreeJS(options) {
           this.objects,
           function (obj, callback) {
             if (obj.type === 'stl') {
-              var loader = new THREE.STLLoader();
+              const loader = new THREE.STLLoader();
               loader.load(
                 obj.file_url,
                 function (geometry) {
-                  var material = new THREE.MeshStandardMaterial({
+                  const material = new THREE.MeshStandardMaterial({
                     color: obj.color,
                     transparent: true,
                     opacity: obj.opacity,
                   });
-                  var mesh = new THREE.Mesh(
+                  const mesh = new THREE.Mesh(
                     geometry.scale(obj.scale, obj.scale, obj.scale),
                     material,
                   );
@@ -300,7 +299,7 @@ function PLThreeJS(options) {
                 }.bind(this),
               );
             } else if (obj.type === 'txt') {
-              var geometry = new TextGeometry(obj.text, {
+              const geometry = new TextGeometry(obj.text, {
                 font: this.font,
                 size: 0.25,
                 height: 0.05,
@@ -310,12 +309,15 @@ function PLThreeJS(options) {
                 bevelSize: 0.008,
                 bevelSegments: 2,
               });
-              var material = new THREE.MeshStandardMaterial({
+              const material = new THREE.MeshStandardMaterial({
                 color: obj.color,
                 transparent: false,
                 opacity: obj.opacity,
               });
-              var mesh = new THREE.Mesh(geometry.scale(obj.scale, obj.scale, obj.scale), material);
+              const mesh = new THREE.Mesh(
+                geometry.scale(obj.scale, obj.scale, obj.scale),
+                material,
+              );
               // FIXME: avoid this hack with renderOrder (used to render text first
               // so it never "disappears" behind or inside of other transparent objects)
               mesh.renderOrder = 1;
@@ -565,13 +567,13 @@ PLThreeJS.prototype.onResize = function () {
 
 PLThreeJS.prototype.makeLights = function () {
   function makeLight(p) {
-    var light = new THREE.DirectionalLight(0xffffff, 0.5);
+    const light = new THREE.DirectionalLight(0xffffff, 0.5);
     light.castShadow = true;
     light.position.copy(p);
     return light;
   }
 
-  var lights = new THREE.Group();
+  const lights = new THREE.Group();
   lights.add(makeLight(new THREE.Vector3(5, 0, 0)));
   lights.add(makeLight(new THREE.Vector3(0, 5, 0)));
   lights.add(makeLight(new THREE.Vector3(0, 0, 5)));
@@ -580,16 +582,16 @@ PLThreeJS.prototype.makeLights = function () {
 
 PLThreeJS.prototype.makeScreen = function () {
   function makePart() {
-    var part = new THREE.Group();
+    const part = new THREE.Group();
 
-    var geometry = new THREE.PlaneGeometry(10, 10, 1);
-    var material = new THREE.ShadowMaterial({ color: 0x888888 });
-    var plane = new THREE.Mesh(geometry, material);
+    const geometry = new THREE.PlaneGeometry(10, 10, 1);
+    const material = new THREE.ShadowMaterial({ color: 0x888888 });
+    const plane = new THREE.Mesh(geometry, material);
     plane.receiveShadow = true;
     plane.position.set(0, 0, -5);
     part.add(plane);
 
-    var grid = new THREE.GridHelper(10, 10, 0xdddddd, 0xdddddd);
+    const grid = new THREE.GridHelper(10, 10, 0xdddddd, 0xdddddd);
     grid.position.set(0, 0, -5);
     grid.quaternion.setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0, 'XYZ'));
     grid.transparent = true;
@@ -599,11 +601,11 @@ PLThreeJS.prototype.makeScreen = function () {
     return part;
   }
 
-  var x = makePart().rotateX(-Math.PI / 2);
-  var y = makePart().rotateY(Math.PI / 2);
-  var z = makePart();
+  const x = makePart().rotateX(-Math.PI / 2);
+  const y = makePart().rotateY(Math.PI / 2);
+  const z = makePart();
 
-  var screen = new THREE.Group();
+  const screen = new THREE.Group();
   screen.add(x);
   screen.add(y);
   screen.add(z);
@@ -613,8 +615,8 @@ PLThreeJS.prototype.makeScreen = function () {
 
 PLThreeJS.prototype.makeFrame = function () {
   function makeAxis(whichAxis) {
-    var geometry = new THREE.CylinderGeometry(0.05, 0.05, 1);
-    var material = new THREE.MeshStandardMaterial({
+    const geometry = new THREE.CylinderGeometry(0.05, 0.05, 1);
+    const material = new THREE.MeshStandardMaterial({
       transparent: true,
       opacity: 0.9,
     });
@@ -631,18 +633,18 @@ PLThreeJS.prototype.makeFrame = function () {
       geometry.translate(0, 0, 0.5);
       material.color = new THREE.Color(0x0000ff);
     } else {
-      throw "argument to whichAxis() must be 'x', 'y', or 'z'";
+      throw new Error('argument to whichAxis() must be "x", "y", or "z"');
     }
-    var cylinder = new THREE.Mesh(geometry, material);
+    const cylinder = new THREE.Mesh(geometry, material);
     cylinder.castShadow = true;
     return cylinder;
   }
 
-  var x = makeAxis('x');
-  var y = makeAxis('y');
-  var z = makeAxis('z');
+  const x = makeAxis('x');
+  const y = makeAxis('y');
+  const z = makeAxis('z');
 
-  var frame = new THREE.Object3D();
+  const frame = new THREE.Object3D();
 
   frame.add(x);
   frame.add(y);
@@ -652,8 +654,8 @@ PLThreeJS.prototype.makeFrame = function () {
 };
 
 PLThreeJS.prototype.onLoad = function (geometry, materials) {
-  var material = materials[0];
-  var object = new THREE.Mesh(geometry, material);
+  const material = materials[0];
+  const object = new THREE.Mesh(geometry, material);
   this.scene.add(object);
 };
 
@@ -664,12 +666,12 @@ PLThreeJS.prototype.onmousedown = function (event) {
   }
 
   // did the user click on something in the bodyGroup?
-  var rect = this.renderer.domElement.getBoundingClientRect();
-  var x = (event.offsetX / rect.width) * 2 - 1;
-  var y = -(event.offsetY / rect.height) * 2 + 1;
-  var mouse = new THREE.Vector2(x, y);
+  const rect = this.renderer.domElement.getBoundingClientRect();
+  const x = (event.offsetX / rect.width) * 2 - 1;
+  const y = -(event.offsetY / rect.height) * 2 + 1;
+  const mouse = new THREE.Vector2(x, y);
   this.raycaster.setFromCamera(mouse, this.camera);
-  var intersects = this.raycaster.intersectObjects([this.bodyGroup], true);
+  const intersects = this.raycaster.intersectObjects([this.bodyGroup], true);
   if (intersects.length > 0) {
     // yes, they did!
     // - turn off orbit controls
@@ -695,25 +697,25 @@ PLThreeJS.prototype.onmousedown = function (event) {
 PLThreeJS.prototype.onmousemove = function (e) {
   if (this.isDragging) {
     if (this.isTranslating) {
-      var rect = this.renderer.domElement.getBoundingClientRect();
-      var x = (event.offsetX / rect.width) * 2 - 1;
-      var y = -(event.offsetY / rect.height) * 2 + 1;
-      var mouse = new THREE.Vector2(x, y);
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      const x = (event.offsetX / rect.width) * 2 - 1;
+      const y = -(event.offsetY / rect.height) * 2 + 1;
+      const mouse = new THREE.Vector2(x, y);
       this.raycaster.setFromCamera(mouse, this.camera);
       if (this.raycaster.ray.intersectPlane(this.translatePlane, this.translateIntersection)) {
         this.bodyGroup.position.copy(this.translateIntersection.sub(this.translateOffset));
       }
       this.render();
     } else {
-      var deltaMove = {
+      const deltaMove = {
         x: e.offsetX - this.previousMousePosition.x,
         y: e.offsetY - this.previousMousePosition.y,
       };
 
       // Orientation of camera
-      var qCamera = this.camera.quaternion.clone();
+      const qCamera = this.camera.quaternion.clone();
       // Rotation to be applied by mouse motion (in camera frame)
-      var qMotion = new THREE.Quaternion().setFromEuler(
+      const qMotion = new THREE.Quaternion().setFromEuler(
         new THREE.Euler(deltaMove.y * (Math.PI / 180), deltaMove.x * (Math.PI / 180), 0, 'XYZ'),
       );
       // Rotation to be applied by mouse motion (in world frame) - note that
@@ -741,7 +743,7 @@ PLThreeJS.prototype.onmouseup = function () {
 };
 
 PLThreeJS.prototype.updateHiddenInput = function () {
-  var val = {
+  const val = {
     body_quaternion: this.bodyGroup.quaternion.toArray(),
     body_position: this.bodyGroup.position.toArray(),
     camera_quaternion: this.camera.quaternion.toArray(),
@@ -753,13 +755,13 @@ PLThreeJS.prototype.updateHiddenInput = function () {
 
 PLThreeJS.prototype.updateDisplayOfPose = function () {
   function numToString(n, decimals, digits) {
-    var s = n.toFixed(decimals);
+    let s = n.toFixed(decimals);
     s = ' '.repeat(digits - s.length) + s;
     return s;
   }
 
   function posToMatlab(p) {
-    var s = '% The position of the body frame.\n';
+    let s = '% The position of the body frame.\n';
     s += 'p = [ ';
     s += numToString(p.x, 4, 7) + ' ;\n      ';
     s += numToString(p.y, 4, 7) + ' ;\n      ';
@@ -768,7 +770,7 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
   }
 
   function posToPython(p) {
-    var s = '# The position of the body frame.\n';
+    let s = '# The position of the body frame.\n';
     s += 'p = np.array([';
     s += '[ ' + numToString(p.x, 4, 7) + ' ],\n              ';
     s += '[ ' + numToString(p.y, 4, 7) + ' ],\n              ';
@@ -777,9 +779,9 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
   }
 
   function quatToMatlab(q) {
-    var s = '% The orientation of the body frame as a quaternion [x, y, z, w].\n';
+    let s = '% The orientation of the body frame as a quaternion [x, y, z, w].\n';
     s += 'q = [ ';
-    for (var i = 0; i < 4; i++) {
+    for (let i = 0; i < 4; i++) {
       s += numToString(q[i], 4, 7);
       if (i < 3) {
         s += ' ';
@@ -791,9 +793,9 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
   }
 
   function quatToPython(q) {
-    var s = '# The orientation of the body frame as a quaternion [x, y, z, w].\n';
+    let s = '# The orientation of the body frame as a quaternion [x, y, z, w].\n';
     s += 'q = np.array([ ';
-    for (var i = 0; i < 4; i++) {
+    for (let i = 0; i < 4; i++) {
       s += numToString(q[i], 4, 7);
       if (i < 3) {
         s += ', ';
@@ -805,10 +807,10 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
   }
 
   function rotToMatlab(R) {
-    var s = '% The orientation of the body frame as a rotation matrix.\n';
+    let s = '% The orientation of the body frame as a rotation matrix.\n';
     s += 'R = [ ';
-    for (var i = 0; i < 3; i++) {
-      for (var j = 0; j < 3; j++) {
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
         s += numToString(R[i + 4 * j], 4, 7);
         if (j < 2) {
           s += ' ';
@@ -823,11 +825,11 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
   }
 
   function rotToPython(R) {
-    var s = '# The orientation of the body frame as a rotation matrix.\n';
+    let s = '# The orientation of the body frame as a rotation matrix.\n';
     s += 'R = np.array([';
-    for (var i = 0; i < 3; i++) {
+    for (let i = 0; i < 3; i++) {
       s += '[ ';
-      for (var j = 0; j < 3; j++) {
+      for (let j = 0; j < 3; j++) {
         s += numToString(R[i + 4 * j], 4, 7);
         if (j < 2) {
           s += ', ';
@@ -843,10 +845,10 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
   }
 
   function homToMatlab(R) {
-    var s = '% The pose of the body frame as a homogeneous transformation matrix.\n';
+    let s = '% The pose of the body frame as a homogeneous transformation matrix.\n';
     s += 'T = [ ';
-    for (var i = 0; i < 4; i++) {
-      for (var j = 0; j < 4; j++) {
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
         s += numToString(R[i + 4 * j], 4, 7);
         if (j < 3) {
           s += ' ';
@@ -861,11 +863,11 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
   }
 
   function homToPython(R) {
-    var s = '# The pose of the body frame as a homogeneous transformation matrix.\n';
+    let s = '# The pose of the body frame as a homogeneous transformation matrix.\n';
     s += 'T = np.array([';
-    for (var i = 0; i < 4; i++) {
+    for (let i = 0; i < 4; i++) {
       s += '[ ';
-      for (var j = 0; j < 4; j++) {
+      for (let j = 0; j < 4; j++) {
         s += numToString(R[i + 4 * j], 4, 7);
         if (j < 3) {
           s += ', ';
@@ -880,8 +882,8 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
     return s;
   }
 
-  var matlabText = '';
-  var pythonText = 'import numpy as np\n\n';
+  let matlabText = '';
+  let pythonText = 'import numpy as np\n\n';
   if (this.textPoseFormat === 'matrix') {
     // position
     matlabText += posToMatlab(this.bodyGroup.position) + '\n\n';

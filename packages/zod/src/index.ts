@@ -71,21 +71,27 @@ const PostgresIntervalSchema = z.object({
 /**
  * A Zod schema for a PostgreSQL interval.
  *
- * This handles two representations of an interval:
+ * This handles three representations of an interval:
  *
  * - A string like "1 year 2 days", which is how intervals will be represented
  *   if they go through `to_jsonb` in a query.
  * - A {@link PostgresIntervalSchema} object, which is what we'll get if a
  *   query directly returns an interval column. The interval will already be
  *   parsed by `postgres-interval` by way of `pg-types`.
+ * - A number of milliseconds, which is possible if you want to feed the output of IntervalSchema.parse()
+ *   back through this schema.
  *
- * In either case, we convert the interval to a number of milliseconds.
+ * In all cases, we convert the interval to a number of milliseconds.
  */
 export const IntervalSchema = z
-  .union([z.string(), PostgresIntervalSchema])
+  .union([z.string(), PostgresIntervalSchema, z.number()])
   .transform((interval) => {
     if (typeof interval === 'string') {
       interval = parsePostgresInterval(interval);
+    }
+
+    if (typeof interval === 'number') {
+      return interval;
     }
 
     // This calculation matches Postgres's behavior when computing the number of
@@ -135,13 +141,33 @@ export const IntegerFromStringOrEmptySchema = z.preprocess(
 );
 
 /**
- * A Zod schema for an arrray of string values from either a string or an array of
+ * A Zod schema for an array of string values from either a string or an array of
  * strings.
  */
 export const ArrayFromStringOrArraySchema = z
   .union([z.string(), z.array(z.string())])
   .transform((s) => {
     if (s === null) {
+      return [];
+    } else if (Array.isArray(s)) {
+      return s;
+    } else {
+      return [s];
+    }
+  });
+
+/**
+ * A Zod schema for an array of string values from a set of checkboxes in the
+ * body parameters from a form. The form should have checkboxes with the same
+ * name attribute, and the value of the checkboxes should be the string values
+ * to include in the array. If no checkboxes are checked, this will return an
+ * empty array. This behavior relies on the ExpressJS `bodyParser.urlencoded()`
+ * middleware that parses the submitted data into a string or array.
+ */
+export const ArrayFromCheckboxSchema = z
+  .union([z.undefined(), z.string(), z.array(z.string())])
+  .transform((s) => {
+    if (s == null) {
       return [];
     } else if (Array.isArray(s)) {
       return s;

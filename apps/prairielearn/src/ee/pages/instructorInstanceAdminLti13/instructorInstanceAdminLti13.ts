@@ -7,8 +7,8 @@ import { flash } from '@prairielearn/flash';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryRow,
   queryRows,
   runInTransactionAsync,
@@ -16,12 +16,13 @@ import {
 
 import {
   AssessmentSchema,
-  Lti13AssessmentsSchema,
+  Lti13AssessmentSchema,
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
   Lti13CombinedInstanceSchema,
@@ -45,11 +46,11 @@ const router = Router({ mergeParams: true });
 
 router.get(
   '/:unsafe_lti13_course_instance_id?',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_edit'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
-    }
-
     const instances = await queryRows(
       sql.select_combined_lti13_instances,
       { course_instance_id: res.locals.course_instance.id },
@@ -115,7 +116,7 @@ router.get(
     const lineitems = await queryRows(
       sql.select_lti13_assessments,
       { lti13_course_instance_id: instance.lti13_course_instance.id },
-      Lti13AssessmentsSchema,
+      Lti13AssessmentSchema,
     );
 
     res.send(
@@ -234,7 +235,7 @@ router.post(
           group_id,
           assessments_group_by: res.locals.course_instance.assessments_group_by,
         },
-        Lti13AssessmentsSchema,
+        Lti13AssessmentSchema,
       );
 
       flash(
@@ -289,9 +290,6 @@ router.post(
         },
         AssessmentSchema,
       );
-      if (assessment === null) {
-        throw new error.HttpStatusError(403, 'Invalid assessment.id');
-      }
 
       serverJobOptions.description = 'LTI 1.3 send assessment grades to LMS';
       const serverJob = await createServerJob(serverJobOptions);
@@ -299,7 +297,7 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         await updateLti13Scores(assessment.id, instance, job);
 
-        await queryAsync(sql.update_lti13_assessment_last_activity, {
+        await execute(sql.update_lti13_assessment_last_activity, {
           assessment_id: assessment.id,
         });
       });

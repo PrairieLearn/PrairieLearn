@@ -4,7 +4,7 @@
   "title": "Image Capture",
   "set": "Homework",
   "number": "13",
-  "allowAccess": [],
+  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "questions": [
@@ -12,6 +12,16 @@
           "id": "demo/imageCapture",
           "manualPoints": 2,
           "maxManualPoints": 2
+        },
+        {
+          "id": "aiGradingSingleImageCapture",
+          "manualPoints": 2,
+          "maxManualPoints": 2
+        },
+        {
+          "id": "aiGradingMultiImageCapture",
+          "manualPoints": 6,
+          "maxManualPoints": 6
         }
       ]
     }

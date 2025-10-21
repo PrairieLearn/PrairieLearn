@@ -1,15 +1,17 @@
 import { z } from 'zod';
 
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { TagBadgeList } from '../../components/TagBadge.html.js';
-import { TagDescription } from '../../components/TagDescription.html.js';
-import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { TopicDescription } from '../../components/TopicDescription.html.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { TagBadgeList } from '../../components/TagBadge.js';
+import { TagDescription } from '../../components/TagDescription.js';
+import { TopicBadgeHtml } from '../../components/TopicBadge.js';
+import { TopicDescription } from '../../components/TopicDescription.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -21,7 +23,6 @@ import {
   type Topic,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
@@ -53,6 +54,7 @@ export function InstructorQuestionSettings({
   questionTestPath,
   questionTestCsrfToken,
   questionGHLink,
+  questionTags,
   qids,
   assessmentsWithQuestion,
   sharingEnabled,
@@ -68,6 +70,7 @@ export function InstructorQuestionSettings({
   questionTestPath: string;
   questionTestCsrfToken: string;
   questionGHLink: string | null;
+  questionTags: Tag[];
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
@@ -82,7 +85,7 @@ export function InstructorQuestionSettings({
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
-  const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
+  const questionTagNames = new Set(questionTags.map((tag) => tag.name));
 
   return PageLayout({
     resLocals,
@@ -96,7 +99,7 @@ export function InstructorQuestionSettings({
       pageNote: resLocals.question.qid,
     },
     headContent: html`
-      ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
+      ${compiledScriptTag('instructorQuestionSettingsClient.tsx')}
       <style>
         .ts-wrapper.multi .ts-control > span {
           cursor: pointer;
@@ -115,15 +118,18 @@ export function InstructorQuestionSettings({
     content: html`
       ${renderHtml(
         <QuestionSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           question={resLocals.question}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,
       )}
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
           <h1>Question Settings</h1>
+          ${GitHubButtonHtml(questionGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-question-settings-form" method="POST">
@@ -131,9 +137,6 @@ export function InstructorQuestionSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="qid">QID</label>
-              ${questionGHLink
-                ? html`<a target="_blank" href="${questionGHLink}">view on GitHub</a>`
-                : ''}
               <input
                 type="text"
                 class="form-control font-monospace"
@@ -175,9 +178,7 @@ export function InstructorQuestionSettings({
                     <th class="align-middle">
                       <label id="topic-label" for="topic">Topic</label>
                     </th>
-                    <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
-                    <!-- This is used by tom-select to style the active item in the dropdown -->
-                    <td style="--bs-tertiary-bg: #f8f9fa">
+                    <td>
                       ${canEdit
                         ? html`
                             <select
@@ -194,14 +195,14 @@ export function InstructorQuestionSettings({
                                     data-name="${topic.name}"
                                     data-description="${topic.implicit
                                       ? ''
-                                      : TopicDescription(topic)}"
+                                      : renderHtml(<TopicDescription topic={topic} />)}"
                                     ${topic.name === resLocals.topic.name ? 'selected' : ''}
                                   ></option>
                                 `;
                               })}
                             </select>
                           `
-                        : TopicBadge(resLocals.topic)}
+                        : TopicBadgeHtml(resLocals.topic)}
                     </td>
                   </tr>
                   <tr>
@@ -228,14 +229,14 @@ export function InstructorQuestionSettings({
                                         data-description="${tag.implicit
                                           ? ''
                                           : TagDescription(tag)}"
-                                        ${selectedTags.has(tag.name) ? 'selected' : ''}
+                                        ${questionTagNames.has(tag.name) ? 'selected' : ''}
                                       ></option>
                                     `;
                                   })
                                 : ''}
                             </select>
                           `
-                        : TagBadgeList(resLocals.tags)}
+                        : renderHtml(<TagBadgeList tags={questionTags} />)}
                     </td>
                   </tr>
                   ${shouldShowAssessmentsList
@@ -445,6 +446,135 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                 </div>
               </div>
             </div>
+            <div class="d-flex align-items-center mb-3">
+              <h2 class="h4 mb-0 me-2">External Grading</h2>
+              <button
+                class="btn btn-sm btn-light"
+                type="button"
+                id="show-external-grading-options-button"
+                ${resLocals.question.external_grading_image ? 'hidden' : ''}
+              >
+                Configure external grading
+              </button>
+            </div>
+            <div>
+              <div
+                id="external-grading-options"
+                ${resLocals.question.external_grading_image ? '' : 'hidden'}
+              >
+                <div class="mb-3 form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="external_grading_enabled"
+                    name="external_grading_enabled"
+                    ${canEdit ? '' : 'disabled'}
+                    ${resLocals.question.external_grading_enabled === true ? 'checked' : ''}
+                  />
+                  <label class="form-check-label" for="external_grading_enabled">Enabled</label>
+                  <div class="small text-muted">
+                    Whether the external grader is currently enabled. Useful for troubleshooting
+                    external grader failures, for instance.
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="external_grading_image">Image</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="external_grading_image"
+                    name="external_grading_image"
+                    value="${resLocals.question.external_grading_image}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    The Docker image that will be used to grade this question. Only images from the
+                    Dockerhub registry are supported.
+                  </small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="external_grading_entrypoint">Entrypoint</label>
+                  <input
+                    class="form-control"
+                    type="text"
+                    id="external_grading_entrypoint"
+                    name="external_grading_entrypoint"
+                    ${canEdit ? '' : 'disabled'}
+                    value="${resLocals.question.external_grading_entrypoint}"
+                  />
+                  <small class="form-text text-muted">
+                    Program or command to run as the entrypoint to your grader. If not provided, the
+                    default entrypoint for the image will be used.
+                  </small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="external_grading_files">Server files</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="external_grading_files"
+                    name="external_grading_files"
+                    value="${resLocals.question.external_grading_files?.join(', ')}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    The list of files or directories that will be copied from
+                    <code>course/serverFilesCourse</code> into the grading job. You may enter
+                    multiple files or directories, separated by commas.
+                  </small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="external_grading_timeout">Timeout</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="external_grading_timeout"
+                    name="external_grading_timeout"
+                    min="0"
+                    value="${resLocals.question.external_grading_timeout}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    The number of seconds after which the grading job will timeout.
+                  </small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="external_grading_environment">Environment</label>
+                  <textarea
+                    class="form-control"
+                    id="external_grading_environment"
+                    name="external_grading_environment"
+                    ${canEdit ? '' : 'disabled'}
+                  >
+${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
+                    typeof resLocals.question.external_grading_environment === 'object'
+                      ? JSON.stringify(resLocals.question.external_grading_environment, null, 2)
+                      : '{}'}</textarea
+                  >
+                  <small class="form-text text-muted">
+                    Environment variables to set inside the grading container. Variables must be
+                    specified as a JSON object (e.g. <code>{"key":"value"}</code>).
+                  </small>
+                </div>
+                <div class="mb-3 form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="external_grading_enable_networking"
+                    name="external_grading_enable_networking"
+                    ${canEdit ? '' : 'disabled'}
+                    ${resLocals.question.external_grading_enable_networking ? 'checked' : ''}
+                  />
+                  <label class="form-check-label" for="external_grading_enable_networking">
+                    Enable networking
+                  </label>
+                  <div class="small text-muted">
+                    Whether the grading containers should have network access. Access is disabled by
+                    default.
+                  </div>
+                </div>
+              </div>
+            </div>
             ${canEdit
               ? html`
                   <button
@@ -522,7 +652,7 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
         </div>
         ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) || canEdit
           ? html`
-              <div class="card-footer">
+              <div class="card-footer d-flex flex-wrap gap-2">
                 ${editableCourses.length > 0 &&
                 resLocals.authz_data.has_course_permission_view &&
                 resLocals.question.course_id === resLocals.course.id
@@ -626,7 +756,7 @@ function DeleteQuestionModal({
         Are you sure you want to delete the question
         <strong>${qid}</strong>?
       </p>
-      ${assessmentsWithQuestion.length
+      ${assessmentsWithQuestion.length > 0
         ? html`
             <p>It is included by these assessments:</p>
             <ul class="list-group my-4">
@@ -635,9 +765,9 @@ function DeleteQuestionModal({
                   <li class="list-group-item">
                     <div class="h6">${a_with_q.short_name} (${a_with_q.long_name})</div>
                     ${a_with_q.assessments.map((assessment) =>
-                      AssessmentBadge({
+                      AssessmentBadgeHtml({
                         plainUrlPrefix: config.urlPrefix,
-                        course_instance_id: a_with_q.course_instance_id,
+                        courseInstanceId: a_with_q.course_instance_id,
                         assessment,
                       }),
                     )}
@@ -670,7 +800,12 @@ function QuestionTestsForm({
   questionTestCsrfToken: string;
 }) {
   return html`
-    <form name="question-tests-form" method="POST" action="${questionTestPath}">
+    <form
+      name="question-tests-form"
+      method="POST"
+      action="${questionTestPath}"
+      class="d-flex flex-wrap gap-2"
+    >
       <input type="hidden" name="__csrf_token" value="${questionTestCsrfToken}" />
       <button
         type="submit"

@@ -1,33 +1,31 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import {
-  callAsync,
-  loadSqlEquiv,
-  queryAsync,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import { IdSchema } from '@prairielearn/zod';
 
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import {
+  deleteAiGradingJobs,
+  toggleAiGradingMode,
+} from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
-  AssessmentQuestionSchema,
-  GradingJobSchema,
-  InstanceQuestionSchema,
-} from '../../../lib/db-types.js';
+  deleteAiInstanceQuestionGroups,
+  selectAssessmentQuestionHasInstanceQuestionGroups,
+  selectInstanceQuestionGroups,
+} from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
-import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestion } from './assessmentQuestion.html.js';
@@ -38,14 +36,23 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     const courseStaff = await selectCourseInstanceGraderStaff({
       course_instance_id: res.locals.course_instance.id,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const rubric_data = await manualGrading.selectRubricData({
+      assessment_question: res.locals.assessment_question,
+    });
+
+    const instanceQuestionGroups = await selectInstanceQuestionGroups({
+      assessmentQuestionId: res.locals.assessment_question.id,
+    });
+
     res.send(
       AssessmentQuestion({
         resLocals: res.locals,
@@ -56,6 +63,8 @@ router.get(
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
+        instanceQuestionGroups,
+        rubric_data,
       }),
     );
   }),
@@ -98,14 +107,31 @@ router.get(
     ) {
       throw new error.HttpStatusError(400, 'prior_instance_question_id must be a single value');
     }
+
+    req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+
+    const use_instance_question_groups = await run(async () => {
+      const aiGradingMode =
+        (await features.enabledFromLocals('ai-grading', res.locals)) &&
+        res.locals.assessment_question.ai_grading_mode;
+      if (!aiGradingMode) {
+        return false;
+      }
+      return await selectAssessmentQuestionHasInstanceQuestionGroups({
+        assessmentQuestionId: res.locals.assessment_question.id,
+      });
+    });
+
     res.redirect(
-      await manualGrading.nextUngradedInstanceQuestionUrl(
-        res.locals.urlPrefix,
-        res.locals.assessment.id,
-        res.locals.assessment_question.id,
-        res.locals.authz_data.user.user_id,
-        req.query.prior_instance_question_id ?? null,
-      ),
+      await manualGrading.nextInstanceQuestionUrl({
+        urlPrefix: res.locals.urlPrefix,
+        assessment_id: res.locals.assessment.id,
+        assessment_question_id: res.locals.assessment_question.id,
+        user_id: res.locals.authz_data.user.user_id,
+        prior_instance_question_id: req.query.prior_instance_question_id ?? null,
+        skip_graded_submissions: true,
+        use_instance_question_groups,
+      }),
     );
   }),
 );
@@ -116,6 +142,8 @@ router.post(
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
+    // TODO: parse req.body with Zod
+
     if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
@@ -138,8 +166,33 @@ router.post(
         });
 
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+      } else if (req.body.batch_action === 'ai_instance_question_group_selected') {
+        if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+          throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+        }
+
+        const instance_question_ids = Array.isArray(req.body.instance_question_id)
+          ? req.body.instance_question_id
+          : [req.body.instance_question_id];
+
+        const jobSequenceId = await aiInstanceQuestionGrouping({
+          question: res.locals.question,
+          course: res.locals.course,
+          course_instance_id: res.locals.course_instance.id,
+          assessment_question: res.locals.assessment_question,
+          urlPrefix: res.locals.urlPrefix,
+          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.user_id,
+          instance_question_ids,
+          closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+          ungrouped_instance_questions_only: false,
+        });
+
+        res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else {
-        const action_data = JSON.parse(req.body.batch_action_data) || {};
+        const action_data = req.body.batch_action_data
+          ? JSON.parse(req.body.batch_action_data)
+          : {};
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
@@ -154,7 +207,7 @@ router.post(
             );
           }
         }
-        await queryAsync(sql.update_instance_questions, {
+        await execute(sql.update_instance_questions, {
           assessment_question_id: res.locals.assessment_question.id,
           instance_question_ids,
           update_requires_manual_grading: 'requires_manual_grading' in action_data,
@@ -169,7 +222,7 @@ router.post(
         res.locals.assessment.id,
         req.body.instance_question_id,
         null, // submission_id
-        req.body.modified_at,
+        req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at
         {
           points: req.body.points,
           manual_points: req.body.manual_points,
@@ -187,9 +240,7 @@ router.post(
         res.send({});
       }
     } else if (req.body.__action === 'toggle_ai_grading_mode') {
-      await queryAsync(sql.toggle_ai_grading_mode, {
-        assessment_question_id: res.locals.assessment_question.id,
-      });
+      await toggleAiGradingMode(res.locals.assessment_question.id);
       res.redirect(req.originalUrl);
     } else if (
       ['ai_grade_assessment', 'ai_grade_assessment_graded', 'ai_grade_assessment_all'].includes(
@@ -209,11 +260,46 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
         mode: run(() => {
-          if (req.body.__action === 'ai_grade_assessment') return 'ungraded';
           if (req.body.__action === 'ai_grade_assessment_graded') return 'human_graded';
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';
           throw new Error(`Unknown action: ${req.body.__action}`);
         }),
+      });
+
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'ai_instance_question_group_assessment_all') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const jobSequenceId = await aiInstanceQuestionGrouping({
+        question: res.locals.question,
+        course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
+        assessment_question: res.locals.assessment_question,
+        urlPrefix: res.locals.urlPrefix,
+        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.user_id,
+        closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+        ungrouped_instance_questions_only: false,
+      });
+
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'ai_instance_question_group_assessment_ungrouped') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const jobSequenceId = await aiInstanceQuestionGrouping({
+        question: res.locals.question,
+        course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
+        assessment_question: res.locals.assessment_question,
+        urlPrefix: res.locals.urlPrefix,
+        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.user_id,
+        closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+        ungrouped_instance_questions_only: true,
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -222,57 +308,10 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      // TODO: revisit this before general availability of AI grading. This implementation
-      // was added primarily to facilitate demos at ASEE 2025. It may not behave completely
-      // correctly in call cases; see the TODOs in the SQL query for more details.
-      //
-      // TODO: we should add locking here. Specifically, we should process each
-      // assessment instance + instance question one at a time in separate
-      // transactions so that we don't need to lock all relevant assessment instances
-      // and assessment questions at once.
-      const iqs = await runInTransactionAsync(async () => {
-        const iqs = await queryRows(
-          sql.delete_ai_grading_jobs,
-          {
-            authn_user_id: res.locals.authn_user.user_id,
-            assessment_question_id: res.locals.assessment_question.id,
-          },
-          z.object({
-            id: IdSchema,
-            assessment_instance_id: IdSchema,
-            max_points: AssessmentQuestionSchema.shape.max_points,
-            max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
-            max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
-            points: InstanceQuestionSchema.shape.points,
-            score_perc: InstanceQuestionSchema.shape.score_perc,
-            auto_points: InstanceQuestionSchema.shape.auto_points,
-            manual_points: InstanceQuestionSchema.shape.manual_points,
-            most_recent_manual_grading_job: GradingJobSchema.nullable(),
-          }),
-        );
-
-        for (const iq of iqs) {
-          await callAsync('assessment_instances_grade', [
-            iq.assessment_instance_id,
-            // We use the user who is performing the deletion.
-            res.locals.authn_user.user_id,
-            100, // credit
-            false, // only_log_if_score_updated
-            true, // allow_decrease
-          ]);
-        }
-
-        return iqs;
+      const iqs = await deleteAiGradingJobs({
+        assessment_question_ids: [res.locals.assessment_question.id],
+        authn_user_id: res.locals.authn_user.user_id,
       });
-
-      // Important: this is done outside of the above transaction so that we don't
-      // hold a database connection open while we do network calls.
-      //
-      // This is here for consistency with other assessment score updating code. We
-      // shouldn't hit this for the vast majority of assessments.
-      for (const iq of iqs) {
-        await ltiOutcomes.updateScore(iq.assessment_instance_id);
-      }
 
       flash(
         'success',
@@ -280,6 +319,35 @@ router.post(
       );
 
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'delete_ai_instance_question_groupings') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const numDeleted = await deleteAiInstanceQuestionGroups({
+        assessment_question_id: res.locals.assessment_question.id,
+      });
+
+      flash('success', `Deleted AI submission grouping results for ${numDeleted} questions.`);
+
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'modify_rubric_settings') {
+      try {
+        await manualGrading.updateAssessmentQuestionRubric(
+          res.locals.assessment_question.id,
+          req.body.use_rubric,
+          req.body.replace_auto_points,
+          req.body.starting_points,
+          req.body.min_points,
+          req.body.max_extra_points,
+          req.body.rubric_items,
+          false, // tag_for_manual_grading
+          res.locals.authn_user.user_id,
+        );
+        res.redirect(req.originalUrl);
+      } catch (err) {
+        res.status(500).send({ err: String(err) });
+      }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

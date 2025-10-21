@@ -12,11 +12,13 @@ from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from tokenize import TokenError
+from types import CodeType
 from typing import Any, Literal, TypedDict, TypeGuard, cast
 
 import sympy
 from sympy.parsing.sympy_parser import (
     eval_expr,
+    evaluateFalse,
     implicit_multiplication_application,
     standard_transformations,
     stringify_expr,
@@ -128,6 +130,9 @@ class _Constants:
             "sec": sympy.sec,
             "cot": sympy.cot,
             "csc": sympy.csc,
+            "cosh": sympy.cosh,
+            "sinh": sympy.sinh,
+            "tanh": sympy.tanh,
             "arccos": sympy.acos,
             "arcsin": sympy.asin,
             "arctan": sympy.atan,
@@ -278,13 +283,13 @@ class CheckAST(ast.NodeVisitor):
             raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
 
-    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
+    def visit_Call(self, node: ast.Call) -> None:
         if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
             err_node = self.get_parent_with_location(node)
             raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
 
-    def visit_Name(self, node: ast.Name) -> None:  # noqa: N802
+    def visit_Name(self, node: ast.Name) -> None:
         if (
             isinstance(node.ctx, ast.Load)
             and not self.is_name_of_function(node)
@@ -430,8 +435,12 @@ def evaluate(
 
 
 def evaluate_with_source(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
-) -> tuple[sympy.Expr, str]:
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    simplify_expression: bool = True,
+) -> tuple[sympy.Expr, str | CodeType]:
     """Evaluate a SymPy expression string with a given set of locals.
 
     Returns:
@@ -485,6 +494,9 @@ def evaluate_with_source(
 
     ast_check_str(code, parsed_locals_to_eval)
 
+    if not simplify_expression:
+        code = compile(evaluateFalse(code), "<string>", "eval")
+
     # Now that it's safe, get sympy expression
     try:
         res = eval_expr(code, local_dict, global_dict)
@@ -504,6 +516,7 @@ def convert_string_to_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
 ) -> sympy.Expr:
@@ -518,6 +531,7 @@ def convert_string_to_sympy(
         allow_hidden: Whether to allow hidden variables (like pi and e).
         allow_complex: Whether to allow complex numbers (like i).
         allow_trig_functions: Whether to allow trigonometric functions.
+        simplify_expression: Whether to simplify the expression during conversion by evaluating it.
         custom_functions: A list of custom function names that are allowed in the expression.
         assumptions: A dictionary of assumptions for variables in the expression.
 
@@ -537,6 +551,7 @@ def convert_string_to_sympy(
         allow_hidden=allow_hidden,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
         custom_functions=custom_functions,
         assumptions=assumptions,
     )[0]
@@ -549,9 +564,10 @@ def convert_string_to_sympy_with_source(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
-) -> tuple[sympy.Expr, str]:
+) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
@@ -635,7 +651,12 @@ def convert_string_to_sympy_with_source(
             function_dict[function] = sympy.Function(function)
 
     # Do the conversion
-    return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)
+    return evaluate_with_source(
+        expr,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        simplify_expression=simplify_expression,
+    )
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
@@ -709,6 +730,7 @@ def json_to_sympy(
     *,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
 ) -> sympy.Expr:
     """Convert a json-seralizable dictionary created by [sympy_to_json][prairielearn.sympy_utils.sympy_to_json] to a SymPy expression.
 
@@ -733,6 +755,7 @@ def json_to_sympy(
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
         custom_functions=sympy_expr_dict.get("_custom_functions"),
         assumptions=sympy_expr_dict.get("_assumptions"),
     )
@@ -857,7 +880,7 @@ def get_items_list(items_string: str | None) -> list[str]:
 
 def greek_unicode_transform(input_str: str) -> str:
     """Return input_str where all unicode greek letters are replaced by their spelled-out english names."""
-    # From https://gist.github.com/beniwohli/765262
+    # From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda
     greek_alphabet = {
         "\u0391": "Alpha",
         "\u0392": "Beta",
@@ -869,7 +892,7 @@ def greek_unicode_transform(input_str: str) -> str:
         "\u0398": "Theta",
         "\u0399": "Iota",
         "\u039a": "Kappa",
-        "\u039b": "Lamda",
+        "\u039b": "Lambda",
         "\u039c": "Mu",
         "\u039d": "Nu",
         "\u039e": "Xi",
@@ -893,7 +916,7 @@ def greek_unicode_transform(input_str: str) -> str:
         "\u03b8": "theta",
         "\u03b9": "iota",
         "\u03ba": "kappa",
-        "\u03bb": "lamda",
+        "\u03bb": "lambda",
         "\u03bc": "mu",
         "\u03bd": "nu",
         "\u03be": "xi",

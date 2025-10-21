@@ -1,13 +1,13 @@
 import { html, unsafeHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
-import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QuestionContainer } from '../../components/QuestionContainer.html.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionContainer } from '../../components/QuestionContainer.js';
+import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorQuestionPreview({
   normalPreviewUrl,
@@ -16,6 +16,7 @@ export function InstructorQuestionPreview({
   aiGradingPreviewEnabled,
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
+  readmeHtml,
   questionCopyTargets,
   resLocals,
 }: {
@@ -25,6 +26,7 @@ export function InstructorQuestionPreview({
   aiGradingPreviewEnabled: boolean;
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams: URLSearchParams;
+  readmeHtml: string;
   questionCopyTargets: CopyTarget[] | null;
   resLocals: Record<string, any>;
 }) {
@@ -50,18 +52,35 @@ export function InstructorQuestionPreview({
             <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
             <script src="${assetPath('javascripts/require.js')}"></script>
             <script src="${assetPath('localscripts/question.js')}"></script>
-            <script src="${assetPath(
-                `localscripts/question${resLocals.effectiveQuestionType}.js`,
-              )}"></script>
+            <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
           `
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
+      <style>
+        .markdown-body :last-child {
+          margin-bottom: 0;
+        }
+
+        .reveal-fade {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 6rem;
+          background: linear-gradient(to bottom, transparent, var(--bs-light));
+          pointer-events: none;
+        }
+
+        .max-height {
+          max-height: 150px;
+        }
+      </style>
     `,
     preContent: html`
       <div class="container-fluid">
         ${renderHtml(
           <QuestionSyncErrorsAndWarnings
-            authz_data={resLocals.authz_data}
+            authzData={resLocals.authz_data}
             question={resLocals.question}
             course={resLocals.course}
             urlPrefix={resLocals.urlPrefix}
@@ -90,6 +109,40 @@ export function InstructorQuestionPreview({
         : ''}
       <div class="row">
         <div class="col-lg-9 col-sm-12">
+          ${readmeHtml
+            ? html`
+                <div class="card mb-3 js-readme-card overflow-hidden">
+                  <div class="card-header d-flex align-items-center collapsible-card-header">
+                    <h2 class="me-auto">
+                      README <span class="small text-muted">(not visible to students)</span>
+                    </h2>
+                    <button
+                      type="button"
+                      class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#readme-card-body"
+                      aria-expanded="true"
+                      aria-controls="#readme-card-body"
+                    >
+                      <i class="fa fa-angle-up ms-1 expand-icon"></i>
+                    </button>
+                  </div>
+                  <div class="show js-collapsible-card-body" id="readme-card-body">
+                    <div
+                      class="card-body position-relative markdown-body overflow-hidden max-height"
+                    >
+                      ${unsafeHtml(readmeHtml)}
+                    </div>
+                    <div class="reveal-fade d-none"></div>
+                    <div
+                      class="py-1 z-1 position-relative d-none justify-content-center bg-light js-expand-button-container"
+                    >
+                      <button type="button" class="btn btn-sm btn-link">Expand</button>
+                    </div>
+                  </div>
+                </div>
+              `
+            : ''}
           ${QuestionContainer({
             resLocals,
             showFooter: manualGradingPreviewEnabled || aiGradingPreviewEnabled ? false : undefined,

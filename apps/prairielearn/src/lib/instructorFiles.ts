@@ -213,7 +213,7 @@ export function getPaths(
     ...path
       .relative(coursePath, workingPath)
       .split(path.sep)
-      .filter((dir) => dir)
+      .filter(Boolean)
       .map((dir) => {
         curPath = path.join(curPath, dir);
         return {

@@ -2,11 +2,13 @@ import { S3 } from '@aws-sdk/client-s3';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fetch from 'node-fetch';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
+import { WorkspaceHostSchema, WorkspaceSchema } from '../../lib/db-types.js';
 
 import {
   type WorkspaceLogRow,
@@ -53,11 +55,19 @@ async function loadLogsForWorkspaceVersion(
   if (!config.workspaceLogsS3Bucket) return null;
 
   // Get the current workspace version.
-  const workspaceRes = await sqldb.queryOneRowAsync(sql.select_workspace, {
-    workspace_id: workspaceId,
-    version,
-  });
-  const workspace = workspaceRes.rows[0];
+  const workspace = await sqldb.queryRow(
+    sql.select_workspace,
+    {
+      workspace_id: workspaceId,
+      version,
+    },
+    z.object({
+      is_current_version: z.boolean(),
+      hostname: WorkspaceHostSchema.shape.hostname,
+      state: WorkspaceSchema.shape.state,
+      version: WorkspaceSchema.shape.version,
+    }),
+  );
 
   const logParts: string[] = [];
 

@@ -6,7 +6,6 @@ import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -35,8 +34,10 @@ import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
   type Assessment,
+  AssessmentSchema,
   type Course,
   type CourseInstance,
+  CourseInstanceSchema,
   type Question,
   type User,
 } from './db-types.js';
@@ -134,7 +135,7 @@ export function getUniqueNames({
         shortNameCompare === oldShortNameCompare ||
         oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
       if (found) {
-        const foundNumber = shortNameCompare === oldShortNameCompare ? 1 : parseInt(found[1]);
+        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -154,7 +155,7 @@ export function getUniqueNames({
       const found =
         oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
       if (found) {
-        const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
+        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -165,7 +166,7 @@ export function getUniqueNames({
 
   const numberShortName = getNumberShortName(shortNames);
   const numberLongName = getNumberLongName(longNames);
-  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  const number = Math.max(numberShortName, numberLongName);
 
   if (number === 1 && shortName !== 'New' && longName !== 'New') {
     // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
@@ -190,8 +191,16 @@ export function getUniqueNames({
  * `defaultValue` may be either a value to compare directly with `===`, or a function
  * that accepts a value and returns a boolean to indicate if it should be considered
  * a default value.
+ *
+ * You should set `isUIBoolean` to true if the property is a UI boolean that controls whether another field is enabled.
+ * For example, `beforeDateEnabled` is a UI boolean that controls whether the `beforeDate` field is enabled.
  */
-export function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+export function propertyValueWithDefault(
+  existingValue: any,
+  newValue: any,
+  defaultValue: any,
+  { isUIBoolean = false }: { isUIBoolean?: boolean } = {},
+) {
   const isExistingDefault =
     typeof defaultValue === 'function'
       ? defaultValue(existingValue)
@@ -199,10 +208,17 @@ export function propertyValueWithDefault(existingValue, newValue, defaultValue) 
   const isNewDefault =
     typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
 
+  // If this is a UI boolean where the default value is false, we want to write that out as false, not as undefined.
+  const writeFalse = isUIBoolean && defaultValue === false && newValue === false;
+  if (writeFalse) {
+    return false;
+  }
+
   if (existingValue === undefined) {
     if (!isNewDefault) {
       return newValue;
     }
+    return undefined;
   } else {
     if (!isExistingDefault && isNewDefault) {
       return undefined;
@@ -481,7 +497,7 @@ export abstract class Editor {
     const idSplit = id.split(path.sep);
 
     // Start deleting subfolders in reverse order
-    const reverseFolders = idSplit.slice(0, -1).reverse();
+    const reverseFolders = idSplit.slice(0, -1).toReversed();
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
@@ -558,7 +574,7 @@ function getNamesForCopy(
   longNames: string[],
 ): { shortName: string; longName: string } {
   function getBaseShortName(oldname: string): string {
-    const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
+    const found = oldname.match(/^(.*)_copy[0-9]+$/);
     if (found) {
       return found[1];
     } else {
@@ -569,7 +585,7 @@ function getNamesForCopy(
   function getBaseLongName(oldname: string | null): string {
     if (typeof oldname !== 'string') return 'Unknown';
     debug(oldname);
-    const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
+    const found = oldname.match(/^(.*) \(copy [0-9]+\)$/);
     debug(found);
     if (found) {
       return found[1];
@@ -583,7 +599,7 @@ function getNamesForCopy(
     oldnames.forEach((oldname) => {
       const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
       if (found) {
-        const foundNumber = parseInt(found[1]);
+        const foundNumber = Number.parseInt(found[1]);
         if (foundNumber >= number) {
           number = foundNumber + 1;
         }
@@ -598,7 +614,7 @@ function getNamesForCopy(
       if (typeof oldname !== 'string') return;
       const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
       if (found) {
-        const foundNumber = parseInt(found[1]);
+        const foundNumber = Number.parseInt(found[1]);
         if (foundNumber >= number) {
           number = foundNumber + 1;
         }
@@ -611,7 +627,7 @@ function getNamesForCopy(
   const baseLongName = getBaseLongName(oldLongName);
   const numberShortName = getNumberShortName(baseShortName, shortNames);
   const numberLongName = getNumberLongName(baseLongName, longNames);
-  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  const number = Math.max(numberShortName, numberLongName);
   return {
     shortName: `${baseShortName}_copy${number}`,
     longName: `${baseLongName} (copy ${number})`,
@@ -637,7 +653,7 @@ export class AssessmentCopyEditor extends Editor {
     this.assessment = assessment;
     this.course_instance = course_instance;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {
@@ -679,7 +695,7 @@ export class AssessmentCopyEditor extends Editor {
     debug('Read infoAssessment.json');
     const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
 
-    delete infoJson['shareSourcePublicly'];
+    delete infoJson.shareSourcePublicly;
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -828,7 +844,7 @@ export class AssessmentAddEditor extends Editor {
 
     this.course_instance = course_instance;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.aid = params.aid;
     this.title = params.title;
@@ -942,7 +958,7 @@ export class CourseInstanceCopyEditor extends Editor {
     this.from_path = params.from_path;
     this.is_transfer = is_transfer;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {
@@ -952,10 +968,11 @@ export class CourseInstanceCopyEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.long_name);
+    const oldNamesLong = await sqldb.queryRows(
+      sql.select_course_instances_with_course,
+      { course_id: this.course.id },
+      z.string(),
+    );
 
     debug('Get all existing short names');
     const oldNamesShort = await getExistingShortNames(
@@ -966,7 +983,7 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Generate short_name and long_name');
     let shortName = this.course_instance.short_name;
     let longName = this.course_instance.long_name;
-    if (oldNamesShort.includes(shortName) || oldNamesLong.includes(longName)) {
+    if (oldNamesShort.includes(shortName) || (longName && oldNamesLong.includes(longName))) {
       const names = getNamesForCopy(
         this.course_instance.short_name,
         oldNamesShort,
@@ -1001,7 +1018,7 @@ export class CourseInstanceCopyEditor extends Editor {
 
       // Clear access rules to avoid leaking student PII or unexpectedly
       // making the copied course instance available to users.
-      infoJson['allowAccess'] = [];
+      infoJson.allowAccess = [];
 
       const questionsForCopy = await selectQuestionsForCourseInstanceCopy(this.course_instance.id);
       const questionsToLink = new Set(
@@ -1041,7 +1058,7 @@ export class CourseInstanceCopyEditor extends Editor {
           // All non-deleted questions should have a UUID.
           assert(question.uuid, 'question.uuid is required');
 
-          if (existingQuestionUuids.has(question.uuid)) return uuidv4();
+          if (existingQuestionUuids.has(question.uuid)) return crypto.randomUUID();
 
           return question.uuid;
         });
@@ -1087,7 +1104,7 @@ export class CourseInstanceCopyEditor extends Editor {
     infoJson.uuid = this.uuid;
 
     // We do not want to preserve sharing settings when copying a course instance
-    delete infoJson['shareSourcePublicly'];
+    delete infoJson.shareSourcePublicly;
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
@@ -1121,14 +1138,15 @@ async function updateInfoAssessmentFilesForTargetCourse(
     const infoJson = await fs.readJson(infoPath);
 
     // We do not want to preserve certain settings when copying an assessment to another course
-    delete infoJson['shareSourcePublicly'];
-    infoJson['allowAccess'] = [];
+    delete infoJson.shareSourcePublicly;
+    infoJson.allowAccess = [];
+
+    function shouldAddSharingPrefix(qid: string) {
+      return qid && !qid.startsWith('@') && questionsToImport.has(qid);
+    }
 
     // Rewrite the question IDs to include the course sharing name,
     // or to point to the new path if the question was copied
-    function shouldAddSharingPrefix(qid: string) {
-      return qid && qid[0] !== '@' && questionsToImport.has(qid);
-    }
     for (const zone of infoJson.zones) {
       for (const question of zone.questions) {
         if (question.id) {
@@ -1263,7 +1281,7 @@ export class CourseInstanceAddEditor extends Editor {
       description: 'Add course instance',
     });
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.short_name = params.short_name;
     this.long_name = params.long_name;
@@ -1285,10 +1303,13 @@ export class CourseInstanceAddEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.long_name);
+    const oldNamesLong = await sqldb.queryRows(
+      sql.select_course_instances_with_course,
+      { course_id: this.course.id },
+      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
+      // course instances, which should always have a non-null long name.
+      z.string(),
+    );
 
     debug('Get all existing short names');
     const oldNamesShort = await getExistingShortNames(
@@ -1375,6 +1396,7 @@ export class QuestionAddEditor extends Editor {
 
   private qid?: string;
   private title?: string;
+  private template_source?: 'empty' | 'example' | 'course';
   private template_qid?: string;
   private files?: Record<string, string>;
   private isDraft?: boolean;
@@ -1383,6 +1405,7 @@ export class QuestionAddEditor extends Editor {
     params: BaseEditorOptions & {
       qid?: string;
       title?: string;
+      template_source?: 'empty' | 'example' | 'course';
       template_qid?: string;
       files?: Record<string, string>;
       isDraft?: boolean;
@@ -1393,9 +1416,10 @@ export class QuestionAddEditor extends Editor {
       description: 'Add question',
     });
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
     this.qid = params.qid;
     this.title = params.title;
+    this.template_source = params.template_source;
     this.template_qid = params.template_qid;
     this.files = params.files;
     this.isDraft = params.isDraft;
@@ -1413,8 +1437,10 @@ export class QuestionAddEditor extends Editor {
           z.number(),
         );
 
-        while (fs.existsSync(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))) {
-          //increment and sync to postgres
+        while (
+          await fs.pathExists(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))
+        ) {
+          // increment and sync to postgres
           draftNumber = await sqldb.queryRow(
             sql.update_draft_number,
             { course_id: this.course.id },
@@ -1426,8 +1452,7 @@ export class QuestionAddEditor extends Editor {
       }
 
       debug('Get all existing long names');
-      const questionMetadata = await selectQuestionTitlesForCourse(this.course);
-      const oldNamesLong = questionMetadata.filter((title) => title !== null);
+      const oldNamesLong = await selectQuestionTitlesForCourse(this.course);
 
       debug('Get all existing short names');
       const oldNamesShort = await getExistingShortNames(questionsPath, 'info.json');
@@ -1461,12 +1486,15 @@ export class QuestionAddEditor extends Editor {
       });
     }
 
-    if (this.template_qid) {
-      const exampleCourseQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
-      const fromPath = path.join(exampleCourseQuestionsPath, this.template_qid);
+    if (this.template_source !== 'empty' && this.template_qid) {
+      const sourceQuestionsPath =
+        this.template_source === 'course'
+          ? questionsPath
+          : path.join(EXAMPLE_COURSE_PATH, 'questions');
+      const fromPath = path.join(sourceQuestionsPath, this.template_qid);
 
-      // Ensure that the template_qid folder path is fully contained in the example course questions directory
-      if (!contains(exampleCourseQuestionsPath, fromPath)) {
+      // Ensure that the template_qid folder path is fully contained in the source course questions directory
+      if (!contains(sourceQuestionsPath, fromPath)) {
         throw new AugmentedError('Invalid folder path', {
           info: html`
             <p>The path of the template question folder</p>
@@ -1475,7 +1503,7 @@ export class QuestionAddEditor extends Editor {
             </div>
             <p>must be inside the root directory</p>
             <div class="container">
-              <pre class="bg-dark text-white rounded p-2">${exampleCourseQuestionsPath}</pre>
+              <pre class="bg-dark text-white rounded p-2">${sourceQuestionsPath}</pre>
             </div>
           `,
         });
@@ -1582,7 +1610,6 @@ export class QuestionAddEditor extends Editor {
 
 export class QuestionModifyEditor extends Editor {
   private question: Question;
-  private origHash: string;
   private files: Record<string, string | null>;
 
   constructor(
@@ -1739,10 +1766,14 @@ export class QuestionRenameEditor extends Editor {
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-    const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
-      question_id: this.question.id,
-    });
-    const assessments = result.rows;
+    const assessments = await sqldb.queryRows(
+      sql.select_assessments_with_question,
+      { question_id: this.question.id },
+      z.object({
+        course_instance_directory: CourseInstanceSchema.shape.short_name,
+        assessment_directory: AssessmentSchema.shape.tid,
+      }),
+    );
 
     const pathsToAdd = [oldPath, newPath];
 
@@ -1750,6 +1781,11 @@ export class QuestionRenameEditor extends Editor {
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
+      assert(
+        assessment.course_instance_directory !== null,
+        'course_instance_directory is required',
+      );
+      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
         'courseInstances',
@@ -1761,14 +1797,14 @@ export class QuestionRenameEditor extends Editor {
       pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
-      const infoJson = await fs.readJson(infoPath);
+      const infoJson: any = await fs.readJson(infoPath);
 
       debug(`Find/replace QID in ${infoPath}`);
-      let found = false;
-      infoJson.zones.forEach((zone) => {
-        zone.questions.forEach((question) => {
+      let found = false as boolean;
+      infoJson.zones?.forEach((zone: any) => {
+        zone.questions?.forEach((question: any) => {
           if (question.alternatives) {
-            question.alternatives.forEach((alternative) => {
+            question.alternatives?.forEach((alternative: any) => {
               if (alternative.id === this.question.qid) {
                 alternative.id = this.qid_new;
                 found = true;
@@ -1826,7 +1862,7 @@ export class QuestionCopyEditor extends Editor {
     this.from_course = from_course;
     this.is_transfer = is_transfer;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {
@@ -1918,9 +1954,9 @@ async function copyQuestion({
   }
 
   // We do not want to preserve sharing settings when copying a question to another course
-  delete infoJson['sharingSets'];
-  delete infoJson['sharePublicly'];
-  delete infoJson['shareSourcePublicly'];
+  delete infoJson.sharingSets;
+  delete infoJson.sharePublicly;
+  delete infoJson.shareSourcePublicly;
 
   const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
   await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
@@ -2299,7 +2335,7 @@ export class FileModifyEditor extends Editor {
     return sha256(contents).toString();
   }
 
-  async shouldEdit() {
+  shouldEdit() {
     debug('get hash of edit contents');
     const editHash = this.getHash(this.editContents);
     debug('editHash: ' + editHash);
@@ -2351,7 +2387,7 @@ export class FileModifyEditor extends Editor {
   async write() {
     debug('FileModifyEditor: write()');
 
-    if (!(await this.shouldEdit())) return null;
+    if (!this.shouldEdit()) return null;
 
     debug('ensure path exists');
     await fs.ensureDir(path.dirname(this.filePath));

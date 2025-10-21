@@ -5,6 +5,7 @@
 # because it is tightly coupled with logic within PrairieLearn's web server.
 
 import base64
+import html
 import json
 import urllib.parse
 from io import BytesIO
@@ -62,12 +63,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else None
     )
 
+    if data["ai_grading"]:
+        if data["panel"] == "question":
+            return ""
+
+        uuid = html.escape(pl.get_uuid())
+        name = html.escape(file_name)
+
+        # The AI grading rendering process will recursively strip any nodes that
+        # don't contain text. Usually this is fine, but in this case this node
+        # really only serves to provide a filename and data attribute for the
+        # AI grading system to pick up on.
+        #
+        # To avoid this node being stripped, we just include the filename as text.
+        return f'<div data-image-capture-uuid="{uuid}" data-file-name="{name}">{name}</div>'
+
     html_params = {
         "uuid": pl.get_uuid(),
         "file_name": file_name,
         "editable": data["editable"] and data["panel"] == "question",
         "mobile_capture_enabled": mobile_capture_enabled,
-        "external_image_capture_available": external_image_capture_url is not None,
     }
 
     image_capture_options = {
@@ -78,6 +93,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "mobile_capture_enabled": mobile_capture_enabled,
         "editable": html_params["editable"],
         "external_image_capture_url": external_image_capture_url,
+        "external_image_capture_available": external_image_capture_url is not None,
     }
 
     html_params["image_capture_options_json"] = json.dumps(image_capture_options)
@@ -90,6 +106,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name")
 
+    # On submission, the captured image is stored directly in submitted_answers.
+    # Later, we will move the image to submitted_answers["_files"], and pop
+    # submitted_answers[file_name].
     submitted_file_content = data["submitted_answers"].get(file_name)
 
     if not submitted_file_content:
@@ -132,6 +151,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             return
 
     pl.add_submitted_file(data, file_name, b64_payload)
+
+    # We remove the captured image from submitted_answers to prevent it from
+    # appearing in assessment instance logs.
+    #
+    # Also, in older versions of image capture, the image file was stored directly in submitted_answers.
+    # Popping file_name ensures that we update older submissions that saved the file to
+    # submitted_answers[file_name].
+
+    data["submitted_answers"].pop(file_name, None)
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:

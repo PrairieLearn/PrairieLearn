@@ -1,10 +1,10 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type CourseInstance } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
@@ -16,7 +16,7 @@ export const QuestionsPage = ({
   resLocals,
 }: {
   questions: QuestionsPageData[];
-  templateQuestions?: { qid: string; title: string }[];
+  templateQuestions?: { example_course: boolean; qid: string; title: string }[];
   course_instances: CourseInstance[];
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;
@@ -37,7 +37,7 @@ export const QuestionsPage = ({
     content: html`
       ${renderHtml(
         <CourseSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,

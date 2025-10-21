@@ -1,5 +1,80 @@
 # @prairielearn/migrations
 
+## 4.0.1
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/error@2.0.20
+  - @prairielearn/logger@2.0.21
+  - @prairielearn/named-locks@3.0.24
+  - @prairielearn/postgres@4.4.1
+
+## 4.0.0
+
+### Major Changes
+
+- d4d5ce6: - `init(...)` now accepts an options object instead of positional arguments.
+  - `init(...)` now supports a `migrationFilters` option to control which migrations to run.
+
+## 3.0.25
+
+### Patch Changes
+
+- d6f506e: Update README for migrations to use modern function calls
+- Updated dependencies [c6f661c]
+  - @prairielearn/postgres@4.2.0
+
+## 3.0.24
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+- Updated dependencies [f571b40]
+  - @prairielearn/error@2.0.19
+  - @prairielearn/logger@2.0.20
+  - @prairielearn/named-locks@3.0.23
+  - @prairielearn/postgres@4.1.1
+
+## 3.0.23
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
+## 3.0.22
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/named-locks@3.0.22
+  - @prairielearn/postgres@4.0.1
+  - @prairielearn/logger@2.0.19
+  - @prairielearn/error@2.0.18
+
+## 3.0.21
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+- Updated dependencies [cd5ed49]
+- Updated dependencies [2c19e43]
+- Updated dependencies [23adb05]
+  - @prairielearn/postgres@4.0.0
+  - @prairielearn/named-locks@3.0.21
+  - @prairielearn/logger@2.0.18
+  - @prairielearn/error@2.0.17
+
+## 3.0.20
+
+### Patch Changes
+
+- Updated dependencies [b911b61]
+  - @prairielearn/postgres@3.0.0
+  - @prairielearn/named-locks@3.0.20
+
 ## 3.0.19
 
 ### Patch Changes

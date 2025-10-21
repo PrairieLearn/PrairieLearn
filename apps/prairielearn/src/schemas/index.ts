@@ -9,7 +9,6 @@
  * If you have an unparsed object, you should use the input types.
  */
 
-export * from './adminQuery.js';
 export * from './infoAssessment.js';
 export * from './infoCourse.js';
 export * from './infoCourseInstance.js';

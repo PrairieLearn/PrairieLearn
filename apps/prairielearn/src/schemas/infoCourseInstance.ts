@@ -45,7 +45,39 @@ export const CourseInstanceJsonSchema = z
         'The timezone for all date input and display (e.g., "America/Chicago"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.',
       )
       .optional(),
-    allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional().default(true),
+    allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional(),
+    selfEnrollment: z
+      .object({
+        enabled: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment access is controlled by the beforeDate and useEnrollmentCode properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.',
+          )
+          .optional()
+          .default(true),
+        restrictToInstitution: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment is restricted to users from the same institution as the course. If false, any user can self-enroll.',
+          )
+          .optional()
+          .default(true),
+        beforeDate: z
+          .string()
+          .describe(
+            'If specified, self-enrollment is allowed before this date and forbidden after this date. If not specified, self-enrollment depends on enabled property.',
+          )
+          .optional(),
+        useEnrollmentCode: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment requires an enrollment code to enroll. If false, any link to the course instance will allow self-enrollment.',
+          )
+          .optional()
+          .default(false),
+      })
+      .optional()
+      .default({}),
     hideInEnrollPage: z
       .boolean()
       .describe(
@@ -54,7 +86,7 @@ export const CourseInstanceJsonSchema = z
       .optional()
       .default(false),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
-    allowAccess: AccessControlJsonSchema.optional(),
+    allowAccess: AccessControlJsonSchema.optional().default([]),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(

@@ -2,14 +2,14 @@ import { Temporal } from '@js-temporal/polyfill';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import { type CourseInstanceAuthz } from '../../models/course-instances.js';
 
 export type CourseInstanceAuthzRow = CourseInstanceAuthz & { enrollment_count?: number };
@@ -56,7 +56,7 @@ export function InstructorCourseAdminInstances({
     content: html`
       ${renderHtml(
         <CourseSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,
@@ -142,12 +142,12 @@ export function InstructorCourseAdminInstances({
                         <tr>
                           <td class="align-left">
                             ${row.sync_errors
-                              ? SyncProblemButton({
+                              ? SyncProblemButtonHtml({
                                   type: 'error',
                                   output: row.sync_errors,
                                 })
                               : row.sync_warnings
-                                ? SyncProblemButton({
+                                ? SyncProblemButtonHtml({
                                     type: 'warning',
                                     output: row.sync_warnings,
                                   })
@@ -180,6 +180,7 @@ export function InstructorCourseAdminInstances({
                   <a
                     href="https://prairielearn.readthedocs.io/en/latest/courseInstance/"
                     target="_blank"
+                    rel="noreferrer"
                     >course instance documentation</a
                   >.
                 </p>

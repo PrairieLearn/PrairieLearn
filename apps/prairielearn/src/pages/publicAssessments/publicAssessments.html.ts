@@ -1,10 +1,10 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
-import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
 import type { Course, CourseInstance } from '../../lib/db-types.js';
 import { type AssessmentRow } from '../../models/assessment.js';
@@ -27,9 +27,9 @@ function CopyCourseInstanceModal({
   return Modal({
     id: 'copyCourseInstanceModal',
     title: 'Copy course instance',
-    formAction: courseInstanceCopyTargets[0]?.copy_url ?? '',
+    formAction: courseInstanceCopyTargets.at(0)?.copy_url ?? '',
     formClass: 'js-copy-course-instance-form',
-    form: courseInstanceCopyTargets?.length > 0,
+    form: courseInstanceCopyTargets.length > 0,
     body:
       courseInstanceCopyTargets.length === 0
         ? html`
@@ -45,7 +45,12 @@ function CopyCourseInstanceModal({
               This course instance can be copied to course for which you have editor permissions.
               Select one of your courses to copy this course instance to.
             </p>
-            <select class="form-select" name="to_course_id" required>
+            <select
+              class="form-select"
+              name="to_course_id"
+              required
+              aria-label="Destination course"
+            >
               ${courseInstanceCopyTargets.map(
                 (course, index) => html`
                   <option
@@ -80,11 +85,11 @@ function CopyCourseInstanceModal({
       <input
         type="hidden"
         name="__csrf_token"
-        value="${courseInstanceCopyTargets[0]?.__csrf_token ?? ''}"
+        value="${courseInstanceCopyTargets.at(0)?.__csrf_token ?? ''}"
       />
       <input type="hidden" name="course_instance_id" value="${courseInstance.id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      ${courseInstanceCopyTargets?.length > 0
+      ${courseInstanceCopyTargets.length > 0
         ? html`
             <button
               type="submit"
@@ -139,7 +144,7 @@ export function PublicAssessments({
                 data-bs-toggle="modal"
                 data-bs-target="#copyCourseInstanceModal"
               >
-                <i class="fa fa-fw fa-clone"></i>
+                <i class="fa fa-clone"></i>
                 <span class="d-none d-sm-inline">Copy course instance</span>
               </button>
             </div>

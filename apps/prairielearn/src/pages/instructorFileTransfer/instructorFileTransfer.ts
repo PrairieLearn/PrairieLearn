@@ -10,6 +10,7 @@ import { config } from '../../lib/config.js';
 import { type FileTransfer, FileTransferSchema } from '../../lib/db-types.js';
 import { CourseInstanceCopyEditor, type Editor, QuestionCopyEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
+import { HttpRedirect } from '../../lib/redirect.js';
 import { assertNever } from '../../lib/types.js';
 import {
   selectCourseInstanceByShortName,
@@ -42,11 +43,10 @@ async function doTransfer(res: Response, editor: Editor, fileTransferId: string)
   try {
     await editor.executeWithServerJob(serverJob);
   } catch {
-    res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-    return;
+    throw new HttpRedirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
   }
 
-  await sqldb.queryAsync(sql.soft_delete_file_transfer, {
+  await sqldb.execute(sql.soft_delete_file_transfer, {
     id: fileTransferId,
     user_id: res.locals.user.user_id,
   });
@@ -54,75 +54,80 @@ async function doTransfer(res: Response, editor: Editor, fileTransferId: string)
 
 export function getContentDir(fullPath: string, parentDir: string): string {
   const path_exploded = path.normalize(fullPath).split(path.sep);
-  const content_dir_idx = path_exploded.findIndex((x) => x === parentDir);
+  const content_dir_idx = path_exploded.indexOf(parentDir);
   return path_exploded.slice(content_dir_idx + 1).join(path.sep);
 }
 
 router.get(
   '/:file_transfer_id',
   asyncHandler(async (req, res) => {
-    if (config.filesRoot == null) throw new Error('config.filesRoot is null');
     const file_transfer = await getFileTransfer(
       req.params.file_transfer_id,
       res.locals.user.user_id,
     );
     const from_course = await selectCourseById(file_transfer.from_course_id);
 
-    if (file_transfer.transfer_type === 'CopyQuestion') {
-      const qid = getContentDir(file_transfer.from_filename, 'questions');
-      const editor = new QuestionCopyEditor({
-        locals: res.locals as any,
-        from_qid: qid,
-        from_course_short_name: from_course.short_name,
-        from_path: path.join(config.filesRoot, file_transfer.storage_filename),
-        is_transfer: true,
-      });
+    switch (file_transfer.transfer_type) {
+      case 'CopyQuestion': {
+        const qid = getContentDir(file_transfer.from_filename, 'questions');
+        const editor = new QuestionCopyEditor({
+          locals: res.locals as any,
+          from_qid: qid,
+          from_course_short_name: from_course.short_name,
+          from_path: path.join(config.filesRoot, file_transfer.storage_filename),
+          is_transfer: true,
+        });
 
-      await doTransfer(res, editor, file_transfer.id);
+        await doTransfer(res, editor, file_transfer.id);
 
-      const question = await selectQuestionByUuid({
-        course_id: res.locals.course.id,
-        uuid: editor.uuid,
-      });
+        const question = await selectQuestionByUuid({
+          course_id: res.locals.course.id,
+          uuid: editor.uuid,
+        });
 
-      flash(
-        'success',
-        'Question copied successfully. You are now viewing your copy of the question.',
-      );
-      res.redirect(`${res.locals.urlPrefix}/question/${question.id}/settings`);
-    } else if (file_transfer.transfer_type === 'CopyCourseInstance') {
-      const course = await selectCourseById(file_transfer.from_course_id);
-      const shortName = getContentDir(file_transfer.from_filename, 'courseInstances');
+        flash(
+          'success',
+          'Question copied successfully. You are now viewing your copy of the question.',
+        );
+        res.redirect(`${res.locals.urlPrefix}/question/${question.id}/settings`);
+        break;
+      }
+      case 'CopyCourseInstance': {
+        const course = await selectCourseById(file_transfer.from_course_id);
+        const shortName = getContentDir(file_transfer.from_filename, 'courseInstances');
 
-      const fromCourseInstance = await selectCourseInstanceByShortName({
-        course_id: file_transfer.from_course_id,
-        short_name: shortName,
-      });
+        const fromCourseInstance = await selectCourseInstanceByShortName({
+          course_id: file_transfer.from_course_id,
+          short_name: shortName,
+        });
 
-      const editor = new CourseInstanceCopyEditor({
-        locals: res.locals as any,
-        from_course: course,
-        from_path: path.join(config.filesRoot, file_transfer.storage_filename),
-        course_instance: fromCourseInstance,
-      });
+        const editor = new CourseInstanceCopyEditor({
+          locals: res.locals as any,
+          from_course: course,
+          from_path: path.join(config.filesRoot, file_transfer.storage_filename),
+          course_instance: fromCourseInstance,
+        });
 
-      await doTransfer(res, editor, file_transfer.id);
+        await doTransfer(res, editor, file_transfer.id);
 
-      const courseInstance = await selectCourseInstanceByUuid({
-        uuid: editor.uuid,
-        course_id: res.locals.course.id,
-      });
+        const courseInstance = await selectCourseInstanceByUuid({
+          uuid: editor.uuid,
+          course_id: res.locals.course.id,
+        });
 
-      flash(
-        'success',
-        'Course instance copied successfully. You are now viewing your copy of the course instance.',
-      );
-      // Redirect to the copied course instance
-      res.redirect(
-        `${res.locals.plainUrlPrefix}/course_instance/${courseInstance.id}/instructor/instance_admin/assessments`,
-      );
-    } else {
-      assertNever(file_transfer.transfer_type);
+        flash(
+          'success',
+          'Course instance copied successfully. You are now viewing your copy of the course instance.',
+        );
+        // Redirect to the copied course instance
+        res.redirect(
+          `${res.locals.plainUrlPrefix}/course_instance/${courseInstance.id}/instructor/instance_admin/assessments`,
+        );
+        break;
+      }
+      default: {
+        assertNever(file_transfer.transfer_type);
+      }
     }
   }),
 );

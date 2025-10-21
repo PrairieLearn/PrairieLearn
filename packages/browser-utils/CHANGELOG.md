@@ -1,5 +1,47 @@
 # @prairielearn/browser-utils
 
+## 2.5.0
+
+### Minor Changes
+
+- 19f0bf7: Improved support for focus on radio groups
+
+## 2.4.0
+
+### Minor Changes
+
+- 5b46852: Add `downloadTextFile`, `downloadAsJSON` and `downloadAsCSV` utilities
+
+## 2.3.0
+
+### Minor Changes
+
+- 65c63e0: Change the default return type of `decodeData` to unknown
+
+## 2.2.14
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/html@4.0.20
+
+## 2.2.13
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+- Updated dependencies [f571b40]
+  - @prairielearn/html@4.0.19
+
+## 2.2.12
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/html@4.0.18
+
 ## 2.2.11
 
 ### Patch Changes

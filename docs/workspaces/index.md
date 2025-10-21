@@ -225,17 +225,19 @@ If a file name appears in multiple locations, the following precedence takes eff
 PrairieLearn provides and maintains the following workspace images:
 
 - [`prairielearn/workspace-desktop`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/desktop/): An Ubuntu 24.04 desktop
-- [`prairielearn/workspace-jupyterlab-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/): JupyterLab with Python 3.11
+- [`prairielearn/workspace-jupyterlab-base`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-base/): JupyterLab without any additions (used to build the Python and R workspaces below)
+- [`prairielearn/workspace-jupyterlab-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/): JupyterLab with Python 3.12
+- [`prairielearn/workspace-jupyterlab-r`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-r/): JupyterLab with R 4.4
 - [`prairielearn/workspace-rstudio`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/): RStudio with R version 4.4
 - [`prairielearn/workspace-vscode-base`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-base/): Basic VS Code without any additions (used to build the C/C++ and Python workspaces below)
 - [`prairielearn/workspace-vscode-cpp`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-cpp/): VS Code with C/C++ (using `gcc` and `g++`)
-- [`prairielearn/workspace-vscode-java`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-java/): VS Code with Java
+- [`prairielearn/workspace-vscode-java`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-java/): VS Code with Java 21
 - [`prairielearn/workspace-vscode-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/): VS Code with Python 3.12
 - [`prairielearn/workspace-xtermjs`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/xtermjs/): Terminal emulator based on xterm.js
 
 ## Custom workspace images
 
-You can build custom workspace images if you want to use a specific browser-based editor or if you need to install specific dependencies for use by students.
+You can [build custom workspace images](../dockerImages.md#custom-variations-of-maintained-images) if you need to install specific dependencies for use by students that are not present in the default version of the images above. If you want to use a specific browser-based editor not supported above, you may also create and build your own custom workspace image.
 
 If you're using your own editor, you must ensure that it frequently autosaves any work and persists it to disk. We make every effort to ensure reliable execution of workspaces, but an occasional hardware failure or other issue may result in the unexpected termination of a workspace. Students will be able to quickly reboot their workspace to start it on a new underlying host, but their work may be lost if it isn't frequently and automatically saved by your workspace code.
 

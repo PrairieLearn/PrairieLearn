@@ -1,31 +1,18 @@
-import AccordionOriginal from 'react-bootstrap/Accordion';
-import AccordionBodyOriginal from 'react-bootstrap/AccordionBody';
-import AccordionHeaderOriginal from 'react-bootstrap/AccordionHeader';
-import AccordionItemOriginal from 'react-bootstrap/AccordionItem';
-import ButtonOriginal from 'react-bootstrap/Button';
-import DropdownOriginal from 'react-bootstrap/Dropdown';
-import DropdownItemOriginal from 'react-bootstrap/DropdownItem';
-import DropdownMenuOriginal from 'react-bootstrap/DropdownMenu';
-import DropdownToggleOriginal from 'react-bootstrap/DropdownToggle';
-import OverlayTriggerOriginal from 'react-bootstrap/OverlayTrigger';
-import TooltipOriginal from 'react-bootstrap/Tooltip';
-
-const Accordion = AccordionOriginal as unknown as typeof AccordionOriginal.default;
-const AccordionItem = AccordionItemOriginal as unknown as typeof AccordionItemOriginal.default;
-const AccordionHeader =
-  AccordionHeaderOriginal as unknown as typeof AccordionHeaderOriginal.default;
-const AccordionBody = AccordionBodyOriginal as unknown as typeof AccordionBodyOriginal.default;
-const Button = ButtonOriginal as unknown as typeof ButtonOriginal.default;
-const Dropdown = DropdownOriginal as unknown as typeof DropdownOriginal.default;
-const DropdownToggle = DropdownToggleOriginal as unknown as typeof DropdownToggleOriginal.default;
-const DropdownMenu = DropdownMenuOriginal as unknown as typeof DropdownMenuOriginal.default;
-const DropdownItem = DropdownItemOriginal as unknown as typeof DropdownItemOriginal.default;
-const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
-const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
+import Accordion from 'react-bootstrap/Accordion';
+import AccordionBody from 'react-bootstrap/AccordionBody';
+import AccordionHeader from 'react-bootstrap/AccordionHeader';
+import AccordionItem from 'react-bootstrap/AccordionItem';
+import Button from 'react-bootstrap/Button';
+import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownItem from 'react-bootstrap/DropdownItem';
+import DropdownMenu from 'react-bootstrap/DropdownMenu';
+import DropdownToggle from 'react-bootstrap/DropdownToggle';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { render } from '@prairielearn/preact-cjs';
-import { useState } from '@prairielearn/preact-cjs/hooks';
+import { useCallback, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
 import { examplePromptsArray } from '../../src/ee/pages/instructorAiGenerateDrafts/aiGeneratedQuestionSamples.js';
@@ -33,12 +20,13 @@ import { examplePromptsArray } from '../../src/ee/pages/instructorAiGenerateDraf
 import { mathjaxTypeset } from './lib/mathjax.js';
 
 onDocumentReady(() => {
-  const sampleQuestions = document.querySelector('#sample-questions') as HTMLElement;
+  const sampleQuestions = document.querySelector('#sample-questions')!;
   render(<SampleQuestion />, sampleQuestions);
 });
 
 function SampleQuestion() {
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
+  const onMathjaxTypeset = useCallback(mathjaxTypeset, []);
 
   const selectedQuestion = examplePromptsArray[selectedQuestionIndex];
 
@@ -65,9 +53,9 @@ function SampleQuestion() {
             onClickNext={handleClickNext}
           />
           <SampleQuestionDemo
-            promptId={selectedQuestion.id}
+            key={selectedQuestion.id}
             prompt={selectedQuestion}
-            onMathjaxTypeset={mathjaxTypeset}
+            onMathjaxTypeset={onMathjaxTypeset}
           />
           <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
         </AccordionBody>
@@ -99,7 +87,7 @@ function SampleQuestionSelector({
           as="button"
           type="button"
           style={{ width: '100%' }}
-          class="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
+          class="btn dropdown-toggle border d-flex justify-content-between align-items-center bg-white"
         >
           {selectedQuestionName}
         </DropdownToggle>
@@ -116,12 +104,12 @@ function SampleQuestionSelector({
         </DropdownMenu>
       </Dropdown>
       <div class="d-flex align-items-center gap-2">
-        <Button onClick={onClickPrevious} disabled={selectedQuestionIndex === 0}>
+        <Button disabled={selectedQuestionIndex === 0} onClick={onClickPrevious}>
           Previous
         </Button>
         <Button
-          onClick={onClickNext}
           disabled={selectedQuestionIndex === examplePromptsArray.length - 1}
+          onClick={onClickNext}
         >
           Next
         </Button>
@@ -132,7 +120,7 @@ function SampleQuestionSelector({
 
 function SampleQuestionPrompt({ prompt }: { prompt: string }) {
   const handleUsePrompt = () => {
-    const promptTextarea = document.querySelector('#user-prompt-llm') as HTMLTextAreaElement;
+    const promptTextarea = document.querySelector<HTMLTextAreaElement>('#user-prompt-llm')!;
     promptTextarea.value = prompt;
   };
 

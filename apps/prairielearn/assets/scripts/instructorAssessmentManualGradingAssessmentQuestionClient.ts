@@ -1,21 +1,23 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
-import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
-import { Scorebar } from '../../src/components/Scorebar.html.js';
+import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.js';
+import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
-import type {
-  InstanceQuestionRowWithAIGradingStats,
-  InstanceQuestionTableData,
+import { type RubricData } from '../../src/lib/manualGrading.types.js';
+import {
+  type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
+  InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
+  type InstanceQuestionTableData,
 } from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 
-type InstanceQuestionRow = InstanceQuestionRowWithAIGradingStats;
 type InstanceQuestionRowWithIndex = InstanceQuestionRow & { index: number };
 
 declare global {
   interface Window {
     gradersList: () => any;
     rubricItemsList: () => any;
+    submissionGroups: () => any;
   }
 }
 
@@ -28,7 +30,16 @@ onDocumentReady(() => {
     maxAutoPoints,
     aiGradingMode,
     csrfToken,
+    rubric_data,
+    instanceQuestionGroups,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
+
+  const instanceQuestionGroupsByName = Object.fromEntries(
+    instanceQuestionGroups.map((group) => [
+      group.instance_question_group_name,
+      group.instance_question_group_description,
+    ]),
+  );
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
     form.addEventListener('submit', ajaxSubmit);
@@ -54,7 +65,12 @@ onDocumentReady(() => {
         value !== generateAiGraderName('OutdatedRubric'),
     );
     humanGraders.sort();
-    return Object.fromEntries(aiGraders.concat(humanGraders).map((name) => [name, name]));
+    return Object.fromEntries(
+      aiGraders
+        .concat(humanGraders)
+        .concat(['Nobody'])
+        .map((name) => [name, name]),
+    );
   };
 
   window.rubricItemsList = function () {
@@ -62,6 +78,16 @@ onDocumentReady(() => {
     const rubricItems = data.flatMap((row) => row.rubric_difference ?? []);
     rubricItems.sort((a, b) => a.number - b.number);
     return Object.fromEntries(rubricItems.map((item) => [item.description, item.description]));
+  };
+
+  window.submissionGroups = function () {
+    return Object.fromEntries([
+      ...instanceQuestionGroups.map((g) => [
+        g.instance_question_group_name,
+        g.instance_question_group_name,
+      ]),
+      ['No Group', 'No Group'],
+    ]);
   };
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
@@ -77,10 +103,16 @@ onDocumentReady(() => {
 
     classes: 'table table-sm table-bordered',
     url: instancesUrl,
-    responseHandler: (res: { instance_questions: InstanceQuestionRow[] }) =>
+    responseHandler: ({ instance_questions }: { instance_questions: InstanceQuestionRow[] }) => {
       // Add a stable, user-friendly index that is used to identify an instance
       // question anonymously but retain its value in case of sorting/filters
-      res.instance_questions.map((row, index) => ({ ...row, index })),
+      return instance_questions.map((row, index) => ({
+        // Re-parse the row to ensure that date strings are parsed correctly
+        // typeof JSON.parse(JSON.stringify(new Date())) === 'string'
+        ...InstanceQuestionRowSchema.parse(row),
+        index,
+      }));
+    },
     escape: true,
     uniqueId: 'id',
     idField: 'id',
@@ -96,11 +128,11 @@ onDocumentReady(() => {
     // is [1, 2, 3], and the user sets [4], the end result is [4, 2, 3].
     //
     // The default for `buttonsOrder` has 5 elements. To avoid an extra button being shown,
-    // we put a dummy element at the end of the array. This won't be rendered, as any button
-    // keys that aren't recognized are silently skipped.
+    // this cannot have fewer than 5 buttons defined. We can optionally put dummy elements
+    // at the end of the array as paddings if we need to have fewer buttons.
     //
     // Another bit of insane behavior from `bootstrap-table`? Who would have thought!
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'not-a-real-button'],
+    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'rubricFilter'],
     theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
@@ -121,6 +153,9 @@ onDocumentReady(() => {
           id: 'js-show-student-info-button',
           title: 'Show/hide student identification information',
         },
+      },
+      rubricFilter: {
+        html: rubricFilterHtml(rubric_data),
       },
     },
     onUncheck: updateGradingTagButton,
@@ -170,6 +205,7 @@ onDocumentReady(() => {
           searchable: false,
           sortable: true,
           switchable: false,
+          class: 'text-center',
           formatter: (_value: number, row: InstanceQuestionRowWithIndex) =>
             html`
               <a
@@ -205,6 +241,36 @@ onDocumentReady(() => {
                 : ''}
             `.toString(),
         },
+        aiGradingMode && instanceQuestionGroups.length > 0
+          ? {
+              field: 'instance_question_group_name',
+              title: 'Submission Group',
+              visible: aiGradingMode,
+              filterControl: 'select',
+              class: 'text-center',
+              formatter: (value: string | null) => {
+                if (!value) {
+                  return html`<span class="text-secondary">No Group</span>`.toString();
+                }
+                return html`
+                  <span class="d-flex align-items-center justify-content-center gap-2">
+                    ${value}
+                    <div
+                      data-bs-toggle="tooltip"
+                      data-bs-html="true"
+                      data-bs-title="${instanceQuestionGroupsByName[value]}"
+                    >
+                      <i class="fas fa-circle-info text-secondary"></i>
+                    </div>
+                  </span>
+                `.toString();
+              },
+              filterData: 'func:submissionGroups',
+              filterCustomSearch: (text: string, value: string) =>
+                value.toLowerCase().includes(html`${text}`.toString()),
+              sortable: true,
+            }
+          : null,
         {
           field: 'user_or_group_name',
           title: groupWork ? 'Group Name' : 'Name',
@@ -227,6 +293,7 @@ onDocumentReady(() => {
           filterControl: 'select',
           sortable: true,
           class: 'text-center',
+          visible: !aiGradingMode,
           formatter: (value: boolean) => (value ? 'Requires grading' : 'Graded'),
         },
         {
@@ -323,10 +390,13 @@ onDocumentReady(() => {
                   return value.includes('js-custom-search-ai-grading-latest-rubric');
                 } else if (text === generateAiGraderName('OutdatedRubric').toLowerCase()) {
                   return value.includes('js-custom-search-ai-grading-nonlatest-rubric');
+                } else if (text === 'nobody') {
+                  return value.trim() === '';
                 } else {
                   return value.toLowerCase().includes(text);
                 }
               },
+              sortable: true,
             }
           : {
               field: 'last_grader',
@@ -384,8 +454,22 @@ onDocumentReady(() => {
                     (item) =>
                       html`<div>
                         ${item.false_positive
-                          ? html`<i class="bi bi-plus-square-fill text-danger"></i>`
-                          : html`<i class="bi bi-dash-square-fill text-danger"></i>`}
+                          ? html`
+                              <i
+                                class="bi bi-plus-square-fill text-danger"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                data-bs-title="Selected by AI but not by human"
+                              ></i>
+                            `
+                          : html`
+                              <i
+                                class="bi bi-dash-square-fill text-danger"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                data-bs-title="Selected by human but not by AI"
+                              ></i>
+                            `}
                         <span>${item.description}</span>
                       </div>`,
                   ),
@@ -403,15 +487,15 @@ onDocumentReady(() => {
       const order = sortOrder === 'desc' ? -1 : 1;
       if (sortName === 'rubric_difference') {
         data.sort(function (a, b) {
-          const a_diff = a['point_difference'] === null ? null : Math.abs(a['point_difference']);
-          const b_diff = b['point_difference'] === null ? null : Math.abs(b['point_difference']);
+          const a_diff = a.point_difference === null ? null : Math.abs(a.point_difference);
+          const b_diff = b.point_difference === null ? null : Math.abs(b.point_difference);
           if (a_diff === null && b_diff === null) {
             // Can't compare if both are null
             return 0;
           } else if (a_diff !== null && b_diff !== null) {
             // Actually sorting based on accuracy
-            const a_rubric_diff = a['rubric_difference'] ? a['rubric_difference'].length : null;
-            const b_rubric_diff = b['rubric_difference'] ? b['rubric_difference'].length : null;
+            const a_rubric_diff = a.rubric_difference ? a.rubric_difference.length : null;
+            const b_rubric_diff = b.rubric_difference ? b.rubric_difference.length : null;
             if (
               a_rubric_diff !== null &&
               b_rubric_diff !== null &&
@@ -431,6 +515,16 @@ onDocumentReady(() => {
             return 1;
           }
         });
+      } else if (sortName === 'ai_graded') {
+        const aiGradingStatusOrder = { Graded: 1, LatestRubric: 2, OutdatedRubric: 1, None: 0 };
+        data.sort(function (a, b) {
+          const aOrder = aiGradingStatusOrder[a.ai_grading_status];
+          const bOrder = aiGradingStatusOrder[b.ai_grading_status];
+          if (aOrder !== bOrder) {
+            return (aOrder - bOrder) * order;
+          }
+          return (a.last_human_grader ?? '').localeCompare(b.last_human_grader ?? '') * order;
+        });
       } else {
         (data as any[]).sort(function (a, b) {
           if (a[sortName] < b[sortName]) {
@@ -444,7 +538,61 @@ onDocumentReady(() => {
       }
     },
   });
+
+  // Build an internal state of filter selection to avoid reading from the html again on click
+  const rubricFilterState: Record<string, boolean> = Object.fromEntries(
+    (rubric_data?.rubric_items ?? []).map((item) => [item.id, false]),
+  );
+
+  document.querySelectorAll('.js-rubric-item-filter').forEach((checkbox) =>
+    checkbox.addEventListener('change', (e) => {
+      if (!(e.target instanceof HTMLInputElement)) return;
+      rubricFilterState[e.target.value] = e.target.checked;
+      const rubricFilterItems = Object.entries(rubricFilterState)
+        .filter(([_, value]) => value)
+        .map(([key]) => key);
+
+      $('#grading-table').bootstrapTable(
+        'filterBy',
+        { rubricFilterItems },
+        {
+          filterAlgorithm: (row: InstanceQuestionRow, filters: { rubricFilterItems: string[] }) => {
+            return filters.rubricFilterItems.every((item_id) =>
+              row.rubric_grading_item_ids.includes(item_id),
+            );
+          },
+        },
+      );
+    }),
+  );
 });
+
+function rubricFilterHtml(rubric_data: RubricData | null): string {
+  if (!rubric_data) return '';
+  return html`
+    <div class="btn-group">
+      <button
+        type="button"
+        class="btn btn-secondary dropdown-toggle"
+        data-bs-toggle="dropdown"
+        name="rubric-item-filter"
+        data-bs-auto-close="outside"
+      >
+        <i class="fas fa-filter"></i> Filter by rubric items
+      </button>
+      <div class="dropdown-menu dropdown-menu-end" id="rubric-item-filter-container">
+        ${rubric_data.rubric_items.map(
+          (item) => html`
+            <label class="dropdown-item"
+              ><input type="checkbox" class="js-rubric-item-filter" value="${item.id}" />
+              <span>${item.description}</span></label
+            >
+          `,
+        )}
+      </div>
+    </div>
+  `.toString();
+}
 
 function generateAiGraderName(
   ai_grading_status?: 'Graded' | 'OutdatedRubric' | 'LatestRubric',
@@ -466,7 +614,12 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
   const action = formData.get('__action');
   const batchAction = formData.get('batch_action');
 
-  if (action === 'batch_action' && batchAction === 'ai_grade_assessment_selected') {
+  const batchActions = new Set([
+    'ai_grade_assessment_selected',
+    'ai_instance_question_group_selected',
+  ]);
+
+  if (action === 'batch_action' && batchAction && batchActions.has(batchAction.toString())) {
     // We'll handle this with a normal form submission since it redirects to another page.
     return;
   }
@@ -512,7 +665,7 @@ function updatePointsPopoverHandlers(this: Element) {
 function updateGradingTagButton() {
   $('.grading-tag-button').prop(
     'disabled',
-    !$('#grading-table').bootstrapTable('getSelections').length,
+    $('#grading-table').bootstrapTable('getSelections').length === 0,
   );
 }
 
@@ -533,8 +686,8 @@ function pointsFormatter(
           field,
           instance_question: row,
           assessment_question: row.assessment_question,
-          urlPrefix: urlPrefix ?? '',
-          csrfToken: csrfToken ?? '',
+          urlPrefix,
+          csrfToken,
         })
       : ''}`;
 }
@@ -547,15 +700,15 @@ function scorebarFormatter(
   csrfToken: string,
 ) {
   return html`<div class="d-inline-block align-middle">
-      ${score == null ? '' : Scorebar(score, { minWidth: '10em' })}
+      ${score == null ? '' : ScorebarHtml(score, { minWidth: '10em' })}
     </div>
     ${hasCourseInstancePermissionEdit
       ? EditQuestionPointsScoreButton({
           field: 'score_perc',
           instance_question: row,
           assessment_question: row.assessment_question,
-          urlPrefix: urlPrefix ?? '',
-          csrfToken: csrfToken ?? '',
+          urlPrefix,
+          csrfToken,
         })
       : ''}`.toString();
 }

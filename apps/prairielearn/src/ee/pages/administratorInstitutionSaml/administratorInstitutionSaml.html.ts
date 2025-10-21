@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
 
 export function AdministratorInstitutionSaml({
@@ -21,7 +21,7 @@ export function AdministratorInstitutionSaml({
   const hasEnabledSaml = institutionAuthenticationProviders.some((p) => p.name === 'SAML');
 
   const missingAttributeMappings =
-    !samlProvider?.uid_attribute || !samlProvider?.uin_attribute || !samlProvider?.name_attribute;
+    !samlProvider?.uid_attribute || !samlProvider.uin_attribute || !samlProvider.name_attribute;
 
   const issuer = `https://${host}/saml/institution/${institution.id}`;
   const metadataUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/metadata`;
@@ -421,10 +421,10 @@ function DeleteSamlConfigurationModal({ csrfToken }: { csrfToken: string }) {
 
 export function DecodedAssertion({ xml, profile }: { xml: string; profile: string }) {
   return html`
-    <h3 class="h5 mt-3">Decoded XML</h2>
+    <h3 class="h5 mt-3">Decoded XML</h3>
     <pre class="bg-dark text-white rounded p-3 mt-3 mb-0">${xml}</pre>
 
-    <h3 class="h5 mt-3">Profile</h2>
+    <h3 class="h5 mt-3">Profile</h3>
     <pre class="bg-dark text-white rounded p-3 mt-3 mb-0">${profile}</pre>
   `.toString();
 }

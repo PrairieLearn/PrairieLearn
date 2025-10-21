@@ -58,9 +58,7 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
     for (const testQuestion of testQuestions) {
       testQuestion.id = await sqldb.queryRow(
         sql.select_question_id,
-        {
-          qid: testQuestion.qid,
-        },
+        { qid: testQuestion.qid },
         z.string(),
       );
     }
@@ -85,7 +83,7 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
     describe('When questions are share_source_publicly but not share_publicly', () => {
       beforeAll(async () => {
         for (const testQuestion of testQuestions) {
-          await sqldb.queryAsync(sql.update_share_source_publicly, {
+          await sqldb.execute(sql.update_share_source_publicly, {
             question_id: testQuestion.id,
           });
         }
@@ -108,7 +106,7 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
       beforeAll(async () => {
         // Publicly share all questions.
         for (const testQuestion of testQuestions) {
-          await sqldb.queryAsync(sql.update_share_publicly, { question_id: testQuestion.id });
+          await sqldb.execute(sql.update_share_publicly, { question_id: testQuestion.id });
         }
       });
 

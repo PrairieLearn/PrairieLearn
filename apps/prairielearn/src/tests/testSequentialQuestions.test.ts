@@ -1,8 +1,10 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
+import { SprocQuestionOrderSchema } from '../lib/db-types.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -20,8 +22,8 @@ describe(
 
     beforeAll(async function () {
       await helperServer.before()();
-      const results = await sqldb.queryOneRowAsync(sql.select_sequential_exam, []);
-      context.assessmentId = results.rows[0].id;
+      const assessmentId = await sqldb.queryRow(sql.select_sequential_exam, IdSchema);
+      context.assessmentId = assessmentId;
       context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
       context.instructorAssessmentQuestionsUrl = `${context.courseInstanceBaseUrl}/instructor/assessment/${context.assessmentId}/questions/`;
     });
@@ -52,8 +54,12 @@ describe(
      * Updates context.instanceQuestions to the current state of the assessment instance
      */
     async function refreshContextQuestions() {
-      const results = await sqldb.callAsync('question_order', [context.assessmentInstanceId]);
-      context.instanceQuestions = results.rows.map((e) => {
+      const results = await sqldb.callRows(
+        'question_order',
+        [context.assessmentInstanceId],
+        SprocQuestionOrderSchema,
+      );
+      context.instanceQuestions = results.map((e) => {
         return {
           id: Number(e.instance_question_id),
           locked: Boolean(e.sequence_locked),
@@ -206,7 +212,7 @@ describe(
       assert.isFalse(context.instanceQuestions[4].locked);
     });
 
-    test.sequential('Unlocking question 4 does NOT cascade to question 6', async function () {
+    test.sequential('Unlocking question 4 does NOT cascade to question 6', function () {
       assert.isTrue(context.instanceQuestions[5].locked);
     });
   },

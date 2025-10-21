@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
-import { JobStatus } from '../../components/JobStatus.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { JobStatus } from '../../components/JobStatus.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const RegradingJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -37,7 +37,7 @@ export function InstructorAssessmentRegrading({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
@@ -97,7 +97,7 @@ export function InstructorAssessmentRegrading({
               </tr>
             </thead>
             <tbody>
-              ${regradingJobSequences && regradingJobSequences.length > 0
+              ${regradingJobSequences.length > 0
                 ? regradingJobSequences.map((jobSequence) => {
                     return html`
                       <tr>

@@ -2,10 +2,12 @@ import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
+import z from 'zod';
 
-import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { AssessmentInstanceSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -94,12 +96,11 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
       "should load the group tab for the first assessment's instructor URL",
       async function () {
         // Get exam assessment URL using ids from database
-        const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
-          assessment_tid: GROUP_EXAM_1_TID,
-        });
-        assert.lengthOf(result.rows, 1);
-        const assessmentId = result.rows[0].id;
-        assert.isDefined(assessmentId);
+        const assessmentId = await queryRow(
+          sql.select_group_exam_by_tid,
+          { assessment_tid: GROUP_EXAM_1_TID },
+          IdSchema,
+        );
         const instructorAssessmentsUrlGroupTab =
           courseInstanceUrl + '/instructor/assessment/' + assessmentId + '/groups';
 
@@ -113,12 +114,11 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
       "should load the group tab for the second assessment's instructor URL",
       async function () {
         // Get exam assessment URLs using ids from database
-        const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
-          assessment_tid: GROUP_EXAM_2_TID,
-        });
-        assert.lengthOf(result.rows, 1);
-        const assessmentId = result.rows[0].id;
-        assert.isDefined(assessmentId);
+        const assessmentId = await queryRow(
+          sql.select_group_exam_by_tid,
+          { assessment_tid: GROUP_EXAM_2_TID },
+          IdSchema,
+        );
         const instructorAssessmentsUrlGroupTab =
           courseInstanceUrl + '/instructor/assessment/' + assessmentId + '/groups';
 
@@ -131,35 +131,37 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
 
   describe('group config correctness', function () {
     test.sequential('first assessment group config in database is correct', async function () {
-      const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
-        assessment_tid: GROUP_EXAM_1_TID,
-      });
-      assert.lengthOf(result.rows, 1);
-      const assessmentId = result.rows[0].id;
-      assert.isDefined(assessmentId);
+      const assessmentId = await queryRow(
+        sql.select_group_exam_by_tid,
+        { assessment_tid: GROUP_EXAM_1_TID },
+        IdSchema,
+      );
 
-      const groupConfigResult = await queryOneRowAsync(sql.select_group_config, {
-        assessment_id: assessmentId,
-      });
-      const min = groupConfigResult.rows[0]['minimum'];
-      const max = groupConfigResult.rows[0]['maximum'];
+      const groupConfigResult = await queryRow(
+        sql.select_group_config,
+        { assessment_id: assessmentId },
+        z.object({ minimum: z.number(), maximum: z.number() }),
+      );
+      const min = groupConfigResult.minimum;
+      const max = groupConfigResult.maximum;
       assert.equal(min, 2);
       assert.equal(max, 2);
     });
 
     test.sequential('second assessment group config in database is correct', async function () {
-      const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
-        assessment_tid: GROUP_EXAM_2_TID,
-      });
-      assert.lengthOf(result.rows, 1);
-      const assessmentId = result.rows[0].id;
-      assert.isDefined(assessmentId);
+      const assessmentId = await queryRow(
+        sql.select_group_exam_by_tid,
+        { assessment_tid: GROUP_EXAM_2_TID },
+        IdSchema,
+      );
 
-      const groupConfigResult = await queryOneRowAsync(sql.select_group_config, {
-        assessment_id: assessmentId,
-      });
-      const min = groupConfigResult.rows[0]['minimum'];
-      const max = groupConfigResult.rows[0]['maximum'];
+      const groupConfigResult = await queryRow(
+        sql.select_group_config,
+        { assessment_id: assessmentId },
+        z.object({ minimum: z.number(), maximum: z.number() }),
+      );
+      const min = groupConfigResult.minimum;
+      const max = groupConfigResult.maximum;
       assert.equal(min, 2);
       assert.equal(max, 4);
     });
@@ -168,12 +170,11 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
   describe('exam group creation, joining, and starting', function () {
     it('allows group creation, joining, and starting', async function () {
       // Get exam assessment URL using id from database
-      const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
-        assessment_tid: GROUP_EXAM_1_TID,
-      });
-      assert.lengthOf(result.rows, 1);
-      const assessmentId = result.rows[0].id;
-      assert.isDefined(assessmentId);
+      const assessmentId = await queryRow(
+        sql.select_group_exam_by_tid,
+        { assessment_tid: GROUP_EXAM_1_TID },
+        IdSchema,
+      );
       const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
 
       // Generate students
@@ -261,8 +262,11 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
       assert.isNotTrue($('#start-assessment').is(':disabled'));
 
       // Should have no assessment instances in database
-      let assessmentInstancesResult = await queryAsync(sql.select_all_assessment_instance, []);
-      assert.lengthOf(assessmentInstancesResult.rows, 0);
+      let assessmentInstancesResult = await queryRows(
+        sql.select_all_assessment_instance,
+        AssessmentInstanceSchema,
+      );
+      assert.lengthOf(assessmentInstancesResult, 0);
 
       // Start assessment
       const response = await fetch(assessmentUrl, {
@@ -277,10 +281,13 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
       $ = cheerio.load(await response.text());
 
       // Check there is now one assessment instance in database
-      assessmentInstancesResult = await queryAsync(sql.select_all_assessment_instance, []);
-      assert.lengthOf(assessmentInstancesResult.rows, 1);
-      assert.equal(assessmentInstancesResult.rows[0].group_id, 1);
-      const assessmentInstanceId = assessmentInstancesResult.rows[0].id;
+      assessmentInstancesResult = await queryRows(
+        sql.select_all_assessment_instance,
+        AssessmentInstanceSchema,
+      );
+      assert.lengthOf(assessmentInstancesResult, 1);
+      assert.equal(assessmentInstancesResult[0].group_id, '1');
+      const assessmentInstanceId = assessmentInstancesResult[0].id;
       const assessmentInstanceURL =
         courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId;
 
@@ -313,12 +320,11 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
 
   it("prevents unauthorized users from accessing other groups' assessment instances", async function () {
     // Get exam assessment URL using id from database
-    const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
-      assessment_tid: GROUP_EXAM_1_TID,
-    });
-    assert.lengthOf(result.rows, 1);
-    const assessmentId = result.rows[0].id;
-    assert.isDefined(assessmentId);
+    const assessmentId = await queryRow(
+      sql.select_group_exam_by_tid,
+      { assessment_tid: GROUP_EXAM_1_TID },
+      IdSchema,
+    );
     const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
 
     // Generate students
@@ -356,10 +362,12 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
     $ = cheerio.load(await response.text());
 
     // Check there is now one assessment instance in database
-    const assessmentInstancesResult = await queryAsync(sql.select_all_assessment_instance, []);
-    assert.lengthOf(assessmentInstancesResult.rows, 1);
-    assert.equal(assessmentInstancesResult.rows[0].group_id, 1);
-    const assessmentInstanceId = assessmentInstancesResult.rows[0].id;
+    const assessmentInstancesResult = await queryRow(
+      sql.select_all_assessment_instance,
+      AssessmentInstanceSchema,
+    );
+    assert.equal(assessmentInstancesResult.group_id, '1');
+    const assessmentInstanceId = assessmentInstancesResult.id;
     const assessmentInstanceURL =
       courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId;
 
@@ -412,20 +420,18 @@ describe('cross exam assessment access', { timeout: 20_000 }, function () {
 
   it("prevents unauthorized users from accessing other groups' assessment instances", async function () {
     // Get exam assessment URL using ids from database
-    const firstAssessmentResult = await queryOneRowAsync(sql.select_group_exam_by_tid, {
-      assessment_tid: GROUP_EXAM_1_TID,
-    });
-    assert.lengthOf(firstAssessmentResult.rows, 1);
-    const firstAssessmentId = firstAssessmentResult.rows[0].id;
-    assert.isDefined(firstAssessmentId);
+    const firstAssessmentId = await queryRow(
+      sql.select_group_exam_by_tid,
+      { assessment_tid: GROUP_EXAM_1_TID },
+      IdSchema,
+    );
     const firstAssessmentUrl = courseInstanceUrl + '/assessment/' + firstAssessmentId;
 
-    const secondAssessmentResult = await queryOneRowAsync(sql.select_group_exam_by_tid, {
-      assessment_tid: GROUP_EXAM_2_TID,
-    });
-    assert.lengthOf(secondAssessmentResult.rows, 1);
-    const secondAssessmentId = secondAssessmentResult.rows[0].id;
-    assert.isDefined(secondAssessmentId);
+    const secondAssessmentId = await queryRow(
+      sql.select_group_exam_by_tid,
+      { assessment_tid: GROUP_EXAM_2_TID },
+      IdSchema,
+    );
     const secondAssessmentUrl = courseInstanceUrl + '/assessment/' + secondAssessmentId;
 
     // Generate students

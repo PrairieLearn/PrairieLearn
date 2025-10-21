@@ -3,12 +3,13 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { Pager } from '../../components/Pager.html.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { Pager } from '../../components/Pager.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -21,7 +22,6 @@ import {
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const PAGE_SIZE = 100;
 
@@ -93,7 +93,7 @@ export function InstructorIssues({
     content: html`
       ${renderHtml(
         <CourseSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           course={course}
           urlPrefix={urlPrefix}
         />,
@@ -306,9 +306,9 @@ function IssueRow({
           ? html`<span class="badge text-bg-info">Manually reported</span>`
           : html`<span class="badge text-bg-warning">Automatically reported</span>`}
         ${issue.assessment && issue.course_instance_id
-          ? AssessmentBadge({
+          ? AssessmentBadgeHtml({
               plainUrlPrefix,
-              course_instance_id: issue.course_instance_id,
+              courseInstanceId: issue.course_instance_id,
               hideLink: issue.hideAssessmentLink,
               assessment: issue.assessment,
             })
@@ -373,68 +373,71 @@ function FilterHelpModal() {
         Issues can be filtered and searched in a variety of ways. Filtering is done with the
         following set of qualifiers.
       </p>
-      <table class="table table-bordered" aria-label="Filtering qualifiers">
-        <thead>
-          <tr>
-            <th>Qualifier</th>
-            <th>Explanation</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>is:open</code></td>
-            <td>Shows all issues that are open</td>
-          </tr>
-          <tr>
-            <td><code>is:closed</code></td>
-            <td>Shows all issues that are closed</td>
-          </tr>
-          <tr>
-            <td><code>is:manually-reported</code></td>
-            <td>Shows all issues that were manually reported by a student</td>
-          </tr>
-          <tr>
-            <td><code>is:automatically-reported</code></td>
-            <td>Shows all issues that were automatically reported by PrairieLearn</td>
-          </tr>
-          <tr>
-            <td>
-              <code>assessment:<em>AID</em></code>
-            </td>
-            <td>
-              Shows all issues with an assessment ID like <code>AID</code>; supports
-              <code>*</code> as a wildcard. For example,
-              <code>assessment:exam/instantFeedback</code> shows all issues associated with the
-              assessment <code>exam/instantFeedback</code>, and <code>assessment:exam/*</code> shows
-              all issues associated with any assessment that starts with <code>exam/</code>, such as
-              <code>exam/instantFeedback</code> and <code>exam/manualGrading</code>.
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <code>qid:<em>QID</em></code>
-            </td>
-            <td>
-              Shows all issues with a question ID like <code>QID</code>; supports <code>*</code> as
-              a wildcard. For example, <code>qid:graphConnectivity</code> shows all issues
-              associated with the question <code>graphConnectivity</code>, and
-              <code>qid:graph*</code> shows all issues associated with any question that starts with
-              <code>graph</code>, such as <code>graphConnectivity</code> and
-              <code>graphTheory</code>.
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <code>user:<em>UID</em></code>
-            </td>
-            <td>
-              Shows all issues that were reported by a user with a UID like <code>UID</code>. For
-              example, <code>user:student@example.com</code> shows all issues that were reported by
-              <code>student@example.com</code>.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="table table-bordered" aria-label="Filtering qualifiers">
+          <thead>
+            <tr>
+              <th>Qualifier</th>
+              <th>Explanation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>is:open</code></td>
+              <td>Shows all issues that are open</td>
+            </tr>
+            <tr>
+              <td><code>is:closed</code></td>
+              <td>Shows all issues that are closed</td>
+            </tr>
+            <tr>
+              <td><code>is:manually-reported</code></td>
+              <td>Shows all issues that were manually reported by a student</td>
+            </tr>
+            <tr>
+              <td><code>is:automatically-reported</code></td>
+              <td>Shows all issues that were automatically reported by PrairieLearn</td>
+            </tr>
+            <tr>
+              <td>
+                <code>assessment:<em>AID</em></code>
+              </td>
+              <td>
+                Shows all issues with an assessment ID like <code>AID</code>; supports
+                <code>*</code> as a wildcard. For example,
+                <code>assessment:exam/instantFeedback</code> shows all issues associated with the
+                assessment <code>exam/instantFeedback</code>, and
+                <code>assessment:exam/*</code> shows all issues associated with any assessment that
+                starts with <code>exam/</code>, such as <code>exam/instantFeedback</code> and
+                <code>exam/manualGrading</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <code>qid:<em>QID</em></code>
+              </td>
+              <td>
+                Shows all issues with a question ID like <code>QID</code>; supports
+                <code>*</code> as a wildcard. For example, <code>qid:graphConnectivity</code> shows
+                all issues associated with the question <code>graphConnectivity</code>, and
+                <code>qid:graph*</code> shows all issues associated with any question that starts
+                with <code>graph</code>, such as <code>graphConnectivity</code> and
+                <code>graphTheory</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <code>user:<em>UID</em></code>
+              </td>
+              <td>
+                Shows all issues that were reported by a user with a UID like <code>UID</code>. For
+                example, <code>user:student@example.com</code> shows all issues that were reported
+                by <code>student@example.com</code>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <h3 class="h4">Full-text search</h3>
       <p>
         You can also search the issue message by simply entering text. For example,
@@ -479,7 +482,7 @@ function IssueActionButton({ issue, csrfToken }: { issue: Issue; csrfToken: stri
                 data-bs-placement="top"
                 data-bs-title="Close issue"
               >
-                <i class="fa fa-times fa-fw" aria-hidden="true"></i>
+                <i class="fa fa-times" aria-hidden="true"></i>
               </button>
             `
           : html`
@@ -492,7 +495,7 @@ function IssueActionButton({ issue, csrfToken }: { issue: Issue; csrfToken: stri
                 data-bs-placement="top"
                 data-bs-title="Reopen issue"
               >
-                <i class="fa fa-rotate-right fa-fw" aria-hidden="true"></i>
+                <i class="fa fa-rotate-right" aria-hidden="true"></i>
               </button>
             `}
       </div>

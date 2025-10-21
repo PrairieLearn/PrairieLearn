@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/markdown",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "repository": {
     "type": "git",
@@ -15,27 +15,17 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "rehype-raw": "^7.0.0",
-    "rehype-sanitize": "^6.0.0",
-    "rehype-stringify": "^10.0.1",
-    "remark-gfm": "^4.0.1",
-    "remark-math": "^6.0.0",
-    "remark-parse": "^11.0.0",
-    "remark-rehype": "^11.1.2",
-    "unified": "^11.0.5",
-    "unist-util-visit": "^5.0.0",
-    "vfile": "^6.0.3"
+    "@prairielearn/marked-mathjax": "workspace:^",
+    "isomorphic-dompurify": "^2.28.0",
+    "marked": "^16.3.0",
+    "mathjax": "^3.2.2"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/hast": "^3.0.4",
-    "@types/mdast": "^4.0.4",
-    "@types/node": "^22.15.34",
-    "@types/unist": "^3.0.3",
+    "@types/node": "^22.18.8",
     "@vitest/coverage-v8": "^3.2.4",
-    "mdast-util-math": "^3.0.0",
-    "tsx": "^4.20.3",
-    "typescript": "^5.8.3",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }
 }

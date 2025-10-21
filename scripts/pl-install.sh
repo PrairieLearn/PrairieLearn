@@ -104,7 +104,7 @@ uv venv --seed
 export CC=/usr/bin/gcc
 export CXX=/usr/bin/g++
 export LDSHARED="/usr/bin/gcc -shared"
-uv pip install --force-reinstall --no-cache-dir -r /PrairieLearn/requirements.txt
+uv pip install --force-reinstall --no-cache-dir -r /PrairieLearn/pyproject.toml
 
 # Clear various caches to minimize the final image size.
 uv cache clean

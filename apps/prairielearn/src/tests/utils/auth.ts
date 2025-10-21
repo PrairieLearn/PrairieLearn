@@ -1,15 +1,19 @@
+import _ from 'lodash';
 import { z } from 'zod';
 
-import { callRow, queryRow } from '@prairielearn/postgres';
+import { callRow, execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
-import { IdSchema, type User, UserSchema } from '../../lib/db-types.js';
+import { IdSchema, InstitutionSchema, type User, UserSchema } from '../../lib/db-types.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export interface AuthUser {
   name: string | null;
   uid: string;
   uin: string | null;
   email?: string | null;
+  institutionId?: string;
 }
 
 export async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise<T> {
@@ -49,7 +53,14 @@ export async function getConfiguredUser(): Promise<User> {
 export async function getOrCreateUser(authUser: AuthUser): Promise<User> {
   const user = await callRow(
     'users_select_or_insert',
-    [authUser.uid, authUser.name, authUser.uin, authUser.email, 'dev'],
+    [
+      authUser.uid,
+      authUser.name,
+      authUser.uin,
+      authUser.email,
+      'dev',
+      authUser.institutionId || null,
+    ],
     // The sproc returns multiple columns, but we only use the ID.
     z.object({ user_id: IdSchema }),
   );
@@ -58,4 +69,42 @@ export async function getOrCreateUser(authUser: AuthUser): Promise<User> {
     { id: user.user_id },
     UserSchema,
   );
+}
+
+/** Helper function to create institutions for testing */
+export async function createInstitution(id: string, shortName: string, longName: string) {
+  await queryOptionalRow(
+    sql.create_institution,
+    {
+      id,
+      short_name: shortName,
+      long_name: longName,
+      uid_regexp: `@${_.escapeRegExp(shortName)}$`,
+    },
+    InstitutionSchema,
+  );
+}
+
+/** Helper function to update course instance settings */
+export async function updateCourseInstanceSettings(
+  courseInstanceId: string,
+  options: {
+    selfEnrollmentEnabled: boolean;
+    restrictToInstitution: boolean;
+    selfEnrollmentUseEnrollmentCode: boolean;
+  },
+) {
+  await execute(sql.update_course_instance_settings, {
+    course_instance_id: courseInstanceId,
+    self_enrollment_enabled: options.selfEnrollmentEnabled,
+    restrict_to_institution: options.restrictToInstitution,
+    self_enrollment_use_enrollment_code: options.selfEnrollmentUseEnrollmentCode,
+  });
+}
+
+/** Helper function to delete enrollments in a course instance for testing */
+export async function deleteEnrollmentsInCourseInstance(courseInstanceId: string) {
+  await execute(sql.delete_enrollments_in_course_instance, {
+    course_instance_id: courseInstanceId,
+  });
 }

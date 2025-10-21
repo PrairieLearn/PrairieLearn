@@ -2,24 +2,25 @@ import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
-import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
-import { Scorebar } from '../../components/Scorebar.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
+import { ScorebarHtml } from '../../components/Scorebar.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
+  type Assessment,
   AssessmentQuestionSchema,
   type ClientFingerprint,
   IdSchema,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -45,7 +46,6 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
   assessment_question: AssessmentQuestionSchema,
-  modified_at: z.string(),
   qid: z.string().nullable(),
   question_id: IdSchema,
   question_number: z.string(),
@@ -112,12 +112,13 @@ export function InstructorAssessmentInstance({
           : html`${resLocals.instance_user.name}`}
       </h1>
       ${ResetQuestionVariantsModal({
+        assessment: resLocals.assessment,
         csrfToken: resLocals.__csrf_token,
-        groupWork: resLocals.assessment.group_work,
       })}
+      ${ExamResetNotSupportedModal({ assessment: resLocals.assessment })}
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
@@ -234,7 +235,7 @@ export function InstructorAssessmentInstance({
               <tr>
                 <th>Score</th>
                 <td class="align-middle" style="width: 20%;">
-                  ${Scorebar(resLocals.assessment_instance.score_perc)}
+                  ${ScorebarHtml(resLocals.assessment_instance.score_perc)}
                 </td>
                 <td class="align-middle" style="width: 100%;">
                   ${resLocals.authz_data.has_course_instance_permission_edit
@@ -344,10 +345,10 @@ export function InstructorAssessmentInstance({
                           <th colspan="9">
                             ${instance_question.zone_title}
                             ${instance_question.zone_has_max_points
-                              ? html`(maximum ${instance_question.zone_max_points} points)}`
+                              ? html`(maximum ${instance_question.zone_max_points} points)`
                               : ''}
                             ${instance_question.zone_has_best_questions
-                              ? html`(best ${instance_question.zone_best_questions} questions)}`
+                              ? html`(best ${instance_question.zone_best_questions} questions)`
                               : ''}
                           </th>
                         </tr>
@@ -421,7 +422,7 @@ export function InstructorAssessmentInstance({
                         : ''}
                     </td>
                     <td class="text-center text-nowrap" style="padding-top: 0.65rem;">
-                      ${Scorebar(instance_question.score_perc)}
+                      ${ScorebarHtml(instance_question.score_perc)}
                     </td>
                     <td style="width: 1em;">
                       ${resLocals.authz_data.has_course_instance_permission_edit
@@ -464,7 +465,9 @@ export function InstructorAssessmentInstance({
                                 <button
                                   class="dropdown-item"
                                   data-bs-toggle="modal"
-                                  data-bs-target="#resetQuestionVariantsModal"
+                                  data-bs-target="${resLocals.assessment.type === 'Exam'
+                                    ? '#examResetNotSupportedModal'
+                                    : '#resetQuestionVariantsModal'}"
                                   data-instance-question-id="${instance_question.id}"
                                 >
                                   Reset question variants
@@ -609,7 +612,7 @@ export function InstructorAssessmentInstance({
                                 class="btn btn-xs color-${FINGERPRINT_COLORS[
                                   row.client_fingerprint_number % 6
                                 ]}"
-                                id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
+                                id="fingerprintPopover${row.client_fingerprint.id}-${index}"
                                 data-bs-toggle="popover"
                                 data-bs-container="body"
                                 data-bs-html="true"
@@ -707,7 +710,11 @@ function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint })
   return html`
     <div>
       IP Address:
-      <a href="https://client.rdap.org/?type=ip&object=${fingerprint.ip_address}" target="_blank">
+      <a
+        href="https://client.rdap.org/?type=ip&object=${fingerprint.ip_address}"
+        target="_blank"
+        rel="noreferrer"
+      >
         ${fingerprint.ip_address}
       </a>
     </div>
@@ -795,10 +802,10 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
 
 function ResetQuestionVariantsModal({
   csrfToken,
-  groupWork,
+  assessment,
 }: {
   csrfToken: string;
-  groupWork: boolean;
+  assessment: Assessment;
 }) {
   return Modal({
     id: 'resetQuestionVariantsModal',
@@ -806,12 +813,12 @@ function ResetQuestionVariantsModal({
     body: html`
       <p>
         Are your sure you want to reset all current variants of this question for this
-        ${groupWork ? 'group' : 'student'}?
+        ${assessment.group_work ? 'group' : 'student'}?
         <strong>All ungraded attempts will be lost.</strong>
       </p>
       <p>
-        This ${groupWork ? 'group' : 'student'} will receive a new variant the next time they view
-        this question.
+        This ${assessment.group_work ? 'group' : 'student'} will receive a new variant the next time
+        they view this question.
       </p>
     `,
     footer: html`
@@ -820,6 +827,23 @@ function ResetQuestionVariantsModal({
       <input type="hidden" name="unsafe_instance_question_id" class="js-instance-question-id" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Reset question variants</button>
+    `,
+  });
+}
+
+function ExamResetNotSupportedModal({ assessment }: { assessment: Assessment }) {
+  return Modal({
+    id: 'examResetNotSupportedModal',
+    title: 'Not supported',
+    body: html`
+      <p>Resetting question variants is not supported for Exam assessments.</p>
+      <p class="mb-0">
+        Consider alternative options, such as deleting the assessment instance to allow the
+        ${assessment.group_work ? 'group' : 'student'} to start over.
+      </p>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }

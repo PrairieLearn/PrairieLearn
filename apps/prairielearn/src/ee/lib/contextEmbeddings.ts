@@ -1,10 +1,11 @@
 import * as path from 'path';
 
+import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
+import { type EmbeddingModel, embed } from 'ai';
 import fs from 'fs-extra';
 import klaw from 'klaw';
-import { type OpenAI } from 'openai';
 
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
@@ -38,33 +39,40 @@ export function openAiUserFromAuthn(authnUserId: string): string {
 /**
  * Converts text to a semantic embedding.
  *
- * @param client The OpenAI client to use.
+ * @param embeddingModel The embedding model to use.
  * @param text The document text to embed.
  * @param openAiUser The OpenAI userstring requesting the embeddng.
  * @returns The resultant document embedding.
  */
-export async function createEmbedding(client: OpenAI, text: string, openAiUser: string) {
-  const embedding = await client.embeddings.create({
-    input: text,
-    model: 'text-embedding-3-small',
-    encoding_format: 'float',
-    user: openAiUser,
+export async function createEmbedding(
+  embeddingModel: EmbeddingModel,
+  text: string,
+  openAiUser: string,
+): Promise<number[]> {
+  const { embedding } = await embed({
+    model: embeddingModel,
+    value: text,
+    providerOptions: {
+      openai: {
+        user: openAiUser,
+      } satisfies OpenAIChatLanguageModelOptions,
+    },
   });
 
-  return embedding.data[0].embedding;
+  return embedding;
 }
 
 /**
- * Inserts a document chunk into the vectorstore.
+ * Inserts a document chunk into the vector store.
  *
- * @param client The OpenAI client to use.
+ * @param embeddingModel The embedding model to use.
  * @param filepath The filepath of the document to add.
  * @param doc The document chunk to add.
  * @param job The server job calling this function.
- * @param openAiUser The OpenAI userstring requesting the adding of the document chunk.
+ * @param openAiUser The OpenAI user string for the user requesting the adding of the document chunk.
  */
 async function insertDocumentChunk(
-  client: OpenAI,
+  embeddingModel: EmbeddingModel,
   filepath: string,
   doc: DocumentChunk,
   job: ServerJob,
@@ -82,27 +90,23 @@ async function insertDocumentChunk(
   }
 
   job.info(`Inserting chunk for ${filepath} (${doc.chunkId}) into the database.`);
-  const embedding = await createEmbedding(client, doc.text, openAiUser);
-  await queryRows(
-    sql.insert_embedding,
-    {
-      doc_path: filepath,
-      doc_text: doc.text,
-      embedding: vectorToString(embedding),
-      chunk_id: doc.chunkId,
-    },
-    QuestionGenerationContextEmbeddingSchema,
-  );
+  const embedding = await createEmbedding(embeddingModel, doc.text, openAiUser);
+  await execute(sql.insert_embedding, {
+    doc_path: filepath,
+    doc_text: doc.text,
+    embedding: vectorToString(embedding),
+    chunk_id: doc.chunkId,
+  });
 }
 
 /**
- * Creates a job to synchronize predefined context (consisting of example course questions + element docs) with the vectorstore.
+ * Creates a job to synchronize predefined context (consisting of example course questions + element docs) with the vector store.
  *
- * @param client The OpenAI client to use.
- * @param authnUserId The OpenAI userstring of the user requesting the sync.
+ * @param embeddingModel The embedding model to use.
+ * @param authnUserId The OpenAI user string of the user requesting the sync.
  * @returns The job ID of the synchronization job.
  */
-export async function syncContextDocuments(client: OpenAI, authnUserId: string) {
+export async function syncContextDocuments(embeddingModel: EmbeddingModel, authnUserId: string) {
   const serverJob = await createServerJob({
     type: 'sync_question_generation_context',
     description: 'Generate embeddings for context documents',
@@ -123,7 +127,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
       const fileText = await buildContextForQuestion(path.dirname(file.path));
       if (fileText) {
         await insertDocumentChunk(
-          client,
+          embeddingModel,
           path.relative(REPOSITORY_ROOT_PATH, file.path),
           { text: fileText, chunkId: '' },
           job,
@@ -136,10 +140,10 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
     const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
     allowedFilepaths.push(path.relative(REPOSITORY_ROOT_PATH, elementDocsPath));
     const fileText = await fs.readFile(elementDocsPath, { encoding: 'utf-8' });
-    const files = await buildContextForElementDocs(fileText);
+    const files = buildContextForElementDocs(fileText);
     for (const doc of files) {
       await insertDocumentChunk(
-        client,
+        embeddingModel,
         path.relative(REPOSITORY_ROOT_PATH, elementDocsPath),
         doc,
         job,
@@ -147,14 +151,10 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
       );
     }
 
-    await queryRows(
-      sql.delete_unused_doc_chunks,
-      {
-        doc_paths: allowedFilepaths,
-        chunk_ids: files.map((doc) => doc.chunkId).concat(['']),
-      },
-      QuestionGenerationContextEmbeddingSchema,
-    );
+    await execute(sql.delete_unused_doc_chunks, {
+      doc_paths: allowedFilepaths,
+      chunk_ids: files.map((doc) => doc.chunkId).concat(['']),
+    });
   });
   return serverJob.jobSequenceId;
 }

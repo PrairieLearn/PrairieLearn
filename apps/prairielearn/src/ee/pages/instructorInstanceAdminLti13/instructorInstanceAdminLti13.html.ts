@@ -3,12 +3,12 @@ import { z } from 'zod';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import {
   AssessmentSchema,
   AssessmentSetSchema,
-  type Lti13Assessments,
+  type Lti13Assessment,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
@@ -52,7 +52,10 @@ export function InstructorInstanceAdminLti13NoInstances({
                   No learning management systems (LMSes) at your institution are available for
                   integration with PrairieLearn. Please contact your IT administrators to set up an
                   integration. You can refer them to the
-                  <a target="_blank" href="https://prairielearn.readthedocs.io/en/latest/lti13/"
+                  <a
+                    target="_blank"
+                    href="https://prairielearn.readthedocs.io/en/latest/lti13/"
+                    rel="noreferrer"
                     >documentation</a
                   >.
                 </p>
@@ -72,6 +75,7 @@ export function InstructorInstanceAdminLti13NoInstances({
                   <a
                     target="_blank"
                     href="https://prairielearn.readthedocs.io/en/latest/lmsIntegrationInstructor/"
+                    rel="noreferrer"
                   >
                     How can I integrate my course with an LMS?
                   </a>
@@ -97,7 +101,7 @@ export function InstructorInstanceAdminLti13({
   instance: Lti13CombinedInstance;
   instances: Lti13CombinedInstance[];
   assessments: AssessmentRow[];
-  lineitems: Lti13Assessments[];
+  lineitems: Lti13Assessment[];
 }): string {
   const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
@@ -123,13 +127,15 @@ export function InstructorInstanceAdminLti13({
               <div class="dropdown mb-2">
                 <button
                   type="button"
-                  class="btn dropdown-toggle border border-gray"
+                  class="btn dropdown-toggle border w-100 text-start pe-4"
                   data-bs-toggle="dropdown"
                   aria-haspopup="true"
                   aria-expanded="false"
                   data-bs-boundary="window"
                 >
-                  ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
+                  <span class="d-inline-block text-wrap w-100">
+                    ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
+                  </span>
                 </button>
                 <div class="dropdown-menu">
                   ${instances.map((i) => {
@@ -214,7 +220,7 @@ function LinkedAssessments({
   resLocals: Record<string, any>;
   lms_name: string;
   assessments: AssessmentRow[];
-  lineitems: Lti13Assessments[];
+  lineitems: Lti13Assessment[];
 }): HtmlSafeString {
   const { urlPrefix } = resLocals;
   const { assessments_group_by } = resLocals.course_instance;
@@ -276,7 +282,7 @@ function LinkedAssessments({
                                 class="btn btn-success"
                                 name="__action"
                                 value="bulk_create_assessments"
-                                onClick="return confirm('Are you sure?');"
+                                onclick="return confirm('Are you sure?');"
                               >
                                 Create and link assignments in ${lms_name}
                               </button>
@@ -286,7 +292,7 @@ function LinkedAssessments({
                                 class="btn btn-med-light"
                                 name="__action"
                                 value="bulk_unlink_assessments"
-                                onClick="return confirm('Are you sure?');"
+                                onclick="return confirm('Are you sure?');"
                               >
                                 Unlink assessments
                               </button>
@@ -355,7 +361,7 @@ function LinkedAssessments({
                           class="btn btn-primary"
                           hx-get="?lineitems"
                           hx-target="next .line-items-inputs"
-                          onClick="this.querySelector('.refresh-button').classList.remove('d-none');"
+                          onclick="this.querySelector('.refresh-button').classList.remove('d-none');"
                         >
                           Pick from existing ${lms_name} assignments
                           <span class="refresh-button d-none"><i class="fa fa-refresh"></i></span>
@@ -429,7 +435,7 @@ function LinkedAssessments({
   `;
 }
 
-function LineItem(item: Lti13Assessments, timezone: string) {
+function LineItem(item: Lti13Assessment, timezone: string) {
   return html`
     <span title="${item.lineitem_id_url}">${item.lineitem.label}</span>
     <p>

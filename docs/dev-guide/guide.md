@@ -106,6 +106,29 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 
 - Buttons should use the `<button>` element when they take actions and the `<a>` element when they are simply links to other pages. We should not use `<a role="button">` to fake a button element. Buttons that do not submit a form should always start with `<button type="button" class="btn ...">`, where `type="button"` specifies that they don't submit.
 
+## HTML accessibility
+
+If you are adding anything more complex than a basic form page, the automated accessibility checks are likely not enough for checking accessibility. You should use [VoiceOver (macOS)](https://support.apple.com/guide/voiceover/welcome/mac) or [NVDA (Windows)](https://www.nvaccess.org/download/) to test the page. All our pages must conform to the [Web Content Accessibility Guidelines (WCAG) 2.1 AA standard](https://www.w3.org/TR/WCAG21/). Some common things to check for:
+
+- Are elements announced correctly?
+  - Do elements have appropriate `aria-label` / `alt` attributes?
+  - Are descriptions concise and accurate?
+  - Do menus, toolbars, and other UI elements have appropriate [ARIA roles](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles)?
+- Can a user navigate the page using only the keyboard?
+  - Tab should move between focusable elements.
+  - Space or Enter should activate buttons/links.
+  - Arrow keys should navigate within components like dropdowns and tables.
+  - Actions that require dragging with a mouse should have keyboard alternatives.
+- Is focus managed correctly?
+  - Is focus correctly trapped within modals and other dialogs?
+  - Is focus position retained during re-renders?
+- Are focus indicators visible?
+- Is the page layout logical and easy to understand?
+- Will users with visual impairments be able to use the page?
+  - Is there at least a 4.5:1 contrast ratio between text and background colors?
+  - Is there at least a 3:1 contrast ratio between UI elements and background colors?
+  - Is there appropriate spacing between elements?
+
 ## SQL usage
 
 - [PostgreSQL](https://www.postgresql.org) v16 is used as the database.
@@ -335,7 +358,7 @@ FOR NO KEY UPDATE;
 - To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
   ```javascript
-  await sqldb.queryAsync(sql.insert_assessment_question, {
+  await sqldb.execute(sql.insert_assessment_question, {
     points_list: [10, 5, 1],
   });
   ```
@@ -375,7 +398,7 @@ FOR NO KEY UPDATE;
     { a: 5, b: 'foo' },
     { a: 9, b: 'bar' },
   ];
-  await sqldb.queryAsync(sql.insert_data, {
+  await sqldb.execute(sql.insert_data, {
     data: JSON.stringify(data),
   });
   ```
@@ -446,7 +469,54 @@ FOR NO KEY UPDATE;
 
 - All state-modifying requests must (normally) be POST and all associated data must be in the body. GET requests may use query parameters for viewing options only.
 
+## Safely interacting with the database
+
+??? note
+
+    This pattern is currently being rolled out as a gradual refactor of existing code on a model-by-model basis.
+
+Almost every page is dealing with database data, so it is important to understand how to interact with the database securely. Data in `res.locals` has already been validated and is safe to use. However, it is recommended to type this data using the `page-context` helpers for extra type safety. For example,
+
+```typescript
+const { authz_data } = getPageContext(res.locals);
+const { course_instance: courseInstance } = getCourseInstance(res.locals, 'student');
+```
+
+For most API/POST handlers, we want to lookup or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. To help with this, we are moving to a pattern where model functions should accept full, typed row objects as parameters. For example,
+
+```typescript
+await updateEnrollmentStatus({
+  enrollment: my_enrollment,
+  status: 'joined',
+});
+```
+
+This is good, because in order to perform an update, you need to pass in a full row object, and a request body won't have enough information for this. It is assumed that the only way to get a full, typed row object is to call a model function that performs the correct authorization checks. For example,
+
+```typescript
+const enrollment = await selectEnrollment({
+  id: enrollment_id,
+  courseInstance,
+  authLevel: 'student',
+});
+```
+
+Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks. For example, in the above example, the `selectEnrollment` function requires the caller to pass in the `course_instance` and `authLevel` parameters, so it can throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollment`).
+
+```typescript
+const enrollment = await dangerouslySelectEnrollment({ id: enrollment_id });
+```
+
+There also may exist versions of these functions that don't require the caller to pass in the `course_instance` and `authLevel` parameters, like `dangerouslySelectEnrollment`, but these should be avoided if possible.
+
 ## State-modifying POST requests
+
+??? note
+
+    This section is outdated. It is now preferred to do the following things:
+
+    1. Use a Zod schema to validate the request body.
+    2. Call model functions instead of directly executing SQL (see above).
 
 - Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern for all state modification. This means that the initial GET should render the page with a `<form>` that has no `action` set, so it will submit back to the current page. This should be handled by a POST handler that performs the state modification and then issues a redirect back to the same page as a GET:
 
@@ -455,7 +525,7 @@ FOR NO KEY UPDATE;
     '/',
     asyncHandler(async (req, res) => {
       if (req.body.__action == 'enroll') {
-        await queryAsync(sql.enroll, {
+        await execute(sql.enroll, {
           course_instance_id: req.body.course_instance_id,
           user_id: res.locals.authn_user.user_id,
         });
@@ -510,7 +580,7 @@ To automatically fix lint and formatting errors, run `make format`.
 
 ## Question-rendering control flow
 
-- The core files involved in question rendering are [lib/question-render.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.ts), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [components/QuestionContainer.html.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/components/QuestionContainer.html.ts).
+- The core files involved in question rendering are [lib/question-render.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.ts), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [components/QuestionContainer.tsx](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/components/QuestionContainer.tsx).
 
 - The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestion`, etc.). Unfortunately the control-flow is complicated because we need to call `lib/question-render.ts` during page data load, store the data it generates, and then later include the `components/QuestionContainer.html.ts` template to actually render this data.
 
@@ -566,6 +636,14 @@ To automatically fix lint and formatting errors, run `make format`.
 - The question flow is shown in the diagram below:
 
 ![Question lifecycle flowchart](./question-flow.d2)
+
+## Assertions
+
+Depending on the context, we use different types of assertions.
+
+- In tests, we use the exported helpers from `vitest`, e.g. `assert.ok` or `assert.isDefined`.
+- In server code, to enforce invariants (e.g. something that should never happen), we use `assert` from `node:assert`.
+- For asserting results on the client, or in utility functions, e.g. a `.querySelector`, `.pop`, etc., consider using the `!` operator to assert that a value is not `null` or `undefined`.
 
 ## JavaScript equality operator
 

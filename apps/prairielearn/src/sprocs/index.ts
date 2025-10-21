@@ -5,7 +5,7 @@ import { eachSeries } from 'async';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { queryAsync } from '@prairielearn/postgres';
+import { execute } from '@prairielearn/postgres';
 
 export async function init() {
   logger.verbose('Starting DB stored procedure initialization');
@@ -19,7 +19,6 @@ export async function init() {
       'histogram.sql',
       'array_histogram.sql',
       'format_interval.sql',
-      'format_interval_short.sql',
       'format_date_iso8601.sql',
       'format_date_short.sql',
       'format_date_full.sql',
@@ -32,9 +31,7 @@ export async function init() {
       'check_course_instance_access.sql',
       'check_assessment_access_rule.sql',
       'check_assessment_access.sql',
-      'assessments_format.sql',
       'assessments_format_for_question.sql',
-      'tags_for_question.sql',
       'random_unique.sql',
       'question_order.sql',
       'authz_assessment.sql',
@@ -43,8 +40,6 @@ export async function init() {
       'admin_assessment_question_number.sql',
       'authz_course.sql',
       'authz_course_instance.sql',
-      'administrators_insert_by_user_uid.sql',
-      'administrators_delete_by_user_id.sql',
       'courses_update_column.sql',
       'assessment_instances_grade.sql',
       'instance_questions_points_homework.sql',
@@ -52,9 +47,6 @@ export async function init() {
       'instance_questions_points.sql',
       'instance_questions_grade.sql',
       'instance_questions_next_allowed_grade.sql',
-      'submissions_lock.sql',
-      'grading_jobs_lock.sql',
-      'grading_jobs_update_after_grading.sql',
       'ip_to_mode.sql',
       'users_select_or_insert.sql',
       'users_select_or_insert_and_enroll_lti.sql',
@@ -64,7 +56,6 @@ export async function init() {
       'users_get_displayed_role.sql',
       'grading_jobs_stats_day.sql',
       'issues_insert_for_variant.sql',
-      'variants_lock.sql',
       'variants_update_after_grading.sql',
       'grader_loads_current.sql',
       'server_loads_current.sql',
@@ -84,7 +75,7 @@ export async function init() {
       logger.verbose('Loading ' + filename);
       try {
         const sql = await readFile(join(import.meta.dirname, filename), 'utf8');
-        await queryAsync(sql, []);
+        await execute(sql);
       } catch (err) {
         throw error.addData(err, { sqlFile: filename });
       }

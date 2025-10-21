@@ -54,7 +54,7 @@ router.get(
       ? ['job.tar.gz', 'archive.tar.gz', 'output.log', 'results.json']
       : ['output.log', 'results.json'];
 
-    if (allowList.indexOf(file) === -1) {
+    if (!allowList.includes(file)) {
       throw new error.HttpStatusError(404, `Unknown file ${file}`);
     }
 

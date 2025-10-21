@@ -1,9 +1,9 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
+import { HeadContents } from '../../components/HeadContents.js';
+import { Navbar } from '../../components/Navbar.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
 import { type GroupInfo } from '../../lib/groups.js';
 
@@ -84,6 +84,7 @@ export function StudentAssessment({
     </html>
   `.toString();
 }
+
 function StartAssessmentForm({
   assessment,
   user,

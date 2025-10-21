@@ -1,13 +1,11 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { Readable, Transform } from 'node:stream';
-import { callbackify } from 'node:util';
 
 import debugfn from 'debug';
 import _ from 'lodash';
 import multipipe from 'multipipe';
-import pg, { type QueryResult } from 'pg';
+import pg, { DatabaseError, type QueryResult, escapeLiteral } from 'pg';
 import Cursor from 'pg-cursor';
-import { DatabaseError } from 'pg-protocol';
 import { z } from 'zod';
 
 export type QueryParams = Record<string, any> | any[];
@@ -27,7 +25,7 @@ const searchSchemaMap = new WeakMap<pg.PoolClient, string>();
 
 function addDataToError(err: Error, data: Record<string, any>): Error {
   (err as any).data = {
-    ...((err as any).data ?? {}),
+    ...(err as any).data,
     ...data,
   };
   return err;
@@ -48,8 +46,8 @@ export class PostgresError extends Error {
  */
 function debugString(s: string): string {
   if (typeof s !== 'string') return 'NOT A STRING';
-  s = s.replace(/\n/g, '\\n');
-  if (s.length > 78) s = s.substring(0, 75) + '...';
+  s = s.replaceAll('\n', '\\n');
+  if (s.length > 78) s = s.slice(0, 75) + '...';
   s = '"' + s + '"';
   return s;
 }
@@ -108,14 +106,14 @@ function paramsToArray(
         paramsArray.push(params[v]);
       }
     }
-    processedSql += remainingSql.substring(0, result.index) + map[v];
-    remainingSql = remainingSql.substring(result.index + result[0].length);
+    processedSql += remainingSql.slice(0, result.index) + map[v];
+    remainingSql = remainingSql.slice(result.index + result[0].length);
   }
   processedSql += remainingSql;
   remainingSql = '';
   if (errorOnUnusedParameters) {
     const difference = _.difference(Object.keys(params), Object.keys(map));
-    if (difference.length) {
+    if (difference.length > 0) {
       throw new Error(`Unused parameters in SQL query: ${JSON.stringify(difference)}`);
     }
   }
@@ -177,6 +175,9 @@ export class PostgresPool {
     pgConfig: PostgresPoolConfig,
     idleErrorHandler: (error: Error, client: pg.PoolClient) => void,
   ): Promise<void> {
+    if (this.pool != null) {
+      throw new Error('Postgres pool already initialized');
+    }
     this.errorOnUnusedParameters = pgConfig.errorOnUnusedParameters ?? false;
     this.pool = new pg.Pool(pgConfig);
     this.pool.on('error', function (err, client) {
@@ -221,11 +222,6 @@ export class PostgresPool {
   }
 
   /**
-   * Creates a new connection pool and attempts to connect to the database.
-   */
-  init = callbackify(this.initAsync);
-
-  /**
    * Closes the connection pool.
    */
   async closeAsync(): Promise<void> {
@@ -235,14 +231,7 @@ export class PostgresPool {
   }
 
   /**
-   * Closes the connection pool.
-   */
-  close = callbackify(this.closeAsync);
-
-  /**
-   * Gets a new client from the connection pool. If `err` is not null
-   * then `client` and `done` are undefined. If `err` is null then
-   * `client` is valid and can be used. The caller MUST call `done()` to
+   * Gets a new client from the connection pool. The caller MUST call `release()` to
    * release the client, whether or not errors occurred while using
    * `client`. The client can call `done(truthy_value)` to force
    * destruction of the client, but this should not be used except in
@@ -291,15 +280,6 @@ export class PostgresPool {
   }
 
   /**
-   * Gets a new client from the connection pool.
-   */
-  getClient(callback: (error: Error | null, client?: pg.PoolClient, done?: () => void) => void) {
-    this.getClientAsync()
-      .then((client) => callback(null, client, client.release))
-      .catch((err) => callback(err));
-  }
-
-  /**
    * Performs a query with the given client.
    */
   async queryWithClientAsync(
@@ -320,11 +300,6 @@ export class PostgresPool {
       throw enhanceError(err, sql, params);
     }
   }
-
-  /**
-   * Performs a query with the given client.
-   */
-  queryWithClient = callbackify(this.queryWithClientAsync);
 
   /**
    * Performs a query with the given client. Errors if the query returns more
@@ -353,12 +328,6 @@ export class PostgresPool {
    * Performs a query with the given client. Errors if the query returns more
    * than one row.
    */
-  queryWithClientOneRow = callbackify(this.queryWithClientOneRowAsync);
-
-  /**
-   * Performs a query with the given client. Errors if the query returns more
-   * than one row.
-   */
   async queryWithClientZeroOrOneRowAsync(
     client: pg.PoolClient,
     sql: string,
@@ -377,12 +346,6 @@ export class PostgresPool {
     debug('queryWithClientZeroOrOneRow() success', 'rowCount:', result.rowCount);
     return result;
   }
-
-  /**
-   * Performs a query with the given client. Errors if the query returns more
-   * than one row.
-   */
-  queryWithClientZeroOrOneRow = callbackify(this.queryWithClientZeroOrOneRowAsync);
 
   /**
    * Rolls back the current transaction for the given client.
@@ -404,21 +367,6 @@ export class PostgresPool {
       // problems might happen.
       client.release(err);
     }
-  }
-
-  /**
-   * Rolls back the current transaction for the given client.
-   */
-  rollbackWithClient(
-    client: pg.PoolClient,
-    _done: (release?: any) => void,
-    callback: (err: Error | null) => void,
-  ) {
-    // Note that we can't use `util.callbackify` here because this function
-    // has an additional unused `done` parameter for backwards compatibility.
-    this.rollbackWithClientAsync(client)
-      .then(() => callback(null))
-      .catch((err) => callback(err));
   }
 
   /**
@@ -466,21 +414,6 @@ export class PostgresPool {
   }
 
   /**
-   * Commits the transaction if err is null, otherwise rollbacks the transaction.
-   * Also releases the client.
-   */
-  endTransaction(
-    client: pg.PoolClient,
-    _done: (rollback?: any) => void,
-    err: Error | null | undefined,
-    callback: (error: Error | null) => void,
-  ): void {
-    this.endTransactionAsync(client, err)
-      .then(() => callback(null))
-      .catch((error) => callback(error));
-  }
-
-  /**
    * Runs the specified function inside of a transaction. The function will
    * receive a database client as an argument, but it can also make queries
    * as usual, and the correct client will be used automatically.
@@ -522,6 +455,11 @@ export class PostgresPool {
 
   /**
    * Executes a query with the specified parameters.
+   *
+   * @deprecated Use {@link execute} instead.
+   *
+   * Using the return value of this function directly is not recommended. Instead, use
+   * {@link queryRows}, {@link queryRow}, or {@link queryOptionalRow}.
    */
   async queryAsync(sql: string, params: QueryParams): Promise<QueryResult> {
     debug('query()', 'sql:', debugString(sql));
@@ -538,13 +476,10 @@ export class PostgresPool {
   }
 
   /**
-   * Executes a query with the specified parameters.
-   */
-  query = callbackify(this.queryAsync);
-
-  /**
    * Executes a query with the specified parameters. Errors if the query does
    * not return exactly one row.
+   *
+   * @deprecated Use {@link executeRow} or {@link queryRow} instead.
    */
   async queryOneRowAsync(sql: string, params: QueryParams): Promise<pg.QueryResult> {
     debug('queryOneRow()', 'sql:', debugString(sql));
@@ -559,12 +494,6 @@ export class PostgresPool {
     debug('queryOneRow() success', 'rowCount:', result.rowCount);
     return result;
   }
-
-  /**
-   * Executes a query with the specified parameters. Errors if the query does
-   * not return exactly one row.
-   */
-  queryOneRow = callbackify(this.queryOneRowAsync);
 
   /**
    * Executes a query with the specified parameters. Errors if the query
@@ -585,18 +514,12 @@ export class PostgresPool {
   }
 
   /**
-   * Executes a query with the specified parameters. Errors if the query
-   * returns more than one row.
-   */
-  queryZeroOrOneRow = callbackify(this.queryZeroOrOneRowAsync);
-
-  /**
-   * Calls the given function with the specified parameters.
+   * Calls the given sproc with the specified parameters.
    */
   async callAsync(functionName: string, params: any[]): Promise<pg.QueryResult> {
     debug('call()', 'function:', functionName);
     debug('call()', 'params:', debugParams(params));
-    const placeholders = params.map((_, v) => '$' + (v + 1)).join();
+    const placeholders = params.map((_, v) => '$' + (v + 1)).join(',');
     const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders});`;
     const result = await this.queryAsync(sql, params);
     debug('call() success', 'rowCount:', result.rowCount);
@@ -604,13 +527,8 @@ export class PostgresPool {
   }
 
   /**
-   * Calls the given function with the specified parameters.
-   */
-  call = callbackify(this.callAsync);
-
-  /**
-   * Calls the given function with the specified parameters. Errors if the
-   * function does not return exactly one row.
+   * Calls the given sproc with the specified parameters. Errors if the
+   * sproc does not return exactly one row.
    */
   async callOneRowAsync(functionName: string, params: any[]): Promise<pg.QueryResult> {
     debug('callOneRow()', 'function:', functionName);
@@ -627,14 +545,8 @@ export class PostgresPool {
   }
 
   /**
-   * Calls the given function with the specified parameters. Errors if the
-   * function does not return exactly one row.
-   */
-  callOneRow = callbackify(this.callOneRowAsync);
-
-  /**
-   * Calls the given function with the specified parameters. Errors if the
-   * function returns more than one row.
+   * Calls the given sproc with the specified parameters. Errors if the
+   * sproc returns more than one row.
    */
   async callZeroOrOneRowAsync(functionName: string, params: any[]): Promise<pg.QueryResult> {
     debug('callZeroOrOneRow()', 'function:', functionName);
@@ -651,13 +563,7 @@ export class PostgresPool {
   }
 
   /**
-   * Calls the given function with the specified parameters. Errors if the
-   * function returns more than one row.
-   */
-  callZeroOrOneRow = callbackify(this.callZeroOrOneRowAsync);
-
-  /**
-   * Calls a function with the specified parameters using a specific client.
+   * Calls a sproc with the specified parameters using a specific client.
    */
   async callWithClientAsync(
     client: pg.PoolClient,
@@ -666,7 +572,7 @@ export class PostgresPool {
   ): Promise<pg.QueryResult> {
     debug('callWithClient()', 'function:', functionName);
     debug('callWithClient()', 'params:', debugParams(params));
-    const placeholders = params.map((_, v) => '$' + (v + 1)).join();
+    const placeholders = params.map((_, v) => '$' + (v + 1)).join(',');
     const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders})`;
     const result = await this.queryWithClientAsync(client, sql, params);
     debug('callWithClient() success', 'rowCount:', result.rowCount);
@@ -674,13 +580,8 @@ export class PostgresPool {
   }
 
   /**
-   * Calls a function with the specified parameters using a specific client.
-   */
-  callWithClient = callbackify(this.callWithClientAsync);
-
-  /**
-   * Calls a function with the specified parameters using a specific client.
-   * Errors if the function does not return exactly one row.
+   * Calls a sproc with the specified parameters using a specific client.
+   * Errors if the sproc does not return exactly one row.
    */
   async callWithClientOneRowAsync(
     client: pg.PoolClient,
@@ -702,13 +603,7 @@ export class PostgresPool {
 
   /**
    * Calls a function with the specified parameters using a specific client.
-   * Errors if the function does not return exactly one row.
-   */
-  callWithClientOneRow = callbackify(this.callWithClientOneRowAsync);
-
-  /**
-   * Calls a function with the specified parameters using a specific client.
-   * Errors if the function returns more than one row.
+   * Errors if the sproc returns more than one row.
    */
   async callWithClientZeroOrOneRowAsync(
     client: pg.PoolClient,
@@ -728,163 +623,18 @@ export class PostgresPool {
     return result;
   }
 
-  /**
-   * Calls a function with the specified parameters using a specific client.
-   * Errors if the function returns more than one row.
-   */
-  callWithClientZeroOrOneRow = callbackify(this.callWithClientZeroOrOneRowAsync);
-
-  /**
-   * Wrapper around {@link queryAsync} that parses the resulting rows with the
-   * given Zod schema. Returns only the rows of the query.
-   */
-  async queryValidatedRows<Model extends z.ZodTypeAny>(
-    query: string,
-    params: QueryParams,
-    model: Model,
-  ): Promise<z.infer<Model>[]> {
-    const results = await this.queryAsync(query, params);
-    return z.array(model).parse(results.rows);
-  }
-
-  /**
-   * Wrapper around {@link queryOneRowAsync} that parses the resulting row with
-   * the given Zod schema. Returns only a single row of the query.
-   */
-  async queryValidatedOneRow<Model extends z.ZodTypeAny>(
-    query: string,
-    params: QueryParams,
-    model: Model,
-  ): Promise<z.infer<Model>> {
-    const results = await this.queryOneRowAsync(query, params);
-    return model.parse(results.rows[0]);
-  }
-
-  /**
-   * Wrapper around {@link queryZeroOrOneRowAsync} that parses the resulting row
-   * (if any) with the given Zod schema. Returns either a single row or `null`.
-   */
-  async queryValidatedZeroOrOneRow<Model extends z.ZodTypeAny>(
-    query: string,
-    params: QueryParams,
-    model: Model,
-  ): Promise<z.infer<Model> | null> {
-    const results = await this.queryZeroOrOneRowAsync(query, params);
-    if (results.rows.length === 0) {
-      return null;
-    } else {
-      return model.parse(results.rows[0]);
-    }
-  }
-
-  /**
-   * Wrapper around {@link queryAsync} that validates that only one column is
-   * returned and parses the data in it with the given Zod schema. Returns only
-   * the single column of the query as an array.
-   */
-  async queryValidatedSingleColumnRows<Model extends z.ZodTypeAny>(
-    query: string,
-    params: QueryParams,
-    model: Model,
-  ): Promise<z.infer<Model>[]> {
-    const results = await this.queryAsync(query, params);
-    if (results.fields.length !== 1) {
-      throw new Error(`Expected one column, got ${results.fields.length}`);
-    }
-    const columnName = results.fields[0].name;
-    const rawData = results.rows.map((row) => row[columnName]);
-    return z.array(model).parse(rawData);
-  }
-
-  /**
-   * Wrapper around {@link queryOneRowAsync} that validates that only one column
-   * is returned and parses the data in it with the given Zod schema. Returns
-   * only the single entry.
-   */
-  async queryValidatedSingleColumnOneRow<Model extends z.ZodTypeAny>(
-    query: string,
-    params: QueryParams,
-    model: Model,
-  ): Promise<z.infer<Model>> {
-    const results = await this.queryOneRowAsync(query, params);
-    if (results.fields.length !== 1) {
-      throw new Error(`Expected one column, got ${results.fields.length}`);
-    }
-    const columnName = results.fields[0].name;
-    return model.parse(results.rows[0][columnName]);
-  }
-
-  /**
-   * Wrapper around {@link queryZeroOrOneRowAsync} that validates that only one
-   * column is returned and parses the data in it (if any) with the given Zod
-   * schema. Returns either the single row of the query or `null`.
-   */
-  async queryValidatedSingleColumnZeroOrOneRow<Model extends z.ZodTypeAny>(
-    query: string,
-    params: QueryParams,
-    model: Model,
-  ): Promise<z.infer<Model> | null> {
-    const results = await this.queryZeroOrOneRowAsync(query, params);
-    if (results.fields.length !== 1) {
-      throw new Error(`Expected one column, got ${results.fields.length}`);
-    }
-    if (results.rows.length === 0) {
-      return null;
-    } else {
-      const columnName = results.fields[0].name;
-      return model.parse(results.rows[0][columnName]);
-    }
-  }
-
-  /**
-   * Wrapper around {@link callAsync} that parses the resulting rows with the
-   * given Zod schema. Returns only the rows.
-   */
-  async callValidatedRows<Model extends z.ZodTypeAny>(
-    sprocName: string,
-    params: any[],
-    model: Model,
-  ): Promise<z.infer<Model>[]> {
-    const results = await this.callAsync(sprocName, params);
-    return z.array(model).parse(results.rows);
-  }
-
-  /**
-   * Wrapper around {@link callOneRowAsync} that parses the resulting rows with
-   * the given Zod schema. Returns only a single row.
-   */
-  async callValidatedOneRow<Model extends z.ZodTypeAny>(
-    sprocName: string,
-    params: any[],
-    model: Model,
-  ): Promise<z.infer<Model>> {
-    const results = await this.callOneRowAsync(sprocName, params);
-    return model.parse(results.rows[0]);
-  }
-
-  /**
-   * Wrapper around {@link callZeroOrOneRowAsync} that parses the resulting row
-   * (if any) with the given Zod schema. Returns at most a single row.
-   */
-  async callValidatedZeroOrOneRow<Model extends z.ZodTypeAny>(
-    sprocName: string,
-    params: any[],
-    model: Model,
-  ): Promise<z.infer<Model> | null> {
-    const results = await this.callZeroOrOneRowAsync(sprocName, params);
-    if (results.rows.length === 0) {
-      return null;
-    } else {
-      return model.parse(results.rows[0]);
-    }
-  }
-
   async queryRows<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>[]>;
   async queryRows<Model extends z.ZodTypeAny>(
     sql: string,
     params: QueryParams,
     model: Model,
   ): Promise<z.infer<Model>[]>;
+  /**
+   * Executes a query with the specified parameters. Returns an array of rows
+   * that conform to the given Zod schema.
+   *
+   * If the query returns a single column, the return value will be a list of column values.
+   */
   async queryRows<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
@@ -908,6 +658,11 @@ export class PostgresPool {
     params: QueryParams,
     model: Model,
   ): Promise<z.infer<Model>>;
+  /**
+   * Executes a query with the specified parameters. Returns exactly one row that conforms to the given Zod schema.
+   *
+   * If the query returns a single column, the return value will be the column value itself.
+   */
   async queryRow<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
@@ -933,6 +688,12 @@ export class PostgresPool {
     params: QueryParams,
     model: Model,
   ): Promise<z.infer<Model> | null>;
+  /**
+   * Executes a query with the specified parameters. Returns either null or a
+   * single row that conforms to the given Zod schema, and errors otherwise.
+   *
+   * If the query returns a single column, the return value will be the column value itself.
+   */
   async queryOptionalRow<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
@@ -957,6 +718,10 @@ export class PostgresPool {
     params: any[],
     model: Model,
   ): Promise<z.infer<Model>[]>;
+  /**
+   * Calls the given sproc with the specified parameters.
+   * Errors if the sproc does not return anything.
+   */
   async callRows<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: any[] | Model,
@@ -980,6 +745,10 @@ export class PostgresPool {
     params: any[],
     model: Model,
   ): Promise<z.infer<Model>>;
+  /**
+   * Calls the given sproc with the specified parameters.
+   * Returns exactly one row from the sproc that conforms to the given Zod schema.
+   */
   async callRow<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: any[] | Model,
@@ -1005,6 +774,10 @@ export class PostgresPool {
     params: any[],
     model: Model,
   ): Promise<z.infer<Model> | null>;
+  /**
+   * Calls the given sproc with the specified parameters. Returns either null
+   * or a single row that conforms to the given Zod schema.
+   */
   async callOptionalRow<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: any[] | Model,
@@ -1024,10 +797,31 @@ export class PostgresPool {
   }
 
   /**
+   * Executes a query with the specified parameters. Returns the number of rows affected.
+   */
+  async execute(sql: string, params: QueryParams = {}): Promise<number> {
+    const result = await this.queryAsync(sql, params);
+    return result.rowCount ?? 0;
+  }
+
+  /**
+   * Executes a query with the specified parameter, and errors if the query doesn't return exactly one row.
+   */
+  async executeRow(sql: string, params: QueryParams = {}) {
+    const rowCount = await this.execute(sql, params);
+    if (rowCount !== 1) {
+      throw new PostgresError('Incorrect rowCount: ' + rowCount, {
+        sql,
+        sqlParams: params,
+      });
+    }
+  }
+
+  /**
    * Returns a {@link Cursor} for the given query. The cursor can be used to
    * read results in batches, which is useful for large result sets.
    */
-  async queryCursorWithClient(
+  private async queryCursorWithClient(
     client: pg.PoolClient,
     sql: string,
     params: QueryParams,
@@ -1040,31 +834,33 @@ export class PostgresPool {
     return client.query(new Cursor(processedSql, paramsArray));
   }
 
-  /**
-   * Returns an {@link CursorIterator} that can be used to iterate over the
-   * results of the query in batches, which is useful for large result sets.
-   */
+  async queryCursor<Model extends z.ZodTypeAny>(
+    sql: string,
+    model: Model,
+  ): Promise<CursorIterator<z.infer<Model>>>;
+
   async queryCursor<Model extends z.ZodTypeAny>(
     sql: string,
     params: QueryParams,
-  ): Promise<CursorIterator<z.infer<Model>>> {
-    return this.queryValidatedCursorInternal(sql, params);
-  }
+    model: Model,
+  ): Promise<CursorIterator<z.infer<Model>>>;
 
   /**
    * Returns an {@link CursorIterator} that can be used to iterate over the
    * results of the query in batches, which is useful for large result sets.
    * Each row will be parsed by the given Zod schema.
    */
-  async queryValidatedCursor<Model extends z.ZodTypeAny>(
+  async queryCursor<Model extends z.ZodTypeAny>(
     sql: string,
-    params: QueryParams,
-    model: Model,
+    paramsOrSchema: Model | QueryParams,
+    maybeModel?: Model,
   ): Promise<CursorIterator<z.infer<Model>>> {
-    return this.queryValidatedCursorInternal(sql, params, model);
+    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    return this.queryCursorInternal(sql, params, model);
   }
 
-  private async queryValidatedCursorInternal<Model extends z.ZodTypeAny>(
+  private async queryCursorInternal<Model extends z.ZodTypeAny>(
     sql: string,
     params: QueryParams,
     model?: Model,
@@ -1073,6 +869,7 @@ export class PostgresPool {
     const cursor = await this.queryCursorWithClient(client, sql, params);
 
     let iterateCalled = false;
+    let rowKeys: string[] | null = null;
     const iterator: CursorIterator<z.infer<Model>> = {
       async *iterate(batchSize: number) {
         // Safety check: if someone calls iterate multiple times, they're
@@ -1089,10 +886,15 @@ export class PostgresPool {
               break;
             }
 
+            if (rowKeys === null) {
+              rowKeys = Object.keys(rows[0] ?? {});
+            }
+            const flattened =
+              rowKeys.length === 1 ? rows.map((row) => row[(rowKeys as string[])[0]]) : rows;
             if (model) {
-              yield z.array(model).parse(rows);
+              yield z.array(model).parse(flattened);
             } else {
-              yield rows;
+              yield flattened;
             }
           }
         } catch (err: any) {
@@ -1142,7 +944,7 @@ export class PostgresPool {
    *
    * @param schema The schema name to use (can be "null" to unset the search path)
    */
-  async setSearchSchema(schema: string) {
+  async setSearchSchema(schema: string | null) {
     if (schema == null) {
       this.searchSchema = schema;
       return;
@@ -1156,7 +958,7 @@ export class PostgresPool {
   /**
    * Get the schema that is currently used for the search path.
    *
-   * @return schema in use (may be `null` to indicate no schema)
+   * @returns schema in use (may be `null` to indicate no schema)
    */
   getSearchSchema(): string | null {
     return this.searchSchema;
@@ -1170,7 +972,7 @@ export class PostgresPool {
    */
   async setRandomSearchSchemaAsync(prefix: string): Promise<string> {
     // truncated prefix (max 28 characters)
-    const truncPrefix = prefix.substring(0, 28);
+    const truncPrefix = prefix.slice(0, 28);
     // timestamp in format YYYY-MM-DDTHH:MM:SS.SSSZ (guaranteed to not exceed 27 characters in the spec)
     const timestamp = new Date().toISOString();
     // random 6-character suffix to avoid clashes (approx 2 billion possible values)
@@ -1188,9 +990,38 @@ export class PostgresPool {
   }
 
   /**
-   * Generate, set, and return a random schema name.
+   * Deletes all schemas starting with the given prefix.
+   *
+   * @param prefix The prefix of the schemas to delete.
    */
-  setRandomSearchSchema = callbackify(this.setRandomSearchSchemaAsync);
+  async clearSchemasStartingWith(prefix: string): Promise<void> {
+    // Sanity check against deleting public, pg_, information_schema, etc.
+    if (prefix === 'public' || prefix.startsWith('pg_') || prefix === 'information_schema') {
+      throw new Error(`Cannot clear schema starting with ${prefix}`);
+    }
+    // Sanity check against a bad prefix.
+    if (prefix.length < 4) {
+      throw new Error(`Prefix is too short: ${prefix}`);
+    }
+
+    await this.queryAsync(
+      `DO $$
+    DECLARE
+      r RECORD;
+    BEGIN
+      FOR r IN
+        SELECT nspname
+        FROM pg_namespace
+        WHERE nspname LIKE ${escapeLiteral(prefix + '%')}
+          AND nspname NOT LIKE 'pg_temp_%'
+      LOOP
+        EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE;', r.nspname);
+        COMMIT;  -- avoid shared memory exhaustion
+      END LOOP;
+    END $$;`,
+      {},
+    );
+  }
 
   /** The number of established connections. */
   get totalCount() {

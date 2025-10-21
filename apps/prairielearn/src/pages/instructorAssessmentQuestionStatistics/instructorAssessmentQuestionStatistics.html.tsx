@@ -2,11 +2,12 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { Scorebar } from '../../components/Scorebar.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { ScorebarHtml } from '../../components/Scorebar.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
@@ -15,11 +16,11 @@ import {
   CourseSchema,
   IdSchema,
   QuestionSchema,
+  TagSchema,
   TopicSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
@@ -29,6 +30,7 @@ export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend(
   qid: QuestionSchema.shape.qid,
   question_title: QuestionSchema.shape.title,
   topic: TopicSchema,
+  question_tags: z.array(TagSchema.shape.name),
   question_id: IdSchema,
   assessment_question_number: z.string(),
   alternative_group_number: AlternativeGroupSchema.shape.number,
@@ -37,7 +39,7 @@ export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend(
   start_new_zone: z.boolean(),
   start_new_alternative_group: z.boolean(),
 });
-type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
+export type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
 
 export function InstructorAssessmentQuestionStatistics({
   questionStatsCsvFilename,
@@ -70,7 +72,7 @@ export function InstructorAssessmentQuestionStatistics({
       </h1>
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
@@ -98,7 +100,7 @@ export function InstructorAssessmentQuestionStatistics({
         : ''}
 
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+        <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
           <h2>
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question difficulty vs
             discrimination
@@ -201,12 +203,12 @@ export function InstructorAssessmentQuestionStatistics({
                       </a>
                     </td>
                     <td class="text-center align-middle">
-                      ${Scorebar(
+                      ${ScorebarHtml(
                         row.mean_question_score ? Math.round(row.mean_question_score) : null,
                       )}
                     </td>
                     <td class="text-center align-middle">
-                      ${Scorebar(row.discrimination ? Math.round(row.discrimination) : null)}
+                      ${ScorebarHtml(row.discrimination ? Math.round(row.discrimination) : null)}
                     </td>
                     <td class="text-center">
                       ${(row.max_auto_points ?? 0) > 0 ||
@@ -291,7 +293,7 @@ export function InstructorAssessmentQuestionStatistics({
       </div>
 
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+        <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
           <h2>
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Detailed question
             statistics

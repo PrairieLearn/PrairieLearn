@@ -10,7 +10,7 @@ export function isIdentifierClient(identifierName: string, packageName: string):
 
   // If the identifier matches the package name directly, include it in the set.
   const clientName = packageName.replace('@aws-sdk/client-', '');
-  const packageIdentifier = clientName.replace(/-/g, '').toLowerCase();
+  const packageIdentifier = clientName.replaceAll('-', '').toLowerCase();
   if (identifierName.toLowerCase() === packageIdentifier) {
     return true;
   }

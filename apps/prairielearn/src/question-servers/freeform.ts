@@ -24,6 +24,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import { assertNever } from '../lib/types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -39,9 +40,12 @@ import {
   type GenerateResultData,
   type GradeResultData,
   type ParseResultData,
+  type ParseSubmission,
   type PrepareResultData,
+  type PrepareVariant,
   type QuestionServerReturnValue,
   type RenderResultData,
+  type RenderSelection,
   type TestResultData,
 } from './types.js';
 
@@ -120,9 +124,14 @@ export async function init() {
  */
 async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   const elementSchema = run(() => {
-    if (elementType === 'core') return ElementCoreJsonSchema;
-    if (elementType === 'course') return ElementCourseJsonSchema;
-    throw new Error(`Unknown element type ${elementType}`);
+    switch (elementType) {
+      case 'core':
+        return ElementCoreJsonSchema;
+      case 'course':
+        return ElementCourseJsonSchema;
+      default:
+        assertNever(elementType);
+    }
   });
 
   let files: string[];
@@ -170,12 +179,12 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     // For backwards compatibility.
     // TODO remove once everyone is using the new version.
     if (elementType === 'core') {
-      elements[elementName.replace(/-/g, '_')] = elements[elementName];
+      elements[elementName.replaceAll('-', '_')] = elements[elementName];
 
       if ('additionalNames' in elements[elementName]) {
         elements[elementName].additionalNames?.forEach((name) => {
           elements[name] = elements[elementName];
-          elements[name.replace(/-/g, '_')] = elements[elementName];
+          elements[name.replaceAll('-', '_')] = elements[elementName];
         });
       }
     }
@@ -186,8 +195,8 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
 export async function loadElementsForCourse(course: Course) {
   if (
-    courseElementsCache[course.id] !== undefined &&
-    courseElementsCache[course.id].commit_hash &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    courseElementsCache[course.id]?.commit_hash &&
     courseElementsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseElementsCache[course.id].data;
@@ -281,8 +290,8 @@ async function loadExtensionsForCourse({
   course_dir_host: string;
 }) {
   if (
-    courseExtensionsCache[course.id] !== undefined &&
-    courseExtensionsCache[course.id].commit_hash &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    courseExtensionsCache[course.id]?.commit_hash &&
     courseExtensionsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseExtensionsCache[course.id].data;
@@ -394,28 +403,34 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
     if (!Object.prototype.hasOwnProperty.call(data, prop)) {
       return `"${prop}" is missing from "data"`;
     }
-    if (type === 'integer') {
-      if (!Number.isInteger(data[prop])) {
-        return `data.${prop} is not an integer: ${String(data[prop])}`;
-      }
-    } else if (type === 'number') {
-      if (!Number.isFinite(data[prop])) {
-        return `data.${prop} is not a number: ${String(data[prop])}`;
-      }
-    } else if (type === 'string') {
-      if (typeof data[prop] !== 'string') {
-        return `data.${prop} is not a string: ${String(data[prop])}`;
-      }
-    } else if (type === 'boolean') {
-      if (data[prop] !== true && data[prop] !== false) {
-        return `data.${prop} is not a boolean: ${String(data[prop])}`;
-      }
-    } else if (type === 'object') {
-      if (data[prop] == null || typeof data[prop] !== 'object') {
-        return `data.${prop} is not an object: ${String(data[prop])}`;
-      }
-    } else {
-      return `invalid type: ${String(type)}`;
+    switch (type) {
+      case 'integer':
+        if (!Number.isInteger(data[prop])) {
+          return `data.${prop} is not an integer: ${String(data[prop])}`;
+        }
+        break;
+      case 'number':
+        if (!Number.isFinite(data[prop])) {
+          return `data.${prop} is not a number: ${String(data[prop])}`;
+        }
+        break;
+      case 'string':
+        if (typeof data[prop] !== 'string') {
+          return `data.${prop} is not a string: ${String(data[prop])}`;
+        }
+        break;
+      case 'boolean':
+        if (data[prop] !== true && data[prop] !== false) {
+          return `data.${prop} is not a boolean: ${String(data[prop])}`;
+        }
+        break;
+      case 'object':
+        if (data[prop] == null || typeof data[prop] !== 'object') {
+          return `data.${prop} is not an object: ${String(data[prop])}`;
+        }
+        break;
+      default:
+        return `invalid type: ${String(type)}`;
     }
     if (!editPhases.includes(phase)) {
       if (!Object.prototype.hasOwnProperty.call(origData, prop)) {
@@ -455,7 +470,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('manual_grading',        'boolean', ['render'],                           [])
              || checkProp('ai_grading',            'boolean', ['render'],                           [])
              || checkProp('panel',                 'string',  ['render'],                           [])
-             || checkProp('num_valid_submissions','integer',  ['render'],                           [])
+             || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
              || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
              || checkProp('filename',              'string',  ['file'],                             [])
              || checkProp('test_type',             'string',  ['test'],                             [])
@@ -486,7 +501,7 @@ async function processQuestionPhase<T>(
     course_path: config.workersExecutionMode === 'container' ? '/course' : context.course_dir_host,
   };
   const courseIssues: CourseIssueError[] = [];
-  let result: any | null = null;
+  let result: any = null;
   let output: string | null = null;
 
   try {
@@ -694,7 +709,12 @@ async function processQuestionServer<T extends ExecutionData>(
         fatal: true,
       }),
     );
-    return { courseIssues, data };
+    return {
+      courseIssues,
+      // The new `data` failed validation, so we can't safely return it. Return
+      // the original data instead.
+      data: origData,
+    };
   }
 
   return { courseIssues, data, html, fileData };
@@ -786,7 +806,7 @@ export async function generate(
     const data = {
       params: {},
       correct_answers: {},
-      variant_seed: parseInt(variant_seed, 36),
+      variant_seed: Number.parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
     } satisfies ExecutionData;
 
@@ -812,10 +832,10 @@ export async function generate(
 export async function prepare(
   question: Question,
   course: Course,
-  variant: Variant,
+  variant: PrepareVariant,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
-    if (variant.broken_at) throw new Error('attempted to prepare broken variant');
+    if (variant.broken) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
 
@@ -823,8 +843,8 @@ export async function prepare(
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -875,7 +895,7 @@ async function renderPanel(
   // broken submission kills the submission panel, but we can
   // proceed with other panels, treating the submission as
   // missing
-  if (submission && submission.broken) {
+  if (submission?.broken) {
     if (panel === 'submission') {
       return {
         courseIssues: [],
@@ -897,11 +917,11 @@ async function renderPanel(
   // it won't be present in `locals`). This URL will only have meaning if
   // there's a submission, so it will be `null` otherwise.
   const submissionFilesUrl = submission
-    ? locals.questionUrl + `submission/${submission?.id}/file`
+    ? locals.questionUrl + `submission/${submission.id}/file`
     : null;
 
   const options = {
-    ...(variant.options ?? {}),
+    ...variant.options,
     client_files_question_url: locals.clientFilesQuestionUrl,
     client_files_course_url: locals.clientFilesCourseUrl,
     client_files_question_dynamic_url: locals.clientFilesQuestionGeneratedFileUrl,
@@ -935,7 +955,7 @@ async function renderPanel(
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
-    variant_seed: parseInt(variant.variant_seed ?? '0', 36),
+    variant_seed: Number.parseInt(variant.variant_seed, 36),
     options,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
@@ -956,7 +976,7 @@ async function renderPanel(
     }),
     ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
-    num_valid_submissions: variant.num_tries ?? null,
+    num_valid_submissions: variant.num_tries,
   } satisfies ExecutionData;
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
@@ -1030,7 +1050,7 @@ async function renderPanelInstrumented(
 }
 
 export async function render(
-  renderSelection: { question: boolean; answer: boolean; submissions: boolean },
+  renderSelection: RenderSelection,
   variant: Variant,
   question: Question,
   submission: Submission | null,
@@ -1118,27 +1138,27 @@ export async function render(
 
       const extensions = context.course_element_extensions;
       const dependencies = {
-        coreStyles: [],
-        coreScripts: [],
-        nodeModulesStyles: [],
-        nodeModulesScripts: [],
-        coreElementStyles: [],
-        coreElementScripts: [],
-        courseElementStyles: [],
-        courseElementScripts: [],
-        extensionStyles: [],
-        extensionScripts: [],
-        clientFilesCourseStyles: [],
-        clientFilesCourseScripts: [],
-        clientFilesQuestionStyles: [],
-        clientFilesQuestionScripts: [],
+        coreStyles: [] as string[],
+        coreScripts: [] as string[],
+        nodeModulesStyles: [] as string[],
+        nodeModulesScripts: [] as string[],
+        coreElementStyles: [] as string[],
+        coreElementScripts: [] as string[],
+        courseElementStyles: [] as string[],
+        courseElementScripts: [] as string[],
+        extensionStyles: [] as string[],
+        extensionScripts: [] as string[],
+        clientFilesCourseStyles: [] as string[],
+        clientFilesCourseScripts: [] as string[],
+        clientFilesQuestionStyles: [] as string[],
+        clientFilesQuestionScripts: [] as string[],
       };
       const dynamicDependencies = {
-        nodeModulesScripts: {},
-        coreElementScripts: {},
-        courseElementScripts: {},
-        extensionScripts: {},
-        clientFilesCourseScripts: {},
+        nodeModulesScripts: {} as Record<string, string>,
+        coreElementScripts: {} as Record<string, string>,
+        courseElementScripts: {} as Record<string, string>,
+        extensionScripts: {} as Record<string, string>,
+        clientFilesCourseScripts: {} as Record<string, string>,
       };
 
       for (const type in question.dependencies) {
@@ -1423,8 +1443,8 @@ export async function file(
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       filename,
     } satisfies ExecutionData;
 
@@ -1459,7 +1479,7 @@ export async function file(
 }
 
 export async function parse(
-  submission: Submission,
+  submission: ParseSubmission,
   variant: Variant,
   question: Question,
   course: Course,
@@ -1477,8 +1497,8 @@ export async function parse(
       submitted_answers: submission.submitted_answer ?? {},
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1533,8 +1553,8 @@ export async function grade(
       partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1587,8 +1607,8 @@ export async function test(
       partial_scores: {},
       score: 0,
       feedback: {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: {},
       gradable: true as boolean,
       test_type,

@@ -14,3 +14,7 @@ export function getUrl(req: Request): URL {
 export function getSearchParams(req: Request): URLSearchParams {
   return new URL(req.originalUrl, getCanonicalHost(req)).searchParams;
 }
+
+export function getCourseInstanceUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}`;
+}
