@@ -669,6 +669,23 @@ export default tseslint.config([
     },
   },
   {
+    files: ['apps/prairielearn/src/models/**/*'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/safe-db-types.js'],
+              message:
+                'Import from db-types instead of safe-db-types in the models directory. Otherwise, this code should live in the lib directory.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.html', '**/*.mustache'],
     languageOptions: {
       parser: htmlParser,

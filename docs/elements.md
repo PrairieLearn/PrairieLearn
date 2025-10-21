@@ -590,14 +590,34 @@ The content of a `pl-statement` can be any HTML element, including other Prairie
 | --------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `match`   | string | —       | Identifies the option as the correct response for this `pl-statement`. If `match` corresponds to the `name` of any `pl-option` element, the statement will be linked to that `pl-option`, otherwise a new option is implicitly created based on this `match` value. |
 
-The content of a `pl-option` can be any HTML element, including other PrairieLearn elements. `pl-option` elements are optional; options are created by default based on the `match` attribute of each `pl-statement`. Additional `pl-option` elements can be added to serve as distractors (an option that is always incorrect, such as "New York City" in the example above), or to render formatted HTML/PrairieLearn elements instead of plain text (see the last question in the demo problem linked in the "Example implementations" below).
+The content of a `pl-option` can be any HTML element, including other PrairieLearn elements. `pl-option` elements are optional; options are created by default based on the `match` attribute of each `pl-statement`. Additional `pl-option` elements can be added to serve as distractors, or to render formatted HTML/PrairieLearn elements instead of plain text.
 
 When the `fixed-options-order` feature is used, options are shown in the following order:
 
 1. Any explicitly-defined `pl-option` elements are shown first, in the order they are declared.
 2. Any implicitly-defined options defined by a `pl-statement` `match` attribute are shown next, in the order they are declared.
 
-It is recommended to explicitly define `pl-option` elements when using `fixed-options-order` to have complete certainty on the order they will be shown.
+!!! warning
+
+    While it is possible to use implicit options from the `match` attribute of each `pl-statement` without defining any `pl-option` elements, it is recommended to define `pl-option` elements explicitly in the following cases:
+
+    * To define distractor options that are not the correct answer to any statement (an option that is always incorrect, such as "New York City" in the example above).
+    * When the option text is longer than a few words, or requires formatting (e.g., mathematical expressions, code, images, etc.). In such cases, the `pl-option` name is used to identify the correct answer, while the content of the `pl-option` element is used to display the option text. The use of `counter-type="full-text"` is not recommended in this case.
+    * When using `fixed-options-order="true"` to ensure the order of options is exactly as intended.
+    * When the statements and options are generated dynamically in `server.py`, to ensure that the correct options are always available.
+
+    Explicit options may be defined as the example below. Note that the `name` attribute is used to link the option to a statement's `match` attribute.
+
+    ```html
+    <pl-matching answers-name="string_value">
+      <pl-statement match="golden">$\Phi$</pl-statement>
+      <pl-statement match="e">$e$</pl-statement>
+      <pl-statement match="i">$i$</pl-statement>
+      <pl-option name="golden">$\frac{1+\sqrt{5}}{2}$</pl-option>
+      <pl-option name="e">$\lim_{n \to \infty} \left(1 + \frac{1}{n}\right)^{n}$</pl-option>
+      <pl-option name="i">$\sqrt{-1}$</pl-option>
+    </pl-matching>
+    ```
 
 A `pl-option` must be specified with these attributes:
 
@@ -1638,11 +1658,15 @@ def generate(data):
 | `negative-weights`          | boolean | false                | Whether to recognize negative weights in an adjacency matrix. If set to false, then all weights at most 0 are ignored (not counted as an edge). If set to true, then all weights that are not `None` are recognized.                                                          |
 | `directed`                  | boolean | true                 | Whether to treat edges in an adjacency matrix as directed or undirected. If set to false, then edges will be rendered as undirected. _The input adjacency matrix must be symmetric if this is set to false._                                                                  |
 | `weights-presentation-type` | string  | `"f"`                | Number display format for the weights when using an adjacency matrix. If `presentation-type` is `"sigfig"`, each number is formatted using the `to_precision` module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`. |
+| `source-file-name`          | string  | —                    | Name of the file to load graph content from. If provided, the file content will be used instead of the element's inner HTML. Useful for complex graphs with special characters like angle brackets in record-based nodes.                                                     |
+| `directory`                 | string  | `"."`                | Directory where the source file is located. Can be `"."` (question directory), `"clientFilesCourse"`, or `"serverFilesCourse"`.                                                                                                                                               |
 | `log-warnings`              | boolean | true                 | Whether to log warnings that occur during Graphviz rendering.                                                                                                                                                                                                                 |
 
 #### Details
 
 Note that using networkx for rendering, attributes from the input networkx graph are retained when creating a Graphviz DOT visualization. As a result, it is possible to set node and edge properties such as color, line weight, as part of the input graph and have these reflected in the rendering. These include global properties of the graph, such as the `rankdir` used in rendering. See the [Graphviz documentation on attributes](https://graphviz.org/doc/info/attrs.html) for more information on what attributes are supported. The currently used Graphviz version is 2.44.0.
+
+The `source-file-name` attribute is particularly useful when working with static graphs that contain special characters like angle brackets (`<>`), which are used in [record-based nodes](https://graphviz.org/doc/info/shapes.html#record) but can interfere with HTML parsing. By placing the graph content in an external file, you can avoid the need to escape these characters.
 
 #### Example implementations
 
