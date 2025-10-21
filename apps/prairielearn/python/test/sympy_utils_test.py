@@ -34,7 +34,7 @@ def test_evaluate() -> None:
 
 class TestSympy:
     SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0")
-    M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
+    M, N, ALPHA, MU0, LAMBDA = sympy.symbols("m n alpha mu0 lambda")
 
     FUNCTION_NAMES = ("f", "g", "beef", "\u03c6")
     # Any annotations here to ignore annoying typechecking complaining
@@ -60,6 +60,7 @@ class TestSympy:
     EXPR_PAIRS = (
         # Test unicode conversion
         ("1+\u03bc0", MU0 + 1),
+        ("1+\u03bb", LAMBDA + 1),
         ("m \u2212 n", M - N),
         ("m - \uff08n + m\uff09", -N),
         ("m \uff0b n", N + M),
