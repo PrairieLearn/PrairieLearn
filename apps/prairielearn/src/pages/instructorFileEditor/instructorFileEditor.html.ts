@@ -353,7 +353,7 @@ function SaveConfirmationModal() {
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h2 class="modal-title h4" id="save-confirmation-modal-title">Confirm Save</h2>
+            <h2 class="modal-title h4" id="save-confirmation-modal-title">Confirm save</h2>
             <button
               type="button"
               class="btn-close"
@@ -374,7 +374,7 @@ function SaveConfirmationModal() {
               Cancel
             </button>
             <button type="button" class="btn btn-primary" id="confirm-save-button">
-              Confirm Save
+              Confirm save
             </button>
           </div>
         </div>

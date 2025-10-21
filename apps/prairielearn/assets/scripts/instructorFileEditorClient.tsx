@@ -177,7 +177,7 @@ class InstructorFileEditor {
     }
 
     // Override the save button click to show confirmation modal if needed
-    this.saveElement!.addEventListener('click', (e) => this.handleSaveClick(e));
+    this.saveElement?.addEventListener('click', (e) => this.handleSaveClick(e));
   }
 
   /**
@@ -282,7 +282,7 @@ class InstructorFileEditor {
     const { errorCode, originalUuid, newUuid } = errorResult;
 
     // Restore original modal styles
-    modalTitle.textContent = 'Confirm Save';
+    modalTitle.textContent = 'Confirm save';
     confirmButton.style.display = '';
     cancelButton.textContent = 'Cancel';
     cancelButton.className = 'btn btn-secondary';
@@ -291,7 +291,7 @@ class InstructorFileEditor {
     switch (errorCode) {
       case SaveErrorCode.INVALID_JSON:
         modalBody.innerHTML = renderHtml(<InvalidJsonModalContent />).toString();
-        modalTitle.textContent = 'Cannot Save';
+        modalTitle.textContent = 'Cannot save';
         confirmButton.style.display = 'none';
         cancelButton.textContent = 'OK';
         cancelButton.className = 'btn btn-primary';
@@ -306,7 +306,7 @@ class InstructorFileEditor {
             newUuid={newUuid}
           />,
         ).toString();
-        modalTitle.textContent = 'Confirm Save';
+        modalTitle.textContent = 'Confirm save';
         confirmButton.style.display = '';
         cancelButton.textContent = 'Cancel';
         cancelButton.className = 'btn btn-secondary';
@@ -319,7 +319,7 @@ class InstructorFileEditor {
     confirmButton.addEventListener('click', () => {
       modal.hide();
       this.confirmedSave = true;
-      this.saveElement!.click();
+      this.saveElement?.click();
     });
   }
 
