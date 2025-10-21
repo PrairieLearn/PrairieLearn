@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
 
+import { downloadAsJSON } from '@prairielearn/browser-utils';
+
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
-import { downloadAsJSON } from '../lib/client/downloads.js';
 import type { AssessmentQuestion, RubricItem } from '../lib/db-types.js';
 import type { RubricData } from '../lib/manualGrading.types.js';
 
@@ -56,21 +57,22 @@ export function RubricSettings({
       .reduce<
         [number, number]
       >(([p, n], v) => (v > 0 ? [p + v, n] : [p, n + v]), [startingPoints, startingPoints]);
-    return { totalPositive: pos, totalNegative: neg };
+    return { totalPositive: roundPoints(pos), totalNegative: roundPoints(neg) };
   }, [rubricItems, startingPoints]);
 
-  const maxPoints =
+  const maxPoints = roundPoints(
     (replaceAutoPoints
       ? (assessmentQuestion.max_points ?? 0)
-      : (assessmentQuestion.max_manual_points ?? 0)) + maxExtraPoints;
+      : (assessmentQuestion.max_manual_points ?? 0)) + maxExtraPoints,
+  );
 
   const pointsWarnings: string[] = useMemo(() => {
     const warnings: string[] = [];
     if (totalPositive < maxPoints) {
       warnings.push(
-        `Rubric item points reach at most ${totalPositive} points. ${
-          maxPoints - totalPositive
-        } left to reach maximum.`,
+        `Rubric item points reach at most ${totalPositive} points. ${roundPoints(
+          maxPoints - totalPositive,
+        )} left to reach maximum.`,
       );
     }
     if (totalNegative > minPoints) {
@@ -102,6 +104,7 @@ export function RubricSettings({
   function onDragStart(idx: number) {
     setDraggedIdx(idx);
   }
+
   function onDragOver(overIdx: number) {
     if (draggedIdx === null || draggedIdx === overIdx) return;
     setRubricItems((items) => {

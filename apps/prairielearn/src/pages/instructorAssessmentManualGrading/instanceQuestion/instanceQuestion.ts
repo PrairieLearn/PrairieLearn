@@ -56,7 +56,7 @@ async function prepareLocalsForRender(
 ) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
-  // submissions or even create a new one. We don't want that behaviour, so we select the last
+  // submissions or even create a new one. We don't want that behavior, so we select the last
   // submission and pass it along to getAndRenderVariant explicitly.
   const variant_with_submission_id = await sqldb.queryOptionalRow(
     sql.select_variant_with_last_submission,
@@ -119,10 +119,6 @@ router.get(
       return null;
     });
 
-    if (instance_question == null) {
-      throw new error.HttpStatusError(404, 'Instance question not found');
-    }
-
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
     const instanceQuestionGroups = await selectInstanceQuestionGroups({
@@ -175,14 +171,39 @@ router.get(
         // try to avoid errors when extracting the explanation. Note that for some
         // time, the explanation wasn't included in the completion at all, so it
         // may legitimately be missing.
+        //
+        // Over the lifetime of this feature, we've changed which APIs/libraries we
+        // use to generate the completion, so we need to handle all formats we've ever
+        // used for backwards-compatibility. Each one is documented below.
         const explanation = run(() => {
           const completion = ai_grading_job_data.completion;
-          if (completion == null) return null;
+          if (!completion) return null;
 
-          const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
-          if (typeof explanation !== 'string') return null;
+          // OpenAI chat completion format
+          if (completion.choices) {
+            const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
+            if (typeof explanation !== 'string') return null;
 
-          return explanation.trim() || null;
+            return explanation.trim() || null;
+          }
+
+          // OpenAI response format
+          if (completion.output_parsed) {
+            const explanation = completion?.output_parsed?.explanation;
+            if (typeof explanation !== 'string') return null;
+
+            return explanation.trim() || null;
+          }
+
+          // `ai` package format
+          if (completion.object) {
+            const explanation = completion?.object?.explanation;
+            if (typeof explanation !== 'string') return null;
+
+            return explanation.trim() || null;
+          }
+
+          return null;
         });
 
         aiGradingInfo = {
@@ -377,8 +398,7 @@ router.post(
       qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
     if (body.__action === 'add_manual_grade') {
-      req.session.skip_graded_submissions =
-        body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
+      req.session.skip_graded_submissions = body.skip_graded_submissions;
 
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
@@ -442,8 +462,7 @@ router.post(
         }),
       );
     } else if (body.__action === 'next_instance_question') {
-      req.session.skip_graded_submissions =
-        body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
+      req.session.skip_graded_submissions = body.skip_graded_submissions;
 
       const use_instance_question_groups = await run(async () => {
         const aiGradingMode =

@@ -14,6 +14,7 @@ import * as courseDB from './course-db.js';
 import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
 import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
 import * as syncAssessments from './fromDisk/assessments.js';
+import * as syncAuthors from './fromDisk/authors.js';
 import * as syncCourseInfo from './fromDisk/courseInfo.js';
 import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
@@ -146,6 +147,7 @@ export async function syncDiskToSqlWithLock(
       syncQuestions.sync(courseId, courseData),
     );
 
+    await timed('Synced authors', () => syncAuthors.sync(courseData.questions, questionIds));
     // We need to perform sharing validation at exactly this moment. We can only
     // do this once we have a dictionary of question IDs, as this process will also
     // populate any shared questions in that dictionary. We also need to do it before

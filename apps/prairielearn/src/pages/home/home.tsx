@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -10,15 +10,15 @@ import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { EnrollmentSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
-import { insertAuditEvent } from '../../models/audit-event.js';
+import { assertNever } from '../../lib/types.js';
 import {
   ensureEnrollment,
-  selectAndLockEnrollmentById,
   selectOptionalEnrollmentByPendingUid,
+  selectOptionalEnrollmentByUid,
+  setEnrollmentStatus,
 } from '../../models/enrollment.js';
-import { selectAndLockUserById } from '../../models/user.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -76,6 +76,10 @@ router.get(
       withAuthzData: false,
     });
 
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: res.locals.authn_institution.id,
+    });
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -96,6 +100,7 @@ router.get(
             adminInstitutions={adminInstitutions}
             urlPrefix={urlPrefix}
             isDevMode={config.devMode}
+            enrollmentManagementEnabled={enrollmentManagementEnabled}
           />
         ),
         postContent:
@@ -119,7 +124,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const BodySchema = z.object({
-      __action: z.enum(['accept_invitation', 'reject_invitation']),
+      __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
       course_instance_id: z.string().min(1),
     });
     const body = BodySchema.parse(req.body);
@@ -128,48 +133,62 @@ router.post(
       authn_user: { uid, user_id },
     } = getPageContext(res.locals, { withAuthzData: false });
 
-    if (body.__action === 'accept_invitation') {
-      await ensureEnrollment({
-        course_instance_id: body.course_instance_id,
-        user_id,
-        agent_user_id: user_id,
-        agent_authn_user_id: user_id,
-        action_detail: 'invitation_accepted',
-      });
-    } else if (body.__action === 'reject_invitation') {
-      await runInTransactionAsync(async () => {
-        const oldEnrollment = await selectOptionalEnrollmentByPendingUid({
+    switch (body.__action) {
+      case 'accept_invitation': {
+        await ensureEnrollment({
+          course_instance_id: body.course_instance_id,
+          user_id,
+          agent_user_id: user_id,
+          agent_authn_user_id: user_id,
+          action_detail: 'invitation_accepted',
+        });
+        break;
+      }
+      case 'reject_invitation': {
+        const enrollment = await selectOptionalEnrollmentByPendingUid({
           course_instance_id: body.course_instance_id,
           pending_uid: uid,
         });
 
-        if (!oldEnrollment) {
+        if (!enrollment) {
           throw new Error('Could not find enrollment to reject');
         }
-        await selectAndLockUserById(user_id);
-        await selectAndLockEnrollmentById(oldEnrollment.id);
 
-        const newEnrollment = await queryRow(
-          sql.reject_invitation,
-          {
-            enrollment_id: oldEnrollment.id,
-          },
-          EnrollmentSchema,
-        );
+        if (enrollment.status !== 'invited') {
+          throw new Error('User does not have access to the course instance');
+        }
 
-        await insertAuditEvent({
-          table_name: 'enrollments',
-          action: 'update',
-          action_detail: 'invitation_rejected',
-          subject_user_id: null,
-          course_instance_id: body.course_instance_id,
-          row_id: newEnrollment.id,
-          old_row: oldEnrollment,
-          new_row: newEnrollment,
+        await setEnrollmentStatus({
+          enrollment_id: enrollment.id,
+          status: 'rejected',
           agent_user_id: user_id,
           agent_authn_user_id: user_id,
+          required_status: 'invited',
         });
-      });
+        break;
+      }
+      case 'unenroll': {
+        const enrollment = await selectOptionalEnrollmentByUid({
+          course_instance_id: body.course_instance_id,
+          uid,
+        });
+
+        if (!enrollment) {
+          throw new Error('Could not find enrollment to unenroll');
+        }
+
+        await setEnrollmentStatus({
+          enrollment_id: enrollment.id,
+          status: 'removed',
+          agent_user_id: user_id,
+          agent_authn_user_id: user_id,
+          required_status: 'joined',
+        });
+        break;
+      }
+      default: {
+        assertNever(body.__action);
+      }
     }
 
     res.redirect(req.originalUrl);
