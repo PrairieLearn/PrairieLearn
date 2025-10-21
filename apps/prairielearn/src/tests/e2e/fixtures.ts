@@ -1,8 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { test as base } from '@playwright/test';
 
-import { close } from '../../server.js';
-
 interface TestFixtures {
   /** Override baseURL to be the worker-specific URL */
   baseURL: string;
@@ -34,8 +32,12 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       process.env.TEST_WORKER_INDEX = String(workerInfo.workerIndex + 1);
       process.env.PORT = String(port);
 
+      // This import implicitly starts the server
+      const { close } = await import('../../server.js');
+
       await use(port);
 
+      // Clean up the server
       await close();
       delete process.env.TEST_WORKER_INDEX;
       delete process.env.PORT;
