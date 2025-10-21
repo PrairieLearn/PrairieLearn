@@ -8,16 +8,15 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 import MemoryStream from 'memorystream';
 import * as tmp from 'tmp-promise';
-import { v4 as uuidv4 } from 'uuid';
 
 import * as bindMount from '@prairielearn/bind-mount';
 import { setupDockerAuth } from '@prairielearn/docker-utils';
 import { logger } from '@prairielearn/logger';
 import { instrumented } from '@prairielearn/opentelemetry';
+import { withResolvers } from '@prairielearn/utils';
 
 import { makeAwsClientConfig } from '../aws.js';
 import { config } from '../config.js';
-import { deferredPromise } from '../deferred.js';
 
 import {
   type CallType,
@@ -51,6 +50,7 @@ const debug = debugfn('prairielearn:code-caller-container');
 const docker = new Docker();
 
 let executorImageTag = 'latest';
+
 async function updateExecutorImageTag() {
   if (config.workerExecutorImageTag) {
     // Give precedence to any value provided by config.
@@ -159,7 +159,7 @@ export class CodeCallerContainer implements CodeCaller {
 
   private constructor(options: CodeCallerContainerOptions) {
     this.state = CREATED;
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.debug('enter constructor()');
 
@@ -277,12 +277,12 @@ export class CodeCallerContainer implements CodeCaller {
     this.outputStderr = [];
     this.outputBoth = '';
 
-    const deferred = deferredPromise<CodeCallerResult>();
+    const promise = withResolvers<CodeCallerResult>();
     this.callback = (err, result, output) => {
       if (err) {
-        deferred.reject(err);
+        promise.reject(err);
       } else {
-        deferred.resolve({ result, output: output ?? '' });
+        promise.resolve({ result, output: output ?? '' });
       }
     };
 
@@ -306,7 +306,7 @@ export class CodeCallerContainer implements CodeCaller {
     this._checkState();
     this.debug('exit call()');
 
-    return deferred.promise;
+    return promise.promise;
   }
 
   async restart() {

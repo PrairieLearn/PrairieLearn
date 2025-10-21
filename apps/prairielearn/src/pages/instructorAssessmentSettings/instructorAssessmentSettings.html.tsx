@@ -1,14 +1,14 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
-import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
+import { PublicLinkSharingHtml, StudentLinkSharingHtml } from '../../components/LinkSharing.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
@@ -301,13 +301,13 @@ ${resLocals.assessment.honor_code}</textarea
                   </div>
                 `
               : ''}
-            ${StudentLinkSharing({
+            ${StudentLinkSharingHtml({
               studentLink,
               studentLinkMessage: 'The link that students will use to access this assessment.',
             })}
             <h2 class="h4">Sharing</h2>
             ${resLocals.assessment.share_source_publicly
-              ? PublicLinkSharing({
+              ? PublicLinkSharingHtml({
                   publicLink,
                   sharingMessage: "This assessment's source is publicly shared.",
                   publicLinkMessage:
@@ -357,8 +357,8 @@ ${resLocals.assessment.honor_code}</textarea
         </div>
         ${canEdit
           ? html`
-              <div class="card-footer d-flex flex-wrap align-items-center">
-                <form name="copy-assessment-form" class="me-2" method="POST">
+              <div class="card-footer d-flex flex-wrap gap-2">
+                <form name="copy-assessment-form" method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                   <button
                     type="submit"

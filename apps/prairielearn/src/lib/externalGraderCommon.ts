@@ -22,6 +22,7 @@ export interface Grader {
     configOverrides?: Partial<Config>,
   ): EventEmitter;
 }
+
 /**
  * Returns the directory where job files should be written to while running
  * with AWS infrastructure.
@@ -177,15 +178,18 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
     return makeGradingFailureWithMessage(jobId, data, "results did not contain 'results' object.");
   }
 
+  // Scores can be undefined/null (if the submission wasn't gradable) or a number.
   let score = 0;
-  if (typeof data.results.score === 'number' || !Number.isNaN(data.results.score)) {
-    score = data.results.score;
-  } else {
-    return makeGradingFailureWithMessage(
-      jobId,
-      data,
-      `score "${data.results.score}" was not a number.`,
-    );
+  if (data.results.score != null) {
+    if (typeof data.results.score === 'number' && !Number.isNaN(data.results.score)) {
+      score = data.results.score;
+    } else {
+      return makeGradingFailureWithMessage(
+        jobId,
+        data,
+        `score "${data.results.score}" was not a number.`,
+      );
+    }
   }
 
   let format_errors: string[] = [];

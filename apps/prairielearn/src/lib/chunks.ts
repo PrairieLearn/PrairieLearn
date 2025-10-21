@@ -9,7 +9,6 @@ import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
 import fs from 'fs-extra';
 import * as tar from 'tar';
-import { v4 as uuidv4 } from 'uuid';
 import z from 'zod';
 
 import * as namedLocks from '@prairielearn/named-locks';
@@ -31,6 +30,7 @@ import {
   IdSchema,
   QuestionSchema,
 } from './db-types.js';
+import { DefaultMap } from './default-map.js';
 import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -202,7 +202,7 @@ interface CourseChunks {
   clientFilesCourse: boolean;
   serverFilesCourse: boolean;
   questions: Set<string>;
-  courseInstances: Record<string, CourseInstanceChunks>;
+  courseInstances: DefaultMap<string, CourseInstanceChunks>;
 }
 
 /**
@@ -359,7 +359,10 @@ export function identifyChunksFromChangedFiles(
     elementExtensions: false,
     clientFilesCourse: false,
     serverFilesCourse: false,
-    courseInstances: {},
+    courseInstances: new DefaultMap(() => ({
+      assessments: new Set(),
+      clientFilesCourseInstance: false,
+    })),
     questions: new Set(),
   };
 
@@ -407,19 +410,14 @@ export function identifyChunksFromChangedFiles(
       const clientFilesAssessmentIndex = pathComponents.indexOf('clientFilesAssessment');
 
       if (clientFilesCourseInstanceIndex !== -1) {
-        // Let's validate that the preceeding path components correspond
+        // Let's validate that the preceding path components correspond
         // to an actual course instance
         const courseInstanceId = path.join(
           ...pathComponents.slice(0, clientFilesCourseInstanceIndex),
         );
         if (courseInstanceId in courseData.courseInstances) {
-          if (!(courseInstanceId in courseChunks.courseInstances)) {
-            courseChunks.courseInstances[courseInstanceId] = {
-              assessments: new Set(),
-              clientFilesCourseInstance: true,
-            };
-          }
-          courseChunks.courseInstances[courseInstanceId].clientFilesCourseInstance = true;
+          courseChunks.courseInstances.getOrCreate(courseInstanceId).clientFilesCourseInstance =
+            true;
           return;
         }
       }
@@ -444,15 +442,7 @@ export function identifyChunksFromChangedFiles(
           courseInstanceId in courseData.courseInstances &&
           assessmentId in courseData.courseInstances[courseInstanceId].assessments
         ) {
-          // This corresponds to something that we need to
-          // create/update a chunk for!
-          if (!(courseInstanceId in courseChunks.courseInstances)) {
-            courseChunks.courseInstances[courseInstanceId] = {
-              assessments: new Set(),
-              clientFilesCourseInstance: false,
-            };
-          }
-          courseChunks.courseInstances[courseInstanceId].assessments.add(assessmentId);
+          courseChunks.courseInstances.getOrCreate(courseInstanceId).assessments.add(assessmentId);
         }
       }
     }
@@ -504,7 +494,10 @@ export async function diffChunks({
     elementExtensions: false,
     serverFilesCourse: false,
     clientFilesCourse: false,
-    courseInstances: {},
+    courseInstances: new DefaultMap(() => ({
+      assessments: new Set(),
+      clientFilesCourseInstance: false,
+    })),
     questions: new Set(),
   };
 
@@ -523,13 +516,9 @@ export async function diffChunks({
       case 'clientFilesCourseInstance': {
         const courseInstanceName = courseChunk.course_instance_name;
         assert(courseInstanceName != null);
-        if (!(courseInstanceName in existingCourseChunks.courseInstances)) {
-          existingCourseChunks.courseInstances[courseInstanceName] = {
-            assessments: new Set(),
-            clientFilesCourseInstance: true,
-          };
-        }
-        existingCourseChunks.courseInstances[courseInstanceName].clientFilesCourseInstance = true;
+        existingCourseChunks.courseInstances.getOrCreate(
+          courseInstanceName,
+        ).clientFilesCourseInstance = true;
         break;
       }
       case 'clientFilesAssessment': {
@@ -537,13 +526,9 @@ export async function diffChunks({
         const assessmentName = courseChunk.assessment_name;
         assert(courseInstanceName != null);
         assert(assessmentName != null);
-        if (!(courseInstanceName in existingCourseChunks.courseInstances)) {
-          existingCourseChunks.courseInstances[courseInstanceName] = {
-            assessments: new Set(),
-            clientFilesCourseInstance: false,
-          };
-        }
-        existingCourseChunks.courseInstances[courseInstanceName].assessments.add(assessmentName);
+        existingCourseChunks.courseInstances
+          .getOrCreate(courseInstanceName)
+          .assessments.add(assessmentName);
         break;
       }
     }
@@ -600,10 +585,8 @@ export async function diffChunks({
 
       if (
         hasClientFilesCourseInstanceDirectory &&
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        (!existingCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance ||
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          changedCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance)
+        (!existingCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance ||
+          changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
@@ -624,10 +607,8 @@ export async function diffChunks({
         );
         if (
           hasClientFilesAssessmentDirectory &&
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          (!existingCourseChunks.courseInstances[ciid]?.assessments?.has(tid) ||
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-            changedCourseChunks.courseInstances[ciid]?.assessments?.has(tid))
+          (!existingCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ||
+            changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid))
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
@@ -641,7 +622,7 @@ export async function diffChunks({
 
   // Check for any deleted course instances or their assessments.
   await Promise.all(
-    Object.entries(existingCourseChunks.courseInstances).map(async ([ciid, courseInstanceInfo]) => {
+    existingCourseChunks.courseInstances.map(async (ciid, courseInstanceInfo) => {
       const courseInstanceExists = ciid in courseData.courseInstances;
       const clientFilesCourseInstanceExists = await fs.pathExists(
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
@@ -699,7 +680,7 @@ export async function createAndUploadChunks(
     const chunkDirectory = coursePathForChunk(coursePath, chunk);
 
     // Generate a UUId for this chunk
-    const chunkUuid = uuidv4();
+    const chunkUuid = crypto.randomUUID();
 
     // Let's create a tarball for this chunk and send it off to S3
     const tarball = tar.create(

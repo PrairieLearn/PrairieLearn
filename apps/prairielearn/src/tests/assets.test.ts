@@ -45,9 +45,14 @@ describe('Static assets', () => {
       const elementInfo = elementsInfo[elementName];
       const nodeModulesScripts = elementInfo.dependencies?.nodeModulesScripts ?? [];
       const nodeModulesStyles = elementInfo.dependencies?.nodeModulesStyles ?? [];
-      [...nodeModulesScripts, ...nodeModulesStyles].forEach((asset) => {
-        elementAssets.add(asset);
-      });
+      const dynamicNodeModulesScripts = Object.values(
+        elementInfo.dynamicDependencies?.nodeModulesScripts ?? {},
+      );
+      [...nodeModulesScripts, ...nodeModulesStyles, ...dynamicNodeModulesScripts].forEach(
+        (asset) => {
+          elementAssets.add(asset);
+        },
+      );
     }
 
     // Ensure that each asset can be fetched.
@@ -70,7 +75,10 @@ describe('Static assets', () => {
       const elementInfo = elementsInfo[elementName];
       const elementScripts = elementInfo.dependencies?.elementScripts ?? [];
       const elementStyles = elementInfo.dependencies?.elementStyles ?? [];
-      [...elementScripts, ...elementStyles].forEach((asset) => {
+      const dynamicElementScripts = Object.values(
+        elementInfo.dynamicDependencies?.elementScripts ?? {},
+      );
+      [...elementScripts, ...elementStyles, ...dynamicElementScripts].forEach((asset) => {
         elementAssets.add(`${elementName}/${asset}`);
       });
     }

@@ -4,7 +4,6 @@ import * as path from 'path';
 import { type Stream } from 'stream';
 
 import debugfn from 'debug';
-import { v4 as uuidv4 } from 'uuid';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -74,7 +73,7 @@ export async function uploadFile({
   let storage_filename;
   if (storage_type === StorageTypes.S3) {
     // use a UUIDv4 as the filename for S3
-    storage_filename = uuidv4();
+    storage_filename = crypto.randomUUID();
 
     const res = await uploadToS3(config.fileStoreS3Bucket, storage_filename, null, false, contents);
     debug('upload() : uploaded to ' + res.Location);
@@ -82,7 +81,7 @@ export async function uploadFile({
     // Make a filename to store the file. We use a UUIDv4 as the filename,
     // and put it in two levels of directories corresponding to the first-3
     // and second-3 characters of the filename.
-    const f = uuidv4();
+    const f = crypto.randomUUID();
     const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
     storage_filename = path.join(relDir, f.slice(6));
     const dir = path.join(config.filesRoot, relDir);

@@ -46,6 +46,7 @@ function computeTitle({
   }
   return assessment.title ?? '';
 }
+
 function computeLabel({
   assessment,
   assessment_instance,

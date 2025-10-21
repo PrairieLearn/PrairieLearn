@@ -1078,6 +1078,9 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
     this.flipped = options.flipped || false;
     this.flipX = this.flipped;
 
+    // This is important to render the controls and drawing at the correct size.
+    this.strokeUniform = true;
+
     this.label1 = options.label1;
     this.offsetx1 = options.offsetx1;
     this.offsety1 = options.offsety1;
@@ -1111,6 +1114,14 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
     const arrowheadOffsetRatio = this.arrowheadOffsetRatio;
     const arrowheadWidthRatio = this.arrowheadWidthRatio;
     const strokeWidth = this.strokeWidth;
+
+    // We need to adjust the end of the arrowhead so that it sits within the
+    // bounding box that students will use when resizing the element. This
+    // ensures that what's rendered is as close as possible to the values
+    // that are being graded.
+    //
+    // This offset was determined empirically. Don't ask about the math.
+    y2 -= this.strokeWidth;
 
     // Forward vector
     let fwdx = x2 - x1;
@@ -1152,15 +1163,20 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
     ctx.fill();
   },
   _render(ctx) {
-    const nSpaces = Math.ceil(this.getScaledWidth() / this.spacing);
-    const dx = this.getScaledWidth() / nSpaces;
+    // We manually compute these values since `getScaledWidth()` and `getScaledHeight()`
+    // include the stroke width, which we don't want.
+    const scaledWidth = this.width * this.scaleX;
+    const scaledHeight = this.height * this.scaleY;
+
+    const nSpaces = Math.max(1, Math.ceil(scaledWidth / this.spacing));
+    const dx = scaledWidth / nSpaces;
 
     // Undo Fabric's scale transformation.
     ctx.scale(1 / this.scaleX, 1 / this.scaleY);
 
     // Centered coordinates
-    const cx = this.getScaledWidth() / 2;
-    const cy = this.getScaledHeight() / 2;
+    const cx = scaledWidth / 2;
+    const cy = scaledHeight / 2;
 
     // Draw all the force arrows
     for (let i = 0; i <= nSpaces; i++) {
@@ -1173,11 +1189,12 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
         this.drawArrow(ctx, i * dx - cx, cy - height, i * dx - cx, cy);
       }
     }
+
     // Draw the head/base line
+    const xoff = this.strokeWidth / 2;
     if (this.anchor_is_tail) {
-      this.drawLine(ctx, -cx, -cy, cx, -cy);
+      this.drawLine(ctx, -cx - xoff, -cy, cx + xoff, -cy);
     } else {
-      const xoff = this.strokeWidth / 2;
       this.drawLine(ctx, -cx - xoff, cy - this.w1, cx + xoff, cy - this.w2);
     }
 
