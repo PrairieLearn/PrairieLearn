@@ -83,7 +83,6 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
-import { postgresTestUtils } from './tests/helperDb.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -2325,31 +2324,21 @@ if (shouldStartServer) {
       passport.use(strategy);
     }
 
-    const pgConfig = run(() => {
-      // https://playwright.dev/docs/test-parallel#isolate-test-data-between-parallel-workers
-      // This server was started by a playwright test worker. Ignore the database configuration,
-      // and use the test worker's database configuration instead.
-      if (process.env.TEST_WORKER_INDEX) {
-        return postgresTestUtils.getPoolConfig();
-      }
-
-      return {
-        user: config.postgresqlUser,
-        database: config.postgresqlDatabase,
-        host: config.postgresqlHost,
-        password: config.postgresqlPassword ?? undefined,
-        max: config.postgresqlPoolSize,
-        idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
-        ssl: config.postgresqlSsl,
-        errorOnUnusedParameters: config.devMode,
-      };
-    });
-
-    logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+    const pgConfig = {
+      user: config.postgresqlUser,
+      database: config.postgresqlDatabase,
+      host: config.postgresqlHost,
+      password: config.postgresqlPassword ?? undefined,
+      max: config.postgresqlPoolSize,
+      idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+      ssl: config.postgresqlSsl,
+      errorOnUnusedParameters: config.devMode,
+    };
 
     // For Playwright tests, the database pool and named locks are already initialized
     // by setupDatabases() in helperDb.ts
     if (!isPlaywrightTest) {
+      logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
       await sqldb.initAsync(pgConfig, idleErrorHandler);
 
       // Our named locks code maintains a separate pool of database connections.
@@ -2357,9 +2346,8 @@ if (shouldStartServer) {
       await namedLocks.init(pgConfig, idleErrorHandler, {
         renewIntervalMs: config.namedLocksRenewIntervalMs,
       });
+      logger.verbose('Successfully connected to database');
     }
-
-    logger.verbose('Successfully connected to database');
 
     if (argv['refresh-workspace-hosts-and-exit']) {
       logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
