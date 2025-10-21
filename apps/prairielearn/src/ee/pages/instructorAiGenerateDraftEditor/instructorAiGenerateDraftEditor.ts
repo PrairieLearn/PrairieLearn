@@ -1,6 +1,6 @@
+import { createOpenAI } from '@ai-sdk/openai';
 import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -25,6 +25,7 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
 import {
+  QUESTION_GENERATION_OPENAI_MODEL,
   addCompletionCostToIntervalUsage,
   approximatePromptCost,
   getIntervalUsage,
@@ -219,7 +220,7 @@ router.get(
         prompts,
         question: res.locals.question,
         richTextEditorEnabled,
-        variantId: typeof req.query?.variant_id === 'string' ? req.query?.variant_id : undefined,
+        variantId: typeof req.query.variant_id === 'string' ? req.query.variant_id : undefined,
       }),
     );
   }),
@@ -244,7 +245,7 @@ router.post(
 
     assertCanCreateQuestion(res.locals);
 
-    const client = new OpenAI({
+    const openai = createOpenAI({
       apiKey: config.aiQuestionGenerationOpenAiApiKey,
       organization: config.aiQuestionGenerationOpenAiOrganization,
     });
@@ -267,38 +268,42 @@ router.post(
         userId: res.locals.authn_user.user_id,
       });
 
-      const approxPromptCost = approximatePromptCost(req.body.prompt);
+      const approxPromptCost = approximatePromptCost({
+        model: QUESTION_GENERATION_OPENAI_MODEL,
+        prompt: req.body.prompt,
+      });
 
       if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
+
         res.send(
           RateLimitExceeded({
             // If the user has more than the threshold of 100 tokens,
             // they can shorten their message to avoid reaching the rate limit.
             canShortenMessage:
-              config.aiQuestionGenerationRateLimitDollars - intervalCost >
-              config.costPerMillionPromptTokens * 100,
+              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
           }),
         );
         return;
       }
 
-      const result = await regenerateQuestion(
-        client,
-        res.locals.course.id,
-        res.locals.authn_user.user_id,
-        prompts[0]?.user_prompt,
-        req.body.prompt,
-        prompts[prompts.length - 1].html || '',
-        prompts[prompts.length - 1].python || '',
-        question.qid,
-        res.locals.authn_user.user_id,
-        res.locals.authz_data.has_course_permission_edit,
-      );
+      const result = await regenerateQuestion({
+        model: openai(QUESTION_GENERATION_OPENAI_MODEL),
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
+        courseId: res.locals.course.id,
+        authnUserId: res.locals.authn_user.user_id,
+        originalPrompt: prompts[0]?.user_prompt,
+        revisionPrompt: req.body.prompt,
+        originalHTML: prompts[prompts.length - 1].html || '',
+        originalPython: prompts[prompts.length - 1].python || '',
+        questionQid: question.qid,
+        userId: res.locals.authn_user.user_id,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      });
 
       await addCompletionCostToIntervalUsage({
         userId: res.locals.authn_user.user_id,
-        promptTokens: result.promptTokens ?? 0,
-        completionTokens: result.completionTokens ?? 0,
+        usage: result.usage,
         intervalCost,
       });
 

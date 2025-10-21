@@ -5,14 +5,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import async from 'async';
-import { v4 as uuidv4 } from 'uuid';
 
 const infolder = process.argv[2];
 const outfolder = process.argv[3];
 
 function getUUID(map, key) {
   if (!map[key]) {
-    map[key] = uuidv4();
+    map[key] = crypto.randomUUID();
   }
   return map[key];
 }

@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -36,6 +37,7 @@ import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
+import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -131,6 +133,7 @@ router.get(
                 hasEnhancedNavigation={has_enhanced_navigation}
                 canEdit={canEdit}
                 courseInstance={courseInstance}
+                institution={institution}
                 shortNames={shortNames}
                 availableTimezones={availableTimezones}
                 origHash={origHash}
@@ -206,10 +209,12 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'update_configuration') {
+      const { course_instance: courseInstanceContext, course: courseContext } =
+        getCourseInstanceContext(res.locals, 'instructor');
       const infoCourseInstancePath = path.join(
-        res.locals.course.path,
+        courseContext.path,
         'courseInstances',
-        res.locals.course_instance.short_name,
+        courseInstanceContext.short_name,
         'infoCourseInstance.json',
       );
 
@@ -231,22 +236,87 @@ router.post(
       const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
-      courseInstanceInfo.longName = req.body.long_name;
+
+      const parsedBody = SettingsFormBodySchema.parse(req.body);
+
+      courseInstanceInfo.longName = parsedBody.long_name;
       courseInstanceInfo.timezone = propertyValueWithDefault(
         courseInstanceInfo.timezone,
-        req.body.display_timezone,
-        res.locals.course.display_timezone,
+        parsedBody.display_timezone,
+        courseContext.display_timezone,
       );
       courseInstanceInfo.groupAssessmentsBy = propertyValueWithDefault(
         courseInstanceInfo.groupAssessmentsBy,
-        req.body.group_assessments_by,
+        parsedBody.group_assessments_by,
         'Set',
       );
       courseInstanceInfo.hideInEnrollPage = propertyValueWithDefault(
         courseInstanceInfo.hideInEnrollPage,
-        req.body.hide_in_enroll_page === 'on',
+        !parsedBody.show_in_enroll_page,
         false,
       );
+
+      // dates from 'datetime-local' inputs are in the format 'YYYY-MM-DDTHH:MM', and we need them to include seconds.
+      const parseDateTime = (date: string) => {
+        if (date === '') return undefined;
+        return Temporal.PlainDateTime.from(date).toString();
+      };
+
+      const selfEnrollmentEnabled = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.enabled,
+        parsedBody.self_enrollment_enabled,
+        true,
+        { isUIBoolean: true },
+      );
+      const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.useEnrollmentCode,
+        parsedBody.self_enrollment_use_enrollment_code,
+        false,
+      );
+      const selfEnrollmentRestrictToInstitution = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.restrictToInstitution,
+        parsedBody.self_enrollment_restrict_to_institution,
+        true,
+      );
+
+      const selfEnrollmentBeforeDate = propertyValueWithDefault(
+        parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
+        // We'll only serialize the value if self-enrollment is enabled.
+        parsedBody.self_enrollment_enabled && parsedBody.self_enrollment_enabled_before_date
+          ? parseDateTime(parsedBody.self_enrollment_enabled_before_date)
+          : undefined,
+        undefined,
+      );
+
+      const hasSelfEnrollmentSettings =
+        (selfEnrollmentEnabled ??
+          selfEnrollmentUseEnrollmentCode ??
+          selfEnrollmentRestrictToInstitution ??
+          selfEnrollmentBeforeDate) !== undefined;
+
+      const {
+        course_instance: courseInstance,
+        course,
+        institution,
+      } = getCourseInstanceContext(res.locals, 'instructor');
+      const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+        institution_id: institution.id,
+        course_id: course.id,
+        course_instance_id: courseInstance.id,
+      });
+      // Only write self enrollment settings if they are not the default values.
+      // When JSON.stringify is used, undefined values are not included in the JSON object.
+      if (hasSelfEnrollmentSettings && enrollmentManagementEnabled) {
+        courseInstanceInfo.selfEnrollment = {
+          enabled: selfEnrollmentEnabled,
+          useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+          restrictToInstitution: selfEnrollmentRestrictToInstitution,
+          beforeDate: selfEnrollmentBeforeDate,
+        };
+      } else {
+        courseInstanceInfo.selfEnrollment = undefined;
+      }
+
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
       let ciid_new;

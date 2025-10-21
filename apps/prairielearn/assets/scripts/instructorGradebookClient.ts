@@ -147,6 +147,8 @@ onDocumentReady(() => {
 
           const { assessment_instance_id, uid_other_users_group } =
             row.scores[assessment.assessment_id] ?? {};
+          if (!assessment_instance_id) return '&mdash;';
+
           const editButton = hasCourseInstancePermissionEdit
             ? html`
                 <button
@@ -155,7 +157,7 @@ onDocumentReady(() => {
                   aria-label="Edit score"
                   data-assessment-instance-id="${assessment_instance_id}"
                   data-score="${score}"
-                  data-other-users="${JSON.stringify(uid_other_users_group ?? [])}"
+                  data-other-users="${JSON.stringify(uid_other_users_group)}"
                 >
                   <i class="bi-pencil-square" aria-hidden="true"></i>
                 </button>

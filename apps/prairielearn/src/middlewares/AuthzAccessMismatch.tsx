@@ -131,6 +131,7 @@ function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
     </table>
   );
 }
+
 function clearEffectiveUserCookies() {
   removeCookieClient(['pl_requested_uid', 'pl2_requested_uid']);
   removeCookieClient(['pl_requested_course_role', 'pl2_requested_course_role']);
