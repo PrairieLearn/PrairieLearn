@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { type HtmlValue, html, joinHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
@@ -105,7 +105,8 @@ export function ManualGradingAssessment({
                   class="btn btn-sm btn-light grading-tag-button"
                   name="export-ai-grading-statistics"
                   aria-label="Export AI grading statistics"
-                  onClick={() => $('#export-ai-grading-statistics').submit()}
+                  // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                  onclick="$('#export-ai-grading-statistics').submit();"
                 >
                   <i class="bi bi-download" aria-hidden="true" />
                   Export AI grading statistics
@@ -115,7 +116,8 @@ export function ManualGradingAssessment({
                   class="btn btn-sm btn-light grading-tag-button"
                   name="ai-grade-all-questions"
                   aria-label="AI grade all questions"
-                  onClick={() => $('#ai-grade-all').submit()}
+                  // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                  onclick="$('#ai-grade-all').submit();"
                 >
                   <i class="bi bi-stars" aria-hidden="true" />
                   AI grade all questions
@@ -127,7 +129,8 @@ export function ManualGradingAssessment({
                   aria-label="Delete all AI grading data"
                   data-bs-toggle="tooltip"
                   data-bs-title="Delete all AI grading results for this assessment's questions"
-                  onClick={() => $('#delete-ai-grading-data').submit()}
+                  // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                  onclick="$('#delete-ai-grading-data').submit();"
                 >
                   Delete AI grading data
                 </button>
@@ -181,14 +184,9 @@ function AssessmentQuestionRow({
     resLocals.authz_data.has_course_instance_permission_edit &&
     question.num_instance_questions_assigned + question.num_instance_questions_unassigned > 0;
   const currentUserName = resLocals.authz_data.user.name ?? resLocals.authz_data.user.uid;
-  const assignedGraders: HtmlValue[] = (question.assigned_graders || [])
+  const otherAssignedGraders = (question.assigned_graders || [])
     .filter((u) => !idsEqual(u.user_id, resLocals.authz_data.user.user_id))
     .map((u) => u.name ?? u.uid);
-  if (question.num_instance_questions_assigned > 0) {
-    assignedGraders.unshift(
-      html`<strong class="bg-warning rounded px-1">${currentUserName}</strong>`,
-    );
-  }
   const gradingUrl = `${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading/assessment_question/${question.id}`;
 
   return (
@@ -227,10 +225,19 @@ function AssessmentQuestionRow({
         {question.num_instance_questions_to_grade} / {question.num_instance_questions}
       </td>
       <td class="align-middle">
-        {ProgressBar(question.num_instance_questions_to_grade, question.num_instance_questions)}
+        <ProgressBar
+          partial={question.num_instance_questions_to_grade}
+          total={question.num_instance_questions}
+        />
       </td>
       <td class="align-middle">
-        {joinHtml(assignedGraders, ', ')}
+        {question.num_instance_questions_assigned > 0 && (
+          <>
+            <strong class="bg-warning rounded px-1">{currentUserName}</strong>
+            {otherAssignedGraders.length > 0 && ', '}
+          </>
+        )}
+        {otherAssignedGraders.join(', ')}
         {question.num_instance_questions_unassigned > 0 && (
           <>
             <small class="text-muted">
@@ -265,7 +272,7 @@ function AssessmentQuestionRow({
   );
 }
 
-function ProgressBar(partial: number | null, total: number | null) {
+function ProgressBar({ partial, total }: { partial: number | null; total: number | null }) {
   if (total == null || total <= 0) return null;
   const progress = Math.floor(100 * (1 - (partial ?? 0) / total));
   return (

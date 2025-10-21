@@ -196,7 +196,8 @@ export function AssessmentQuestion({
                         <button
                           class="dropdown-item"
                           type="button"
-                          onClick={() => $('#ai-grading-graded').submit()}
+                          // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                          onclick="$('#ai-grading-graded').submit();"
                         >
                           Grade all human-graded
                         </button>
@@ -211,7 +212,8 @@ export function AssessmentQuestion({
                         <button
                           class="dropdown-item"
                           type="button"
-                          onClick={() => $('#ai-grading-all').submit()}
+                          // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                          onclick="$('#ai-grading-all').submit();"
                         >
                           Grade all
                         </button>
