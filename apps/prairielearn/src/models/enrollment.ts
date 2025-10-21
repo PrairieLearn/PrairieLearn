@@ -72,7 +72,8 @@ function assertEnrollmentBelongsToUser(
   if (isDangerousFullAuthzPermissions(authzData)) {
     return;
   }
-  if (enrollment.user_id !== authzData.user.user_id) {
+  // We only check this for enrollments that have a user_id (e.g. non-pending enrollments)
+  if (enrollment.user_id && enrollment.user_id !== authzData.user.user_id) {
     throw new error.HttpStatusError(403, 'Access denied');
   }
 }
