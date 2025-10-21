@@ -259,7 +259,9 @@ export function InstructorFileEditor({
               data-contents="${draftEdit?.contents ?? editorData.diskContents}"
               data-ace-mode="${editorData.aceMode}"
               data-read-only="${!!draftEdit?.alertChoice}"
-              data-file-metadata="${JSON.stringify(editorData.fileMetadata)}"
+              data-file-metadata="${editorData.fileMetadata
+                ? JSON.stringify(editorData.fileMetadata)
+                : ''}"
             >
               <div class="card p-0">
                 ${draftEdit?.alertChoice

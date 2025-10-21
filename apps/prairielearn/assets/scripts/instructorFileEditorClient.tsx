@@ -316,11 +316,15 @@ class InstructorFileEditor {
     const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement);
     modal.show();
 
-    confirmButton.addEventListener('click', () => {
-      modal.hide();
-      this.confirmedSave = true;
-      this.saveElement?.click();
-    });
+    confirmButton.addEventListener(
+      'click',
+      () => {
+        modal.hide();
+        this.confirmedSave = true;
+        this.saveElement?.click();
+      },
+      { once: true },
+    );
   }
 
   setEditorContents(contents: string) {
