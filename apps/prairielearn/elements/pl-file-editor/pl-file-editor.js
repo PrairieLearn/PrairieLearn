@@ -68,7 +68,7 @@ window.PLFileEditor = function (uuid, options) {
   if (options.currentContents) {
     currentContents = this.b64DecodeUnicode(options.currentContents);
   }
-  this.setEditorContents(currentContents, true);
+  this.setEditorContents(currentContents, { resetUndo: true });
 
   if (options.preview) {
     this.editor.session.on('change', () => this.updatePreview(options.preview));
@@ -269,7 +269,7 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
   });
 };
 
-window.PLFileEditor.prototype.setEditorContents = function (contents, resetUndo = false) {
+window.PLFileEditor.prototype.setEditorContents = function (contents, { resetUndo = false } = {}) {
   if (resetUndo) {
     // Setting the value of the session causes the undo manager to be reset.
     // https://github.com/ajaxorg/ace/blob/35e1be52fd8172405cf0f219bab1ef7571b3363f/src/edit_session.js#L321-L328
