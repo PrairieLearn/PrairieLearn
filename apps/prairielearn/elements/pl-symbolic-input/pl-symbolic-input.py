@@ -221,10 +221,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         editable = data["editable"]
 
-        # For display/editing purposes, treat multi-character vars as function names to prevent adding spaces
-        multi_char_variables = [v for v in variables if len(v) > 1]
-        custom_functions += multi_char_variables
-
         html_params = {
             "question": True,
             "name": name,
