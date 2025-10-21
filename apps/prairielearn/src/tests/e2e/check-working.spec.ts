@@ -1,5 +1,6 @@
 import * as sqldb from '@prairielearn/postgres';
 
+// Importing from fixtures picks up our worker-scoped fixtures.
 import { expect, test } from './fixtures.js';
 
 test('has title', async ({ page }) => {

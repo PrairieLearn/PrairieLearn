@@ -2194,7 +2194,17 @@ if (isHMR && isServerPending()) {
   throw new Error('The server was restarted, but it was not fully initialized.');
 }
 
-if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
+const isPlaywrightTest = process.env.TEST_WORKER_INDEX !== undefined;
+
+const shouldStartServer = run(() => {
+  if (isPlaywrightTest) return true;
+  if (!config.startServer) return false;
+  if (esMain(import.meta)) return true;
+  if (isHMR && !isServerInitialized()) return true;
+  return false;
+});
+
+if (shouldStartServer) {
   try {
     setServerState('pending');
     logger.verbose('PrairieLearn server start');
@@ -2218,6 +2228,17 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // Load config immediately so we can use it configure everything else.
     await loadConfig(configPaths);
 
+    // Override the server port if PORT environment variable is set
+    if (process.env.PORT) {
+      config.serverPort = process.env.PORT;
+    }
+
+    // For Playwright tests, set up the database
+    if (isPlaywrightTest) {
+      const { before: setupDatabase } = await import('./tests/helperDb.js');
+      await setupDatabase();
+    }
+
     // This should be done as soon as we load our config so that we can
     // start exporting spans.
     await opentelemetry.init({
@@ -2231,6 +2252,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       // is used, 100% of traces will be sent to Sentry, despite us never having set
       // `tracesSampleRate` in the Sentry configuration.
       contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
+      ...(isPlaywrightTest ? { openTelemetryEnabled: false } : {}),
     });
 
     // Same with Sentry configuration.
@@ -2325,13 +2347,17 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
 
     logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
 
-    await sqldb.initAsync(pgConfig, idleErrorHandler);
+    // For Playwright tests, the database pool and named locks are already initialized
+    // by setupDatabases() in helperDb.ts
+    if (!isPlaywrightTest) {
+      await sqldb.initAsync(pgConfig, idleErrorHandler);
 
-    // Our named locks code maintains a separate pool of database connections.
-    // This ensures that we avoid deadlocks.
-    await namedLocks.init(pgConfig, idleErrorHandler, {
-      renewIntervalMs: config.namedLocksRenewIntervalMs,
-    });
+      // Our named locks code maintains a separate pool of database connections.
+      // This ensures that we avoid deadlocks.
+      await namedLocks.init(pgConfig, idleErrorHandler, {
+        renewIntervalMs: config.namedLocksRenewIntervalMs,
+      });
+    }
 
     logger.verbose('Successfully connected to database');
 
@@ -2664,6 +2690,12 @@ export async function close() {
   await stopBatchedMigrations();
   await namedLocks.close();
   await sqldb.closeAsync();
+
+  // For Playwright tests, clean up the database
+  if (isPlaywrightTest) {
+    const { after: cleanupDatabase } = await import('./tests/helperDb.js');
+    await cleanupDatabase();
+  }
 }
 
 export const viteExpressApp = app;
