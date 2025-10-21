@@ -17,14 +17,19 @@ body,
   grid-area: navbar;
 }
 
+.app-content-container {
+  grid-area: content;
+  min-height: 0;
+}
+
 .app-content {
   grid-area: content;
 
+  height: 100%;
   display: grid;
   grid-template-areas: 'back preview-tabs' 'chat preview';
   grid-template-rows: min-content 1fr;
   grid-template-columns: var(--chat-width, 400px) 1fr;
-  min-height: 0;
 }
 
 .app-chat {

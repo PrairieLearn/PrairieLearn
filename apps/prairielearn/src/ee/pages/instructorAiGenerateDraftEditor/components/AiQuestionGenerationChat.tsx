@@ -106,7 +106,6 @@ export function AiQuestionGenerationChat({
       prepareReconnectToStreamRequest: ({ id }) => {
         return {
           api: `${urlPrefix}/ai_generate_editor/${id}/chat/stream`,
-          credentials: 'include',
         };
       },
     }),
@@ -126,7 +125,7 @@ export function AiQuestionGenerationChat({
             e.preventDefault();
             const trimmedInput = input.trim();
             if (trimmedInput) {
-              sendMessage({ text: trimmedInput });
+              void sendMessage({ text: trimmedInput });
               setInput('');
             }
           }}

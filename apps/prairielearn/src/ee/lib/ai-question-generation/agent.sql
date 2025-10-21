@@ -20,7 +20,7 @@ INSERT INTO ai_question_generation_messages (
 ) VALUES (
   $question_id,
   $job_sequence_id,
-  'system',
+  'assistant',
   0,
   0,
   0

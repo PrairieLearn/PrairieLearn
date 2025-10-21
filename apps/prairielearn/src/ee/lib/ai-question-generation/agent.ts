@@ -43,62 +43,76 @@ import { getAiQuestionGenerationStreamContext } from './redis.js';
 const sql = loadSqlEquiv(import.meta.url);
 const otherSql = loadSql(path.join(import.meta.dirname, '..', 'aiQuestionGeneration.sql'));
 
-const SYSTEM_PROMPT = formatPrompt([
-  '# Introduction',
-  'You are an assistant that helps instructors write questions for PrairieLearn.',
-  [
-    'A question has a `question.html` file that can contain standard HTML, CSS, and JavaScript.',
-    'It can also include PrairieLearn elements like `<pl-multiple-choice>` and `<pl-number-input>`.',
-  ],
-  'The following PrairieLearn elements are supported (and may be used in the generated question.html):',
-  Array.from(ALLOWED_ELEMENTS)
-    .map((el) => `- \`<${el}>\``)
-    .join('\n'),
-  [
-    'A question may also have a `server.py` file that can randomly generate unique parameters and answers,',
-    'and which can also assign grades to student submissions.',
-  ],
-  '## Generating and using random parameters',
-  [
-    '`server.py` may define a `generate` function.',
-    '`generate` has a single parameter `data` which can be modified by reference.',
-    'It has the following properties:',
-  ],
-  '- `params`: A dictionary where random parameters, choices, etc. can be written here for later retrieval, e.g. during rendering or grading.',
-  [
-    '- `correct_answers`:',
-    'A dictionary where correct answers can be written.',
-    'You MUST ONLY write to this dictionary if actually required by the question or a specific element.',
-    'Pay attention to the provided examples and documentation for each element.',
-  ],
-  [
-    'Parameters can be read in `question.html` with Mustache syntax.',
-    'For instance, if `server.py` contains `data["params"]["answer"]`,',
-    'it can be read with `{{ params.answer }}` in `question.html`.',
-  ],
-  [
-    'If a `question.html` file includes Mustache templates, a `server.py` should be provided to generate the necessary parameters.',
-    'Remember that Mustache logic is quite limited, so any computation should be done in `server.py`.',
-  ],
-  'If the question does not use random parameters, `server.py` can be omitted.',
-  '## Formatting',
-  [
-    'You can use LaTeX to format numerical quantities, equations, formulas, and so on.',
-    'For inline LaTeX, use `$...$`. For block LaTeX, use `$$...$$`.',
-  ],
-  '# Instructions',
-  [
-    "You must generate a `question.html` file that meets the user's requirements.",
-    'If necessary, also generate a `server.py` file.',
-    'You MUST ONLY use the PrairieLearn elements listed above.',
-    'You MUST use tool calls to explore element documentation.',
-    'You MUST review at least one example question before attempting to generate any code.',
-    'You MUST save and validate the question before finishing.',
-    'If validation fails, you MUST fix the errors and re-validate until it passes.',
-  ],
-]);
-
 const ALLOWED_ELEMENT_NAMES = Array.from(ALLOWED_ELEMENTS) as [string, ...string[]];
+
+function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean }) {
+  return formatPrompt([
+    '# Introduction',
+    'You are an assistant that helps instructors author questions for PrairieLearn.',
+    [
+      'A question has a `question.html` file that can contain standard HTML, CSS, and JavaScript.',
+      'It can also include PrairieLearn elements like `<pl-multiple-choice>` and `<pl-number-input>`.',
+    ],
+    'The following PrairieLearn elements are supported (and may be used in the generated question.html):',
+    Array.from(ALLOWED_ELEMENTS)
+      .map((el) => `- \`<${el}>\``)
+      .join('\n'),
+    [
+      'A question may also have a `server.py` file that can randomly generate unique parameters and answers,',
+      'and which can also assign grades to student submissions.',
+    ],
+    '## Generating and using random parameters',
+    [
+      '`server.py` may define a `generate` function.',
+      '`generate` has a single parameter `data` which can be modified by reference.',
+      'It has the following properties:',
+    ],
+    '- `params`: A dictionary where random parameters, choices, etc. can be written here for later retrieval, e.g. during rendering or grading.',
+    [
+      '- `correct_answers`:',
+      'A dictionary where correct answers can be written.',
+      'You MUST ONLY write to this dictionary if actually required by the question or a specific element.',
+      'Pay attention to the provided examples and documentation for each element.',
+    ],
+    [
+      'Parameters can be read in `question.html` with Mustache syntax.',
+      'For instance, if `server.py` contains `data["params"]["answer"]`,',
+      'it can be read with `{{ params.answer }}` in `question.html`.',
+    ],
+    [
+      'If a `question.html` file includes Mustache templates, a `server.py` should be provided to generate the necessary parameters.',
+      'Remember that Mustache logic is quite limited, so any computation should be done in `server.py`.',
+    ],
+    'If the question does not use random parameters, `server.py` can be omitted.',
+    '## Formatting',
+    [
+      'You can use LaTeX to format numerical quantities, equations, formulas, and so on.',
+      'For inline LaTeX, use `$...$`. For block LaTeX, use `$$...$$`.',
+    ],
+    '# Instructions',
+    isExistingQuestion
+      ? [
+          'You are editing an existing question.',
+          'This means that an existing `server.py` and `question.html` already exist.',
+          'You MUST read the contents of the existing files using the `readFiles` first.',
+          'This is VERY IMPORTANT: the instructor may have edited the files since you last saw them.',
+          'You MUST ONLY make necessary changes to the existing files to satisfy the user requirements.',
+          'You MUST NOT otherwise change the structure, style, or content of the existing files unless explicitly asked.',
+        ]
+      : [
+          'You are creating a new question from scratch.',
+          "You MUST generate a `question.html` file that meets the user's requirements.",
+          'If necessary, also generate a `server.py` file.',
+        ],
+    [
+      'You MUST ONLY use the PrairieLearn elements listed above.',
+      'You MUST use tool calls to explore element documentation.',
+      'You MUST review at least one example question before attempting to generate any code.',
+      'You MUST save and validate the question before finishing.',
+      'If validation fails, you MUST fix the errors and re-validate until it passes.',
+    ],
+  ]);
+}
 
 export async function createQuestionGenerationAgent({
   model,
@@ -106,6 +120,7 @@ export async function createQuestionGenerationAgent({
   user,
   authnUser,
   question,
+  isExistingQuestion,
   hasCoursePermissionEdit,
 }: {
   model: LanguageModel;
@@ -113,12 +128,10 @@ export async function createQuestionGenerationAgent({
   user: User;
   authnUser: User;
   question: Question;
+  isExistingQuestion: boolean;
   hasCoursePermissionEdit: boolean;
 }) {
-  const files = {
-    'question.html': '',
-    'server.py': '',
-  };
+  const files: Record<string, string> = {};
 
   // TODO: global cache or TTL cache of these?
   const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
@@ -157,9 +170,13 @@ export async function createQuestionGenerationAgent({
     }
   }
 
+  const systemPrompt = makeSystemPrompt({ isExistingQuestion });
+
+  console.log(systemPrompt);
+
   const agent = new Agent({
     model,
-    system: SYSTEM_PROMPT,
+    system: systemPrompt,
     stopWhen: [
       // Cap to 20 steps to avoid runaways.
       stepCountIs(20),
@@ -265,16 +282,27 @@ export async function createQuestionGenerationAgent({
           errors: z.array(z.string()),
         }),
         execute: async () => {
-          const errors: string[] = [];
-
           if (!files['question.html']) {
-            errors.push('You must generation a question.html file.');
-            return errors;
+            return ['You must generation a question.html file.'];
           }
 
           // TODO: we could possibly speed up the iteration loop by skipping the save if
           // this detected any errors in the HTML.
-          errors.push(...validateHTML(files['question.html'], !!files['server.py']));
+          const errors = validateHTML(files['question.html'], !!files['server.py']);
+
+          // If there are any validation errors, don't even try to save. Let the model fix them first.
+          if (errors.length > 0) return { errors };
+
+          // Create a object that contains only the files that have been written.
+          // Base-64 encode the files for transmission.
+          const writtenFiles = Object.fromEntries(
+            Object.entries(files).map(([filename, content]) => [
+              filename,
+              // TODO: creation uses plain files, this uses base-64. The different is bad
+              // and should be addressed.
+              Buffer.from(content, 'utf-8').toString('base64'),
+            ]),
+          );
 
           const courseFilesClient = getCourseFilesClient();
           const result = await courseFilesClient.updateQuestionFiles.mutate({
@@ -283,14 +311,7 @@ export async function createQuestionGenerationAgent({
             authn_user_id: authnUser.user_id,
             has_course_permission_edit: hasCoursePermissionEdit,
             question_id: question.id,
-            // TODO: creation uses plain files, this uses base-64. The different is bad
-            // and should be addressed.
-            files: {
-              'question.html': Buffer.from(files['question.html'], 'utf-8').toString('base64'),
-              'server.py': files['server.py']
-                ? Buffer.from(files['server.py'], 'utf-8').toString('base64')
-                : null,
-            },
+            files: writtenFiles,
           });
 
           if (result.status === 'error') {
@@ -342,6 +363,8 @@ export async function editQuestionWithAgent({
     description: `${question ? 'Edit' : 'Generate'} a question with AI`,
     authnUserId: authnUser.user_id,
   });
+
+  const isExistingQuestion = !!question;
 
   if (!question) {
     // Create the initial question so we can get a question ID. This also simplifies
@@ -402,19 +425,28 @@ export async function editQuestionWithAgent({
   const streamContext = await getAiQuestionGenerationStreamContext();
   await streamContext.createNewResumableStream(messageRow.id, () => sseStream.readable);
 
-  serverJob.executeInBackground(async () => {
+  serverJob.executeInBackground(async (job) => {
     const { agent } = await createQuestionGenerationAgent({
       model,
       course,
       question,
       user,
       authnUser,
+      isExistingQuestion,
       hasCoursePermissionEdit,
     });
 
     const args = run(() => {
       if (messages) {
-        return { messages: convertToModelMessages(messages) };
+        const filteredMessages = messages.map((msg) => {
+          return {
+            ...msg,
+            parts: msg.parts.filter((part) => {
+              return true;
+            }),
+          };
+        });
+        return { messages: convertToModelMessages(filteredMessages) };
       } else if (prompt) {
         return { prompt };
       } else {
@@ -452,6 +484,9 @@ export async function editQuestionWithAgent({
       userId: authnUser.user_id,
       usage: await res.totalUsage,
     });
+
+    job.info(JSON.stringify(await res.steps, null, 2));
+    job.info(JSON.stringify(await res.totalUsage, null, 2));
   });
 
   return {

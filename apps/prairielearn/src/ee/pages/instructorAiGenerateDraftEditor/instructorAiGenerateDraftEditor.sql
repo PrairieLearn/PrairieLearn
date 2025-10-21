@@ -52,3 +52,6 @@ WHERE
 
 -- BLOCK select_ai_question_generation_messages
 SELECT * FROM ai_question_generation_messages WHERE question_id = $question_id ORDER BY created_at ASC;
+
+-- BLOCK select_latest_ai_question_generation_message
+SELECT * FROM ai_question_generation_messages WHERE question_id = $question_id AND role = 'assistant' ORDER BY created_at DESC LIMIT 1;

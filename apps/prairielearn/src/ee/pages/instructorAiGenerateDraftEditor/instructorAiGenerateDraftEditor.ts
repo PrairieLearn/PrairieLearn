@@ -2,13 +2,20 @@ import { Readable } from 'node:stream';
 
 import { createOpenAI } from '@ai-sdk/openai';
 import { UI_MESSAGE_STREAM_HEADERS } from 'ai';
-import { type Response, Router } from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
+import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
@@ -30,53 +37,11 @@ import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
 import { editQuestionWithAgent } from '../../lib/ai-question-generation/agent.js';
 import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-generation/redis.js';
-import {
-  QUESTION_GENERATION_OPENAI_MODEL,
-  approximatePromptCost,
-  getIntervalUsage,
-} from '../../lib/aiQuestionGeneration.js';
-import { RateLimitExceeded } from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
-
-async function saveGeneratedQuestion(
-  res: Response,
-  htmlFileContents: string | undefined,
-  pythonFileContents: string | undefined,
-  title?: string,
-  qid?: string,
-): Promise<{ question_id: string; qid: string }> {
-  const files = {};
-
-  if (htmlFileContents) {
-    files['question.html'] = htmlFileContents;
-  }
-
-  if (pythonFileContents) {
-    files['server.py'] = pythonFileContents;
-  }
-
-  const client = getCourseFilesClient();
-
-  const result = await client.createQuestion.mutate({
-    course_id: res.locals.course.id,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
-    has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-    qid,
-    title,
-    files,
-  });
-
-  if (result.status === 'error') {
-    throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
-  }
-
-  return { question_id: result.question_id, qid: result.question_qid };
-}
 
 async function saveRevisedQuestion({
   course,
@@ -187,6 +152,10 @@ router.get(
       AiQuestionGenerationMessageSchema,
     );
 
+    for (const message of messages) {
+      console.dir(message.parts, { depth: null });
+    }
+
     const courseFilesClient = getCourseFilesClient();
     const { files: questionFiles } = await courseFilesClient.getQuestionFiles.query({
       course_id: res.locals.course.id,
@@ -207,6 +176,11 @@ router.get(
     });
     await logPageView('instructorQuestionPreview', req, res);
 
+    const questionContainerHtml = QuestionContainer({
+      resLocals: res.locals,
+      questionContext: 'instructor',
+    });
+
     res.send(
       InstructorAiGenerateDraftEditor({
         resLocals: res.locals,
@@ -214,6 +188,7 @@ router.get(
         messages,
         questionFiles,
         richTextEditorEnabled,
+        questionContainerHtml: questionContainerHtml.toString(),
       }),
     );
   }),
@@ -235,14 +210,29 @@ router.get(
 
     assertCanCreateQuestion(res.locals);
 
+    const latestMessage = await queryOptionalRow(
+      sql.select_latest_ai_question_generation_message,
+      { question_id: req.params.question_id },
+      AiQuestionGenerationMessageSchema,
+    );
+
+    if (!latestMessage) {
+      console.log('no latest message');
+      res.status(204).send();
+      return;
+    }
+    console.log('latest message found:', latestMessage.id);
+
     const streamContext = await getAiQuestionGenerationStreamContext();
 
-    const stream = await streamContext.resumeExistingStream('testing');
+    const stream = await streamContext.resumeExistingStream(latestMessage.id);
     if (!stream) {
+      console.log('stream not found');
       res.status(204).send();
       return;
     }
 
+    console.log('stream found!');
     Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
       res.setHeader(key, value);
     });
@@ -275,30 +265,30 @@ router.post(
     });
 
     // TODO: figure out how cost tracking will work here.
-    if (false) {
-      const intervalCost = await getIntervalUsage({
-        userId: res.locals.authn_user.user_id,
-      });
+    // if (false) {
+    //   const intervalCost = await getIntervalUsage({
+    //     userId: res.locals.authn_user.user_id,
+    //   });
 
-      const approxPromptCost = approximatePromptCost({
-        model: QUESTION_GENERATION_OPENAI_MODEL,
-        prompt: req.body.prompt,
-      });
+    //   const approxPromptCost = approximatePromptCost({
+    //     model: QUESTION_GENERATION_OPENAI_MODEL,
+    //     prompt: req.body.prompt,
+    //   });
 
-      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
-        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
+    //   if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+    //     const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
 
-        res.send(
-          RateLimitExceeded({
-            // If the user has more than the threshold of 100 tokens,
-            // they can shorten their message to avoid reaching the rate limit.
-            canShortenMessage:
-              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
-          }),
-        );
-        return;
-      }
-    }
+    //     res.send(
+    //       RateLimitExceeded({
+    //         // If the user has more than the threshold of 100 tokens,
+    //         // they can shorten their message to avoid reaching the rate limit.
+    //         canShortenMessage:
+    //           config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
+    //       }),
+    //     );
+    //     return;
+    //   }
+    // }
 
     const { message } = await editQuestionWithAgent({
       model: openai('gpt-5-mini'),
@@ -351,35 +341,28 @@ router.post(
         throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 
-      // TODO: any membership checks needed here?
-      const { question_id, qid } = await saveGeneratedQuestion(
-        res,
-        prompts[prompts.length - 1].html || undefined,
-        prompts[prompts.length - 1].python || undefined,
-        req.body.title,
-        req.body.qid,
-      );
-
       const client = getCourseFilesClient();
 
-      const result = await client.batchDeleteQuestions.mutate({
+      // TODO: this needs to handle updating the question title as well.
+      const result = await client.renameQuestion.mutate({
         course_id: res.locals.course.id,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        question_ids: [question.id],
+        question_id: question.id,
+        qid: req.body.qid,
       });
 
       if (result.status === 'error') {
-        throw new error.HttpStatusError(
-          500,
-          'Draft deletion failed, but question creation succeeded.',
-        );
+        throw new Error('Renaming question failed.');
       }
 
-      flash('success', `Your question is ready for use as ${qid}.`);
+      // Re-fetch the question in case the QID was changed to avoid conflicts.
+      const updatedQuestion = await selectQuestionById(question.id);
 
-      res.redirect(res.locals.urlPrefix + '/question/' + question_id + '/preview');
+      flash('success', `Your question is ready for use as ${updatedQuestion.qid}.`);
+
+      res.redirect(res.locals.urlPrefix + '/question/' + question.id + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
       await saveRevisedQuestion({
         course: res.locals.course,
