@@ -55,6 +55,9 @@ def parse_highlight_lines(highlight_lines: str) -> list[int] | None:
     """
     Parse a string like "1", "1-4", "1-3,5,7-8" into a list of lines like
     [1], [1,2,3,4], and [1,2,3,5,7,8]
+
+    Returns:
+        A list of line numbers
     """
     lines = []
     components = highlight_lines.split(",")
@@ -137,7 +140,9 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter[str]):
 def get_lexer_by_name(name: str) -> pygments.lexer.Lexer | None:
     """
     Find a lexer by both its proper name and any aliases it has.
-    Returns None if no lexer is found.
+
+    Returns:
+        A lexer or None if no lexer is found.
     """
     # Search by proper class/language names
     # This returns None if not found, and a class if found.
@@ -312,6 +317,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if normalize_whitespace:
         code = dedent(code).rstrip()
+
+    if data["ai_grading"]:
+        # Return just the raw code for AI grading.
+        #
+        # As we're never actually rendering this as HTML, we don't have to think
+        # carefully about escaping. We can also introduce leading/trailing newlines
+        # to make it easier for a human to read.
+        return f"<pre><code>\n{code.strip()}\n</code></pre>"
 
     lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
 

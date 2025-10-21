@@ -11,9 +11,9 @@ INSERT INTO
   )
 SELECT
   'Submission',
-  i.id,
-  c.id,
-  ci.id,
+  i.id AS institution_id,
+  c.id AS course_id,
+  ci.id AS course_instance_id,
   date_trunc('day', s.date, 'UTC'),
   $user_id,
   coalesce(ai.include_in_statistics, FALSE)
@@ -51,9 +51,9 @@ INSERT INTO
   )
 SELECT
   'External grading',
-  i.id,
-  c.id,
-  ci.id,
+  i.id AS institution_id,
+  c.id AS course_id,
+  ci.id AS course_instance_id,
   date_trunc('day', gj.grading_finished_at, 'UTC'),
   -- Use v.authn_user_id because we don't care about really tracking the
   -- effective user, we are only using this to avoid contention when there are
@@ -103,8 +103,8 @@ INSERT INTO
   )
 SELECT
   'AI question generation',
-  i.id,
-  c.id,
+  i.id AS institution_id,
+  c.id AS course_id,
   NULL,
   $cost_ai_question_generation,
   date_trunc('day', now() AT TIME ZONE 'UTC'),

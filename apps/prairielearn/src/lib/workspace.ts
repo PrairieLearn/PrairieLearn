@@ -13,7 +13,6 @@ import mustache from 'mustache';
 import fetch from 'node-fetch';
 import type { Socket } from 'socket.io';
 import * as tmp from 'tmp-promise';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -94,7 +93,8 @@ export class SubmissionFormatError extends Error {
   }
 }
 
-export async function init(): Promise<void> {
+export function init(): void {
+  assert(socketServer.io);
   workspaceUtils.init(socketServer.io);
   socketServer.io
     .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
@@ -130,7 +130,7 @@ function connection(socket: Socket) {
   const workspace_id = socket.handshake.auth.workspace_id;
 
   socket.on('joinWorkspace', (callback: (result: any) => void) => {
-    socket.join(`workspace-${workspace_id}`);
+    void socket.join(`workspace-${workspace_id}`);
 
     sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema).then(
       (workspace) => callback({ workspace_id, state: workspace.state }),
@@ -170,6 +170,7 @@ async function controlContainer(
   action: 'init',
   options: { useInitialZip: boolean },
 ): Promise<void>;
+
 async function controlContainer(
   workspace_id: string,
   action: 'init' | 'getGradedFiles',
@@ -255,7 +256,7 @@ async function startup(workspace_id: string): Promise<void> {
   //   stopped -> launching -> stopped -> launching
   // - We don't want multiple hosts trying to assign a host for the same
   //   workspace at the same time.
-  let shouldAssignHost = false;
+  let shouldAssignHost = false as boolean;
   await sqldb.runInTransactionAsync(async () => {
     // First, lock the workspace row.
     const workspace = await sqldb.queryRow(
@@ -376,7 +377,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
 
   const root = config.workspaceHomeDirRoot;
   const destinationPath = path.join(root, remotePath);
-  const sourcePath = `${destinationPath}-${uuidv4()}`;
+  const sourcePath = `${destinationPath}-${crypto.randomUUID()}`;
 
   const { fileGenerationErrors } = await generateWorkspaceFiles({
     serverFilesCoursePath,
@@ -493,7 +494,7 @@ export async function generateWorkspaceFiles({
     (params?._workspace_files as DynamicWorkspaceFile[] | null)
       ?.map((file: DynamicWorkspaceFile, i: number): WorkspaceFile | null => {
         // Ignore files without a name
-        if (!file?.name) {
+        if (!file.name) {
           fileGenerationErrors.push({
             file: `Dynamic file ${i}`,
             msg: 'Dynamic workspace file does not include a name. File ignored.',
@@ -669,7 +670,7 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
   }
 
   // Zip files from filesystem to zip file
-  (gradedFiles ?? []).forEach((file) => {
+  gradedFiles.forEach((file) => {
     const remotePath = path.join(remoteDir, file.path);
     debug(`Zipping graded file ${remotePath} into ${zipPath}`);
     archive.file(remotePath, { name: file.path });

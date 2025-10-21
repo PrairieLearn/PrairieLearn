@@ -4,7 +4,7 @@ import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import fetch from 'node-fetch';
-import { afterAll, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
@@ -13,6 +13,9 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { assertNever } from '../../lib/types.js';
+import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -27,7 +30,7 @@ const SITE_URL = 'http://localhost:' + config.serverPort;
 async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM }> {
   const text = await fetch(url).then((res) => {
     if (!res.ok) {
-      throw new Error(`Error loading page: ${res.status}`);
+      throw new Error(`Error loading page "${url}": ${res.status}`);
     }
     return res.text();
   });
@@ -155,12 +158,12 @@ async function checkPage(url: string) {
 const STATIC_ROUTE_PARAMS = {
   // These are trivially known because there will only be one course and course
   // instance in the database after syncing the test course.
-  course_id: 1,
-  course_instance_id: 1,
+  course_id: '1',
+  course_instance_id: '1',
 };
 
 function getRouteParams(url: string) {
-  const routeParams = url.match(/:([^/]+)/g);
+  const routeParams = url.match(/:([^?/]+)/g);
 
   if (!routeParams) return [];
 
@@ -196,10 +199,7 @@ const SKIP_ROUTES = [
 
   // These routes just render JSON.
   /^\/pl\/api\/v1\//,
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/raw_data.json',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/instances.json',
-  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/generation_logs.json',
-  '/pl/course/:course_id/ai_generate_question_drafts/generation_logs.json',
+  /\.json$/,
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
@@ -365,6 +365,9 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_editor/:question_id',
   '/pl/course/:course_id/ai_generate_editor/:question_id',
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/:job_id',
+
+  // API routes.
+  '/pl/course_instance/lookup',
 ];
 
 function shouldSkipPath(path) {
@@ -374,7 +377,7 @@ function shouldSkipPath(path) {
     } else if (r instanceof RegExp) {
       return r.test(path);
     } else {
-      throw new Error(`Invalid route: ${r}`);
+      assertNever(r);
     }
   });
 }
@@ -423,6 +426,20 @@ describe('accessibility', () => {
       IdSchema,
     );
 
+    const courseInstance = await selectOptionalCourseInstanceById(
+      STATIC_ROUTE_PARAMS.course_instance_id,
+    );
+    assert.isNotNull(courseInstance);
+
+    const enrollment = await ensureEnrollment({
+      course_instance_id: courseInstance.id,
+      user_id,
+      agent_user_id: null,
+      agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
+    });
+    assert.isNotNull(enrollment);
+
     await features.enable('question-sharing');
 
     routeParams = {
@@ -431,19 +448,20 @@ describe('accessibility', () => {
       assessment_id,
       question_id,
       user_id,
+      enrollment_id: enrollment.id,
+      code: courseInstance.enrollment_code,
     };
 
-    await sqldb.queryOneRowAsync(
-      'UPDATE questions SET share_publicly = true WHERE id = $question_id',
-      { question_id: routeParams.question_id },
-    );
+    await sqldb.executeRow('UPDATE questions SET share_publicly = true WHERE id = $question_id', {
+      question_id: routeParams.question_id,
+    });
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE assessments SET share_source_publicly = true WHERE id = $assessment_id',
       { assessment_id: routeParams.assessment_id },
     );
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE course_instances SET share_source_publicly = true WHERE id = $course_instance_id',
       { course_instance_id: routeParams.course_instance_id },
     );
@@ -454,7 +472,7 @@ describe('accessibility', () => {
       IdSchema,
     );
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
       { sharing_name: 'test', course_id },
     );

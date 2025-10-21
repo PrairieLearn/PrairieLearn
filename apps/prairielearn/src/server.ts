@@ -33,7 +33,6 @@ import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
 import favicon from 'serve-favicon';
-import { v4 as uuidv4 } from 'uuid';
 
 import { cache } from '@prairielearn/cache';
 import { flashMiddleware } from '@prairielearn/flash';
@@ -73,6 +72,7 @@ import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
+import { assertNever } from './lib/types.js';
 import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
@@ -384,7 +384,7 @@ export async function initExpress(): Promise<Express> {
   // Middleware for all requests
   // response_id is logged on request, response, and error to link them together
   app.use(function (req, res, next) {
-    res.locals.response_id = uuidv4();
+    res.locals.response_id = crypto.randomUUID();
     res.set('X-Response-ID', res.locals.response_id);
     next();
   });
@@ -583,6 +583,12 @@ export async function initExpress(): Promise<Express> {
     res.redirect(`${req.params[0]}/instance_admin/assessments`);
   });
 
+  // API route for looking up a course instance by enrollment code
+  app.use(
+    '/pl/course_instance/lookup',
+    (await import('./pages/course_instance/lookup/lookupByEnrollmentCode.js')).default,
+  );
+
   // is the course instance being accessed through the student or instructor page route
   app.use('/pl/course_instance/:course_instance_id(\\d+)', function (req, res, next) {
     res.locals.viewType = 'student';
@@ -597,6 +603,15 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)',
     (await import('./middlewares/authzCourseOrInstance.js')).default,
+  );
+
+  // This must come after `authzCourseOrInstance` but before the
+  // `studentCourseInstanceUpgrade` middleware and the `requireEnrollmentCode` middleware.
+  // so that it can render it even when the student hasn't upgraded yet.
+  // Otherwise, we might ask the student to upgrade before they know the enrollment code.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/join',
+    (await import('./pages/enrollmentCodeRequired/enrollmentCodeRequired.js')).default,
   );
 
   if (isEnterprise()) {
@@ -618,6 +633,7 @@ export async function initExpress(): Promise<Express> {
 
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
+    (await import('./middlewares/requireEnrollmentCode.js')).default,
     await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
     await enterpriseOnly(
@@ -804,8 +820,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
-      res.locals.lti11_enabled =
-        config.hasLti && (await features.enabledFromLocals('lti11', res.locals));
+      res.locals.lti11_enabled = await features.enabledFromLocals('lti11', res.locals);
       next();
     }),
   );
@@ -1261,7 +1276,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorGradebook/instructorGradebook.js')).default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/student',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/enrollment',
     (await import('./pages/instructorStudentDetail/instructorStudentDetail.js')).default,
   );
   app.use(
@@ -1451,6 +1466,13 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/studentAssessmentInstance/studentAssessmentInstance.js')).default,
   );
 
+  // Perform auth for all student-facing instance question routes.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
+    (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
+    (await import('./middlewares/studentAssessmentAccess.js')).default,
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
@@ -1458,27 +1480,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
-  );
-
-  if (config.devMode) {
-    app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
-      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-    );
-    app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
-      (await import('./pages/jobSequence/jobSequence.js')).default,
-    );
-  }
-
-  // Global client files
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse',
-    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
-    (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
 
   // Client files for questions
@@ -1511,6 +1512,27 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/text',
     (await import('./pages/legacyQuestionText/legacyQuestionText.js')).default,
+  );
+
+  if (config.devMode) {
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
+      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
+    );
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
+      (await import('./pages/jobSequence/jobSequence.js')).default,
+    );
+  }
+
+  // Global client files
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse',
+    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
+    (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -1968,7 +1990,10 @@ export async function initExpress(): Promise<Express> {
   // if no earlier routes matched, this will match and generate a 404 error
   app.use((await import('./middlewares/notFound.js')).default);
 
-  app.use((await import('./middlewares/redirectEffectiveAccessDenied.js')).default);
+  app.use(
+    (await import('./middlewares/redirectEffectiveAccessDenied.js'))
+      .redirectEffectiveAccessDeniedErrorHandler,
+  );
 
   // This is not a true error handler; it just implements support for
   // "throwing" redirects.
@@ -2021,28 +2046,34 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
-let server: http.Server | https.Server;
+let server: http.Server | https.Server | undefined;
 let app: express.Express | undefined;
 
 export async function startServer(app: express.Express) {
-  if (config.serverType === 'https') {
-    const options: https.ServerOptions = {};
-    if (config.sslKeyFile) {
-      options.key = await fs.promises.readFile(config.sslKeyFile);
+  switch (config.serverType) {
+    case 'https': {
+      const options: https.ServerOptions = {};
+      if (config.sslKeyFile) {
+        options.key = await fs.promises.readFile(config.sslKeyFile);
+      }
+      if (config.sslCertificateFile) {
+        options.cert = await fs.promises.readFile(config.sslCertificateFile);
+      }
+      if (config.sslCAFile) {
+        options.ca = [await fs.promises.readFile(config.sslCAFile)];
+      }
+      server = https.createServer(options, app);
+      logger.verbose('server listening to HTTPS on port ' + config.serverPort);
+      break;
     }
-    if (config.sslCertificateFile) {
-      options.cert = await fs.promises.readFile(config.sslCertificateFile);
+    case 'http': {
+      server = http.createServer(app);
+      logger.verbose('server listening to HTTP on port ' + config.serverPort);
+      break;
     }
-    if (config.sslCAFile) {
-      options.ca = [await fs.promises.readFile(config.sslCAFile)];
+    default: {
+      assertNever(config.serverType);
     }
-    server = https.createServer(options, app);
-    logger.verbose('server listening to HTTPS on port ' + config.serverPort);
-  } else if (config.serverType === 'http') {
-    server = http.createServer(app);
-    logger.verbose('server listening to HTTP on port ' + config.serverPort);
-  } else {
-    throw new Error('unknown serverType: ' + config.serverType);
   }
 
   // Capture metrics about the server, including the number of active connections
@@ -2054,8 +2085,9 @@ export async function startServer(app: express.Express) {
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  // Hack to get us running in Bun, which doesn't currently support `getConnections`:
+  // @ts-expect-error: Hack to get us running in Bun, which doesn't currently support `getConnections`:
   // https://github.com/oven-sh/bun/issues/4459
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (server.getConnections) {
     opentelemetry.createObservableValueGauges(
       meter,
@@ -2066,7 +2098,7 @@ export async function startServer(app: express.Express) {
       },
       // @ts-expect-error TODO: type correctly
       () => {
-        return util.promisify(server.getConnections.bind(server))();
+        return util.promisify(server!.getConnections.bind(server))();
       },
     );
   }
@@ -2090,14 +2122,14 @@ export async function startServer(app: express.Express) {
   await new Promise((resolve, reject) => {
     let done = false;
 
-    server.on('error', (err) => {
+    server!.on('error', (err) => {
       if (!done) {
         done = true;
         reject(err);
       }
     });
 
-    server.on('listening', () => {
+    server!.on('listening', () => {
       if (!done) {
         done = true;
         resolve(null);
@@ -2138,7 +2170,7 @@ export async function insertDevUser() {
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
     ' ON CONFLICT (user_id) DO NOTHING;';
-  await sqldb.queryAsync(adminSql, { user_id });
+  await sqldb.execute(adminSql, { user_id });
 }
 
 function idleErrorHandler(err: Error) {
@@ -2151,7 +2183,7 @@ function idleErrorHandler(err: Error) {
       last_query: (err as any)?.data?.lastQuery ?? undefined,
     },
   });
-  Sentry.close().finally(() => process.exit(1));
+  void Sentry.close().finally(() => process.exit(1));
 }
 
 const isHMR = DEV_EXECUTION_MODE === 'hmr';
@@ -2178,7 +2210,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // If a config file was specified on the command line, we'll use that
     // instead of the default locations.
     if ('config' in argv) {
-      configPaths = [argv['config']];
+      configPaths = [argv.config];
     }
 
     // Load config immediately so we can use it configure everything else.
@@ -2320,15 +2352,47 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // `config.runMigrations`. This allows us to use the same config when
     // running migrations as we do when we start the server.
     if (config.runMigrations || argv['migrate-and-exit']) {
-      await migrations.init(
-        [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-        'prairielearn',
-      );
+      await migrations.init({
+        directories: [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
+        project: 'prairielearn',
+      });
+    }
 
-      if (argv['migrate-and-exit']) {
-        logger.info('option --migrate-and-exit passed, running DB setup and exiting');
-        process.exit(0);
-      }
+    // We create and activate a random DB schema name
+    // (https://www.postgresql.org/docs/current/ddl-schemas.html)
+    // after we have run the migrations but before we create
+    // the sprocs. This means all tables (from migrations) are
+    // in the public schema, but all sprocs are in the random
+    // schema. Every server invocation thus has its own copy
+    // of its sprocs, allowing us to update servers while old
+    // servers are still running. See docs/dev-guide/guide.md for
+    // more info.
+    //
+    // We use the combination of instance ID and port number to uniquely
+    // identify each server; in some cases, we're running multiple instances
+    // on the same physical host.
+    //
+    // The schema prefix should not exceed 28 characters; this is due to
+    // the underlying Postgres limit of 63 characters for schema names.
+    // Currently, EC2 instance IDs are 19 characters long, and we use
+    // 4-digit port numbers, so this will be safe (19+1+4=24). If either
+    // of those ever get longer, we have a little wiggle room. Nonetheless,
+    // we'll check to make sure we don't exceed the limit and fail fast if
+    // we do.
+    const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
+    if (schemaPrefix.length > 28) {
+      throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
+    }
+    if (config.devMode && !argv['migrate-and-exit']) {
+      await sqldb.clearSchemasStartingWith(schemaPrefix);
+    }
+
+    await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
+    await sprocs.init();
+
+    if (argv['migrate-and-exit']) {
+      logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+      process.exit(0);
     }
 
     // Collect metrics on our Postgres connection pools.
@@ -2403,34 +2467,6 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       () => codeCaller.getMetrics().pending,
     );
 
-    // We create and activate a random DB schema name
-    // (https://www.postgresql.org/docs/current/ddl-schemas.html)
-    // after we have run the migrations but before we create
-    // the sprocs. This means all tables (from migrations) are
-    // in the public schema, but all sprocs are in the random
-    // schema. Every server invocation thus has its own copy
-    // of its sprocs, allowing us to update servers while old
-    // servers are still running. See docs/dev-guide.md for
-    // more info.
-    //
-    // We use the combination of instance ID and port number to uniquely
-    // identify each server; in some cases, we're running multiple instances
-    // on the same physical host.
-    //
-    // The schema prefix should not exceed 28 characters; this is due to
-    // the underlying Postgres limit of 63 characters for schema names.
-    // Currently, EC2 instance IDs are 19 characters long, and we use
-    // 4-digit port numbers, so this will be safe (19+1+4=24). If either
-    // of those ever get longer, we have a little wiggle room. Nonetheless,
-    // we'll check to make sure we don't exceed the limit and fail fast if
-    // we do.
-    const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
-    if (schemaPrefix.length > 28) {
-      throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
-    }
-    await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
-    await sprocs.init();
-
     if (config.runBatchedMigrations) {
       // Now that all migrations have been run, we can start executing any
       // batched migrations that may have been enqueued by migrations.
@@ -2462,7 +2498,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     if (config.initNewsItems) {
       // We initialize news items asynchronously so that servers can boot up
       // in production as quickly as possible.
-      news_items.initInBackground({
+      void news_items.initInBackground({
         // Always notify in production environments.
         notifyIfPreviouslyEmpty: !config.devMode,
       });
@@ -2494,13 +2530,13 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     app = await initExpress();
     const httpServer = await startServer(app);
 
-    await socketServer.init(httpServer);
+    socketServer.init(httpServer);
 
     externalGradingSocket.init();
     externalGrader.init();
     externalImageCaptureSocket.init();
 
-    await workspace.init();
+    workspace.init();
     serverJobs.init();
 
     if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
@@ -2596,7 +2632,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
   await socketServer.close();
   app = await initExpress();
   const httpServer = await startServer(app);
-  await socketServer.init(httpServer);
+  socketServer.init(httpServer);
 }
 
 /**

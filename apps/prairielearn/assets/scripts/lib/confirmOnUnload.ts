@@ -3,6 +3,7 @@ function getQuestionFormData(form: HTMLFormElement): string {
   // see https://github.com/microsoft/TypeScript/issues/30584
   const formData = new URLSearchParams(new FormData(form) as any);
   formData.delete('__csrf_token');
+  formData.delete('__variant_id');
   form.querySelectorAll<HTMLInputElement>('[data-skip-unload-check]').forEach((input) => {
     if (input.name) formData.delete(input.name);
   });

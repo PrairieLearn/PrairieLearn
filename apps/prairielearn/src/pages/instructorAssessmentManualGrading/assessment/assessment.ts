@@ -6,8 +6,8 @@ import { stringify } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRows,
   runInTransactionAsync,
@@ -16,10 +16,10 @@ import {
 import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
-import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
@@ -107,7 +107,7 @@ router.post(
         // number of instances as the others, and that is expected.
         const numInstancesPerGrader = Math.ceil(numInstancesToGrade / assignedGraderIds.length);
         for (const graderId of assignedGraderIds) {
-          await queryAsync(sql.update_instance_question_graders, {
+          await execute(sql.update_instance_question_graders, {
             assessment_id: res.locals.assessment.id,
             unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
             assigned_grader: graderId,

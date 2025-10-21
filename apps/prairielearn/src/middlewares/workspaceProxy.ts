@@ -7,10 +7,10 @@ import type * as httpProxyMiddleware from 'http-proxy-middleware';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { queryOneRowAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { WorkspaceSchema } from '../lib/db-types.js';
+import { QuestionSchema, WorkspaceSchema } from '../lib/db-types.js';
 import { LocalCache } from '../lib/local-cache.js';
 
 /**
@@ -76,6 +76,7 @@ function getRequestPath(req: Request): string {
   // `req.originalUrl` won't be defined for websocket requests, but for
   // non-websocket requests, `req.url` won't contain the full path. So we
   // need to handle both.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   return req.originalUrl ?? req.url;
 }
 
@@ -108,8 +109,9 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
             ' FROM questions AS q' +
             ' JOIN variants AS v ON (v.question_id = q.id)' +
             ' WHERE v.workspace_id = $workspace_id;';
-          const result = await queryOneRowAsync(sql, { workspace_id });
-          workspace_url_rewrite = result.rows[0].workspace_url_rewrite ?? true;
+          workspace_url_rewrite =
+            (await queryRow(sql, { workspace_id }, QuestionSchema.shape.workspace_url_rewrite)) ??
+            true;
           workspaceUrlRewriteCache.set(workspace_id, workspace_url_rewrite);
         }
 

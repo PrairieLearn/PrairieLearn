@@ -1,11 +1,14 @@
 /* eslint perfectionist/sort-objects: error */
 // @ts-check
+import path from 'path';
+
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
 import html from '@html-eslint/eslint-plugin';
 import htmlParser from '@html-eslint/parser';
 import stylistic from '@stylistic/eslint-plugin';
+import pluginQuery from '@tanstack/eslint-plugin-query';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -108,6 +111,7 @@ export default tseslint.config([
       '@html-eslint': html,
       '@prairielearn': prairielearn,
       '@stylistic': stylistic,
+      '@tanstack/query': pluginQuery,
       perfectionist,
       unicorn: eslintPluginUnicorn,
     },
@@ -183,6 +187,7 @@ export default tseslint.config([
       'no-useless-concat': 'off', // TODO: Consider enabling this
       'no-useless-constructor': 'off',
       'no-useless-return': 'off', // TODO: Consider enabling this
+      'no-void': 'off', // https://typescript-eslint.io/rules/no-floating-promises/#ignorevoid
       'no-warning-comments': 'off',
       'object-shorthand': 'error',
       'one-var': ['off', 'never'], // TODO: Consider enabling this
@@ -285,7 +290,7 @@ export default tseslint.config([
       '@eslint-react/no-forbidden-props': [
         'error',
         {
-          forbid: ['className', '/_/'],
+          forbid: ['className', 'htmlFor', '/_/'],
         },
       ],
 
@@ -396,19 +401,6 @@ export default tseslint.config([
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
       '@prairielearn/no-unused-sql-blocks': 'error',
 
-      '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
-
-      // We use empty functions in quite a few places, so we'll disable this rule.
-      '@typescript-eslint/no-empty-function': 'off',
-
-      // Look, sometimes we just want to use `any`.
-      '@typescript-eslint/no-explicit-any': 'off',
-
-      // This was enabled when we upgraded to `@typescript-eslint/*` v6.
-      // TODO: fix the violations so we can enable this rule.
-      '@typescript-eslint/no-dynamic-delete': 'off',
-
-      // Replaces the standard `no-unused-vars` rule.
       '@stylistic/jsx-curly-brace-presence': [
         'error',
         { children: 'never', propElementValues: 'always', props: 'never' },
@@ -448,17 +440,39 @@ export default tseslint.config([
         { exceptAfterSingleLine: true },
       ],
       '@stylistic/no-tabs': 'error',
-      '@typescript-eslint/no-unused-vars': [
+      '@stylistic/padding-line-between-statements': [
         'error',
-        {
-          args: 'after-used',
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-        },
+        { blankLine: 'always', next: 'function', prev: '*' },
+        { blankLine: 'always', next: '*', prev: 'import' },
+        { blankLine: 'any', next: 'import', prev: 'import' },
       ],
       // Blocks double-quote strings (unless a single quote is present in the
       // string) and backticks (unless there is a tag or substitution in place).
       '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
+
+      '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
+      // We use empty functions in quite a few places, so we'll disable this rule.
+      '@typescript-eslint/no-empty-function': 'off',
+      // Look, sometimes we just want to use `any`.
+      '@typescript-eslint/no-explicit-any': 'off',
+      // This was enabled when we upgraded to `@typescript-eslint/*` v6.
+      // TODO: fix the violations so we can enable this rule.
+      '@typescript-eslint/no-dynamic-delete': 'off',
+      // We use `!` to assert that a value is not `null` or `undefined`.
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      // Replaces the standard `no-unused-vars` rule.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'after-used',
+          argsIgnorePattern: '^_', // Args can be _
+          varsIgnorePattern: '^_.', // This includes lodash, which should be considered
+        },
+      ],
+
+      // https://github.com/TanStack/query/blob/6402d756b702ac560b69a5ce84d6e4e764b96451/packages/eslint-plugin-query/src/index.ts#L43
+      ...pluginQuery.configs['flat/recommended'][0].rules,
+      '@tanstack/query/no-rest-destructuring': 'error',
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
@@ -550,6 +564,90 @@ export default tseslint.config([
     },
   },
   {
+    // We only include apps/prairielearn for performance reasons.
+    extends: [
+      tseslint.configs.recommendedTypeCheckedOnly,
+      tseslint.configs.stylisticTypeCheckedOnly,
+    ],
+    files: ['apps/prairielearn/**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['vite.config.ts', 'vitest.config.ts'],
+        },
+        tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/no-invalid-void-type': [
+        'error',
+        {
+          allowAsThisParameter: true,
+        },
+      ],
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      // Some functions are required to be async, but don't actually use any async code.
+      '@typescript-eslint/require-await': 'off',
+      // We don't always check that we got a error when a promise is rejected.
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+
+        {
+          checksConditionals: true,
+          checksSpreads: true,
+          checksVoidReturn: {
+            // Common usage with `async` functions
+            arguments: false,
+            // Common usage with `async` onClick handlers
+            attributes: false,
+            inheritedMethods: true,
+            // Common usage with e.g. setState
+            properties: false,
+            returns: true,
+            variables: true,
+          },
+        },
+      ],
+      '@typescript-eslint/no-unnecessary-condition': [
+        'error',
+        { allowConstantLoopConditions: 'only-allowed-literals' },
+      ],
+      '@typescript-eslint/only-throw-error': [
+        'error',
+        {
+          allow: [
+            {
+              from: 'file',
+              name: 'HttpRedirect',
+            },
+          ],
+          allowRethrowing: true,
+          allowThrowingAny: true,
+          allowThrowingUnknown: true,
+        },
+      ],
+      '@typescript-eslint/prefer-nullish-coalescing': 'off', // TODO: enable
+      '@typescript-eslint/prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/prefer-regexp-exec': 'off',
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        {
+          allow: [{ from: 'lib', name: ['Error', 'URL', 'URLSearchParams'] }],
+          allowAny: true,
+          allowBoolean: true,
+          allowNullish: true,
+          allowNumber: true,
+          allowRegExp: true,
+        },
+      ],
+    },
+  },
+  {
     files: ['apps/prairielearn/assets/scripts/**/*', 'apps/prairielearn/elements/**/*.js'],
     languageOptions: {
       globals: {
@@ -568,6 +666,23 @@ export default tseslint.config([
     files: ['apps/prairielearn/src/tests/**/*', 'scripts/**/*', 'contrib/**/*'],
     rules: {
       'no-console': 'off',
+    },
+  },
+  {
+    files: ['apps/prairielearn/src/models/**/*'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/safe-db-types.js'],
+              message:
+                'Import from db-types instead of safe-db-types in the models directory. Otherwise, this code should live in the lib directory.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

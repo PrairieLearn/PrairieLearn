@@ -64,14 +64,13 @@ export const parseAsSortingState = createParser<SortingState>({
       .filter((v): v is { id: string; desc: boolean } => !!v);
   },
   serialize(value) {
-    if (!value || value.length === 0) return '';
+    if (value.length === 0) return '';
     return value
       .filter((v) => v.id)
       .map((v) => `${v.id}:${v.desc ? 'desc' : 'asc'}`)
       .join(',');
   },
   eq(a, b) {
-    if (!a || !b) return a === b;
     return (
       a.length === b.length &&
       a.every((item, index) => item.id === b[index].id && item.desc === b[index].desc)
@@ -99,7 +98,6 @@ export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
       return result;
     },
     serialize(value) {
-      if (!value) return '';
       // Only output columns that are visible
       const visible = allColumns.filter((col) => value[col]);
       if (visible.length === allColumns.length) return '';
@@ -132,7 +130,7 @@ export const parseAsColumnPinningState = createParser<ColumnPinningState>({
     };
   },
   serialize(value) {
-    if (!value || !value.left) return '';
+    if (!value.left) return '';
     return value.left.join(',');
   },
   eq(a, b) {

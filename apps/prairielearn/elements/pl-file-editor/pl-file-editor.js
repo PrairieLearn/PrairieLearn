@@ -64,16 +64,16 @@ window.PLFileEditor = function (uuid, options) {
 
   this.plOptionFocus = options.plOptionFocus;
 
-  if (options.preview) {
-    this.editor.session.on('change', () => this.updatePreview(options.preview));
-    this.updatePreview(options.preview);
-  }
-
   let currentContents = '';
   if (options.currentContents) {
     currentContents = this.b64DecodeUnicode(options.currentContents);
   }
-  this.setEditorContents(currentContents);
+  this.setEditorContents(currentContents, { resetUndo: true });
+
+  if (options.preview) {
+    this.editor.session.on('change', () => this.updatePreview(options.preview));
+    this.updatePreview(options.preview);
+  }
 
   this.syncSettings();
 
@@ -103,13 +103,6 @@ window.PLFileEditor.prototype.syncSettings = function () {
 };
 
 window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
-  const editor_value = this.editor.getValue();
-  const default_preview_text = '<p>Begin typing above to preview</p>';
-  const html_contents = editor_value
-    ? ((await Promise.resolve(this.preview[preview_type]?.(editor_value))) ??
-      `<p>Unknown preview type: <code>${preview_type}</code></p>`)
-    : '';
-
   /** @type {HTMLElement} */
   const preview = this.element.find('.preview')[0];
   let shadowRoot = preview.shadowRoot;
@@ -127,6 +120,14 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       shadowRoot.adoptedStyleSheets.push(style);
     }
   }
+
+  const editor_value = this.editor.getValue();
+  const default_preview_text = '<p>Begin typing above to preview</p>';
+  const html_contents = editor_value
+    ? ((await Promise.resolve(this.preview[preview_type]?.(editor_value))) ??
+      `<p>Unknown preview type: <code>${preview_type}</code></p>`)
+    : '';
+
   if (html_contents.trim().length === 0) {
     shadowRoot.innerHTML = default_preview_text;
   } else {
@@ -268,8 +269,15 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
   });
 };
 
-window.PLFileEditor.prototype.setEditorContents = function (contents) {
-  this.editor.setValue(contents);
+window.PLFileEditor.prototype.setEditorContents = function (contents, { resetUndo = false } = {}) {
+  if (resetUndo) {
+    // Setting the value of the session causes the undo manager to be reset.
+    // https://github.com/ajaxorg/ace/blob/35e1be52fd8172405cf0f219bab1ef7571b3363f/src/edit_session.js#L321-L328
+    this.editor.session.setValue(contents);
+  } else {
+    // Using setValue directly adds the change to the undo manager.
+    this.editor.setValue(contents);
+  }
   this.editor.gotoLine(1, 0);
   if (this.plOptionFocus) {
     this.editor.focus();

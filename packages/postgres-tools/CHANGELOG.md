@@ -1,5 +1,21 @@
 # @prairielearn/postgres-tools
 
+## 2.0.25
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/postgres@4.4.1
+
+## 2.0.24
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+- Updated dependencies [f571b40]
+  - @prairielearn/postgres@4.1.1
+
 ## 2.0.23
 
 ### Patch Changes

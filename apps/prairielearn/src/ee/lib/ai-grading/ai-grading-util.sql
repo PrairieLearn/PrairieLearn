@@ -27,12 +27,24 @@ RETURNING
 
 -- BLOCK select_instance_questions_for_assessment_question
 SELECT
-  *
+  iq.*
 FROM
   instance_questions AS iq
+  JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
 WHERE
   iq.assessment_question_id = $assessment_question_id
-  AND iq.status != 'unanswered';
+  AND iq.status != 'unanswered'
+  AND (
+    NOT $closed_instance_questions_only
+    OR ai.open = FALSE
+  )
+  AND (
+    NOT $ungrouped_instance_questions_only
+    OR (
+      iq.ai_instance_question_group_id IS NULL
+      AND iq.manual_instance_question_group_id IS NULL
+    )
+  );
 
 -- BLOCK insert_ai_grading_job
 INSERT INTO
@@ -85,7 +97,7 @@ WITH
       iq.id AS iq_id,
       iq.score_perc AS iq_score_perc,
       s.feedback,
-      s.is_ai_graded AS is_ai_graded,
+      s.is_ai_graded,
       s.manual_rubric_grading_id AS s_manual_rubric_grading_id,
       ROW_NUMBER() OVER (
         PARTITION BY
@@ -182,7 +194,7 @@ WITH
   most_recent_submission_manual_grading_jobs AS (
     SELECT DISTINCT
       ON (s.id) s.id AS submission_id,
-      gj.manual_rubric_grading_id AS manual_rubric_grading_id
+      gj.manual_rubric_grading_id
     FROM
       deleted_grading_jobs AS dgj
       JOIN variants AS v ON (v.instance_question_id = dgj.instance_question_id)
@@ -191,7 +203,7 @@ WITH
     WHERE
       gj.grading_method = 'Manual'
     ORDER BY
-      s.id,
+      s.id ASC,
       gj.date DESC,
       gj.id DESC
   ),
@@ -207,7 +219,7 @@ WITH
     WHERE
       gj.grading_method != 'AI'
     ORDER BY
-      s.id,
+      s.id ASC,
       gj.date DESC,
       gj.id DESC
   ),
@@ -244,7 +256,7 @@ WITH
     WHERE
       gj.grading_method = 'Manual'
     ORDER BY
-      iq.id,
+      iq.id ASC,
       gj.date DESC,
       gj.id DESC
   ),
@@ -273,12 +285,7 @@ WITH
       -- requires manual grading. This both helps ensure that it eventually gets graded, and
       -- also ensures that this submission isn't erroneously picked up when we're looking for
       -- similar submissions for RAG.
-      requires_manual_grading = (
-        CASE
-          WHEN mriqmgj.id IS NULL THEN TRUE
-          ELSE FALSE
-        END
-      )
+      requires_manual_grading = (coalesce(mriqmgj.id IS NULL, FALSE))
     FROM
       deleted_grading_jobs AS dgj
       JOIN assessment_questions AS aq ON (aq.id = dgj.assessment_question_id)

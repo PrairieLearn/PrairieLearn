@@ -1,4 +1,5 @@
 import assert from 'assert';
+import url from 'node:url';
 
 import { type Request, type Response, Router } from 'express';
 
@@ -19,8 +20,6 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
-import selectAndAuthzInstanceQuestion from '../../middlewares/selectAndAuthzInstanceQuestion.js';
-import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -30,10 +29,27 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const router = Router({ mergeParams: true });
 
-router.use(selectAndAuthzInstanceQuestion);
-router.use(studentAssessmentAccess);
-router.use(clientFingerprint);
 router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
+router.use((req, res, next) => {
+  // We deliberately use `url` instead of `originalUrl`. The former is relative to
+  // where this router is mounted, while the latter is absolute to the app.
+  const pathname = url.parse(req.url).pathname ?? '/';
+
+  // Because this router is mounted a general path, its middleware will also
+  // be run for sub-routes like `submissions/:submission_id/file/:filename`
+  // and `clientFilesQuestion/:filename`.
+  //
+  // We only want to run this middleware for requests to the main page itself,
+  // as that's the only page that will record log entries with fingerprints. It
+  // would be confusing if the fingerprint change count was incremented without
+  // a corresponding log entry.
+  if (pathname !== '/') {
+    next();
+    return;
+  }
+
+  clientFingerprint(req, res, next);
+});
 
 async function processFileUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
@@ -186,8 +202,11 @@ router.post(
             'Time limit is expired, please go back and finish your assessment',
           );
         }
-        if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
-          throw new HttpStatusError(403, 'Real-time grading is not allowed for this assessment');
+        if (
+          req.body.__action === 'grade' &&
+          !res.locals.assessment_question.allow_real_time_grading
+        ) {
+          throw new HttpStatusError(403, 'Real-time grading is not allowed for this question');
         }
       }
       const variant_id = await validateAndProcessSubmission(req, res);
@@ -207,18 +226,17 @@ router.post(
         return res.redirect(req.originalUrl);
       }
 
-      const requireOpen = true;
-      const closeExam = true;
-      const overrideGradeRate = false;
-      await gradeAssessmentInstance(
-        res.locals.assessment_instance.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        requireOpen,
-        closeExam,
-        overrideGradeRate,
-        res.locals.client_fingerprint_id,
-      );
+      await gradeAssessmentInstance({
+        assessment_instance_id: res.locals.assessment_instance.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        requireOpen: true,
+        close: true,
+        ignoreGradeRateLimit: false,
+        ignoreRealTimeGradingDisabled: false,
+        client_fingerprint_id: res.locals.client_fingerprint_id,
+      });
+
       res.redirect(
         `${res.locals.urlPrefix}/assessment_instance/${res.locals.assessment_instance.id}?timeLimitExpired=true`,
       );

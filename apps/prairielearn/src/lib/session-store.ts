@@ -1,5 +1,5 @@
 import * as opentelemetry from '@prairielearn/opentelemetry';
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { type SessionStore } from '@prairielearn/session';
 
 import { UserSessionSchema } from './db-types.js';
@@ -27,7 +27,7 @@ export class PostgresSessionStore implements SessionStore {
   async set(session_id: string, data: any, expires_at: Date) {
     this.setCounter.add(1);
 
-    await queryAsync(sql.set_session, {
+    await execute(sql.set_session, {
       session_id,
       data: JSON.stringify(data),
       expires_at,
@@ -53,6 +53,6 @@ export class PostgresSessionStore implements SessionStore {
   async destroy(session_id: string) {
     this.destroyCounter.add(1);
 
-    await queryAsync(sql.destroy_session, { session_id });
+    await execute(sql.destroy_session, { session_id });
   }
 }
