@@ -37,7 +37,9 @@ def generate(data):
         # To make an executable file, set the mode to 0o755
         {
             "name": "run_tests.sh",
-            "contents": "#!/bin/bash\necho 'Running tests...'\necho 'Random value: {}'".format(data["params"]["random_value"]),
+            "contents": "#!/bin/bash\necho 'Running tests...'\necho 'Random value: {}'".format(
+                data["params"]["random_value"]
+            ),
             "mode": 0o755,
         },
     ]
