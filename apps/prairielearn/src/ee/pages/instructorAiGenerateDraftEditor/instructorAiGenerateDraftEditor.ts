@@ -328,19 +328,6 @@ router.post(
     assertCanCreateQuestion(res.locals);
 
     if (req.body.__action === 'save_question') {
-      const prompts = await queryRows(
-        sql.select_ai_question_generation_prompts,
-        {
-          question_id: question.id,
-          course_id: res.locals.course.id,
-        },
-        AiQuestionGenerationPromptSchema,
-      );
-
-      if (prompts.length === 0) {
-        throw new error.HttpStatusError(403, 'Prompt history not found.');
-      }
-
       const client = getCourseFilesClient();
 
       // TODO: this needs to handle updating the question title as well.

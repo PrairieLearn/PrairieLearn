@@ -17,7 +17,7 @@ export const renameQuestion = privateProcedure
       question_id: IdSchema,
 
       // Question data.
-      qid: IdSchema,
+      qid: z.string(),
     }),
   )
   .output(
