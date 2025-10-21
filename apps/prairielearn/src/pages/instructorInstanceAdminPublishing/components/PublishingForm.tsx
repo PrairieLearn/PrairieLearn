@@ -20,7 +20,7 @@ import { PublishingExtensions } from './PublishingExtensions.js';
 // Create QueryClient outside component to ensure stability
 const queryClient = new QueryClient();
 
-type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published' | 'archived';
+type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
 
 /** Helper to compute status from dates and current time. */
 function computeStatus(
@@ -36,7 +36,7 @@ function computeStatus(
 
   if (publishDate && archiveDate) {
     if (archiveDate <= now) {
-      return 'archived';
+      return 'unpublished';
     }
     if (publishDate > now) {
       return 'publish_scheduled';
@@ -106,14 +106,18 @@ export function PublishingForm({
   const publishDate = watch('publishDate');
   const archiveDate = watch('archiveDate');
 
+  const getNow = () => {
+    return Temporal.Now.plainDateTimeISO(courseInstance.display_timezone).round({
+      smallestUnit: 'seconds',
+    });
+  };
+
   // Update form values when status changes
   const handleStatusChange = (newStatus: PublishingStatus) => {
     setSelectedStatus(newStatus);
 
     // "Now" must be rounded to the nearest second, as that's what `datetime-local` supports.
-    const now = Temporal.Now.plainDateTimeISO(courseInstance.display_timezone).round({
-      smallestUnit: 'seconds',
-    });
+    const now = getNow();
 
     const oneWeekLater = now.add({ weeks: 1 });
     const eighteenWeeksLater = now.add({ weeks: 18 });
@@ -127,8 +131,15 @@ export function PublishingForm({
 
     switch (newStatus) {
       case 'unpublished': {
-        updatedPublishDate = null;
-        updatedArchiveDate = null;
+        // If the form was previously saved,
+        // we need to set the publish date to null and the archive date to now
+        if (originalArchiveDate !== null) {
+          updatedPublishDate = null;
+          updatedArchiveDate = now;
+        } else {
+          updatedPublishDate = null;
+          updatedArchiveDate = null;
+        }
         break;
       }
       case 'publish_scheduled': {
@@ -160,17 +171,6 @@ export function PublishingForm({
           Temporal.PlainDateTime.compare(currentArchiveDate, now) <= 0
         ) {
           updatedArchiveDate = eighteenWeeksLater;
-        }
-        break;
-      }
-      case 'archived': {
-        updatedArchiveDate = now;
-        if (
-          currentPublishDate !== null &&
-          Temporal.PlainDateTime.compare(currentPublishDate, now) > 0
-        ) {
-          const oneWeekAgo = now.add({ weeks: -1 });
-          updatedPublishDate = oneWeekAgo;
         }
         break;
       }
@@ -321,7 +321,28 @@ export function PublishingForm({
               </div>
               {selectedStatus === 'unpublished' && (
                 <div class="ms-4 mt-1 small text-muted">
-                  Course is not accessible by any students.
+                  Course is not accessible by any students
+                  {publishDate && ' except those with extensions'}.
+                  {archiveDate && (
+                    <>
+                      <br />
+                      The course{' '}
+                      {Temporal.PlainDateTime.compare(
+                        Temporal.PlainDateTime.from(archiveDate),
+                        getNow(),
+                      ) <= 0
+                        ? 'was'
+                        : 'will be'}{' '}
+                      unpublished at{' '}
+                      <FriendlyDate
+                        date={Temporal.PlainDateTime.from(archiveDate)}
+                        timezone={courseInstance.display_timezone}
+                        tooltip={true}
+                        options={{ timeFirst: true }}
+                      />
+                      .
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -528,42 +549,6 @@ export function PublishingForm({
                 </div>
               )}
             </div>
-
-            {/* Archived */}
-            <div class="mb-3">
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="radio"
-                  name="status"
-                  id="status-archived"
-                  value="archived"
-                  checked={selectedStatus === 'archived'}
-                  disabled={!canEdit}
-                  onChange={(e) => {
-                    const target = e.target as HTMLInputElement;
-                    if (target.checked) {
-                      handleStatusChange('archived');
-                    }
-                  }}
-                />
-                <label class="form-check-label" for="status-archived">
-                  Archived
-                </label>
-              </div>
-              {selectedStatus === 'archived' && archiveDate && (
-                <div class="ms-4 mt-1 small text-muted">
-                  The course {currentStatus === 'archived' ? 'was' : 'will be'} archived at{' '}
-                  <FriendlyDate
-                    date={Temporal.PlainDateTime.from(archiveDate)}
-                    timezone={courseInstance.display_timezone}
-                    tooltip={true}
-                    options={{ timeFirst: true }}
-                  />
-                  .
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Save and Cancel Buttons */}
@@ -586,7 +571,7 @@ export function PublishingForm({
         </form>
 
         {/* Access Control Extensions Section */}
-        {selectedStatus !== 'unpublished' && (
+        {publishDate && (
           <>
             <hr class="my-4" />
             <QueryClientProviderDebug client={queryClient} isDevMode={false}>
