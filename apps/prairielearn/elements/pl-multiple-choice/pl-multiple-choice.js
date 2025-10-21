@@ -8,6 +8,9 @@ window.PLMultipleChoice = function (uuid) {
     plugins: ['no_backspace_delete', 'dropdown_input'],
     allowEmptyOption: true,
 
+    // Append dropdown to body to prevent overflow clipping by parent containers
+    dropdownParent: 'body',
+
     // Search based on the `content` field, which comes from the `data-content`
     // attribute on each option.
     searchField: ['content'],
@@ -27,17 +30,29 @@ window.PLMultipleChoice = function (uuid) {
         return `<div class="${data.disabled ? 'text-muted' : ''}">${data.content}</div>`;
       },
     },
+
+    onDropdownOpen: (dropdown) => {
+      // Ensure the height of the dropdown is constrained to the viewport.
+      const content = dropdown.querySelector('.ts-dropdown-content');
+      content.style.maxHeight = `${window.innerHeight - content.getBoundingClientRect().top}px`;
+
+      // The first time the dropdown is opened, this event is fired before the
+      // options are actually present in the DOM. We'll wait for the next tick
+      // to ensure that the options are present.
+      setTimeout(() => MathJax.typesetPromise([dropdown]), 0);
+    },
+
+    onDropdownClose: () => {
+      // In case the dropdown items contain math, render it when the
+      // dropdown is opened or closed.
+      MathJax.typesetPromise([container]);
+    },
   });
 
-  // In case the dropdown items contain math, render it when the
-  // dropdown is opened or closed.
-  select.on('dropdown_open', () => {
-    // The first time the dropdown is opened, this even is fired before the
-    // options are actually present in the DOM. We'll wait for the next tick
-    // to ensure that the options are present.
-    setTimeout(() => MathJax.typesetPromise([container]), 0);
-  });
-  select.on('dropdown_close', () => MathJax.typesetPromise([container]));
+  // Reposition the dropdown when the main container is scrolled.
+  selectElement
+    .closest('.app-main-container')
+    .addEventListener('scroll', () => select.positionDropdown());
 
   // By default, `tom-select` will set the placeholder as the "active" option,
   // but this means that the active option can't be changed with the up/down keys
