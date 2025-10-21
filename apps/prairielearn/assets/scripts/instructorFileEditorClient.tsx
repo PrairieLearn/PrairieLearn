@@ -316,11 +316,7 @@ class InstructorFileEditor {
     const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement);
     modal.show();
 
-    // Remove any existing event listeners by cloning the button
-    const newConfirmButton = confirmButton.cloneNode(true) as HTMLButtonElement;
-    confirmButton.parentNode!.replaceChild(newConfirmButton, confirmButton);
-
-    newConfirmButton.addEventListener('click', () => {
+    confirmButton.addEventListener('click', () => {
       modal.hide();
       this.confirmedSave = true;
       this.saveElement!.click();
