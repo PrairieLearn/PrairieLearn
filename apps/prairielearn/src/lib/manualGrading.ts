@@ -10,7 +10,7 @@ import { run } from '@prairielearn/run';
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
-import { computeAssessmentInstanceScore } from './assessment.js';
+import { computeAssessmentInstanceScore } from './assessment-grading.js';
 import {
   type AssessmentQuestion,
   AssessmentQuestionSchema,

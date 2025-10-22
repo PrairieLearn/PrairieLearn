@@ -5,7 +5,8 @@ import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prair
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
-import { computeAssessmentInstanceScore, updateAssessmentInstance } from './assessment.js';
+import { computeAssessmentInstanceScore } from './assessment-grading.js';
+import { updateAssessmentInstance } from './assessment.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,

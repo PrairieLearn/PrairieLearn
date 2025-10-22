@@ -6,9 +6,9 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
+import { computeAssessmentInstanceScore } from './assessment-grading.js';
 import {
   type Assessment,
   type AssessmentInstance,
@@ -18,7 +18,6 @@ import {
   DateFromISOString,
   IdSchema,
   QuestionSchema,
-  SubmissionSchema,
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
@@ -49,14 +48,6 @@ export const InstanceLogSchema = z.object({
   instructor_question_number: z.string().nullable(),
 });
 export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
-
-const AssessmentInstanceZonePointsSchema = z.object({
-  zid: IdSchema,
-  points: z.number(),
-  iq_ids: IdSchema.array(),
-  max_points: z.number(),
-  max_iq_ids: IdSchema.array(),
-});
 
 /**
  * Check that an assessment_instance_id really belongs to the given assessment_id
@@ -227,71 +218,6 @@ export async function updateAssessmentInstance(
     await ltiOutcomes.updateScore(assessment_instance_id);
   }
   return updated;
-}
-
-export async function computeAssessmentInstanceScore({
-  assessment_instance_id,
-  authn_user_id,
-  credit = null,
-  onlyLogIfScoreUpdated = false,
-  allowDecrease = false,
-}: {
-  assessment_instance_id: string;
-  authn_user_id: string | null;
-  credit?: number | null;
-  onlyLogIfScoreUpdated?: boolean;
-  allowDecrease?: boolean;
-}): Promise<{ updated: boolean; points: number; score_perc: number }> {
-  const assessmentInstance = await selectAssessmentInstanceById(assessment_instance_id);
-
-  if (credit == null) {
-    // If credit was not explicitly set, fetch it from the last submission.
-    credit =
-      (await sqldb.queryOptionalRow(
-        sql.select_credit_of_last_submission,
-        { assessment_instance_id },
-        SubmissionSchema.shape.credit,
-      )) ?? 0;
-  }
-
-  const pointsByZone = await sqldb.callRows(
-    'assessment_instances_points',
-    [assessment_instance_id],
-    AssessmentInstanceZonePointsSchema,
-  );
-  const instanceQuestionsUsedForGrade = pointsByZone.flatMap((zone) => zone.iq_ids);
-  const totalPoints = pointsByZone.reduce((sum, zone) => sum + zone.points, 0);
-
-  // compute the score in points, maxing out at max_points + max_bonus_points
-  const points = Math.min(
-    totalPoints,
-    (assessmentInstance.max_points ?? 0) + (assessmentInstance.max_bonus_points ?? 0),
-  );
-
-  // compute the score as a percentage, applying credit bonus/limits
-  let score_perc = (points * 100) / (assessmentInstance.max_points || 1);
-  if (credit < 100) {
-    score_perc = Math.min(score_perc, credit);
-  } else if (credit > 100 && points >= assessmentInstance.max_points!) {
-    score_perc = (credit * score_perc) / 100;
-  }
-  if (!allowDecrease) {
-    score_perc = Math.max(score_perc, assessmentInstance.score_perc ?? 0);
-  }
-
-  const updated =
-    points !== assessmentInstance.points || score_perc !== assessmentInstance.score_perc;
-
-  await sqldb.execute(sql.update_assessment_instance_grade, {
-    assessment_instance_id,
-    points,
-    score_perc,
-    authn_user_id,
-    insert_log: updated || !onlyLogIfScoreUpdated,
-    instance_questions_used_for_grade: instanceQuestionsUsedForGrade,
-  });
-
-  return { updated, points, score_perc };
 }
 
 /**

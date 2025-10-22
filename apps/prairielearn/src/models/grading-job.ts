@@ -8,7 +8,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { computeAssessmentInstanceScore } from '../lib/assessment.js';
+import { computeAssessmentInstanceScore } from '../lib/assessment-grading.js';
 import {
   type GradingJob,
   GradingJobSchema,

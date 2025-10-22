@@ -19,7 +19,7 @@ import {
 import { run } from '@prairielearn/run';
 
 import { type OpenAIModelId, calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
-import { computeAssessmentInstanceScore } from '../../../lib/assessment.js';
+import { computeAssessmentInstanceScore } from '../../../lib/assessment-grading.js';
 import {
   AssessmentQuestionSchema,
   type Course,
