@@ -49,30 +49,30 @@
 
 {{#format}}
 {{!Include descriptions for each grading method}}
-{{#percent_correct}}
+{{#net}}
 You must select {{{insert_text}}} You will receive a score of <code>100% * (t - f) / n</code>,
 where <code>t</code> is the number of true options that you select, <code>f</code>
 is the number of false options that you select, and <code>n</code> is the total number of true options.
 At minimum, you will receive a score of 0%.
-{{/percent_correct}}
+{{/net}}
 
-{{#every_decision_counts}}
+{{#eca}}
 You must select {{{insert_text}}} You will receive a score of <code>100% * (t + f) / {{num_display_answers}}</code>,
 where <code>t</code> is the number of true options that you select and <code>f</code>
 is the number of false options that you do not select.
-{{/every_decision_counts}}
+{{/eca}}
 
-{{#coverage}}
+{{#cov}}
 You must select {{{insert_text}}} You will receive a score of <code>100% * (t / c) * (t / n)</code>,
 where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options,
 and <code>n</code> is the total number of options you select."
-{{/coverage}}
+{{/cov}}
 
-{{#none}}
+{{#off}}
 You must select {{{insert_text}}} You will receive a score of 100%
 if you select all options that are true and no options that are false.
 Otherwise, you will receive a score of 0%.
-{{/none}}
+{{/off}}
 {{/format}}
 
 {{#submission}}
