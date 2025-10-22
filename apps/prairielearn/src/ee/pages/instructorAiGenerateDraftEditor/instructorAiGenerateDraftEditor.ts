@@ -6,8 +6,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import * as b64Util from '../../../lib/base64-util.js';
-import { b64EncodeUnicode } from '../../../lib/base64-util.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
@@ -372,8 +371,8 @@ router.post(
         authn_user: res.locals.authn_user,
         authz_data: res.locals.authz_data,
         urlPrefix: res.locals.urlPrefix,
-        html: b64Util.b64DecodeUnicode(req.body.html),
-        python: b64Util.b64DecodeUnicode(req.body.python),
+        html: b64DecodeUnicode(req.body.html),
+        python: b64DecodeUnicode(req.body.python),
         prompt: 'Manually update question.',
         promptType: 'manual_change',
       });

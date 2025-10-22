@@ -29,8 +29,7 @@ import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
-import * as b64Util from './base64-util.js';
-import { b64EncodeUnicode } from './base64-util.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
@@ -1655,7 +1654,7 @@ export class QuestionModifyEditor extends Editor {
       if (contents === null) {
         await fs.remove(resolvedPath);
       } else {
-        await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+        await fs.writeFile(resolvedPath, b64DecodeUnicode(contents));
       }
     }
 
@@ -2402,7 +2401,7 @@ export class FileModifyEditor extends Editor {
     }
 
     debug('write file');
-    await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
+    await fs.writeFile(this.filePath, b64DecodeUnicode(this.editContents));
 
     return {
       pathsToAdd: [this.filePath],
