@@ -118,7 +118,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     ip: req.ip || null,
     req_date: res.locals.req_date,
     // We allow unit tests to override the req_mode. Unit tests may also override
-    // the user (middlewares/authn.js) and the req_date (middlewares/date.js).
+    // the user (middlewares/authn.ts) and the req_date (middlewares/date.ts).
     req_mode: config.devMode && req.cookies.pl_test_mode ? req.cookies.pl_test_mode : null,
   });
 
