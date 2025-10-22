@@ -20,6 +20,7 @@ export function InstructorInstanceAdminSettings({
   hasEnhancedNavigation,
   canEdit,
   courseInstance,
+  institution,
   shortNames,
   availableTimezones,
   origHash,
@@ -36,6 +37,7 @@ export function InstructorInstanceAdminSettings({
   hasEnhancedNavigation: boolean;
   canEdit: boolean;
   courseInstance: StaffCourseInstanceContext['course_instance'];
+  institution: StaffCourseInstanceContext['institution'];
   shortNames: string[];
   availableTimezones: Timezone[];
   origHash: string;
@@ -55,8 +57,9 @@ export function InstructorInstanceAdminSettings({
       courseInstance.hide_in_enroll_page == null ? true : !courseInstance.hide_in_enroll_page,
     self_enrollment_enabled: courseInstance.self_enrollment_enabled,
     self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
+    self_enrollment_restrict_to_institution: courseInstance.self_enrollment_restrict_to_institution,
     self_enrollment_enabled_before_date_enabled:
-      courseInstance.self_enrollment_enabled_before_date_enabled,
+      !!courseInstance.self_enrollment_enabled_before_date,
     self_enrollment_enabled_before_date: courseInstance.self_enrollment_enabled_before_date
       ? Temporal.Instant.fromEpochMilliseconds(
           courseInstance.self_enrollment_enabled_before_date.getTime(),
@@ -216,7 +219,9 @@ export function InstructorInstanceAdminSettings({
             enrollmentManagementEnabled={enrollmentManagementEnabled}
             studentLink={studentLink}
             selfEnrollLink={selfEnrollLink}
+            enrollmentCode={courseInstance.enrollment_code}
             csrfToken={csrfToken}
+            institution={institution}
           />
 
           <h2 class="h4">Sharing</h2>
@@ -272,8 +277,8 @@ export function InstructorInstanceAdminSettings({
           )}
         </form>
       </div>
-      <div class="card-footer d-flex flex-wrap align-items-center">
-        <form name="copy-course-instance-form" class="me-2" method="POST">
+      <div class="card-footer d-flex flex-wrap gap-2">
+        <form name="copy-course-instance-form" method="POST">
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <button
             type="submit"
@@ -296,4 +301,5 @@ export function InstructorInstanceAdminSettings({
     </div>
   );
 }
+
 InstructorInstanceAdminSettings.displayName = 'InstructorInstanceAdminSettings';

@@ -41,9 +41,7 @@ SHOW_SCORE_DEFAULT = True
 ANSWER_INSUFFICIENT_PRECISION_WARNING = (
     "Your answer does not have precision within the specified relative tolerance."
 )
-ANSWER_SHOULD_BE_BLANK_WARNING = "The correct answer was to leave this input blank."
-
-
+ANSWER_BLANK_CORRECT_FEEDBACK = "The correct answer used for grading was blank."
 NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-number-input.mustache"
 
 
@@ -427,20 +425,26 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         feedback = ""
         is_correct = None
 
+        can_show_if_correct = pl.get_boolean_attrib(
+            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
+        )
+
         # Special cases: submitted or correct answer are the empty string
-        if isinstance(correct_answer, str) and correct_answer.strip() == "":
-            if isinstance(submitted_answer, str) and submitted_answer.strip() == "":
-                return (
-                    True,
-                    "The correct answer used for grading was blank",
-                )
-            return (False, ANSWER_SHOULD_BE_BLANK_WARNING)
-        elif isinstance(submitted_answer, str) and submitted_answer.strip() == "":
-            correct_answer_converted = np.float64(correct_answer)
-            return (
-                False,
-                f"The correct answer used for grading was {correct_answer_converted}. Your answer was blank.",
-            )
+        is_submitted_blank = (
+            isinstance(submitted_answer, str) and submitted_answer.strip() == ""
+        )
+        is_correct_blank = (
+            isinstance(correct_answer, str) and correct_answer.strip() == ""
+        )
+
+        if is_submitted_blank or is_correct_blank:
+            if is_submitted_blank and is_correct_blank:
+                is_correct = True
+                feedback = ANSWER_BLANK_CORRECT_FEEDBACK if can_show_if_correct else ""
+            else:
+                is_correct = False
+                feedback = ""
+            return (is_correct, feedback)
 
         # Cast both submitted and true answers as np.float64, because...
         #
@@ -503,11 +507,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         else:
             assert_never(comparison)
 
-        if is_correct and pl.get_boolean_attrib(
-            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
-        ):
+        if is_correct and can_show_if_correct:
             feedback = (
-                f"The correct answer used for grading was {correct_answer_converted}"
+                f"The correct answer used for grading was {correct_answer_converted}."
             )
         return (is_correct, feedback)
 
@@ -553,7 +555,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
         if show_correct:
             data["partial_scores"][name]["feedback"] = (
-                f"The correct answer used for grading was {correct_answer_converted}"
+                f"The correct answer used for grading was {correct_answer_converted}."
             )
     elif result == "incorrect":
         data["partial_scores"][name] = {
@@ -578,7 +580,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         # If the empty answer is correct, use 0 as an arbitrary starting point for incorrect answers
         if correct_answer_converted == "blank":
             answer = random.choice([-1.1, 1.1])
-            feedback = ANSWER_SHOULD_BE_BLANK_WARNING
         elif comparison is ComparisonType.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)

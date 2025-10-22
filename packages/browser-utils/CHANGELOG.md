@@ -1,5 +1,17 @@
 # @prairielearn/browser-utils
 
+## 2.5.0
+
+### Minor Changes
+
+- 19f0bf7: Improved support for focus on radio groups
+
+## 2.4.0
+
+### Minor Changes
+
+- 5b46852: Add `downloadTextFile`, `downloadAsJSON` and `downloadAsCSV` utilities
+
 ## 2.3.0
 
 ### Minor Changes

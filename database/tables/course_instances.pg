@@ -11,7 +11,7 @@ columns
     long_name: text
     self_enrollment_enabled: boolean default true
     self_enrollment_enabled_before_date: timestamp with time zone
-    self_enrollment_enabled_before_date_enabled: boolean default false
+    self_enrollment_restrict_to_institution: boolean default true
     self_enrollment_use_enrollment_code: boolean default false
     share_source_publicly: boolean not null default false
     short_name: text
