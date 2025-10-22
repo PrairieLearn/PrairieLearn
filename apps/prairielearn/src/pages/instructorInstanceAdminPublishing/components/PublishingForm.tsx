@@ -10,7 +10,7 @@ import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
 import {
-  DateToPlainDateTimeString,
+  DateToPlainDateTime,
   nowDateInTimezone,
   plainDateTimeStringToDate,
 } from '../utils/dateUtils.js';
@@ -74,20 +74,20 @@ export function PublishingForm({
   const originalPublishDate = courseInstance.publishing_publish_date;
   const originalUnpublishDate = courseInstance.publishing_unpublish_date;
 
-  const currentStatus = computeStatus(
+  const originalStatus = computeStatus(
     courseInstance.publishing_publish_date,
     courseInstance.publishing_unpublish_date,
     courseInstance,
   );
 
-  const [selectedStatus, setSelectedStatus] = useState<PublishingStatus>(currentStatus);
+  const [selectedStatus, setSelectedStatus] = useState<PublishingStatus>(originalStatus);
 
   const defaultValues: PublishingFormValues = {
     publishDate: originalPublishDate
-      ? DateToPlainDateTimeString(originalPublishDate, courseInstance.display_timezone)
+      ? DateToPlainDateTime(originalPublishDate, courseInstance.display_timezone).toString()
       : '',
     unpublishDate: originalUnpublishDate
-      ? DateToPlainDateTimeString(originalUnpublishDate, courseInstance.display_timezone)
+      ? DateToPlainDateTime(originalUnpublishDate, courseInstance.display_timezone).toString()
       : '',
   };
 
@@ -106,23 +106,18 @@ export function PublishingForm({
   const publishDate = watch('publishDate');
   const unpublishDate = watch('unpublishDate');
 
-  const getNow = () => {
-    return Temporal.Now.plainDateTimeISO(courseInstance.display_timezone).round({
-      smallestUnit: 'seconds',
-    });
-  };
-
-  let now = getNow();
+  let now = nowDateInTimezone(courseInstance.display_timezone);
 
   // Update form values when status changes
   const handleStatusChange = (newStatus: PublishingStatus) => {
     setSelectedStatus(newStatus);
 
     // "Now" must be rounded to the nearest second, as that's what `datetime-local` supports.
-    now = getNow();
+    now = nowDateInTimezone(courseInstance.display_timezone);
+    const nowTemporal = DateToPlainDateTime(now, courseInstance.display_timezone);
 
-    const oneWeekLater = now.add({ weeks: 1 });
-    const eighteenWeeksLater = now.add({ weeks: 18 });
+    const oneWeekLater = nowTemporal.add({ weeks: 1 });
+    const eighteenWeeksLater = nowTemporal.add({ weeks: 18 });
 
     const currentPublishDate = publishDate === '' ? null : Temporal.PlainDateTime.from(publishDate);
     const currentUnpublishDate =
@@ -134,11 +129,28 @@ export function PublishingForm({
 
     switch (newStatus) {
       case 'unpublished': {
-        // If the form was previously saved,
-        // we need to set the publish date to null and the unpublish date to now
-        if (originalUnpublishDate !== null) {
-          updatedPublishDate = null;
-          updatedUnpublishDate = now;
+        // If the original dates from the form put the course instance in a unpublished state,
+        // use those dates.
+        if (originalPublishDate && originalUnpublishDate && now >= originalUnpublishDate) {
+          updatedPublishDate = DateToPlainDateTime(
+            originalPublishDate,
+            courseInstance.display_timezone,
+          );
+          updatedUnpublishDate = DateToPlainDateTime(
+            originalUnpublishDate,
+            courseInstance.display_timezone,
+          );
+          break;
+        }
+
+        // If the original publish date was in the past, use that.
+        // Otherwise, we are transitioning from 'scheduled publish' to 'unpublished'. Drop both dates.
+        if (originalPublishDate && originalPublishDate < now) {
+          updatedPublishDate = DateToPlainDateTime(
+            originalPublishDate,
+            courseInstance.display_timezone,
+          );
+          updatedUnpublishDate = nowTemporal;
         } else {
           updatedPublishDate = null;
           updatedUnpublishDate = null;
@@ -146,16 +158,42 @@ export function PublishingForm({
         break;
       }
       case 'publish_scheduled': {
-        if (
+        // If the original dates from the form put the course instance in a publish scheduled state,
+        // use those dates.
+        if (originalPublishDate && originalUnpublishDate && now <= originalPublishDate) {
+          updatedPublishDate = DateToPlainDateTime(
+            originalPublishDate,
+            courseInstance.display_timezone,
+          );
+          updatedUnpublishDate = DateToPlainDateTime(
+            originalUnpublishDate,
+            courseInstance.display_timezone,
+          );
+          break;
+        }
+
+        if (originalPublishDate && now <= originalPublishDate) {
+          // Try to re-use the original publish date if it is in the future.
+          updatedPublishDate = DateToPlainDateTime(
+            originalPublishDate,
+            courseInstance.display_timezone,
+          );
+        } else if (
           currentPublishDate === null ||
-          Temporal.PlainDateTime.compare(currentPublishDate, now) <= 0
+          Temporal.PlainDateTime.compare(currentPublishDate, nowTemporal) <= 0
         ) {
           updatedPublishDate = oneWeekLater;
         }
 
-        if (
+        if (originalUnpublishDate && now <= originalUnpublishDate) {
+          // Try to re-use the original unpublish date if it is in the future.
+          updatedUnpublishDate = DateToPlainDateTime(
+            originalUnpublishDate,
+            courseInstance.display_timezone,
+          );
+        } else if (
           currentUnpublishDate === null ||
-          Temporal.PlainDateTime.compare(currentUnpublishDate, now) <= 0 ||
+          Temporal.PlainDateTime.compare(currentUnpublishDate, nowTemporal) <= 0 ||
           Temporal.PlainDateTime.compare(updatedPublishDate!, currentUnpublishDate) >= 0
         ) {
           updatedUnpublishDate = eighteenWeeksLater;
@@ -163,15 +201,30 @@ export function PublishingForm({
         break;
       }
       case 'published': {
-        if (
+        if (originalPublishDate && now >= originalPublishDate) {
+          // Try to re-use the original publish date if it is in the past.
+          updatedPublishDate = DateToPlainDateTime(
+            originalPublishDate,
+            courseInstance.display_timezone,
+          );
+        } else if (
           currentPublishDate === null ||
-          Temporal.PlainDateTime.compare(currentPublishDate, now) <= 0
+          // If the current publish date is in the future, set it to now.
+          Temporal.PlainDateTime.compare(currentPublishDate, nowTemporal) > 0
         ) {
-          updatedPublishDate = now;
+          updatedPublishDate = nowTemporal;
         }
-        if (
+
+        if (originalUnpublishDate && now <= originalUnpublishDate) {
+          // Try to re-use the original unpublish date if it is in the future.
+          updatedUnpublishDate = DateToPlainDateTime(
+            originalUnpublishDate,
+            courseInstance.display_timezone,
+          );
+        } else if (
           currentUnpublishDate === null ||
-          Temporal.PlainDateTime.compare(currentUnpublishDate, now) <= 0
+          // If the current unpublish date is in the past, set it to 18 weeks from now.
+          Temporal.PlainDateTime.compare(currentUnpublishDate, nowTemporal) < 0
         ) {
           updatedUnpublishDate = eighteenWeeksLater;
         }
@@ -330,15 +383,16 @@ export function PublishingForm({
                     <>
                       <br />
                       The course{' '}
-                      {Temporal.PlainDateTime.compare(
-                        Temporal.PlainDateTime.from(unpublishDate),
-                        now,
-                      ) < 0
+                      {plainDateTimeStringToDate(unpublishDate, courseInstance.display_timezone) <
+                      now
                         ? 'was'
                         : 'will be'}{' '}
                       unpublished at{' '}
                       <FriendlyDate
-                        date={Temporal.PlainDateTime.from(unpublishDate)}
+                        date={plainDateTimeStringToDate(
+                          unpublishDate,
+                          courseInstance.display_timezone,
+                        )}
                         timezone={courseInstance.display_timezone}
                         tooltip={true}
                         options={{ timeFirst: true }}
@@ -491,7 +545,7 @@ export function PublishingForm({
               {selectedStatus === 'published' && publishDate && unpublishDate && (
                 <div class="ms-4 mt-1 small text-muted">
                   The course{' '}
-                  {Temporal.PlainDateTime.compare(Temporal.PlainDateTime.from(publishDate), now) < 0
+                  {plainDateTimeStringToDate(publishDate, courseInstance.display_timezone) < now
                     ? 'was'
                     : 'will be'}{' '}
                   published at{' '}

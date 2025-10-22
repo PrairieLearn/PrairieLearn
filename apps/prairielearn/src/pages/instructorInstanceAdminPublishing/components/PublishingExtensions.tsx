@@ -10,7 +10,7 @@ import { formatDateFriendly } from '@prairielearn/formatter';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
-import { DateToPlainDateTimeString, plainDateTimeStringToDate } from '../utils/dateUtils.js';
+import { DateToPlainDateTime, plainDateTimeStringToDate } from '../utils/dateUtils.js';
 
 interface PublishingExtensionsProps {
   courseInstance: StaffCourseInstance;
@@ -282,10 +282,10 @@ export function PublishingExtensions({
     setModalDefaults({
       name: '',
       unpublish_date: courseInstance.publishing_unpublish_date
-        ? DateToPlainDateTimeString(
+        ? DateToPlainDateTime(
             courseInstance.publishing_unpublish_date,
             courseInstance.display_timezone,
-          )
+          ).toString()
         : '',
       uids: '',
     });
@@ -297,10 +297,10 @@ export function PublishingExtensions({
     setEditExtensionId(extension.id);
     setModalDefaults({
       name: extension.name ?? '',
-      unpublish_date: DateToPlainDateTimeString(
+      unpublish_date: DateToPlainDateTime(
         extension.unpublish_date,
         courseInstance.display_timezone,
-      ),
+      ).toString(),
       uids: extension.user_data
         .map((u) => u.uid)
         .sort()
