@@ -259,8 +259,7 @@ export function generateSubmissionMessage({
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
-  // Helper function to recursively process nodes and their descendants
-  const processNode = (node: any) => {
+  const processNode = (node: cheerio.Cheerio<AnyNode>) => {
     const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
     
     if (imageCaptureUUID) {
