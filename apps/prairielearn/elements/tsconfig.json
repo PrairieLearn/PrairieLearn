@@ -5,7 +5,21 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "noEmit": true,
     "rootDir": "../",
-    "types": ["jquery", "fabric", "mathjax", "sylvester", "bootstrap", "cropperjs", "dompurify", "quill", "he", "ace", "qrcode", "three", "lodash"],
+    "types": [
+      "jquery",
+      "fabric",
+      "mathjax",
+      "sylvester",
+      "bootstrap",
+      "cropperjs",
+      "dompurify",
+      "quill",
+      "he",
+      "ace",
+      "qrcode",
+      "three",
+      "lodash"
+    ],
     "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -13,6 +27,6 @@
     "moduleResolution": "NodeNext",
     "skipLibCheck": true
   },
-  "include": ["**/*.js"],
+  "include": ["**/*.js", "**/*.d.ts"],
   "exclude": ["pl-threejs/**", "pl-drawing/mechanicsObjects.js"]
 }

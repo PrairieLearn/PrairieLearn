@@ -40,35 +40,45 @@ function PLMultipleChoice(uuid) {
     /** @param {HTMLElement} dropdown */
     onDropdownOpen: (dropdown) => {
       // Ensure the height of the dropdown is constrained to the viewport.
-      const content = dropdown.querySelector('.ts-dropdown-content');
-      content.style.maxHeight = `${window.innerHeight - content.getBoundingClientRect().top}px`;
+      const content = /** @type {HTMLElement | null} */ (
+        dropdown.querySelector('.ts-dropdown-content')
+      );
+      if (content) {
+        content.style.maxHeight = `${window.innerHeight - content.getBoundingClientRect().top}px`;
+      }
 
       // The first time the dropdown is opened, this event is fired before the
       // options are actually present in the DOM. We'll wait for the next tick
       // to ensure that the options are present.
-      setTimeout(() => /** @type {any} */ (MathJax).typesetPromise([dropdown]), 0);
+      setTimeout(() => {
+        if ('typesetPromise' in MathJax) {
+          MathJax.typesetPromise([dropdown]);
+        }
+      }, 0);
     },
 
     onDropdownClose: () => {
       // In case the dropdown items contain math, render it when the
       // dropdown is opened or closed.
-      /** @type {any} */ (MathJax).typesetPromise([container]);
+      if ('typesetPromise' in MathJax && container) {
+        MathJax.typesetPromise([container]);
+      }
     },
   });
 
   // Reposition the dropdown when the main container is scrolled. This doesn't exist
   // on student pages, so we take care to handle that case.
-  selectElement
-    .closest('.app-main-container')
-    ?.addEventListener('scroll', () => select.positionDropdown());
+  const mainContainer = selectElement.closest('.app-main-container');
+  if (mainContainer) {
+    mainContainer.addEventListener('scroll', () => select.positionDropdown());
+  }
 
   // By default, `tom-select` will set the placeholder as the "active" option,
   // but this means that the active option can't be changed with the up/down keys
   // immediately after opening the dropdown. We'll override this function to
   // ensure that a non-disabled option is always set as the active one.
   const originalSetActiveOption = select.setActiveOption.bind(select);
-  /** @param {HTMLElement | null} option */
-  select.setActiveOption = (option, scroll = true) => {
+  select.setActiveOption = (/** @type {Element | null} */ option, scroll = true) => {
     if (option?.getAttribute('aria-disabled') === 'true') {
       option = select.wrapper.querySelector('[data-selectable]');
     }
@@ -77,12 +87,15 @@ function PLMultipleChoice(uuid) {
   };
 
   // Mirror native `<select>` behavior, open the dropdown on Space or Enter.
-  select.control.addEventListener('keydown', /** @param {KeyboardEvent} event */ (event) => {
-    if (event.key === ' ' || event.key === 'Enter') {
-      select.open();
-      event.preventDefault();
-    }
-  });
+  select.control.addEventListener(
+    'keydown',
+    /** @param {KeyboardEvent} event */ (event) => {
+      if (event.key === ' ' || event.key === 'Enter') {
+        select.open();
+        event.preventDefault();
+      }
+    },
+  );
 
   // Because we set `openOnFocus: false`, we need to manually open the dropdown
   // when the control is clicked.

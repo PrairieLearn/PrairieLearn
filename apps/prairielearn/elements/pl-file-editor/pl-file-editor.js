@@ -1,6 +1,11 @@
 /* global ace, MathJax, DOMPurify */
 
-window.PLFileEditor = function (uuid, options) {
+/**
+ * @param {string} uuid
+ * @param {PLFileEditorOptions} options
+ * @this {PLFileEditor}
+ */
+function PLFileEditor(uuid, options) {
   const elementId = '#file-editor-' + uuid;
   this.element = $(elementId);
   if (!this.element) {
@@ -18,36 +23,42 @@ window.PLFileEditor = function (uuid, options) {
   this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
   this.restoreOriginalCancel = this.element.find('.restore-original-cancel');
+  // @ts-ignore - ace types don't accept second parameter but it exists
   this.editor = ace.edit(this.editorElement.get(0), {
     enableKeyboardAccessibility: true,
   });
   this.editor.setTheme('ace/theme/chrome');
   this.editor.getSession().setUseWrapMode(true);
   this.editor.setShowPrintMargin(false);
-  this.editor.setReadOnly(options.readOnly);
+  this.editor.setReadOnly(options.readOnly || false);
   this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
 
   if (options.aceMode) {
     this.editor.getSession().setMode(options.aceMode);
   }
 
-  if (localStorage.getItem('pl-file-editor-theme')) {
-    this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
+  const theme = localStorage.getItem('pl-file-editor-theme');
+  if (theme) {
+    this.editor.setTheme(theme);
   } else if (options.aceTheme) {
     this.editor.setTheme(options.aceTheme);
   } else {
     this.editor.setTheme('ace/theme/chrome');
   }
 
-  if (localStorage.getItem('pl-file-editor-fontsize')) {
-    this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
+  const fontSize = localStorage.getItem('pl-file-editor-fontsize');
+  if (fontSize) {
+    this.editor.setFontSize(fontSize);
   } else if (options.fontSize) {
-    this.editor.setFontSize(options.fontSize);
+    this.editor.setFontSize(String(options.fontSize));
   } else {
-    this.editor.setFontSize(12);
+    this.editor.setFontSize('12');
   }
 
-  this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+  const keyboardHandler = localStorage.getItem('pl-file-editor-keyboardHandler');
+  if (keyboardHandler) {
+    this.editor.setKeyboardHandler(keyboardHandler);
+  }
 
   if (options.minLines) {
     this.editor.setOption('minLines', options.minLines);
@@ -58,11 +69,15 @@ window.PLFileEditor = function (uuid, options) {
   }
 
   if (options.autoResize) {
+    // @ts-ignore - setAutoScrollEditorIntoView is not in the ace types
     this.editor.setAutoScrollEditorIntoView(true);
     this.editor.setOption('maxLines', Infinity);
   }
 
   this.plOptionFocus = options.plOptionFocus;
+  
+  /** @type {Record<string, (value: string) => Promise<string> | string>} */
+  this.preview = {};
 
   let currentContents = '';
   if (options.currentContents) {
@@ -71,7 +86,7 @@ window.PLFileEditor = function (uuid, options) {
   this.setEditorContents(currentContents, { resetUndo: true });
 
   if (options.preview) {
-    this.editor.session.on('change', () => this.updatePreview(options.preview));
+    this.editor.session.on('change', () => this.updatePreview(options.preview || ''));
     this.updatePreview(options.preview);
   }
 
@@ -80,29 +95,38 @@ window.PLFileEditor = function (uuid, options) {
   this.initSettingsButton(uuid);
 
   this.initRestoreOriginalButton();
-};
+}
 
-window.PLFileEditor.prototype.syncSettings = function () {
+PLFileEditor.prototype.syncSettings = function () {
   window.addEventListener('storage', (event) => {
-    if (event.key === 'pl-file-editor-theme') {
+    if (event.key === 'pl-file-editor-theme' && event.newValue) {
       this.editor.setTheme(event.newValue);
     }
-    if (event.key === 'pl-file-editor-fontsize') {
+    if (event.key === 'pl-file-editor-fontsize' && event.newValue) {
       this.editor.setFontSize(event.newValue);
     }
-    if (event.key === 'pl-file-editor-keyboardHandler') {
+    if (event.key === 'pl-file-editor-keyboardHandler' && event.newValue) {
       this.editor.setKeyboardHandler(event.newValue);
     }
   });
 
   window.addEventListener('pl-file-editor-settings-changed', () => {
-    this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
-    this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
-    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+    const theme = localStorage.getItem('pl-file-editor-theme');
+    if (theme) this.editor.setTheme(theme);
+
+    const fontSize = localStorage.getItem('pl-file-editor-fontsize');
+    if (fontSize) this.editor.setFontSize(fontSize);
+
+    const keyboardHandler = localStorage.getItem('pl-file-editor-keyboardHandler');
+    if (keyboardHandler) this.editor.setKeyboardHandler(keyboardHandler);
   });
 };
 
-window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
+/**
+ * @this {PLFileEditor}
+ * @param {string} preview_type
+ */
+PLFileEditor.prototype.updatePreview = async function (preview_type) {
   /** @type {HTMLElement} */
   const preview = this.element.find('.preview')[0];
   let shadowRoot = preview.shadowRoot;
@@ -114,7 +138,7 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
     // default, so we need to manually adopt the MathJax styles.
     await MathJax.startup.promise;
     const mjxStyles = document.getElementById('MJX-SVG-styles');
-    if (mjxStyles) {
+    if (mjxStyles && mjxStyles.textContent) {
       const style = new CSSStyleSheet();
       style.replaceSync(mjxStyles.textContent);
       shadowRoot.adoptedStyleSheets.push(style);
@@ -123,14 +147,16 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
 
   const editor_value = this.editor.getValue();
   const default_preview_text = '<p>Begin typing above to preview</p>';
-  const html_contents = editor_value
-    ? ((await Promise.resolve(this.preview[preview_type]?.(editor_value))) ??
+  const previewFn = this.preview[preview_type];
+  const html_contents = editor_value && previewFn
+    ? ((await Promise.resolve(previewFn(editor_value))) ??
       `<p>Unknown preview type: <code>${preview_type}</code></p>`)
     : '';
 
   if (html_contents.trim().length === 0) {
     shadowRoot.innerHTML = default_preview_text;
   } else {
+    // @ts-ignore - DOMPurify is declared in global comment
     const sanitized_contents = DOMPurify.sanitize(html_contents);
     shadowRoot.innerHTML = sanitized_contents;
     if (
@@ -140,86 +166,98 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       sanitized_contents.includes('\\[') ||
       sanitized_contents.includes('\\]')
     ) {
-      MathJax.typesetPromise(shadowRoot.children);
+      MathJax.typesetPromise([...shadowRoot.children]);
     }
   }
 };
 
-window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
+/**
+ * @this {PLFileEditor}
+ * @param {string} uuid
+ */
+PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.settingsButton.click(() => {
-    ace.require(['ace/ext/themelist'], (themeList) => {
-      const themeSelect = this.modal.find('#modal-' + uuid + '-themes');
-      themeSelect.empty();
-      for (const entries in themeList.themesByName) {
-        const caption = themeList.themesByName[entries].caption;
-        const theme = themeList.themesByName[entries].theme;
+    // @ts-ignore - ace.require signature doesn't match types
+    ace.require(['ace/ext/themelist'], /** @param {{ themesByName: Record<string, { caption: string; theme: string }> }} themeList */ (themeList) => {
+        const themeSelect = this.modal.find('#modal-' + uuid + '-themes');
+        themeSelect.empty();
+        for (const entries in themeList.themesByName) {
+          const caption = themeList.themesByName[entries].caption;
+          const theme = themeList.themesByName[entries].theme;
 
-        themeSelect.append(
-          $('<option>', {
-            value: theme,
-            text: caption,
-            selected: localStorage.getItem('pl-file-editor-theme') === theme,
-          }),
-        );
-      }
+          themeSelect.append(
+            $('<option>', {
+              value: theme,
+              text: caption,
+              selected: localStorage.getItem('pl-file-editor-theme') === theme,
+            }),
+          );
+        }
 
-      const fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
-      const fontSelect = this.modal.find('#modal-' + uuid + '-fontsize');
-      fontSelect.empty();
-      for (const entries in fontSizeList) {
-        fontSelect.append(
-          $('<option>', {
-            value: fontSizeList[entries],
-            text: fontSizeList[entries],
-            selected: localStorage.getItem('pl-file-editor-fontsize') === fontSizeList[entries],
-          }),
-        );
-      }
+        const fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
+        const fontSelect = this.modal.find('#modal-' + uuid + '-fontsize');
+        fontSelect.empty();
+        for (const entries in fontSizeList) {
+          fontSelect.append(
+            $('<option>', {
+              value: fontSizeList[entries],
+              text: fontSizeList[entries],
+              selected: localStorage.getItem('pl-file-editor-fontsize') === fontSizeList[entries],
+            }),
+          );
+        }
 
-      const keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
-      const keyboardHandlerSelect = this.modal.find('#modal-' + uuid + '-keyboardHandler');
-      keyboardHandlerSelect.empty();
-      for (const index in keyboardHandlerList) {
-        const keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
+        const keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
+        const keyboardHandlerSelect = this.modal.find('#modal-' + uuid + '-keyboardHandler');
+        keyboardHandlerSelect.empty();
+        for (const index in keyboardHandlerList) {
+          const keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
 
-        keyboardHandlerSelect.append(
-          $('<option>', {
-            value: keyboardHandler,
-            text: keyboardHandlerList[index],
-            selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyboardHandler,
-          }),
-        );
-      }
-    });
+          keyboardHandlerSelect.append(
+            $('<option>', {
+              value: keyboardHandler,
+              text: keyboardHandlerList[index],
+              selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyboardHandler,
+            }),
+          );
+        }
+      },
+    );
     this.modal.modal('show');
     sessionStorage.setItem('pl-file-editor-theme-current', this.editor.getTheme());
-    sessionStorage.setItem('pl-file-editor-fontsize-current', this.editor.getFontSize());
-    if (localStorage.getItem('pl-file-editor-keyboardHandler')) {
+    // @ts-ignore - getFontSize exists at runtime but not in types
+    sessionStorage.setItem('pl-file-editor-fontsize-current', String(this.editor.getFontSize()));
+    const savedHandler = localStorage.getItem('pl-file-editor-keyboardHandler');
+    if (savedHandler) {
       sessionStorage.setItem(
         'pl-file-editor-keyboardHandler-current',
-        localStorage.getItem('pl-file-editor-keyboardHandler'),
+        savedHandler,
       );
     }
 
     this.modal.find('#modal-' + uuid + '-themes').change((e) => {
-      const theme = $(e.currentTarget).val();
-      this.editor.setTheme(theme);
+      const themeValue = $(e.currentTarget).val();
+      if (typeof themeValue === 'string') {
+        this.editor.setTheme(themeValue);
+      }
     });
     this.modal.find('#modal-' + uuid + '-fontsize').change((e) => {
-      const fontSize = $(e.currentTarget).val();
-      this.editor.setFontSize(fontSize);
+      const fontSizeValue = $(e.currentTarget).val();
+      if (typeof fontSizeValue === 'string') {
+        this.editor.setFontSize(fontSizeValue);
+      }
     });
   });
 
   this.saveSettingsButton.click(() => {
-    const theme = this.modal.find('#modal-' + uuid + '-themes').val();
-    const fontsize = this.modal.find('#modal-' + uuid + '-fontsize').val();
-    const keyboardHandler = this.modal.find('#modal-' + uuid + '-keyboardHandler').val();
+    const themeValue = this.modal.find('#modal-' + uuid + '-themes').val();
+    const fontsizeValue = this.modal.find('#modal-' + uuid + '-fontsize').val();
+    const keyboardHandlerValue = this.modal.find('#modal-' + uuid + '-keyboardHandler').val();
 
-    localStorage.setItem('pl-file-editor-theme', theme);
-    localStorage.setItem('pl-file-editor-fontsize', fontsize);
-    localStorage.setItem('pl-file-editor-keyboardHandler', keyboardHandler);
-    if (keyboardHandler === 'ace/keyboard/default') {
+    if (typeof themeValue === 'string') localStorage.setItem('pl-file-editor-theme', themeValue);
+    if (typeof fontsizeValue === 'string') localStorage.setItem('pl-file-editor-fontsize', fontsizeValue);
+    if (typeof keyboardHandlerValue === 'string') localStorage.setItem('pl-file-editor-keyboardHandler', keyboardHandlerValue);
+    if (keyboardHandlerValue === 'ace/keyboard/default') {
       localStorage.removeItem('pl-file-editor-keyboardHandler');
     }
 
@@ -227,20 +265,40 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
     sessionStorage.removeItem('pl-file-editor-keyboardHandler-current');
 
-    this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
-    this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
-    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+    const theme = localStorage.getItem('pl-file-editor-theme');
+    const fontSize = localStorage.getItem('pl-file-editor-fontsize');
+    const handler = localStorage.getItem('pl-file-editor-keyboardHandler');
+    
+    if (theme) this.editor.setTheme(theme);
+    if (fontSize) this.editor.setFontSize(fontSize);
+    if (handler) this.editor.setKeyboardHandler(handler);
 
     window.dispatchEvent(new Event('pl-file-editor-settings-changed'));
     this.modal.modal('hide');
   });
 
   this.closeSettingsButton.click(() => {
-    this.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
-    this.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
-    this.editor.setKeyboardHandler(
-      sessionStorage.getItem('pl-file-editor-keyboardHandler-current'),
-    );
+    const theme = sessionStorage.getItem('pl-file-editor-theme-current');
+    const fontSize = sessionStorage.getItem('pl-file-editor-fontsize-current');
+    const handler = sessionStorage.getItem('pl-file-editor-keyboardHandler-current');
+    
+    if (theme) this.editor.setTheme(theme);
+    if (fontSize) this.editor.setFontSize(fontSize);
+    if (handler) this.editor.setKeyboardHandler(handler);
+
+    sessionStorage.removeItem('pl-file-editor-theme-current');
+    sessionStorage.removeItem('pl-file-editor-fontsize-current');
+    sessionStorage.removeItem('pl-file-editor-keyboardHandler-current');
+  });
+  
+  this.modal.on('hidden.bs.modal', () => {
+    const theme = sessionStorage.getItem('pl-file-editor-theme-current');
+    const fontSize = sessionStorage.getItem('pl-file-editor-fontsize-current');
+    const handler = sessionStorage.getItem('pl-file-editor-keyboardHandler-current');
+    
+    if (theme) this.editor.setTheme(theme);
+    if (fontSize) this.editor.setFontSize(fontSize);
+    if (handler) this.editor.setKeyboardHandler(handler);
 
     sessionStorage.removeItem('pl-file-editor-theme-current');
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
@@ -248,7 +306,10 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   });
 };
 
-window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
+/**
+ * @this {PLFileEditor}
+ */
+PLFileEditor.prototype.initRestoreOriginalButton = function () {
   this.restoreOriginalButton.click(() => {
     this.restoreOriginalButton.hide();
     this.restoreOriginalConfirmContainer.show();
@@ -269,7 +330,12 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
   });
 };
 
-window.PLFileEditor.prototype.setEditorContents = function (contents, { resetUndo = false } = {}) {
+/**
+ * @this {PLFileEditor}
+ * @param {string} contents
+ * @param {{ resetUndo?: boolean }} [options]
+ */
+PLFileEditor.prototype.setEditorContents = function (contents, { resetUndo = false } = {}) {
   if (resetUndo) {
     // Setting the value of the session causes the undo manager to be reset.
     // https://github.com/ajaxorg/ace/blob/35e1be52fd8172405cf0f219bab1ef7571b3363f/src/edit_session.js#L321-L328
@@ -285,11 +351,18 @@ window.PLFileEditor.prototype.setEditorContents = function (contents, { resetUnd
   this.syncFileToHiddenInput();
 };
 
-window.PLFileEditor.prototype.syncFileToHiddenInput = function () {
+/**
+ * @this {PLFileEditor}
+ */
+PLFileEditor.prototype.syncFileToHiddenInput = function () {
   this.inputElement.val(this.b64EncodeUnicode(this.editor.getValue()));
 };
 
-window.PLFileEditor.prototype.b64DecodeUnicode = function (str) {
+/**
+ * @this {PLFileEditor}
+ * @param {string} str
+ */
+PLFileEditor.prototype.b64DecodeUnicode = function (str) {
   // Going backwards: from bytestream, to percent-encoding, to original string.
   return decodeURIComponent(
     atob(str)
@@ -301,32 +374,42 @@ window.PLFileEditor.prototype.b64DecodeUnicode = function (str) {
   );
 };
 
-window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
+/**
+ * @this {PLFileEditor}
+ * @param {string} str
+ */
+PLFileEditor.prototype.b64EncodeUnicode = function (str) {
   // first we use encodeURIComponent to get percent-encoded UTF-8,
   // then we convert the percent encodings into raw bytes which
   // can be fed into btoa.
   return btoa(
     encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, function toSolidBytes(match, p1) {
-      return String.fromCharCode('0x' + p1);
+      return String.fromCharCode(Number.parseInt('0x' + p1, 16));
     }),
   );
 };
 
-window.PLFileEditor.prototype.preview = {
+PLFileEditor.prototype.preview = {
+  /** @param {string} value */
   html: (value) => value,
   markdown: (() => {
+    /** @type {typeof import('marked').marked | null} */
     let marked = null;
+    /** @param {string} value */
     return async (value) => {
       if (marked == null) {
         marked = (await import('marked')).marked;
         await MathJax.startup.promise;
+        // @ts-ignore - addMathjaxExtension signature is complex
         (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
       }
       return marked.parse(value);
     };
   })(),
   dot: (() => {
+    /** @type {Promise<unknown> | null} */
     let vizPromise = null;
+    /** @param {string} value */
     return async (value) => {
       try {
         // Only load/create instance on first call.
@@ -337,11 +420,17 @@ window.PLFileEditor.prototype.preview = {
           })();
         }
         const viz = await vizPromise;
+        // @ts-ignore - viz-js types are not well-defined
         return viz.renderString(value, { format: 'svg' });
       } catch (err) {
-        return `<span class="text-danger">${err.message}</span>`;
+        const error = err instanceof Error ? err : new Error(String(err));
+        return `<span class="text-danger">${error.message}</span>`;
       }
     };
   })(),
-  // Additional preview types can be created by extensions, by adding entries to window.PLFileEditor.prototype.preview.
+  // Additional preview types can be created by extensions, by adding entries to PLFileEditor.prototype.preview.
 };
+
+/** @type {new (uuid: string, options: PLFileEditorOptions) => PLFileEditor} */
+// @ts-ignore - TypeScript has difficulty with constructor functions
+window.PLFileEditor = PLFileEditor;

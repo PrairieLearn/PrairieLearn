@@ -1,4 +1,7 @@
 (() => {
+  /**
+   * @param {string} name
+   */
   function escapeFileName(name) {
     return name
       .replaceAll('&', '&amp;')
@@ -8,11 +11,14 @@
       .replaceAll("'", '&#39;');
   }
 
+  /**
+   * @param {string} path
+   */
   function escapePath(path) {
     return path
       .replace(/^\//, '')
       .split('/')
-      .map((part) => encodeURIComponent(part))
+      .map(/** @param {string} part */ (part) => encodeURIComponent(part))
       .join('/');
   }
 
@@ -20,32 +26,37 @@
     // Not configurable at this point as this matches the request size limit enforced by the server (accounting for base64 overhead)
     maxFileSizeMB = 5;
 
+    /**
+     * @param {string} uuid
+     * @param {any} options
+     */
     constructor(uuid, options) {
       this.uuid = uuid;
+      /** @type {any[]} */
       this.files = [];
       this.requiredFiles = options.requiredFiles || [];
-      this.requiredFilesLowerCase = this.requiredFiles.map((f) => f.toLowerCase());
+      this.requiredFilesLowerCase = this.requiredFiles.map(/** @param {string} f */ (f) => f.toLowerCase());
       this.requiredFilesRegex = options.requiredFilesRegex || [];
       // Initialized after files are downloaded
       this.requiredFilesUnmatchedRegex = this.requiredFilesRegex.slice();
       this.optionalFiles = options.optionalFiles || [];
-      this.optionalFilesLowerCase = this.optionalFiles.map((f) => f.toLowerCase());
+      this.optionalFilesLowerCase = this.optionalFiles.map(/** @param {string} f */ (f) => f.toLowerCase());
       this.optionalFilesRegex = options.optionalFilesRegex || [];
 
       // Checks whether a file name is acceptable
       // If yes, it returns the canonical name of the file, if not, it returns null
       // Note the priority order: first, fill required file names, then required patterns, then optional names, then optional patterns
-      this.findAcceptedFileName = (fileName) => {
+      this.findAcceptedFileName = /** @param {string} fileName */ (fileName) => {
         if (this.requiredFilesLowerCase.includes(fileName)) {
           return this.requiredFiles[this.requiredFilesLowerCase.indexOf(fileName)];
         }
-        if (this.requiredFilesUnmatchedRegex.some((f) => new RegExp(f[0], 'i').test(fileName))) {
+        if (this.requiredFilesUnmatchedRegex.some(/** @param {any} f */ (f) => new RegExp(f[0], 'i').test(fileName))) {
           return fileName;
         }
         if (this.optionalFilesLowerCase.includes(fileName)) {
           return this.optionalFiles[this.optionalFilesLowerCase.indexOf(fileName)];
         }
-        if (this.optionalFilesRegex.some((f) => new RegExp(f[0], 'i').test(fileName))) {
+        if (this.optionalFilesRegex.some(/** @param {any} f */ (f) => new RegExp(f[0], 'i').test(fileName))) {
           return fileName;
         }
         return null;
@@ -61,9 +72,9 @@
       }
 
       if (options.submittedFileNames) {
-        options.submittedFileNames.forEach((n) => {
+        options.submittedFileNames.forEach(/** @param {string} n */ (n) => {
           if (this.requiredFiles.includes(n)) return;
-          const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
+          const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(/** @param {any} f */ (f) =>
             new RegExp(f[0], 'i').test(n),
           );
           if (matchingRegex !== -1) {
@@ -82,12 +93,15 @@
       this.initializeTemplate();
     }
 
+    /**
+     * @param {string[]} fileNames
+     */
     async downloadExistingFiles(fileNames) {
       const submissionFilesUrl = this.element.data('submission-files-url');
-      fileNames.forEach((file) => this.pendingFileDownloads.add(file));
+      fileNames.forEach(/** @param {string} file */ (file) => this.pendingFileDownloads.add(file));
 
       await Promise.all(
-        fileNames.map(async (file) => {
+        fileNames.map(async /** @param {string} file */ (file) => {
           const escapedFileName = escapePath(file);
           const path = `${submissionFilesUrl}/${escapedFileName}`;
           try {
@@ -123,10 +137,11 @@
     initializeTemplate() {
       const $dropTarget = this.element.find('.upload-dropzone');
 
+      // @ts-ignore - dropzone is a jQuery plugin
       $dropTarget.dropzone({
         url: '/none',
         autoProcessQueue: false,
-        accept: (file, done) => {
+        accept: /** @param {any} file @param {(error?: string) => void} done */ (file, done) => {
           // fuzzy case match
           const fileNameLowerCase = file.name.toLowerCase();
           if (this.findAcceptedFileName(fileNameLowerCase)) {
@@ -134,7 +149,7 @@
           }
           return done('invalid file');
         },
-        addedfile: (file) => {
+        addedfile: /** @param {any} file */ (file) => {
           const existingFileSize = this.files.reduce((prev, next) => prev + next.size, 0);
           if (existingFileSize + file.size > this.maxFileSizeMB * 1024 * 1024) {
             this.addWarningMessage(
@@ -165,19 +180,26 @@
 
     /**
      * Syncs the internal file array to the hidden input element
-     * @type {[type]}
      */
     syncFilesToHiddenInput() {
       this.element.find('input').val(JSON.stringify(this.files));
     }
 
+    /**
+     * @param {string} name
+     * @param {number} size
+     * @param {Blob} blob
+     * @param {boolean} isFromDownload
+     */
     addFileFromBlob(name, size, blob, isFromDownload) {
       this.pendingFileDownloads.delete(name);
       this.failedFileDownloads.delete(name);
 
       const reader = new FileReader();
       reader.onload = (e) => {
+        if (!e.target) return;
         const dataUrl = e.target.result;
+        if (!dataUrl || typeof dataUrl !== 'string') return;
 
         const commaSplitIdx = dataUrl.indexOf(',');
         if (commaSplitIdx === -1) {
@@ -233,13 +255,16 @@
     /**
      * Gets the base64-encoded contents of a file with the given name.
      * @param {string} name The desired file
-     * @returns {string} The file's contents, or null if the file was not found
+     * @returns {string | null} The file's contents, or null if the file was not found
      */
     getSubmittedFileContents(name) {
-      const file = this.files.find((file) => file.name === name);
+      const file = this.files.find(/** @param {any} file */ (file) => file.name === name);
       return file ? file.contents : null;
     }
 
+    /**
+     * @param {string} name
+     */
     deleteUploadedFile(name) {
       this.pendingFileDownloads.delete(name);
       this.failedFileDownloads.delete(name);
@@ -258,9 +283,9 @@
      */
     refreshRequiredRegex() {
       this.requiredFilesUnmatchedRegex = this.requiredFilesRegex.slice();
-      this.files.forEach((n) => {
+      this.files.forEach(/** @param {any} n */ (n) => {
         if (this.requiredFiles.includes(n.name)) return;
-        const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
+        const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(/** @param {any} f */ (f) =>
           new RegExp(f[0], 'i').test(n.name),
         );
         if (matchingRegex !== -1) {
@@ -277,9 +302,10 @@
       const $fileList = this.element.find('.file-upload-status .card ul.list-group');
 
       // Save which cards are currently expanded
+      /** @type {string[]} */
       const expandedFiles = [];
       $fileList.children().each(function () {
-        const fileName = $(this).attr('data-file');
+        const fileName = /** @type {string | undefined} */ ($(this).attr('data-file'));
         if (fileName && $(this).find('.file-preview').hasClass('show')) {
           expandedFiles.push(fileName);
         }
@@ -291,6 +317,11 @@
       let index = 0;
 
       // This is called repeatedly with different parameters for required/optional/regex entries
+      /**
+       * @param {string} fileName
+       * @param {boolean} [isOptional]
+       * @param {boolean} [isWildcard]
+       */
       const renderFileListEntry = (fileName, isOptional = false, isWildcard = false) => {
         const isExpanded = expandedFiles.includes(fileName);
         const fileData = this.getSubmittedFileContents(fileName);
@@ -395,7 +426,7 @@
 
           try {
             if (this.isPdf(fileData)) {
-              const url = this.b64ToBlobUrl(fileData, { type: 'application/pdf' });
+              const url = this.b64ToBlobUrl(fileData, 'application/pdf');
               const $objectPreview = $(
                 `<div class="mt-2 ratio ratio-4x3">
                    <iframe src="${url}">
@@ -448,16 +479,18 @@
       };
 
       // First list required files...
-      this.requiredFiles.forEach((n) => renderFileListEntry(n));
+      this.requiredFiles.forEach(/** @param {string} n */ (n) => renderFileListEntry(n));
       // ... then uploaded files matching a required regex (in 1:1 mapping) ...
+      /** @type {any[]} */
       const matchedRegex = [];
+      /** @type {string[]} */
       const matchedRegexFiles = [];
       this.files
-        .map((f) => f.name)
-        .filter((n) => {
+        .map(/** @param {any} f */ (f) => f.name)
+        .filter(/** @param {string} n */ (n) => {
           if (this.requiredFiles.includes(n)) return false;
           const matchingRegex = this.requiredFilesRegex.findIndex(
-            (f) => new RegExp(f[0], 'i').test(n) && !matchedRegex.includes(f),
+            /** @param {any} f */ (f) => new RegExp(f[0], 'i').test(n) && !matchedRegex.includes(f),
           );
           if (matchingRegex !== -1) {
             matchedRegex.push(this.requiredFilesRegex[matchingRegex]);
@@ -467,25 +500,28 @@
             return false;
           }
         })
-        .forEach((n) => renderFileListEntry(n));
+        .forEach(/** @param {string} n */ (n) => renderFileListEntry(n));
       // ...then unmatched required regexes ...
-      this.requiredFilesUnmatchedRegex.forEach((n) => renderFileListEntry(n[1], false, true));
+      this.requiredFilesUnmatchedRegex.forEach(/** @param {any} n */ (n) => renderFileListEntry(n[1], false, true));
       // ...then optional file names...
-      this.optionalFiles.forEach((n) => renderFileListEntry(n, true));
+      this.optionalFiles.forEach(/** @param {string} n */ (n) => renderFileListEntry(n, true));
       // ...then all remaining uploaded files (matching a wildcard regex)...
       this.files
-        .map((f) => f.name)
+        .map(/** @param {any} f */ (f) => f.name)
         .filter(
-          (n) =>
+          /** @param {string} n */ (n) =>
             !this.requiredFiles.includes(n) &&
             !this.optionalFiles.includes(n) &&
             !matchedRegexFiles.includes(n),
         )
-        .forEach((n) => renderFileListEntry(n, true));
+        .forEach(/** @param {string} n */ (n) => renderFileListEntry(n, true));
       // ...and finally all wildcard patterns (which might accept an arbitrary number of uploads)
-      this.optionalFilesRegex.map((n) => n[1]).forEach((n) => renderFileListEntry(n, true, true));
+      this.optionalFilesRegex.map(/** @param {any} n */ (n) => n[1]).forEach(/** @param {string} n */ (n) => renderFileListEntry(n, true, true));
     }
 
+    /**
+     * @param {string} message
+     */
     addWarningMessage(message) {
       const $alert = $(
         '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>',
@@ -495,6 +531,9 @@
       this.element.find('.messages').append($alert);
     }
 
+    /**
+     * @param {string} name
+     */
     expandPreviewForFile(name) {
       const container = this.element.find(`li[data-file="${escapeFileName(name)}"]`);
       container.find('.file-preview').addClass('show');
@@ -521,6 +560,7 @@
      * https://github.com/file/file/blob/master/magic/Magdir/pdf
      * The signatures are converted to base64 for comparison, to avoid issues
      * with converting from base64 to binary.
+     * @param {string} base64FileData
      */
     isPdf(base64FileData) {
       return (
@@ -550,7 +590,12 @@
       );
     }
 
-    b64ToBlobUrl(str, options = undefined) {
+    /**
+     * @param {string} str
+     * @param {string} [mimeType]
+     */
+    b64ToBlobUrl(str, mimeType) {
+      const options = mimeType ? { type: mimeType } : undefined;
       const blob = new Blob(
         [
           new Uint8Array(
@@ -565,5 +610,6 @@
     }
   }
 
+  // @ts-ignore - TypeScript doesn't recognize PLFileUpload as a valid property
   window.PLFileUpload = PLFileUpload;
 })();
