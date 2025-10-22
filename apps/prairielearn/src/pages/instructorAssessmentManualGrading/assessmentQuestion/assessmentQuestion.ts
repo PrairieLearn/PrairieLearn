@@ -14,7 +14,7 @@ import {
   deleteAiGradingJobs,
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import { aiGrade, tuneRubric } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
   deleteAiInstanceQuestionGroups,
   selectAssessmentQuestionHasInstanceQuestionGroups,
@@ -330,6 +330,15 @@ router.post(
 
       flash('success', `Deleted AI submission grouping results for ${numDeleted} questions.`);
 
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'tune_rubric') {
+      await tuneRubric({
+        assessment_question: res.locals.assessment_question,
+        question: res.locals.question,
+        course: res.locals.course,
+        urlPrefix: res.locals.urlPrefix,
+      });
+      flash('success', 'Tuned rubric.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'modify_rubric_settings') {
       try {

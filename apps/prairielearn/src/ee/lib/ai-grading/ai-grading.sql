@@ -29,3 +29,14 @@ VALUES
   )
 RETURNING
   id;
+
+-- BLOCK update_rubric_item
+UPDATE rubric_items
+SET
+  explanation = $explanation,
+  grader_note = $grader_note
+WHERE
+  id = $id
+  AND rubric_id = $rubric_id
+RETURNING
+  id;
