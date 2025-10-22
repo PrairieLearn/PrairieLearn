@@ -25,7 +25,6 @@ import {
   logResponseUsage,
   mergeUsage,
 } from '../../lib/ai.js';
-import * as b64Util from '../../lib/base64-util.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
