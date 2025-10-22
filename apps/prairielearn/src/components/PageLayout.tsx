@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
-import { HtmlSafeString, html } from '@prairielearn/html';
+import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
 
@@ -137,9 +137,11 @@ export function PageLayout({
         <body
           class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
           hx-ext="${resolvedOptions.hxExt}"
-          ${Object.entries(resolvedOptions.dataAttributes)
-            .map(([key, value]) => `data-${key}="${value}"`)
-            .join(' ')}
+          ${unsafeHtml(
+            Object.entries(resolvedOptions.dataAttributes)
+              .map(([key, value]) => `data-${key}="${value}"`)
+              .join(' '),
+          )}
         >
           <div
             id="app-container"
@@ -233,9 +235,11 @@ export function PageLayout({
         <body
           class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
           hx-ext="${resolvedOptions.hxExt}"
-          ${Object.entries(resolvedOptions.dataAttributes)
-            .map(([key, value]) => `data-${key}="${value}"`)
-            .join(' ')}
+          ${unsafeHtml(
+            Object.entries(resolvedOptions.dataAttributes)
+              .map(([key, value]) => `data-${key}="${value}"`)
+              .join(' '),
+          )}
         >
           ${resolvedOptions.enableNavbar
             ? Navbar({
@@ -252,7 +256,7 @@ export function PageLayout({
             ${clsx(
               resolvedOptions.fullWidth ? 'container-fluid' : 'container',
               resolvedOptions.paddingBottom && 'pb-4',
-              resolvedOptions.fullHeight && 'h-100',
+              resolvedOptions.fullHeight && 'flex-grow-1',
             )}
           "
           >
