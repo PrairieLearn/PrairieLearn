@@ -7,6 +7,7 @@ import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../../lib/base64-util.js';
+import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
@@ -105,14 +106,14 @@ async function saveRevisedQuestion({
   const client = getCourseFilesClient();
 
   const files: Record<string, string | null> = {
-    'question.html': b64Util.b64EncodeUnicode(html),
+    'question.html': b64EncodeUnicode(html),
   };
 
   // We'll delete the `server.py` file if the Python code is empty. Setting
   // it to `null` instructs the editor to delete the file.
   const trimmedPython = python?.trim() ?? '';
   if (trimmedPython !== '') {
-    files['server.py'] = b64Util.b64EncodeUnicode(trimmedPython);
+    files['server.py'] = b64EncodeUnicode(trimmedPython);
   } else {
     files['server.py'] = null;
   }

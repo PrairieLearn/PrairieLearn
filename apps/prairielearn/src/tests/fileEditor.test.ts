@@ -13,6 +13,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import * as b64Util from '../lib/base64-util.js';
+import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
@@ -430,7 +431,7 @@ function editPost(
         body: new URLSearchParams({
           __action: action,
           __csrf_token: locals.__csrf_token,
-          file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
+          file_edit_contents: b64EncodeUnicode(fileEditContents),
           file_edit_orig_hash: locals.file_edit_orig_hash,
         }),
       });

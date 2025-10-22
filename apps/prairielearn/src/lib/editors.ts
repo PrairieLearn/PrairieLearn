@@ -30,6 +30,7 @@ import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import * as b64Util from './base64-util.js';
+import { b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
@@ -2394,7 +2395,7 @@ export class FileModifyEditor extends Editor {
 
     debug('verify disk hash matches orig hash');
     const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
-    const diskContents = b64Util.b64EncodeUnicode(diskContentsUTF);
+    const diskContents = b64EncodeUnicode(diskContentsUTF);
     const diskHash = this.getHash(diskContents);
     if (this.origHash !== diskHash) {
       throw new Error('Another user made changes to the file you were editing.');
