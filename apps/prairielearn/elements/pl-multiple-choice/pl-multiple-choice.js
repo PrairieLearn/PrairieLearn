@@ -50,11 +50,10 @@ window.PLMultipleChoice = function (uuid) {
   });
 
   // Reposition the dropdown when the main container is scrolled. This doesn't exist
-  // on student pages.
-  const appMainContainer = selectElement.closest('.app-main-container');
-  if (appMainContainer) {
-    appMainContainer.addEventListener('scroll', () => select.positionDropdown());
-  }
+  // on student pages, so we take care to handle that case.
+  selectElement
+    .closest('.app-main-container')
+    ?.addEventListener('scroll', () => select.positionDropdown());
 
   // By default, `tom-select` will set the placeholder as the "active" option,
   // but this means that the active option can't be changed with the up/down keys
