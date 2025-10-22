@@ -237,7 +237,7 @@ export async function computeAssessmentInstanceScore({
   allowDecrease = false,
 }: {
   assessment_instance_id: string;
-  authn_user_id: string;
+  authn_user_id: string | null;
   credit?: number | null;
   onlyLogIfScoreUpdated?: boolean;
   allowDecrease?: boolean;
