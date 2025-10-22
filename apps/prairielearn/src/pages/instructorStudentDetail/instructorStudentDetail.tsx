@@ -8,10 +8,11 @@ import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { StaffAuditEventSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
-import { selectAuditEvents } from '../../models/audit-event.js';
+import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
 import {
   deleteEnrollmentById,
   enrollUserInCourseInstance,
@@ -82,13 +83,11 @@ router.get(
       return `${student.enrollment.pending_uid}`;
     });
 
-    const auditEvents = student.user
-      ? await selectAuditEvents({
-          subject_user_id: student.user.user_id,
-          course_instance_id: courseInstance.id,
-          table_names: ['enrollments'],
-        })
-      : [];
+    const rawAuditEvents = await selectAuditEventsByEnrollmentId({
+      enrollment_id: req.params.enrollment_id,
+      table_names: ['enrollments'],
+    });
+    const auditEvents = rawAuditEvents.map((event) => StaffAuditEventSchema.parse(event));
 
     res.send(
       PageLayout({
