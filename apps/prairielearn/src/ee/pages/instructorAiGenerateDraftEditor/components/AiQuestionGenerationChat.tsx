@@ -1,25 +1,38 @@
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport, type UIMessage } from 'ai';
+import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
 import { useEffect, useRef, useState } from 'preact/hooks';
+import Markdown from 'react-markdown';
 
 import { run } from '@prairielearn/run';
+
+function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
+  return part.type.startsWith('tool-');
+}
 
 function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
   return parts.map((part, index) => {
     const key = `part-${index}`;
-    if (part.type.startsWith('tool-')) {
+    if (isToolPart(part)) {
       const toolName = part.type.slice('tool-'.length);
       return (
         <div key={key} class="border rounded p-2">
           <i class="bi bi-tools me-2" aria-hidden="true" />
           <span class="font-monospace">{toolName}</span>
+          <pre>
+            <code>{JSON.stringify(part.input, null, 2)}</code>
+          </pre>
+          {part.output && (
+            <pre>
+              <code>{JSON.stringify(part.output, null, 2)}</code>
+            </pre>
+          )}
         </div>
       );
     } else if (part.type === 'text') {
       return (
-        <p key={key} class="mb-0" style="white-space: pre-wrap;">
-          {part.text}
-        </p>
+        <div key={key} class="markdown-body">
+          <Markdown>{part.text}</Markdown>
+        </div>
       );
     } else if (part.type === 'reasoning') {
       if (!part.text) return '';
@@ -29,9 +42,10 @@ function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
             <i class="bi bi-lightbulb" aria-hidden="true" />
             <span>Thinking...</span>
           </div>
-          <p class="small mb-0" style="white-space: pre-wrap;">
-            {part.text}
-          </p>
+
+          <div class="markdown-body">
+            <Markdown>{part.text}</Markdown>
+          </div>
         </div>
       );
     } else if (['reasoning', 'step-start'].includes(part.type)) {
@@ -50,9 +64,9 @@ function Messages({ messages, urlPrefix }: { messages: UIMessage[]; urlPrefix: s
   return messages.map((message) => {
     if (message.role === 'user') {
       return (
-        <div key={message.id} class="d-flex flex-row-reverse">
+        <div key={message.id} class="d-flex flex-row-reverse mb-3">
           <div
-            class="d-flex flex-column gap-2 p-3 mb-2 rounded bg-secondary-subtle"
+            class="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
             style="max-width: 90%"
           >
             <MessageParts parts={message.parts} />
@@ -71,7 +85,7 @@ function Messages({ messages, urlPrefix }: { messages: UIMessage[]; urlPrefix: s
     });
 
     return (
-      <div key={message.id} class="d-flex flex-column gap-2">
+      <div key={message.id} class="d-flex flex-column gap-2 mb-3">
         <MessageParts parts={message.parts} />
         {jobLogsUrl && (
           <a class="small" href={jobLogsUrl} target="_blank">

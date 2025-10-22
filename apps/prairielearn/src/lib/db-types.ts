@@ -17,6 +17,14 @@ export type EnumAiQuestionGenerationMessageRole = z.infer<
   typeof EnumAiQuestionGenerationMessageRoleSchema
 >;
 
+export const EnumAiQuestionGenerationMessageStatusSchema = z.enum([
+  'pending',
+  'streaming',
+  'completed',
+  'errored',
+  'canceled',
+]);
+
 export const EnumAuditEventActionSchema = z.enum(['insert', 'update', 'delete']);
 export type EnumAuditEventAction = z.infer<typeof EnumAuditEventActionSchema>;
 
@@ -253,6 +261,7 @@ export const AiQuestionGenerationMessageSchema = z.object({
   parts: z.array(z.any()),
   question_id: IdSchema,
   role: EnumAiQuestionGenerationMessageRoleSchema,
+  status: EnumAiQuestionGenerationMessageStatusSchema,
   updated_at: DateFromISOString,
   usage_input_tokens: z.number(),
   usage_output_tokens: z.number(),

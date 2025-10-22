@@ -1,6 +1,5 @@
 import { Readable } from 'node:stream';
 
-import { createOpenAI } from '@ai-sdk/openai';
 import { UI_MESSAGE_STREAM_HEADERS } from 'ai';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -35,7 +34,7 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
-import { editQuestionWithAgent } from '../../lib/ai-question-generation/agent.js';
+import { editQuestionWithAgent, getAgenticModel } from '../../lib/ai-question-generation/agent.js';
 import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-generation/redis.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
@@ -259,39 +258,26 @@ router.post(
 
     assertCanCreateQuestion(res.locals);
 
-    const openai = createOpenAI({
-      apiKey: config.aiQuestionGenerationOpenAiApiKey,
-      organization: config.aiQuestionGenerationOpenAiOrganization,
-    });
+    // const intervalCost = await getIntervalUsage({
+    //   userId: res.locals.authn_user.user_id,
+    // });
 
-    // TODO: figure out how cost tracking will work here.
-    // if (false) {
-    //   const intervalCost = await getIntervalUsage({
-    //     userId: res.locals.authn_user.user_id,
-    //   });
+    // if (intervalCost > config.aiQuestionGenerationRateLimitDollars) {
+    //   const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
 
-    //   const approxPromptCost = approximatePromptCost({
-    //     model: QUESTION_GENERATION_OPENAI_MODEL,
-    //     prompt: req.body.prompt,
-    //   });
-
-    //   if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
-    //     const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
-
-    //     res.send(
-    //       RateLimitExceeded({
-    //         // If the user has more than the threshold of 100 tokens,
-    //         // they can shorten their message to avoid reaching the rate limit.
-    //         canShortenMessage:
-    //           config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
-    //       }),
-    //     );
-    //     return;
-    //   }
+    //   res.send(
+    //     RateLimitExceeded({
+    //       // If the user has more than the threshold of 100 tokens,
+    //       // they can shorten their message to avoid reaching the rate limit.
+    //       canShortenMessage:
+    //         config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
+    //     }),
+    //   );
+    //   return;
     // }
 
     const { message } = await editQuestionWithAgent({
-      model: openai('gpt-5-mini'),
+      model: getAgenticModel(),
       course: res.locals.course,
       question,
       user: res.locals.user,

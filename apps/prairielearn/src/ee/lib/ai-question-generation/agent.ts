@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
+import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import {
   Experimental_Agent as Agent,
   JsonToSseTransformStream,
@@ -18,8 +18,9 @@ import { z } from 'zod';
 import { execute, loadSql, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { formatPrompt } from '../../../lib/ai.js';
+import { emptyUsage, formatPrompt, mergeUsage } from '../../../lib/ai.js';
 import { b64DecodeUnicode } from '../../../lib/base64-util.js';
+import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationMessageSchema,
@@ -31,7 +32,11 @@ import { DefaultMap } from '../../../lib/default-map.js';
 import { REPOSITORY_ROOT_PATH } from '../../../lib/paths.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectQuestionById } from '../../../models/question.js';
-import { addCompletionCostToIntervalUsage, checkRender } from '../aiQuestionGeneration.js';
+import {
+  QUESTION_GENERATION_OPENAI_MODEL,
+  addCompletionCostToIntervalUsage,
+  checkRender,
+} from '../aiQuestionGeneration.js';
 import { ALLOWED_ELEMENTS, buildContextForElementDocs } from '../context-parsers/documentation.js';
 import {
   type QuestionContext,
@@ -113,6 +118,21 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
       'If validation fails, you MUST fix the errors and re-validate until it passes.',
     ],
   ]);
+}
+
+export function getAgenticModel(): LanguageModel {
+  assert(config.aiQuestionGenerationOpenAiApiKey, 'OpenAI API key is not configured');
+  assert(config.aiQuestionGenerationOpenAiOrganization, 'OpenAI organization is not configured');
+  const openai = createOpenAI({
+    apiKey: config.aiQuestionGenerationOpenAiApiKey,
+    organization: config.aiQuestionGenerationOpenAiOrganization,
+  });
+  return openai('gpt-5-codex');
+  // const openai = createOpenAI({
+  //   baseURL: 'http://127.0.0.1:1234/v1',
+  //   apiKey: 'testing',
+  // });
+  // return openai('qwen/qwen3-30b-a3b-2507');
 }
 
 export async function createQuestionGenerationAgent({
@@ -455,11 +475,14 @@ export async function editQuestionWithAgent({
           return {
             ...msg,
             parts: msg.parts.filter((part) => {
-              return true;
+              // Drop file reads/writes from the history. This helps force the model
+              // to always re-read files after new prompts, to account for modifications.
+              return !['tool-readFile', 'tool-writeFile'].includes(part.type);
             }),
           };
         });
-        return { messages: convertToModelMessages(filteredMessages) };
+        const modelMessages = convertToModelMessages(filteredMessages);
+        return { messages: modelMessages };
       } else if (prompt) {
         return { prompt };
       } else {
@@ -477,29 +500,40 @@ export async function editQuestionWithAgent({
       },
     });
 
+    let finalMessage: UIMessage<any, any> | null = null;
     const stream = res.toUIMessageStream({
       generateMessageId: () => messageRow.id,
       onFinish: async ({ responseMessage }) => {
-        const usage = await res.totalUsage;
-        await execute(sql.update_message, {
-          id: messageRow.id,
-          parts: JSON.stringify(responseMessage.parts),
-          usage_input_tokens: usage.inputTokens,
-          usage_output_tokens: usage.outputTokens,
-          usage_total_tokens: usage.totalTokens,
-        });
+        finalMessage = responseMessage;
+      },
+      // TODO: need to find some sensible way to handle errors here.
+      onError(error) {
+        job.error(error.message);
       },
     });
 
     await stream.pipeTo(sseStream.writable);
 
-    await addCompletionCostToIntervalUsage({
-      userId: authnUser.user_id,
-      usage: await res.totalUsage,
+    const steps = await res.steps.catch(() => []);
+    const totalUsage = mergeUsage(emptyUsage(), await res.totalUsage.catch(() => emptyUsage()));
+
+    job.info('Finish reason: ' + (await res.finishReason));
+    job.info(JSON.stringify(steps, null, 2));
+    job.info(JSON.stringify(totalUsage, null, 2));
+
+    await execute(sql.finalize_assistant_message, {
+      id: messageRow.id,
+      status: 'completed',
+      parts: JSON.stringify(finalMessage?.parts ?? []),
+      usage_input_tokens: totalUsage.inputTokens,
+      usage_output_tokens: totalUsage.outputTokens,
+      usage_total_tokens: totalUsage.totalTokens,
     });
 
-    job.info(JSON.stringify(await res.steps, null, 2));
-    job.info(JSON.stringify(await res.totalUsage, null, 2));
+    await addCompletionCostToIntervalUsage({
+      userId: user.user_id,
+      usage: totalUsage,
+    });
   });
 
   return {

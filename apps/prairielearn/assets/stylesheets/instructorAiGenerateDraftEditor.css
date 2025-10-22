@@ -154,3 +154,7 @@ body,
     grid-template-columns: 1fr;
   }
 }
+
+.markdown-body :last-child {
+  margin-bottom: 0;
+}

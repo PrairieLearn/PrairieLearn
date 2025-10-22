@@ -37,6 +37,7 @@ export function InstructorAiGenerateDraftEditor({
       parts: message.parts,
       metadata: {
         job_sequence_id: message.job_sequence_id,
+        status: message.status,
       },
     };
   });

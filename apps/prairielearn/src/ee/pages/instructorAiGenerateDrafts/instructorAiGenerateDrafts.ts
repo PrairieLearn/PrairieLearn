@@ -9,7 +9,7 @@ import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
-import { editQuestionWithAgent } from '../../lib/ai-question-generation/agent.js';
+import { editQuestionWithAgent, getAgenticModel } from '../../lib/ai-question-generation/agent.js';
 import {
   QUESTION_GENERATION_OPENAI_MODEL,
   approximatePromptCost,
@@ -94,11 +94,6 @@ router.post(
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
-    const openai = createOpenAI({
-      apiKey: config.aiQuestionGenerationOpenAiApiKey,
-      organization: config.aiQuestionGenerationOpenAiOrganization,
-    });
-
     if (req.body.__action === 'generate_question') {
       const intervalCost = await getIntervalUsage({
         userId: res.locals.authn_user.user_id,
@@ -123,13 +118,8 @@ router.post(
         return;
       }
 
-      // const openai2 = createOpenAI({
-      //   baseURL: 'http://127.0.0.1:1234/v1',
-      //   apiKey: 'testing',
-      // });
-
       const result = await editQuestionWithAgent({
-        model: openai('gpt-5-mini'),
+        model: getAgenticModel(),
         course: res.locals.course,
         user: res.locals.authn_user,
         authnUser: res.locals.authn_user,
