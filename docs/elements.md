@@ -182,8 +182,8 @@ as checkboxes.
 | `min-correct`         | integer                                   | See description                                                   | The minimum number of correct answers to display. Defaults to displaying all correct answers.                                                                                                                                        |
 | `max-correct`         | integer                                   | See description                                                   | The maximum number of correct answers to display. Defaults to displaying all correct answers.                                                                                                                                        |
 | `order`               | "random", "ascend", "descend", or "fixed" | "random"                                                          | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                                                                         |
-| `partial-credit-mode` | string                                    | "none", "coverage", "every-decision-counts", or "percent-correct" | Four grading modes for partial credit: None, Coverage, Every Decision Counts, and Percent Correct. See explanation below.                                                                                                            |
-| `hide-help-text`      | boolean                                   | false                                                             | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm (`"all-or-nothing"`, `"COV"`, `"EDC"` or `"PC"`)                                                                     |
+| `partial-credit`      | string                                    | "net-correct"                                                     | Grading mode: `"off"`, `"coverage"`, `"each-answer"`, or `"net-correct"`. See explanation below.                                                                                                                                     |
+| `hide-help-text`      | boolean                                   | false                                                             | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm.                                                                                                                     |
 | `detailed-help-text`  | boolean                                   | false                                                             | Display the minimum and maximum number of options that can be selected in a valid submission. See explanation below.                                                                                                                 |
 | `hide-answer-panel`   | boolean                                   | false                                                             | Option to not display the correct answer in the correct panel.                                                                                                                                                                       |
 | `hide-letter-keys`    | boolean                                   | false                                                             | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                                                                                   |
@@ -203,17 +203,15 @@ a `pl-answer` that has attributes:
 
 #### Partial credit grading
 
-Three grading methods are possible settings for the `partial-credit-mode` attribute:
+Four grading methods are available via the `partial-credit` attribute:
 
-- `"none"` (None): in this method, no partial credit is used. For full credit, all correct choices must be selected.
+- `"off"`: No partial credit. All correct choices must be selected for full credit.
 
-- `"coverage"` (Coverage): in this method, the final score is calculated by multiplying the **base score** (the proportion of correct answers that are chosen) with
-  the **guessing factor** (the proportion of chosen answers that are correct). Specifically, if `t` is the number of correct answers chosen, `c` is the total number
-  of correct answers, and `n` is the total number of answers chosen, then the final score is `(t / c) * (t / n)`. This grading scheme rewards submissions that include (i.e. "cover") all true options.
+- `"net-correct"` (default): Score = `max(0, (t - f) / c)` where `t` = correct answers selected, `f` = incorrect answers selected, `c` = total correct answers.
 
-- `"every-decision-counts"` (Every Decision Counts): in this method, the checkbox answers are considered as a list of true/false answers. If `n` is the total number of answers, each answer is assigned `1/n` points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.
+- `"each-answer"`: Each answer choice is graded independently. Score = `(t + u) / n` where `t` = correct answers selected, `u` = incorrect answers not selected, `n` = total answers.
 
-- `"percent-correct"` (Percent Correct): in this method, 1 point is added for each correct answer that is marked as correct and 1 point is subtracted for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.
+- `"coverage"`: Score = `(t / c) × (t / s)` where `t` = correct answers selected, `c` = total correct answers, `s` = total answers selected. Rewards covering all correct options without excessive guessing.
 
 #### Using the `detailed-help-text` attribute
 

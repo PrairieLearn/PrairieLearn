@@ -13,16 +13,16 @@ from typing_extensions import assert_never
 class PartialCreditType(Enum):
     """Partial credit grading modes for checkbox questions.
 
-    - ALL_OR_NOTHING (off): Must get everything correct, no partial credit
-    - COVERAGE (cov): Rewards finding correct answers without over-guessing
-    - EACH_ANSWER (eca): Each individual answer choice is graded independently to be right or wrong
-    - NET_CORRECT (net): Net correct answers (correct minus incorrect selected)
+    - ALL_OR_NOTHING: Must get everything correct, no partial credit
+    - COVERAGE: Rewards finding correct answers without over-guessing
+    - EACH_ANSWER: Each individual answer choice is graded independently to be right or wrong
+    - NET_CORRECT: Net correct answers (correct minus incorrect selected)
     """
 
     ALL_OR_NOTHING = "off"
-    COVERAGE = "cov"
-    EACH_ANSWER = "eca"
-    NET_CORRECT = "net"
+    COVERAGE = "coverage"
+    EACH_ANSWER = "each-answer"
+    NET_CORRECT = "net-correct"
 
 
 class OrderType(Enum):
@@ -74,9 +74,8 @@ def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
 def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType:
     """Get partial credit mode with backward compatibility.
 
-    New usage: partial-credit="off|cov|eca|net|all-or-nothing|coverage|each-answer|net-correct"
+    New usage: partial-credit="off|coverage|each-answer|net-correct"
     Old usage: partial-credit="true|false" + partial-credit-method="PC|COV|EDC"
-    Legacy: partial-credit="rw|cmi|right-wrong|correct-minus-incorrect" (still supported)
 
     Returns:
         PartialCreditType enum value
@@ -121,34 +120,23 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
                 else PartialCreditType.ALL_OR_NOTHING
             )
 
-    # New style: partial-credit="off|cov|eca|net|..."
+    # New style: partial-credit="off|coverage|each-answer|net-correct"
     if pl.has_attrib(element, "partial-credit-method"):
         raise ValueError(
-            'partial-credit-method is deprecated. Use partial-credit="off|cov|eca|net" instead.'
+            'partial-credit-method is deprecated. Use partial-credit="off|coverage|each-answer|net-correct" instead.'
         )
 
-    # Map long-form and legacy names to current abbreviations
-    long_to_short = {
-        "all-or-nothing": "off",
-        "coverage": "cov",
-        "each-answer": "eca",
-        "net-correct": "net",
-    }
-    partial_credit_normalized = long_to_short.get(
-        partial_credit_str.lower(), partial_credit_str.lower()
-    )
-
-    # Try to match against enum values
+    # Try to match against enum values (case-insensitive)
+    partial_credit_normalized = partial_credit_str.lower()
     for pct in PartialCreditType:
         if pct.value == partial_credit_normalized:
             return pct
 
     # If we got here, invalid value
     valid_values = ", ".join([pct.value for pct in PartialCreditType])
-    valid_long_forms = "all-or-nothing, coverage, each-answer, net-correct"
     raise ValueError(
         f'Invalid partial-credit value: "{partial_credit_str}". '
-        f"Must be one of: {valid_values}, {valid_long_forms}"
+        f"Must be one of: {valid_values}"
     )
 
 
