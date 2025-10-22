@@ -682,7 +682,6 @@ export function InstructorAssessmentQuestionsTable({
   const [showResetModal, setShowResetModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  // TODO: Better type.
   const [selectedQuestion, setSelectedQuestion] = useState<
     ZoneQuestionJson | QuestionAlternativeJson | null
   >(null);
@@ -691,7 +690,6 @@ export function InstructorAssessmentQuestionsTable({
     alternativeGroupNumber: number;
     alternativeNumber?: number;
   } | null>(null);
-  const [questionState, setQuestionState] = useState<StaffAssessmentQuestionRow[]>(questionRows);
   const [addQuestion, setAddQuestion] = useState(false);
   const [selectedQuestionDisplayName, setSelectedQuestionDisplayName] = useState<string>('');
   const [selectedAlternativeGroup, setSelectedAlternativeGroup] = useState<ZoneQuestionJson | null>(

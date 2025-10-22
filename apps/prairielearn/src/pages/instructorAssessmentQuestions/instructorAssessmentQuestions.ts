@@ -17,15 +17,15 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-import {
-  ZoneQuestionJsonSchema,
-  QuestionAlternativeJsonSchema,
-  ZoneAssessmentJsonSchema,
-} from '../../schemas/infoAssessment.js';
+import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
-import { selectOptionalQuestionByQid } from '../../models/question.js';
 import * as sqldb from '@prairielearn/postgres';
+import {
+  StaffQuestionSchema,
+  StaffTopicSchema,
+  StaffTagSchema,
+} from '../../lib/client/safe-db-types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -140,15 +140,18 @@ router.get(
 router.get(
   '/:qid',
   asyncHandler(async (req, res) => {
-    // const assessmentQuestion = await selectAssessmentQuestion(req.params.assessment_question_id);
-    const assessmentQuestion = await sqldb.queryRow(
+    const assessmentQuestion = await sqldb.queryOptionalRow(
       sql.select_assessment_question,
       {
         qid: req.params.qid,
         course_id: res.locals.course.id,
       },
-      // TODO better schema
-      z.any(),
+      z.object({
+        question: StaffQuestionSchema,
+        topic: StaffTopicSchema,
+        open_issue_count: z.number(),
+        tags: z.array(StaffTagSchema),
+      }),
     );
     res.json(assessmentQuestion);
   }),
