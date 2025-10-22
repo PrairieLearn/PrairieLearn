@@ -46,9 +46,13 @@ export function OverviewCard({
       <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
         <h1 class="mb-0">Details</h1>
         {user && (
-          <button type="button" class="btn btn-sm btn-light" onClick={handleViewAsStudent}>
-            <i class="fas fa-user-graduate me-1" aria-hidden="true" />
-            View as student
+          <button
+            type="button"
+            class="btn btn-sm btn-light d-flex flex-row align-items-center gap-1"
+            onClick={handleViewAsStudent}
+          >
+            <i class="fas fa-user-graduate" aria-hidden="true" />
+            <span>View as student</span>
           </button>
         )}
       </div>
@@ -64,8 +68,12 @@ export function OverviewCard({
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value={csrfToken} />
                   <input type="hidden" name="__action" value="block_student" />
-                  <button type="submit" class="btn btn-sm btn-outline-danger">
-                    <i class="fas fa-user-slash me-1" aria-hidden="true" /> Block student
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-outline-danger d-flex flex-row align-items-center gap-1"
+                  >
+                    <i class="fas fa-user-slash" aria-hidden="true" />
+                    <span>Block student</span>
                   </button>
                 </form>
               )}
@@ -73,8 +81,12 @@ export function OverviewCard({
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value={csrfToken} />
                   <input type="hidden" name="__action" value="unblock_student" />
-                  <button type="submit" class="btn btn-sm btn-outline-success">
-                    <i class="fas fa-user-check me-1" aria-hidden="true" /> Remove block
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-outline-success d-flex flex-row align-items-center gap-1"
+                  >
+                    <i class="fas fa-user-check" aria-hidden="true" />
+                    <span>Remove block</span>
                   </button>
                 </form>
               )}
@@ -82,8 +94,12 @@ export function OverviewCard({
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value={csrfToken} />
                   <input type="hidden" name="__action" value="cancel_invitation" />
-                  <button type="submit" class="btn btn-sm btn-outline-secondary">
-                    <i class="fas fa-times me-1" aria-hidden="true" /> Cancel invitation
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-outline-secondary d-flex flex-row align-items-center gap-1"
+                  >
+                    <i class="fas fa-times" aria-hidden="true" />
+                    <span>Cancel invitation</span>
                   </button>
                 </form>
               )}
@@ -91,8 +107,12 @@ export function OverviewCard({
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value={csrfToken} />
                   <input type="hidden" name="__action" value="invite_student" />
-                  <button type="submit" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-user-plus me-1" aria-hidden="true" /> Re-invite student
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-outline-primary d-flex flex-row align-items-center gap-1"
+                  >
+                    <i class="fas fa-user-plus" aria-hidden="true" />
+                    <span>Re-invite student</span>
                   </button>
                 </form>
               )}
