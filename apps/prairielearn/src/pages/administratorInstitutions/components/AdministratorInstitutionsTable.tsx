@@ -1,13 +1,14 @@
 import { useState } from 'preact/compat';
 
-import { type AuthnProvider, type Institution } from '../../../lib/db-types.js';
+import type { AdminInstitution } from '../../../lib/client/safe-db-types.js';
+import { type AuthnProvider } from '../../../lib/db-types.js';
 import { type Timezone } from '../../../lib/timezone.shared.js';
 
 import { AddInstitutionModal } from './AddInstitutionModal.js';
 
 export interface InstitutionRow {
-  institution: Institution;
-  authn_providers: string[];
+  institution: AdminInstitution;
+  authn_providers: AuthnProvider['name'][];
 }
 
 export function AdministratorInstitutionsTable({
