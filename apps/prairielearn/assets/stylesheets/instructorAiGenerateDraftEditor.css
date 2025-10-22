@@ -116,6 +116,7 @@
   .app-content {
     grid-template-areas: 'back' 'chat' 'preview-tabs' 'preview';
     grid-template-columns: 1fr;
+    height: unset;
   }
 
   .editor-pane-html,

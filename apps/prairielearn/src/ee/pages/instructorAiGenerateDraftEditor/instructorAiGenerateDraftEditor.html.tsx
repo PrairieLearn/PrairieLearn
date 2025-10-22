@@ -1,10 +1,8 @@
 import type { UIMessage } from 'ai';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { hydrateHtml } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/preact/server';
 
-import { HeadContents } from '../../../components/HeadContents.js';
-import { Navbar } from '../../../components/Navbar.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import {
   compiledScriptTag,
@@ -67,8 +65,8 @@ export function InstructorAiGenerateDraftEditor({
       html`<script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>`,
       unsafeHtml(resLocals.extraHeadContentHtml),
     ],
-    content: html`
-      ${hydrateHtml(
+    content: (
+      <Hydrate class="app-content-container">
         <AiQuestionGenerationEditor
           question={question}
           initialMessages={initialMessages}
@@ -79,9 +77,8 @@ export function InstructorAiGenerateDraftEditor({
           chatCsrfToken={chatCsrfToken}
           resLocals={resLocals}
           questionContainerHtml={questionContainerHtml}
-        />,
-        { class: 'app-content-container' },
-      )}
-    `,
+        />
+      </Hydrate>
+    ),
   });
 }

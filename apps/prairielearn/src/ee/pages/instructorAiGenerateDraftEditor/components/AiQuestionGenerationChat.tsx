@@ -182,8 +182,8 @@ export function AiQuestionGenerationChat({
   }, []);
 
   return (
-    <div ref={containerRef} class="app-chat p-2 bg-light border-end">
-      <div ref={chatHistoryRef} class="app-chat-history">
+    <div ref={containerRef} class="app-chat px-2 pb-2 bg-light border-end">
+      <div ref={chatHistoryRef} class="app-chat-history pt-2">
         <Messages messages={messages} urlPrefix={urlPrefix} />
       </div>
       <div class="app-chat-prompt mt-2">
