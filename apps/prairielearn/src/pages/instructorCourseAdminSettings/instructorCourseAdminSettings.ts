@@ -1,10 +1,11 @@
 import * as crypto from 'node:crypto';
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fs from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -24,10 +25,8 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const coursePathExists = await fs.pathExists(res.locals.course.path);
-    const courseInfoExists = await fs.pathExists(
-      path.join(res.locals.course.path, 'infoCourse.json'),
-    );
+    const coursePathExists = await pathExists(res.locals.course.path);
+    const courseInfoExists = await pathExists(path.join(res.locals.course.path, 'infoCourse.json'));
     const availableTimezones = await getCanonicalTimezones([res.locals.course.display_timezone]);
 
     const courseGHLink = courseRepoContentUrl(res.locals.course);
@@ -81,7 +80,7 @@ router.post(
     }
 
     if (req.body.__action === 'update_configuration') {
-      if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
+      if (!(await pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
 

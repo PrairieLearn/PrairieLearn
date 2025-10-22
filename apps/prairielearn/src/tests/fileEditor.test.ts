@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
+import * as fs from 'node:fs/promises';
 import http from 'node:http';
 import nodeUrl from 'node:url';
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
-import fs from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 import fetch, { FormData } from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
@@ -390,7 +391,7 @@ async function createCourseFiles() {
     cwd: '.',
     env: process.env,
   });
-  await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
+  await fs.cp(courseTemplateDir, courseLiveDir, { force: false, recursive: true });
   await execa('git', ['add', '-A'], {
     cwd: courseLiveDir,
     env: process.env,
@@ -410,9 +411,9 @@ async function createCourseFiles() {
 }
 
 async function deleteCourseFiles() {
-  await fs.remove(courseOriginDir);
-  await fs.remove(courseLiveDir);
-  await fs.remove(courseDevDir);
+  await fs.rm(courseOriginDir, { recursive: true, force: true });
+  await fs.rm(courseLiveDir, { recursive: true, force: true });
+  await fs.rm(courseDevDir, { recursive: true, force: true });
 }
 
 function editPost(
@@ -702,7 +703,7 @@ function pullAndVerifyFileNotInDev(fileName) {
       });
     });
     it('should not exist', async () => {
-      assert.isFalse(await fs.pathExists(path.join(courseDevDir, fileName)));
+      assert.isFalse(await pathExists(path.join(courseDevDir, fileName)));
     });
   });
 }

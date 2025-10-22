@@ -1,7 +1,7 @@
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import { Octokit } from '@octokit/rest';
-import fs from 'fs-extra';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';

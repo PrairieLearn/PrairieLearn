@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/dot-notation */
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import { execa } from 'execa';
-import fs from 'fs-extra';
+import { ensureDir, move, pathExists } from 'fs-extra/esm';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
@@ -344,12 +345,12 @@ describe('Question Sharing', function () {
         { name: SHARING_SET_NAME, description: 'Sharing set for testing' },
       ];
       const courseInfoPath = path.join(sharingCourseOriginDir, 'infoCourse.json');
-      await fs.writeJSON(courseInfoPath, sharingCourseData.course);
+      await fs.writeFile(courseInfoPath, JSON.stringify(sharingCourseData.course, null, 2));
 
       sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
-      await fs.writeJSON(
+      await fs.writeFile(
         path.join(sharingCourseOriginDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
-        sharingCourseData.questions[SHARING_QUESTION_QID],
+        JSON.stringify(sharingCourseData.questions[SHARING_QUESTION_QID], null, 2),
       );
 
       await commitAndPullSharingCourse();
@@ -456,9 +457,9 @@ describe('Question Sharing', function () {
 
     test.sequential('Publicly share a question', async () => {
       sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = true;
-      await fs.writeJSON(
+      await fs.writeFile(
         path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
-        sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
+        JSON.stringify(sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID], null, 2),
       );
 
       await commitAndPullSharingCourse();
@@ -506,7 +507,7 @@ describe('Question Sharing', function () {
     test.sequential('Fail to sync if shared question is renamed', async () => {
       const questionPath = path.join(sharingCourse.path, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
-      await fs.rename(questionPath, questionTempPath);
+      await move(questionPath, questionTempPath, { overwrite: true });
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
       assert.equal(
         syncResult.status,
@@ -526,7 +527,7 @@ describe('Question Sharing', function () {
         question_id !== null,
         'Sync of consuming course should not allow renaming a shared question.',
       );
-      await fs.rename(questionTempPath, questionPath);
+      await move(questionTempPath, questionPath, { overwrite: true });
     });
 
     test.sequential(
@@ -545,7 +546,7 @@ describe('Question Sharing', function () {
     test.sequential('Rename shared question in origin, ensure live does not sync it', async () => {
       const questionPath = path.join(sharingCourseOriginDir, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
-      await fs.rename(questionPath, questionTempPath);
+      await move(questionPath, questionTempPath, { overwrite: true });
       await execa('git', ['add', '-A'], gitOptionsOrigin);
       await execa('git', ['commit', '-m', 'invalid sharing config edit'], gitOptionsOrigin);
 
@@ -560,7 +561,7 @@ describe('Question Sharing', function () {
         'Commit hash of sharing course should not change when attempting to sync breaking change.',
       );
 
-      const sharedQuestionExists = await fs.pathExists(
+      const sharedQuestionExists = await pathExists(
         path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID),
       );
       assert(
@@ -578,9 +579,9 @@ describe('Question Sharing', function () {
     test.sequential('Remove question from sharing set, ensure live does not sync it', async () => {
       const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets || [];
       sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
-      await fs.writeJSON(
+      await fs.writeFile(
         path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
-        sharingCourseData.questions[SHARING_QUESTION_QID],
+        JSON.stringify(sharingCourseData.questions[SHARING_QUESTION_QID], null, 2),
       );
 
       await ensureInvalidSharingOperationFailsToSync();
@@ -592,9 +593,9 @@ describe('Question Sharing', function () {
       'Unshare a publicly shared question, ensure live does not sync it',
       async () => {
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = false;
-        await fs.writeJSON(
+        await fs.writeFile(
           path.join(sharingCourseLiveDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
-          sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
+          JSON.stringify(sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID], null, 2),
         );
 
         await ensureInvalidSharingOperationFailsToSync();
@@ -604,9 +605,9 @@ describe('Question Sharing', function () {
     test.sequential('Delete a sharing set, ensure live does not sync it', async () => {
       const saveSharingSets = sharingCourseData.course.sharingSets || [];
       sharingCourseData.course.sharingSets = [];
-      await fs.writeJSON(
+      await fs.writeFile(
         path.join(sharingCourseLiveDir, 'infoCourse.json'),
-        sharingCourseData.course,
+        JSON.stringify(sharingCourseData.course, null, 2),
       );
 
       await ensureInvalidSharingOperationFailsToSync();
@@ -621,9 +622,9 @@ describe('Question Sharing', function () {
         sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets?.push(
           'Fake Sharing Set Name',
         );
-        await fs.writeJSON(
+        await fs.writeFile(
           path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
-          sharingCourseData.questions[SHARING_QUESTION_QID],
+          JSON.stringify(sharingCourseData.questions[SHARING_QUESTION_QID], null, 2),
         );
 
         await ensureInvalidSharingOperationFailsToSync();
@@ -645,18 +646,18 @@ describe('Question Sharing', function () {
       'Fail to sync a shared course instance containing a nonshared assessment',
       async () => {
         sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
-        await fs.writeJSON(
+        await fs.writeFile(
           path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
-          sharingCourseData.courseInstances['Fa19'].courseInstance,
+          JSON.stringify(sharingCourseData.courseInstances['Fa19'].courseInstance, null, 2),
         );
 
         await ensureInvalidSharingOperationFailsToSync();
 
         // Restore for now
         sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = false;
-        await fs.writeJSON(
+        await fs.writeFile(
           path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
-          sharingCourseData.courseInstances['Fa19'].courseInstance,
+          JSON.stringify(sharingCourseData.courseInstances['Fa19'].courseInstance, null, 2),
         );
       },
     );
@@ -680,12 +681,12 @@ describe('Question Sharing', function () {
           },
         ];
 
-        await fs.writeJSON(
+        await fs.writeFile(
           path.join(
             sharingCourseLiveDir,
             'courseInstances/Fa19/assessments/test/infoAssessment.json',
           ),
-          sharingCourseData.courseInstances['Fa19'].assessments['test'],
+          JSON.stringify(sharingCourseData.courseInstances['Fa19'].assessments['test'], null, 2),
         );
 
         await ensureInvalidSharingOperationFailsToSync();
@@ -704,12 +705,12 @@ describe('Question Sharing', function () {
         },
       ];
 
-      await fs.writeJSON(
+      await fs.writeFile(
         path.join(
           sharingCourseLiveDir,
           'courseInstances/Fa19/assessments/test/infoAssessment.json',
         ),
-        sharingCourseData.courseInstances['Fa19'].assessments['test'],
+        JSON.stringify(sharingCourseData.courseInstances['Fa19'].assessments['test'], null, 2),
       );
 
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
@@ -735,9 +736,9 @@ describe('Question Sharing', function () {
 
     test.sequential('Successfully sync a shared course instance', async () => {
       sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
-      await fs.writeJSON(
+      await fs.writeFile(
         path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
-        sharingCourseData.courseInstances['Fa19'].courseInstance,
+        JSON.stringify(sharingCourseData.courseInstances['Fa19'].courseInstance, null, 2),
       );
 
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
@@ -762,10 +763,10 @@ describe('Question Sharing', function () {
         sharingCourseData.questions[DRAFT_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
 
         const questionDirectory = path.join(sharingCourseLiveDir, 'questions', DRAFT_QUESTION_QID);
-        await fs.ensureDir(questionDirectory);
-        await fs.writeJSON(
+        await ensureDir(questionDirectory);
+        await fs.writeFile(
           path.join(questionDirectory, 'info.json'),
-          sharingCourseData.questions[DRAFT_QUESTION_QID],
+          JSON.stringify(sharingCourseData.questions[DRAFT_QUESTION_QID], null, 2),
         );
 
         await ensureInvalidSharingOperationFailsToSync();
@@ -779,9 +780,9 @@ describe('Question Sharing', function () {
         sharingCourseData.questions[DRAFT_QUESTION_QID].sharePublicly = true;
 
         const questionDirectory = path.join(sharingCourseLiveDir, 'questions', DRAFT_QUESTION_QID);
-        await fs.writeJSON(
+        await fs.writeFile(
           path.join(questionDirectory, 'info.json'),
-          sharingCourseData.questions[DRAFT_QUESTION_QID],
+          JSON.stringify(sharingCourseData.questions[DRAFT_QUESTION_QID], null, 2),
         );
 
         await ensureInvalidSharingOperationFailsToSync();
@@ -795,9 +796,9 @@ describe('Question Sharing', function () {
         sharingCourseData.questions[DRAFT_QUESTION_QID].shareSourcePublicly = true;
 
         const questionDirectory = path.join(sharingCourseLiveDir, 'questions', DRAFT_QUESTION_QID);
-        await fs.writeJSON(
+        await fs.writeFile(
           path.join(questionDirectory, 'info.json'),
-          sharingCourseData.questions[DRAFT_QUESTION_QID],
+          JSON.stringify(sharingCourseData.questions[DRAFT_QUESTION_QID], null, 2),
         );
 
         await ensureInvalidSharingOperationFailsToSync();

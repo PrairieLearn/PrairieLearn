@@ -1,9 +1,10 @@
 import assert from 'node:assert';
+import * as fs from 'node:fs/promises';
 import * as url from 'node:url';
 import * as path from 'path';
 
 import { Router } from 'express';
-import fs from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -134,7 +135,7 @@ router.get(
 
     // We do not need an explicit `ensureChunks()` call here as the `getAndRenderVariant()` call
     // above will have already done that.
-    const questionReadmeExists = await fs.pathExists(questionReadmePath);
+    const questionReadmeExists = await pathExists(questionReadmePath);
     let readmeHtml = '';
     if (questionReadmeExists) {
       const readme = await fs.readFile(questionReadmePath, 'utf8');
