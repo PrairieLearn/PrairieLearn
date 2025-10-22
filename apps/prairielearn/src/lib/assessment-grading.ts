@@ -1,11 +1,11 @@
 import z from 'zod';
 
 import {
-  callRows,
   execute,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
+  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
@@ -52,11 +52,7 @@ export async function computeAssessmentInstanceScore({
         )) ?? 0;
     }
 
-    const pointsByZone = await callRows(
-      'assessment_instances_points',
-      [assessment_instance_id],
-      AssessmentInstanceZonePointsSchema,
-    );
+    const pointsByZone = await computeAssessmentInstanceScoreByZone({ assessment_instance_id });
     const instanceQuestionsUsedForGrade = pointsByZone.flatMap((zone) => zone.iq_ids);
     const totalPoints = pointsByZone.reduce((sum, zone) => sum + zone.points, 0);
 
@@ -91,4 +87,16 @@ export async function computeAssessmentInstanceScore({
 
     return { updated, points, score_perc };
   });
+}
+
+export async function computeAssessmentInstanceScoreByZone({
+  assessment_instance_id,
+}: {
+  assessment_instance_id: string;
+}) {
+  return await queryRows(
+    sql.compute_assessment_instance_points_by_zone,
+    { assessment_instance_id },
+    AssessmentInstanceZonePointsSchema,
+  );
 }

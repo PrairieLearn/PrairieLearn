@@ -8,7 +8,10 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
-import { computeAssessmentInstanceScore } from './assessment-grading.js';
+import {
+  computeAssessmentInstanceScore,
+  computeAssessmentInstanceScoreByZone,
+} from './assessment-grading.js';
 import {
   type Assessment,
   type AssessmentInstance,
@@ -192,9 +195,12 @@ export async function updateAssessmentInstance(
       IdSchema,
     );
 
+    const pointsByZone = await computeAssessmentInstanceScoreByZone({ assessment_instance_id });
+    const totalPointsZones = pointsByZone.reduce((sum, zone) => sum + zone.max_points, 0);
+
     const newMaxPoints = await sqldb.queryOptionalRow(
       sql.update_assessment_instance_max_points,
-      { assessment_instance_id, authn_user_id },
+      { assessment_instance_id, total_points_zones: totalPointsZones, authn_user_id },
       AssessmentInstanceSchema.pick({ max_points: true, max_bonus_points: true }),
     );
     // If assessment was not updated, grades do not need to be recomputed.
