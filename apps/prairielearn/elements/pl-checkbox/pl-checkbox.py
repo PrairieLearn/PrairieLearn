@@ -567,6 +567,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_key = data["submitted_answers"].get(name, None)
 
     if not allow_blank:
+        submitted_key_set = set()
         # Check that at least one option was selected
         if submitted_key is None:
             data["format_errors"][name] = "You must select at least one option."
@@ -574,7 +575,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     else:
         # Check that the selected options are a subset of the valid options
         # FIXME: raise ValueError instead of treating as parse error?
-        submitted_key_set = set(submitted_key)
+        submitted_key_set = set(submitted_key) if submitted_key else set()
         all_keys_set = {a["key"] for a in data["params"][name]}
 
         if not submitted_key_set.issubset(all_keys_set):
@@ -592,7 +593,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
 
     # Check that the number of submitted answers is in the interval [min_options_to_select, max_options_to_select].
-    if not (min_options_to_select <= len(submitted_key) <= max_options_to_select):
+    if not (min_options_to_select <= len(submitted_key_set) <= max_options_to_select):
         if min_options_to_select != max_options_to_select:
             data["format_errors"][name] = (
                 f"You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
