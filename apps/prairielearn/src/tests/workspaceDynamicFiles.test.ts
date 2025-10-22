@@ -12,6 +12,15 @@ async function checkFileContents(targetPath: string, filename: string, expectedC
   assert.equal(fileContents, expectedContents);
 }
 
+async function checkFilePermissions(
+  targetPath: string,
+  filename: string,
+  expectedPermissions: number,
+) {
+  const fileStats = await fs.stat(join(targetPath, filename));
+  assert.equal(fileStats.mode & 0o777, expectedPermissions);
+}
+
 describe('Workspace dynamic files', function () {
   it('succeeds with valid dynamic files', async () => {
     const targetPath = await tmp.dir({ unsafeCleanup: true });
@@ -242,17 +251,13 @@ describe('Workspace dynamic files', function () {
     assert.lengthOf(fileGenerationErrors, 0);
 
     // Check that the rendered template file has executable permissions
-    const renderedScriptPath = join(targetPath.path, 'script.sh');
-    const renderedScriptStats = await fs.stat(renderedScriptPath);
-    assert.equal(renderedScriptStats.mode & 0o755, 0o755);
+    await checkFilePermissions(targetPath.path, 'script.sh', 0o755);
 
     // Check that the simple (non-rendered) template file has executable permissions
-    const simpleScriptPath = join(targetPath.path, 'simple_script.sh');
-    const simpleScriptStats = await fs.stat(simpleScriptPath);
-    assert.equal(simpleScriptStats.mode & 0o777, 0o755);
+    await checkFilePermissions(targetPath.path, 'simple_script.sh', 0o755);
 
     // Verify the content was correctly rendered
-    const scriptContent = await fs.readFile(renderedScriptPath, 'utf-8');
+    const scriptContent = await fs.readFile(join(targetPath.path, 'script.sh'), 'utf-8');
     assert.include(scriptContent, 'params: test', 'Template should be rendered with params');
   });
 
@@ -289,19 +294,12 @@ describe('Workspace dynamic files', function () {
     assert.lengthOf(fileGenerationErrors, 0);
 
     // Check that dynamic file with mode=0o755 is executable
-    const executableScriptPath = join(targetPath.path, 'executable_script.sh');
-    const executableStats = await fs.stat(executableScriptPath);
-    assert.equal(executableStats.mode & 0o777, 0o755);
+    await checkFilePermissions(targetPath.path, 'executable_script.sh', 0o755);
 
     // Check that dynamic file with mode=0o644 is not executable
-    const nonExecutablePath = join(targetPath.path, 'non_executable.txt');
-    const nonExecutableStats = await fs.stat(nonExecutablePath);
-    assert.equal(nonExecutableStats.mode & 0o777, 0o644);
+    await checkFilePermissions(targetPath.path, 'non_executable.txt', 0o644);
 
     // Check that dynamic file without mode uses default permissions
-    const noModePath = join(targetPath.path, 'no_mode_specified.txt');
-    const noModeStats = await fs.stat(noModePath);
-    // Default permissions from fs.writeFile (no chmod applied)
-    assert.equal(noModeStats.mode & 0o777, 0o644);
+    await checkFilePermissions(targetPath.path, 'no_mode_specified.txt', 0o644);
   });
 });
