@@ -96,7 +96,7 @@ WITH
       -- drop deleted questions unless assessment type is Exam
       AND (
         aq.deleted_at IS NULL
-        OR a.assessment_type = 'Exam'
+        OR a.type = 'Exam'
       )
   ),
   points_questions AS (
