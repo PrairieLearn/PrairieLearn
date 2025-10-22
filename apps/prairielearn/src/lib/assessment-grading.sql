@@ -1,3 +1,13 @@
+-- BLOCK select_and_lock_assessment_instance
+SELECT
+  *
+FROM
+  assessment_instances AS ai
+WHERE
+  ai.id = $assessment_instance_id
+FOR NO KEY UPDATE OF
+  ai;
+
 -- BLOCK select_credit_of_last_submission
 SELECT
   s.credit

@@ -202,7 +202,7 @@ async function regradeSingleAssessmentInstance({
       await computeAssessmentInstanceScore({
         assessment_instance_id,
         authn_user_id,
-        allowDecrease: true,
+        onlyLogIfScoreUpdated: true,
       });
 
     return {
