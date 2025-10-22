@@ -50,8 +50,8 @@ window.PLMultipleChoice = function (uuid) {
       // The first time the dropdown is opened, this event is fired before the
       // options are actually present in the DOM. We'll wait for the next tick
       // to ensure that the options are present.
-      setTimeout(() => {
-        MathJax.typesetPromise([dropdown]);
+      setTimeout(async () => {
+        await MathJax.typesetPromise([dropdown]);
         select.positionDropdown();
       }, 0);
     },
