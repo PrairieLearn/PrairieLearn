@@ -9,6 +9,7 @@ import type { AccessRuleJson } from '../../../schemas/infoCourseInstance.js';
 import { PublishingMigrationModal } from './PublishingMigrationModal.js';
 
 export function LegacyAccessRuleCard({
+  isExampleCourse,
   accessRules,
   showComments,
   courseInstance,
@@ -17,6 +18,7 @@ export function LegacyAccessRuleCard({
   csrfToken,
   origHash,
 }: {
+  isExampleCourse: boolean;
   accessRules: CourseInstancePublishingRule[];
   showComments: boolean;
   courseInstance: CourseInstance;
@@ -25,6 +27,9 @@ export function LegacyAccessRuleCard({
   csrfToken: string;
   origHash: string;
 }) {
+  const canMigrate =
+    !isExampleCourse && hasCourseInstancePermissionEdit && hasCourseInstancePermissionView;
+
   const accessRuleJsonArray: AccessRuleJson[] = accessRules.map((rule) =>
     convertAccessRuleToJson(rule, courseInstance.display_timezone),
   );
@@ -32,7 +37,7 @@ export function LegacyAccessRuleCard({
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
         <h1>{courseInstance.long_name} course instance access rules</h1>
-        {hasCourseInstancePermissionEdit && hasCourseInstancePermissionView && (
+        {canMigrate && (
           <Hydrate>
             <PublishingMigrationModal
               accessRules={accessRuleJsonArray}

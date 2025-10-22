@@ -84,7 +84,10 @@ router.get(
 
     assert(hasCourseInstancePermissionEdit !== undefined);
     assert(hasCourseInstancePermissionView !== undefined);
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance, course } = getCourseInstanceContext(
+      res.locals,
+      'instructor',
+    );
 
     // Calculate orig_hash for the infoCourseInstance.json file
     const infoCourseInstancePath = path.join(
@@ -128,6 +131,7 @@ router.get(
               urlPrefix={res.locals.urlPrefix}
             />
             <InstructorInstanceAdminPublishing
+              isExampleCourse={course.example_course}
               accessControlExtensions={accessControlExtensions}
               courseInstance={courseInstance}
               hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}

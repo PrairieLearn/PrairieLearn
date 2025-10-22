@@ -101,8 +101,8 @@ export function InstructorCourseAdminInstances({
                     <tr>
                       <th>Long Name</th>
                       <th>CIID</th>
-                      <th>Published Date</th>
-                      <th>Archived Date</th>
+                      <th>Publish Date</th>
+                      <th>Unpublish Date</th>
                       <th>Students</th>
                     </tr>
                   </thead>
@@ -143,7 +143,7 @@ export function InstructorCourseAdminInstances({
                                   <button
                                     type="button"
                                     class="btn btn-xs btn-ghost"
-                                    aria-label="Information about Published Date"
+                                    aria-label="Information about Publish Date"
                                     data-bs-toggle="popover"
                                     data-bs-container="body"
                                     data-bs-placement="bottom"
@@ -163,7 +163,7 @@ export function InstructorCourseAdminInstances({
                                   <button
                                     type="button"
                                     class="btn btn-xs btn-ghost"
-                                    aria-label="Information about Archived Date"
+                                    aria-label="Information about Unpublish Date"
                                     data-bs-toggle="popover"
                                     data-bs-container="body"
                                     data-bs-placement="bottom"

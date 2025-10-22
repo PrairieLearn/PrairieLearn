@@ -42,7 +42,7 @@ const PublishingJsonSchema = z.object({
   unpublishDate: z
     .string()
     .describe(
-      'When the course instance is archived. If specified, publishDate must also be specified.',
+      'When the course instance is unpublished. If specified, publishDate must also be specified.',
     )
     .optional(),
 });

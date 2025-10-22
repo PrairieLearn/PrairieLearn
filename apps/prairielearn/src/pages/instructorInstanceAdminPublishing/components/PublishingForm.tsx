@@ -112,12 +112,14 @@ export function PublishingForm({
     });
   };
 
+  let now = getNow();
+
   // Update form values when status changes
   const handleStatusChange = (newStatus: PublishingStatus) => {
     setSelectedStatus(newStatus);
 
     // "Now" must be rounded to the nearest second, as that's what `datetime-local` supports.
-    const now = getNow();
+    now = getNow();
 
     const oneWeekLater = now.add({ weeks: 1 });
     const eighteenWeeksLater = now.add({ weeks: 18 });
@@ -269,7 +271,7 @@ export function PublishingForm({
 
   if (hasAccessRules) {
     return (
-      <div class="alert alert-info" role="alert">
+      <div class="alert alert-warning" role="alert">
         <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy
         allowAccess system. To use the new access control system, you must first remove all
         allowAccess rules from the course configuration.
@@ -330,8 +332,8 @@ export function PublishingForm({
                       The course{' '}
                       {Temporal.PlainDateTime.compare(
                         Temporal.PlainDateTime.from(unpublishDate),
-                        getNow(),
-                      ) <= 0
+                        now,
+                      ) < 0
                         ? 'was'
                         : 'will be'}{' '}
                       unpublished at{' '}
@@ -380,7 +382,7 @@ export function PublishingForm({
                     tooltip={true}
                     options={{ timeFirst: true }}
                   />{' '}
-                  and will be archived at{' '}
+                  and will be unpublished at{' '}
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(unpublishDate)}
                     timezone={courseInstance.display_timezone}
@@ -489,11 +491,8 @@ export function PublishingForm({
               {selectedStatus === 'published' && publishDate && unpublishDate && (
                 <div class="ms-4 mt-1 small text-muted">
                   The course{' '}
-                  {currentStatus === 'published'
-                    ? plainDateTimeStringToDate(publishDate, courseInstance.display_timezone) <=
-                      nowDateInTimezone(courseInstance.display_timezone)
-                      ? 'was'
-                      : 'will be'
+                  {Temporal.PlainDateTime.compare(Temporal.PlainDateTime.from(publishDate), now) < 0
+                    ? 'was'
                     : 'will be'}{' '}
                   published at{' '}
                   <FriendlyDate
@@ -502,7 +501,7 @@ export function PublishingForm({
                     tooltip={true}
                     options={{ timeFirst: true }}
                   />{' '}
-                  and will be archived at{' '}
+                  and will be unpublished at{' '}
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(unpublishDate)}
                     timezone={courseInstance.display_timezone}

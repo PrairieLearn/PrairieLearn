@@ -137,7 +137,7 @@ export async function evaluateModernCourseInstanceAccess(
   if (currentDate > latestDate) {
     return {
       hasAccess: false,
-      reason: 'Course instance has been archived',
+      reason: 'Course instance has been unpublished',
     };
   }
 

@@ -73,7 +73,7 @@
           "type": "string"
         },
         "unpublishDate": {
-          "description": "When the course instance is archived. If specified, publishDate must also be specified.",
+          "description": "When the course instance is unpublished. If specified, publishDate must also be specified.",
           "type": "string"
         }
       }

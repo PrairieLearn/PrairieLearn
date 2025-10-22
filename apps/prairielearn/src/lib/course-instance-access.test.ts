@@ -215,7 +215,7 @@ describe('evaluateCourseInstanceAccess', () => {
     const result = await evaluateCourseInstanceAccess(courseInstance, params, currentDate);
 
     assert.isFalse(result.hasAccess);
-    assert.equal(result.reason, 'Course instance has been archived');
+    assert.equal(result.reason, 'Course instance has been unpublished');
   });
 
   it('combines start and end date restrictions correctly', async () => {
@@ -532,7 +532,7 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
     await cleanupExtensionTests();
   });
 
-  it('denies access for student with no enrollment when course instance is archived', async () => {
+  it('denies access for student with no enrollment when course instance is unpublished', async () => {
     // Setup course instance with unpublish date
     await setupExtensionTests('2024-06-01 00:00:00-00');
 
@@ -552,10 +552,10 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
     const result = await evaluateCourseInstanceAccess(courseInstance, params, currentDate);
 
     assert.isFalse(result.hasAccess);
-    assert.equal(result.reason, 'Course instance has been archived');
+    assert.equal(result.reason, 'Course instance has been unpublished');
   });
 
-  it('denies access for student with enrollment but no extensions when course instance is archived', async () => {
+  it('denies access for student with enrollment but no extensions when course instance is unpublished', async () => {
     // Setup course instance with unpublish date
     await setupExtensionTests('2024-06-01 00:00:00-00');
 
@@ -575,7 +575,7 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
     const result = await evaluateCourseInstanceAccess(courseInstance, params, currentDate);
 
     assert.isFalse(result.hasAccess);
-    assert.equal(result.reason, 'Course instance has been archived');
+    assert.equal(result.reason, 'Course instance has been unpublished');
   });
 
   it('grants access for student with one extension that extends access beyond course instance archive', async () => {
@@ -650,7 +650,7 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
     assert.isTrue(result.hasAccess); // Should use latest extension (2024-09-01)
   });
 
-  it('denies access when current date is after both course instance and extension have archived', async () => {
+  it('denies access when current date is after both course instance and extension have unpublished', async () => {
     // Setup course instance with unpublish date
     await setupExtensionTests('2024-06-01 00:00:00-00');
 
@@ -675,11 +675,11 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
       enrollment: { id: testEnrollmentId } as any,
     });
 
-    const currentDate = new Date('2024-09-01T00:00:00Z'); // After both course instance and extension have archived
+    const currentDate = new Date('2024-09-01T00:00:00Z'); // After both course instance and extension have unpublished
 
     const result = await evaluateCourseInstanceAccess(courseInstance, params, currentDate);
 
     assert.isFalse(result.hasAccess);
-    assert.equal(result.reason, 'Course instance has been archived');
+    assert.equal(result.reason, 'Course instance has been unpublished');
   });
 });
