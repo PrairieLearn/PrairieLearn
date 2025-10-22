@@ -8,7 +8,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
-import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
+import { setAssessmentInstanceScore } from '../../lib/assessment.js';
 import {
   checkAssessmentInstanceBelongsToCourseInstance,
   getCourseOwners,
@@ -147,7 +147,7 @@ router.post(
         req.body.assessment_instance_id,
         res.locals.course_instance.id,
       );
-      await updateAssessmentInstanceScore(
+      await setAssessmentInstanceScore(
         req.body.assessment_instance_id,
         req.body.score_perc,
         res.locals.authn_user.user_id,

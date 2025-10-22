@@ -451,7 +451,7 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
   });
 }
 
-export async function updateAssessmentInstanceScore(
+export async function setAssessmentInstanceScore(
   assessment_instance_id: string,
   score_perc: number,
   authn_user_id: string,
@@ -472,7 +472,7 @@ export async function updateAssessmentInstanceScore(
   });
 }
 
-export async function updateAssessmentInstancePoints(
+export async function setAssessmentInstancePoints(
   assessment_instance_id: string,
   points: number,
   authn_user_id: string,
