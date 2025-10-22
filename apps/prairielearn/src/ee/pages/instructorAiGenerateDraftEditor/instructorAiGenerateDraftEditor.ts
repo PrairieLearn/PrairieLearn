@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream';
 
-import { UI_MESSAGE_STREAM_HEADERS } from 'ai';
+import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -36,6 +36,7 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
 import { editQuestionWithAgent, getAgenticModel } from '../../lib/ai-question-generation/agent.js';
+import { type QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.types.js';
 import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-generation/redis.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
@@ -158,6 +159,24 @@ router.get(
       console.dir(message.parts, { depth: null });
     }
 
+    const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
+      return {
+        id: message.id,
+        role: message.role,
+        parts: message.parts,
+        metadata: {
+          job_sequence_id: message.job_sequence_id,
+          status: message.status,
+        },
+      };
+    });
+
+    // TODO: we're currently lying to the compiler here. We should be passing schemas
+    // for our metadata and tools.
+    const validatedInitialMessages = await validateUIMessages<QuestionGenerationUIMessage>({
+      messages: initialMessages,
+    });
+
     const courseFilesClient = getCourseFilesClient();
     const { files: questionFiles } = await courseFilesClient.getQuestionFiles.query({
       course_id: res.locals.course.id,
@@ -187,7 +206,7 @@ router.get(
       InstructorAiGenerateDraftEditor({
         resLocals: res.locals,
         question: res.locals.question,
-        messages,
+        messages: validatedInitialMessages,
         questionFiles,
         richTextEditorEnabled,
         questionContainerHtml: questionContainerHtml.toString(),

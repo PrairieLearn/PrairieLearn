@@ -5,6 +5,11 @@ import Markdown from 'react-markdown';
 
 import { run } from '@prairielearn/run';
 
+import type {
+  QuestionGenerationToolUIPart,
+  QuestionGenerationUIMessage,
+} from '../../../lib/ai-question-generation/agent.types.js';
+
 function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
   return part.type.startsWith('tool-');
 }
@@ -41,23 +46,23 @@ function ToolCallStatus({
   );
 }
 
-function ToolCall({ part }: { part: ToolUIPart }) {
+function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
   const toolName = part.type.slice('tool-'.length);
 
   const statusText = run(() => {
-    if (toolName === 'getElementDocumentation') {
+    if (part.type === 'tool-getElementDocumentation') {
       if (part.state === 'input-streaming') {
         return <span>Getting element documentation...</span>;
       } else if (part.state === 'input-available') {
         return (
           <span>
-            Getting documentation for <code>&lt;{part.input?.elementName}&gt;</code>...
+            Getting documentation for <code>&lt;{part.input.elementName}&gt;</code>...
           </span>
         );
       } else if (part.state === 'output-available') {
         return (
           <span>
-            Got documentation for <code>&lt;{part.input?.elementName}&gt;</code>
+            Got documentation for <code>&lt;{part.input.elementName}&gt;</code>
           </span>
         );
       } else {
@@ -65,19 +70,19 @@ function ToolCall({ part }: { part: ToolUIPart }) {
       }
     }
 
-    if (toolName === 'listElementExamples') {
+    if (part.type === 'tool-listElementExamples') {
       if (part.state === 'input-streaming') {
         return <span>Listing element examples...</span>;
       } else if (part.state === 'input-available') {
         return (
           <span>
-            Listing examples for <code>&lt;{part.input?.elementName}&gt;</code>...
+            Listing examples for <code>&lt;{part.input.elementName}&gt;</code>...
           </span>
         );
       } else if (part.state === 'output-available') {
         return (
           <span>
-            Listed examples for <code>&lt;{part.input?.elementName}&gt;</code>
+            Listed examples for <code>&lt;{part.input.elementName}&gt;</code>
           </span>
         );
       } else {
@@ -85,8 +90,8 @@ function ToolCall({ part }: { part: ToolUIPart }) {
       }
     }
 
-    if (toolName === 'getExampleQuestions') {
-      const questionCount = part.input?.qids.length || 0;
+    if (part.type === 'tool-getExampleQuestions') {
+      const questionCount = part.input?.qids?.length || 0;
       const pluralQuestions = questionCount === 1 ? 'question' : 'questions';
       if (part.state === 'input-streaming') {
         return <span>Getting example questions...</span>;
@@ -107,19 +112,19 @@ function ToolCall({ part }: { part: ToolUIPart }) {
       }
     }
 
-    if (toolName === 'writeFile') {
+    if (part.type === 'tool-writeFile') {
       if (part.state === 'input-streaming') {
         return <span>Writing file...</span>;
       } else if (part.state === 'input-available') {
         return (
           <span>
-            Writing file <code>{part.input?.path}</code>...
+            Writing file <code>{part.input.path}</code>...
           </span>
         );
       } else if (part.state === 'output-available') {
         return (
           <span>
-            Wrote file <code>{part.input?.path}</code>
+            Wrote file <code>{part.input.path}</code>
           </span>
         );
       } else {
@@ -131,19 +136,19 @@ function ToolCall({ part }: { part: ToolUIPart }) {
       }
     }
 
-    if (toolName === 'readFile') {
+    if (part.type === 'tool-readFile') {
       if (part.state === 'input-streaming') {
         return <span>Reading file...</span>;
       } else if (part.state === 'input-available') {
         return (
           <span>
-            Reading file <code>{part.input?.path}</code>...
+            Reading file <code>{part.input.path}</code>...
           </span>
         );
       } else if (part.state === 'output-available') {
         return (
           <span>
-            Read file <code>{part.input?.path}</code>
+            Read file <code>{part.input.path}</code>
           </span>
         );
       } else {
@@ -155,7 +160,8 @@ function ToolCall({ part }: { part: ToolUIPart }) {
       }
     }
 
-    if (toolName === 'saveAndValidateQuestion') {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (part.type === 'tool-saveAndValidateQuestion') {
       if (part.state === 'input-streaming') {
         return <span>Saving and validating question...</span>;
       } else if (part.state === 'input-available') {
@@ -187,7 +193,7 @@ function ToolCall({ part }: { part: ToolUIPart }) {
   );
 }
 
-function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
+function MessageParts({ parts }: { parts: QuestionGenerationUIMessage['parts'] }) {
   return parts.map((part, index) => {
     const key = `part-${index}`;
     if (isToolPart(part)) {
@@ -224,7 +230,13 @@ function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
   });
 }
 
-function Messages({ messages, urlPrefix }: { messages: UIMessage[]; urlPrefix: string }) {
+function Messages({
+  messages,
+  urlPrefix,
+}: {
+  messages: QuestionGenerationUIMessage[];
+  urlPrefix: string;
+}) {
   return messages.map((message) => {
     if (message.role === 'user') {
       return (
@@ -268,12 +280,12 @@ export function AiQuestionGenerationChat({
   urlPrefix,
   csrfToken,
 }: {
-  initialMessages: UIMessage[];
+  initialMessages: QuestionGenerationUIMessage[];
   questionId: string;
   urlPrefix: string;
   csrfToken: string;
 }) {
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status } = useChat<QuestionGenerationUIMessage>({
     // Currently, we assume one chat per question. This should change in the future.
     id: questionId,
     messages: initialMessages,

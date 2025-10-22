@@ -1,3 +1,4 @@
+import type { Root } from 'mdast';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
@@ -31,7 +32,7 @@ function stringify(content: any) {
   });
 }
 
-function extractElementSections(ast: any) {
+function extractElementSections(ast: Root) {
   const elementSections: ElementSection[] = [];
 
   // Find the first level-three heading.

@@ -1,7 +1,7 @@
-import type { UIMessage } from 'ai';
 import { useState } from 'preact/hooks';
 
 import { type Question } from '../../../../lib/db-types.js';
+import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.types.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
 import { FinalizeModal } from './FinalizeModal.js';
@@ -19,7 +19,7 @@ export function AiQuestionGenerationEditor({
   questionContainerHtml,
 }: {
   question: Question;
-  initialMessages: UIMessage[];
+  initialMessages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
   richTextEditorEnabled: boolean;
   urlPrefix: string;

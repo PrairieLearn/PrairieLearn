@@ -13,7 +13,6 @@ import {
   tool,
 } from 'ai';
 import klaw from 'klaw';
-import { z } from 'zod';
 
 import { execute, loadSql, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -40,6 +39,7 @@ import {
 } from '../context-parsers/template-questions.js';
 import { validateHTML } from '../validateHTML.js';
 
+import { QUESTION_GENERATION_TOOLS } from './agent.types.js';
 import { getAiQuestionGenerationStreamContext } from './redis.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -224,30 +224,21 @@ export async function createQuestionGenerationAgent({
     tools: {
       readFile: tool({
         description: 'Read a file from the filesystem.',
-        inputSchema: z.object({
-          path: z.enum(['question.html', 'server.py']),
-        }),
-        outputSchema: z.string(),
+        ...QUESTION_GENERATION_TOOLS.readFile,
         execute: ({ path }) => {
           return files[path];
         },
       }),
       writeFile: tool({
         description: 'Write a file to the filesystem.',
-        inputSchema: z.object({
-          path: z.enum(['question.html', 'server.py']),
-          content: z.string(),
-        }),
+        ...QUESTION_GENERATION_TOOLS.writeFile,
         execute: ({ path, content }) => {
           files[path] = content;
         },
       }),
       getElementDocumentation: tool({
         description: 'Get the documentation for a PrairieLearn element.',
-        inputSchema: z.object({
-          elementName: z.enum(ALLOWED_ELEMENT_NAMES),
-        }),
-        outputSchema: z.string(),
+        ...QUESTION_GENERATION_TOOLS.getElementDocumentation,
         execute: async ({ elementName }) => {
           const docs = elementDocs.find((f) => f.chunkId === elementName);
           return docs?.text ?? `No documentation found for element ${elementName}`;
@@ -255,15 +246,7 @@ export async function createQuestionGenerationAgent({
       }),
       listElementExamples: tool({
         description: 'List example questions that use a given PrairieLearn element.',
-        inputSchema: z.object({
-          elementName: z.enum(ALLOWED_ELEMENT_NAMES),
-        }),
-        outputSchema: z.array(
-          z.object({
-            qid: z.string(),
-            description: z.string(),
-          }),
-        ),
+        ...QUESTION_GENERATION_TOOLS.listElementExamples,
         execute: ({ elementName }) => {
           const examples = exampleQuestionsByElement.get(elementName);
           if (!examples) return [];
@@ -276,42 +259,30 @@ export async function createQuestionGenerationAgent({
       }),
       getExampleQuestions: tool({
         description: 'Get the files for example questions by their QIDs.',
-        inputSchema: z.object({
-          qids: z.array(z.string()),
-        }),
-        outputSchema: z.array(
-          z.object({
-            qid: z.string(),
-            files: z.object({
-              'question.html': z.string(),
-              'server.py': z.string().nullable(),
-            }),
-          }),
-        ),
+        ...QUESTION_GENERATION_TOOLS.getExampleQuestions,
         execute: ({ qids }) => {
-          return qids.map((qid) => {
-            const exampleQuestion = exampleQuestions.get(qid);
-            if (!exampleQuestion) return null;
+          return qids
+            .map((qid) => {
+              const exampleQuestion = exampleQuestions.get(qid);
+              if (!exampleQuestion) return null;
 
-            return {
-              qid,
-              files: {
-                'question.html': exampleQuestion.html,
-                'server.py': exampleQuestion.python ?? null,
-              },
-            };
-          });
+              return {
+                qid,
+                files: {
+                  'question.html': exampleQuestion.html,
+                  'server.py': exampleQuestion.python ?? null,
+                },
+              };
+            })
+            .filter((example) => example != null);
         },
       }),
       saveAndValidateQuestion: tool({
         description: 'Save and validate the generated question.',
-        inputSchema: z.object({}),
-        outputSchema: z.object({
-          errors: z.array(z.string()),
-        }),
+        ...QUESTION_GENERATION_TOOLS.saveAndValidateQuestion,
         execute: async () => {
           if (!files['question.html']) {
-            return ['You must generation a question.html file.'];
+            return { errors: ['You must generation a question.html file.'] };
           }
 
           // TODO: we could possibly speed up the iteration loop by skipping the save if

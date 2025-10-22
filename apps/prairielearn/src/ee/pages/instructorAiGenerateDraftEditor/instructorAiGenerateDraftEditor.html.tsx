@@ -1,5 +1,3 @@
-import type { UIMessage } from 'ai';
-
 import { html, unsafeHtml } from '@prairielearn/html';
 import { Hydrate } from '@prairielearn/preact/server';
 
@@ -9,8 +7,9 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
-import { type AiQuestionGenerationMessage, type Question } from '../../../lib/db-types.js';
+import { type Question } from '../../../lib/db-types.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
+import type { QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.types.js';
 
 import { AiQuestionGenerationEditor } from './components/AiQuestionGenerationEditor.js';
 
@@ -24,23 +23,11 @@ export function InstructorAiGenerateDraftEditor({
 }: {
   resLocals: Record<string, any>;
   question: Question;
-  messages: AiQuestionGenerationMessage[];
+  messages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
 }) {
-  const initialMessages = messages.map((message): UIMessage => {
-    return {
-      id: message.id,
-      role: message.role,
-      parts: message.parts,
-      metadata: {
-        job_sequence_id: message.job_sequence_id,
-        status: message.status,
-      },
-    };
-  });
-
   const chatCsrfToken = generateCsrfToken({
     url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/chat`,
     authn_user_id: resLocals.authn_user?.user_id ?? '',
@@ -75,7 +62,7 @@ export function InstructorAiGenerateDraftEditor({
       <Hydrate class="app-content-container">
         <AiQuestionGenerationEditor
           question={question}
-          initialMessages={initialMessages}
+          initialMessages={messages}
           questionFiles={questionFiles}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}
