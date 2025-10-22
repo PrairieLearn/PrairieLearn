@@ -38,7 +38,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
   {
     "publishing": {
       "publishDate": "2024-08-17T00:00:01",
-      "archiveDate": "2024-12-18T23:59:59"
+      "unpublishDate": "2024-12-18T23:59:59"
     }
   }
   ```

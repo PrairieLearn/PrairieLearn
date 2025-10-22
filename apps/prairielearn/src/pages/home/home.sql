@@ -51,7 +51,7 @@ WITH
       LATERAL (
         SELECT
           COALESCE(ci.publishing_publish_date, min(ar.start_date)) AS start_date,
-          COALESCE(ci.publishing_archive_date, max(ar.end_date)) AS end_date
+          COALESCE(ci.publishing_unpublish_date, max(ar.end_date)) AS end_date
         FROM
           course_instance_access_rules AS ar
         WHERE
@@ -101,10 +101,10 @@ WITH
         SELECT
           -- Use new publishing dates if available, otherwise fall back to legacy access rules
           COALESCE(ci.publishing_publish_date, min(ar.start_date)) AS start_date,
-          COALESCE(ci.publishing_archive_date, max(ar.end_date)) AS end_date,
+          COALESCE(ci.publishing_unpublish_date, max(ar.end_date)) AS end_date,
           -- Check if archived using new publishing dates or legacy access rules
           CASE
-            WHEN ci.publishing_archive_date IS NOT NULL THEN ci.publishing_archive_date < now() - interval '1 month'
+            WHEN ci.publishing_unpublish_date IS NOT NULL THEN ci.publishing_unpublish_date < now() - interval '1 month'
             ELSE bool_and(
               ar.end_date IS NOT NULL
               -- Tolerance of 1 month to allow instructors to easily see recently archived courses
@@ -275,10 +275,10 @@ GROUP BY
   ci.id,
   e.id,
   ci.publishing_publish_date,
-  ci.publishing_archive_date
+  ci.publishing_unpublish_date
 ORDER BY
   ci.publishing_publish_date DESC NULLS LAST,
-  ci.publishing_archive_date DESC NULLS LAST,
+  ci.publishing_unpublish_date DESC NULLS LAST,
   ci.id DESC;
 
 -- BLOCK select_admin_institutions

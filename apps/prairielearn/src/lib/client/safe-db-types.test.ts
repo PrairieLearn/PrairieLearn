@@ -80,7 +80,7 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   id: '3',
   json_comment: null,
   long_name: null,
-  publishing_archive_date: null,
+  publishing_unpublish_date: null,
   publishing_publish_date: null,
   self_enrollment_enabled: true,
   self_enrollment_enabled_before_date: null,

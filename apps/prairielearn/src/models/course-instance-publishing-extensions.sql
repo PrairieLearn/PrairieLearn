@@ -11,9 +11,9 @@ WHERE
 
 -- BLOCK insert_publishing_extension
 INSERT INTO
-  course_instance_publishing_extensions (course_instance_id, name, archive_date)
+  course_instance_publishing_extensions (course_instance_id, name, unpublish_date)
 VALUES
-  ($course_instance_id, $name, $archive_date)
+  ($course_instance_id, $name, $unpublish_date)
 RETURNING
   *;
 
@@ -76,7 +76,7 @@ WHERE
 UPDATE course_instance_publishing_extensions
 SET
   name = $name,
-  archive_date = $archive_date
+  unpublish_date = $unpublish_date
 WHERE
   id = $extension_id
   AND course_instance_id = $course_instance_id

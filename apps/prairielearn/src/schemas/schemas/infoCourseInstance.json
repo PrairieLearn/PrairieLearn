@@ -69,10 +69,10 @@
       "type": "object",
       "properties": {
         "publishDate": {
-          "description": "When the course instance is published. If specified, archiveDate must also be specified.",
+          "description": "When the course instance is published. If specified, unpublishDate must also be specified.",
           "type": "string"
         },
-        "archiveDate": {
+        "unpublishDate": {
           "description": "When the course instance is archived. If specified, publishDate must also be specified.",
           "type": "string"
         }

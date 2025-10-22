@@ -36,10 +36,10 @@ const PublishingJsonSchema = z.object({
   publishDate: z
     .string()
     .describe(
-      'When the course instance is published. If specified, archiveDate must also be specified.',
+      'When the course instance is published. If specified, unpublishDate must also be specified.',
     )
     .optional(),
-  archiveDate: z
+  unpublishDate: z
     .string()
     .describe(
       'When the course instance is archived. If specified, publishDate must also be specified.',

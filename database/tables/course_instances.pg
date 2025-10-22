@@ -9,7 +9,7 @@ columns
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     json_comment: jsonb
     long_name: text
-    publishing_archive_date: timestamp with time zone
+    publishing_unpublish_date: timestamp with time zone
     publishing_publish_date: timestamp with time zone
     self_enrollment_enabled: boolean default true
     self_enrollment_enabled_before_date: timestamp with time zone
@@ -28,7 +28,7 @@ indexes
     course_instances_course_id_idx: USING btree (course_id)
 
 check constraints
-    course_instances_publishing_dates_consistency_check: CHECK (publishing_publish_date IS NULL AND publishing_archive_date IS NULL OR publishing_publish_date IS NOT NULL AND publishing_archive_date IS NOT NULL)
+    course_instances_publishing_dates_consistency_check: CHECK (publishing_publish_date IS NULL AND publishing_unpublish_date IS NULL OR publishing_publish_date IS NOT NULL AND publishing_unpublish_date IS NOT NULL)
 
 foreign-key constraints
     course_instances_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE

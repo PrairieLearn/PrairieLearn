@@ -103,7 +103,7 @@ export function migrateAccessRuleJsonToPublishingConfiguration(
   // Build the new access control configuration
   const publishingConfiguration = {
     publishDate: rule.startDate,
-    archiveDate: rule.endDate,
+    unpublishDate: rule.endDate,
   };
 
   return {

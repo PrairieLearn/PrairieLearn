@@ -21,7 +21,7 @@ interface PublishingExtensionsProps {
 
 interface ExtensionFormValues {
   name: string;
-  archive_date: string;
+  unpublish_date: string;
   uids: string;
 }
 
@@ -31,7 +31,7 @@ function ExtensionModal({
   currentArchiveText,
   onHide,
   mode,
-  mainArchiveDate,
+  mainUnpublishDate,
   courseInstanceTimezone,
   csrfToken,
   editExtensionId,
@@ -41,7 +41,7 @@ function ExtensionModal({
   currentArchiveText: string;
   onHide: () => void;
   mode: 'add' | 'edit';
-  mainArchiveDate: Date | null;
+  mainUnpublishDate: Date | null;
   courseInstanceTimezone: string;
   csrfToken: string;
   editExtensionId: string | null;
@@ -64,13 +64,13 @@ function ExtensionModal({
     reValidateMode: 'onSubmit',
   });
 
-  const currentArchiveDate = watch('archive_date');
+  const currentUnpublishDate = watch('unpublish_date');
 
   const handleAddWeek = async () => {
-    const currentDate = Temporal.PlainDateTime.from(currentArchiveDate);
+    const currentDate = Temporal.PlainDateTime.from(currentUnpublishDate);
     const newValue = currentDate.add({ weeks: 1 });
-    setValue('archive_date', newValue.toString());
-    await trigger('archive_date');
+    setValue('unpublish_date', newValue.toString());
+    await trigger('unpublish_date');
   };
 
   const validateEmails = async (value: string) => {
@@ -128,7 +128,7 @@ function ExtensionModal({
               __csrf_token: csrfToken,
               __action: editExtensionId ? 'edit_extension' : 'add_extension',
               name: data.name.trim(),
-              archive_date: data.archive_date,
+              unpublish_date: data.unpublish_date,
               extension_id: editExtensionId,
               uids: data.uids.trim(),
             };
@@ -165,32 +165,32 @@ function ExtensionModal({
                 type="datetime-local"
                 step="1"
                 class="form-control"
-                {...register('archive_date', {
+                {...register('unpublish_date', {
                   required: 'Archive date is required',
                   validate: (value) => {
-                    if (!mainArchiveDate) return true;
+                    if (!mainUnpublishDate) return true;
                     const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
-                    // edit mode has no validation on the archive date
+                    // edit mode has no validation on the unpublish date
                     return (
                       mode === 'edit' ||
-                      enteredDate > mainArchiveDate ||
-                      'Archive date must be after the course archive date'
+                      enteredDate > mainUnpublishDate ||
+                      'Archive date must be after the course unpublish date'
                     );
                   },
                 })}
               />
               <button
                 type="button"
-                class={clsx('btn btn-outline-secondary', !currentArchiveDate && 'disabled')}
+                class={clsx('btn btn-outline-secondary', !currentUnpublishDate && 'disabled')}
                 onClick={handleAddWeek}
               >
                 +1 week
               </button>
             </div>
-            {errors.archive_date && (
-              <div class="text-danger small">{String(errors.archive_date.message)}</div>
+            {errors.unpublish_date && (
+              <div class="text-danger small">{String(errors.unpublish_date.message)}</div>
             )}
-            <small class="text-muted">Current course archive date: {currentArchiveText}</small>
+            <small class="text-muted">Current course unpublish date: {currentArchiveText}</small>
           </div>
           {errorMessage && (
             <Alert variant="danger" dismissible onClose={() => setErrorMessage(null)}>
@@ -256,7 +256,7 @@ export function PublishingExtensions({
   const [shownModalMode, setShownModalMode] = useState<'add' | 'edit' | null>(null);
   const [modalDefaults, setModalDefaults] = useState<ExtensionFormValues>({
     name: '',
-    archive_date: '',
+    unpublish_date: '',
     uids: '',
   });
   const [editExtensionId, setEditExtensionId] = useState<string | null>(null);
@@ -272,8 +272,8 @@ export function PublishingExtensions({
       }
   >({ show: false });
 
-  const currentInstanceArchiveDate = courseInstance.publishing_archive_date
-    ? formatDateFriendly(courseInstance.publishing_archive_date, courseInstance.display_timezone)
+  const currentInstanceUnpublishDate = courseInstance.publishing_unpublish_date
+    ? formatDateFriendly(courseInstance.publishing_unpublish_date, courseInstance.display_timezone)
     : '—';
 
   const openAddModal = () => {
@@ -281,9 +281,9 @@ export function PublishingExtensions({
     setEditExtensionId(null);
     setModalDefaults({
       name: '',
-      archive_date: courseInstance.publishing_archive_date
+      unpublish_date: courseInstance.publishing_unpublish_date
         ? DateToPlainDateTimeString(
-            courseInstance.publishing_archive_date,
+            courseInstance.publishing_unpublish_date,
             courseInstance.display_timezone,
           )
         : '',
@@ -297,8 +297,8 @@ export function PublishingExtensions({
     setEditExtensionId(extension.id);
     setModalDefaults({
       name: extension.name ?? '',
-      archive_date: DateToPlainDateTimeString(
-        extension.archive_date,
+      unpublish_date: DateToPlainDateTimeString(
+        extension.unpublish_date,
         courseInstance.display_timezone,
       ),
       uids: extension.user_data
@@ -312,7 +312,7 @@ export function PublishingExtensions({
   const closeModal = () => {
     setShownModalMode(null);
     setEditExtensionId(null);
-    setModalDefaults({ name: '', archive_date: '', uids: '' });
+    setModalDefaults({ name: '', unpublish_date: '', uids: '' });
   };
 
   const openDeleteModal = (extension: CourseInstancePublishingExtensionWithUsers) => {
@@ -368,9 +368,9 @@ export function PublishingExtensions({
           )}
         </div>
         <small class="text-muted">
-          Extend access to specific users beyond the original archive date. If multiple extensions
+          Extend access to specific users beyond the original unpublish date. If multiple extensions
           apply to a user, the latest extension date will take effect. If an extension is before the
-          archive date, it will be ignored.
+          unpublish date, it will be ignored.
         </small>
       </div>
 
@@ -405,7 +405,7 @@ export function PublishingExtensions({
                   timeZone={courseInstance.display_timezone}
                   canEdit={canEdit}
                   isSubmitting={isSubmitting}
-                  courseInstanceArchiveDate={courseInstance.publishing_archive_date}
+                  courseInstanceUnpublishDate={courseInstance.publishing_unpublish_date}
                   showAllStudents={showAllStudents}
                   onToggleShowAllStudents={(id) => {
                     setShowAllStudents((prev) => {
@@ -428,9 +428,9 @@ export function PublishingExtensions({
         <ExtensionModal
           show={true}
           defaultValues={modalDefaults}
-          currentArchiveText={currentInstanceArchiveDate}
+          currentArchiveText={currentInstanceUnpublishDate}
           mode={shownModalMode}
-          mainArchiveDate={courseInstance.publishing_archive_date}
+          mainUnpublishDate={courseInstance.publishing_unpublish_date}
           courseInstanceTimezone={courseInstance.display_timezone}
           csrfToken={csrfToken}
           editExtensionId={editExtensionId}
@@ -494,7 +494,7 @@ function ExtensionTableRow({
   canEdit,
   onDelete,
   isSubmitting,
-  courseInstanceArchiveDate,
+  courseInstanceUnpublishDate,
   showAllStudents,
   onToggleShowAllStudents,
   onEditExtension,
@@ -506,14 +506,14 @@ function ExtensionTableRow({
   canEdit: boolean;
   onDelete: (extension: CourseInstancePublishingExtensionWithUsers) => void;
   isSubmitting: boolean;
-  courseInstanceArchiveDate: Date | null;
+  courseInstanceUnpublishDate: Date | null;
   showAllStudents: Set<string>;
   onToggleShowAllStudents: (extensionId: string) => void;
   onEditExtension: (extension: CourseInstancePublishingExtensionWithUsers) => void;
 }) {
-  // Check if extension archive date is before the course instance archive date
-  const isBeforeInstanceArchiveDate =
-    courseInstanceArchiveDate && extension.archive_date < courseInstanceArchiveDate;
+  // Check if extension unpublish date is before the course instance unpublish date
+  const isBeforeInstanceUnpublishDate =
+    courseInstanceUnpublishDate && extension.unpublish_date < courseInstanceUnpublishDate;
 
   return (
     <tr>
@@ -525,17 +525,17 @@ function ExtensionTableRow({
         )}
       </td>
       <td class="col-1">
-        {isBeforeInstanceArchiveDate ? (
+        {isBeforeInstanceUnpublishDate ? (
           <span
             data-bs-toggle="tooltip"
             data-bs-placement="top"
-            title="This date is before the course instance archive date and will be ignored"
+            title="This date is before the course instance unpublish date and will be ignored"
           >
-            {formatDateFriendly(extension.archive_date, timeZone)}
+            {formatDateFriendly(extension.unpublish_date, timeZone)}
             <i class="fas fa-exclamation-triangle text-warning" aria-hidden="true" />
           </span>
         ) : (
-          <span>{formatDateFriendly(extension.archive_date, timeZone)}</span>
+          <span>{formatDateFriendly(extension.unpublish_date, timeZone)}</span>
         )}
       </td>
       <td class="col-3">

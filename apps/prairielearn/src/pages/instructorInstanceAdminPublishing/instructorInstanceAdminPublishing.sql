@@ -18,9 +18,9 @@ WHERE
 UPDATE course_instance_publishing_extensions
 SET
   name = $name,
-  archive_date = CASE
-    WHEN $archive_date = '' THEN NULL
-    ELSE $archive_date::timestamp
+  unpublish_date = CASE
+    WHEN $unpublish_date = '' THEN NULL
+    ELSE $unpublish_date::timestamp
   END
 WHERE
   id = $extension_id

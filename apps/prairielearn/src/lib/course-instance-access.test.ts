@@ -31,13 +31,13 @@ let testEnrollmentId: string;
  *
  * Creates a complete test environment with:
  * - A course (ID: 100)
- * - A course instance (ID: 100) with configurable archive date
+ * - A course instance (ID: 100) with configurable unpublish date
  * - A test user (ID: 100) with email 'testuser@example.com'
  * - An enrollment linking the user to the course instance
  *
- * @param courseInstanceArchiveDate - The archive date for the course instance
+ * @param courseInstanceUnpublishDate - The unpublish date for the course instance
  */
-async function setupExtensionTests(courseInstanceArchiveDate: string): Promise<void> {
+async function setupExtensionTests(courseInstanceUnpublishDate: string): Promise<void> {
   // Create course using model function
   const course = await insertCourse({
     institution_id: '1',
@@ -58,7 +58,7 @@ async function setupExtensionTests(courseInstanceArchiveDate: string): Promise<v
     display_timezone: 'UTC',
     enrollment_code: 'TEST123',
     publishing_publish_date: '2024-01-01 00:00:00-00',
-    publishing_archive_date: courseInstanceArchiveDate,
+    publishing_unpublish_date: courseInstanceUnpublishDate,
   });
 
   // Create user using model function
@@ -132,7 +132,7 @@ function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): Cour
 
     // These are the only fields we care about.
     publishing_publish_date: null,
-    publishing_archive_date: null,
+    publishing_unpublish_date: null,
     ...overrides,
   };
 }
@@ -203,12 +203,12 @@ describe('evaluateCourseInstanceAccess', () => {
 
   it('denies access when current date is after published end date', async () => {
     const publishDate = new Date('2024-04-01T00:00:00Z');
-    const archiveDate = new Date('2024-05-01T00:00:00Z');
+    const unpublishDate = new Date('2024-05-01T00:00:00Z');
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
       publishing_publish_date: publishDate,
-      publishing_archive_date: archiveDate,
+      publishing_unpublish_date: unpublishDate,
     });
     const params = createMockParams();
 
@@ -220,12 +220,12 @@ describe('evaluateCourseInstanceAccess', () => {
 
   it('combines start and end date restrictions correctly', async () => {
     const publishDate = new Date('2024-05-01T00:00:00Z');
-    const archiveDate = new Date('2024-07-01T00:00:00Z');
+    const unpublishDate = new Date('2024-07-01T00:00:00Z');
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
       publishing_publish_date: publishDate,
-      publishing_archive_date: archiveDate,
+      publishing_unpublish_date: unpublishDate,
     });
     const params = createMockParams();
 
@@ -236,12 +236,12 @@ describe('evaluateCourseInstanceAccess', () => {
 
   it('prioritizes start date restriction over end date restriction', async () => {
     const publishDate = new Date('2024-07-01T00:00:00Z');
-    const archiveDate = new Date('2024-05-01T00:00:00Z');
+    const unpublishDate = new Date('2024-05-01T00:00:00Z');
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
       publishing_publish_date: publishDate,
-      publishing_archive_date: archiveDate,
+      publishing_unpublish_date: unpublishDate,
     });
     const params = createMockParams();
 
@@ -254,7 +254,7 @@ describe('evaluateCourseInstanceAccess', () => {
   it('staff bypass all restrictions even when course instance is not published', async () => {
     const courseInstance = createMockCourseInstance({
       publishing_publish_date: new Date('2024-07-01T00:00:00Z'),
-      publishing_archive_date: new Date('2024-05-01T00:00:00Z'),
+      publishing_unpublish_date: new Date('2024-05-01T00:00:00Z'),
     });
     const params = createMockParams({ course_role: 'Viewer' });
 
@@ -376,7 +376,7 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
     expect(result).toMatchInlineSnapshot(`
       {
         "publishingConfiguration": {
-          "archiveDate": "2024-07-01T00:00:00",
+          "unpublishDate": "2024-07-01T00:00:00",
           "publishDate": "2024-05-01T00:00:00",
         },
         "success": true,
@@ -436,7 +436,7 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
     expect(result).toMatchInlineSnapshot(`
       {
         "publishingConfiguration": {
-          "archiveDate": "2024-07-01T00:00:00",
+          "unpublishDate": "2024-07-01T00:00:00",
           "publishDate": "2024-05-01T00:00:00",
         },
         "success": true,
@@ -463,7 +463,7 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
     expect(result).toMatchInlineSnapshot(`
       {
         "publishingConfiguration": {
-          "archiveDate": "2024-07-01T00:00:00",
+          "unpublishDate": "2024-07-01T00:00:00",
           "publishDate": "2024-05-01T00:00:00",
         },
         "success": true,
@@ -509,7 +509,7 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
     expect(result).toMatchInlineSnapshot(`
       {
         "publishingConfiguration": {
-          "archiveDate": "2024-07-01T00:00:00",
+          "unpublishDate": "2024-07-01T00:00:00",
           "publishDate": "2024-05-01T00:00:00",
         },
         "success": true,
@@ -533,21 +533,21 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
   });
 
   it('denies access for student with no enrollment when course instance is archived', async () => {
-    // Setup course instance with archive date
+    // Setup course instance with unpublish date
     await setupExtensionTests('2024-06-01 00:00:00-00');
 
     const courseInstance = createMockCourseInstance({
       id: '100',
       course_id: '100',
       publishing_publish_date: new Date('2024-01-01T00:00:00Z'),
-      publishing_archive_date: new Date('2024-06-01T00:00:00Z'),
+      publishing_unpublish_date: new Date('2024-06-01T00:00:00Z'),
     });
 
     const params = createMockParams({
       enrollment: null,
     });
 
-    const currentDate = new Date('2024-07-01T00:00:00Z'); // After archive date
+    const currentDate = new Date('2024-07-01T00:00:00Z'); // After unpublish date
 
     const result = await evaluateCourseInstanceAccess(courseInstance, params, currentDate);
 
@@ -556,21 +556,21 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
   });
 
   it('denies access for student with enrollment but no extensions when course instance is archived', async () => {
-    // Setup course instance with archive date
+    // Setup course instance with unpublish date
     await setupExtensionTests('2024-06-01 00:00:00-00');
 
     const courseInstance = createMockCourseInstance({
       id: '100',
       course_id: '100',
       publishing_publish_date: new Date('2024-01-01T00:00:00Z'),
-      publishing_archive_date: new Date('2024-06-01T00:00:00Z'),
+      publishing_unpublish_date: new Date('2024-06-01T00:00:00Z'),
     });
 
     const params = createMockParams({
       enrollment: { id: '100' } as any, // Mock enrollment object
     });
 
-    const currentDate = new Date('2024-07-01T00:00:00Z'); // After archive date
+    const currentDate = new Date('2024-07-01T00:00:00Z'); // After unpublish date
 
     const result = await evaluateCourseInstanceAccess(courseInstance, params, currentDate);
 
@@ -579,14 +579,14 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
   });
 
   it('grants access for student with one extension that extends access beyond course instance archive', async () => {
-    // Setup course instance with archive date
+    // Setup course instance with unpublish date
     await setupExtensionTests('2024-06-01 00:00:00-00');
 
     // Create extension that extends access
     const extension = await insertPublishingExtension({
       course_instance_id: '100',
       name: 'Extended Access',
-      archive_date: new Date('2024-08-01 00:00:00-00'),
+      unpublish_date: new Date('2024-08-01 00:00:00-00'),
     });
 
     // Link extension to enrollment
@@ -596,7 +596,7 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
       id: '100',
       course_id: '100',
       publishing_publish_date: new Date('2024-01-01T00:00:00Z'),
-      publishing_archive_date: new Date('2024-06-01T00:00:00Z'),
+      publishing_unpublish_date: new Date('2024-06-01T00:00:00Z'),
     });
 
     const params = createMockParams({
@@ -610,22 +610,22 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
     assert.isTrue(result.hasAccess);
   });
 
-  it('uses latest extension archive date when student has multiple extensions', async () => {
-    // Setup course instance with archive date
+  it('uses latest extension unpublish date when student has multiple extensions', async () => {
+    // Setup course instance with unpublish date
     await setupExtensionTests('2024-06-01 00:00:00-00');
 
     // Create first extension
     const extension1 = await insertPublishingExtension({
       course_instance_id: '100',
       name: 'Extension 1',
-      archive_date: new Date('2024-07-01 00:00:00-00'),
+      unpublish_date: new Date('2024-07-01 00:00:00-00'),
     });
 
-    // Create second extension with later archive date
+    // Create second extension with later unpublish date
     const extension2 = await insertPublishingExtension({
       course_instance_id: '100',
       name: 'Extension 2',
-      archive_date: new Date('2024-09-01 00:00:00-00'),
+      unpublish_date: new Date('2024-09-01 00:00:00-00'),
     });
 
     // Link both extensions to enrollment
@@ -636,7 +636,7 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
       id: '100',
       course_id: '100',
       publishing_publish_date: new Date('2024-01-01T00:00:00Z'),
-      publishing_archive_date: new Date('2024-06-01T00:00:00Z'),
+      publishing_unpublish_date: new Date('2024-06-01T00:00:00Z'),
     });
 
     const params = createMockParams({
@@ -651,14 +651,14 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
   });
 
   it('denies access when current date is after both course instance and extension have archived', async () => {
-    // Setup course instance with archive date
+    // Setup course instance with unpublish date
     await setupExtensionTests('2024-06-01 00:00:00-00');
 
     // Create extension that extends access
     const extension = await insertPublishingExtension({
       course_instance_id: '100',
       name: 'Extended Access',
-      archive_date: new Date('2024-08-01 00:00:00-00'),
+      unpublish_date: new Date('2024-08-01 00:00:00-00'),
     });
 
     // Link extension to enrollment
@@ -668,7 +668,7 @@ describe('evaluateCourseInstanceAccess with publishing extensions', () => {
       id: '100',
       course_id: '100',
       publishing_publish_date: new Date('2024-01-01T00:00:00Z'),
-      publishing_archive_date: new Date('2024-06-01T00:00:00Z'),
+      publishing_unpublish_date: new Date('2024-06-01T00:00:00Z'),
     });
 
     const params = createMockParams({

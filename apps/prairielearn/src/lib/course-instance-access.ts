@@ -119,15 +119,15 @@ export async function evaluateModernCourseInstanceAccess(
   }
 
   // Archive date is always set alongside publish date
-  assert(courseInstance.publishing_archive_date != null);
+  assert(courseInstance.publishing_unpublish_date != null);
 
   // Consider the latest enabled date for the enrollment.
   const publishingExtensions =
     enrollment != null ? await selectPublishingExtensionsByEnrollmentId(enrollment.id) : [];
 
   const allDates = [
-    courseInstance.publishing_archive_date,
-    ...publishingExtensions.map((extension) => extension.archive_date),
+    courseInstance.publishing_unpublish_date,
+    ...publishingExtensions.map((extension) => extension.unpublish_date),
   ].sort((a, b) => {
     return b.getTime() - a.getTime();
   });

@@ -32,7 +32,7 @@ FROM
   LATERAL (
     SELECT
       COALESCE(ci.publishing_publish_date, min(ar.start_date)) AS start_date,
-      COALESCE(ci.publishing_archive_date, max(ar.end_date)) AS end_date
+      COALESCE(ci.publishing_unpublish_date, max(ar.end_date)) AS end_date
     FROM
       course_instance_access_rules AS ar
     WHERE

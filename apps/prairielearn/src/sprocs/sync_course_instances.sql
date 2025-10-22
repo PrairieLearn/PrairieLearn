@@ -156,7 +156,7 @@ BEGIN
         self_enrollment_enabled_before_date = input_date(src.data->>'self_enrollment_enabled_before_date', COALESCE(src.data->>'display_timezone', c.display_timezone)),
         self_enrollment_use_enrollment_code = (src.data->>'self_enrollment_use_enrollment_code')::boolean,
         publishing_publish_date = input_date(src.data->>'publishing_publish_date', COALESCE(src.data->>'display_timezone', c.display_timezone)),
-        publishing_archive_date = input_date(src.data->>'publishing_archive_date', COALESCE(src.data->>'display_timezone', c.display_timezone)),
+        publishing_unpublish_date = input_date(src.data->>'publishing_unpublish_date', COALESCE(src.data->>'display_timezone', c.display_timezone)),
         share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings

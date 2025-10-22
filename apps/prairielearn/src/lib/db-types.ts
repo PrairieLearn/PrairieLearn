@@ -605,7 +605,7 @@ export const CourseInstanceSchema = z.object({
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
   modern_publishing: z.boolean(),
-  publishing_archive_date: DateFromISOString.nullable(),
+  publishing_unpublish_date: DateFromISOString.nullable(),
   publishing_publish_date: DateFromISOString.nullable(),
   self_enrollment_enabled: z.boolean(),
   self_enrollment_enabled_before_date: DateFromISOString.nullable(),
@@ -644,7 +644,7 @@ export const CourseInstancePublishingRuleSchema = z.object({
 export type CourseInstancePublishingRule = z.infer<typeof CourseInstancePublishingRuleSchema>;
 
 export const CourseInstancePublishingExtensionSchema = z.object({
-  archive_date: DateFromISOString,
+  unpublish_date: DateFromISOString,
   course_instance_id: IdSchema,
   id: IdSchema,
   name: z.string().nullable(),

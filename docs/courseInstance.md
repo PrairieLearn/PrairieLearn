@@ -42,7 +42,7 @@ This file specifies basic information about the course instance:
   "longName": "Spring 2015",
   "publishing": {
     "publishDate": "2015-01-19T00:00:01",
-    "archiveDate": "2015-05-13T23:59:59"
+    "unpublishDate": "2015-05-13T23:59:59"
   }
 }
 ```
@@ -57,12 +57,12 @@ The course instance `publishing` configuration determines when the course instan
 {
   "publishing": {
     "publishDate": "2015-01-19T00:00:01",
-    "archiveDate": "2015-05-13T23:59:59"
+    "unpublishDate": "2015-05-13T23:59:59"
   }
 }
 ```
 
-Both `publishDate` and `archiveDate` must be specified together.
+Both `publishDate` and `unpublishDate` must be specified together.
 
 ### Controlling access by institution
 

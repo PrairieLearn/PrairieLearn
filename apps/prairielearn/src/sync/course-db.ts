@@ -1484,13 +1484,17 @@ function validateCourseInstance({
     errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
   } else if (usingModernPublishing) {
     assert(courseInstance.publishing != null);
-    const hasArchiveDate = courseInstance.publishing.archiveDate != null;
+    const hasUnpublishDate = courseInstance.publishing.unpublishDate != null;
     const hasPublishDate = courseInstance.publishing.publishDate != null;
-    if (hasPublishDate && !hasArchiveDate) {
-      errors.push('"publishing.archiveDate" is required if "publishing.publishDate" is specified.');
+    if (hasPublishDate && !hasUnpublishDate) {
+      errors.push(
+        '"publishing.unpublishDate" is required if "publishing.publishDate" is specified.',
+      );
     }
-    if (!hasPublishDate && hasArchiveDate) {
-      errors.push('"publishing.publishDate" is required if "publishing.archiveDate" is specified.');
+    if (!hasPublishDate && hasUnpublishDate) {
+      errors.push(
+        '"publishing.publishDate" is required if "publishing.unpublishDate" is specified.',
+      );
     }
 
     const parsedPublishDate =
@@ -1502,23 +1506,23 @@ function validateCourseInstance({
       errors.push('"publishing.publishDate" is not a valid date.');
     }
 
-    const parsedArchiveDate =
-      courseInstance.publishing.archiveDate == null
+    const parsedUnpublishDate =
+      courseInstance.publishing.unpublishDate == null
         ? null
-        : parseJsonDate(courseInstance.publishing.archiveDate);
+        : parseJsonDate(courseInstance.publishing.unpublishDate);
 
-    if (hasArchiveDate && parsedArchiveDate == null) {
-      errors.push('"publishing.archiveDate" is not a valid date.');
+    if (hasUnpublishDate && parsedUnpublishDate == null) {
+      errors.push('"publishing.unpublishDate" is not a valid date.');
     }
 
     if (
       hasPublishDate &&
-      hasArchiveDate &&
+      hasUnpublishDate &&
       parsedPublishDate != null &&
-      parsedArchiveDate != null &&
-      isAfter(parsedPublishDate, parsedArchiveDate)
+      parsedUnpublishDate != null &&
+      isAfter(parsedPublishDate, parsedUnpublishDate)
     ) {
-      errors.push('"publishing.publishDate" must be before "publishing.archiveDate".');
+      errors.push('"publishing.publishDate" must be before "publishing.unpublishDate".');
     }
   }
 

@@ -73,10 +73,10 @@ First, for the course instance, create a extension for the student:
 
 1. Go to the course instance's **Publishing** page (Admin → Publishing)
 2. Click **Add Extension** to create a new extension
-3. Enter the student's UID and set the new archive date
+3. Enter the student's UID and set the new unpublish date
 4. Save the extension
 
-This will allow the student to access the course instance beyond the original archive date.
+This will allow the student to access the course instance beyond the original unpublish date.
 
 Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoAssessment.json` to add a section for `student@example.com`:
 

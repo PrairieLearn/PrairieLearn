@@ -149,7 +149,7 @@ describe('Course instance syncing', () => {
       json: CourseInstanceJsonInput['publishing'];
       db: {
         publishing_publish_date: Date | null;
-        publishing_archive_date: Date | null;
+        publishing_unpublish_date: Date | null;
       } | null;
       errors: string[];
     }[] = [
@@ -157,25 +157,27 @@ describe('Course instance syncing', () => {
         json: {},
         db: {
           publishing_publish_date: null,
-          publishing_archive_date: null,
+          publishing_unpublish_date: null,
         },
         errors: [],
       },
       {
         json: {
-          archiveDate: jsonDate,
+          unpublishDate: jsonDate,
         },
         db: null,
-        errors: ['"publishing.publishDate" is required if "publishing.archiveDate" is specified.'],
+        errors: [
+          '"publishing.publishDate" is required if "publishing.unpublishDate" is specified.',
+        ],
       },
       {
         json: {
           publishDate: jsonDate,
-          archiveDate: jsonDate,
+          unpublishDate: jsonDate,
         },
         db: {
           publishing_publish_date: date,
-          publishing_archive_date: date,
+          publishing_unpublish_date: date,
         },
         errors: [],
       },
@@ -184,33 +186,35 @@ describe('Course instance syncing', () => {
           publishDate: jsonDate,
         },
         db: null,
-        errors: ['"publishing.archiveDate" is required if "publishing.publishDate" is specified.'],
+        errors: [
+          '"publishing.unpublishDate" is required if "publishing.publishDate" is specified.',
+        ],
       },
       {
         json: {
           publishDate: 'not a date',
-          archiveDate: jsonDate,
+          unpublishDate: jsonDate,
         },
         db: null,
         errors: ['"publishing.publishDate" is not a valid date.'],
       },
       {
         json: {
-          archiveDate: 'not a date',
+          unpublishDate: 'not a date',
         },
         db: null,
         errors: [
-          '"publishing.publishDate" is required if "publishing.archiveDate" is specified.',
-          '"publishing.archiveDate" is not a valid date.',
+          '"publishing.publishDate" is required if "publishing.unpublishDate" is specified.',
+          '"publishing.unpublishDate" is not a valid date.',
         ],
       },
       {
         json: {
           publishDate: '2025-12-01T00:00:00',
-          archiveDate: '2025-06-01T00:00:00',
+          unpublishDate: '2025-06-01T00:00:00',
         },
         db: null,
-        errors: ['"publishing.publishDate" must be before "publishing.archiveDate".'],
+        errors: ['"publishing.publishDate" must be before "publishing.unpublishDate".'],
       },
     ];
 
@@ -244,7 +248,7 @@ describe('Course instance syncing', () => {
 
         const result = {
           publishing_publish_date: syncedCourseInstance.publishing_publish_date,
-          publishing_archive_date: syncedCourseInstance.publishing_archive_date,
+          publishing_unpublish_date: syncedCourseInstance.publishing_unpublish_date,
         };
 
         assert.deepEqual(result, db);

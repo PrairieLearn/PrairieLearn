@@ -191,7 +191,7 @@ router.post(
           .object({
             accessControl: z.object({
               publishDate: z.string().nullable(),
-              archiveDate: z.string().nullable(),
+              unpublishDate: z.string().nullable(),
             }),
           })
           .parse(req.body);
@@ -203,9 +203,9 @@ router.post(
             parsedBody.accessControl.publishDate,
             (v: string | null) => v === null || v === '',
           ),
-          archiveDate: propertyValueWithDefault(
-            courseInstanceInfo.publishing?.archiveDate,
-            parsedBody.accessControl.archiveDate,
+          unpublishDate: propertyValueWithDefault(
+            courseInstanceInfo.publishing?.unpublishDate,
+            parsedBody.accessControl.unpublishDate,
             (v: string | null) => v === null || v === '',
           ),
         };
@@ -330,7 +330,7 @@ router.post(
             .trim()
             .optional()
             .transform((v) => (v === '' || v === undefined ? null : v)),
-          archive_date: z.string().trim().min(1, 'Archive date is required'),
+          unpublish_date: z.string().trim().min(1, 'Archive date is required'),
           uids: z.preprocess(
             (val) =>
               typeof val === 'string'
@@ -359,7 +359,7 @@ router.post(
         await createPublishingExtensionWithEnrollments({
           course_instance_id: res.locals.course_instance.id,
           name: body.name ?? null,
-          archive_date: new Date(body.archive_date),
+          unpublish_date: new Date(body.unpublish_date),
           enrollment_ids: enrollmentIds,
         });
 
@@ -402,7 +402,7 @@ router.post(
             .trim()
             .optional()
             .transform((v) => (v === '' || v === undefined ? null : v)),
-          archive_date: z.string().trim().optional().default(''),
+          unpublish_date: z.string().trim().optional().default(''),
           uids: z.preprocess(
             (val) =>
               typeof val === 'string'
@@ -421,7 +421,7 @@ router.post(
           await execute(sql.update_extension, {
             extension_id: body.extension_id,
             name: body.name ?? '',
-            archive_date: body.archive_date,
+            unpublish_date: body.unpublish_date,
             course_instance_id: res.locals.course_instance.id,
           });
 

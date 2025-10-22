@@ -1,5 +1,5 @@
 columns
-    archive_date: timestamp with time zone not null
+    unpublish_date: timestamp with time zone not null
     course_instance_id: bigint not null
     enabled: boolean not null default true
     id: bigint not null default nextval('course_instance_publishing_extensions_id_seq'::regclass)

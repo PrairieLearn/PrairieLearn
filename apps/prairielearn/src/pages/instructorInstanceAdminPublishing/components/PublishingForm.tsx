@@ -25,17 +25,17 @@ type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
 /** Helper to compute status from dates and current time. */
 function computeStatus(
   publishDate: Date | null,
-  archiveDate: Date | null,
+  unpublishDate: Date | null,
   courseInstance: StaffCourseInstance,
 ): PublishingStatus {
-  if (!publishDate && !archiveDate) {
+  if (!publishDate && !unpublishDate) {
     return 'unpublished';
   }
 
   const now = nowDateInTimezone(courseInstance.display_timezone);
 
-  if (publishDate && archiveDate) {
-    if (archiveDate <= now) {
+  if (publishDate && unpublishDate) {
+    if (unpublishDate <= now) {
       return 'unpublished';
     }
     if (publishDate > now) {
@@ -50,7 +50,7 @@ function computeStatus(
 
 interface PublishingFormValues {
   publishDate: string;
-  archiveDate: string;
+  unpublishDate: string;
 }
 
 export function PublishingForm({
@@ -72,11 +72,11 @@ export function PublishingForm({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const originalPublishDate = courseInstance.publishing_publish_date;
-  const originalArchiveDate = courseInstance.publishing_archive_date;
+  const originalUnpublishDate = courseInstance.publishing_unpublish_date;
 
   const currentStatus = computeStatus(
     courseInstance.publishing_publish_date,
-    courseInstance.publishing_archive_date,
+    courseInstance.publishing_unpublish_date,
     courseInstance,
   );
 
@@ -86,8 +86,8 @@ export function PublishingForm({
     publishDate: originalPublishDate
       ? DateToPlainDateTimeString(originalPublishDate, courseInstance.display_timezone)
       : '',
-    archiveDate: originalArchiveDate
-      ? DateToPlainDateTimeString(originalArchiveDate, courseInstance.display_timezone)
+    unpublishDate: originalUnpublishDate
+      ? DateToPlainDateTimeString(originalUnpublishDate, courseInstance.display_timezone)
       : '',
   };
 
@@ -104,7 +104,7 @@ export function PublishingForm({
   });
 
   const publishDate = watch('publishDate');
-  const archiveDate = watch('archiveDate');
+  const unpublishDate = watch('unpublishDate');
 
   const getNow = () => {
     return Temporal.Now.plainDateTimeISO(courseInstance.display_timezone).round({
@@ -123,22 +123,23 @@ export function PublishingForm({
     const eighteenWeeksLater = now.add({ weeks: 18 });
 
     const currentPublishDate = publishDate === '' ? null : Temporal.PlainDateTime.from(publishDate);
-    const currentArchiveDate = archiveDate === '' ? null : Temporal.PlainDateTime.from(archiveDate);
+    const currentUnpublishDate =
+      unpublishDate === '' ? null : Temporal.PlainDateTime.from(unpublishDate);
 
     // Compute updated dates. We will update them at the end of this function.
     let updatedPublishDate = currentPublishDate;
-    let updatedArchiveDate = currentArchiveDate;
+    let updatedUnpublishDate = currentUnpublishDate;
 
     switch (newStatus) {
       case 'unpublished': {
         // If the form was previously saved,
-        // we need to set the publish date to null and the archive date to now
-        if (originalArchiveDate !== null) {
+        // we need to set the publish date to null and the unpublish date to now
+        if (originalUnpublishDate !== null) {
           updatedPublishDate = null;
-          updatedArchiveDate = now;
+          updatedUnpublishDate = now;
         } else {
           updatedPublishDate = null;
-          updatedArchiveDate = null;
+          updatedUnpublishDate = null;
         }
         break;
       }
@@ -151,11 +152,11 @@ export function PublishingForm({
         }
 
         if (
-          currentArchiveDate === null ||
-          Temporal.PlainDateTime.compare(currentArchiveDate, now) <= 0 ||
-          Temporal.PlainDateTime.compare(updatedPublishDate!, currentArchiveDate) >= 0
+          currentUnpublishDate === null ||
+          Temporal.PlainDateTime.compare(currentUnpublishDate, now) <= 0 ||
+          Temporal.PlainDateTime.compare(updatedPublishDate!, currentUnpublishDate) >= 0
         ) {
-          updatedArchiveDate = eighteenWeeksLater;
+          updatedUnpublishDate = eighteenWeeksLater;
         }
         break;
       }
@@ -167,16 +168,16 @@ export function PublishingForm({
           updatedPublishDate = now;
         }
         if (
-          currentArchiveDate === null ||
-          Temporal.PlainDateTime.compare(currentArchiveDate, now) <= 0
+          currentUnpublishDate === null ||
+          Temporal.PlainDateTime.compare(currentUnpublishDate, now) <= 0
         ) {
-          updatedArchiveDate = eighteenWeeksLater;
+          updatedUnpublishDate = eighteenWeeksLater;
         }
         break;
       }
     }
     setValue('publishDate', updatedPublishDate === null ? '' : updatedPublishDate.toString());
-    setValue('archiveDate', updatedArchiveDate === null ? '' : updatedArchiveDate.toString());
+    setValue('unpublishDate', updatedUnpublishDate === null ? '' : updatedUnpublishDate.toString());
   };
 
   const onSubmit = async (data: PublishingFormValues) => {
@@ -189,7 +190,7 @@ export function PublishingForm({
         __action: 'update_access_control',
         accessControl: {
           publishDate: data.publishDate === '' ? null : data.publishDate,
-          archiveDate: data.archiveDate === '' ? null : data.archiveDate,
+          unpublishDate: data.unpublishDate === '' ? null : data.unpublishDate,
         },
         orig_hash: origHash,
       };
@@ -219,15 +220,15 @@ export function PublishingForm({
     }
   };
 
-  const handleAddWeek = async (field: 'publishDate' | 'archiveDate') => {
-    const currentValue = field === 'publishDate' ? publishDate : archiveDate;
+  const handleAddWeek = async (field: 'publishDate' | 'unpublishDate') => {
+    const currentValue = field === 'publishDate' ? publishDate : unpublishDate;
     if (currentValue) {
       const currentDate = Temporal.PlainDateTime.from(currentValue);
       const newValue = currentDate.add({ weeks: 1 });
       setValue(field, newValue.toString());
       // setValue doesn't seem to trigger validation so we need to trigger it manually
       await trigger('publishDate');
-      await trigger('archiveDate');
+      await trigger('unpublishDate');
     }
   };
 
@@ -246,19 +247,19 @@ export function PublishingForm({
     return true;
   };
 
-  const validateArchiveDate = (value: string) => {
+  const validateUnpublishDate = (value: string) => {
     if (selectedStatus !== 'unpublished') {
       if (!value) {
         return 'Archive date is required';
       }
-      // Check if archive date is after publish date
+      // Check if unpublish date is after publish date
       if (publishDate && value) {
         const publishDateTime = plainDateTimeStringToDate(
           publishDate,
           courseInstance.display_timezone,
         );
-        const archiveDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
-        if (archiveDateTime <= publishDateTime) {
+        const unpublishDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
+        if (unpublishDateTime <= publishDateTime) {
           return 'Archive date must be after publish date';
         }
       }
@@ -323,19 +324,19 @@ export function PublishingForm({
                 <div class="ms-4 mt-1 small text-muted">
                   Course is not accessible by any students
                   {publishDate && ' except those with extensions'}.
-                  {archiveDate && (
+                  {unpublishDate && (
                     <>
                       <br />
                       The course{' '}
                       {Temporal.PlainDateTime.compare(
-                        Temporal.PlainDateTime.from(archiveDate),
+                        Temporal.PlainDateTime.from(unpublishDate),
                         getNow(),
                       ) <= 0
                         ? 'was'
                         : 'will be'}{' '}
                       unpublished at{' '}
                       <FriendlyDate
-                        date={Temporal.PlainDateTime.from(archiveDate)}
+                        date={Temporal.PlainDateTime.from(unpublishDate)}
                         timezone={courseInstance.display_timezone}
                         tooltip={true}
                         options={{ timeFirst: true }}
@@ -370,7 +371,7 @@ export function PublishingForm({
                   {/* Published at a scheduled future date */}
                 </label>
               </div>
-              {selectedStatus === 'publish_scheduled' && publishDate && archiveDate && (
+              {selectedStatus === 'publish_scheduled' && publishDate && unpublishDate && (
                 <div class="ms-4 mt-1 small text-muted">
                   The course will be published at{' '}
                   <FriendlyDate
@@ -381,7 +382,7 @@ export function PublishingForm({
                   />{' '}
                   and will be archived at{' '}
                   <FriendlyDate
-                    date={Temporal.PlainDateTime.from(archiveDate)}
+                    date={Temporal.PlainDateTime.from(unpublishDate)}
                     timezone={courseInstance.display_timezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
@@ -416,7 +417,7 @@ export function PublishingForm({
                         disabled={!canEdit}
                         {...register('publishDate', {
                           validate: validatePublishDate,
-                          deps: ['archiveDate'],
+                          deps: ['unpublishDate'],
                         })}
                       />
                       <span class="input-group-text">{courseInstance.display_timezone}</span>
@@ -428,15 +429,15 @@ export function PublishingForm({
 
                   <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center">
-                      <label class="form-label mb-0" for="archiveDate">
+                      <label class="form-label mb-0" for="unpublishDate">
                         Archive Date
                       </label>
                       {canEdit && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-primary"
-                          disabled={!archiveDate}
-                          onClick={() => handleAddWeek('archiveDate')}
+                          disabled={!unpublishDate}
+                          onClick={() => handleAddWeek('unpublishDate')}
                         >
                           +1 week
                         </button>
@@ -445,18 +446,18 @@ export function PublishingForm({
                     <div class="input-group mt-2">
                       <input
                         type="datetime-local"
-                        class={clsx('form-control', errors.archiveDate && 'is-invalid')}
-                        id="archiveDate"
+                        class={clsx('form-control', errors.unpublishDate && 'is-invalid')}
+                        id="unpublishDate"
                         step="1"
                         disabled={!canEdit}
-                        {...register('archiveDate', {
-                          validate: validateArchiveDate,
+                        {...register('unpublishDate', {
+                          validate: validateUnpublishDate,
                         })}
                       />
                       <span class="input-group-text">{courseInstance.display_timezone}</span>
                     </div>
-                    {errors.archiveDate && (
-                      <div class="text-danger small mt-1">{errors.archiveDate.message}</div>
+                    {errors.unpublishDate && (
+                      <div class="text-danger small mt-1">{errors.unpublishDate.message}</div>
                     )}
                   </div>
                 </div>
@@ -485,7 +486,7 @@ export function PublishingForm({
                   Published
                 </label>
               </div>
-              {selectedStatus === 'published' && publishDate && archiveDate && (
+              {selectedStatus === 'published' && publishDate && unpublishDate && (
                 <div class="ms-4 mt-1 small text-muted">
                   The course{' '}
                   {currentStatus === 'published'
@@ -503,7 +504,7 @@ export function PublishingForm({
                   />{' '}
                   and will be archived at{' '}
                   <FriendlyDate
-                    date={Temporal.PlainDateTime.from(archiveDate)}
+                    date={Temporal.PlainDateTime.from(unpublishDate)}
                     timezone={courseInstance.display_timezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
@@ -515,15 +516,15 @@ export function PublishingForm({
                 <div class="ms-4 mt-2">
                   <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center">
-                      <label class="form-label mb-0" for="archiveDate">
+                      <label class="form-label mb-0" for="unpublishDate">
                         Archive Date
                       </label>
                       {canEdit && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-primary"
-                          disabled={!archiveDate}
-                          onClick={() => handleAddWeek('archiveDate')}
+                          disabled={!unpublishDate}
+                          onClick={() => handleAddWeek('unpublishDate')}
                         >
                           +1 week
                         </button>
@@ -532,18 +533,18 @@ export function PublishingForm({
                     <div class="input-group mt-2">
                       <input
                         type="datetime-local"
-                        class={clsx('form-control', errors.archiveDate && 'is-invalid')}
-                        id="archiveDate"
+                        class={clsx('form-control', errors.unpublishDate && 'is-invalid')}
+                        id="unpublishDate"
                         step="1"
                         disabled={!canEdit}
-                        {...register('archiveDate', {
-                          validate: validateArchiveDate,
+                        {...register('unpublishDate', {
+                          validate: validateUnpublishDate,
                         })}
                       />
                       <span class="input-group-text">{courseInstance.display_timezone}</span>
                     </div>
-                    {errors.archiveDate && (
-                      <div class="text-danger small mt-1">{errors.archiveDate.message}</div>
+                    {errors.unpublishDate && (
+                      <div class="text-danger small mt-1">{errors.unpublishDate.message}</div>
                     )}
                   </div>
                 </div>

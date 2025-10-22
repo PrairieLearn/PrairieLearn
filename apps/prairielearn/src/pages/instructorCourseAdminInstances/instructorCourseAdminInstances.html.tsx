@@ -109,12 +109,12 @@ export function InstructorCourseAdminInstances({
                   <tbody>
                     ${courseInstances.map((row) => {
                       const isLegacyPublishDate = row.publishing_publish_date === null;
-                      const isLegacyArchiveDate = row.publishing_archive_date === null;
+                      const isLegacyUnpublishDate = row.publishing_unpublish_date === null;
                       const publishDate = row.publishing_publish_date
                         ? `${formatDate(row.publishing_publish_date, row.display_timezone)}`
                         : row.formatted_start_date;
-                      const archiveDate = row.publishing_archive_date
-                        ? `${formatDate(row.publishing_archive_date, row.display_timezone)}`
+                      const unpublishDate = row.publishing_unpublish_date
+                        ? `${formatDate(row.publishing_unpublish_date, row.display_timezone)}`
                         : row.formatted_end_date;
                       return html`
                         <tr>
@@ -157,8 +157,8 @@ export function InstructorCourseAdminInstances({
                               : ''}
                           </td>
                           <td class="align-left">
-                            ${archiveDate}
-                            ${isLegacyArchiveDate
+                            ${unpublishDate}
+                            ${isLegacyUnpublishDate
                               ? html`
                                   <button
                                     type="button"

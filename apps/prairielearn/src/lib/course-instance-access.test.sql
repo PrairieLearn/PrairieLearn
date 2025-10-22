@@ -7,7 +7,7 @@ INSERT INTO
     display_timezone,
     enrollment_code,
     publishing_publish_date,
-    publishing_archive_date
+    publishing_unpublish_date
   )
 VALUES
   (
@@ -17,7 +17,7 @@ VALUES
     $display_timezone,
     $enrollment_code,
     $publishing_publish_date,
-    $publishing_archive_date
+    $publishing_unpublish_date
   );
 
 -- BLOCK cleanup_extension_tests

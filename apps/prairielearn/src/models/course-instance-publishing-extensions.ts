@@ -52,18 +52,18 @@ export async function selectPublishingExtensionsWithUsersByCourseInstance(
 export async function insertPublishingExtension({
   course_instance_id,
   name,
-  archive_date,
+  unpublish_date,
 }: {
   course_instance_id: string;
   name: string | null;
-  archive_date: Date | null;
+  unpublish_date: Date | null;
 }): Promise<CourseInstancePublishingExtension> {
   return await queryRow(
     sql.insert_publishing_extension,
     {
       course_instance_id,
       name,
-      archive_date,
+      unpublish_date,
     },
     CourseInstancePublishingExtensionSchema,
   );
@@ -95,12 +95,12 @@ export async function insertPublishingEnrollmentExtension({
 export async function createPublishingExtensionWithEnrollments({
   course_instance_id,
   name,
-  archive_date,
+  unpublish_date,
   enrollment_ids,
 }: {
   course_instance_id: string;
   name: string | null;
-  archive_date: Date | null;
+  unpublish_date: Date | null;
   enrollment_ids: string[];
 }): Promise<CourseInstancePublishingExtension> {
   return await runInTransactionAsync(async () => {
@@ -108,7 +108,7 @@ export async function createPublishingExtensionWithEnrollments({
     const extension = await insertPublishingExtension({
       course_instance_id,
       name,
-      archive_date,
+      unpublish_date,
     });
 
     // Link to enrollments
@@ -146,12 +146,12 @@ export async function updatePublishingExtension({
   extension_id,
   course_instance_id,
   name,
-  archive_date,
+  unpublish_date,
 }: {
   extension_id: string;
   course_instance_id: string;
   name: string | null;
-  archive_date: Date | null;
+  unpublish_date: Date | null;
 }): Promise<CourseInstancePublishingExtension> {
   return await queryRow(
     sql.update_publishing_extension,
@@ -159,7 +159,7 @@ export async function updatePublishingExtension({
       extension_id,
       course_instance_id,
       name,
-      archive_date,
+      unpublish_date,
     },
     CourseInstancePublishingExtensionSchema,
   );

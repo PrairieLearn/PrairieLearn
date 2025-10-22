@@ -2,7 +2,7 @@ CREATE TABLE course_instance_publishing_extensions (
   id BIGSERIAL PRIMARY KEY,
   course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,
   name TEXT,
-  archive_date TIMESTAMP WITH TIME ZONE NOT NULL,
+  unpublish_date TIMESTAMP WITH TIME ZONE NOT NULL,
   enabled BOOLEAN NOT NULL DEFAULT true
   -- These records will be hard deleted.
 );
