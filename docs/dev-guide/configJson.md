@@ -52,10 +52,10 @@ To retrieve your local IPv4 address, if you're on
 
 Copy the first address you see, and paste it into the `serverCanonicalHost` property of your `config.json` file.
 
-For example, if your IPv4 is `192.168.1.60`, your file should read:
+For example, if your IPv4 is `192.168.1.60` and PL is running on port `3000`, your file should read:
 
 ```json title="config.json"
 {
-  "serverCanonicalHost": "192.168.1.60"
+  "serverCanonicalHost": "http://192.168.1.60:3000"
 }
 ```
