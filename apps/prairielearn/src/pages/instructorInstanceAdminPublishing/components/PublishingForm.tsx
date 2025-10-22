@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { QueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useEffect, useState } from 'preact/compat';
 import { Alert } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -97,7 +97,7 @@ export function PublishingForm({
     watch,
     setValue,
     trigger,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<PublishingFormValues>({
     mode: 'onChange',
     defaultValues,
@@ -105,6 +105,20 @@ export function PublishingForm({
 
   const startDate = watch('startDate');
   const endDate = watch('endDate');
+
+  // Add browser prompt when navigating away with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        // Chrome requires returnValue to be set
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   let now = nowDateInTimezone(courseInstance.display_timezone);
 
@@ -614,14 +628,6 @@ export function PublishingForm({
                 initialExtensions={accessControlExtensions}
                 canEdit={canEdit}
                 csrfToken={csrfToken}
-                hasSaved={
-                  !!originalStartDate &&
-                  startDate ===
-                    DateToPlainDateTime(
-                      originalStartDate,
-                      courseInstance.display_timezone,
-                    ).toString()
-                }
               />
             </QueryClientProviderDebug>
           </>

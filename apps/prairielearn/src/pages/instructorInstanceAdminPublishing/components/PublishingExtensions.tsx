@@ -21,7 +21,6 @@ interface PublishingExtensionsProps {
   initialExtensions: CourseInstancePublishingExtensionWithUsers[];
   canEdit: boolean;
   csrfToken: string;
-  hasSaved: boolean;
 }
 
 interface ExtensionFormValues {
@@ -265,7 +264,6 @@ export function PublishingExtensions({
   initialExtensions,
   canEdit,
   csrfToken,
-  hasSaved,
 }: PublishingExtensionsProps) {
   const queryClient = useQueryClient();
 
@@ -286,6 +284,10 @@ export function PublishingExtensions({
   // A set of extension IDs that are showing all students
   const [showAllStudents, setShowAllStudents] = useState<Set<string>>(() => new Set());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Check if we have extensions but no publish end date
+  const hasExtensionsWithoutPublishDate =
+    extensions.length > 0 && !courseInstance.publishing_end_date;
 
   const [shownModalMode, setShownModalMode] = useState<'add' | 'edit' | null>(null);
   const [modalDefaults, setModalDefaults] = useState<ExtensionFormValues>({
@@ -392,7 +394,7 @@ export function PublishingExtensions({
       <div class="mb-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h5 class="mb-0">Extensions</h5>
-          {canEdit && hasSaved && (
+          {canEdit && (
             <button
               type="button"
               class="btn btn-outline-primary btn-sm text-nowrap"
@@ -410,13 +412,17 @@ export function PublishingExtensions({
         </small>
       </div>
 
+      {hasExtensionsWithoutPublishDate && (
+        <Alert variant="warning" class="mb-3">
+          <i class="fas fa-exclamation-triangle me-2" aria-hidden="true" />
+          You have extensions configured but no course instance end date. Extensions will not take
+          effect until you save a publishing end date above.
+        </Alert>
+      )}
+
       {extensions.length === 0 && (
         <div class="text-center text-muted mb-3">
-          <p class="mb-0">
-            {hasSaved
-              ? 'No extensions configured.'
-              : 'Extensions are not available until the course instance publishing settings are saved.'}
-          </p>
+          <p class="mb-0">No extensions configured.</p>
         </div>
       )}
       {errorMessage && (
