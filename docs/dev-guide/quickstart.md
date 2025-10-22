@@ -32,6 +32,8 @@ If you need support for [workspaces](../workspaces/index.md), ensure Docker is i
 
 ```sh
 sudo make dev-workspace-host # or sudo make start-workspace-host
+# Make sure to run PrairieLearn as root
+sudo make dev
 ```
 
 !!! note "Debugging workspaces"
@@ -47,6 +49,8 @@ sudo make dev-workspace-host # or sudo make start-workspace-host
     ```
 
     If you see no hosts, the workspace host is not running. If the `ready_at` column is an older date, the workspace host may also not be running.
+
+    Additionally, since PrairieLearn manages the workspace files, you need to also run PrairieLearn as root.
 
 ## Documentation
 

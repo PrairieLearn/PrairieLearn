@@ -389,8 +389,6 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
 
   // Update permissions so that the directory and all contents are owned by the workspace user
   for await (const file of klaw(sourcePath)) {
-    // file.stats.gid
-    // file.stats.uid
     await fsPromises.chown(
       file.path,
       config.workspaceJobsDirectoryOwnerUid,
