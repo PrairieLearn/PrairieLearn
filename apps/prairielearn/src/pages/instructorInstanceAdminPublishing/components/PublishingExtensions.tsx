@@ -22,7 +22,7 @@ interface PublishingExtensionsProps {
 
 interface ExtensionFormValues {
   name: string;
-  unpublish_date: string;
+  end_date: string;
   uids: string;
 }
 
@@ -32,7 +32,7 @@ function ExtensionModal({
   currentUnpublishText,
   onHide,
   mode,
-  mainUnpublishDate,
+  mainEndDate,
   courseInstanceTimezone,
   csrfToken,
   editExtensionId,
@@ -42,7 +42,7 @@ function ExtensionModal({
   currentUnpublishText: string;
   onHide: () => void;
   mode: 'add' | 'edit';
-  mainUnpublishDate: Date | null;
+  mainEndDate: Date | null;
   courseInstanceTimezone: string;
   csrfToken: string;
   editExtensionId: string | null;
@@ -65,13 +65,13 @@ function ExtensionModal({
     reValidateMode: 'onSubmit',
   });
 
-  const currentUnpublishDate = watch('unpublish_date');
+  const currentEndDate = watch('end_date');
 
   const handleAddWeek = async () => {
-    const currentDate = Temporal.PlainDateTime.from(currentUnpublishDate);
+    const currentDate = Temporal.PlainDateTime.from(currentEndDate);
     const newValue = currentDate.add({ weeks: 1 });
-    setValue('unpublish_date', newValue.toString());
-    await trigger('unpublish_date');
+    setValue('end_date', newValue.toString());
+    await trigger('end_date');
   };
 
   const validateEmails = async (value: string) => {
@@ -129,7 +129,7 @@ function ExtensionModal({
               __csrf_token: csrfToken,
               __action: editExtensionId ? 'edit_extension' : 'add_extension',
               name: data.name.trim(),
-              unpublish_date: data.unpublish_date,
+              end_date: data.end_date,
               extension_id: editExtensionId,
               uids: data.uids.trim(),
             };
@@ -158,7 +158,7 @@ function ExtensionModal({
           </div>
           <div class="mb-3">
             <label class="form-label" for="ext-date">
-              Unpublish date
+              End date
             </label>
             <div class="input-group">
               <input
@@ -166,32 +166,32 @@ function ExtensionModal({
                 type="datetime-local"
                 step="1"
                 class="form-control"
-                {...register('unpublish_date', {
-                  required: 'Unpublish date is required',
+                {...register('end_date', {
+                  required: 'End date is required',
                   validate: (value) => {
-                    if (!mainUnpublishDate) return true;
+                    if (!mainEndDate) return true;
                     const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
-                    // edit mode has no validation on the unpublish date
+                    // edit mode has no validation on the end date
                     return (
                       mode === 'edit' ||
-                      enteredDate > mainUnpublishDate ||
-                      'Unpublish date must be after the course unpublish date'
+                      enteredDate > mainEndDate ||
+                      'End date must be after the course end date'
                     );
                   },
                 })}
               />
               <button
                 type="button"
-                class={clsx('btn btn-outline-secondary', !currentUnpublishDate && 'disabled')}
+                class={clsx('btn btn-outline-secondary', !currentEndDate && 'disabled')}
                 onClick={handleAddWeek}
               >
                 +1 week
               </button>
             </div>
-            {errors.unpublish_date && (
-              <div class="text-danger small">{String(errors.unpublish_date.message)}</div>
+            {errors.end_date && (
+              <div class="text-danger small">{String(errors.end_date.message)}</div>
             )}
-            <small class="text-muted">Current course unpublish date: {currentUnpublishText}</small>
+            <small class="text-muted">Current course end date: {currentUnpublishText}</small>
           </div>
           {errorMessage && (
             <Alert variant="danger" dismissible onClose={() => setErrorMessage(null)}>
@@ -258,7 +258,7 @@ export function PublishingExtensions({
   const [shownModalMode, setShownModalMode] = useState<'add' | 'edit' | null>(null);
   const [modalDefaults, setModalDefaults] = useState<ExtensionFormValues>({
     name: '',
-    unpublish_date: '',
+    end_date: '',
     uids: '',
   });
   const [editExtensionId, setEditExtensionId] = useState<string | null>(null);
@@ -274,8 +274,8 @@ export function PublishingExtensions({
       }
   >({ show: false });
 
-  const currentInstanceUnpublishDate = courseInstance.publishing_unpublish_date
-    ? formatDateFriendly(courseInstance.publishing_unpublish_date, courseInstance.display_timezone)
+  const currentInstanceEndDate = courseInstance.publishing_end_date
+    ? formatDateFriendly(courseInstance.publishing_end_date, courseInstance.display_timezone)
     : '—';
 
   const openAddModal = () => {
@@ -283,9 +283,9 @@ export function PublishingExtensions({
     setEditExtensionId(null);
     setModalDefaults({
       name: '',
-      unpublish_date: courseInstance.publishing_unpublish_date
+      end_date: courseInstance.publishing_end_date
         ? DateToPlainDateTime(
-            courseInstance.publishing_unpublish_date,
+            courseInstance.publishing_end_date,
             courseInstance.display_timezone,
           ).toString()
         : '',
@@ -299,10 +299,7 @@ export function PublishingExtensions({
     setEditExtensionId(extension.id);
     setModalDefaults({
       name: extension.name ?? '',
-      unpublish_date: DateToPlainDateTime(
-        extension.unpublish_date,
-        courseInstance.display_timezone,
-      ).toString(),
+      end_date: DateToPlainDateTime(extension.end_date, courseInstance.display_timezone).toString(),
       uids: extension.user_data
         .map((u) => u.uid)
         .sort()
@@ -314,7 +311,7 @@ export function PublishingExtensions({
   const closeModal = () => {
     setShownModalMode(null);
     setEditExtensionId(null);
-    setModalDefaults({ name: '', unpublish_date: '', uids: '' });
+    setModalDefaults({ name: '', end_date: '', uids: '' });
   };
 
   const openDeleteModal = (extension: CourseInstancePublishingExtensionWithUsers) => {
@@ -370,9 +367,9 @@ export function PublishingExtensions({
           )}
         </div>
         <small class="text-muted">
-          Extend access to specific users beyond the original unpublish date. If multiple extensions
-          apply to a user, the latest extension date will take effect. If an extension is before the
-          unpublish date, it will be ignored.
+          Extend access to specific users beyond the original end date. If multiple extensions apply
+          to a user, the latest extension date will take effect. If an extension is before the end
+          date, it will be ignored.
         </small>
       </div>
 
@@ -396,7 +393,7 @@ export function PublishingExtensions({
             <thead>
               <tr>
                 <th class="col-1">Extension Name</th>
-                <th class="col-1">Unpublish date</th>
+                <th class="col-1">End date</th>
                 <th class="col-3">Students</th>
                 <th class="col-1">Actions</th>
               </tr>
@@ -411,7 +408,7 @@ export function PublishingExtensions({
                   timeZone={courseInstance.display_timezone}
                   canEdit={canEdit}
                   isSubmitting={isSubmitting}
-                  courseInstanceUnpublishDate={courseInstance.publishing_unpublish_date}
+                  courseInstanceEndDate={courseInstance.publishing_end_date}
                   showAllStudents={showAllStudents}
                   onToggleShowAllStudents={(id) => {
                     setShowAllStudents((prev) => {
@@ -434,9 +431,9 @@ export function PublishingExtensions({
         <ExtensionModal
           show={true}
           defaultValues={modalDefaults}
-          currentUnpublishText={currentInstanceUnpublishDate}
+          currentUnpublishText={currentInstanceEndDate}
           mode={shownModalMode}
-          mainUnpublishDate={courseInstance.publishing_unpublish_date}
+          mainEndDate={courseInstance.publishing_end_date}
           courseInstanceTimezone={courseInstance.display_timezone}
           csrfToken={csrfToken}
           editExtensionId={editExtensionId}
@@ -500,7 +497,7 @@ function ExtensionTableRow({
   canEdit,
   onDelete,
   isSubmitting,
-  courseInstanceUnpublishDate,
+  courseInstanceEndDate,
   showAllStudents,
   onToggleShowAllStudents,
   onEditExtension,
@@ -512,14 +509,14 @@ function ExtensionTableRow({
   canEdit: boolean;
   onDelete: (extension: CourseInstancePublishingExtensionWithUsers) => void;
   isSubmitting: boolean;
-  courseInstanceUnpublishDate: Date | null;
+  courseInstanceEndDate: Date | null;
   showAllStudents: Set<string>;
   onToggleShowAllStudents: (extensionId: string) => void;
   onEditExtension: (extension: CourseInstancePublishingExtensionWithUsers) => void;
 }) {
-  // Check if extension unpublish date is before the course instance unpublish date
-  const isBeforeInstanceUnpublishDate =
-    courseInstanceUnpublishDate && extension.unpublish_date < courseInstanceUnpublishDate;
+  // Check if extension end date is before the course instance end date
+  const isBeforeInstanceEndDate =
+    courseInstanceEndDate && extension.end_date < courseInstanceEndDate;
 
   return (
     <tr>
@@ -531,17 +528,17 @@ function ExtensionTableRow({
         )}
       </td>
       <td class="col-1">
-        {isBeforeInstanceUnpublishDate ? (
+        {isBeforeInstanceEndDate ? (
           <span
             data-bs-toggle="tooltip"
             data-bs-placement="top"
-            title="This date is before the course instance unpublish date and will be ignored"
+            title="This date is before the course instance end date and will be ignored"
           >
-            {formatDateFriendly(extension.unpublish_date, timeZone)}
+            {formatDateFriendly(extension.end_date, timeZone)}
             <i class="fas fa-exclamation-triangle text-warning" aria-hidden="true" />
           </span>
         ) : (
-          <span>{formatDateFriendly(extension.unpublish_date, timeZone)}</span>
+          <span>{formatDateFriendly(extension.end_date, timeZone)}</span>
         )}
       </td>
       <td class="col-3">

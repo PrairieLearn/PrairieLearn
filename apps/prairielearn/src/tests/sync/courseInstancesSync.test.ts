@@ -148,73 +148,69 @@ describe('Course instance syncing', () => {
     const schemaMappings: {
       json: CourseInstanceJsonInput['publishing'];
       db: {
-        publishing_publish_date: Date | null;
-        publishing_unpublish_date: Date | null;
+        publishing_start_date: Date | null;
+        publishing_end_date: Date | null;
       } | null;
       errors: string[];
     }[] = [
       {
         json: {},
         db: {
-          publishing_publish_date: null,
-          publishing_unpublish_date: null,
+          publishing_start_date: null,
+          publishing_end_date: null,
         },
         errors: [],
       },
       {
         json: {
-          unpublishDate: jsonDate,
+          endDate: jsonDate,
         },
         db: null,
-        errors: [
-          '"publishing.publishDate" is required if "publishing.unpublishDate" is specified.',
-        ],
+        errors: ['"publishing.startDate" is required if "publishing.endDate" is specified.'],
       },
       {
         json: {
-          publishDate: jsonDate,
-          unpublishDate: jsonDate,
+          startDate: jsonDate,
+          endDate: jsonDate,
         },
         db: {
-          publishing_publish_date: date,
-          publishing_unpublish_date: date,
+          publishing_start_date: date,
+          publishing_end_date: date,
         },
         errors: [],
       },
       {
         json: {
-          publishDate: jsonDate,
+          startDate: jsonDate,
+        },
+        db: null,
+        errors: ['"publishing.endDate" is required if "publishing.startDate" is specified.'],
+      },
+      {
+        json: {
+          startDate: 'not a date',
+          endDate: jsonDate,
+        },
+        db: null,
+        errors: ['"publishing.startDate" is not a valid date.'],
+      },
+      {
+        json: {
+          endDate: 'not a date',
         },
         db: null,
         errors: [
-          '"publishing.unpublishDate" is required if "publishing.publishDate" is specified.',
+          '"publishing.startDate" is required if "publishing.endDate" is specified.',
+          '"publishing.endDate" is not a valid date.',
         ],
       },
       {
         json: {
-          publishDate: 'not a date',
-          unpublishDate: jsonDate,
+          startDate: '2025-12-01T00:00:00',
+          endDate: '2025-06-01T00:00:00',
         },
         db: null,
-        errors: ['"publishing.publishDate" is not a valid date.'],
-      },
-      {
-        json: {
-          unpublishDate: 'not a date',
-        },
-        db: null,
-        errors: [
-          '"publishing.publishDate" is required if "publishing.unpublishDate" is specified.',
-          '"publishing.unpublishDate" is not a valid date.',
-        ],
-      },
-      {
-        json: {
-          publishDate: '2025-12-01T00:00:00',
-          unpublishDate: '2025-06-01T00:00:00',
-        },
-        db: null,
-        errors: ['"publishing.publishDate" must be before "publishing.unpublishDate".'],
+        errors: ['"publishing.startDate" must be before "publishing.endDate".'],
       },
     ];
 
@@ -247,8 +243,8 @@ describe('Course instance syncing', () => {
         }
 
         const result = {
-          publishing_publish_date: syncedCourseInstance.publishing_publish_date,
-          publishing_unpublish_date: syncedCourseInstance.publishing_unpublish_date,
+          publishing_start_date: syncedCourseInstance.publishing_start_date,
+          publishing_end_date: syncedCourseInstance.publishing_end_date,
         };
 
         assert.deepEqual(result, db);

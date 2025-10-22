@@ -101,20 +101,20 @@ export function InstructorCourseAdminInstances({
                     <tr>
                       <th>Long Name</th>
                       <th>CIID</th>
-                      <th>Publish Date</th>
-                      <th>Unpublish Date</th>
+                      <th>Start date</th>
+                      <th>End date</th>
                       <th>Students</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${courseInstances.map((row) => {
-                      const isLegacyPublishDate = row.publishing_publish_date === null;
-                      const isLegacyUnpublishDate = row.publishing_unpublish_date === null;
-                      const publishDate = row.publishing_publish_date
-                        ? `${formatDate(row.publishing_publish_date, row.display_timezone)}`
+                      const isLegacyStartDate = row.publishing_start_date === null;
+                      const isLegacyEndDate = row.publishing_end_date === null;
+                      const startDate = row.publishing_start_date
+                        ? `${formatDate(row.publishing_start_date, row.display_timezone)}`
                         : row.formatted_start_date;
-                      const unpublishDate = row.publishing_unpublish_date
-                        ? `${formatDate(row.publishing_unpublish_date, row.display_timezone)}`
+                      const endDate = row.publishing_end_date
+                        ? `${formatDate(row.publishing_end_date, row.display_timezone)}`
                         : row.formatted_end_date;
                       return html`
                         <tr>
@@ -137,13 +137,13 @@ export function InstructorCourseAdminInstances({
                           </td>
                           <td class="align-left">${row.short_name}</td>
                           <td class="align-left">
-                            ${publishDate}
-                            ${isLegacyPublishDate
+                            ${startDate}
+                            ${isLegacyStartDate
                               ? html`
                                   <button
                                     type="button"
                                     class="btn btn-xs btn-ghost"
-                                    aria-label="Information about Publish Date"
+                                    aria-label="Information about Start date"
                                     data-bs-toggle="popover"
                                     data-bs-container="body"
                                     data-bs-placement="bottom"
@@ -157,13 +157,13 @@ export function InstructorCourseAdminInstances({
                               : ''}
                           </td>
                           <td class="align-left">
-                            ${unpublishDate}
-                            ${isLegacyUnpublishDate
+                            ${endDate}
+                            ${isLegacyEndDate
                               ? html`
                                   <button
                                     type="button"
                                     class="btn btn-xs btn-ghost"
-                                    aria-label="Information about Unpublish Date"
+                                    aria-label="Information about End date"
                                     data-bs-toggle="popover"
                                     data-bs-container="body"
                                     data-bs-placement="bottom"

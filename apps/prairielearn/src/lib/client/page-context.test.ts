@@ -189,8 +189,8 @@ describe('getCourseInstanceContext', () => {
   const mockInstructorData: z.input<typeof StaffCourseInstanceContextSchema> = {
     course_instance: {
       ...mockStudentData.course_instance,
-      publishing_unpublish_date: null,
-      publishing_publish_date: null,
+      publishing_end_date: null,
+      publishing_start_date: null,
       enrollment_code: 'AAABBBDDDD',
       enrollment_limit: 10,
       json_comment: 'foo',

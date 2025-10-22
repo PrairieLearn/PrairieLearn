@@ -68,12 +68,12 @@
     "publishing": {
       "type": "object",
       "properties": {
-        "publishDate": {
-          "description": "When the course instance is published. If specified, unpublishDate must also be specified.",
+        "startDate": {
+          "description": "When the course instance is published. If specified, endDate must also be specified.",
           "type": "string"
         },
-        "unpublishDate": {
-          "description": "When the course instance is unpublished. If specified, publishDate must also be specified.",
+        "endDate": {
+          "description": "When the course instance is unpublished. If specified, startDate must also be specified.",
           "type": "string"
         }
       }

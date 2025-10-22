@@ -194,22 +194,22 @@ router.post(
         const parsedBody = z
           .object({
             accessControl: z.object({
-              publishDate: z.string().nullable(),
-              unpublishDate: z.string().nullable(),
+              startDate: z.string().nullable(),
+              endDate: z.string().nullable(),
             }),
           })
           .parse(req.body);
 
         // Update the publishing settings
         const resolvedPublishing = {
-          publishDate: propertyValueWithDefault(
-            courseInstanceInfo.publishing?.publishDate,
-            parsedBody.accessControl.publishDate,
+          startDate: propertyValueWithDefault(
+            courseInstanceInfo.publishing?.startDate,
+            parsedBody.accessControl.startDate,
             (v: string | null) => v === null || v === '',
           ),
-          unpublishDate: propertyValueWithDefault(
-            courseInstanceInfo.publishing?.unpublishDate,
-            parsedBody.accessControl.unpublishDate,
+          endDate: propertyValueWithDefault(
+            courseInstanceInfo.publishing?.endDate,
+            parsedBody.accessControl.endDate,
             (v: string | null) => v === null || v === '',
           ),
         };
@@ -334,7 +334,7 @@ router.post(
             .trim()
             .optional()
             .transform((v) => (v === '' || v === undefined ? null : v)),
-          unpublish_date: z.string().trim().min(1, 'Unpublish date is required'),
+          end_date: z.string().trim().min(1, 'End date is required'),
           uids: z.preprocess(
             (val) =>
               typeof val === 'string'
@@ -363,7 +363,7 @@ router.post(
         await createPublishingExtensionWithEnrollments({
           course_instance_id: res.locals.course_instance.id,
           name: body.name ?? null,
-          unpublish_date: new Date(body.unpublish_date),
+          end_date: new Date(body.end_date),
           enrollment_ids: enrollmentIds,
         });
 
@@ -406,7 +406,7 @@ router.post(
             .trim()
             .optional()
             .transform((v) => (v === '' || v === undefined ? null : v)),
-          unpublish_date: z.string().trim().optional().default(''),
+          end_date: z.string().trim().optional().default(''),
           uids: z.preprocess(
             (val) =>
               typeof val === 'string'
@@ -425,7 +425,7 @@ router.post(
           await execute(sql.update_extension, {
             extension_id: body.extension_id,
             name: body.name ?? '',
-            unpublish_date: body.unpublish_date,
+            end_date: body.end_date,
             course_instance_id: res.locals.course_instance.id,
           });
 

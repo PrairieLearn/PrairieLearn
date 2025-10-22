@@ -16,20 +16,20 @@ In PrairieLearn there are two levels of access control for students to gain acce
 
 ## Publishing configuration for course instances
 
-For course instances, you can control access using the `publishing` configuration in `infoCourseInstance.json`. This allows you to set when the course instance becomes available (`publishDate`) and when it becomes unavailable (`unpublishDate`):
+For course instances, you can control access using the `publishing` configuration in `infoCourseInstance.json`. This allows you to set when the course instance becomes available (`startDate`) and when it becomes unavailable (`endDate`):
 
 ```json title="infoCourseInstance.json"
 {
   "publishing": {
-    "publishDate": "2015-01-19T00:00:01",
-    "unpublishDate": "2015-05-13T23:59:59"
+    "startDate": "2015-01-19T00:00:01",
+    "endDate": "2015-05-13T23:59:59"
   }
 }
 ```
 
 This can be edited on the **Publishing** page (Course Instance → Settings → Publishing).
 
-Both `publishDate` and `unpublishDate` must be specified together. If you only want to set one date, you can set the other to `null` or omit the `publishing` configuration entirely.
+Both `startDate` and `endDate` must be specified together. If you only want to set one date, you can set the other to `null` or omit the `publishing` configuration entirely.
 
 ## `allowAccess` format
 
@@ -285,8 +285,8 @@ In the example above, from January 1st to February 15th, students can see the as
 ```json
 {
   "publishing": {
-    "publishDate": "2014-08-19T00:00:01",
-    "unpublishDate": "2014-12-22T23:59:59"
+    "startDate": "2014-08-19T00:00:01",
+    "endDate": "2014-12-22T23:59:59"
   }
 }
 ```

@@ -1484,45 +1484,41 @@ function validateCourseInstance({
     errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
   } else if (usingModernPublishing) {
     assert(courseInstance.publishing != null);
-    const hasUnpublishDate = courseInstance.publishing.unpublishDate != null;
-    const hasPublishDate = courseInstance.publishing.publishDate != null;
-    if (hasPublishDate && !hasUnpublishDate) {
-      errors.push(
-        '"publishing.unpublishDate" is required if "publishing.publishDate" is specified.',
-      );
+    const hasEndDate = courseInstance.publishing.endDate != null;
+    const hasStartDate = courseInstance.publishing.startDate != null;
+    if (hasStartDate && !hasEndDate) {
+      errors.push('"publishing.endDate" is required if "publishing.startDate" is specified.');
     }
-    if (!hasPublishDate && hasUnpublishDate) {
-      errors.push(
-        '"publishing.publishDate" is required if "publishing.unpublishDate" is specified.',
-      );
+    if (!hasStartDate && hasEndDate) {
+      errors.push('"publishing.startDate" is required if "publishing.endDate" is specified.');
     }
 
-    const parsedPublishDate =
-      courseInstance.publishing.publishDate == null
+    const parsedStartDate =
+      courseInstance.publishing.startDate == null
         ? null
-        : parseJsonDate(courseInstance.publishing.publishDate);
+        : parseJsonDate(courseInstance.publishing.startDate);
 
-    if (hasPublishDate && parsedPublishDate == null) {
-      errors.push('"publishing.publishDate" is not a valid date.');
+    if (hasStartDate && parsedStartDate == null) {
+      errors.push('"publishing.startDate" is not a valid date.');
     }
 
-    const parsedUnpublishDate =
-      courseInstance.publishing.unpublishDate == null
+    const parsedEndDate =
+      courseInstance.publishing.endDate == null
         ? null
-        : parseJsonDate(courseInstance.publishing.unpublishDate);
+        : parseJsonDate(courseInstance.publishing.endDate);
 
-    if (hasUnpublishDate && parsedUnpublishDate == null) {
-      errors.push('"publishing.unpublishDate" is not a valid date.');
+    if (hasEndDate && parsedEndDate == null) {
+      errors.push('"publishing.endDate" is not a valid date.');
     }
 
     if (
-      hasPublishDate &&
-      hasUnpublishDate &&
-      parsedPublishDate != null &&
-      parsedUnpublishDate != null &&
-      isAfter(parsedPublishDate, parsedUnpublishDate)
+      hasStartDate &&
+      hasEndDate &&
+      parsedStartDate != null &&
+      parsedEndDate != null &&
+      isAfter(parsedStartDate, parsedEndDate)
     ) {
-      errors.push('"publishing.publishDate" must be before "publishing.unpublishDate".');
+      errors.push('"publishing.startDate" must be before "publishing.endDate".');
     }
   }
 

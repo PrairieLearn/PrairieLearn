@@ -24,21 +24,21 @@ type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
 
 /** Helper to compute status from dates and current time. */
 function computeStatus(
-  publishDate: Date | null,
-  unpublishDate: Date | null,
+  startDate: Date | null,
+  endDate: Date | null,
   courseInstance: StaffCourseInstance,
 ): PublishingStatus {
-  if (!publishDate && !unpublishDate) {
+  if (!startDate && !endDate) {
     return 'unpublished';
   }
 
   const now = nowDateInTimezone(courseInstance.display_timezone);
 
-  if (publishDate && unpublishDate) {
-    if (unpublishDate <= now) {
+  if (startDate && endDate) {
+    if (endDate <= now) {
       return 'unpublished';
     }
-    if (publishDate > now) {
+    if (startDate > now) {
       return 'publish_scheduled';
     }
     return 'published';
@@ -49,8 +49,8 @@ function computeStatus(
 }
 
 interface PublishingFormValues {
-  publishDate: string;
-  unpublishDate: string;
+  startDate: string;
+  endDate: string;
 }
 
 export function PublishingForm({
@@ -71,23 +71,23 @@ export function PublishingForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const originalPublishDate = courseInstance.publishing_publish_date;
-  const originalUnpublishDate = courseInstance.publishing_unpublish_date;
+  const originalStartDate = courseInstance.publishing_start_date;
+  const originalEndDate = courseInstance.publishing_end_date;
 
   const originalStatus = computeStatus(
-    courseInstance.publishing_publish_date,
-    courseInstance.publishing_unpublish_date,
+    courseInstance.publishing_start_date,
+    courseInstance.publishing_end_date,
     courseInstance,
   );
 
   const [selectedStatus, setSelectedStatus] = useState<PublishingStatus>(originalStatus);
 
   const defaultValues: PublishingFormValues = {
-    publishDate: originalPublishDate
-      ? DateToPlainDateTime(originalPublishDate, courseInstance.display_timezone).toString()
+    startDate: originalStartDate
+      ? DateToPlainDateTime(originalStartDate, courseInstance.display_timezone).toString()
       : '',
-    unpublishDate: originalUnpublishDate
-      ? DateToPlainDateTime(originalUnpublishDate, courseInstance.display_timezone).toString()
+    endDate: originalEndDate
+      ? DateToPlainDateTime(originalEndDate, courseInstance.display_timezone).toString()
       : '',
   };
 
@@ -103,8 +103,8 @@ export function PublishingForm({
     defaultValues,
   });
 
-  const publishDate = watch('publishDate');
-  const unpublishDate = watch('unpublishDate');
+  const startDate = watch('startDate');
+  const endDate = watch('endDate');
 
   let now = nowDateInTimezone(courseInstance.display_timezone);
 
@@ -119,120 +119,107 @@ export function PublishingForm({
     const oneWeekLater = nowTemporal.add({ weeks: 1 });
     const eighteenWeeksLater = nowTemporal.add({ weeks: 18 });
 
-    const currentPublishDate = publishDate === '' ? null : Temporal.PlainDateTime.from(publishDate);
-    const currentUnpublishDate =
-      unpublishDate === '' ? null : Temporal.PlainDateTime.from(unpublishDate);
+    const currentStartDate = startDate === '' ? null : Temporal.PlainDateTime.from(startDate);
+    const currentEndDate = endDate === '' ? null : Temporal.PlainDateTime.from(endDate);
 
     // Compute updated dates. We will update them at the end of this function.
-    let updatedPublishDate = currentPublishDate;
-    let updatedUnpublishDate = currentUnpublishDate;
+    let updatedStartDate = currentStartDate;
+    let updatedEndDate = currentEndDate;
 
     switch (newStatus) {
       case 'unpublished': {
         // If the original dates from the form put the course instance in a unpublished state,
         // use those dates.
-        if (originalPublishDate && originalUnpublishDate && now >= originalUnpublishDate) {
-          updatedPublishDate = DateToPlainDateTime(
-            originalPublishDate,
+        if (originalStartDate && originalEndDate && now >= originalEndDate) {
+          updatedStartDate = DateToPlainDateTime(
+            originalStartDate,
             courseInstance.display_timezone,
           );
-          updatedUnpublishDate = DateToPlainDateTime(
-            originalUnpublishDate,
-            courseInstance.display_timezone,
-          );
+          updatedEndDate = DateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
           break;
         }
 
         // If the original publish date was in the past, use that.
         // Otherwise, we are transitioning from 'scheduled publish' to 'unpublished'. Drop both dates.
-        if (originalPublishDate && originalPublishDate < now) {
-          updatedPublishDate = DateToPlainDateTime(
-            originalPublishDate,
+        if (originalStartDate && originalStartDate < now) {
+          updatedStartDate = DateToPlainDateTime(
+            originalStartDate,
             courseInstance.display_timezone,
           );
-          updatedUnpublishDate = nowTemporal;
+          updatedEndDate = nowTemporal;
         } else {
-          updatedPublishDate = null;
-          updatedUnpublishDate = null;
+          updatedStartDate = null;
+          updatedEndDate = null;
         }
         break;
       }
       case 'publish_scheduled': {
         // If the original dates from the form put the course instance in a publish scheduled state,
         // use those dates.
-        if (originalPublishDate && originalUnpublishDate && now <= originalPublishDate) {
-          updatedPublishDate = DateToPlainDateTime(
-            originalPublishDate,
+        if (originalStartDate && originalEndDate && now <= originalStartDate) {
+          updatedStartDate = DateToPlainDateTime(
+            originalStartDate,
             courseInstance.display_timezone,
           );
-          updatedUnpublishDate = DateToPlainDateTime(
-            originalUnpublishDate,
-            courseInstance.display_timezone,
-          );
+          updatedEndDate = DateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
           break;
         }
 
-        if (originalPublishDate && now <= originalPublishDate) {
+        if (originalStartDate && now <= originalStartDate) {
           // Try to re-use the original publish date if it is in the future.
-          updatedPublishDate = DateToPlainDateTime(
-            originalPublishDate,
+          updatedStartDate = DateToPlainDateTime(
+            originalStartDate,
             courseInstance.display_timezone,
           );
         } else if (
-          currentPublishDate === null ||
-          Temporal.PlainDateTime.compare(currentPublishDate, nowTemporal) <= 0
+          currentStartDate === null ||
+          Temporal.PlainDateTime.compare(currentStartDate, nowTemporal) <= 0
         ) {
-          updatedPublishDate = oneWeekLater;
+          updatedStartDate = oneWeekLater;
         }
 
-        if (originalUnpublishDate && now <= originalUnpublishDate) {
-          // Try to re-use the original unpublish date if it is in the future.
-          updatedUnpublishDate = DateToPlainDateTime(
-            originalUnpublishDate,
-            courseInstance.display_timezone,
-          );
+        if (originalEndDate && now <= originalEndDate) {
+          // Try to re-use the original end date if it is in the future.
+          updatedEndDate = DateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
         } else if (
-          currentUnpublishDate === null ||
-          Temporal.PlainDateTime.compare(currentUnpublishDate, nowTemporal) <= 0 ||
-          Temporal.PlainDateTime.compare(updatedPublishDate!, currentUnpublishDate) >= 0
+          currentEndDate === null ||
+          Temporal.PlainDateTime.compare(currentEndDate, nowTemporal) <= 0 ||
+          Temporal.PlainDateTime.compare(updatedStartDate!, currentEndDate) >= 0
         ) {
-          updatedUnpublishDate = eighteenWeeksLater;
+          updatedEndDate = eighteenWeeksLater;
         }
         break;
       }
       case 'published': {
-        if (originalPublishDate && now >= originalPublishDate) {
+        if (originalStartDate && now >= originalStartDate) {
           // Try to re-use the original publish date if it is in the past.
-          updatedPublishDate = DateToPlainDateTime(
-            originalPublishDate,
+          updatedStartDate = DateToPlainDateTime(
+            originalStartDate,
             courseInstance.display_timezone,
           );
         } else if (
-          currentPublishDate === null ||
+          currentStartDate === null ||
           // If the current publish date is in the future, set it to now.
-          Temporal.PlainDateTime.compare(currentPublishDate, nowTemporal) > 0
+          Temporal.PlainDateTime.compare(currentStartDate, nowTemporal) > 0
         ) {
-          updatedPublishDate = nowTemporal;
+          updatedStartDate = nowTemporal;
         }
 
-        if (originalUnpublishDate && now <= originalUnpublishDate) {
-          // Try to re-use the original unpublish date if it is in the future.
-          updatedUnpublishDate = DateToPlainDateTime(
-            originalUnpublishDate,
-            courseInstance.display_timezone,
-          );
+        if (originalEndDate && now <= originalEndDate) {
+          // Try to re-use the original end date if it is in the future.
+          updatedEndDate = DateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
         } else if (
-          currentUnpublishDate === null ||
-          // If the current unpublish date is in the past, set it to 18 weeks from now.
-          Temporal.PlainDateTime.compare(currentUnpublishDate, nowTemporal) < 0
+          currentEndDate === null ||
+          // If the current end date is in the past, set it to 18 weeks from now.
+          Temporal.PlainDateTime.compare(currentEndDate, nowTemporal) < 0
         ) {
-          updatedUnpublishDate = eighteenWeeksLater;
+          updatedEndDate = eighteenWeeksLater;
         }
         break;
       }
     }
-    setValue('publishDate', updatedPublishDate === null ? '' : updatedPublishDate.toString());
-    setValue('unpublishDate', updatedUnpublishDate === null ? '' : updatedUnpublishDate.toString());
+    setValue('startDate', updatedStartDate === null ? '' : updatedStartDate.toString());
+    setValue('endDate', updatedEndDate === null ? '' : updatedEndDate.toString());
   };
 
   const onSubmit = async (data: PublishingFormValues) => {
@@ -244,8 +231,8 @@ export function PublishingForm({
         __csrf_token: csrfToken,
         __action: 'update_access_control',
         accessControl: {
-          publishDate: data.publishDate === '' ? null : data.publishDate,
-          unpublishDate: data.unpublishDate === '' ? null : data.unpublishDate,
+          startDate: data.startDate === '' ? null : data.startDate,
+          endDate: data.endDate === '' ? null : data.endDate,
         },
         orig_hash: origHash,
       };
@@ -275,47 +262,44 @@ export function PublishingForm({
     }
   };
 
-  const handleAddWeek = async (field: 'publishDate' | 'unpublishDate') => {
-    const currentValue = field === 'publishDate' ? publishDate : unpublishDate;
+  const handleAddWeek = async (field: 'startDate' | 'endDate') => {
+    const currentValue = field === 'startDate' ? startDate : endDate;
     if (currentValue) {
       const currentDate = Temporal.PlainDateTime.from(currentValue);
       const newValue = currentDate.add({ weeks: 1 });
       setValue(field, newValue.toString());
       // setValue doesn't seem to trigger validation so we need to trigger it manually
-      await trigger('publishDate');
-      await trigger('unpublishDate');
+      await trigger('startDate');
+      await trigger('endDate');
     }
   };
 
   // Validation
-  const validatePublishDate = (value: string) => {
+  const validateStartDate = (value: string) => {
     if (selectedStatus === 'publish_scheduled') {
       if (!value) {
         return 'Publish date is required for scheduled publishing';
       }
       // Check if publish date is in the future
-      const publishDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
-      if (publishDateTime <= nowDateInTimezone(courseInstance.display_timezone)) {
+      const startDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
+      if (startDateTime <= nowDateInTimezone(courseInstance.display_timezone)) {
         return 'Publish date must be in the future for scheduled publishing';
       }
     }
     return true;
   };
 
-  const validateUnpublishDate = (value: string) => {
+  const validateEndDate = (value: string) => {
     if (selectedStatus !== 'unpublished') {
       if (!value) {
-        return 'Unpublish date is required';
+        return 'End date is required';
       }
-      // Check if unpublish date is after publish date
-      if (publishDate && value) {
-        const publishDateTime = plainDateTimeStringToDate(
-          publishDate,
-          courseInstance.display_timezone,
-        );
-        const unpublishDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
-        if (unpublishDateTime <= publishDateTime) {
-          return 'Unpublish date must be after publish date';
+      // Check if end date is after publish date
+      if (startDate && value) {
+        const startDateTime = plainDateTimeStringToDate(startDate, courseInstance.display_timezone);
+        const endDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
+        if (endDateTime <= startDateTime) {
+          return 'End date must be after publish date';
         }
       }
     }
@@ -378,21 +362,17 @@ export function PublishingForm({
               {selectedStatus === 'unpublished' && (
                 <div class="ms-4 mt-1 small text-muted">
                   Course is not accessible by any students
-                  {publishDate && ' except those with extensions'}.
-                  {unpublishDate && (
+                  {startDate && ' except those with extensions'}.
+                  {endDate && (
                     <>
                       <br />
                       The course{' '}
-                      {plainDateTimeStringToDate(unpublishDate, courseInstance.display_timezone) <
-                      now
+                      {plainDateTimeStringToDate(endDate, courseInstance.display_timezone) < now
                         ? 'was'
                         : 'will be'}{' '}
                       unpublished at{' '}
                       <FriendlyDate
-                        date={plainDateTimeStringToDate(
-                          unpublishDate,
-                          courseInstance.display_timezone,
-                        )}
+                        date={plainDateTimeStringToDate(endDate, courseInstance.display_timezone)}
                         timezone={courseInstance.display_timezone}
                         tooltip={true}
                         options={{ timeFirst: true }}
@@ -427,18 +407,18 @@ export function PublishingForm({
                   {/* Published at a scheduled future date */}
                 </label>
               </div>
-              {selectedStatus === 'publish_scheduled' && publishDate && unpublishDate && (
+              {selectedStatus === 'publish_scheduled' && startDate && endDate && (
                 <div class="ms-4 mt-1 small text-muted">
                   The course will be published at{' '}
                   <FriendlyDate
-                    date={Temporal.PlainDateTime.from(publishDate)}
+                    date={Temporal.PlainDateTime.from(startDate)}
                     timezone={courseInstance.display_timezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
                   />{' '}
                   and will be unpublished at{' '}
                   <FriendlyDate
-                    date={Temporal.PlainDateTime.from(unpublishDate)}
+                    date={Temporal.PlainDateTime.from(endDate)}
                     timezone={courseInstance.display_timezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
@@ -450,15 +430,15 @@ export function PublishingForm({
                 <div class="ms-4 mt-2">
                   <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center">
-                      <label class="form-label mb-0" for="publishDate">
-                        Publish Date
+                      <label class="form-label mb-0" for="startDate">
+                        Start date
                       </label>
                       {canEdit && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-primary"
-                          disabled={!publishDate}
-                          onClick={() => handleAddWeek('publishDate')}
+                          disabled={!startDate}
+                          onClick={() => handleAddWeek('startDate')}
                         >
                           +1 week
                         </button>
@@ -467,33 +447,33 @@ export function PublishingForm({
                     <div class="input-group mt-2">
                       <input
                         type="datetime-local"
-                        class={clsx('form-control', errors.publishDate && 'is-invalid')}
-                        id="publishDate"
+                        class={clsx('form-control', errors.startDate && 'is-invalid')}
+                        id="startDate"
                         step="1"
                         disabled={!canEdit}
-                        {...register('publishDate', {
-                          validate: validatePublishDate,
-                          deps: ['unpublishDate'],
+                        {...register('startDate', {
+                          validate: validateStartDate,
+                          deps: ['endDate'],
                         })}
                       />
                       <span class="input-group-text">{courseInstance.display_timezone}</span>
                     </div>
-                    {errors.publishDate && (
-                      <div class="text-danger small mt-1">{errors.publishDate.message}</div>
+                    {errors.startDate && (
+                      <div class="text-danger small mt-1">{errors.startDate.message}</div>
                     )}
                   </div>
 
                   <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center">
-                      <label class="form-label mb-0" for="unpublishDate">
-                        Unpublish date
+                      <label class="form-label mb-0" for="endDate">
+                        End date
                       </label>
                       {canEdit && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-primary"
-                          disabled={!unpublishDate}
-                          onClick={() => handleAddWeek('unpublishDate')}
+                          disabled={!endDate}
+                          onClick={() => handleAddWeek('endDate')}
                         >
                           +1 week
                         </button>
@@ -502,18 +482,18 @@ export function PublishingForm({
                     <div class="input-group mt-2">
                       <input
                         type="datetime-local"
-                        class={clsx('form-control', errors.unpublishDate && 'is-invalid')}
-                        id="unpublishDate"
+                        class={clsx('form-control', errors.endDate && 'is-invalid')}
+                        id="endDate"
                         step="1"
                         disabled={!canEdit}
-                        {...register('unpublishDate', {
-                          validate: validateUnpublishDate,
+                        {...register('endDate', {
+                          validate: validateEndDate,
                         })}
                       />
                       <span class="input-group-text">{courseInstance.display_timezone}</span>
                     </div>
-                    {errors.unpublishDate && (
-                      <div class="text-danger small mt-1">{errors.unpublishDate.message}</div>
+                    {errors.endDate && (
+                      <div class="text-danger small mt-1">{errors.endDate.message}</div>
                     )}
                   </div>
                 </div>
@@ -542,22 +522,22 @@ export function PublishingForm({
                   Published
                 </label>
               </div>
-              {selectedStatus === 'published' && publishDate && unpublishDate && (
+              {selectedStatus === 'published' && startDate && endDate && (
                 <div class="ms-4 mt-1 small text-muted">
                   The course{' '}
-                  {plainDateTimeStringToDate(publishDate, courseInstance.display_timezone) < now
+                  {plainDateTimeStringToDate(startDate, courseInstance.display_timezone) < now
                     ? 'was'
                     : 'will be'}{' '}
                   published at{' '}
                   <FriendlyDate
-                    date={Temporal.PlainDateTime.from(publishDate)}
+                    date={Temporal.PlainDateTime.from(startDate)}
                     timezone={courseInstance.display_timezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
                   />{' '}
                   and will be unpublished at{' '}
                   <FriendlyDate
-                    date={Temporal.PlainDateTime.from(unpublishDate)}
+                    date={Temporal.PlainDateTime.from(endDate)}
                     timezone={courseInstance.display_timezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
@@ -569,15 +549,15 @@ export function PublishingForm({
                 <div class="ms-4 mt-2">
                   <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center">
-                      <label class="form-label mb-0" for="unpublishDate">
-                        Unpublish date
+                      <label class="form-label mb-0" for="endDate">
+                        End date
                       </label>
                       {canEdit && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-primary"
-                          disabled={!unpublishDate}
-                          onClick={() => handleAddWeek('unpublishDate')}
+                          disabled={!endDate}
+                          onClick={() => handleAddWeek('endDate')}
                         >
                           +1 week
                         </button>
@@ -586,18 +566,18 @@ export function PublishingForm({
                     <div class="input-group mt-2">
                       <input
                         type="datetime-local"
-                        class={clsx('form-control', errors.unpublishDate && 'is-invalid')}
-                        id="unpublishDate"
+                        class={clsx('form-control', errors.endDate && 'is-invalid')}
+                        id="endDate"
                         step="1"
                         disabled={!canEdit}
-                        {...register('unpublishDate', {
-                          validate: validateUnpublishDate,
+                        {...register('endDate', {
+                          validate: validateEndDate,
                         })}
                       />
                       <span class="input-group-text">{courseInstance.display_timezone}</span>
                     </div>
-                    {errors.unpublishDate && (
-                      <div class="text-danger small mt-1">{errors.unpublishDate.message}</div>
+                    {errors.endDate && (
+                      <div class="text-danger small mt-1">{errors.endDate.message}</div>
                     )}
                   </div>
                 </div>
@@ -625,7 +605,7 @@ export function PublishingForm({
         </form>
 
         {/* Access Control Extensions Section */}
-        {publishDate && (
+        {startDate && (
           <>
             <hr class="my-4" />
             <QueryClientProviderDebug client={queryClient} isDevMode={false}>
@@ -635,10 +615,10 @@ export function PublishingForm({
                 canEdit={canEdit}
                 csrfToken={csrfToken}
                 hasSaved={
-                  !!originalPublishDate &&
-                  publishDate ===
+                  !!originalStartDate &&
+                  startDate ===
                     DateToPlainDateTime(
-                      originalPublishDate,
+                      originalStartDate,
                       courseInstance.display_timezone,
                     ).toString()
                 }

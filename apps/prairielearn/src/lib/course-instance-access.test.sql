@@ -6,8 +6,8 @@ INSERT INTO
     course_id,
     display_timezone,
     enrollment_code,
-    publishing_publish_date,
-    publishing_unpublish_date
+    publishing_start_date,
+    publishing_end_date
   )
 VALUES
   (
@@ -16,8 +16,8 @@ VALUES
     $course_id,
     $display_timezone,
     $enrollment_code,
-    $publishing_publish_date,
-    $publishing_unpublish_date
+    $publishing_start_date,
+    $publishing_end_date
   );
 
 -- BLOCK cleanup_extension_tests

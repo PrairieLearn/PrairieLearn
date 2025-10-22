@@ -41,8 +41,8 @@ This file specifies basic information about the course instance:
   "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
   "longName": "Spring 2015",
   "publishing": {
-    "publishDate": "2015-01-19T00:00:01",
-    "unpublishDate": "2015-05-13T23:59:59"
+    "startDate": "2015-01-19T00:00:01",
+    "endDate": "2015-05-13T23:59:59"
   }
 }
 ```
@@ -56,13 +56,13 @@ The course instance `publishing` configuration determines when the course instan
 ```json title="infoCourseInstance.json"
 {
   "publishing": {
-    "publishDate": "2015-01-19T00:00:01",
-    "unpublishDate": "2015-05-13T23:59:59"
+    "startDate": "2015-01-19T00:00:01",
+    "endDate": "2015-05-13T23:59:59"
   }
 }
 ```
 
-Both `publishDate` and `unpublishDate` must be specified together.
+Both `startDate` and `endDate` must be specified together.
 
 ### Controlling access by institution
 

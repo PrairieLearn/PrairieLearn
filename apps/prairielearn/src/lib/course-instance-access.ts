@@ -104,30 +104,30 @@ export async function evaluateModernCourseInstanceAccess(
   }
 
   // If no start date is set, the course instance is not published
-  if (courseInstance.publishing_publish_date == null) {
+  if (courseInstance.publishing_start_date == null) {
     return {
       hasAccess: false,
       reason: 'Course instance is not published',
     };
   }
 
-  if (currentDate < courseInstance.publishing_publish_date) {
+  if (currentDate < courseInstance.publishing_start_date) {
     return {
       hasAccess: false,
       reason: 'Course instance is not yet published',
     };
   }
 
-  // Unpublish date is always set alongside publish date
-  assert(courseInstance.publishing_unpublish_date != null);
+  // End date is always set alongside publish date
+  assert(courseInstance.publishing_end_date != null);
 
   // Consider the latest enabled date for the enrollment.
   const publishingExtensions =
     enrollment != null ? await selectPublishingExtensionsByEnrollmentId(enrollment.id) : [];
 
   const allDates = [
-    courseInstance.publishing_unpublish_date,
-    ...publishingExtensions.map((extension) => extension.unpublish_date),
+    courseInstance.publishing_end_date,
+    ...publishingExtensions.map((extension) => extension.end_date),
   ].sort((a, b) => {
     return b.getTime() - a.getTime();
   });
@@ -137,7 +137,7 @@ export async function evaluateModernCourseInstanceAccess(
   if (currentDate > latestDate) {
     return {
       hasAccess: false,
-      reason: 'Course instance has been unpublished',
+      reason: 'Course instance is not published',
     };
   }
 

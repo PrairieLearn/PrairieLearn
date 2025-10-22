@@ -33,16 +33,16 @@ const AllowAccessJsonSchema = z
   );
 
 const PublishingJsonSchema = z.object({
-  publishDate: z
+  startDate: z
     .string()
     .describe(
-      'When the course instance is published. If specified, unpublishDate must also be specified.',
+      'When the course instance is published. If specified, endDate must also be specified.',
     )
     .optional(),
-  unpublishDate: z
+  endDate: z
     .string()
     .describe(
-      'When the course instance is unpublished. If specified, publishDate must also be specified.',
+      'When the course instance is unpublished. If specified, startDate must also be specified.',
     )
     .optional(),
 });
