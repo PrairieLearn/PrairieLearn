@@ -252,7 +252,7 @@ export function PageLayout({
             ${clsx(
               resolvedOptions.fullWidth ? 'container-fluid' : 'container',
               resolvedOptions.paddingBottom && 'pb-4',
-              resolvedOptions.fullHeight && 'flex-grow-1',
+              resolvedOptions.fullHeight && 'h-100',
             )}
           "
           >

@@ -1,7 +1,6 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { assetPath, compiledScriptTag } from '../../lib/assets.js';
@@ -50,7 +49,6 @@ export function Workspace({
       enableNavbar: false,
     },
     headContent: html`
-      ${HeadContents({ resLocals, pageNote, pageTitle })}
       <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
       ${compiledScriptTag('workspaceClient.ts')}
       ${resLocals.assessment?.type === 'Exam' && resLocals.assessment_instance_remaining_ms
