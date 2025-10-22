@@ -5,7 +5,7 @@ import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prair
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
-import { computeAssessmentInstanceScore } from './assessment-grading.js';
+import { updateAssessmentInstanceGrade } from './assessment-grading.js';
 import { updateAssessmentInstance } from './assessment.js';
 import {
   AssessmentInstanceSchema,
@@ -198,12 +198,13 @@ async function regradeSingleAssessmentInstance({
       QuestionSchema.shape.qid,
     );
 
-    const { updated: gradeUpdated, score_perc: newScorePerc } =
-      await computeAssessmentInstanceScore({
+    const { updated: gradeUpdated, score_perc: newScorePerc } = await updateAssessmentInstanceGrade(
+      {
         assessment_instance_id,
         authn_user_id,
         onlyLogIfScoreUpdated: true,
-      });
+      },
+    );
 
     return {
       updated: assessmentUpdated || updatedQuestionQids.length > 0 || gradeUpdated,

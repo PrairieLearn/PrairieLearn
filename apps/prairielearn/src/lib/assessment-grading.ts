@@ -22,7 +22,7 @@ const AssessmentInstanceZonePointsSchema = z.object({
   max_iq_ids: IdSchema.array(),
 });
 
-export async function computeAssessmentInstanceScore({
+export async function updateAssessmentInstanceGrade({
   assessment_instance_id,
   authn_user_id,
   credit = null,

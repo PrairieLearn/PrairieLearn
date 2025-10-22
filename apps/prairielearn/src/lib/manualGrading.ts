@@ -10,7 +10,7 @@ import { run } from '@prairielearn/run';
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
-import { computeAssessmentInstanceScore } from './assessment-grading.js';
+import { updateAssessmentInstanceGrade } from './assessment-grading.js';
 import {
   type AssessmentQuestion,
   AssessmentQuestionSchema,
@@ -675,7 +675,7 @@ export async function updateInstanceQuestionScore(
         is_ai_graded,
       });
 
-      await computeAssessmentInstanceScore({
+      await updateAssessmentInstanceGrade({
         assessment_instance_id: current_submission.assessment_instance_id,
         authn_user_id,
         credit: 100,

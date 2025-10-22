@@ -9,8 +9,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import {
-  computeAssessmentInstanceScore,
   computeAssessmentInstanceScoreByZone,
+  updateAssessmentInstanceGrade,
 } from './assessment-grading.js';
 import {
   type Assessment,
@@ -208,7 +208,7 @@ export async function updateAssessmentInstance(
 
     // if updated, regrade to pick up max_points changes, etc.
     if (recomputeGrades) {
-      await computeAssessmentInstanceScore({
+      await updateAssessmentInstanceGrade({
         assessment_instance_id,
         authn_user_id,
         onlyLogIfScoreUpdated: true,

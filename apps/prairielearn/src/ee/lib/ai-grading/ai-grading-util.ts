@@ -19,7 +19,7 @@ import {
 import { run } from '@prairielearn/run';
 
 import { type OpenAIModelId, calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
-import { computeAssessmentInstanceScore } from '../../../lib/assessment-grading.js';
+import { updateAssessmentInstanceGrade } from '../../../lib/assessment-grading.js';
 import {
   AssessmentQuestionSchema,
   type Course,
@@ -565,7 +565,7 @@ export async function deleteAiGradingJobs({
     );
 
     for (const iq of iqs) {
-      await computeAssessmentInstanceScore({
+      await updateAssessmentInstanceGrade({
         assessment_instance_id: iq.assessment_instance_id,
         // We use the user who is performing the deletion.
         authn_user_id,

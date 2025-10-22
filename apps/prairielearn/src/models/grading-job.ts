@@ -8,7 +8,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { computeAssessmentInstanceScore } from '../lib/assessment-grading.js';
+import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
 import {
   type GradingJob,
   GradingJobSchema,
@@ -81,7 +81,7 @@ export async function insertGradingJob({
       }),
     );
     if (assessment_instance_id != null) {
-      await computeAssessmentInstanceScore({ assessment_instance_id, authn_user_id, credit });
+      await updateAssessmentInstanceGrade({ assessment_instance_id, authn_user_id, credit });
     }
     return grading_job;
   });
@@ -193,7 +193,7 @@ export async function updateGradingJobAfterGrading({
           [instance_question_id, gradingJob.score, gradingJob.id, gradingJob.auth_user_id],
           z.unknown(),
         );
-        await computeAssessmentInstanceScore({
+        await updateAssessmentInstanceGrade({
           assessment_instance_id,
           authn_user_id: gradingJob.auth_user_id,
           credit,
