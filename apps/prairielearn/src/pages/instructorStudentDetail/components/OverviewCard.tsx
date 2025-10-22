@@ -101,7 +101,21 @@ export function OverviewCard({
                     class="btn btn-sm btn-outline-secondary d-flex flex-row align-items-center gap-1"
                   >
                     <i class="fas fa-times" aria-hidden="true" />
+                    {/* This permanently removes the enrollment from the course instance. */}
                     <span>Cancel invitation</span>
+                  </button>
+                </form>
+              )}
+              {enrollment.status === 'removed' && (
+                <form method="POST">
+                  <input type="hidden" name="__csrf_token" value={csrfToken} />
+                  <input type="hidden" name="__action" value="invite_student" />
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-outline-primary d-flex flex-row align-items-center gap-1"
+                  >
+                    <i class="fas fa-user-plus" aria-hidden="true" />
+                    <span>Invite student</span>
                   </button>
                 </form>
               )}

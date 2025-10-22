@@ -20,6 +20,7 @@ import {
   selectEnrollmentById,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
+import { selectUserById } from '../../models/user.js';
 
 import { UserDetailSchema } from './components/OverviewCard.js';
 import { InstructorStudentDetail } from './instructorStudentDetail.html.js';
@@ -182,15 +183,23 @@ router.post(
         break;
       }
       case 'invite_student': {
-        if (!enrollment.pending_uid) {
-          throw new HttpStatusError(400, 'Enrollment does not have a pending UID');
+        if (!['rejected', 'removed'].includes(enrollment.status)) {
+          throw new HttpStatusError(400, 'Enrollment is not rejected or removed');
         }
-        if (enrollment.status !== 'rejected') {
-          throw new HttpStatusError(400, 'Enrollment is not rejected');
-        }
+
+        const pending_uid = await run(async () => {
+          if (enrollment.pending_uid) {
+            return enrollment.pending_uid;
+          }
+          if (enrollment.user_id) {
+            const user = await selectUserById(enrollment.user_id);
+            return user.uid;
+          }
+          throw new HttpStatusError(400, 'Enrollment does not have a pending UID or user ID');
+        });
         await inviteEnrollmentById({
           enrollment_id,
-          pending_uid: enrollment.pending_uid,
+          pending_uid,
           agent_user_id: res.locals.authn_user.user_id,
           agent_authn_user_id: res.locals.user.id,
         });
