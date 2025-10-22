@@ -462,7 +462,7 @@ ORDER BY
   s.id DESC NULLS LAST
 LIMIT
   1
--- The assessment instance must be locked as a convention for any operation that updates scores.
+  -- The assessment instance must be locked as a convention for any operation that updates scores.
 FOR NO KEY UPDATE OF
   ai;
 
