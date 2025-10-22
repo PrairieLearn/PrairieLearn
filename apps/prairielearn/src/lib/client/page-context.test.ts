@@ -195,6 +195,7 @@ describe('getCourseInstanceContext', () => {
       share_source_publicly: true,
       self_enrollment_enabled: true,
       self_enrollment_use_enrollment_code: false,
+      self_enrollment_restrict_to_institution: true,
       self_enrollment_enabled_before_date: null,
       sync_errors: null,
       sync_job_sequence_id: null,

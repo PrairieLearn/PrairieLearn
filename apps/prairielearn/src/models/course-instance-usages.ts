@@ -23,7 +23,7 @@
  * `duration` for compute usage.
  */
 
-import type OpenAI from 'openai';
+import type { LanguageModelUsage } from 'ai';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
@@ -85,7 +85,7 @@ export async function updateCourseInstanceUsagesForAiQuestionGeneration({
   promptId: string;
   authnUserId: string;
   model: keyof (typeof config)['costPerMillionTokens'];
-  usage: OpenAI.Responses.ResponseUsage | undefined;
+  usage: LanguageModelUsage | undefined;
 }) {
   await execute(sql.update_course_instance_usages_for_ai_question_generation, {
     prompt_id: promptId,

@@ -1472,6 +1472,10 @@ function validateCourseInstance({
     warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
   }
 
+  if (courseInstance.selfEnrollment.restrictToInstitution !== true) {
+    warnings.push('"selfEnrollment.restrictToInstitution" is not configurable yet.');
+  }
+
   let accessibleInFuture = false;
   for (const rule of courseInstance.allowAccess) {
     const allowAccessResult = checkAllowAccessDates(rule);

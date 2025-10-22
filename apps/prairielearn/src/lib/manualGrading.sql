@@ -533,7 +533,11 @@ WITH
       score_perc = $score_perc,
       auto_points = COALESCE($auto_points, auto_points),
       manual_points = COALESCE($manual_points, manual_points),
-      status = 'complete',
+      -- If the question was unanswered, the status remains unanswered. Otherwise, it becomes complete.
+      status = CASE
+        WHEN iq.status = 'unanswered' THEN 'unanswered'::enum_instance_question_status
+        ELSE 'complete'::enum_instance_question_status
+      END,
       modified_at = now(),
       -- TODO: this might not be correct. Matt suggested that we might want to
       -- refactor `highest_submission_score` to track only auto points.
