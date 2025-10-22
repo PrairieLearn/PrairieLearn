@@ -611,7 +611,7 @@ export function PublishingForm({
             <QueryClientProviderDebug client={queryClient} isDevMode={false}>
               <PublishingExtensions
                 courseInstance={courseInstance}
-                extensions={accessControlExtensions}
+                initialExtensions={accessControlExtensions}
                 canEdit={canEdit}
                 csrfToken={csrfToken}
                 hasSaved={

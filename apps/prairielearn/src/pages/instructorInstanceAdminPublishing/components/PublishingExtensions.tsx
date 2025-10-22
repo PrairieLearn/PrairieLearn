@@ -1,4 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { Alert, Modal } from 'react-bootstrap';
@@ -9,12 +10,15 @@ import { formatDateFriendly } from '@prairielearn/formatter';
 
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
-import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
+import {
+  type CourseInstancePublishingExtensionWithUsers,
+  CourseInstancePublishingExtensionWithUsersSchema,
+} from '../../../models/course-instance-publishing-extensions.types.js';
 import { DateToPlainDateTime, plainDateTimeStringToDate } from '../utils/dateUtils.js';
 
 interface PublishingExtensionsProps {
   courseInstance: StaffCourseInstance;
-  extensions: CourseInstancePublishingExtensionWithUsers[];
+  initialExtensions: CourseInstancePublishingExtensionWithUsers[];
   canEdit: boolean;
   csrfToken: string;
   hasSaved: boolean;
@@ -36,6 +40,7 @@ function ExtensionModal({
   courseInstanceTimezone,
   csrfToken,
   editExtensionId,
+  onSaveSuccess,
 }: {
   show: boolean;
   defaultValues: ExtensionFormValues;
@@ -46,6 +51,7 @@ function ExtensionModal({
   courseInstanceTimezone: string;
   csrfToken: string;
   editExtensionId: string | null;
+  onSaveSuccess: () => void;
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [bypassEnrollmentCheck, setBypassEnrollmentCheck] = useState(false);
@@ -58,7 +64,7 @@ function ExtensionModal({
     setValue,
     watch,
     trigger,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ExtensionFormValues>({
     values: defaultValues,
     mode: 'onSubmit',
@@ -115,38 +121,45 @@ function ExtensionModal({
     return true;
   };
 
+  const saveMutation = useMutation({
+    mutationFn: async (data: ExtensionFormValues) => {
+      const body = {
+        __csrf_token: csrfToken,
+        __action: editExtensionId ? 'edit_extension' : 'add_extension',
+        name: data.name.trim(),
+        end_date: data.end_date,
+        extension_id: editExtensionId,
+        uids: data.uids.trim(),
+      };
+      const resp = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to save extension');
+      }
+    },
+    onSuccess: () => {
+      onSaveSuccess();
+      onHide();
+    },
+    onError: (error) => {
+      setErrorMessage(error instanceof Error ? error.message : 'Unknown error');
+    },
+  });
+
   return (
     <Modal show={show} backdrop="static" onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>{mode === 'add' ? 'Add Extension' : 'Edit Extension'}</Modal.Title>
       </Modal.Header>
       <form
-        onSubmit={handleSubmit(async (data, event) => {
-          event.preventDefault();
+        onSubmit={handleSubmit((data, event) => {
+          event?.preventDefault();
           setErrorMessage(null);
-          try {
-            const body = {
-              __csrf_token: csrfToken,
-              __action: editExtensionId ? 'edit_extension' : 'add_extension',
-              name: data.name.trim(),
-              end_date: data.end_date,
-              extension_id: editExtensionId,
-              uids: data.uids.trim(),
-            };
-            const resp = await fetch(window.location.pathname, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(body),
-            });
-            if (!resp.ok) {
-              const data = await resp.json().catch(() => ({}));
-              setErrorMessage(data.message || 'Failed to save extension');
-            }
-            // On success, reload the page
-            window.location.reload();
-          } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Unknown error');
-          }
+          void saveMutation.mutate(data);
         })}
       >
         <Modal.Body>
@@ -219,7 +232,7 @@ function ExtensionModal({
           <button
             type="button"
             class="btn btn-outline-secondary"
-            disabled={isSubmitting}
+            disabled={saveMutation.isPending}
             onClick={onHide}
           >
             Cancel
@@ -227,7 +240,7 @@ function ExtensionModal({
           <button
             type="submit"
             class="btn btn-primary"
-            disabled={isSubmitting}
+            disabled={saveMutation.isPending}
             onClick={() => {
               // You can't return errors with a type from validate, so we will use a constant string prefix.
               if (errors.uids?.message?.startsWith(someInvalidUidsPrefix)) {
@@ -235,7 +248,11 @@ function ExtensionModal({
               }
             }}
           >
-            {errors.uids?.message?.startsWith(someInvalidUidsPrefix) ? 'Continue Anyway' : 'Save'}
+            {saveMutation.isPending
+              ? 'Saving...'
+              : errors.uids?.message?.startsWith(someInvalidUidsPrefix)
+                ? 'Continue Anyway'
+                : 'Save'}
           </button>
         </Modal.Footer>
       </form>
@@ -245,12 +262,27 @@ function ExtensionModal({
 
 export function PublishingExtensions({
   courseInstance,
-  extensions,
+  initialExtensions,
   canEdit,
   csrfToken,
   hasSaved,
 }: PublishingExtensionsProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: extensions } = useQuery<CourseInstancePublishingExtensionWithUsers[]>({
+    queryKey: ['extensions'],
+    queryFn: async () => {
+      const res = await fetch(window.location.pathname + '/extension/data.json');
+      if (!res.ok) throw new Error('Failed to fetch extensions');
+      const data = await res.json();
+      const parsedData = z.array(CourseInstancePublishingExtensionWithUsersSchema).safeParse(data);
+      if (!parsedData.success) throw new Error('Failed to parse extensions');
+      return parsedData.data;
+    },
+    staleTime: Infinity,
+    initialData: initialExtensions,
+  });
+
   // A set of extension IDs that are showing all students
   const [showAllStudents, setShowAllStudents] = useState<Set<string>>(() => new Set());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -325,14 +357,12 @@ export function PublishingExtensions({
 
   const closeDeleteModal = () => setDeleteState({ show: false });
 
-  const confirmDelete = async () => {
-    if (!deleteState.show) return;
-    setIsSubmitting(true);
-    try {
+  const deleteMutation = useMutation({
+    mutationFn: async (extensionId: string) => {
       const requestBody = {
         __csrf_token: csrfToken,
         __action: 'delete_extension',
-        extension_id: deleteState.extensionId,
+        extension_id: extensionId,
       };
       const response = await fetch(window.location.pathname, {
         method: 'POST',
@@ -340,14 +370,21 @@ export function PublishingExtensions({
         body: JSON.stringify(requestBody),
       });
       if (!response.ok) throw new Error('Failed to delete extension');
-      window.location.reload();
-    } catch (error) {
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['extensions'] });
+      closeDeleteModal();
+    },
+    onError: (error) => {
       console.error('Error deleting extension:', error);
       setErrorMessage('Failed to delete extension. Please try again.');
-    } finally {
-      setIsSubmitting(false);
       closeDeleteModal();
-    }
+    },
+  });
+
+  const confirmDelete = () => {
+    if (!deleteState.show) return;
+    void deleteMutation.mutate(deleteState.extensionId);
   };
 
   return (
@@ -359,7 +396,7 @@ export function PublishingExtensions({
             <button
               type="button"
               class="btn btn-outline-primary btn-sm text-nowrap"
-              disabled={isSubmitting}
+              disabled={deleteMutation.isPending}
               onClick={openAddModal}
             >
               Add Extension
@@ -407,7 +444,7 @@ export function PublishingExtensions({
                   courseInstance={courseInstance}
                   timeZone={courseInstance.display_timezone}
                   canEdit={canEdit}
-                  isSubmitting={isSubmitting}
+                  isSubmitting={deleteMutation.isPending}
                   courseInstanceEndDate={courseInstance.publishing_end_date}
                   showAllStudents={showAllStudents}
                   onToggleShowAllStudents={(id) => {
@@ -438,6 +475,9 @@ export function PublishingExtensions({
           csrfToken={csrfToken}
           editExtensionId={editExtensionId}
           onHide={closeModal}
+          onSaveSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: ['extensions'] });
+          }}
         />
       )}
 
@@ -469,7 +509,7 @@ export function PublishingExtensions({
             <button
               type="button"
               class="btn btn-outline-secondary"
-              disabled={isSubmitting}
+              disabled={deleteMutation.isPending}
               onClick={closeDeleteModal}
             >
               Cancel
@@ -477,10 +517,10 @@ export function PublishingExtensions({
             <button
               type="button"
               class="btn btn-danger"
-              disabled={isSubmitting}
+              disabled={deleteMutation.isPending}
               onClick={confirmDelete}
             >
-              Delete
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
             </button>
           </Modal.Footer>
         </Modal>
