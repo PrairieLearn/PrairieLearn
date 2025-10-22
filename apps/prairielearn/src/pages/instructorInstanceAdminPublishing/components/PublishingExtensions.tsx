@@ -17,6 +17,7 @@ interface PublishingExtensionsProps {
   extensions: CourseInstancePublishingExtensionWithUsers[];
   canEdit: boolean;
   csrfToken: string;
+  hasSaved: boolean;
 }
 
 interface ExtensionFormValues {
@@ -28,7 +29,7 @@ interface ExtensionFormValues {
 function ExtensionModal({
   show,
   defaultValues,
-  currentArchiveText,
+  currentUnpublishText,
   onHide,
   mode,
   mainUnpublishDate,
@@ -38,7 +39,7 @@ function ExtensionModal({
 }: {
   show: boolean;
   defaultValues: ExtensionFormValues;
-  currentArchiveText: string;
+  currentUnpublishText: string;
   onHide: () => void;
   mode: 'add' | 'edit';
   mainUnpublishDate: Date | null;
@@ -190,7 +191,7 @@ function ExtensionModal({
             {errors.unpublish_date && (
               <div class="text-danger small">{String(errors.unpublish_date.message)}</div>
             )}
-            <small class="text-muted">Current course unpublish date: {currentArchiveText}</small>
+            <small class="text-muted">Current course unpublish date: {currentUnpublishText}</small>
           </div>
           {errorMessage && (
             <Alert variant="danger" dismissible onClose={() => setErrorMessage(null)}>
@@ -247,6 +248,7 @@ export function PublishingExtensions({
   extensions,
   canEdit,
   csrfToken,
+  hasSaved,
 }: PublishingExtensionsProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // A set of extension IDs that are showing all students
@@ -356,7 +358,7 @@ export function PublishingExtensions({
       <div class="mb-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h5 class="mb-0">Extensions</h5>
-          {canEdit && (
+          {canEdit && hasSaved && (
             <button
               type="button"
               class="btn btn-outline-primary btn-sm text-nowrap"
@@ -376,7 +378,11 @@ export function PublishingExtensions({
 
       {extensions.length === 0 && (
         <div class="text-center text-muted mb-3">
-          <p class="mb-0">No extensions configured.</p>
+          <p class="mb-0">
+            {hasSaved
+              ? 'No extensions configured.'
+              : 'Extensions are not available until the course instance publishing settings are saved.'}
+          </p>
         </div>
       )}
       {errorMessage && (
@@ -428,7 +434,7 @@ export function PublishingExtensions({
         <ExtensionModal
           show={true}
           defaultValues={modalDefaults}
-          currentArchiveText={currentInstanceUnpublishDate}
+          currentUnpublishText={currentInstanceUnpublishDate}
           mode={shownModalMode}
           mainUnpublishDate={courseInstance.publishing_unpublish_date}
           courseInstanceTimezone={courseInstance.display_timezone}

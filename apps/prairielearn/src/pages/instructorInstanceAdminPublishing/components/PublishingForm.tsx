@@ -634,6 +634,14 @@ export function PublishingForm({
                 extensions={accessControlExtensions}
                 canEdit={canEdit}
                 csrfToken={csrfToken}
+                hasSaved={
+                  !!originalPublishDate &&
+                  publishDate ===
+                    DateToPlainDateTime(
+                      originalPublishDate,
+                      courseInstance.display_timezone,
+                    ).toString()
+                }
               />
             </QueryClientProviderDebug>
           </>
