@@ -21,6 +21,7 @@ const AssessmentInstanceZonePointsSchema = z.object({
   max_points: z.number(),
   max_iq_ids: IdSchema.array(),
 });
+type AssessmentInstanceZonePoints = z.infer<typeof AssessmentInstanceZonePointsSchema>;
 
 export async function updateAssessmentInstanceGrade({
   assessment_instance_id,
@@ -28,12 +29,14 @@ export async function updateAssessmentInstanceGrade({
   credit = null,
   onlyLogIfScoreUpdated = false,
   allowDecrease = false,
+  precomputedPointsByZone,
 }: {
   assessment_instance_id: string;
   authn_user_id: string | null;
   credit?: number | null;
   onlyLogIfScoreUpdated?: boolean;
   allowDecrease?: boolean;
+  precomputedPointsByZone?: AssessmentInstanceZonePoints[];
 }): Promise<{ updated: boolean; points: number; score_perc: number }> {
   return await runInTransactionAsync(async () => {
     const assessmentInstance = await queryRow(
@@ -52,7 +55,9 @@ export async function updateAssessmentInstanceGrade({
         )) ?? 0;
     }
 
-    const pointsByZone = await computeAssessmentInstanceScoreByZone({ assessment_instance_id });
+    const pointsByZone =
+      precomputedPointsByZone ??
+      (await computeAssessmentInstanceScoreByZone({ assessment_instance_id }));
     const instanceQuestionsUsedForGrade = pointsByZone.flatMap((zone) => zone.iq_ids);
     const totalPoints = pointsByZone.reduce((sum, zone) => sum + zone.points, 0);
 

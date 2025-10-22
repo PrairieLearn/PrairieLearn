@@ -212,6 +212,7 @@ export async function updateAssessmentInstance(
         assessment_instance_id,
         authn_user_id,
         onlyLogIfScoreUpdated: true,
+        precomputedPointsByZone: pointsByZone,
       });
     }
     return true;
