@@ -32,11 +32,7 @@ import { DefaultMap } from '../../../lib/default-map.js';
 import { REPOSITORY_ROOT_PATH } from '../../../lib/paths.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectQuestionById } from '../../../models/question.js';
-import {
-  QUESTION_GENERATION_OPENAI_MODEL,
-  addCompletionCostToIntervalUsage,
-  checkRender,
-} from '../aiQuestionGeneration.js';
+import { addCompletionCostToIntervalUsage, checkRender } from '../aiQuestionGeneration.js';
 import { ALLOWED_ELEMENTS, buildContextForElementDocs } from '../context-parsers/documentation.js';
 import {
   type QuestionContext,
@@ -100,7 +96,7 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
       ? [
           'You are editing an existing question.',
           'This means that an existing `server.py` and `question.html` already exist.',
-          'You MUST read the contents of the existing files using the `readFiles` first.',
+          'You MUST read the contents of the existing files using the `readFiles` tool first.',
           'This is VERY IMPORTANT: the instructor may have edited the files since you last saw them.',
           'You MUST ONLY make necessary changes to the existing files to satisfy the user requirements.',
           'You MUST NOT otherwise change the structure, style, or content of the existing files unless explicitly asked.',
@@ -114,6 +110,7 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
       'You MUST ONLY use the PrairieLearn elements listed above.',
       'You MUST use tool calls to explore element documentation.',
       'You MUST review at least one example question before attempting to generate any code.',
+      'You MUST use the `writeFile` tool to write files - DO NOT generate full file contents in your messages.',
       'You MUST save and validate the question before finishing.',
       'If validation fails, you MUST fix the errors and re-validate until it passes.',
     ],
@@ -127,7 +124,7 @@ export function getAgenticModel(): LanguageModel {
     apiKey: config.aiQuestionGenerationOpenAiApiKey,
     organization: config.aiQuestionGenerationOpenAiOrganization,
   });
-  return openai('gpt-5-codex');
+  return openai('gpt-5');
   // const openai = createOpenAI({
   //   baseURL: 'http://127.0.0.1:1234/v1',
   //   apiKey: 'testing',
@@ -204,8 +201,6 @@ export async function createQuestionGenerationAgent({
   }
 
   const systemPrompt = makeSystemPrompt({ isExistingQuestion });
-
-  console.log(systemPrompt);
 
   const agent = new Agent({
     model,
@@ -417,7 +412,6 @@ export async function editQuestionWithAgent({
     });
 
     if (saveResults.status === 'error') {
-      console.error('Failed to create initial question');
       throw new Error('Failed to create initial question for AI generation.');
     }
 
@@ -474,10 +468,14 @@ export async function editQuestionWithAgent({
         const filteredMessages = messages.map((msg) => {
           return {
             ...msg,
-            parts: msg.parts.filter((part) => {
+            parts: msg.parts.filter(() => {
               // Drop file reads/writes from the history. This helps force the model
               // to always re-read files after new prompts, to account for modifications.
-              return !['tool-readFile', 'tool-writeFile'].includes(part.type);
+              // TODO: this isn't working with reprompts because of this reason:
+              // https://github.com/vercel/ai/issues/8379
+              // return !['tool-readFile', 'tool-writeFile'].includes(part.type);
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+              return true;
             }),
           };
         });
@@ -500,15 +498,16 @@ export async function editQuestionWithAgent({
       },
     });
 
-    let finalMessage: UIMessage<any, any> | null = null;
+    let finalMessage = null as UIMessage<any, any> | null;
     const stream = res.toUIMessageStream({
       generateMessageId: () => messageRow.id,
       onFinish: async ({ responseMessage }) => {
         finalMessage = responseMessage;
       },
-      // TODO: need to find some sensible way to handle errors here.
-      onError(error) {
+      onError(error: any) {
         job.error(error.message);
+        // TODO: need to find some sensible way to handle errors here.
+        return error.message;
       },
     });
 

@@ -22,6 +22,7 @@ import {
   AiQuestionGenerationMessageSchema,
   AiQuestionGenerationPromptSchema,
   type Course,
+  type EnumAiQuestionGenerationMessageStatus,
   IdSchema,
   type Question,
   type User,
@@ -152,6 +153,8 @@ router.get(
     );
 
     for (const message of messages) {
+      // TODO: remove this before merging.
+      // eslint-disable-next-line no-console
       console.dir(message.parts, { depth: null });
     }
 
@@ -215,23 +218,24 @@ router.get(
       AiQuestionGenerationMessageSchema,
     );
 
-    if (!latestMessage) {
-      console.log('no latest message');
+    const finishedStatuses: EnumAiQuestionGenerationMessageStatus[] = [
+      'completed',
+      'errored',
+      'canceled',
+    ] as const;
+    if (!latestMessage || finishedStatuses.includes(latestMessage.status)) {
       res.status(204).send();
       return;
     }
-    console.log('latest message found:', latestMessage.id);
 
     const streamContext = await getAiQuestionGenerationStreamContext();
 
     const stream = await streamContext.resumeExistingStream(latestMessage.id);
     if (!stream) {
-      console.log('stream not found');
       res.status(204).send();
       return;
     }
 
-    console.log('stream found!');
     Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
       res.setHeader(key, value);
     });

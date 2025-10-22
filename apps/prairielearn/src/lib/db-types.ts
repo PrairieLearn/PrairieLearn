@@ -24,6 +24,9 @@ export const EnumAiQuestionGenerationMessageStatusSchema = z.enum([
   'errored',
   'canceled',
 ]);
+export type EnumAiQuestionGenerationMessageStatus = z.infer<
+  typeof EnumAiQuestionGenerationMessageStatusSchema
+>;
 
 export const EnumAuditEventActionSchema = z.enum(['insert', 'update', 'delete']);
 export type EnumAuditEventAction = z.infer<typeof EnumAuditEventActionSchema>;
