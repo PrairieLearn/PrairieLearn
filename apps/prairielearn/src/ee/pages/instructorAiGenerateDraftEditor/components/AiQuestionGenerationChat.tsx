@@ -305,12 +305,40 @@ export function AiQuestionGenerationChat({
   const chatHistoryRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const resizerRef = useRef<HTMLDivElement>(null);
+  const isUserAtBottomRef = useRef(true);
 
-  // Scroll to bottom on initial load and when messages change
+  // Track whether the user is at the bottom via scroll events
   useEffect(() => {
-    if (chatHistoryRef.current) {
-      chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
-    }
+    const el = chatHistoryRef.current;
+    if (!el) return;
+
+    const updateIsAtBottom = () => {
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10;
+      isUserAtBottomRef.current = atBottom;
+    };
+
+    // Initialize on mount
+    updateIsAtBottom();
+
+    el.addEventListener('scroll', updateIsAtBottom, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', updateIsAtBottom);
+    };
+  }, []);
+
+  // Auto-scroll only when the user is already at the bottom
+  useEffect(() => {
+    const el = chatHistoryRef.current;
+    if (!el) return;
+
+    // Defer to next animation frame to ensure layout is updated
+    const id = requestAnimationFrame(() => {
+      if (isUserAtBottomRef.current) {
+        el.scrollTop = el.scrollHeight;
+      }
+    });
+
+    return () => cancelAnimationFrame(id);
   }, [messages]);
 
   // Chat width resizing
