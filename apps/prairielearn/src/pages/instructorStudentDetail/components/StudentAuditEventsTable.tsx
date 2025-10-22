@@ -22,6 +22,7 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     blocked: 'Blocked from course',
     unblocked: 'Unblocked from course, now enrolled',
     invitation_deleted: 'Invitation cancelled', // You can never actually see this state.
+    removed: 'Removed self from course',
   };
 
   const detail = detailMap[action_detail as SupportedActionsForTable<'enrollments'>];
