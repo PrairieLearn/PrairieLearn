@@ -8,18 +8,22 @@ import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { StaffAuditEventSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
+import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
 import {
   deleteEnrollmentById,
   enrollUserInCourseInstance,
   inviteEnrollmentById,
   selectEnrollmentById,
-  setEnrollmentStatusBlocked,
+  setEnrollmentStatus,
 } from '../../models/enrollment.js';
+import { selectUserById } from '../../models/user.js';
 
-import { InstructorStudentDetail, UserDetailSchema } from './instructorStudentDetail.html.js';
+import { UserDetailSchema } from './components/OverviewCard.js';
+import { InstructorStudentDetail } from './instructorStudentDetail.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -80,6 +84,12 @@ router.get(
       return `${student.enrollment.pending_uid}`;
     });
 
+    const rawAuditEvents = await selectAuditEventsByEnrollmentId({
+      enrollment_id: req.params.enrollment_id,
+      table_names: ['enrollments'],
+    });
+    const auditEvents = rawAuditEvents.map((event) => StaffAuditEventSchema.parse(event));
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -89,12 +99,10 @@ router.get(
           page: 'instance_admin',
           subPage: 'students',
         },
-        options: {
-          fullWidth: true,
-        },
         content: (
           <Hydrate>
             <InstructorStudentDetail
+              auditEvents={auditEvents}
               gradebookRows={gradebookRows}
               student={student}
               urlPrefix={urlPrefix}
@@ -136,10 +144,12 @@ router.post(
         if (enrollment.status !== 'joined') {
           throw new HttpStatusError(400, 'Enrollment is not joined');
         }
-        await setEnrollmentStatusBlocked({
+        await setEnrollmentStatus({
+          status: 'blocked',
           enrollment_id,
           agent_user_id: res.locals.authn_user.user_id,
           agent_authn_user_id: res.locals.user.id,
+          required_status: 'joined',
         });
         res.redirect(req.originalUrl);
         break;
@@ -173,15 +183,23 @@ router.post(
         break;
       }
       case 'invite_student': {
-        if (!enrollment.pending_uid) {
-          throw new HttpStatusError(400, 'Enrollment does not have a pending UID');
+        if (!['rejected', 'removed'].includes(enrollment.status)) {
+          throw new HttpStatusError(400, 'Enrollment is not rejected or removed');
         }
-        if (enrollment.status !== 'rejected') {
-          throw new HttpStatusError(400, 'Enrollment is not rejected');
-        }
+
+        const pending_uid = await run(async () => {
+          if (enrollment.pending_uid) {
+            return enrollment.pending_uid;
+          }
+          if (enrollment.user_id) {
+            const user = await selectUserById(enrollment.user_id);
+            return user.uid;
+          }
+          throw new HttpStatusError(400, 'Enrollment does not have a pending UID or user ID');
+        });
         await inviteEnrollmentById({
           enrollment_id,
-          pending_uid: enrollment.pending_uid,
+          pending_uid,
           agent_user_id: res.locals.authn_user.user_id,
           agent_authn_user_id: res.locals.user.id,
         });
