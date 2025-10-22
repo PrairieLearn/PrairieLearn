@@ -34,12 +34,14 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
 export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps) {
   if (events.length === 0) {
     return (
-      <div class="card-body">
-        <div class="text-muted">No enrollment events found.</div>
+      <>
+        <div class="card-body">
+          <div class="text-muted">No enrollment events found.</div>
+        </div>
         <div class="card-footer text-muted small">
           Missing events? Enrollment events were not logged before October 2025.
         </div>
-      </div>
+      </>
     );
   }
 

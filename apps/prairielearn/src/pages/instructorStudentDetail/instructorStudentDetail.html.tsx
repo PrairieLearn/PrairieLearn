@@ -68,38 +68,36 @@ export function InstructorStudentDetail({
 
   return (
     <TimezoneContext.Provider value={course_instance.display_timezone}>
-      <div class="container-fluid">
-        <OverviewCard
-          student={student}
-          courseInstanceUrl={courseInstanceUrl}
-          csrfToken={csrfToken}
-          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}
-          enrollmentManagementEnabled={enrollmentManagementEnabled}
-        />
+      <OverviewCard
+        student={student}
+        courseInstanceUrl={courseInstanceUrl}
+        csrfToken={csrfToken}
+        hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}
+        enrollmentManagementEnabled={enrollmentManagementEnabled}
+      />
 
-        <div class="card mb-4">
-          <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-            <h2 class="mb-0">Gradebook</h2>
-            {user && (
-              <button
-                type="button"
-                class="btn btn-sm btn-light"
-                onClick={handleViewGradebookAsStudent}
-              >
-                <i class="fas fa-book me-1" aria-hidden="true" />
-                View gradebook as student
-              </button>
-            )}
-          </div>
-          <StudentGradebookTable rows={gradebookRows} urlPrefix={urlPrefix} />
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <h2 class="mb-0">Gradebook</h2>
+          {user && (
+            <button
+              type="button"
+              class="btn btn-sm btn-light d-flex flex-row align-items-center gap-1"
+              onClick={handleViewGradebookAsStudent}
+            >
+              <i class="fas fa-book" aria-hidden="true" />
+              <span>View gradebook as student</span>
+            </button>
+          )}
         </div>
+        <StudentGradebookTable rows={gradebookRows} urlPrefix={urlPrefix} />
+      </div>
 
-        <div class="card mb-4">
-          <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-            <h2 class="mb-0">Enrollment events</h2>
-          </div>
-          <StudentAuditEventsTable events={auditEvents} />
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <h2 class="mb-0">Enrollment events</h2>
         </div>
+        <StudentAuditEventsTable events={auditEvents} />
       </div>
     </TimezoneContext.Provider>
   );
