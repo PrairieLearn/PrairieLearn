@@ -1,25 +1,7 @@
-body,
-.app-container {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  overscroll-behavior: none;
-}
-
-.app-grid {
-  height: 100%;
-  display: grid;
-  grid-template-areas: 'navbar' 'content';
-  grid-template-rows: min-content 1fr;
-}
-
-.app-navbar {
-  grid-area: navbar;
-}
-
 .app-content-container {
   grid-area: content;
   min-height: 0;
+  height: 100%;
 }
 
 .app-content {
@@ -131,10 +113,6 @@ body,
 
 /* Reflow to a vertical layout on narrow viewports */
 @media (max-width: 768px) {
-  .app-grid {
-    height: auto;
-  }
-
   .app-content {
     grid-template-areas: 'back' 'chat' 'preview-tabs' 'preview';
     grid-template-columns: 1fr;

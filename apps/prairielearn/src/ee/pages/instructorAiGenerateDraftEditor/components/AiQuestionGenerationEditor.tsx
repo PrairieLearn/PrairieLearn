@@ -31,10 +31,10 @@ export function AiQuestionGenerationEditor({
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
 
   return (
-    <main id="content" class="app-content">
-      <div class="d-flex flex-row align-items-center p-2 bg-light border-bottom app-back">
+    <div class="app-content">
+      <div class="d-flex flex-row align-items-center p-2 bg-light border-bottom app-back shadow-sm z-1">
         <a href={`${urlPrefix}/ai_generate_question_drafts`} class="btn btn-sm btn-ghost">
-          <i class="fa fa-arrow-left" aria-hidden="true" />
+          <i class="fa fa-arrow-left me-2" aria-hidden="true" />
           Back to AI questions
         </a>
       </div>
@@ -45,7 +45,7 @@ export function AiQuestionGenerationEditor({
         csrfToken={chatCsrfToken}
       />
 
-      <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs">
+      <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs z-1">
         <ul class="nav nav-tabs me-auto ps-2 pt-2">
           <li class="nav-item">
             <a
@@ -96,7 +96,7 @@ export function AiQuestionGenerationEditor({
         show={showFinalizeModal}
         onHide={() => setShowFinalizeModal(false)}
       />
-    </main>
+    </div>
   );
 }
 
