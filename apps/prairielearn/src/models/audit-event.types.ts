@@ -65,6 +65,7 @@ export type SupportedTableActionCombination =
         | 'blocked'
         | 'unblocked'
         | 'invitation_deleted'
+        | 'removed'
         | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<
