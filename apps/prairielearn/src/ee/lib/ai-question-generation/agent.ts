@@ -39,7 +39,7 @@ import {
 } from '../context-parsers/template-questions.js';
 import { validateHTML } from '../validateHTML.js';
 
-import { QUESTION_GENERATION_TOOLS } from './agent.types.js';
+import { QUESTION_GENERATION_TOOLS, type QuestionGenerationUIMessage } from './agent.types.js';
 import { getAiQuestionGenerationStreamContext } from './redis.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -470,8 +470,23 @@ export async function editQuestionWithAgent({
     });
 
     let finalMessage = null as UIMessage<any, any> | null;
-    const stream = res.toUIMessageStream({
+    const stream = res.toUIMessageStream<QuestionGenerationUIMessage>({
       generateMessageId: () => messageRow.id,
+      messageMetadata: ({ part }) => {
+        if (part.type === 'start') {
+          return {
+            job_sequence_id: serverJob.jobSequenceId,
+            status: 'streaming',
+          };
+        }
+        if (part.type === 'finish') {
+          // TODO: we could also capture token usage here if we wanted.
+          return {
+            job_sequence_id: serverJob.jobSequenceId,
+            status: 'completed',
+          };
+        }
+      },
       onFinish: async ({ responseMessage }) => {
         finalMessage = responseMessage;
       },

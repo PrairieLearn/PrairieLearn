@@ -274,6 +274,8 @@ function Messages({
   });
 }
 
+class RateLimitError extends Error {}
+
 export function AiQuestionGenerationChat({
   initialMessages,
   questionId,
@@ -285,7 +287,7 @@ export function AiQuestionGenerationChat({
   urlPrefix: string;
   csrfToken: string;
 }) {
-  const { messages, sendMessage, status } = useChat<QuestionGenerationUIMessage>({
+  const { messages, sendMessage, status, error } = useChat<QuestionGenerationUIMessage>({
     // Currently, we assume one chat per question. This should change in the future.
     id: questionId,
     messages: initialMessages,
@@ -298,7 +300,17 @@ export function AiQuestionGenerationChat({
           api: `${urlPrefix}/ai_generate_editor/${id}/chat/stream`,
         };
       },
+      async fetch(input, init) {
+        const res = await fetch(input, init);
+        if (res.status === 429) {
+          throw new RateLimitError();
+        }
+        return res;
+      },
     }),
+    onError(error) {
+      console.error('Chat error:', error);
+    },
   });
 
   const [input, setInput] = useState('');
@@ -316,9 +328,6 @@ export function AiQuestionGenerationChat({
       const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10;
       isUserAtBottomRef.current = atBottom;
     };
-
-    // Initialize on mount
-    updateIsAtBottom();
 
     el.addEventListener('scroll', updateIsAtBottom, { passive: true });
     return () => {
@@ -391,8 +400,17 @@ export function AiQuestionGenerationChat({
         <Messages messages={messages} urlPrefix={urlPrefix} />
       </div>
       <div class="app-chat-prompt mt-2">
+        {error && (
+          <div class="alert alert-danger mb-2" role="alert">
+            {run(() => {
+              if (error instanceof RateLimitError) {
+                return 'Rate limit exceeded. Please try again later.';
+              }
+              return 'An error occurred. Please try again.';
+            })}
+          </div>
+        )}
         <form
-          class="js-revision-form"
           onSubmit={(e) => {
             e.preventDefault();
             const trimmedInput = input.trim();
@@ -417,7 +435,11 @@ export function AiQuestionGenerationChat({
               }
             }}
           />
-          <button type="submit" class="btn btn-dark w-100" disabled={status !== 'ready'}>
+          <button
+            type="submit"
+            class="btn btn-dark w-100"
+            disabled={status !== 'ready' && status !== 'error'}
+          >
             Revise question
           </button>
           <div class="text-muted small text-center mt-1">

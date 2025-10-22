@@ -38,6 +38,7 @@ import { selectQuestionById } from '../../../models/question.js';
 import { editQuestionWithAgent, getAgenticModel } from '../../lib/ai-question-generation/agent.js';
 import { type QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.types.js';
 import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-generation/redis.js';
+import { getIntervalUsage } from '../../lib/aiQuestionGeneration.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
@@ -128,13 +129,7 @@ router.use(
     if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
       throw new error.HttpStatusError(403, 'Feature not enabled');
     }
-    next();
-  }),
-);
 
-router.get(
-  '/',
-  typedAsyncHandler<'instance-question'>(async (req, res) => {
     res.locals.question = await selectQuestionById(req.params.question_id);
 
     // Ensure the question belongs to this course and that it's a draft question.
@@ -147,17 +142,18 @@ router.get(
 
     assertCanCreateQuestion(res.locals);
 
+    next();
+  }),
+);
+
+router.get(
+  '/',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const messages = await queryRows(
       sql.select_ai_question_generation_messages,
       { question_id: req.params.question_id },
       AiQuestionGenerationMessageSchema,
     );
-
-    for (const message of messages) {
-      // TODO: remove this before merging.
-      // eslint-disable-next-line no-console
-      console.dir(message.parts, { depth: null });
-    }
 
     const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
       return {
@@ -215,22 +211,9 @@ router.get(
   }),
 );
 
-// TODO: `instance-question` is probably the wrong type here.
 router.get(
   '/chat/stream',
-  typedAsyncHandler<'instance-question'>(async (req, res) => {
-    res.locals.question = await selectQuestionById(req.params.question_id);
-
-    // Ensure the question belongs to this course and that it's a draft question.
-    if (
-      !idsEqual(res.locals.question.course_id, res.locals.course.id) ||
-      !res.locals.question.draft
-    ) {
-      throw new error.HttpStatusError(404, 'Draft question not found');
-    }
-
-    assertCanCreateQuestion(res.locals);
-
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const latestMessage = await queryOptionalRow(
       sql.select_latest_ai_question_generation_message,
       { question_id: req.params.question_id },
@@ -264,7 +247,7 @@ router.get(
 
 router.post(
   '/chat',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (
       !config.aiQuestionGenerationOpenAiApiKey ||
       !config.aiQuestionGenerationOpenAiOrganization
@@ -272,37 +255,21 @@ router.post(
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
-    const question = await selectQuestionById(req.params.question_id);
-
-    // Ensure the question belongs to this course and that it's a draft question.
-    if (!idsEqual(question.course_id, res.locals.course.id) || !question.draft || !question.qid) {
-      throw new error.HttpStatusError(404, 'Draft question not found');
-    }
-
     assertCanCreateQuestion(res.locals);
 
-    // const intervalCost = await getIntervalUsage({
-    //   userId: res.locals.authn_user.user_id,
-    // });
+    const intervalCost = await getIntervalUsage({
+      userId: res.locals.authn_user.user_id,
+    });
 
-    // if (intervalCost > config.aiQuestionGenerationRateLimitDollars) {
-    //   const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
-
-    //   res.send(
-    //     RateLimitExceeded({
-    //       // If the user has more than the threshold of 100 tokens,
-    //       // they can shorten their message to avoid reaching the rate limit.
-    //       canShortenMessage:
-    //         config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
-    //     }),
-    //   );
-    //   return;
-    // }
+    if (intervalCost > config.aiQuestionGenerationRateLimitDollars) {
+      res.status(429).send();
+      return;
+    }
 
     const { message } = await editQuestionWithAgent({
       model: getAgenticModel(),
       course: res.locals.course,
-      question,
+      question: res.locals.question,
       user: res.locals.user,
       authnUser: res.locals.authn_user,
       hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
@@ -326,16 +293,7 @@ router.post(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
-    const question = await selectQuestionById(req.params.question_id);
-
-    // Ensure the question belongs to this course and that it's a draft question.
-    if (!idsEqual(question.course_id, res.locals.course.id) || !question.draft || !question.qid) {
-      throw new error.HttpStatusError(404, 'Draft question not found');
-    }
-
-    assertCanCreateQuestion(res.locals);
-
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'save_question') {
       const client = getCourseFilesClient();
 
@@ -345,7 +303,7 @@ router.post(
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        question_id: question.id,
+        question_id: res.locals.question.id,
         qid: req.body.qid,
       });
 
@@ -354,15 +312,15 @@ router.post(
       }
 
       // Re-fetch the question in case the QID was changed to avoid conflicts.
-      const updatedQuestion = await selectQuestionById(question.id);
+      const updatedQuestion = await selectQuestionById(res.locals.question.id);
 
       flash('success', `Your question is ready for use as ${updatedQuestion.qid}.`);
 
-      res.redirect(res.locals.urlPrefix + '/question/' + question.id + '/preview');
+      res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
       await saveRevisedQuestion({
         course: res.locals.course,
-        question,
+        question: res.locals.question,
         user: res.locals.user,
         authn_user: res.locals.authn_user,
         authz_data: res.locals.authz_data,
@@ -383,7 +341,7 @@ router.post(
 
       await saveRevisedQuestion({
         course: res.locals.course,
-        question,
+        question: res.locals.question,
         user: res.locals.user,
         authn_user: res.locals.authn_user,
         authz_data: res.locals.authz_data,
@@ -396,7 +354,6 @@ router.post(
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
-      res.locals.question = question;
       const variantId = await processSubmission(req, res);
       res.redirect(
         `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}?variant_id=${variantId}`,
