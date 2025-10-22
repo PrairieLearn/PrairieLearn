@@ -15,7 +15,7 @@ import { AssessmentInstanceSchema, SubmissionSchema } from './db-types.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const AssessmentInstanceZonePointsSchema = z.object({
-  zid: IdSchema,
+  zone_id: IdSchema,
   points: z.number(),
   iq_ids: IdSchema.array(),
   max_points: z.number(),

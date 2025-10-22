@@ -68,7 +68,7 @@ WITH
   all_questions AS (
     SELECT
       iq.id AS iq_id,
-      z.id AS zid,
+      z.id AS zone_id,
       iq.points,
       row_number() OVER (
         PARTITION BY
@@ -102,7 +102,7 @@ WITH
   points_questions AS (
     SELECT
       allq.iq_id,
-      allq.zid,
+      allq.zone_id,
       allq.points,
       allq.zone_max_points
     FROM
@@ -116,7 +116,7 @@ WITH
   max_points_questions AS (
     SELECT
       allq.iq_id,
-      allq.zid,
+      allq.zone_id,
       allq.max_points,
       allq.zone_max_points
     FROM
@@ -129,32 +129,32 @@ WITH
   ),
   points_zones AS (
     SELECT
-      ptsq.zid,
+      ptsq.zone_id,
       LEAST(sum(ptsq.points), ptsq.zone_max_points) AS points,
       array_agg(ptsq.iq_id) AS iq_ids
     FROM
       points_questions AS ptsq
     GROUP BY
-      ptsq.zid,
+      ptsq.zone_id,
       ptsq.zone_max_points
   ),
   max_points_zones AS (
     SELECT
-      ptsq.zid,
+      ptsq.zone_id,
       LEAST(sum(ptsq.max_points), ptsq.zone_max_points) AS max_points,
       array_agg(ptsq.iq_id) AS max_iq_ids
     FROM
       max_points_questions AS ptsq
     GROUP BY
-      ptsq.zid,
+      ptsq.zone_id,
       ptsq.zone_max_points
   )
 SELECT
-  pz.zid,
+  pz.zone_id,
   pz.points,
   pz.iq_ids,
   mpz.max_points,
   mpz.max_iq_ids
 FROM
   points_zones AS pz
-  INNER JOIN max_points_zones AS mpz USING (zid);
+  INNER JOIN max_points_zones AS mpz USING (zone_id);
