@@ -21,7 +21,7 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     invitation_rejected: 'Rejected invitation',
     blocked: 'Blocked from course',
     unblocked: 'Unblocked from course, now enrolled',
-    invitation_deleted: 'Invitation cancelled', // You can never actually see this state.
+    invitation_deleted: 'Invitation cancelled', // You can never actually see this state since canceling an invitation hard-deletes the enrollment.
     removed: 'Removed self from course',
   };
 

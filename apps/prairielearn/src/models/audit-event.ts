@@ -1,33 +1,10 @@
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import {
-  type AuditEvent,
-  AuditEventSchema,
-  type EnumAuditEventAction,
-  type TableName,
-} from '../lib/db-types.js';
+import { type AuditEvent, AuditEventSchema, type EnumAuditEventAction } from '../lib/db-types.js';
 
-import type { SupportedTableActionCombination } from './audit-event.types.js';
+import { type SupportedTableActionCombination, requiredTableFields } from './audit-event.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-/**
- * These fields are required to insert an audit event for a given table. If a parameter is explicitly marked as NULL,
- * it will pass this check.
- *
- * The value will be taken from parameters, or inferred from the current row data or row ID if not provided.
- */
-const requiredTableFields = {
-  course_instances: ['course_instance_id'],
-  pl_courses: ['course_id'],
-  users: ['subject_user_id'],
-  groups: ['group_id'],
-  assessment_instances: ['assessment_instance_id'],
-  assessment_questions: ['assessment_question_id'],
-  assessments: ['assessment_id'],
-  institutions: ['institution_id'],
-  enrollments: ['enrollment_id', 'course_instance_id', 'subject_user_id', 'action_detail'],
-} as const satisfies Partial<Record<TableName, readonly string[]>>;
 
 export async function selectAuditEventsByEnrollmentId({
   enrollment_id,
