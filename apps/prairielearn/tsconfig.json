@@ -17,5 +17,9 @@
   },
   "files": [],
   "include": [],
-  "references": [{ "path": "./src/tsconfig.json" }, { "path": "./assets/scripts/tsconfig.json" }]
+  "references": [
+    { "path": "./src/tsconfig.json" },
+    { "path": "./assets/scripts/tsconfig.json" },
+    { "path": "./elements/tsconfig.json" }
+  ]
 }

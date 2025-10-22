@@ -1,5 +1,3 @@
-/* eslint-disable jsdoc/require-returns-type */
-/* eslint-disable jsdoc/require-param-type */
 /* global _, fabric, mechanicsObjects */
 
 /**
@@ -172,7 +170,7 @@ window.PLDrawingApi = {
 
     // Set all button icons
     const drawing_btns = $(root_elem).find('button');
-    const element_base_url = elem_options['element_client_files'];
+    const element_base_url = elem_options.element_client_files;
     const clientFilesBase = this.clientFilesBase;
     drawing_btns.each(function (i, btn) {
       const img = btn.children[0];
@@ -204,7 +202,7 @@ window.PLDrawingApi = {
     });
 
     // Render at a higher resolution if requested
-    const renderScale = elem_options['render_scale'];
+    const renderScale = elem_options.render_scale;
     canvas_elem.width = canvas_width * renderScale;
     canvas_elem.height = canvas_height * renderScale;
 
@@ -394,7 +392,7 @@ class PLDrawingAnswerState {
         modifyHandler(submitted_object, object);
       } else {
         for (const [key, value] of Object.entries(object)) {
-          if (key[0] !== '_' && !blocked_keys.has(key)) {
+          if (!key.startsWith('_') && !blocked_keys.has(key)) {
             submitted_object[key] = value;
           }
         }

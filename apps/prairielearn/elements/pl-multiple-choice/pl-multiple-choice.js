@@ -1,10 +1,14 @@
 /* global TomSelect, MathJax */
 
-window.PLMultipleChoice = function (uuid) {
+/**
+ * @param {string} uuid
+ */
+function PLMultipleChoice(uuid) {
   const selectElement = document.getElementById('pl-multiple-choice-select-' + uuid);
+  if (!selectElement) throw new Error(`Element not found: pl-multiple-choice-select-${uuid}`);
   const container = selectElement.closest('.pl-multiple-choice-dropdown');
 
-  const select = new TomSelect(selectElement, {
+  const select = new TomSelect(/** @type {HTMLSelectElement} */ (selectElement), {
     plugins: ['no_backspace_delete', 'dropdown_input'],
     allowEmptyOption: true,
 
@@ -23,14 +27,17 @@ window.PLMultipleChoice = function (uuid) {
 
     // Render items based on the `data-content` attribute.
     render: {
+      /** @param {{ content: string }} data */
       option: (data) => {
         return `<div>${data.content}</div>`;
       },
+      /** @param {{ content: string; disabled?: boolean }} data */
       item: (data) => {
         return `<div class="${data.disabled ? 'text-muted' : ''}">${data.content}</div>`;
       },
     },
 
+    /** @param {HTMLElement} dropdown */
     onDropdownOpen: (dropdown) => {
       // Ensure the height of the dropdown is constrained to the viewport.
       const content = dropdown.querySelector('.ts-dropdown-content');
@@ -39,13 +46,13 @@ window.PLMultipleChoice = function (uuid) {
       // The first time the dropdown is opened, this event is fired before the
       // options are actually present in the DOM. We'll wait for the next tick
       // to ensure that the options are present.
-      setTimeout(() => MathJax.typesetPromise([dropdown]), 0);
+      setTimeout(() => /** @type {any} */ (MathJax).typesetPromise([dropdown]), 0);
     },
 
     onDropdownClose: () => {
       // In case the dropdown items contain math, render it when the
       // dropdown is opened or closed.
-      MathJax.typesetPromise([container]);
+      /** @type {any} */ (MathJax).typesetPromise([container]);
     },
   });
 
@@ -60,6 +67,7 @@ window.PLMultipleChoice = function (uuid) {
   // immediately after opening the dropdown. We'll override this function to
   // ensure that a non-disabled option is always set as the active one.
   const originalSetActiveOption = select.setActiveOption.bind(select);
+  /** @param {HTMLElement | null} option */
   select.setActiveOption = (option, scroll = true) => {
     if (option?.getAttribute('aria-disabled') === 'true') {
       option = select.wrapper.querySelector('[data-selectable]');
@@ -69,7 +77,7 @@ window.PLMultipleChoice = function (uuid) {
   };
 
   // Mirror native `<select>` behavior, open the dropdown on Space or Enter.
-  select.control.addEventListener('keydown', (event) => {
+  select.control.addEventListener('keydown', /** @param {KeyboardEvent} event */ (event) => {
     if (event.key === ' ' || event.key === 'Enter') {
       select.open();
       event.preventDefault();
@@ -79,4 +87,6 @@ window.PLMultipleChoice = function (uuid) {
   // Because we set `openOnFocus: false`, we need to manually open the dropdown
   // when the control is clicked.
   select.control.addEventListener('click', () => select.open());
-};
+}
+
+window.PLMultipleChoice = PLMultipleChoice;

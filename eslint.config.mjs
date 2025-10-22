@@ -648,6 +648,35 @@ export default tseslint.config([
     },
   },
   {
+    // Enable TypeScript type checking for element JavaScript files
+    extends: [
+      tseslint.configs.recommendedTypeCheckedOnly,
+      tseslint.configs.stylisticTypeCheckedOnly,
+    ],
+    files: ['apps/prairielearn/elements/**/*.js'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn', 'elements'),
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/no-unnecessary-condition': [
+        'error',
+        { allowConstantLoopConditions: 'only-allowed-literals' },
+      ],
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
+      '@typescript-eslint/prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/prefer-regexp-exec': 'off',
+    },
+  },
+  {
     files: ['apps/prairielearn/assets/scripts/**/*', 'apps/prairielearn/elements/**/*.js'],
     languageOptions: {
       globals: {
