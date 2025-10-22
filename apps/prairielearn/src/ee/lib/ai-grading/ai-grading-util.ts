@@ -259,68 +259,87 @@ export function generateSubmissionMessage({
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
+  // Helper function to recursively process nodes and their descendants
+  const processNode = (node: any) => {
+    const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
+    
+    if (imageCaptureUUID) {
+      // Found an image capture element
+      if (submissionTextSegment) {
+        // Push and reset the current text segment before adding the image.
+        content.push({
+          type: 'text',
+          text: submissionTextSegment.trim(),
+        });
+        submissionTextSegment = '';
+      }
+
+      const fileName = run(() => {
+        // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
+        const submittedFileName = $submission_html(node).data('file-name');
+        if (submittedFileName && typeof submittedFileName === 'string') {
+          return submittedFileName.trim();
+        }
+
+        // Old style, where we have to pick the filename out of the `data-options` attribute.
+        const options = $submission_html(node).data('options') as Record<string, string> | null;
+
+        return options?.submitted_file_name;
+      });
+
+      if (!submitted_answer) {
+        throw new Error('No submitted answers found.');
+      }
+
+      if (!fileName) {
+        throw new Error('No file name found.');
+      }
+
+      const fileData = submitted_answer._files?.find((file) => file.name === fileName);
+
+      if (fileData) {
+        // fileData.contents does not contain the MIME type header, so we add it.
+        content.push({
+          type: 'image',
+          image: `data:image/jpeg;base64,${fileData.contents}`,
+          providerOptions: {
+            openai: {
+              imageDetail: 'auto',
+            },
+          },
+        });
+      } else {
+        // If the submitted answer doesn't contain the image, the student likely
+        // didn't capture an image.
+        content.push({
+          type: 'text',
+          text: `Image capture with ${fileName} was not captured.`,
+        });
+      }
+      // Don't process children of image capture elements
+      return;
+    }
+
+    // If this is a text node, add its text to the current segment
+    if (node.type === 'text') {
+      submissionTextSegment += $submission_html(node).text();
+    } else if (node.type === 'tag') {
+      // For element nodes, recursively process all children
+      $submission_html(node)
+        .contents()
+        .each((_, childNode) => {
+          processNode(childNode);
+        });
+    }
+  };
+
+  // Start processing from the body element
   $submission_html
     .root()
     .find('body')
     .contents()
     .each((_, node) => {
-      const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
-      if (imageCaptureUUID) {
-        if (submissionTextSegment) {
-          // Push and reset the current text segment before adding the image.
-          content.push({
-            type: 'text',
-            text: submissionTextSegment.trim(),
-          });
-          submissionTextSegment = '';
-        }
-
-        const fileName = run(() => {
-          // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
-          const submittedFileName = $submission_html(node).data('file-name');
-          if (submittedFileName && typeof submittedFileName === 'string') {
-            return submittedFileName.trim();
-          }
-
-          // Old style, where we have to pick the filename out of the `data-options` attribute.
-          const options = $submission_html(node).data('options') as Record<string, string> | null;
-
-          return options?.submitted_file_name;
-        });
-
-        if (!submitted_answer) {
-          throw new Error('No submitted answers found.');
-        }
-
-        if (!fileName) {
-          throw new Error('No file name found.');
-        }
-
-        const fileData = submitted_answer._files?.find((file) => file.name === fileName);
-
-        if (fileData) {
-          // fileData.contents does not contain the MIME type header, so we add it.
-          content.push({
-            type: 'image',
-            image: `data:image/jpeg;base64,${fileData.contents}`,
-            providerOptions: {
-              openai: {
-                imageDetail: 'auto',
-              },
-            },
-          });
-        } else {
-          // If the submitted answer doesn't contain the image, the student likely
-          // didn't capture an image.
-          content.push({
-            type: 'text',
-            text: `Image capture with ${fileName} was not captured.`,
-          });
-          return;
-        }
-      } else {
-        submissionTextSegment += $submission_html(node).text();
-      }
+      processNode(node);
     });
 
   if (submissionTextSegment) {
