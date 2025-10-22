@@ -66,7 +66,7 @@ export async function updateAssessmentInstanceGrade({
     let score_perc = (points * 100) / (assessmentInstance.max_points || 1);
     if (credit < 100) {
       score_perc = Math.min(score_perc, credit);
-    } else if (credit > 100 && points >= assessmentInstance.max_points!) {
+    } else if (credit > 100 && points >= (assessmentInstance.max_points ?? 0)) {
       score_perc = (credit * score_perc) / 100;
     }
     if (!allowDecrease) {
