@@ -64,6 +64,12 @@ export function InstructorAiGenerateDraftEditor({
       compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
       html`<script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>`,
       unsafeHtml(resLocals.extraHeadContentHtml),
+      html`
+        <meta
+          name="ace-base-path"
+          content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
+        />
+      `,
     ],
     content: (
       <Hydrate class="app-content-container">

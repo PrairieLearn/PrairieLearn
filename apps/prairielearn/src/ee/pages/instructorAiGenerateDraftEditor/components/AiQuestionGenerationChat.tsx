@@ -9,25 +9,189 @@ function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
   return part.type.startsWith('tool-');
 }
 
+function ToolCallStatus({
+  state,
+  statusText,
+  children,
+}: {
+  state: ToolUIPart['state'];
+  statusText: preact.ComponentChildren;
+  children?: preact.ComponentChildren;
+}) {
+  return (
+    <div class="border rounded p-2">
+      <div class="d-flex flex-row align-items-center gap-2">
+        {run(() => {
+          if (state === 'input-streaming' || state === 'input-available') {
+            return (
+              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            );
+          } else if (state === 'output-available') {
+            return <i class="bi bi-check-circle-fill text-success" aria-hidden="true" />;
+          } else {
+            return <i class="bi bi-x-circle-fill text-danger" aria-hidden="true" />;
+          }
+        })}
+        <span>{statusText}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ToolCall({ part }: { part: ToolUIPart }) {
+  const toolName = part.type.slice('tool-'.length);
+
+  const statusText = run(() => {
+    if (toolName === 'getElementDocumentation') {
+      if (part.state === 'input-streaming') {
+        return <span>Getting element documentation...</span>;
+      } else if (part.state === 'input-available') {
+        return (
+          <span>
+            Getting documentation for <code>&lt;{part.input?.elementName}&gt;</code>...
+          </span>
+        );
+      } else if (part.state === 'output-available') {
+        return (
+          <span>
+            Got documentation for <code>&lt;{part.input?.elementName}&gt;</code>
+          </span>
+        );
+      } else {
+        return <span>Error getting element documentation</span>;
+      }
+    }
+
+    if (toolName === 'listElementExamples') {
+      if (part.state === 'input-streaming') {
+        return <span>Listing element examples...</span>;
+      } else if (part.state === 'input-available') {
+        return (
+          <span>
+            Listing examples for <code>&lt;{part.input?.elementName}&gt;</code>...
+          </span>
+        );
+      } else if (part.state === 'output-available') {
+        return (
+          <span>
+            Listed examples for <code>&lt;{part.input?.elementName}&gt;</code>
+          </span>
+        );
+      } else {
+        return <span>Error listing element examples</span>;
+      }
+    }
+
+    if (toolName === 'getExampleQuestions') {
+      const questionCount = part.input?.qids.length || 0;
+      const pluralQuestions = questionCount === 1 ? 'question' : 'questions';
+      if (part.state === 'input-streaming') {
+        return <span>Getting example questions...</span>;
+      } else if (part.state === 'input-available') {
+        return (
+          <span>
+            Getting {questionCount} example {pluralQuestions}...
+          </span>
+        );
+      } else if (part.state === 'output-available') {
+        return (
+          <span>
+            Got {questionCount} example {pluralQuestions}
+          </span>
+        );
+      } else {
+        return <span>Error getting example questions</span>;
+      }
+    }
+
+    if (toolName === 'writeFile') {
+      if (part.state === 'input-streaming') {
+        return <span>Writing file...</span>;
+      } else if (part.state === 'input-available') {
+        return (
+          <span>
+            Writing file <code>{part.input?.path}</code>...
+          </span>
+        );
+      } else if (part.state === 'output-available') {
+        return (
+          <span>
+            Wrote file <code>{part.input?.path}</code>
+          </span>
+        );
+      } else {
+        return (
+          <span>
+            Error writing file <code>{part.input?.path}</code>
+          </span>
+        );
+      }
+    }
+
+    if (toolName === 'readFile') {
+      if (part.state === 'input-streaming') {
+        return <span>Reading file...</span>;
+      } else if (part.state === 'input-available') {
+        return (
+          <span>
+            Reading file <code>{part.input?.path}</code>...
+          </span>
+        );
+      } else if (part.state === 'output-available') {
+        return (
+          <span>
+            Read file <code>{part.input?.path}</code>
+          </span>
+        );
+      } else {
+        return (
+          <span>
+            Error reading file <code>{part.input?.path}</code>
+          </span>
+        );
+      }
+    }
+
+    if (toolName === 'saveAndValidateQuestion') {
+      if (part.state === 'input-streaming') {
+        return <span>Saving and validating question...</span>;
+      } else if (part.state === 'input-available') {
+        return <span>Saving and validating question...</span>;
+      } else if (part.state === 'output-available') {
+        // TODO: check output for validation results.
+        return <span>Saved and validated question</span>;
+      } else {
+        return <span>Error saving and validating question</span>;
+      }
+    }
+
+    return <span>{toolName}</span>;
+  });
+
+  return (
+    <ToolCallStatus state={part.state} statusText={statusText}>
+      {/* <>
+        <pre>
+          <code>{JSON.stringify(part.input, null, 2)}</code>
+        </pre>
+        {part.output && (
+          <pre>
+            <code>{JSON.stringify(part.output, null, 2)}</code>
+          </pre>
+        )}
+      </> */}
+    </ToolCallStatus>
+  );
+}
+
 function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
   return parts.map((part, index) => {
     const key = `part-${index}`;
     if (isToolPart(part)) {
-      const toolName = part.type.slice('tool-'.length);
-      return (
-        <div key={key} class="border rounded p-2">
-          <i class="bi bi-tools me-2" aria-hidden="true" />
-          <span class="font-monospace">{toolName}</span>
-          <pre>
-            <code>{JSON.stringify(part.input, null, 2)}</code>
-          </pre>
-          {part.output && (
-            <pre>
-              <code>{JSON.stringify(part.output, null, 2)}</code>
-            </pre>
-          )}
-        </div>
-      );
+      return <ToolCall key={key} part={part} />;
     } else if (part.type === 'text') {
       return (
         <div key={key} class="markdown-body">
