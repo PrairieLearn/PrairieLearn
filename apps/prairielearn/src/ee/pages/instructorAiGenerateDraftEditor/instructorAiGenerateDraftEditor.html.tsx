@@ -44,7 +44,10 @@ export function InstructorAiGenerateDraftEditor({
       fullWidth: true,
       fullHeight: true,
       contentPadding: false,
-      hxExt: 'loading-states',
+      // Hide the sidebar by default. We want to maximize the horizontal space for the editor.
+      defaultNavToggleState: false,
+      // Do not persist the sidebar state when the user toggles it.
+      persistNavToggleState: false,
     },
     headContent: [
       compiledScriptTag('question.ts'),

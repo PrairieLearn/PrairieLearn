@@ -163,10 +163,12 @@ export function SideNav({
   resLocals,
   page,
   subPage,
+  persistToggleState = true,
 }: {
   resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
+  persistToggleState?: boolean;
 }) {
   // We recompute `urlPrefix` instead of using the one from `resLocals` because
   // it may not be populated correctly in the case of an access error, specifically
@@ -189,6 +191,7 @@ export function SideNav({
       page,
       subPage,
       urlPrefix,
+      persistToggleState,
     })}
     ${resLocals.course_instance
       ? CourseInstanceNav({
@@ -206,11 +209,13 @@ function CourseNav({
   page,
   subPage,
   urlPrefix,
+  persistToggleState,
 }: {
   resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
   urlPrefix: string;
+  persistToggleState: boolean;
 }) {
   const courseSideNavPageTabs = sideNavPagesTabs.course_admin;
 
@@ -223,6 +228,7 @@ function CourseNav({
         data-bs-toggle="tooltip"
         data-bs-placement="right"
         data-bs-title="${resLocals.side_nav_expanded ? 'Collapse side nav' : 'Expand side nav'}"
+        data-persist-toggle-state="${persistToggleState ? 'true' : 'false'}"
       >
         <i
           id="side-nav-toggler-icon"
