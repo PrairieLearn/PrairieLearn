@@ -330,7 +330,7 @@ router.post(
             .trim()
             .optional()
             .transform((v) => (v === '' || v === undefined ? null : v)),
-          unpublish_date: z.string().trim().min(1, 'Archive date is required'),
+          unpublish_date: z.string().trim().min(1, 'Unpublish date is required'),
           uids: z.preprocess(
             (val) =>
               typeof val === 'string'

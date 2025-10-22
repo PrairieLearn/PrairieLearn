@@ -250,7 +250,7 @@ export function PublishingForm({
   const validateUnpublishDate = (value: string) => {
     if (selectedStatus !== 'unpublished') {
       if (!value) {
-        return 'Archive date is required';
+        return 'Unpublish date is required';
       }
       // Check if unpublish date is after publish date
       if (publishDate && value) {
@@ -260,7 +260,7 @@ export function PublishingForm({
         );
         const unpublishDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
         if (unpublishDateTime <= publishDateTime) {
-          return 'Archive date must be after publish date';
+          return 'Unpublish date must be after publish date';
         }
       }
     }
@@ -430,7 +430,7 @@ export function PublishingForm({
                   <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center">
                       <label class="form-label mb-0" for="unpublishDate">
-                        Archive Date
+                        Unpublish date
                       </label>
                       {canEdit && (
                         <button
@@ -517,7 +517,7 @@ export function PublishingForm({
                   <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center">
                       <label class="form-label mb-0" for="unpublishDate">
-                        Archive Date
+                        Unpublish date
                       </label>
                       {canEdit && (
                         <button

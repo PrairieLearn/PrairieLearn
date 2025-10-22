@@ -118,7 +118,7 @@ export async function evaluateModernCourseInstanceAccess(
     };
   }
 
-  // Archive date is always set alongside publish date
+  // Unpublish date is always set alongside publish date
   assert(courseInstance.publishing_unpublish_date != null);
 
   // Consider the latest enabled date for the enrollment.

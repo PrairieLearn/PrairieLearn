@@ -157,7 +157,7 @@ function ExtensionModal({
           </div>
           <div class="mb-3">
             <label class="form-label" for="ext-date">
-              Archive date
+              Unpublish date
             </label>
             <div class="input-group">
               <input
@@ -166,7 +166,7 @@ function ExtensionModal({
                 step="1"
                 class="form-control"
                 {...register('unpublish_date', {
-                  required: 'Archive date is required',
+                  required: 'Unpublish date is required',
                   validate: (value) => {
                     if (!mainUnpublishDate) return true;
                     const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
@@ -174,7 +174,7 @@ function ExtensionModal({
                     return (
                       mode === 'edit' ||
                       enteredDate > mainUnpublishDate ||
-                      'Archive date must be after the course unpublish date'
+                      'Unpublish date must be after the course unpublish date'
                     );
                   },
                 })}
@@ -390,7 +390,7 @@ export function PublishingExtensions({
             <thead>
               <tr>
                 <th class="col-1">Extension Name</th>
-                <th class="col-1">Archive Date</th>
+                <th class="col-1">Unpublish date</th>
                 <th class="col-3">Students</th>
                 <th class="col-1">Actions</th>
               </tr>
