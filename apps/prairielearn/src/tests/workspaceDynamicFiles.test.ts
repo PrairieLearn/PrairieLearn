@@ -225,6 +225,28 @@ describe('Workspace dynamic files', function () {
     assert.lengthOf(fileGenerationErrors, 9);
   });
 
+  it('preserves executable permissions from static files', async () => {
+    const targetPath = await tmp.dir({ unsafeCleanup: true });
+    const { fileGenerationErrors } = await generateWorkspaceFiles({
+      serverFilesCoursePath: join(TEST_COURSE_PATH, 'serverFilesCourse'),
+      questionBasePath: join(TEST_COURSE_PATH, 'questions', 'workspace'),
+      params: {
+        a: 'example',
+      },
+      correctAnswers: {
+        b: 10,
+      },
+      targetPath: targetPath.path,
+    });
+
+    assert.lengthOf(fileGenerationErrors, 0);
+
+    // Check that the static file with executable permissions is preserved
+    const staticScriptPath = join(targetPath.path, 'script.sh');
+    const staticScriptStats = await fs.stat(staticScriptPath);
+    assert.equal(staticScriptStats.mode & 0o755, 0o755);
+  });
+
   it('preserves executable permissions from template files', async () => {
     const targetPath = await tmp.dir({ unsafeCleanup: true });
     const { fileGenerationErrors } = await generateWorkspaceFiles({
