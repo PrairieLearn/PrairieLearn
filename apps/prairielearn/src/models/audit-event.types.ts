@@ -32,7 +32,7 @@ export type SupportedTableActionCombination =
     }
   | {
       table_name: 'users';
-      action_detail?: 'TEST_VALUE' | null;
+      action_detail?: null;
     }
   | {
       table_name: 'groups';

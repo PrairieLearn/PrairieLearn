@@ -7,6 +7,8 @@ import {
   type TableName,
 } from '../lib/db-types.js';
 
+import type { SupportedTableActionCombination } from './audit-event.types.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
@@ -26,60 +28,6 @@ const requiredTableFields = {
   institutions: ['institution_id'],
   enrollments: ['enrollment_id', 'course_instance_id', 'subject_user_id', 'action_detail'],
 } as const satisfies Partial<Record<TableName, readonly string[]>>;
-
-/**
- * This lists all the possible table+action_detail combinations that are supported.
- */
-type SupportedTableActionCombination =
-  | {
-      table_name: 'course_instances';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'pl_courses';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'users';
-      action_detail?: 'TEST_VALUE' | null;
-    }
-  | {
-      table_name: 'groups';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'assessment_instances';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'assessment_questions';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'assessments';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'institutions';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'enrollments';
-      action_detail?:
-        | 'implicit_joined'
-        | 'explicit_joined'
-        | 'invited'
-        | 'invitation_accepted'
-        | 'invitation_rejected'
-        | 'removed'
-        | 'blocked'
-        | 'unblocked'
-        | 'invitation_deleted'
-        | null;
-    };
-export type SupportedActionsForTable<T extends TableName> = NonNullable<
-  Exclude<Extract<SupportedTableActionCombination, { table_name: T }>['action_detail'], null>
->;
 
 export async function selectAuditEventsByEnrollmentId({
   enrollment_id,
