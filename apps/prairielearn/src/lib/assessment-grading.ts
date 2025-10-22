@@ -62,7 +62,13 @@ export async function updateAssessmentInstanceGrade({
       (assessmentInstance.max_points ?? 0) + (assessmentInstance.max_bonus_points ?? 0),
     );
 
-    // compute the score as a percentage, applying credit bonus/limits
+    // Compute the score as a percentage, applying credit bonus/limits. If
+    // max_points is zero (or null), points will typically also be zero, so we
+    // avoid division by zero by using 1 as denominator in that case. If points
+    // happens to have a positive value (which can only happen if bonus points
+    // is positive), for legacy reasons we still compute a percentage score
+    // based on 1 point total (with the usual credit bonus/limit applied),
+    // though we don't expect this to be commonly used.
     let score_perc = (points * 100) / (assessmentInstance.max_points || 1);
     if (credit < 100) {
       score_perc = Math.min(score_perc, credit);
