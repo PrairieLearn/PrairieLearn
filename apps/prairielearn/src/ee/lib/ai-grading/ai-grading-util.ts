@@ -6,6 +6,8 @@ import type {
   UserContent,
 } from 'ai';
 import * as cheerio from 'cheerio';
+import { Tag, Text } from 'domelementtype';
+import type { AnyNode } from 'domhandler';
 import { z } from 'zod';
 
 import {
@@ -259,9 +261,9 @@ export function generateSubmissionMessage({
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
-  const processNode = (node: cheerio.Cheerio<AnyNode>) => {
+  const processNode = (node: AnyNode) => {
     const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
-    
+
     if (imageCaptureUUID) {
       // Found an image capture element
       if (submissionTextSegment) {
@@ -320,9 +322,9 @@ export function generateSubmissionMessage({
     }
 
     // If this is a text node, add its text to the current segment
-    if (node.type === 'text') {
+    if (node.type === Text) {
       submissionTextSegment += $submission_html(node).text();
-    } else if (node.type === 'tag') {
+    } else if (node.type === Tag) {
       // For element nodes, recursively process all children
       $submission_html(node)
         .contents()
