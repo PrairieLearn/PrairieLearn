@@ -60,7 +60,7 @@ declare global {
     PLOrderBlocks: typeof PLOrderBlocks;
     TomSelect: typeof TomSelect;
     PLDrawingApi: {
-      generateID(): string;
+      generateID(): number;
       _idCounter: number;
       elements: any;
       elementModule: any;
