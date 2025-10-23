@@ -1,7 +1,6 @@
 /* global Quill, he, MathJax, QuillMarkdown, DOMPurify, bootstrap */
 
 (() => {
-  // @ts-expect-error - DOMPurify global is declared but not typed correctly
   const rtePurify = DOMPurify();
   const rtePurifyConfig = { SANITIZE_NAMED_PROPS: true };
 
@@ -86,9 +85,7 @@
 
     showToast() {
       if (!this.toast) {
-        // @ts-expect-error - options is available on clipboard modules
-        const toastElement = document.getElementById(this.options.toast_id);
-        // @ts-expect-error - bootstrap global is declared but not fully typed
+        const toastElement = document.getElementById(/** @type {any} */ (this).options.toast_id);
         this.toast = toastElement
           ? new bootstrap.Toast(toastElement, { autohide: true, delay: 2000 })
           : null;
@@ -200,7 +197,6 @@
         : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
       inputElement.val(
         btoa(
-          // @ts-expect-error - he global is declared but not typed
           he.encode(contents, {
             allowUnsafeSymbols: true, // HTML tags should be kept
             useNamedReferences: true,
@@ -285,7 +281,6 @@ function initializeFormulaPopover(quill, uuid) {
     <button type="submit" class="btn btn-primary">Confirm</button>
   `;
 
-  // @ts-expect-error - bootstrap global is declared but not fully typed
   const popover = new bootstrap.Popover(formulaButton, {
     content: popoverContent,
     html: true,

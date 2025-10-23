@@ -524,7 +524,6 @@ const MAX_ZOOM_SCALE = 5;
 
           // Dismiss the QR code popover if it is open.
           for (const mobileCaptureButton of mobileCaptureButtons) {
-            // @ts-expect-error - bootstrap is a UMD global
             const popover = bootstrap.Popover.getInstance(mobileCaptureButton);
             if (popover) {
               popover.hide();
@@ -782,7 +781,6 @@ const MAX_ZOOM_SCALE = 5;
         if (!this.imageCapturePreviewPanzoom) {
           // Initialize Panzoom on the parent of the captured image element, since
           // the image itself may be rotated.
-          // @ts-expect-error - Panzoom is a UMD global
           this.imageCapturePreviewPanzoom = Panzoom(capturePreviewParent, {
             contain: 'outside',
             minScale: MIN_ZOOM_SCALE,
@@ -1522,7 +1520,6 @@ const MAX_ZOOM_SCALE = 5;
         return;
       }
 
-      // @ts-expect-error - Cropper transformation type is complex
       this.cropper
         .getCropperImage()
         .$setTransform(

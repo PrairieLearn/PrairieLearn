@@ -193,9 +193,7 @@
 
                       // @ts-expect-error - nb global is not well-typed
                       nb.sanitizer = /** @param {string} code */ (code) =>
-                        // @ts-expect-error - DOMPurify global is declared but not typed correctly
                         DOMPurify.sanitize(code, { SANITIZE_NAMED_PROPS: true });
-                      // @ts-expect-error - nb global is not well-typed
                       const notebook = nb.parse(JSON.parse(text));
                       const rendered = notebook.render();
 

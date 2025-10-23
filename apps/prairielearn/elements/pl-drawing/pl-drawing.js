@@ -24,7 +24,7 @@ class PLDrawingBaseElement {
   /**
    * Generates a canvas representation of an element from given options.
    * This should set up all handlers for saving the element to the submittedAnswer.
-   * @param {fabric.Canvas} _canvas Fabric canvas to create the object onto.
+   * @param {typeof fabric.Canvas} _canvas Fabric canvas to create the object onto.
    * @param {PLDrawingOptions} _options Element options
    * @param {PLDrawingSubmittedAnswer} _submittedAnswer Answer state.
    */
@@ -35,7 +35,7 @@ class PLDrawingBaseElement {
   /**
    * Function that is called on pressing this element's control button.
    * You can usually leave this as the default.
-   * @param {fabric.Canvas} canvas Fabric canvas to create the object onto.
+   * @param {typeof fabric.Canvas} canvas Fabric canvas to create the object onto.
    * @param {PLDrawingOptions} options Element options
    * @param {PLDrawingSubmittedAnswer} submittedAnswer Answer state.
    */
@@ -65,7 +65,6 @@ class PLDrawingBaseElement {
 /**
  * Base functions to be used by element objects and extensions.
  */
-// @ts-expect-error - PLDrawingApi is added to window
 window.PLDrawingApi = {
   _idCounter: 0,
 
@@ -117,7 +116,7 @@ window.PLDrawingApi = {
 
   /**
    * Generate an element from an options dictionary.
-   * @param {fabric.Canvas} canvas Canvas to create the element on.
+   * @param {typeof fabric.Canvas} canvas Canvas to create the element on.
    * @param {PLDrawingOptions} options Element options.  Must contain a 'type' key.
    * @param {PLDrawingSubmittedAnswer} submittedAnswer Answer state object.
    */
@@ -153,7 +152,7 @@ window.PLDrawingApi = {
 
   /**
    * Restore the drawing canvas state from a submitted answer.
-   * @param {fabric.Canvas} canvas Canvas to restore state onto.
+   * @param {typeof fabric.Canvas} canvas Canvas to restore state onto.
    * @param {PLDrawingSubmittedAnswer} submittedAnswer Answer state to restore from.
    */
   restoreAnswer(canvas, submittedAnswer) {
@@ -210,7 +209,6 @@ window.PLDrawingApi = {
             image_filename += '.svg';
           }
           let base = clientFilesBase;
-          // @ts-expect-error - PLDrawingApi is added to window
           const api = window.PLDrawingApi;
           if (api.elementModule[elem_name] !== '_base') {
             base = element_base_url[api.elementModule[elem_name]] + '/';
@@ -234,17 +232,13 @@ window.PLDrawingApi = {
     canvas_elem.width = canvas_width * renderScale;
     canvas_elem.height = canvas_height * renderScale;
 
-    /** @type {fabric.Canvas} */
+    /** @type {InstanceType<typeof fabric.Canvas> | InstanceType<typeof fabric.StaticCanvas>} */
     let canvas;
-    // @ts-expect-error - fabric is a UMD global
     if (elem_options.editable) {
-      // @ts-expect-error - fabric is a UMD global
       canvas = new fabric.Canvas(canvas_elem);
     } else {
-      // @ts-expect-error - fabric is a UMD global
       canvas = new fabric.StaticCanvas(canvas_elem);
     }
-    // @ts-expect-error - selection property exists on Canvas but not StaticCanvas
     canvas.selection = false; // disable group selection
 
     // Re-scale the html elements
@@ -259,17 +253,14 @@ window.PLDrawingApi = {
       $(canvas_elem.parentElement).children('canvas').height(canvas_height);
     }
 
-    canvas.on('object:added', (ev) => {
-      if (ev.target) {
-        // @ts-expect-error - cornerSize and borderColor exist on fabric objects
+    canvas.on('object:added', (/** @type {any} */ ev) => {
+      if (ev.target && ev.target.cornerSize !== undefined) {
         ev.target.cornerSize *= renderScale;
-        // @ts-expect-error - borderColor exists on fabric objects
         ev.target.borderColor = 'rgba(102,153,255,1.0)';
       }
     });
 
     if (elem_options.grid_size > 0) {
-      // @ts-expect-error - mechanicsObjects is in excluded file
       mechanicsObjects.addCanvasBackground(
         canvas,
         canvas_width,
@@ -283,7 +274,6 @@ window.PLDrawingApi = {
     canvas.on('object:moving', function (e) {
       const obj = e.target;
       if (!obj) return;
-      // @ts-expect-error - currentHeight and currentWidth are fabric.js properties
       // if object is too big ignore,
       if (obj.currentHeight > canvas_width || obj.currentWidth > canvas_height) {
         return;
@@ -301,7 +291,6 @@ window.PLDrawingApi = {
         obj.left = Math.min(obj.left ?? 0, canvas_width - rect.width + (obj.left ?? 0) - rect.left);
       }
       // snap the element to the grid if enabled
-      // @ts-expect-error - snap_to_grid is on elem_options
       if (elem_options.snap_to_grid) {
         obj.top = Math.round((obj.top ?? 0) / elem_options.grid_size) * elem_options.grid_size;
         obj.left = Math.round((obj.left ?? 0) / elem_options.grid_size) * elem_options.grid_size;
@@ -310,14 +299,16 @@ window.PLDrawingApi = {
       obj.setCoords();
     });
 
-    // @ts-expect-error - fabric is a UMD global
-    fabric.util.addListener(canvas.upperCanvasEl, 'dblclick', function (e) {
-      // @ts-expect-error - findTarget signature varies
-      const target = canvas.findTarget(e);
-      if (target !== undefined) {
-        target.fire('dblclick', { e });
-      }
-    });
+    fabric.util.addListener(
+      /** @type {any} */ (canvas).upperCanvasEl,
+      'dblclick',
+      function (/** @type {any} */ e) {
+        const target = canvas.findTarget(e);
+        if (target !== undefined) {
+          target.fire('dblclick', { e });
+        }
+      },
+    );
 
     // Restore existing answer if it exists
     const submittedAnswer = new PLDrawingAnswerState(html_input);
@@ -406,8 +397,8 @@ class PLDrawingAnswerState {
    * By default, all properties from the canvas object are copied to the submission object.
    *
    * @param {PLDrawingOptions & Record<string, unknown>} options Options that were passed to the 'generate()' function.
-   * @param {fabric.Object} object Canvas object that was created and should be saved.
-   * @param {((submitted_object: PLDrawingOptions & Record<string, unknown>, canvas_object: fabric.Object) => void)} [modifyHandler] Function that is run whenever the canvas object is modified.
+   * @param {InstanceType<typeof fabric.Object>} object Canvas object that was created and should be saved.
+   * @param {((submitted_object: PLDrawingOptions & Record<string, unknown>, canvas_object: InstanceType<typeof fabric.Object>) => void)} [modifyHandler] Function that is run whenever the canvas object is modified.
    * This has the signature of (submitted_object, canvas_object).
    * Any properties that should be saved should be copied from canvas_object into
    * submitted_object.  If this is omitted, all properties from the canvas object
@@ -419,10 +410,8 @@ class PLDrawingAnswerState {
     const submitted_object = { ...options, id: 0 };
     if (!('id' in submitted_object) || submitted_object.id === 0) {
       if (!('id' in object)) {
-        // @ts-expect-error - PLDrawingApi is added to window
         submitted_object.id = window.PLDrawingApi.generateID();
       } else {
-        // @ts-expect-error - object.id is a valid id
         submitted_object.id = object.id;
       }
     }
@@ -445,7 +434,6 @@ class PLDrawingAnswerState {
       'id',
     ]);
 
-    // @ts-expect-error - submitted_object has id after initialization
     this.updateObject(submitted_object);
     object.on('modified', () => {
       if (modifyHandler) {
@@ -457,15 +445,12 @@ class PLDrawingAnswerState {
           }
         }
       }
-      // @ts-expect-error - submitted_object has id after initialization
       this.updateObject(submitted_object);
     });
     object.on('removed', () => {
       if (removeHandler) {
-        // @ts-expect-error - removeHandler can accept more parameters but we don't use them
         removeHandler(submitted_object, object);
       }
-      // @ts-expect-error - submitted_object has id after initialization
       this.deleteObject(submitted_object);
     });
   }
@@ -486,7 +471,7 @@ class PLDrawingAnswerState {
     }
 
     /**
-     * @param {fabric.Canvas} canvas
+     * @param {typeof fabric.Canvas} canvas
      * @param {PLDrawingOptions} _options
      * @param {PLDrawingSubmittedAnswer} _submittedAnswer
      */
@@ -500,7 +485,7 @@ class PLDrawingAnswerState {
   // @ts-expect-error - class extensions are correct but TypeScript has issues with method overrides
   class DrawingHelpLineButton extends PLDrawingBaseElement {
     /**
-     * @param {fabric.Canvas} canvas
+     * @param {typeof fabric.Canvas} canvas
      * @param {PLDrawingOptions} options
      * @param {PLDrawingSubmittedAnswer} submittedAnswer
      */
@@ -520,7 +505,6 @@ class PLDrawingAnswerState {
         graded: false,
       };
       const opts = { ...def, ...options, type: 'pl-line' };
-      // @ts-expect-error - PLDrawingApi is added to window
       window.PLDrawingApi.createElement(canvas, opts, submittedAnswer);
     }
 

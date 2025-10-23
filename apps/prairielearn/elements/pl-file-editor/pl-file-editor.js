@@ -153,7 +153,6 @@ PLFileEditor.prototype.updatePreview = async function (preview_type) {
   if (html_contents.trim().length === 0) {
     shadowRoot.innerHTML = default_preview_text;
   } else {
-    // @ts-expect-error - DOMPurify is declared in global comment
     const sanitized_contents = DOMPurify.sanitize(html_contents);
     shadowRoot.innerHTML = sanitized_contents;
     if (
@@ -429,5 +428,4 @@ PLFileEditor.prototype.preview = {
 };
 
 /** @type {new (uuid: string, options: PLFileEditorOptions) => PLFileEditor} */
-// @ts-expect-error - TypeScript has difficulty with constructor functions
 window.PLFileEditor = PLFileEditor;
