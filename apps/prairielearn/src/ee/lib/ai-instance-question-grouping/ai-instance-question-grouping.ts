@@ -1,12 +1,11 @@
+import { type OpenAIChatLanguageModelOptions, createOpenAI } from '@ai-sdk/openai';
+import { type LanguageModel, type ModelMessage, generateObject } from 'ai';
 import * as async from 'async';
-import { OpenAI } from 'openai';
-import { zodTextFormat } from 'openai/helpers/zod';
-import type { ResponseInput } from 'openai/resources/responses/responses';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { formatPrompt, logResponseUsage } from '../../../lib/ai.js';
+import { type OpenAIModelId, formatPrompt, logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import type {
   AssessmentQuestion,
@@ -33,8 +32,7 @@ import {
 
 const PARALLEL_INSTANCE_QUESTION_GROUPING_LIMIT = 20;
 
-const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL =
-  'gpt-5-mini-2025-08-07' satisfies OpenAI.Chat.ChatModel;
+const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAIModelId;
 
 /**
  * Given a question, the AI returns whether or not the student-provided final answer is correct.
@@ -46,7 +44,7 @@ async function aiEvaluateStudentResponse({
   assessment_question,
   instance_question,
   urlPrefix,
-  openai,
+  model,
   logger,
 }: {
   course: Course;
@@ -55,7 +53,7 @@ async function aiEvaluateStudentResponse({
   assessment_question: AssessmentQuestion;
   instance_question: InstanceQuestion;
   urlPrefix: string;
-  openai: OpenAI;
+  model: LanguageModel;
   logger: AIGradingLogger;
 }) {
   const { submission, variant } = await selectLastVariantAndSubmission(instance_question.id);
@@ -83,9 +81,9 @@ async function aiEvaluateStudentResponse({
   });
 
   // Prompt the LLM to determine if the submission is correct or not.
-  const input: ResponseInput = [
+  const input: ModelMessage[] = [
     {
-      role: 'developer',
+      role: 'system',
       content: formatPrompt([
         'Your role is to determine if a student submission is correct or not.',
         [
@@ -112,48 +110,41 @@ async function aiEvaluateStudentResponse({
       content: answer_text,
     },
     {
-      role: 'developer',
+      role: 'system',
       content: 'Now, consider the following student submission:',
     },
     submissionMessage,
     {
-      role: 'developer',
+      role: 'system',
       content:
         'Please evaluate whether or not the student submission is correct according to the above instructions.',
     },
   ];
 
-  const response = await openai.responses.parse({
-    model: INSTANCE_QUESTION_GROUPING_OPENAI_MODEL,
-    input,
-    text: {
-      format: zodTextFormat(
-        z.object({
-          correct: z.boolean().describe('Whether or not the student submission is correct.'),
-        }),
-        'response-evaluation',
-      ),
+  const response = await generateObject({
+    model,
+    schema: z.object({
+      correct: z.boolean().describe('Whether or not the student submission is correct.'),
+    }),
+    messages: input,
+    providerOptions: {
+      openai: {
+        metadata: {
+          course_id: course.id,
+          course_instance_id,
+          assessment_id: assessment_question.assessment_id,
+          assessment_question_id: assessment_question.id,
+          instance_question_id: instance_question.id,
+        },
+        promptCacheKey: `assessment_question_${instance_question.assessment_question_id}_grouping`,
+        safetyIdentifier: `course_${course.id}`,
+      } satisfies OpenAIChatLanguageModelOptions,
     },
-    metadata: {
-      course_id: course.id.toString(),
-      course_instance_id: course_instance_id.toString(),
-      assessment_id: assessment_question.assessment_id,
-      assessment_question_id: assessment_question.id,
-      instance_question_id: instance_question.id,
-    },
-    prompt_cache_key: `assessment_question_${instance_question.assessment_question_id}_grouping`,
-    safety_identifier: `course_${course.id}`,
   });
 
   logResponseUsage({ response, logger });
 
-  const completionContent = response.output_parsed;
-
-  if (!completionContent) {
-    throw new Error('No response returned from OpenAI.');
-  }
-
-  return completionContent.correct;
+  return response.object.correct;
 }
 
 /**
@@ -195,10 +186,11 @@ export async function aiInstanceQuestionGrouping({
     throw new HttpStatusError(403, 'Feature not available.');
   }
 
-  const openai = new OpenAI({
+  const openai = createOpenAI({
     apiKey: config.aiGradingOpenAiApiKey,
     organization: config.aiGradingOpenAiOrganization,
   });
+  const model = openai(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL);
 
   const serverJob = await createServerJob({
     courseId: course.id,
@@ -275,7 +267,7 @@ export async function aiInstanceQuestionGrouping({
         assessment_question,
         instance_question,
         urlPrefix,
-        openai,
+        model,
         logger,
       });
 

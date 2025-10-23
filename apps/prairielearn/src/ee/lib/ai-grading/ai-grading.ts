@@ -1,8 +1,8 @@
 import assert from 'node:assert';
 
+import { type OpenAIChatLanguageModelOptions, createOpenAI } from '@ai-sdk/openai';
+import { generateObject } from 'ai';
 import * as async from 'async';
-import { OpenAI } from 'openai';
-import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -46,37 +46,6 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
 
-function logMissingResponse({
-  instance_question,
-  response,
-  logger,
-}: {
-  instance_question: InstanceQuestion;
-  response: OpenAI.Responses.Response;
-  logger: AIGradingLogger;
-}) {
-  switch (response.incomplete_details?.reason) {
-    case 'max_output_tokens': {
-      logger.error(
-        `Error grading instance question ${instance_question.id}: response exceeded maximum length`,
-      );
-      return;
-    }
-    case 'content_filter': {
-      logger.error(
-        `Error grading instance question ${instance_question.id}: response was flagged by the content filter`,
-      );
-      return;
-    }
-    case undefined: {
-      // The response was not parsed, but there is no indication of why.
-      // Log the entire output for debugging.
-      logger.error(`Error grading instance question ${instance_question.id}: unexpected output`);
-      logger.error(JSON.stringify(response.output, null, 2));
-    }
-  }
-}
-
 /**
  * Grade instance questions using AI.
  * The related grading jobs and rubric gradings will be generated,
@@ -112,10 +81,13 @@ export async function aiGrade({
   if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
     throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
   }
-  const openai = new OpenAI({
+
+  const openai = createOpenAI({
     apiKey: config.aiGradingOpenAiApiKey,
     organization: config.aiGradingOpenAiOrganization,
   });
+  const embeddingModel = openai.textEmbeddingModel('text-embedding-3-small');
+  const model = openai(AI_GRADING_OPENAI_MODEL);
 
   const question_course = await getQuestionCourse(question, course);
 
@@ -153,7 +125,7 @@ export async function aiGrade({
           question,
           instance_question,
           urlPrefix,
-          openai,
+          embeddingModel,
         });
         newEmbeddingsCount++;
       }
@@ -229,7 +201,7 @@ export async function aiGrade({
           question,
           instance_question,
           urlPrefix,
-          openai,
+          embeddingModel,
         });
       }
       const submission_text = submission_embedding.submission_text;
@@ -292,6 +264,18 @@ export async function aiGrade({
         return parts.join(' ');
       });
 
+      const openaiProviderOptions: OpenAIChatLanguageModelOptions = {
+        metadata: {
+          course_id: course.id,
+          course_instance_id,
+          assessment_id: assessment_question.assessment_id,
+          assessment_question_id: assessment_question.id,
+          instance_question_id: instance_question.id,
+        },
+        promptCacheKey: `assessment_question_${assessment_question.id}`,
+        safetyIdentifier: `course_${course.id}`,
+      };
+
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
         let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
@@ -310,33 +294,21 @@ export async function aiGrade({
           rubric_items: RubricGradingItemsSchema,
         });
 
-        const response = await openai.responses.parse({
-          model: AI_GRADING_OPENAI_MODEL,
-          input,
-          text: {
-            format: zodTextFormat(RubricGradingResultSchema, 'score'),
+        const response = await generateObject({
+          model,
+          schema: RubricGradingResultSchema,
+          messages: input,
+          providerOptions: {
+            openai: openaiProviderOptions,
           },
-          metadata: {
-            course_id: course.id.toString(),
-            course_instance_id: course_instance_id.toString(),
-            assessment_id: assessment_question.assessment_id.toString(),
-            assessment_question_id: assessment_question.id.toString(),
-            instance_question_id: instance_question.id.toString(),
-          },
-          prompt_cache_key: `assessment_question_${assessment_question.id}`,
-          safety_identifier: `course_${course.id}`,
         });
+
         try {
           logResponseUsage({ response, logger });
 
-          if (!response.output_parsed) {
-            logMissingResponse({ instance_question, response, logger });
-            return false;
-          }
-
-          logger.info(`Parsed response: ${JSON.stringify(response.output_parsed, null, 2)}`);
+          logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
           const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
-            ai_rubric_items: response.output_parsed.rubric_items,
+            ai_rubric_items: response.object.rubric_items,
             rubric_items,
           });
           if (shouldUpdateScore) {
@@ -439,36 +411,23 @@ export async function aiGrade({
             ),
         });
 
-        const response = await openai.responses.parse({
-          model: AI_GRADING_OPENAI_MODEL,
-          input,
-          text: {
-            format: zodTextFormat(GradingResultSchema, 'score'),
+        const response = await generateObject({
+          model,
+          schema: GradingResultSchema,
+          messages: input,
+          providerOptions: {
+            openai: openaiProviderOptions,
           },
-          metadata: {
-            course_id: course.id.toString(),
-            course_instance_id: course_instance_id.toString(),
-            assessment_id: assessment_question.assessment_id.toString(),
-            assessment_question_id: assessment_question.id.toString(),
-            instance_question_id: instance_question.id.toString(),
-          },
-          prompt_cache_key: `assessment_question_${assessment_question.id}`,
-          safety_identifier: `course_${course.id}`,
         });
         try {
           logResponseUsage({ response, logger });
 
-          if (!response.output_parsed) {
-            logMissingResponse({ instance_question, response, logger });
-            return false;
-          }
-
-          logger.info(`Parsed response: ${JSON.stringify(response.output_parsed, null, 2)}`);
-          const score = response.output_parsed.score;
+          logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
+          const score = response.object.score;
 
           if (shouldUpdateScore) {
             // Requires grading: update instance question score
-            const feedback = response.output_parsed.feedback;
+            const feedback = response.object.feedback;
             await runInTransactionAsync(async () => {
               const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
                 assessment_question.assessment_id,
@@ -523,7 +482,7 @@ export async function aiGrade({
             });
           }
 
-          logger.info(`AI score: ${response.output_parsed.score}`);
+          logger.info(`AI score: ${response.object.score}`);
         } catch (err) {
           logger.error(`ERROR AI grading for ${instance_question.id}`);
           logger.error(err);
