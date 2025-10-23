@@ -48,9 +48,11 @@ export function WorkspaceLogs({
       <div class="table-responsive">
         <table class="table table-sm" aria-label="Workspace versions">
           <thead>
-            <th>Version</th>
-            <th>Created</th>
-            <th>Actions</th>
+            <tr>
+              <th>Version</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
           </thead>
           <tbody>
             ${uniqueVersions.map((version) => {

@@ -144,7 +144,7 @@ export function Workspace({
                     </li>
                   `
                 : null}
-              <li class="nav-item ms-2 ml-md-3 my-1">
+              <li class="nav-item ms-2 ms-md-3 my-1">
                 <button
                   type="button"
                   class="nav-item btn btn-light"
