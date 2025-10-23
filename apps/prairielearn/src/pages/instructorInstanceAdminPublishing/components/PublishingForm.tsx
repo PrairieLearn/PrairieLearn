@@ -153,7 +153,7 @@ export function PublishingForm({
           break;
         }
 
-        // If the original publish date was in the past, use that.
+        // If the original start date was in the past, use that.
         // Otherwise, we are transitioning from 'scheduled publish' to 'unpublished'. Drop both dates.
         if (originalStartDate && originalStartDate < now) {
           updatedStartDate = DateToPlainDateTime(
@@ -180,7 +180,7 @@ export function PublishingForm({
         }
 
         if (originalStartDate && now <= originalStartDate) {
-          // Try to re-use the original publish date if it is in the future.
+          // Try to re-use the original start date if it is in the future.
           updatedStartDate = DateToPlainDateTime(
             originalStartDate,
             courseInstance.display_timezone,
@@ -206,14 +206,14 @@ export function PublishingForm({
       }
       case 'published': {
         if (originalStartDate && now >= originalStartDate) {
-          // Try to re-use the original publish date if it is in the past.
+          // Try to re-use the original start date if it is in the past.
           updatedStartDate = DateToPlainDateTime(
             originalStartDate,
             courseInstance.display_timezone,
           );
         } else if (
           currentStartDate === null ||
-          // If the current publish date is in the future, set it to now.
+          // If the current start date is in the future, set it to now.
           Temporal.PlainDateTime.compare(currentStartDate, nowTemporal) > 0
         ) {
           updatedStartDate = nowTemporal;
@@ -292,12 +292,12 @@ export function PublishingForm({
   const validateStartDate = (value: string) => {
     if (selectedStatus === 'publish_scheduled') {
       if (!value) {
-        return 'Publish date is required for scheduled publishing';
+        return 'Start date is required for scheduled publishing';
       }
-      // Check if publish date is in the future
+      // Check if start date is in the future
       const startDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
       if (startDateTime <= nowDateInTimezone(courseInstance.display_timezone)) {
-        return 'Publish date must be in the future for scheduled publishing';
+        return 'Start date must be in the future for scheduled publishing';
       }
     }
     return true;
@@ -308,12 +308,12 @@ export function PublishingForm({
       if (!value) {
         return 'End date is required';
       }
-      // Check if end date is after publish date
+      // Check if end date is after start date
       if (startDate && value) {
         const startDateTime = plainDateTimeStringToDate(startDate, courseInstance.display_timezone);
         const endDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
         if (endDateTime <= startDateTime) {
-          return 'End date must be after publish date';
+          return 'End date must be after start date';
         }
       }
     }

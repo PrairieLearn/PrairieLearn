@@ -1,6 +1,7 @@
 import {
   execute,
   loadSqlEquiv,
+  queryOptionalRow,
   queryRow,
   queryRows,
   runInTransactionAsync,
@@ -29,6 +30,23 @@ export async function selectPublishingExtensionsByEnrollmentId(
   return await queryRows(
     sql.select_publishing_extensions_by_enrollment_id,
     { enrollment_id },
+    CourseInstancePublishingExtensionSchema,
+  );
+}
+
+/**
+ * Finds a publishing extension by name within a course instance.
+ */
+export async function selectPublishingExtensionByName({
+  name,
+  course_instance_id,
+}: {
+  name: string;
+  course_instance_id: string;
+}): Promise<CourseInstancePublishingExtension | null> {
+  return await queryOptionalRow(
+    sql.select_publishing_extension_by_name,
+    { name, course_instance_id },
     CourseInstancePublishingExtensionSchema,
   );
 }

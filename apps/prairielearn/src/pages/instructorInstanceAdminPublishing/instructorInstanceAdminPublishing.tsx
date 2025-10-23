@@ -26,6 +26,7 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import {
   createPublishingExtensionWithEnrollments,
   deletePublishingExtension,
+  selectPublishingExtensionByName,
   selectPublishingExtensionsWithUsersByCourseInstance,
 } from '../../models/course-instance-publishing-extensions.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
@@ -377,11 +378,26 @@ router.post(
           return;
         }
 
+        // Check if an extension with this name already exists
+        if (body.name) {
+          const existingExtension = await selectPublishingExtensionByName({
+            name: body.name,
+            course_instance_id: res.locals.course_instance.id,
+          });
+
+          if (existingExtension) {
+            res
+              .status(400)
+              .json({ message: `An extension with the name "${body.name}" already exists` });
+            return;
+          }
+        }
+
         const enrollmentIds = records.map(({ enrollment }) => enrollment.id);
 
         await createPublishingExtensionWithEnrollments({
           course_instance_id: res.locals.course_instance.id,
-          name: body.name ?? null,
+          name: body.name,
           end_date: new Date(body.end_date),
           enrollment_ids: enrollmentIds,
         });
@@ -439,11 +455,26 @@ router.post(
         });
         const body = EditExtensionSchema.parse(req.body);
 
+        // Check if an extension with this name already exists (excluding the current one)
+        if (body.name) {
+          const existingExtension = await selectPublishingExtensionByName({
+            name: body.name,
+            course_instance_id: res.locals.course_instance.id,
+          });
+
+          if (existingExtension && existingExtension.id !== body.extension_id) {
+            res
+              .status(400)
+              .json({ message: `An extension with the name "${body.name}" already exists` });
+            return;
+          }
+        }
+
         await runInTransactionAsync(async () => {
           // Update extension metadata
           await execute(sql.update_extension, {
             extension_id: body.extension_id,
-            name: body.name ?? '',
+            name: body.name,
             end_date: body.end_date,
             course_instance_id: res.locals.course_instance.id,
           });

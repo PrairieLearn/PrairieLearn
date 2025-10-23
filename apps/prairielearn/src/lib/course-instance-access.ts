@@ -118,7 +118,7 @@ export async function evaluateModernCourseInstanceAccess(
     };
   }
 
-  // End date is always set alongside publish date
+  // End date is always set alongside start date
   assert(courseInstance.publishing_end_date != null);
 
   // Consider the latest enabled date for the enrollment.

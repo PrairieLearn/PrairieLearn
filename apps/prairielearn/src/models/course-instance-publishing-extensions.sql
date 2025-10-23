@@ -9,6 +9,15 @@ FROM
 WHERE
   ci_enrollment_extensions.enrollment_id = $enrollment_id;
 
+-- BLOCK select_publishing_extension_by_name
+SELECT
+  *
+FROM
+  course_instance_publishing_extensions
+WHERE
+  course_instance_id = $course_instance_id
+  AND name = $name;
+
 -- BLOCK insert_publishing_extension
 INSERT INTO
   course_instance_publishing_extensions (course_instance_id, name, end_date)

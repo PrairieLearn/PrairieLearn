@@ -53,9 +53,16 @@ function ExtensionModal({
   onSaveSuccess: () => void;
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // This updates asynchronously, so the validation function will see the latest value.
   const [bypassEnrollmentCheck, setBypassEnrollmentCheck] = useState(false);
 
-  const someInvalidUidsPrefix = 'The following UIDs were invalid';
+  const someUnenrolledUidsPrefix = 'Not enrolled';
+
+  const handleHide = () => {
+    setBypassEnrollmentCheck(false);
+    onHide();
+  };
 
   const {
     register,
@@ -81,7 +88,7 @@ function ExtensionModal({
 
   const validateEmails = async (value: string) => {
     const uids = value
-      .split(/[\n,]+/)
+      .split(/[\n,\s]+/)
       .map((uid) => uid.trim())
       .filter((uid) => uid.length > 0);
 
@@ -93,7 +100,7 @@ function ExtensionModal({
 
     if (invalidEmails.length > 0) {
       // You can't return errors with a type from validate, so we will use a constant string prefix.
-      return `${someInvalidUidsPrefix}: "${invalidEmails.join('", "')}"`;
+      return `The following UIDs were invalid: "${invalidEmails.join('", "')}"`;
     }
 
     const params = new URLSearchParams();
@@ -115,7 +122,7 @@ function ExtensionModal({
     if (bypassEnrollmentCheck) return true;
 
     if (data.invalidUids.length > 0) {
-      return `Not enrolled: "${data.invalidUids.join('", ')}". If you hit "Save Anyway", these users will be ignored.`;
+      return `${someUnenrolledUidsPrefix}: "${data.invalidUids.join('", ')}"`;
     }
     return true;
   };
@@ -141,16 +148,20 @@ function ExtensionModal({
       }
     },
     onSuccess: () => {
+      setBypassEnrollmentCheck(false);
       onSaveSuccess();
-      onHide();
+      handleHide();
     },
     onError: (error) => {
       setErrorMessage(error instanceof Error ? error.message : 'Unknown error');
     },
   });
 
+  const hasSomeInvalidUids =
+    errors.uids?.message?.startsWith(someUnenrolledUidsPrefix) && Object.keys(errors).length === 1;
+
   return (
-    <Modal show={show} backdrop="static" onHide={onHide}>
+    <Modal show={show} backdrop="static" onHide={handleHide}>
       <Modal.Header closeButton>
         <Modal.Title>{mode === 'add' ? 'Add Extension' : 'Edit Extension'}</Modal.Title>
       </Modal.Header>
@@ -221,7 +232,9 @@ function ExtensionModal({
               placeholder="One UID per line, or comma/space separated"
               {...register('uids', {
                 validate: validateEmails,
-                onChange: () => setBypassEnrollmentCheck(false),
+                onChange: () => {
+                  setBypassEnrollmentCheck(false);
+                },
               })}
             />
             {errors.uids && <div class="text-danger small">{String(errors.uids.message)}</div>}
@@ -232,24 +245,31 @@ function ExtensionModal({
             type="button"
             class="btn btn-outline-secondary"
             disabled={saveMutation.isPending}
-            onClick={onHide}
+            onClick={handleHide}
           >
             Cancel
           </button>
           <button
             type="submit"
-            class="btn btn-primary"
+            class={clsx(
+              'btn',
+              hasSomeInvalidUids && bypassEnrollmentCheck ? 'btn-warning' : 'btn-primary',
+            )}
             disabled={saveMutation.isPending}
-            onClick={() => {
-              // You can't return errors with a type from validate, so we will use a constant string prefix.
-              if (errors.uids?.message?.startsWith(someInvalidUidsPrefix)) {
-                setBypassEnrollmentCheck(true);
+            onClick={async (e) => {
+              if (hasSomeInvalidUids) {
+                if (!bypassEnrollmentCheck) {
+                  // Prevent the form from submitting
+                  e.preventDefault();
+                  await trigger('uids');
+                  setBypassEnrollmentCheck(true);
+                }
               }
             }}
           >
             {saveMutation.isPending
               ? 'Saving...'
-              : errors.uids?.message?.startsWith(someInvalidUidsPrefix)
+              : hasSomeInvalidUids && bypassEnrollmentCheck
                 ? 'Continue Anyway'
                 : 'Save'}
           </button>
@@ -415,8 +435,7 @@ export function PublishingExtensions({
       {hasExtensionsWithoutPublishDate && (
         <Alert variant="warning" class="mb-3">
           <i class="fas fa-exclamation-triangle me-2" aria-hidden="true" />
-          You have extensions configured but no course instance end date. Extensions will not take
-          effect until you save a publishing end date above.
+          Extensions will not take effect until you set a publishing end date.
         </Alert>
       )}
 
@@ -617,6 +636,7 @@ function ExtensionTableRow({
                     )}
                     {hasMoreStudents && (
                       <button
+                        key={`button-${isShowingAll ? 'show-less' : 'show-more'}`}
                         type="button"
                         class="btn btn-sm btn-outline-secondary"
                         onClick={() => onToggleShowAllStudents(extension.id)}

@@ -10,7 +10,7 @@ ADD COLUMN publishing_end_date TIMESTAMP WITH TIME ZONE;
 ALTER TABLE course_instances
 ADD COLUMN modern_publishing BOOLEAN NOT NULL DEFAULT FALSE;
 
--- Ensure that either both publish date and end date are null, or neither are null
+-- Ensure that either both start date and end date are null, or neither are null
 ALTER TABLE course_instances
 ADD CONSTRAINT course_instances_publishing_dates_consistency_check CHECK (
   (
