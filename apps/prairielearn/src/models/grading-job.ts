@@ -300,14 +300,10 @@ async function updateInstanceQuestionGrade({
       grading_job_id,
       authn_user_id,
     });
-    await updateInstanceQuestionStats({ instance_question_id });
+    await updateInstanceQuestionStats(instance_question_id);
   });
 }
 
-export async function updateInstanceQuestionStats({
-  instance_question_id,
-}: {
-  instance_question_id: string;
-}) {
+export async function updateInstanceQuestionStats(instance_question_id: string) {
   await execute(sql.recalculate_instance_question_stats, { instance_question_id });
 }

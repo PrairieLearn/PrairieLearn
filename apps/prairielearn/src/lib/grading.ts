@@ -167,7 +167,7 @@ export async function insertSubmission({
         status: gradable ? 'saved' : 'invalid',
         requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
       });
-      await updateInstanceQuestionStats({ instance_question_id: variant.instance_question_id! });
+      await updateInstanceQuestionStats(variant.instance_question_id!);
     }
 
     return { submission_id, variant };
