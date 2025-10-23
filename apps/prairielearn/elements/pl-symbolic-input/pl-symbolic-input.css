@@ -28,6 +28,12 @@ math-field.read-only {
   height: auto;
 }
 
+math-field::part(content),
+math-field::part(container) {
+  max-width: 100%;
+  overflow: hidden;
+}
+
 math-field::part(menu-toggle) {
   display: none;
 }
