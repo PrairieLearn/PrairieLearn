@@ -1,6 +1,22 @@
 /* global ace, MathJax, DOMPurify */
 
 /**
+ * @typedef {Object} PLFileEditorOptions
+ * @property {string} [originalContents]
+ * @property {Record<string, (content: string) => string | Promise<string>>} [preview]
+ * @property {string} [preview_type]
+ * @property {boolean} [readOnly]
+ * @property {string} [aceMode]
+ * @property {string} [aceTheme]
+ * @property {number} [fontSize]
+ * @property {number} [minLines]
+ * @property {number} [maxLines]
+ * @property {boolean} [autoResize]
+ * @property {boolean} [plOptionFocus]
+ * @property {string} [currentContents]
+ */
+
+/**
  * @param {string} uuid
  * @param {PLFileEditorOptions} options
  * @this {PLFileEditor}

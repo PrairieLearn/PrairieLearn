@@ -199,7 +199,6 @@ window.PLDrawingApi = {
     drawing_btns.each(function (i, btn) {
       const img = btn.children[0];
       const opts = parseElemOptions(/** @type {HTMLElement} */ (img.parentNode));
-      // @ts-expect-error - PLDrawingApi is added to window
       const elem = window.PLDrawingApi.getElement(opts.type);
       const elem_name = opts.type;
       if (elem !== null) {
@@ -271,7 +270,7 @@ window.PLDrawingApi = {
 
     // Restrict objects from being able to be dragged off-canvas
     // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
-    canvas.on('object:moving', function (e) {
+    canvas.on('object:moving', function (/** @type {any} */ e) {
       const obj = e.target;
       if (!obj) return;
       // if object is too big ignore,
@@ -315,7 +314,6 @@ window.PLDrawingApi = {
     if (existing_answer_submission != null) {
       // @ts-expect-error - type signature of existing_answer_submission varies
       submittedAnswer._set(existing_answer_submission);
-      // @ts-expect-error - PLDrawingApi is added to window
       window.PLDrawingApi.restoreAnswer(canvas, submittedAnswer);
     }
   },
@@ -397,22 +395,27 @@ class PLDrawingAnswerState {
    * By default, all properties from the canvas object are copied to the submission object.
    *
    * @param {PLDrawingOptions & Record<string, unknown>} options Options that were passed to the 'generate()' function.
-   * @param {InstanceType<typeof fabric.Object>} object Canvas object that was created and should be saved.
+   * @param {InstanceType<typeof fabric.Object>} canvasObject Canvas object that was created and should be saved.
    * @param {((submitted_object: PLDrawingOptions & Record<string, unknown>, canvas_object: InstanceType<typeof fabric.Object>) => void)} [modifyHandler] Function that is run whenever the canvas object is modified.
    * This has the signature of (submitted_object, canvas_object).
    * Any properties that should be saved should be copied from canvas_object into
    * submitted_object.  If this is omitted, all properties from the canvas object
    * are copied as-is.
-   * @param {(() => void)} [removeHandler] Function that is run whenever the canvas object is deleted.
+   * @param {((submitted_object: PLDrawingOptions & Record<string, unknown>, canvas_object: InstanceType<typeof fabric.Object>) => void)} [removeHandler] Function that is run whenever the canvas object is deleted.
    */
-  registerAnswerObject(options, object, modifyHandler, removeHandler) {
+  registerAnswerObject(
+    options,
+    /** @type {InstanceType<typeof fabric.Object>} */ canvasObject,
+    modifyHandler,
+    removeHandler,
+  ) {
     /** @type {PLDrawingOptions & Record<string, unknown> & { id: string | number }} */
     const submitted_object = { ...options, id: 0 };
     if (!('id' in submitted_object) || submitted_object.id === 0) {
-      if (!('id' in object)) {
+      if (!('id' in canvasObject)) {
         submitted_object.id = window.PLDrawingApi.generateID();
       } else {
-        submitted_object.id = object.id;
+        submitted_object.id = canvasObject.id;
       }
     }
 
@@ -435,11 +438,11 @@ class PLDrawingAnswerState {
     ]);
 
     this.updateObject(submitted_object);
-    object.on('modified', () => {
+    canvasObject.on('modified', () => {
       if (modifyHandler) {
-        modifyHandler(submitted_object, object);
+        modifyHandler(submitted_object, canvasObject);
       } else {
-        for (const [key, value] of Object.entries(object)) {
+        for (const [key, value] of Object.entries(canvasObject)) {
           if (!key.startsWith('_') && !blocked_keys.has(key)) {
             submitted_object[key] = value;
           }
@@ -447,9 +450,9 @@ class PLDrawingAnswerState {
       }
       this.updateObject(submitted_object);
     });
-    object.on('removed', () => {
+    canvasObject.on('removed', () => {
       if (removeHandler) {
-        removeHandler(submitted_object, object);
+        removeHandler(submitted_object, canvasObject);
       }
       this.deleteObject(submitted_object);
     });
@@ -471,14 +474,18 @@ class PLDrawingAnswerState {
     }
 
     /**
-     * @param {typeof fabric.Canvas} canvas
+     * @param {typeof fabric.Canvas} canvasInstance
      * @param {PLDrawingOptions} _options
      * @param {PLDrawingSubmittedAnswer} _submittedAnswer
      */
-    static button_press(canvas, _options, _submittedAnswer) {
-      const activeObj = canvas.getActiveObject();
+    static button_press(
+      /** @type {InstanceType<typeof fabric.Canvas>} */ canvasInstance,
+      _options,
+      _submittedAnswer,
+    ) {
+      const activeObj = canvasInstance.getActiveObject();
       if (activeObj) {
-        canvas.remove(activeObj);
+        canvasInstance.remove(activeObj);
       }
     }
   }
@@ -524,6 +531,5 @@ class PLDrawingAnswerState {
     'help-line': DrawingHelpLineButton,
   };
 
-  // @ts-expect-error - PLDrawingApi is added to window
   window.PLDrawingApi.registerElements('_base', builtins);
 })();

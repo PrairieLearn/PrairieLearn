@@ -66,6 +66,10 @@ declare global {
       elementModule: any;
       createElement: any;
       clientFilesBase: string;
+      registerElements: (module: string, elements: any) => void;
+      getElement: (type: string) => any;
+      restoreAnswer: (canvas: any, submittedAnswer: any) => void;
+      setupCanvas: (canvas: any, options: any) => void;
     };
   }
 
