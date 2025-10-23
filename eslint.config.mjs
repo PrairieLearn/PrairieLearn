@@ -654,6 +654,10 @@ export default tseslint.config([
       tseslint.configs.stylisticTypeCheckedOnly,
     ],
     files: ['apps/prairielearn/elements/**/*.js'],
+    ignores: [
+      'apps/prairielearn/elements/pl-threejs/*.js',
+      'apps/prairielearn/elements/pl-drawing/mechanicsObjects.js',
+    ],
     languageOptions: {
       parserOptions: {
         projectService: true,

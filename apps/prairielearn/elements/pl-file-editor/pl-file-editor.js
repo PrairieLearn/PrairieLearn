@@ -2,18 +2,18 @@
 
 /**
  * @typedef {object} PLFileEditorOptions
- * @property {string} [originalContents]
- * @property {Record<string, (content: string) => string | Promise<string>>} [preview]
- * @property {string} [preview_type]
- * @property {boolean} [readOnly]
- * @property {string} [aceMode]
- * @property {string} [aceTheme]
- * @property {number} [fontSize]
- * @property {number} [minLines]
- * @property {number} [maxLines]
- * @property {boolean} [autoResize]
- * @property {boolean} [plOptionFocus]
- * @property {string} [currentContents]
+ * @property {string} [originalContents] - The original contents of the file
+ * @property {Record<string, (content: string) => string | Promise<string>>} [preview] - The preview function for the file
+ * @property {string} [preview_type] - The type of preview to use (html, markdown, dot)
+ * @property {boolean} [readOnly] - Whether the file is read only
+ * @property {string} [aceMode] - The mode of the editor (text, python, javascript, etc.)
+ * @property {string} [aceTheme] - The theme of the editor (chrome, monokai, solarized_dark, etc.)
+ * @property {number} [fontSize] - The font size of the editor
+ * @property {number} [minLines] - The minimum number of lines to display
+ * @property {number} [maxLines] - The maximum number of lines to display
+ * @property {boolean} [autoResize] - Whether the editor should automatically resize
+ * @property {boolean} [plOptionFocus] - Whether the editor should focus on the first option
+ * @property {string} [currentContents] - The current contents of the file
  */
 
 /**
@@ -144,8 +144,7 @@ PLFileEditor.prototype.syncSettings = function () {
  * @param {string} preview_type
  */
 PLFileEditor.prototype.updatePreview = async function (preview_type) {
-  /** @type {HTMLElement} */
-  const preview = this.element.find('.preview')[0];
+  const preview = /** @type {HTMLElement} */ (this.element.find('.preview')[0]);
   let shadowRoot = preview.shadowRoot;
   if (!shadowRoot) {
     shadowRoot = preview.attachShadow({ mode: 'open' });

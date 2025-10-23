@@ -128,7 +128,9 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
 export async function initializeExcalidraw(uuid, name, metadata) {
   const rootElement = /** @type {HTMLElement} */ (document.getElementById(`excalidraw-${uuid}`));
 
-  const hiddenInput = /** @type {HTMLInputElement} */ (document.getElementById(`excalidraw-input-${uuid}`));
+  const hiddenInput = /** @type {HTMLInputElement} */ (
+    document.getElementById(`excalidraw-input-${uuid}`)
+  );
   /** @param {string} value */
   const setHiddenInput = (value) => {
     hiddenInput.value = value;
