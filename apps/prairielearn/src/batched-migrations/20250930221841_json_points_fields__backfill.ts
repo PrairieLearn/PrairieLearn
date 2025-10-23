@@ -11,7 +11,10 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
 export default makeBatchedMigration({
   async getParameters() {
-    const result = await queryRow('SELECT MAX(id) as max from pl_courses;', z.string().nullable());
+    const result = await queryRow(
+      'SELECT MAX(id) as max from pl_courses;',
+      z.coerce.bigint().nullable(),
+    );
     return {
       min: 1n,
       max: result,
@@ -26,8 +29,21 @@ export default makeBatchedMigration({
       CourseSchema,
     );
 
+    const errors: Error[] = [];
     for (const course of courses) {
-      await syncCourse(course);
+      try {
+        await syncCourse(course);
+      } catch (err) {
+        errors.push(
+          new Error(`Failed to sync course ${course.id} (${course.short_name}): ${err}`, {
+            cause: err,
+          }),
+        );
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new AggregateError(errors, `Failed to sync ${errors.length} course(s)`);
     }
   },
 });
