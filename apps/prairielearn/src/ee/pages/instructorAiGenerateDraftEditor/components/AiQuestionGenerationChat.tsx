@@ -5,7 +5,7 @@ import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
 import clsx from 'clsx';
 import { useEffect, useRef } from 'preact/hooks';
 import Markdown from 'react-markdown';
-import { StickToBottom, useStickToBottomContext } from 'use-stick-to-bottom';
+import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
 
@@ -236,9 +236,13 @@ function MessageParts({ parts }: { parts: QuestionGenerationUIMessage['parts'] }
   });
 }
 
-function ScrollToBottomButton() {
-  const { isAtBottom, scrollToBottom } = useStickToBottomContext();
-
+function ScrollToBottomButton({
+  isAtBottom,
+  scrollToBottom,
+}: {
+  isAtBottom?: boolean;
+  scrollToBottom: () => void;
+}) {
   return (
     !isAtBottom && (
       <button
@@ -401,6 +405,10 @@ export function AiQuestionGenerationChat({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const resizerRef = useRef<HTMLDivElement>(null);
+  const stickToBottom = useStickToBottom({
+    initial: 'smooth',
+    resize: 'smooth',
+  });
 
   // Chat width resizing
   useEffect(() => {
@@ -446,20 +454,37 @@ export function AiQuestionGenerationChat({
     };
   }, []);
 
-  return (
-    <StickToBottom class="app-chat-container" resize="smooth" initial="smooth">
-      <div ref={containerRef} class="app-chat px-2 pb-2 bg-light border-end">
-        <div class="app-chat-history">
-          <StickToBottom.Content class="app-chat-history pt-2 position-relative">
-            <Messages
-              messages={messages}
-              urlPrefix={urlPrefix}
-              showJobLogsLink={showJobLogsLink}
-              showSpinner={showSpinner}
-            />
-          </StickToBottom.Content>
+  const hasMessages = messages.length > 0;
 
-          <ScrollToBottomButton />
+  return (
+    <div class="app-chat-container">
+      <div ref={containerRef} class="app-chat px-2 pb-2 bg-light border-end">
+        <div
+          class={clsx('app-chat-history', {
+            'd-flex align-items-center justify-content-center': !hasMessages,
+          })}
+        >
+          {hasMessages ? (
+            <div ref={stickToBottom.scrollRef} class="overflow-y-auto w-100 h-100">
+              <div ref={stickToBottom.contentRef} class="pt-2">
+                <Messages
+                  messages={messages}
+                  urlPrefix={urlPrefix}
+                  showJobLogsLink={showJobLogsLink}
+                  showSpinner={showSpinner}
+                />
+              </div>
+            </div>
+          ) : (
+            // If this is an old draft question that was using `ai_question_generation_prompts`,
+            // we won't have any messages to display. That's fine, just warn the user.
+            <div class="text-muted my-5">Message history unavailable.</div>
+          )}
+
+          <ScrollToBottomButton
+            isAtBottom={stickToBottom.isAtBottom}
+            scrollToBottom={stickToBottom.scrollToBottom}
+          />
         </div>
 
         <div class="app-chat-prompt mt-2">
@@ -474,13 +499,16 @@ export function AiQuestionGenerationChat({
             </div>
           )}
           <PromptInput
-            sendMessage={sendMessage}
+            sendMessage={(message: { text: string }) => {
+              void sendMessage(message);
+              void stickToBottom.scrollToBottom();
+            }}
             disabled={status !== 'ready' && status !== 'error'}
           />
         </div>
         <div ref={resizerRef} class="app-chat-resizer" aria-label="Resize chat" role="separator" />
       </div>
-    </StickToBottom>
+    </div>
   );
 }
 
