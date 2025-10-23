@@ -2,7 +2,7 @@ import { Temporal } from '@js-temporal/polyfill';
 
 import { type AccessRuleJson, type PublishingJson } from '../schemas/infoCourseInstance.js';
 
-import { type CourseInstancePublishingRule } from './db-types.js';
+import { type CourseInstanceAccessRule } from './db-types.js';
 
 export interface PublishingConfigurationMigrationResult {
   success: true;
@@ -29,7 +29,7 @@ const toIsoString = (date: Date, timezone: string) => {
  * Converts a database CourseInstanceAccessRule to the AccessRuleJson format.
  */
 export function convertAccessRuleToJson(
-  accessRule: CourseInstancePublishingRule,
+  accessRule: CourseInstanceAccessRule,
   courseInstanceTimezone: string,
 ): AccessRuleJson {
   const json: AccessRuleJson = {};

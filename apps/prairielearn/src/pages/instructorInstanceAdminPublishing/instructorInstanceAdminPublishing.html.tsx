@@ -2,7 +2,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { type StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import { isRenderableComment } from '../../lib/comments.js';
-import type { CourseInstancePublishingRule } from '../../lib/db-types.js';
+import type { CourseInstanceAccessRule } from '../../lib/db-types.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../models/course-instance-publishing-extensions.types.js';
 
 import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
@@ -22,7 +22,7 @@ export function InstructorInstanceAdminPublishing({
   courseInstance: StaffCourseInstance;
   hasCourseInstancePermissionEdit: boolean;
   hasCourseInstancePermissionView: boolean;
-  accessRules: CourseInstancePublishingRule[];
+  accessRules: CourseInstanceAccessRule[];
   accessControlExtensions: CourseInstancePublishingExtensionWithUsers[];
   csrfToken: string;
   origHash: string;

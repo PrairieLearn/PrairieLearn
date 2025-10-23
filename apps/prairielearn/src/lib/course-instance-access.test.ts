@@ -19,7 +19,7 @@ import {
   convertAccessRuleToJson,
   migrateAccessRuleJsonToPublishingConfiguration,
 } from './course-instance-access.shared.js';
-import { type CourseInstance, type CourseInstancePublishingRule } from './db-types.js';
+import { type CourseInstance, type CourseInstanceAccessRule } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -124,6 +124,7 @@ function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): Cour
     self_enrollment_enabled: true,
     self_enrollment_enabled_before_date: null,
     self_enrollment_use_enrollment_code: false,
+    self_enrollment_restrict_to_institution: false,
     share_source_publicly: false,
     sync_errors: null,
     sync_job_sequence_id: null,
@@ -131,6 +132,7 @@ function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): Cour
     assessments_group_by: 'Set',
 
     // These are the only fields we care about.
+    modern_publishing: false,
     publishing_start_date: null,
     publishing_end_date: null,
     ...overrides,
@@ -278,8 +280,8 @@ describe('evaluateCourseInstanceAccess', () => {
 
 describe('convertAccessRuleToJson', () => {
   function createMockAccessRule(
-    overrides: Partial<CourseInstancePublishingRule> = {},
-  ): CourseInstancePublishingRule {
+    overrides: Partial<CourseInstanceAccessRule> = {},
+  ): CourseInstanceAccessRule {
     return {
       id: '1',
       course_instance_id: '1',
@@ -349,8 +351,8 @@ describe('convertAccessRuleToJson', () => {
 
 describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleToJson + migrateAccessRuleJsonToPublishingConfiguration)', () => {
   function createMockAccessRule(
-    overrides: Partial<CourseInstancePublishingRule> = {},
-  ): CourseInstancePublishingRule {
+    overrides: Partial<CourseInstanceAccessRule> = {},
+  ): CourseInstanceAccessRule {
     return {
       id: '1',
       course_instance_id: '1',
@@ -385,7 +387,7 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
   });
 
   it('fails when there are no access rules', () => {
-    const accessRules: CourseInstancePublishingRule[] = [];
+    const accessRules: CourseInstanceAccessRule[] = [];
 
     // Convert to JSON format first
     const accessRuleJsonArray = accessRules.map((rule) => convertAccessRuleToJson(rule, 'UTC'));

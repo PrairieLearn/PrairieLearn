@@ -19,7 +19,7 @@ import {
   convertAccessRuleToJson,
   migrateAccessRuleJsonToPublishingConfiguration,
 } from '../../lib/course-instance-access.shared.js';
-import { CourseInstancePublishingRuleSchema } from '../../lib/db-types.js';
+import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -127,7 +127,7 @@ router.get(
     const accessRules = await queryRows(
       sql.course_instance_access_rules,
       { course_instance_id: res.locals.course_instance.id },
-      CourseInstancePublishingRuleSchema,
+      CourseInstanceAccessRuleSchema,
     );
 
     res.send(
@@ -184,7 +184,7 @@ router.post(
         const accessRules = await queryRows(
           sql.course_instance_access_rules,
           { course_instance_id: res.locals.course_instance.id },
-          CourseInstancePublishingRuleSchema,
+          CourseInstanceAccessRuleSchema,
         );
 
         if (accessRules.length > 0) {
@@ -275,7 +275,7 @@ router.post(
       const accessRules = await queryRows(
         sql.course_instance_access_rules,
         { course_instance_id: res.locals.course_instance.id },
-        CourseInstancePublishingRuleSchema,
+        CourseInstanceAccessRuleSchema,
       );
       const accessRuleJsonArray = accessRules.map((rule) =>
         convertAccessRuleToJson(rule, res.locals.course_instance.display_timezone),

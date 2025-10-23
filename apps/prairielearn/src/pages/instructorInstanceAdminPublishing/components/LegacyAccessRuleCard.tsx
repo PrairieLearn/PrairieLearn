@@ -3,7 +3,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { CommentPopover } from '../../../components/CommentPopover.js';
 import { convertAccessRuleToJson } from '../../../lib/course-instance-access.shared.js';
-import type { CourseInstance, CourseInstancePublishingRule } from '../../../lib/db-types.js';
+import type { CourseInstance, CourseInstanceAccessRule } from '../../../lib/db-types.js';
 import type { AccessRuleJson } from '../../../schemas/infoCourseInstance.js';
 
 import { PublishingMigrationModal } from './PublishingMigrationModal.js';
@@ -19,7 +19,7 @@ export function LegacyAccessRuleCard({
   origHash,
 }: {
   isExampleCourse: boolean;
-  accessRules: CourseInstancePublishingRule[];
+  accessRules: CourseInstanceAccessRule[];
   showComments: boolean;
   courseInstance: CourseInstance;
   hasCourseInstancePermissionView: boolean;
@@ -86,7 +86,7 @@ function AccessRuleRow({
   hasCourseInstancePermissionView,
   showComments,
 }: {
-  accessRule: CourseInstancePublishingRule;
+  accessRule: CourseInstanceAccessRule;
   timeZone: string;
   hasCourseInstancePermissionView: boolean;
   showComments: boolean;
