@@ -627,7 +627,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             grading_method is GradingMethodType.DAG
             and order_blocks_options.has_optional_lines
         ):
-            # extract multigraph from all blocks not just those in correct_answer
             depends_multigraph, final = extract_multigraph(true_answer_list)
             num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
                 submission, depends_multigraph, final
