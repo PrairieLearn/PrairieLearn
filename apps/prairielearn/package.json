@@ -16,6 +16,7 @@
     "test:docker-smoke-tests": "vitest run --coverage --mode=docker-smoke-tests"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.52",
     "@aws-sdk/client-auto-scaling": "^3.899.0",
     "@aws-sdk/client-cloudwatch": "^3.899.0",
     "@aws-sdk/client-ec2": "^3.899.0",
@@ -104,6 +105,7 @@
     "@web3-storage/parse-link-header": "^3.1.0",
     "ace-builds": "^1.43.3",
     "ace-code": "^1.43.3",
+    "ai": "^5.0.72",
     "ajv": "^8.17.1",
     "ansi_up": "^6.0.6",
     "archiver": "^7.0.1",
@@ -192,7 +194,6 @@
     "object-hash": "^3.0.0",
     "on-finished": "^2.4.1",
     "on-headers": "^1.1.0",
-    "openai": "^6.0.0",
     "openid-client": "^6.6.3",
     "p-memoize": "^8.0.0",
     "parse5": "^7.3.0",
@@ -238,7 +239,7 @@
     "ua-parser-js": "^1.0.41",
     "unified": "^11.0.5",
     "unzipper": "^0.12.3",
-    "vite": "^7.1.7",
+    "vite": "^7.1.11",
     "winston": "^3.18.3",
     "xml-formatter": "^3.6.7",
     "xml2js": "^0.6.2",
