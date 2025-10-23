@@ -44,7 +44,6 @@ export async function init() {
       'assessment_instances_grade.sql',
       'instance_questions_points_homework.sql',
       'instance_questions_points_exam.sql',
-      'instance_questions_points.sql',
       'instance_questions_next_allowed_grade.sql',
       'ip_to_mode.sql',
       'users_select_or_insert.sql',

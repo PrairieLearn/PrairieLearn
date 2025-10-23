@@ -8,9 +8,11 @@ import {
   queryRow,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   AssessmentQuestionSchema,
+  AssessmentSchema,
   type GradingJob,
   GradingJobSchema,
   IdSchema,
@@ -222,15 +224,12 @@ const InstanceQuestionsPointsSchema = InstanceQuestionSchema.pick({
   open: true,
   status: true,
   auto_points: true,
-  points: true,
-  score_perc: true,
   highest_submission_score: true,
   current_value: true,
   points_list: true,
   variants_points_list: true,
 }).extend({
   max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
-  max_points: AssessmentQuestionSchema.shape.max_points,
 });
 
 async function updateInstanceQuestionGrade({
@@ -267,14 +266,36 @@ async function updateInstanceQuestionGrade({
       return;
     }
 
-    const points = await callRow(
-      'instance_questions_points',
+    const { assessment_type, manual_points, max_points } = await queryRow(
+      sql.select_type_and_points_for_instance_question,
+      { instance_question_id },
+      z.object({
+        assessment_type: AssessmentSchema.shape.type,
+        manual_points: InstanceQuestionSchema.shape.manual_points,
+        max_points: AssessmentQuestionSchema.shape.max_points,
+      }),
+    );
+
+    const sprocName = run(() => {
+      if (assessment_type === 'Exam') return 'instance_questions_points_exam';
+      if (assessment_type === 'Homework') return 'instance_questions_points_homework';
+      throw new Error(`Unknown assessment type: ${assessment_type}`);
+    });
+
+    const computedPoints = await callRow(
+      sprocName,
       [instance_question_id, submission_score],
       InstanceQuestionsPointsSchema,
     );
+    const points = (computedPoints.auto_points ?? 0) + (manual_points ?? 0);
+    const score_perc = (points / (max_points ?? 1)) * 100;
+
     await executeRow(sql.update_instance_question_grade, {
       instance_question_id,
-      ...points,
+      ...computedPoints,
+      points,
+      score_perc,
+      max_points,
       grading_job_id,
       authn_user_id,
     });

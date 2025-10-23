@@ -184,6 +184,18 @@ WHERE
 RETURNING
   *;
 
+-- BLOCK select_type_and_points_for_instance_question
+SELECT
+  a.type AS assessment_type,
+  iq.manual_points,
+  aq.max_points
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+  JOIN assessments AS a ON (a.id = aq.assessment_id)
+WHERE
+  iq.id = $instance_question_id;
+
 -- BLOCK update_instance_question_grade
 WITH
   updated_instance_question AS (
