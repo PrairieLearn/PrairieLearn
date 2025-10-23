@@ -218,8 +218,6 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     data_copy["partial_scores"] = {}
     grade(html, data_copy)
 
-    # TODO: this will break the grading if you use correct_answers to sovle a correct answer
-    # because the depends graph will be missing nodes in order to collapse the multigraph
     if (
         data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1
         and not order_blocks_options.has_optional_lines
