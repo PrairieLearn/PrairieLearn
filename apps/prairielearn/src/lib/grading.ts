@@ -7,11 +7,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
-import {
-  insertGradingJob,
-  updateGradingJobAfterGrading,
-  updateInstanceQuestionStats,
-} from '../models/grading-job.js';
+import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -34,6 +30,7 @@ import * as externalGrader from './externalGrader.js';
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
+import { updateInstanceQuestionStats } from './question-points.js';
 import { getQuestionCourse } from './question-variant.js';
 import * as workspaceHelper from './workspace.js';
 
