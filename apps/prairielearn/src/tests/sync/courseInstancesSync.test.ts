@@ -5,7 +5,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { CourseInstancePublishingRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
+import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
@@ -90,7 +90,7 @@ describe('Course instance syncing', () => {
     await util.syncCourseData(courseDir);
     const syncedAccessRules = await util.dumpTableWithSchema(
       'course_instance_access_rules',
-      CourseInstancePublishingRuleSchema,
+      CourseInstanceAccessRuleSchema,
     );
     assert.equal(
       syncedAccessRules.length,
@@ -117,7 +117,7 @@ describe('Course instance syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const newSyncedAccessRule = await util.dumpTableWithSchema(
       'course_instance_access_rules',
-      CourseInstancePublishingRuleSchema,
+      CourseInstanceAccessRuleSchema,
     );
     assert.equal(newSyncedAccessRule.length, 1);
 
@@ -290,10 +290,7 @@ describe('Course instance syncing', () => {
     await util.writeAndSyncCourseData(courseData);
     const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
     const syncedAccessRules = (
-      await util.dumpTableWithSchema(
-        'course_instance_access_rules',
-        CourseInstancePublishingRuleSchema,
-      )
+      await util.dumpTableWithSchema('course_instance_access_rules', CourseInstanceAccessRuleSchema)
     ).filter((ar) => idsEqual(ar.course_instance_id, syncedCourseInstance.id));
     assert.lengthOf(syncedAccessRules, 1);
     const [syncedAccessRule] = syncedAccessRules;
@@ -555,7 +552,7 @@ describe('Course instance syncing', () => {
     assert.equal(syncedCourseInstances[0].json_comment, 'course instance comment');
     const syncedAccessRules = await util.dumpTableWithSchema(
       'course_instance_access_rules',
-      CourseInstancePublishingRuleSchema,
+      CourseInstanceAccessRuleSchema,
     );
     assert.equal(syncedAccessRules[0].json_comment, 'course instance access rule comment');
   });
@@ -583,7 +580,7 @@ describe('Course instance syncing', () => {
     ]);
     const syncedAccessRules = await util.dumpTableWithSchema(
       'course_instance_access_rules',
-      CourseInstancePublishingRuleSchema,
+      CourseInstanceAccessRuleSchema,
     );
     assert.deepEqual(syncedAccessRules[0].json_comment, [
       'course instance access rule comment',
@@ -617,7 +614,7 @@ describe('Course instance syncing', () => {
     });
     const syncedAccessRules = await util.dumpTableWithSchema(
       'course_instance_access_rules',
-      CourseInstancePublishingRuleSchema,
+      CourseInstanceAccessRuleSchema,
     );
     assert.deepEqual(syncedAccessRules[0].json_comment, {
       comment: 'course instance access rule comment',

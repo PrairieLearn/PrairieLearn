@@ -74,6 +74,13 @@ export const CourseInstanceJsonSchema = z
           )
           .optional()
           .default(true),
+        restrictToInstitution: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment is restricted to the institution. If false, self-enrollment is not restricted to the institution.',
+          )
+          .optional()
+          .default(true),
         beforeDate: z
           .string()
           .describe(
@@ -87,13 +94,6 @@ export const CourseInstanceJsonSchema = z
           )
           .optional()
           .default(false),
-        restrictToInstitution: z
-          .boolean()
-          .describe(
-            'If true, self-enrollment is restricted to the institution. If false, self-enrollment is not restricted to the institution.',
-          )
-          .optional()
-          .default(true),
       })
       .optional()
       .default({}),

@@ -633,18 +633,6 @@ export const CourseInstanceAccessRuleSchema = z.object({
 });
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
 
-export const CourseInstancePublishingRuleSchema = z.object({
-  course_instance_id: IdSchema,
-  end_date: DateFromISOString.nullable(),
-  id: IdSchema,
-  institution: z.string().nullable(),
-  json_comment: JsonCommentSchema.nullable(),
-  number: z.number().nullable(),
-  start_date: DateFromISOString.nullable(),
-  uids: z.string().array().nullable(),
-});
-export type CourseInstancePublishingRule = z.infer<typeof CourseInstancePublishingRuleSchema>;
-
 export const CourseInstancePublishingExtensionSchema = z.object({
   course_instance_id: IdSchema,
   end_date: DateFromISOString,
