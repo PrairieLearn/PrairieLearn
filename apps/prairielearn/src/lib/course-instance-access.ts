@@ -100,7 +100,7 @@ export async function evaluateModernCourseInstanceAccess(
 > {
   // Staff with course or course instance roles always have access
   if (course_role !== 'None' || course_instance_role !== 'None') {
-    return { hasAccess: true };
+    return { hasAccess: true, has_student_access: true, has_student_access_with_enrollment: true };
   }
 
   // If no start date is set, the course instance is not published
@@ -141,5 +141,5 @@ export async function evaluateModernCourseInstanceAccess(
     };
   }
 
-  return { hasAccess: true };
+  return { hasAccess: true, has_student_access: true, has_student_access_with_enrollment: true };
 }
