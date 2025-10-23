@@ -43,6 +43,7 @@
     Object.entries({
       Alpha: '391',
       Beta: '392',
+      Epsilon: '395',
       Zeta: '396',
       Eta: '397',
       Iota: '399',
@@ -53,7 +54,6 @@
       Rho: '3A1',
       Tau: '3A4',
       Chi: '3A7',
-      Epsilon: '190',
     }),
   );
 
@@ -344,7 +344,7 @@
               label: '<i>&#x03f5;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\epsilon',
-              shift: '\u0190',
+              shift: '\u0395',
             },
             {
               label: '<i>&rho;</i>',
