@@ -6826,12 +6826,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jquery@npm:^3.5.33":
+"@types/jquery@npm:*, @types/jquery@npm:^3.5.33":
   version: 3.5.33
   resolution: "@types/jquery@npm:3.5.33"
   dependencies:
     "@types/sizzle": "npm:*"
   checksum: 10c0/d96c42762b7370ddf3b81cdad436a79d275e0ff09e2f4d7fbf2bbd8f97acef4110a11f1c3cb683195a1eba4fd9959e59d73f84d56ce2c010907a2bea696eb057
+  languageName: node
+  linkType: hard
+
+"@types/jqueryui@npm:^1.12.24":
+  version: 1.12.24
+  resolution: "@types/jqueryui@npm:1.12.24"
+  dependencies:
+    "@types/jquery": "npm:*"
+  checksum: 10c0/95afc94bfa4cf31de6b34b7770de849ccb2b5c2c9d8e092e6b9d3a1e0b4ee913659ede75eeebcbf8cb00a59d73da0da648da2be15fea2b94dd8ddeb237027bcf
   languageName: node
   linkType: hard
 
@@ -15730,6 +15739,7 @@ __metadata:
     "@postgrestools/postgrestools": "npm:^0.15.1"
     "@stylistic/eslint-plugin": "npm:^5.4.0"
     "@tanstack/eslint-plugin-query": "npm:^5.91.0"
+    "@types/jqueryui": "npm:^1.12.24"
     "@types/tar-stream": "npm:^3.1.4"
     "@vitest/coverage-v8": "npm:^3.2.4"
     "@vitest/eslint-plugin": "npm:^1.3.13"

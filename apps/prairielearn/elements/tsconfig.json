@@ -9,6 +9,7 @@
     "rootDir": "../",
     "types": [
       "jquery",
+      "jqueryui",
       "fabric",
       "mathjax",
       "sylvester",

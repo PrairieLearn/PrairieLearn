@@ -38,14 +38,19 @@ interface PLOrderBlocksOptions {
 declare global {
   const DOMPurify: DOMPurify;
   const TomSelect: TomSelect;
-  /** jQuery plugin extensions */
+  /** jQuery plugin extensions - using @types/jquery for base types */
   interface JQuery {
     modal(action?: string): JQuery;
-    popover(options?: any): JQuery;
+    popover(options?: Bootstrap.PopoverOptions): JQuery;
   }
 
   const mechanicsObjects: {
-    addCanvasBackground(canvas: any, width: number, height: number, gridSize: number): void;
+    addCanvasBackground(
+      canvas: HTMLCanvasElement,
+      width: number,
+      height: number,
+      gridSize: number,
+    ): void;
   };
 
   interface Window {
@@ -55,14 +60,18 @@ declare global {
     PLDrawingApi: {
       generateID(): number;
       _idCounter: number;
-      elements: any;
-      elementModule: any;
-      createElement: any;
+      elements: Record<string, any>;
+      elementModule: Record<string, string>;
+      createElement: (canvas: any, options: any, submittedAnswer: any) => any;
       clientFilesBase: string;
-      registerElements: (module: string, elements: any) => void;
-      getElement: (type: string) => any;
+      registerElements: (extensionName: string, dictionary: Record<string, any>) => void;
+      getElement: (name: string) => any;
       restoreAnswer: (canvas: any, submittedAnswer: any) => void;
-      setupCanvas: (canvas: any, options: any) => void;
+      setupCanvas: (
+        root_elem: HTMLElement,
+        elem_options: any,
+        existing_answer_submission?: any,
+      ) => void;
     };
   }
 

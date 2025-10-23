@@ -833,7 +833,6 @@ const MAX_ZOOM_SCALE = 5;
                 : Math.min(clientHeight / photoWidth, clientWidth / photoHeight);
 
             capturePreviewImgElement.style.transform = `rotate(${rotation}deg) scale(${scaleFactor})`;
-            // @ts-expect-error - Panzoom type definitions are incomplete
             this.imageCapturePreviewPanzoom?.reset({ animate: true });
           });
 
@@ -873,7 +872,6 @@ const MAX_ZOOM_SCALE = 5;
             }
           });
         } else {
-          // @ts-expect-error - Panzoom type definitions are incomplete
           this.imageCapturePreviewPanzoom.reset({ animate: false });
         }
       }

@@ -262,7 +262,7 @@ window.PLDrawingApi = {
 
     if (elem_options.grid_size > 0) {
       mechanicsObjects.addCanvasBackground(
-        canvas,
+        /** @type {HTMLCanvasElement} */ (canvas.getElement()),
         canvas_width,
         canvas_height,
         elem_options.grid_size,

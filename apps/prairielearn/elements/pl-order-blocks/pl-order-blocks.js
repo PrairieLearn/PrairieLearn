@@ -1,5 +1,5 @@
 /**
- * @typedef {Object} PLOrderBlocksOptions
+ * @typedef {object} PLOrderBlocksOptions
  * @property {number} maxIndent
  * @property {boolean} enableIndentation
  * @property {boolean} [inline]
@@ -17,7 +17,9 @@ function PLOrderBlocks(uuid, options) {
 
   const optionsElementId = '#order-blocks-options-' + uuid;
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
-  const fullContainer = /** @type {Element} */ (document.querySelector('.pl-order-blocks-question-' + uuid));
+  const fullContainer = /** @type {Element} */ (
+    document.querySelector('.pl-order-blocks-question-' + uuid)
+  );
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -351,6 +353,7 @@ function PLOrderBlocks(uuid, options) {
     cancel: 'input,textarea,button,select,option,a',
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
+    // @ts-expect-error Doesn't exist in the type definitions
     create() {
       placePairingIndicators();
       setAnswer();
