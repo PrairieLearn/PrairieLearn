@@ -4,15 +4,15 @@ import RichTextEditor from '../RichTextEditor/index.js';
 import { QuestionCodeEditors } from './QuestionCodeEditors.js';
 
 export function QuestionAndFilePreview({
-  resLocals,
   questionFiles,
   richTextEditorEnabled,
   questionContainerHtml,
+  csrfToken,
 }: {
-  resLocals: Record<string, any>;
   questionFiles: Record<string, string>;
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
+  csrfToken: string;
 }) {
   return (
     <div class="tab-content" style="height: 100%">
@@ -27,14 +27,14 @@ export function QuestionAndFilePreview({
         <QuestionCodeEditors
           htmlContents={b64DecodeUnicode(questionFiles['question.html'] || '')}
           pythonContents={b64DecodeUnicode(questionFiles['server.py'] || '')}
-          csrfToken={resLocals.__csrf_token}
+          csrfToken={csrfToken}
         />
       </div>
       <div role="tabpanel" id="question-rich-text-editor" class="tab-pane" style="height: 100%">
         {richTextEditorEnabled && (
           <RichTextEditor
             htmlContents={b64DecodeUnicode(questionFiles['question.html'])}
-            csrfToken={resLocals.__csrf_token}
+            csrfToken={csrfToken}
           />
         )}
       </div>

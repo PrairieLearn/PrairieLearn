@@ -4122,6 +4122,7 @@ __metadata:
     "@prairielearn/utils": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
+    "@preact/signals": "npm:^2.3.2"
     "@pyroscope/nodejs": "npm:^0.4.5"
     "@sa11y/format": "npm:^7.4.0"
     "@smithy/types": "npm:^4.6.0"
@@ -4352,6 +4353,7 @@ __metadata:
     ua-parser-js: "npm:^1.0.41"
     unified: "npm:^11.0.5"
     unzipper: "npm:^0.12.3"
+    use-stick-to-bottom: "npm:^1.1.1"
     vite: "npm:^7.1.7"
     vitest: "npm:^3.2.4"
     winston: "npm:^3.18.3"
@@ -4620,6 +4622,24 @@ __metadata:
     zod: "npm:^3.25.76"
   languageName: unknown
   linkType: soft
+
+"@preact/signals-core@npm:^1.12.0":
+  version: 1.12.1
+  resolution: "@preact/signals-core@npm:1.12.1"
+  checksum: 10c0/06e73a9b6b90ef5967687eb64003cc7c1abae1950ade55941c3eefeca5d4f642010bce3f267f00663703d7f1509c51ced4751733b7ef5dcba29707fe38d375a1
+  languageName: node
+  linkType: hard
+
+"@preact/signals@npm:^2.3.2":
+  version: 2.3.2
+  resolution: "@preact/signals@npm:2.3.2"
+  dependencies:
+    "@preact/signals-core": "npm:^1.12.0"
+  peerDependencies:
+    preact: ">= 10.25.0 || >=11.0.0-0"
+  checksum: 10c0/85cefee33652e3a90fdd0f3fdb625b0d1b8b480c917839f8e791b9ae2235914d92a485f4994ab1a193c1b64a5cf000ccde0ab21fdb0548745a240c6a3de745db
+  languageName: node
+  linkType: hard
 
 "@protobufjs/aspromise@npm:^1.1.1, @protobufjs/aspromise@npm:^1.1.2":
   version: 1.1.2
@@ -18600,6 +18620,15 @@ __metadata:
   dependencies:
     punycode: "npm:^2.1.0"
   checksum: 10c0/4ef57b45aa820d7ac6496e9208559986c665e49447cb072744c13b66925a362d96dd5a46c4530a6b8e203e5db5fe849369444440cb22ecfc26c679359e5dfa3c
+  languageName: node
+  linkType: hard
+
+"use-stick-to-bottom@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "use-stick-to-bottom@npm:1.1.1"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/f41286545b1689fae0ee9c5f5f222f14446d7d4d6feaa1673a0dbd75594135d7933ad351ca260b5f26a0043155ff1975db87bade26912be316bf36e4b047ab52
   languageName: node
   linkType: hard
 

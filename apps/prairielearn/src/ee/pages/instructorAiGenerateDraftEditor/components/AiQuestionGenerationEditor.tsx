@@ -15,8 +15,8 @@ export function AiQuestionGenerationEditor({
   urlPrefix,
   csrfToken,
   chatCsrfToken,
-  resLocals,
   questionContainerHtml,
+  showJobLogsLink,
 }: {
   question: Question;
   initialMessages: QuestionGenerationUIMessage[];
@@ -25,8 +25,8 @@ export function AiQuestionGenerationEditor({
   urlPrefix: string;
   csrfToken: string;
   chatCsrfToken: string;
-  resLocals: Record<string, any>;
   questionContainerHtml: string;
+  showJobLogsLink: boolean;
 }) {
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
 
@@ -41,6 +41,7 @@ export function AiQuestionGenerationEditor({
       <AiQuestionGenerationChat
         initialMessages={initialMessages}
         questionId={question.id}
+        showJobLogsLink={showJobLogsLink}
         urlPrefix={urlPrefix}
         csrfToken={chatCsrfToken}
       />
@@ -85,10 +86,10 @@ export function AiQuestionGenerationEditor({
       </div>
       <div class="app-preview">
         <QuestionAndFilePreview
-          resLocals={resLocals}
           questionFiles={questionFiles}
           richTextEditorEnabled={richTextEditorEnabled}
           questionContainerHtml={questionContainerHtml}
+          csrfToken={csrfToken}
         />
       </div>
       <FinalizeModal

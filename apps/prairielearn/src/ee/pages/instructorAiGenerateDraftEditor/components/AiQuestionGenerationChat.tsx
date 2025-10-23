@@ -1,7 +1,10 @@
 import { useChat } from '@ai-sdk/react';
+import { type Signal, useSignal } from '@preact/signals';
+import { Show } from '@preact/signals/utils';
 import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import Markdown from 'react-markdown';
+import { StickToBottom, useStickToBottomContext } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
 
@@ -230,14 +233,36 @@ function MessageParts({ parts }: { parts: QuestionGenerationUIMessage['parts'] }
   });
 }
 
+function ScrollToBottomButton() {
+  const { isAtBottom, scrollToBottom } = useStickToBottomContext();
+
+  return (
+    !isAtBottom && (
+      <button
+        type="button"
+        class="position-absolute bottom-0 start-50 translate-middle rounded-circle btn btn-primary"
+        style={{ aspectRatio: '1 / 1' }}
+        aria-label="Scroll to bottom"
+        onClick={() => scrollToBottom()}
+      >
+        <i class="bi bi-arrow-down-circle-fill" aria-hidden="true" />
+      </button>
+    )
+  );
+}
+
 function Messages({
   messages,
+  showJobLogsLink,
+  showSpinner,
   urlPrefix,
 }: {
   messages: QuestionGenerationUIMessage[];
+  showJobLogsLink: boolean;
+  showSpinner: Signal<boolean>;
   urlPrefix: string;
 }) {
-  return messages.map((message) => {
+  return messages.map((message, index) => {
     if (message.role === 'user') {
       return (
         <div key={message.id} class="d-flex flex-row-reverse mb-3">
@@ -252,9 +277,9 @@ function Messages({
     }
 
     const jobLogsUrl = run(() => {
-      // TODO: strongly type metadata.
-      const metadata: any = message.metadata;
-      const job_sequence_id = metadata?.job_sequence_id;
+      if (!showJobLogsLink) return null;
+
+      const job_sequence_id = message.metadata?.job_sequence_id;
       if (!job_sequence_id) return null;
 
       return urlPrefix + '/jobSequence/' + job_sequence_id;
@@ -263,6 +288,14 @@ function Messages({
     return (
       <div key={message.id} class="d-flex flex-column gap-2 mb-3">
         <MessageParts parts={message.parts} />
+        {index === messages.length - 1 && (
+          <Show when={showSpinner}>
+            <div class="d-flex flex-row align-items-center gap-2 mb-3 small">
+              <div class="spinner-border spinner-border-sm" role="status" />
+              Working...
+            </div>
+          </Show>
+        )}
         {jobLogsUrl && (
           <a class="small" href={jobLogsUrl} target="_blank">
             {' '}
@@ -276,14 +309,48 @@ function Messages({
 
 class RateLimitError extends Error {}
 
+function useShowSpinner({
+  status,
+  messages,
+}: {
+  status: string;
+  messages: QuestionGenerationUIMessage[];
+}) {
+  const signal = useSignal<boolean>(false);
+
+  // Ideally this would use `onData` in `useChat(...)` but that seems to be broken:
+  // https://github.com/vercel/ai/issues/8597
+  // Instead, we'll watch for changes to `messages` here.
+  //
+  // Queue a show of the spinner after a delay when messages change
+  useEffect(() => {
+    if (status !== 'streaming' && status !== 'submitted') {
+      signal.value = false;
+      return;
+    }
+
+    signal.value = false;
+
+    const id = setTimeout(() => {
+      signal.value = true;
+    }, 800);
+
+    return () => clearTimeout(id);
+  }, [signal, status, messages]);
+
+  return signal;
+}
+
 export function AiQuestionGenerationChat({
   initialMessages,
   questionId,
+  showJobLogsLink,
   urlPrefix,
   csrfToken,
 }: {
   initialMessages: QuestionGenerationUIMessage[];
   questionId: string;
+  showJobLogsLink: boolean;
   urlPrefix: string;
   csrfToken: string;
 }) {
@@ -313,42 +380,11 @@ export function AiQuestionGenerationChat({
     },
   });
 
+  const showSpinner = useShowSpinner({ status, messages });
+
   const [input, setInput] = useState('');
-  const chatHistoryRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const resizerRef = useRef<HTMLDivElement>(null);
-  const isUserAtBottomRef = useRef(true);
-
-  // Track whether the user is at the bottom via scroll events
-  useEffect(() => {
-    const el = chatHistoryRef.current;
-    if (!el) return;
-
-    const updateIsAtBottom = () => {
-      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10;
-      isUserAtBottomRef.current = atBottom;
-    };
-
-    el.addEventListener('scroll', updateIsAtBottom, { passive: true });
-    return () => {
-      el.removeEventListener('scroll', updateIsAtBottom);
-    };
-  }, []);
-
-  // Auto-scroll only when the user is already at the bottom
-  useEffect(() => {
-    const el = chatHistoryRef.current;
-    if (!el) return;
-
-    // Defer to next animation frame to ensure layout is updated
-    const id = requestAnimationFrame(() => {
-      if (isUserAtBottomRef.current) {
-        el.scrollTop = el.scrollHeight;
-      }
-    });
-
-    return () => cancelAnimationFrame(id);
-  }, [messages]);
 
   // Chat width resizing
   useEffect(() => {
@@ -396,9 +432,18 @@ export function AiQuestionGenerationChat({
 
   return (
     <div ref={containerRef} class="app-chat px-2 pb-2 bg-light border-end">
-      <div ref={chatHistoryRef} class="app-chat-history pt-2">
-        <Messages messages={messages} urlPrefix={urlPrefix} />
-      </div>
+      <StickToBottom class="app-chat-history pt-2" resize="smooth" initial="smooth">
+        <StickToBottom.Content>
+          <Messages
+            messages={messages}
+            urlPrefix={urlPrefix}
+            showJobLogsLink={showJobLogsLink}
+            showSpinner={showSpinner}
+          />
+        </StickToBottom.Content>
+
+        <ScrollToBottomButton />
+      </StickToBottom>
       <div class="app-chat-prompt mt-2">
         {error && (
           <div class="alert alert-danger mb-2" role="alert">

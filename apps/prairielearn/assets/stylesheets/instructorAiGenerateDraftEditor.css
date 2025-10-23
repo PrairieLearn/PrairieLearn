@@ -32,6 +32,7 @@
   grid-area: history;
   overflow-y: auto;
   scrollbar-color: var(--bs-secondary) transparent;
+  position: relative;
 }
 
 .app-chat-prompt {

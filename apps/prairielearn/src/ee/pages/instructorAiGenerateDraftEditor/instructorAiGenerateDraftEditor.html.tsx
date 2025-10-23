@@ -71,8 +71,8 @@ export function InstructorAiGenerateDraftEditor({
           urlPrefix={resLocals.urlPrefix}
           csrfToken={resLocals.__csrf_token}
           chatCsrfToken={chatCsrfToken}
-          resLocals={resLocals}
           questionContainerHtml={questionContainerHtml}
+          showJobLogsLink={resLocals.is_administrator}
         />
       </Hydrate>
     ),
