@@ -11,6 +11,7 @@ import * as sqldb from '@prairielearn/postgres';
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
+import { evaluateModernCourseInstanceAccess } from '../lib/course-instance-access.js';
 import {
   CourseInstanceSchema,
   CourseSchema,
@@ -24,6 +25,7 @@ import {
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
+import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:authzCourseOrInstance');
@@ -90,12 +92,16 @@ interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
   authn_course_instance_role: SelectAuthzData['permissions_course_instance']['course_instance_role'];
   authn_has_course_instance_permission_view: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
   authn_has_course_instance_permission_edit: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
+  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   authn_has_student_access: SelectAuthzData['permissions_course_instance']['has_student_access'];
+  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   authn_has_student_access_with_enrollment: SelectAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
   course_instance_role: SelectAuthzData['permissions_course_instance']['course_instance_role'];
   has_course_instance_permission_view: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
   has_course_instance_permission_edit: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
+  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   has_student_access_with_enrollment: SelectAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
+  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   has_student_access: SelectAuthzData['permissions_course_instance']['has_student_access'];
   user_with_requested_uid_has_instructor_access_to_course_instance: boolean;
 }
@@ -115,6 +121,73 @@ export interface ResLocalsCourseInstance extends ResLocalsCourse {
   course_instance: NonNullable<SelectAuthzData['course_instance']>;
   authz_data: ResLocalsCourseInstanceAuthz;
   user: ResLocalsCourseInstanceAuthz['user'];
+}
+
+/**
+ * Checks if the user has access to the course or course instance.
+ *
+ * Returns either the authz data or the reason why the user does not have access.
+ */
+async function checkCourseOrInstanceAccess(params: {
+  user_id: string;
+  course_id: string | null;
+  course_instance_id: string | null;
+  is_administrator: boolean;
+  allow_example_course_override: boolean;
+  ip: string | undefined;
+  req_date: Date;
+  req_mode: string | null;
+  req_course_role: string | null;
+  req_course_instance_role: string | null;
+}): Promise<
+  | {
+      hasAccess: false;
+      reason: string;
+    }
+  | {
+      hasAccess: true;
+      authzData: SelectAuthzData;
+    }
+> {
+  const authzData = await sqldb.queryOptionalRow(
+    sql.select_authz_data,
+    params,
+    SelectAuthzDataSchema,
+  );
+
+  if (authzData === null) {
+    return {
+      hasAccess: false,
+      reason: 'Access denied',
+    };
+  }
+
+  if (authzData.course_instance?.modern_publishing) {
+    const enrollment = await selectOptionalEnrollmentByUserId({
+      user_id: params.user_id,
+      course_instance_id: authzData.course_instance.id,
+    });
+
+    const result = await evaluateModernCourseInstanceAccess(
+      authzData.course_instance,
+      {
+        course_role: authzData.permissions_course.course_role,
+        course_instance_role: authzData.permissions_course_instance.course_instance_role,
+        enrollment,
+      },
+      params.req_date,
+    );
+    if (!result.hasAccess) {
+      return {
+        hasAccess: false,
+        reason: result.reason,
+      };
+    }
+  }
+  return {
+    hasAccess: true,
+    authzData,
+  };
 }
 
 export async function authzCourseOrInstance(req: Request, res: Response) {
@@ -145,14 +218,12 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     );
   }
 
-  const authzData = await sqldb.queryOptionalRow(
-    sql.select_authz_data,
-    params,
-    SelectAuthzDataSchema,
-  );
-  if (authzData === null) {
-    throw new HttpStatusError(403, 'Access denied');
+  const accessResult = await checkCourseOrInstanceAccess(params);
+  if (!accessResult.hasAccess) {
+    throw new HttpStatusError(403, accessResult.reason);
   }
+
+  const authzData = accessResult.authzData;
 
   debug('authn user is authorized');
 

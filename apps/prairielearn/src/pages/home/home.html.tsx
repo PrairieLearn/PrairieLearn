@@ -8,6 +8,7 @@ import {
   type StaffInstitution,
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
+import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
 
 import { EmptyStateCards } from './components/EmptyStateCards.js';
 import { StudentCoursesCard } from './components/StudentCoursesCard.js';
@@ -21,7 +22,7 @@ export const InstructorHomePageCourseSchema = z.object({
     z.object({
       id: RawStudentCourseSchema.shape.id,
       long_name: RawStudentCourseInstanceSchema.shape.long_name,
-      expired: z.boolean(),
+      archived: z.boolean(),
     }),
   ),
 });
@@ -35,6 +36,13 @@ export const StudentHomePageCourseSchema = z.object({
   enrollment: StudentEnrollmentSchema,
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+
+export const StudentHomePageCourseWithExtensionsSchema = StudentHomePageCourseSchema.extend({
+  publishing_extensions: z.array(CourseInstancePublishingExtensionSchema),
+});
+export type StudentHomePageCourseWithExtensions = z.infer<
+  typeof StudentHomePageCourseWithExtensionsSchema
+>;
 
 export function Home({
   canAddCourses,
@@ -191,14 +199,14 @@ function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCours
                 </td>
                 <td class="js-course-instance-list">
                   <CourseInstanceList
-                    courseInstances={course.course_instances.filter((ci) => !ci.expired)}
+                    courseInstances={course.course_instances.filter((ci) => !ci.archived)}
                     urlPrefix={urlPrefix}
                   />
-                  {course.course_instances.some((ci) => ci.expired) && (
+                  {course.course_instances.some((ci) => ci.archived) && (
                     <details>
                       <summary class="text-muted small">Older instances</summary>
                       <CourseInstanceList
-                        courseInstances={course.course_instances.filter((ci) => ci.expired)}
+                        courseInstances={course.course_instances.filter((ci) => ci.archived)}
                         urlPrefix={urlPrefix}
                       />
                     </details>
