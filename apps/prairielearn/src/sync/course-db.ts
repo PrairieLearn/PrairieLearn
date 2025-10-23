@@ -1,3 +1,4 @@
+import assert from 'assert';
 import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
@@ -1165,6 +1166,10 @@ function validateAssessment({
   // instances that instructors will never touch again, as they won't benefit
   // from fixing things. So, we'll only show some warnings for course instances
   // which are accessible either now or any time in the future.
+
+  // NOTE (@reteps): We are deprecating `allowAccess` in favor of `publishing`.
+  // So further validation will never be done here.
+
   if (!courseInstanceExpired) {
     assessment.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
@@ -1472,8 +1477,49 @@ function validateCourseInstance({
     warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
   }
 
-  if (courseInstance.selfEnrollment.restrictToInstitution !== true) {
-    warnings.push('"selfEnrollment.restrictToInstitution" is not configurable yet.');
+  const usingLegacyAllowAccess = courseInstance.allowAccess.length > 0;
+  const usingModernPublishing = courseInstance.publishing != null;
+
+  if (usingLegacyAllowAccess && usingModernPublishing) {
+    errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
+  } else if (usingModernPublishing) {
+    assert(courseInstance.publishing != null);
+    const hasEndDate = courseInstance.publishing.endDate != null;
+    const hasStartDate = courseInstance.publishing.startDate != null;
+    if (hasStartDate && !hasEndDate) {
+      errors.push('"publishing.endDate" is required if "publishing.startDate" is specified.');
+    }
+    if (!hasStartDate && hasEndDate) {
+      errors.push('"publishing.startDate" is required if "publishing.endDate" is specified.');
+    }
+
+    const parsedStartDate =
+      courseInstance.publishing.startDate == null
+        ? null
+        : parseJsonDate(courseInstance.publishing.startDate);
+
+    if (hasStartDate && parsedStartDate == null) {
+      errors.push('"publishing.startDate" is not a valid date.');
+    }
+
+    const parsedEndDate =
+      courseInstance.publishing.endDate == null
+        ? null
+        : parseJsonDate(courseInstance.publishing.endDate);
+
+    if (hasEndDate && parsedEndDate == null) {
+      errors.push('"publishing.endDate" is not a valid date.');
+    }
+
+    if (
+      hasStartDate &&
+      hasEndDate &&
+      parsedStartDate != null &&
+      parsedEndDate != null &&
+      isAfter(parsedStartDate, parsedEndDate)
+    ) {
+      errors.push('"publishing.startDate" must be before "publishing.endDate".');
+    }
   }
 
   let accessibleInFuture = false;

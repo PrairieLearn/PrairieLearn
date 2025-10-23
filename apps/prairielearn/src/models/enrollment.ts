@@ -1,13 +1,15 @@
 import assert from 'node:assert';
 
+import z from 'zod';
+
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
+  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 
 import {
   PotentialEnterpriseEnrollmentStatus,
@@ -19,13 +21,13 @@ import {
   type Enrollment,
   EnrollmentSchema,
   type Institution,
+  UserSchema,
 } from '../lib/db-types.js';
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 import { assertNever } from '../lib/types.js';
 
-import { insertAuditEvent } from './audit-event.js';
-import type { SupportedActionsForTable } from './audit-event.types.js';
+import { type SupportedActionsForTable, insertAuditEvent } from './audit-event.js';
 import { generateUsers, selectAndLockUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -117,8 +119,6 @@ async function dangerouslyEnrollUserInCourseInstance({
  *
  * If the user was invited to the course instance, this will set the
  * enrollment status to 'joined'.
- * If the user was in the 'removed' status, this will set the
- * enrollment status to 'joined'.
  */
 export async function ensureEnrollment({
   course_instance_id,
@@ -135,24 +135,16 @@ export async function ensureEnrollment({
 }): Promise<Enrollment | null> {
   const result = await runInTransactionAsync(async () => {
     const user = await selectAndLockUserById(user_id);
-    let enrollment = await selectOptionalEnrollmentByPendingUid({
+    const enrollment = await selectOptionalEnrollmentByPendingUid({
       course_instance_id,
       pending_uid: user.uid,
     });
-
-    if (enrollment == null) {
-      // Try to lookup an enrollment by user_id
-      enrollment = await selectOptionalEnrollmentByUserId({
-        course_instance_id,
-        user_id,
-      });
-    }
 
     if (enrollment) {
       await selectAndLockEnrollmentById(enrollment.id);
     }
 
-    if (enrollment && ['invited', 'removed', 'rejected'].includes(enrollment.status)) {
+    if (enrollment && enrollment.status === 'invited') {
       const updated = await dangerouslyEnrollUserInCourseInstance({
         enrollment_id: enrollment.id,
         user_id,
@@ -291,6 +283,25 @@ export async function generateAndEnrollUsers({
   });
 }
 
+/**
+ * Gets enrollments and associated users for the given UIDs in a course instance.
+ */
+export async function selectUsersAndEnrollmentsByUidsInCourseInstance({
+  uids,
+  course_instance_id,
+}: {
+  uids: string[];
+  course_instance_id: string;
+}) {
+  return await queryRows(
+    sql.select_enrollments_by_uids_in_course_instance,
+    { uids, course_instance_id },
+    z.object({
+      enrollment: EnrollmentSchema,
+      user: UserSchema,
+    }),
+  );
+}
 export async function selectEnrollmentById({ id }: { id: string }) {
   return await queryRow(sql.select_enrollment_by_id, { id }, EnrollmentSchema);
 }
@@ -436,24 +447,20 @@ export async function selectAndLockEnrollmentById(id: string) {
 }
 
 /**
- * Updates the status of an existing enrollment record.
- *
- * If the enrollment is not in the required status or already in the desired status, this will throw an error.
+ * Sets the status of an enrollment.
+ * This function updates the enrollment status without any additional WHERE clauses
+ * for course_instance_id or current status.
  *
  * The function will lock the enrollment row and create an audit event based on the status change.
  */
-export async function setEnrollmentStatus({
+export async function setEnrollmentStatusBlocked({
   enrollment_id,
   agent_user_id,
   agent_authn_user_id,
-  status,
-  required_status,
 }: {
   enrollment_id: string;
   agent_user_id: string | null;
   agent_authn_user_id: string | null;
-  status: 'rejected' | 'blocked' | 'removed';
-  required_status: 'invited' | 'joined';
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const oldEnrollment = await selectAndLockEnrollmentById(enrollment_id);
@@ -461,40 +468,16 @@ export async function setEnrollmentStatus({
       await selectAndLockUserById(oldEnrollment.user_id);
     }
 
-    // The enrollment is already in the desired status, so we can return early.
-    if (oldEnrollment.status === status) {
-      return oldEnrollment;
-    }
-
-    if (oldEnrollment.status !== required_status) {
-      throw new Error(
-        `Enrollment is not in the required status. Expected ${required_status}, but got ${oldEnrollment.status}`,
-      );
-    }
-
     const newEnrollment = await queryRow(
       sql.set_enrollment_status,
-      { enrollment_id, status },
+      { enrollment_id, status: 'blocked' },
       EnrollmentSchema,
     );
-
-    const action_detail = run(() => {
-      switch (status) {
-        case 'blocked':
-          return 'blocked';
-        case 'rejected':
-          return 'invitation_rejected';
-        case 'removed':
-          return 'removed';
-        default:
-          assertNever(status);
-      }
-    });
 
     await insertAuditEvent({
       table_name: 'enrollments',
       action: 'update',
-      action_detail,
+      action_detail: 'blocked',
       row_id: newEnrollment.id,
       old_row: oldEnrollment,
       new_row: newEnrollment,

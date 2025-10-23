@@ -26,6 +26,16 @@ export const EnumChunkTypeSchema = z.enum([
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
 
+export const EnumCourseRoleSchema = z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']);
+export type EnumCourseRole = z.infer<typeof EnumCourseRoleSchema>;
+
+export const EnumCourseInstanceRoleSchema = z.enum([
+  'None',
+  'Student Data Viewer',
+  'Student Data Editor',
+]);
+export type EnumCourseInstanceRole = z.infer<typeof EnumCourseInstanceRoleSchema>;
+
 export const EnumEnrollmentStatusSchema = z.enum([
   'invited',
   'joined',
@@ -148,7 +158,7 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
 
 // Result of authz_course sproc
 export const SprocAuthzCourseSchema = z.object({
-  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
+  course_role: EnumCourseRoleSchema,
   has_course_permission_edit: z.boolean(),
   has_course_permission_own: z.boolean(),
   has_course_permission_preview: z.boolean(),
@@ -196,10 +206,12 @@ export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullabl
 
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
-  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor', 'Student']),
+  course_instance_role: EnumCourseInstanceRoleSchema,
   has_course_instance_permission_edit: z.boolean(),
   has_course_instance_permission_view: z.boolean(),
+  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   has_student_access: z.boolean(),
+  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   has_student_access_with_enrollment: z.boolean(),
 });
 export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
@@ -469,7 +481,6 @@ export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
 export const AuditEventSchema = z.object({
   action: EnumAuditEventActionSchema,
-  // See audit-event.types.ts for the list of supported action_detail values based on the table.
   action_detail: z.string().nullable(),
   agent_authn_user_id: IdSchema.nullable(),
   agent_user_id: IdSchema.nullable(),
@@ -480,7 +491,6 @@ export const AuditEventSchema = z.object({
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString,
-  enrollment_id: IdSchema.nullable(),
   group_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
@@ -594,9 +604,11 @@ export const CourseInstanceSchema = z.object({
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
+  modern_publishing: z.boolean(),
+  publishing_end_date: DateFromISOString.nullable(),
+  publishing_start_date: DateFromISOString.nullable(),
   self_enrollment_enabled: z.boolean(),
   self_enrollment_enabled_before_date: DateFromISOString.nullable(),
-  self_enrollment_restrict_to_institution: z.boolean(),
   self_enrollment_use_enrollment_code: z.boolean(),
   share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
@@ -618,6 +630,37 @@ export const CourseInstanceAccessRuleSchema = z.object({
   uids: z.string().array().nullable(),
 });
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
+
+export const CourseInstancePublishingRuleSchema = z.object({
+  course_instance_id: IdSchema,
+  end_date: DateFromISOString.nullable(),
+  id: IdSchema,
+  institution: z.string().nullable(),
+  json_comment: JsonCommentSchema.nullable(),
+  number: z.number().nullable(),
+  start_date: DateFromISOString.nullable(),
+  uids: z.string().array().nullable(),
+});
+export type CourseInstancePublishingRule = z.infer<typeof CourseInstancePublishingRuleSchema>;
+
+export const CourseInstancePublishingExtensionSchema = z.object({
+  end_date: DateFromISOString,
+  course_instance_id: IdSchema,
+  id: IdSchema,
+  name: z.string().nullable(),
+});
+export type CourseInstancePublishingExtension = z.infer<
+  typeof CourseInstancePublishingExtensionSchema
+>;
+
+export const CourseInstancePublishingEnrollmentExtensionSchema = z.object({
+  course_instance_publishing_extension_id: IdSchema,
+  enrollment_id: IdSchema,
+  id: IdSchema,
+});
+export type CourseInstancePublishingEnrollmentExtension = z.infer<
+  typeof CourseInstancePublishingEnrollmentExtensionSchema
+>;
 
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,

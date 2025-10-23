@@ -5,7 +5,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
+import { CourseInstancePublishingRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
@@ -90,7 +90,7 @@ describe('Course instance syncing', () => {
     await util.syncCourseData(courseDir);
     const syncedAccessRules = await util.dumpTableWithSchema(
       'course_instance_access_rules',
-      CourseInstanceAccessRuleSchema,
+      CourseInstancePublishingRuleSchema,
     );
     assert.equal(
       syncedAccessRules.length,
@@ -117,7 +117,7 @@ describe('Course instance syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const newSyncedAccessRule = await util.dumpTableWithSchema(
       'course_instance_access_rules',
-      CourseInstanceAccessRuleSchema,
+      CourseInstancePublishingRuleSchema,
     );
     assert.equal(newSyncedAccessRule.length, 1);
 
@@ -130,6 +130,126 @@ describe('Course instance syncing', () => {
     assert.equal(remainingRule.end_date?.getTime(), new Date('2024-02-28T06:00:00.000Z').getTime());
     assert.isNull(remainingRule.uids);
     assert.equal(remainingRule.institution, 'Any');
+  });
+
+  describe('syncs access control settings correctly', async () => {
+    const timezone = 'America/New_York';
+
+    // We pick an arbitrary date to use.
+    const date = new Date('2025-09-05T20:52:49.000Z');
+
+    // In JSON, the date must be formatted like `2025-01-01T00:00:00` and will
+    // be interpreted in the course instance's timezone.
+    const jsonDate = Temporal.Instant.from(date.toISOString())
+      .toZonedDateTimeISO(timezone)
+      .toPlainDateTime()
+      .toString();
+
+    const schemaMappings: {
+      json: CourseInstanceJsonInput['publishing'];
+      db: {
+        publishing_start_date: Date | null;
+        publishing_end_date: Date | null;
+      } | null;
+      errors: string[];
+    }[] = [
+      {
+        json: {},
+        db: {
+          publishing_start_date: null,
+          publishing_end_date: null,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          endDate: jsonDate,
+        },
+        db: null,
+        errors: ['"publishing.startDate" is required if "publishing.endDate" is specified.'],
+      },
+      {
+        json: {
+          startDate: jsonDate,
+          endDate: jsonDate,
+        },
+        db: {
+          publishing_start_date: date,
+          publishing_end_date: date,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          startDate: jsonDate,
+        },
+        db: null,
+        errors: ['"publishing.endDate" is required if "publishing.startDate" is specified.'],
+      },
+      {
+        json: {
+          startDate: 'not a date',
+          endDate: jsonDate,
+        },
+        db: null,
+        errors: ['"publishing.startDate" is not a valid date.'],
+      },
+      {
+        json: {
+          endDate: 'not a date',
+        },
+        db: null,
+        errors: [
+          '"publishing.startDate" is required if "publishing.endDate" is specified.',
+          '"publishing.endDate" is not a valid date.',
+        ],
+      },
+      {
+        json: {
+          startDate: '2025-12-01T00:00:00',
+          endDate: '2025-06-01T00:00:00',
+        },
+        db: null,
+        errors: ['"publishing.startDate" must be before "publishing.endDate".'],
+      },
+    ];
+
+    let i = 0;
+    for (const { json, db, errors } of schemaMappings) {
+      it(`access control configuration #${i++}`, async () => {
+        const courseData = util.getCourseData();
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.publishing = json;
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
+        // Remove allowAccess rules since we can't have both allowAccess and publishing
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [];
+
+        const courseDir = await util.writeCourseToTempDirectory(courseData);
+        const results = await util.syncCourseData(courseDir);
+        assert.isOk(results.status === 'complete');
+        const courseInstance = results.courseData.courseInstances[util.COURSE_INSTANCE_ID];
+        const courseInstanceErrors = courseInstance.courseInstance.errors;
+        const courseInstanceUUID = courseInstance.courseInstance.uuid;
+        assert.equal(JSON.stringify(courseInstanceErrors), JSON.stringify(errors));
+        assert.isDefined(courseInstanceUUID);
+
+        const syncedCourseInstance = await selectCourseInstanceByUuid({
+          course_id: results.courseId,
+          uuid: courseInstanceUUID,
+        });
+        assert.isOk(syncedCourseInstance);
+
+        if (courseInstanceErrors.length > 0) {
+          return;
+        }
+
+        const result = {
+          publishing_start_date: syncedCourseInstance.publishing_start_date,
+          publishing_end_date: syncedCourseInstance.publishing_end_date,
+        };
+
+        assert.deepEqual(result, db);
+      });
+    }
   });
 
   it('soft-deletes and restores course instances', async () => {
@@ -170,7 +290,10 @@ describe('Course instance syncing', () => {
     await util.writeAndSyncCourseData(courseData);
     const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
     const syncedAccessRules = (
-      await util.dumpTableWithSchema('course_instance_access_rules', CourseInstanceAccessRuleSchema)
+      await util.dumpTableWithSchema(
+        'course_instance_access_rules',
+        CourseInstancePublishingRuleSchema,
+      )
     ).filter((ar) => idsEqual(ar.course_instance_id, syncedCourseInstance.id));
     assert.lengthOf(syncedAccessRules, 1);
     const [syncedAccessRule] = syncedAccessRules;
@@ -432,7 +555,7 @@ describe('Course instance syncing', () => {
     assert.equal(syncedCourseInstances[0].json_comment, 'course instance comment');
     const syncedAccessRules = await util.dumpTableWithSchema(
       'course_instance_access_rules',
-      CourseInstanceAccessRuleSchema,
+      CourseInstancePublishingRuleSchema,
     );
     assert.equal(syncedAccessRules[0].json_comment, 'course instance access rule comment');
   });
@@ -460,7 +583,7 @@ describe('Course instance syncing', () => {
     ]);
     const syncedAccessRules = await util.dumpTableWithSchema(
       'course_instance_access_rules',
-      CourseInstanceAccessRuleSchema,
+      CourseInstancePublishingRuleSchema,
     );
     assert.deepEqual(syncedAccessRules[0].json_comment, [
       'course instance access rule comment',
@@ -494,7 +617,7 @@ describe('Course instance syncing', () => {
     });
     const syncedAccessRules = await util.dumpTableWithSchema(
       'course_instance_access_rules',
-      CourseInstanceAccessRuleSchema,
+      CourseInstancePublishingRuleSchema,
     );
     assert.deepEqual(syncedAccessRules[0].json_comment, {
       comment: 'course instance access rule comment',
@@ -655,7 +778,7 @@ describe('Course instance syncing', () => {
         assert.equal(JSON.stringify(courseInstanceErrors), JSON.stringify(errors));
         assert.isDefined(courseInstanceUUID);
 
-        if (db == null) {
+        if (courseInstanceErrors.length > 0) {
           return;
         }
 
