@@ -354,18 +354,17 @@
       label: 'math',
       rows: [
         [
-          { class: 'small', latex: '{#@}^{#?}', width: 1 },
+          { class: 'small', latex: '{#@}^{#?}' },
           {
             class: 'small',
             latex: '{#@}^{2}',
-            width: 1,
-            variants: [{ class: 'small', latex: '{#@}^{3}', width: 1 }],
+            variants: [{ class: 'small', latex: '{#@}^{3}' }],
           },
           {
             class: 'small',
             latex: '\\frac{#@}{#0}',
             width: 1.3,
-            variants: [{ class: 'small', latex: '\\frac{1}{#@}', width: 1 }],
+            variants: [{ class: 'small', latex: '\\frac{1}{#@}' }],
           },
           '[separator]',
           '7',
@@ -378,7 +377,7 @@
           '\\pi',
         ],
         [
-          { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#0}', width: 1 },
+          { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#0}' },
           logAsLn
             ? {
                 class: 'small',
@@ -390,7 +389,7 @@
                 latex: '\\log',
                 insert: '\\log({#0})',
               },
-          { class: 'small', latex: '!', width: 1 },
+          { class: 'small', latex: '!' },
           '[separator]',
           '4',
           '5',
@@ -424,8 +423,8 @@
             ? {
                 class: 'small',
                 latex: '\\sin',
+
                 insert: '\\sin({#0})',
-                width: 1,
                 variants: [
                   { class: 'small', latex: '\\csc', insert: '\\csc({#0})' },
                   { class: 'small', latex: '\\arcsin', insert: '\\arcsin({#0})' },
@@ -447,7 +446,6 @@
                 class: 'small',
                 latex: '\\cos',
                 insert: '\\cos({#0})',
-                width: 1,
                 variants: [
                   { class: 'small', latex: '\\sec', insert: '\\sec({#0})' },
                   { class: 'small', latex: '\\arccos', insert: '\\arccos({#0})' },
@@ -469,7 +467,6 @@
                 class: 'small',
                 latex: '\\tan',
                 insert: '\\tan({#0})',
-                width: 1,
                 variants: [
                   { class: 'small', latex: '\\cot', insert: '\\cot({#0})' },
                   { class: 'small', latex: '\\arctan', insert: '\\arctan({#0})' },
@@ -492,13 +489,13 @@
               }
             : '[separator]',
           '[separator]',
-          { label: '0', width: 2 },
+          { class: 'small', label: '0', width: 2 },
           '.',
           '/',
           '[separator]',
-          { label: '[left]' },
-          { label: '[right]' },
-          { label: '[backspace]', width: 1 },
+          { class: 'small', label: '[left]' },
+          { class: 'small', label: '[right]' },
+          { class: 'small', label: '[backspace]', width: 1 },
         ],
       ],
     };
