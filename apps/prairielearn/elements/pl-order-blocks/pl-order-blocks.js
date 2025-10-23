@@ -1,8 +1,8 @@
 /**
  * @typedef {object} PLOrderBlocksOptions
- * @property {number} maxIndent
- * @property {boolean} enableIndentation
- * @property {boolean} [inline]
+ * @property {number} maxIndent - The maximum number of times an answer block can be indented
+ * @property {boolean} enableIndentation - Whether to enable indentation
+ * @property {boolean} [inline] - Whether to display the blocks inline
  */
 
 /**
@@ -17,17 +17,17 @@ function PLOrderBlocks(uuid, options) {
 
   const optionsElementId = '#order-blocks-options-' + uuid;
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
-  const fullContainer = /** @type {Element} */ (
-    document.querySelector('.pl-order-blocks-question-' + uuid)
-  );
+  const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
 
   function initializeKeyboardHandling() {
-    const blocks = fullContainer.querySelectorAll('.pl-order-block');
+    const blocks = /** @type {NodeListOf<HTMLElement>} */ (
+      fullContainer?.querySelectorAll('.pl-order-block') ?? []
+    );
 
     blocks.forEach((block) => block.setAttribute('tabindex', '-1'));
     blocks[0].setAttribute('tabindex', '0'); // only the first block in the pl-order-blocks element can be focused by tabbing through
 
-    blocks.forEach((block) => initializeBlockEvents(/** @type {HTMLElement} */ (block)));
+    blocks.forEach((block) => initializeBlockEvents(block));
   }
 
   /** @param {HTMLElement} block */
@@ -195,7 +195,7 @@ function PLOrderBlocks(uuid, options) {
 
     block.addEventListener('blur', () => {
       block.setAttribute('tabindex', '-1');
-      const blocks = fullContainer.querySelectorAll('.pl-order-block');
+      const blocks = fullContainer?.querySelectorAll('.pl-order-block') ?? [];
       if (
         // Make sure one block is always focusable in each pl-order-blocks element
         Array.from(blocks).every((item) => {
@@ -207,7 +207,7 @@ function PLOrderBlocks(uuid, options) {
     });
     block.addEventListener('focus', () => {
       fullContainer
-        .querySelectorAll('.pl-order-block')
+        ?.querySelectorAll('.pl-order-block')
         .forEach((item) => item.setAttribute('tabindex', '-1'));
       block.setAttribute('tabindex', '0');
     });
