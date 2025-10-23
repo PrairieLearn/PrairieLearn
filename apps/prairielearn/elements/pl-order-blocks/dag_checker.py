@@ -398,5 +398,5 @@ def collapse_multigraph(
 
 
 def has_colored_edges(edges: Edges | ColoredEdges) -> TypeIs[ColoredEdges]:
-    """a halting condition function for dfs_until, used to check for colored edges."""
+    """A halting condition function for dfs_until, used to check for colored edges."""
     return any(isinstance(edge, list) for edge in edges)
