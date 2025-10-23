@@ -63,17 +63,6 @@ WHERE
     OR u.uid = $uid
   );
 
--- BLOCK invite_existing_enrollment
-UPDATE enrollments
-SET
-  status = 'invited',
-  user_id = NULL,
-  pending_uid = $pending_uid
-WHERE
-  id = $enrollment_id
-RETURNING
-  *;
-
 -- BLOCK select_enrollments_by_uids_in_course_instance
 SELECT
   to_jsonb(e) AS enrollment,
@@ -84,6 +73,17 @@ FROM
 WHERE
   u.uid = ANY ($uids)
   AND e.course_instance_id = $course_instance_id;
+
+-- BLOCK invite_existing_enrollment
+UPDATE enrollments
+SET
+  status = 'invited',
+  user_id = NULL,
+  pending_uid = $pending_uid
+WHERE
+  id = $enrollment_id
+RETURNING
+  *;
 
 -- BLOCK invite_new_enrollment
 INSERT INTO
