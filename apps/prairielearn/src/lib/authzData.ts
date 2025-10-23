@@ -1,11 +1,11 @@
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   CourseInstanceSchema,
   CourseSchema,
-  type EnumCourseInstanceRole,
   EnumModeReasonSchema,
   EnumModeSchema,
   InstitutionSchema,
@@ -16,7 +16,7 @@ import {
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export const SelectAuthzDataSchema = z.object({
+export const AuthzDataSchema = z.object({
   mode: EnumModeSchema,
   mode_reason: EnumModeReasonSchema,
   course: CourseSchema,
@@ -26,7 +26,7 @@ export const SelectAuthzDataSchema = z.object({
   permissions_course_instance: SprocAuthzCourseInstanceSchema,
 });
 
-export type SelectAuthzData = z.infer<typeof SelectAuthzDataSchema>;
+export type AuthzData = z.infer<typeof AuthzDataSchema>;
 
 export async function selectAuthzData({
   user_id,
@@ -65,7 +65,7 @@ export async function selectAuthzData({
       req_course_role,
       req_course_instance_role,
     },
-    SelectAuthzDataSchema,
+    AuthzDataSchema,
   );
 }
 
@@ -125,7 +125,7 @@ export async function buildAuthzData({
 
   const permissions_course = rawAuthzData.permissions_course;
 
-  let authzData = {
+  const authzData = {
     authn_user: structuredClone(authn_user),
     authn_mode: rawAuthzData.mode,
     authn_mode_reason: rawAuthzData.mode_reason,
@@ -167,6 +167,7 @@ export async function buildAuthzData({
         has_student_access,
       };
     }),
+  };
 
   return {
     authzData,
