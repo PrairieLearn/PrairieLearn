@@ -481,6 +481,7 @@ For most API/POST handlers, we want to lookup or modify data based on unvalidate
 
 ```typescript
 // We want to prove that we are authorized to read the course instance.
+// Most pages don't need to do this, as `res.locals.course_instance` is already set.
 const courseInstance = await selectCourseInstance({
   id: course_instance_id,
   requestedRole: 'Student',
@@ -489,7 +490,8 @@ const courseInstance = await selectCourseInstance({
 
 const enrollment = await selectEnrollment({
   id: enrollment_id,
-  // What role are we trying to authorize as?
+  // This serves to require the caller to be aware of the role they want to authorize as.
+  // For example, on a student page, you would set requestedRole is 'Student'. Instructors don't have the 'Student' role.
   requestedRole: 'Student',
   // Information to prove we are authorized to read the record.
   // E.g. we need to prove that we have access to the course instance it's in,
@@ -498,6 +500,32 @@ const enrollment = await selectEnrollment({
   authzData: res.locals.authz_data,
 });
 ```
+
+!!! note "Sample model function"
+
+    This is a sample model function that demonstrates the pattern from `src/models/enrollment.ts`.
+
+    ```typescript
+    export async function selectEnrollmentById({
+      id,
+      courseInstance,
+      requestedRole,
+      authzData,
+    }) {
+      assertHasRole(authzData, requestedRole, [
+        // The allowable roles that can call this function
+        'Student',
+        'Student Data Viewer',
+        'Student Data Editor',
+      ]);
+      const enrollment = await queryRow(sql.select_enrollment_by_id, { id }, EnrollmentSchema);
+      assertEnrollmentInCourseInstance(enrollment, courseInstance);
+      if (requestedRole === 'Student') {
+        assertEnrollmentBelongsToUser(enrollment, authzData);
+      }
+      return enrollment;
+    }
+    ```
 
 This is good, because in order to perform an update, you need to pass in a full row object, and a request body won't have enough information for this. Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks. For example, in the above example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance. It will throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollment`). This also forced the caller to prove access to the course instance in order to read the enrollment record.
 

@@ -9,7 +9,7 @@ import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
-import { type SelectAuthzData, buildAuthzData, selectAuthzData } from '../lib/authzData.js';
+import { type AuthzData, buildAuthzData, selectAuthzData } from '../lib/authzData.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
@@ -46,43 +46,43 @@ const SelectUserSchema = z.object({
 
 interface ResLocalsCourseAuthz {
   authn_user: ResLocalsAuthnUser['authn_user'];
-  authn_mode: SelectAuthzData['mode'];
-  authn_mode_reason: SelectAuthzData['mode_reason'];
+  authn_mode: AuthzData['mode'];
+  authn_mode_reason: AuthzData['mode_reason'];
   authn_is_administrator: ResLocalsAuthnUser['is_administrator'];
-  authn_course_role: SelectAuthzData['permissions_course']['course_role'];
-  authn_has_course_permission_preview: SelectAuthzData['permissions_course']['has_course_permission_preview'];
-  authn_has_course_permission_view: SelectAuthzData['permissions_course']['has_course_permission_view'];
-  authn_has_course_permission_edit: SelectAuthzData['permissions_course']['has_course_permission_edit'];
-  authn_has_course_permission_own: SelectAuthzData['permissions_course']['has_course_permission_own'];
+  authn_course_role: AuthzData['permissions_course']['course_role'];
+  authn_has_course_permission_preview: AuthzData['permissions_course']['has_course_permission_preview'];
+  authn_has_course_permission_view: AuthzData['permissions_course']['has_course_permission_view'];
+  authn_has_course_permission_edit: AuthzData['permissions_course']['has_course_permission_edit'];
+  authn_has_course_permission_own: AuthzData['permissions_course']['has_course_permission_own'];
   user: ResLocalsAuthnUser['authn_user'];
-  mode: SelectAuthzData['mode'];
-  mode_reason: SelectAuthzData['mode_reason'];
+  mode: AuthzData['mode'];
+  mode_reason: AuthzData['mode_reason'];
   is_administrator: ResLocalsAuthnUser['is_administrator'];
-  course_role: SelectAuthzData['permissions_course']['course_role'];
-  has_course_permission_preview: SelectAuthzData['permissions_course']['has_course_permission_preview'];
-  has_course_permission_view: SelectAuthzData['permissions_course']['has_course_permission_view'];
-  has_course_permission_edit: SelectAuthzData['permissions_course']['has_course_permission_edit'];
-  has_course_permission_own: SelectAuthzData['permissions_course']['has_course_permission_own'];
+  course_role: AuthzData['permissions_course']['course_role'];
+  has_course_permission_preview: AuthzData['permissions_course']['has_course_permission_preview'];
+  has_course_permission_view: AuthzData['permissions_course']['has_course_permission_view'];
+  has_course_permission_edit: AuthzData['permissions_course']['has_course_permission_edit'];
+  has_course_permission_own: AuthzData['permissions_course']['has_course_permission_own'];
   overrides: Override[];
 }
 
 interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
-  authn_course_instance_role: SelectAuthzData['permissions_course_instance']['course_instance_role'];
-  authn_has_course_instance_permission_view: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
-  authn_has_course_instance_permission_edit: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
-  authn_has_student_access: SelectAuthzData['permissions_course_instance']['has_student_access'];
-  authn_has_student_access_with_enrollment: SelectAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
-  course_instance_role: SelectAuthzData['permissions_course_instance']['course_instance_role'];
-  has_course_instance_permission_view: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
-  has_course_instance_permission_edit: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
-  has_student_access_with_enrollment: SelectAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
-  has_student_access: SelectAuthzData['permissions_course_instance']['has_student_access'];
+  authn_course_instance_role: AuthzData['permissions_course_instance']['course_instance_role'];
+  authn_has_course_instance_permission_view: AuthzData['permissions_course_instance']['has_course_instance_permission_view'];
+  authn_has_course_instance_permission_edit: AuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
+  authn_has_student_access: AuthzData['permissions_course_instance']['has_student_access'];
+  authn_has_student_access_with_enrollment: AuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
+  course_instance_role: AuthzData['permissions_course_instance']['course_instance_role'];
+  has_course_instance_permission_view: AuthzData['permissions_course_instance']['has_course_instance_permission_view'];
+  has_course_instance_permission_edit: AuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
+  has_student_access_with_enrollment: AuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
+  has_student_access: AuthzData['permissions_course_instance']['has_student_access'];
   user_with_requested_uid_has_instructor_access_to_course_instance: boolean;
 }
 
 export interface ResLocalsCourse {
-  course: SelectAuthzData['course'];
-  institution: SelectAuthzData['institution'];
+  course: AuthzData['course'];
+  institution: AuthzData['institution'];
   side_nav_expanded: boolean;
   authz_data: ResLocalsCourseAuthz;
   user: ResLocalsCourseAuthz['user'];
@@ -92,16 +92,13 @@ export interface ResLocalsCourse {
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {
-  course_instance: NonNullable<SelectAuthzData['course_instance']>;
+  course_instance: NonNullable<AuthzData['course_instance']>;
   authz_data: ResLocalsCourseInstanceAuthz;
   user: ResLocalsCourseInstanceAuthz['user'];
 }
 
 export async function authzCourseOrInstance(req: Request, res: Response) {
-  const isCourseInstance = Boolean(req.params.course_instance_id);
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (req.params.course_id == null && req.params.course_instance_id == null) {
+  if (!req.params.course_id || !req.params.course_instance_id) {
     throw new HttpStatusError(
       403,
       'Access denied (both course_id and course_instance_id are null)',
@@ -118,7 +115,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     ip: req.ip || null,
     req_date: res.locals.req_date,
     // We allow unit tests to override the req_mode. Unit tests may also override
-    // the user (middlewares/authn.js) and the req_date (middlewares/date.js).
+    // the user (middlewares/authn.ts) and the req_date (middlewares/date.ts).
     req_mode: config.devMode && req.cookies.pl_test_mode ? req.cookies.pl_test_mode : null,
   });
 
@@ -131,8 +128,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.course = authzCourse;
   res.locals.institution = authzInstitution;
   res.locals.user = authzData.user;
-  res.locals.course_instance = authzCourseInstance;
-
+  if (req.params.course_instance_id) {
+    res.locals.course_instance = authzCourseInstance;
+  }
   // The session middleware does not run for API requests.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true; // The side nav is expanded by default.
@@ -247,7 +245,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       sql.select_user,
       {
         uid: req.cookies.pl2_requested_uid,
-        course_instance_id: isCourseInstance ? res.locals.course_instance.id : null,
+        course_instance_id: req.params.course_instance_id ? res.locals.course_instance.id : null,
       },
       SelectUserSchema,
     );
@@ -273,7 +271,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
                   </a>
                   first and then try the emulation again.
                 </div>
-                ${isCourseInstance
+                ${req.params.course_instance_id
                   ? html`
                       <p>
                         To auto-generate many users for testing, see
@@ -340,7 +338,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     debug(`effective req_date = ${req_date}`);
   }
 
-  const effectiveParams = {
+  const effectiveAuthzData = await selectAuthzData({
     user_id: user.user_id,
     course_id: req.params.course_id || null,
     course_instance_id: req.params.course_instance_id || null,
@@ -351,9 +349,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     req_mode: res.locals.authz_data.mode,
     req_course_role: req.cookies.pl2_requested_course_role || null,
     req_course_instance_role: req.cookies.pl2_requested_course_instance_role || null,
-  };
-
-  const effectiveAuthzData = await selectAuthzData(effectiveParams);
+  });
 
   // If the authn user were denied access, then we would return an error. Here,
   // we simply return (without error). This allows the authn user to keep access
@@ -371,7 +367,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     res.locals.authz_data.has_course_permission_edit = false;
     res.locals.authz_data.has_course_permission_own = false;
 
-    if (isCourseInstance) {
+    if (req.params.course_instance_id) {
       res.locals.authz_data.course_instance_role = 'None';
       res.locals.authz_data.has_course_instance_permission_view = false;
       res.locals.authz_data.has_course_instance_permission_edit = false;
@@ -391,7 +387,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // administrator status, and not the authn user's administrator status.
     res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
-    res.locals.authz_data.mode = effectiveParams.req_mode;
     res.locals.req_date = req_date;
     return;
   }
@@ -474,7 +469,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  if (isCourseInstance) {
+  if (req.params.course_instance_id) {
     // The effective user is a Student Data Viewer and the authn_user is not -
     // remove all override cookies and return with error
     if (
@@ -582,7 +577,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.authz_data.has_course_permission_own =
     effectiveAuthzData.permissions_course.has_course_permission_own;
 
-  if (isCourseInstance) {
+  if (req.params.course_instance_id) {
     res.locals.authz_data.course_instance_role =
       effectiveAuthzData.permissions_course_instance.course_instance_role;
     res.locals.authz_data.has_course_instance_permission_view =

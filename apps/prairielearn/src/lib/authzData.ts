@@ -2,12 +2,12 @@ import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import type { RawAuthzData } from './client/page-context.js';
 import {
   CourseInstanceSchema,
   CourseSchema,
-  type EnumCourseInstanceRole,
   EnumModeReasonSchema,
   EnumModeSchema,
   InstitutionSchema,
@@ -18,7 +18,7 @@ import {
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export const SelectAuthzDataSchema = z.object({
+export const AuthzDataSchema = z.object({
   mode: EnumModeSchema,
   mode_reason: EnumModeReasonSchema,
   course: CourseSchema,
@@ -28,7 +28,7 @@ export const SelectAuthzDataSchema = z.object({
   permissions_course_instance: SprocAuthzCourseInstanceSchema,
 });
 
-export type SelectAuthzData = z.infer<typeof SelectAuthzDataSchema>;
+export type AuthzData = z.infer<typeof AuthzDataSchema>;
 
 export async function selectAuthzData({
   user_id,
@@ -67,7 +67,7 @@ export async function selectAuthzData({
       req_course_role,
       req_course_instance_role,
     },
-    SelectAuthzDataSchema,
+    AuthzDataSchema,
   );
 }
 
@@ -127,7 +127,7 @@ export async function buildAuthzData({
 
   const permissions_course = rawAuthzData.permissions_course;
 
-  let authzData = {
+  const authzData = {
     authn_user: structuredClone(authn_user),
     authn_mode: rawAuthzData.mode,
     authn_mode_reason: rawAuthzData.mode_reason,
@@ -146,41 +146,30 @@ export async function buildAuthzData({
     has_course_permission_view: permissions_course.has_course_permission_view,
     has_course_permission_edit: permissions_course.has_course_permission_edit,
     has_course_permission_own: permissions_course.has_course_permission_own,
-    // Course instance fields are undefined
-    authn_course_instance_role: undefined as EnumCourseInstanceRole | undefined,
-    authn_has_course_instance_permission_view: undefined as boolean | undefined,
-    authn_has_course_instance_permission_edit: undefined as boolean | undefined,
-    authn_has_student_access: undefined as boolean | undefined,
-    authn_has_student_access_with_enrollment: undefined as boolean | undefined,
-    course_instance_role: undefined as EnumCourseInstanceRole | undefined,
-    has_course_instance_permission_view: undefined as boolean | undefined,
-    has_course_instance_permission_edit: undefined as boolean | undefined,
-    has_student_access_with_enrollment: undefined as boolean | undefined,
-    has_student_access: undefined as boolean | undefined,
-  };
+    ...run(() => {
+      if (!isCourseInstance) return {};
 
-  if (isCourseInstance) {
-    const {
-      course_instance_role,
-      has_course_instance_permission_view,
-      has_course_instance_permission_edit,
-      has_student_access,
-      has_student_access_with_enrollment,
-    } = rawAuthzData.permissions_course_instance;
-    authzData = {
-      ...authzData,
-      authn_course_instance_role: course_instance_role,
-      authn_has_course_instance_permission_view: has_course_instance_permission_view,
-      authn_has_course_instance_permission_edit: has_course_instance_permission_edit,
-      authn_has_student_access: has_student_access,
-      authn_has_student_access_with_enrollment: has_student_access_with_enrollment,
-      course_instance_role,
-      has_course_instance_permission_view,
-      has_course_instance_permission_edit,
-      has_student_access_with_enrollment,
-      has_student_access,
-    };
-  }
+      const {
+        course_instance_role,
+        has_course_instance_permission_view,
+        has_course_instance_permission_edit,
+        has_student_access,
+        has_student_access_with_enrollment,
+      } = rawAuthzData.permissions_course_instance;
+      return {
+        authn_course_instance_role: course_instance_role,
+        authn_has_course_instance_permission_view: has_course_instance_permission_view,
+        authn_has_course_instance_permission_edit: has_course_instance_permission_edit,
+        authn_has_student_access: has_student_access,
+        authn_has_student_access_with_enrollment: has_student_access_with_enrollment,
+        course_instance_role,
+        has_course_instance_permission_view,
+        has_course_instance_permission_edit,
+        has_student_access_with_enrollment,
+        has_student_access,
+      };
+    }),
+  };
 
   return {
     authzData,
@@ -193,29 +182,21 @@ export async function buildAuthzData({
 export type CourseInstanceRole = 'None' | 'Student Data Viewer' | 'Student Data Editor' | 'Student';
 
 export interface DangerousAuthzData {
-  authn_user: {
-    user_id: null;
-  };
-  user: {
-    user_id: null;
-  };
+  authn_user: true;
+  user: true;
 }
 
 export function dangerousFullAuthzPermissions(): DangerousAuthzData {
   return {
-    authn_user: {
-      user_id: null,
-    },
-    user: {
-      user_id: null,
-    },
+    authn_user: true,
+    user: true,
   };
 }
 
 export function isDangerousFullAuthzPermissions(
   authzData: RawAuthzData | DangerousAuthzData,
 ): authzData is DangerousAuthzData {
-  if (authzData.authn_user.user_id === null) {
+  if (authzData.authn_user === true) {
     return true;
   }
   return false;
