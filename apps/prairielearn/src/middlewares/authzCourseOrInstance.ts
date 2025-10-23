@@ -98,7 +98,7 @@ export interface ResLocalsCourseInstance extends ResLocalsCourse {
 }
 
 export async function authzCourseOrInstance(req: Request, res: Response) {
-  if (!req.params.course_id || !req.params.course_instance_id) {
+  if (!req.params.course_id && !req.params.course_instance_id) {
     throw new HttpStatusError(
       403,
       'Access denied (both course_id and course_instance_id are null)',
