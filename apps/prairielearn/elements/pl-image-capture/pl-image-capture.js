@@ -131,7 +131,9 @@ const MAX_ZOOM_SCALE = 5;
         '.js-cancel-local-camera-button',
       );
 
-      const applyChangesButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-apply-changes-button'));
+      const applyChangesButton = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-apply-changes-button')
+      );
 
       this.ensureElementsExist({
         captureLocalCameraImageButton,
@@ -197,25 +199,33 @@ const MAX_ZOOM_SCALE = 5;
       /** Whether or not the image is flipped vertically */
       this.flippedY = false;
 
-      const cropRotateButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-crop-rotate-button'));
-      const rotationSlider = /** @type {HTMLInputElement} */ (this.imageCaptureDiv.querySelector('.js-rotation-slider'));
-      const cancelCropRotateButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
-        '.js-cancel-crop-rotate-button',
-      ));
+      const cropRotateButton = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-crop-rotate-button')
+      );
+      const rotationSlider = /** @type {HTMLInputElement} */ (
+        this.imageCaptureDiv.querySelector('.js-rotation-slider')
+      );
+      const cancelCropRotateButton = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-cancel-crop-rotate-button')
+      );
 
-      const rotateClockwiseButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
-        '.js-rotate-clockwise-button',
-      ));
-      const rotateCounterclockwiseButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
-        '.js-rotate-counterclockwise-button',
-      ));
+      const rotateClockwiseButton = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-rotate-clockwise-button')
+      );
+      const rotateCounterclockwiseButton = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-rotate-counterclockwise-button')
+      );
 
-      const flipHorizontalButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-flip-horizontal-button'));
-      const flipVerticalButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-flip-vertical-button'));
+      const flipHorizontalButton = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-flip-horizontal-button')
+      );
+      const flipVerticalButton = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-flip-vertical-button')
+      );
 
-      const cropRotateResetButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
-        '.js-crop-rotate-reset-button',
-      ));
+      const cropRotateResetButton = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-crop-rotate-reset-button')
+      );
 
       this.ensureElementsExist({
         cropRotateButton,
@@ -382,7 +392,9 @@ const MAX_ZOOM_SCALE = 5;
       );
 
       // Displays an interface for cropping and rotating the captured image.
-      const cropRotateContainer = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-crop-rotate-container'));
+      const cropRotateContainer = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-crop-rotate-container')
+      );
 
       this.ensureElementsExist({
         capturePreviewContainer,
@@ -616,7 +628,9 @@ const MAX_ZOOM_SCALE = 5;
 
     /** @param {string} dataUrl */
     setHiddenCaptureInputValue(dataUrl) {
-      const hiddenCaptureInput = /** @type {HTMLInputElement} */ (this.imageCaptureDiv.querySelector('.js-hidden-capture-input'));
+      const hiddenCaptureInput = /** @type {HTMLInputElement} */ (
+        this.imageCaptureDiv.querySelector('.js-hidden-capture-input')
+      );
 
       this.ensureElementsExist({
         hiddenCaptureInput,
@@ -734,13 +748,19 @@ const MAX_ZOOM_SCALE = 5;
       if (this.editable) {
         this.setShowDeletionButton(dataUrl ? true : false);
       } else {
-        const zoomButtonsContainer = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-zoom-buttons'));
-        const viewerRotateClockwiseButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
-          '.js-viewer-rotate-clockwise-button',
-        ));
+        const zoomButtonsContainer = /** @type {HTMLElement} */ (
+          this.imageCaptureDiv.querySelector('.js-zoom-buttons')
+        );
+        const viewerRotateClockwiseButton = /** @type {HTMLElement} */ (
+          this.imageCaptureDiv.querySelector('.js-viewer-rotate-clockwise-button')
+        );
 
-        const zoomInButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-zoom-in-button'));
-        const zoomOutButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-zoom-out-button'));
+        const zoomInButton = /** @type {HTMLElement} */ (
+          this.imageCaptureDiv.querySelector('.js-zoom-in-button')
+        );
+        const zoomOutButton = /** @type {HTMLElement} */ (
+          this.imageCaptureDiv.querySelector('.js-zoom-out-button')
+        );
 
         this.ensureElementsExist({
           zoomButtonsContainer,
@@ -938,11 +958,13 @@ const MAX_ZOOM_SCALE = 5;
         localCameraCaptureContainer?.querySelector('.js-local-camera-error-message')
       );
 
-      const localCameraVideo = /** @type {HTMLVideoElement} */ (this.imageCaptureDiv.querySelector('.js-local-camera-video'));
+      const localCameraVideo = /** @type {HTMLVideoElement} */ (
+        this.imageCaptureDiv.querySelector('.js-local-camera-video')
+      );
 
-      const localCameraInstructions = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
-        '.js-local-camera-instructions',
-      ));
+      const localCameraInstructions = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-local-camera-instructions')
+      );
 
       this.ensureElementsExist({
         capturePreviewContainer,
@@ -1004,10 +1026,12 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     deactivateVideoStream() {
-      const localCameraVideo = /** @type {HTMLVideoElement} */ (this.imageCaptureDiv.querySelector('.js-local-camera-video'));
-      const captureLocalCameraImageButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
-        '.js-capture-local-camera-image-button',
-      ));
+      const localCameraVideo = /** @type {HTMLVideoElement} */ (
+        this.imageCaptureDiv.querySelector('.js-local-camera-video')
+      );
+      const captureLocalCameraImageButton = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-capture-local-camera-image-button')
+      );
 
       this.ensureElementsExist({
         localCameraVideo,
@@ -1039,7 +1063,9 @@ const MAX_ZOOM_SCALE = 5;
       const localCameraVideo = /** @type {HTMLVideoElement | null} */ (
         localCameraCaptureContainer?.querySelector('.js-local-camera-video')
       );
-      const hiddenCaptureInput = /** @type {HTMLInputElement} */ (this.imageCaptureDiv.querySelector('.js-hidden-capture-input'));
+      const hiddenCaptureInput = /** @type {HTMLInputElement} */ (
+        this.imageCaptureDiv.querySelector('.js-hidden-capture-input')
+      );
 
       this.ensureElementsExist({
         localCameraCaptureContainer,
@@ -1119,7 +1145,9 @@ const MAX_ZOOM_SCALE = 5;
      * @param {boolean} show If true, shows the crop rotate button. Otherwise, hides it.
      */
     setShowCropRotateButton(show) {
-      const cropRotateButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-crop-rotate-button'));
+      const cropRotateButton = /** @type {HTMLElement} */ (
+        this.imageCaptureDiv.querySelector('.js-crop-rotate-button')
+      );
 
       this.ensureElementsExist({
         cropRotateButton,

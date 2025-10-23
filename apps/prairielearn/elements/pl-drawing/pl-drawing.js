@@ -109,7 +109,6 @@ window.PLDrawingApi = {
    * @param {Record<string, typeof PLDrawingBaseElement>} dictionary Dictionary of elements to register.
    */
   registerElements(extensionName, dictionary) {
-    // @ts-expect-error - _ (lodash) is a UMD global
     _.extend(this.elements, dictionary);
     Object.keys(dictionary).forEach((elem) => {
       this.elementModule[elem] = extensionName;
