@@ -1,85 +1,25 @@
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import {
-  type AuditEvent,
-  AuditEventSchema,
-  type EnumAuditEventAction,
-  type TableName,
-} from '../lib/db-types.js';
+import { type AuditEvent, AuditEventSchema, type EnumAuditEventAction } from '../lib/db-types.js';
+
+import { type SupportedTableActionCombination, requiredTableFields } from './audit-event.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-/**
- * These fields are required to insert an audit event for a given table. If a parameter is explicitly marked as NULL,
- * it will pass this check.
- *
- * The value will be taken from parameters, or inferred from the current row data or row ID if not provided.
- */
-const requiredTableFields = {
-  course_instances: ['course_instance_id'],
-  pl_courses: ['course_id'],
-  users: ['subject_user_id'],
-  groups: ['group_id'],
-  assessment_instances: ['assessment_instance_id'],
-  assessment_questions: ['assessment_question_id'],
-  assessments: ['assessment_id'],
-  institutions: ['institution_id'],
-  enrollments: ['course_instance_id', 'subject_user_id', 'action_detail'],
-} as const satisfies Partial<Record<TableName, readonly string[]>>;
+export async function selectAuditEventsByEnrollmentId({
+  enrollment_id,
+  table_names,
+}: {
+  enrollment_id: string;
+  table_names: (keyof typeof requiredTableFields)[];
+}): Promise<AuditEvent[]> {
+  return await queryRows(
+    sql.select_audit_events_by_enrollment_id_table_names,
+    { enrollment_id, table_names },
+    AuditEventSchema,
+  );
+}
 
-/**
- * This lists all the possible table+action_detail combinations that are supported.
- */
-type SupportedTableActionCombination =
-  | {
-      tableName: 'course_instances';
-      actionDetail?: null;
-    }
-  | {
-      tableName: 'pl_courses';
-      actionDetail?: null;
-    }
-  | {
-      tableName: 'users';
-      actionDetail?: 'TEST_VALUE' | null;
-    }
-  | {
-      tableName: 'groups';
-      actionDetail?: null;
-    }
-  | {
-      tableName: 'assessment_instances';
-      actionDetail?: null;
-    }
-  | {
-      tableName: 'assessment_questions';
-      actionDetail?: null;
-    }
-  | {
-      tableName: 'assessments';
-      actionDetail?: null;
-    }
-  | {
-      tableName: 'institutions';
-      actionDetail?: null;
-    }
-  | {
-      tableName: 'enrollments';
-      actionDetail?:
-        | 'implicit_joined'
-        | 'explicit_joined'
-        | 'invited'
-        | 'invitation_accepted'
-        | 'invitation_rejected'
-        | 'removed'
-        | 'blocked'
-        | 'unblocked'
-        | 'invitation_deleted'
-        | null;
-    };
-export type SupportedActionsForTable<T extends TableName> = NonNullable<
-  Exclude<Extract<SupportedTableActionCombination, { tableName: T }>['actionDetail'], null>
->;
 /**
  * Selects audit events by subject user ID, table names, and course instance ID.
  * Exactly one of `subject_user_id` or `agent_authn_user_id` must be provided.
@@ -145,6 +85,7 @@ export type InsertAuditEventParams = SupportedTableActionCombination & {
   assessmentQuestionId?: string | null;
   courseId?: string | null;
   courseInstanceId?: string | null;
+  enrollmentId?: string | null;
   groupId?: string | null;
   institutionId?: string | null;
 };
@@ -161,6 +102,7 @@ export type InsertAuditEventParams = SupportedTableActionCombination & {
  * @param params.courseId - Inferred from `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
  * @param params.courseInstanceId - Inferred from `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
  * @param params.groupId - ID of the affected group
+ * @param params.enrollmentId - ID of the affected enrollment
  * @param params.institutionId - Inferred from `subject_user_id`, `course_id`, `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
  * @param params.newRow - The new row data
  * @param params.oldRow - The old row data
@@ -183,6 +125,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     context = {},
     courseId: course_id,
     courseInstanceId: course_instance_id,
+    enrollmentId: enrollment_id,
     groupId: group_id,
     institutionId: institution_id,
     newRow: new_row = null,
@@ -221,6 +164,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     assessment_question_id: inferred_assessment_question_id,
     course_id: inferred_course_id,
     course_instance_id: inferred_course_instance_id,
+    enrollment_id: inferred_enrollment_id,
     group_id: inferred_group_id,
     institution_id: inferred_institution_id,
     user_id: inferred_subject_user_id,
@@ -254,6 +198,10 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
       course_instance_id !== undefined
         ? course_instance_id
         : ((table_name === 'course_instances' ? row_id : null) ?? inferred_course_instance_id),
+    enrollment_id:
+      enrollment_id !== undefined
+        ? enrollment_id
+        : ((table_name === 'enrollments' ? row_id : null) ?? inferred_enrollment_id),
     group_id:
       group_id !== undefined
         ? group_id

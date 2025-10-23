@@ -411,7 +411,7 @@ class TestExceptions:
 
 @pytest.mark.parametrize(
     ("input_str", "expected_output"),
-    [("abba", "abba"), ("\u03bc0", "mu0")],
+    [("abba", "abba"), ("\u03bc0", "mu0"), ("\u03bb", "lambda")],
 )
 def test_greek_unicode_transform(input_str: str, expected_output: str) -> None:
     assert psu.greek_unicode_transform(input_str) == expected_output

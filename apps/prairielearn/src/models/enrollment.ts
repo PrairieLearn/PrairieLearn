@@ -35,7 +35,8 @@ import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 import { assertNever } from '../lib/types.js';
 
-import { type SupportedActionsForTable, insertAuditEvent } from './audit-event.js';
+import { insertAuditEvent } from './audit-event.js';
+import type { SupportedActionsForTable } from './audit-event.types.js';
 import { selectCourseInstanceById } from './course-instances.js';
 import { generateUsers, selectAndLockUser } from './user.js';
 

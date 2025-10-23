@@ -72,8 +72,8 @@ router.get(
         const qid = getContentDir(file_transfer.from_filename, 'questions');
         const editor = new QuestionCopyEditor({
           locals: res.locals as any,
+          from_course,
           from_qid: qid,
-          from_course_short_name: from_course.short_name,
           from_path: path.join(config.filesRoot, file_transfer.storage_filename),
           is_transfer: true,
         });
