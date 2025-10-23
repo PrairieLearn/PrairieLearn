@@ -144,41 +144,29 @@ export async function buildAuthzData({
     has_course_permission_view: permissions_course.has_course_permission_view,
     has_course_permission_edit: permissions_course.has_course_permission_edit,
     has_course_permission_own: permissions_course.has_course_permission_own,
-    // Course instance fields are undefined
-    authn_course_instance_role: undefined as EnumCourseInstanceRole | undefined,
-    authn_has_course_instance_permission_view: undefined as boolean | undefined,
-    authn_has_course_instance_permission_edit: undefined as boolean | undefined,
-    authn_has_student_access: undefined as boolean | undefined,
-    authn_has_student_access_with_enrollment: undefined as boolean | undefined,
-    course_instance_role: undefined as EnumCourseInstanceRole | undefined,
-    has_course_instance_permission_view: undefined as boolean | undefined,
-    has_course_instance_permission_edit: undefined as boolean | undefined,
-    has_student_access_with_enrollment: undefined as boolean | undefined,
-    has_student_access: undefined as boolean | undefined,
-  };
+    ...run(() => {
+      if (!isCourseInstance) return {};
 
-  if (isCourseInstance) {
-    const {
-      course_instance_role,
-      has_course_instance_permission_view,
-      has_course_instance_permission_edit,
-      has_student_access,
-      has_student_access_with_enrollment,
-    } = rawAuthzData.permissions_course_instance;
-    authzData = {
-      ...authzData,
-      authn_course_instance_role: course_instance_role,
-      authn_has_course_instance_permission_view: has_course_instance_permission_view,
-      authn_has_course_instance_permission_edit: has_course_instance_permission_edit,
-      authn_has_student_access: has_student_access,
-      authn_has_student_access_with_enrollment: has_student_access_with_enrollment,
-      course_instance_role,
-      has_course_instance_permission_view,
-      has_course_instance_permission_edit,
-      has_student_access_with_enrollment,
-      has_student_access,
-    };
-  }
+      const {
+        course_instance_role,
+        has_course_instance_permission_view,
+        has_course_instance_permission_edit,
+        has_student_access,
+        has_student_access_with_enrollment,
+      } = rawAuthzData.permissions_course_instance;
+      return {
+        authn_course_instance_role: course_instance_role,
+        authn_has_course_instance_permission_view: has_course_instance_permission_view,
+        authn_has_course_instance_permission_edit: has_course_instance_permission_edit,
+        authn_has_student_access: has_student_access,
+        authn_has_student_access_with_enrollment: has_student_access_with_enrollment,
+        course_instance_role,
+        has_course_instance_permission_view,
+        has_course_instance_permission_edit,
+        has_student_access_with_enrollment,
+        has_student_access,
+      };
+    }),
 
   return {
     authzData,
