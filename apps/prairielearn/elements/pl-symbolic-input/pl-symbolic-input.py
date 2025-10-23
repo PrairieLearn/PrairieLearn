@@ -489,16 +489,27 @@ def _build_known_tokens(
         List of all multi-character tokens that should be recognized as single units.
     """
     constants_class = psu._Constants()
+
+    # Include 1-letter tokens here since Greek letters might become multi-letter tokens when transformed
     tokens = (
         list(psu.STANDARD_OPERATORS)
         + list(constants_class.functions.keys())
         + custom_functions
+        + variables
     )
     if allow_trig:
         tokens += list(constants_class.trig_functions.keys())
 
-    # Add multi-character variables
-    tokens += [var for var in variables if len(var) > 1]
+    # Add transformed versions of Greek letters
+    tokens += [
+        psu.greek_unicode_transform(token)
+        for token in tokens
+        if psu.greek_unicode_transform(token) != token
+    ]
+
+    # Filter out single-letter tokens
+    tokens = [token for token in tokens if len(token) > 1]
+
     tokens.sort(key=len, reverse=True)
 
     return tokens
@@ -506,16 +517,17 @@ def _build_known_tokens(
 
 def _greek_transform(text: str) -> str:
     """
-    Replace Greek unicode letters with their English spelling and insert spaces, so that
-    they are handled equivalently to letters already spelled in English.
+    Replace Greek unicode letters with their English spelling and insert spaces around,
+    every letter so that they are handled equivalently to letters already spelled in English.
 
-    Example: "Α0x" becomes "A l p h a 0 x", the same as if it was spelled out in the
+    Example: "Α0x" becomes " A l p h a 0 x ", the same as if it was spelled out in the
     submission (and the consecutive processing steps will correct the spacing)
 
     Returns:
         The string with Greek unicode letters replaced by spaced-out English spelling
     """  # noqa: RUF002
-    return " ".join(psu.greek_unicode_transform(text)) + " "
+    transformed = psu.greek_unicode_transform(text)
+    return (" " + " ".join(transformed) + " ") if transformed != text else text
 
 
 def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
