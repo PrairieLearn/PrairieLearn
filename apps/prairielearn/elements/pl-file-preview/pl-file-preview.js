@@ -36,7 +36,9 @@
      * @param {string} uuid
      */
     constructor(uuid) {
-      const filePreview = /** @type {HTMLElement | null} */ (document.querySelector('#file-preview-' + uuid));
+      const filePreview = /** @type {HTMLElement | null} */ (
+        document.querySelector('#file-preview-' + uuid)
+      );
       if (!filePreview) throw new Error(`File preview element not found: #file-preview-${uuid}`);
       const submissionFilesUrl = filePreview.dataset.submissionFilesUrl;
       if (!submissionFilesUrl) throw new Error('submissionFilesUrl not found');
@@ -125,7 +127,8 @@
          */
         function toggleExpanded(expanded) {
           const containerElement = /** @type {HTMLElement | null} */ (container);
-          const shouldExpand = expanded ?? (containerElement ? !containerElement.style.maxHeight : false);
+          const shouldExpand =
+            expanded ?? (containerElement ? !containerElement.style.maxHeight : false);
 
           // The container has a class with a `max-height` set which will only take
           // effect if there is no `max-height` set via the `style` attribute.
@@ -159,90 +162,110 @@
             const iframe = preview.querySelector('iframe');
 
             fetch(path, { method: 'GET' })
-            .then((result) => {
-              if (!result.ok) {
-                throw new Error(`Failed to download file: ${result.status}`);
-              }
-              return result.blob();
-            })
-            .then(async (blob) => {
-              hideErrorMessage();
+              .then((result) => {
+                if (!result.ok) {
+                  throw new Error(`Failed to download file: ${result.status}`);
+                }
+                return result.blob();
+              })
+              .then(async (blob) => {
+                hideErrorMessage();
 
-              const type = blob.type;
-              if (type === 'text/plain') {
-                const text = await blob.text();
-                if (escapedFileName.endsWith('.ipynb')) {
-                  await Promise.all([
-                    import('marked'),
-                    import('@prairielearn/marked-mathjax'),
-                    // importing DOMPurify sets the global variable `DOMPurify`.
-                    import('dompurify'),
-                    // importing the notebookjs library sets the global variable `nb`.
-                    import('notebookjs'),
-                    // MathJax needs to have been loaded before the extension can be used.
-                    MathJax.startup.promise,
-                  ]).then(async ([Marked, markedMathjax]) => {
-                    // @ts-ignore - addMathjaxExtension signature is complex
-                    markedMathjax.addMathjaxExtension(Marked.marked, MathJax);
-                    // @ts-ignore - nb global is not well-typed
-                    nb.markdown = Marked.marked.parse;
+                const type = blob.type;
+                if (type === 'text/plain') {
+                  const text = await blob.text();
+                  if (escapedFileName.endsWith('.ipynb')) {
+                    await Promise.all([
+                      import('marked'),
+                      import('@prairielearn/marked-mathjax'),
+                      // importing DOMPurify sets the global variable `DOMPurify`.
+                      import('dompurify'),
+                      // importing the notebookjs library sets the global variable `nb`.
+                      // @ts-ignore - notebookjs has no types
+                      import('notebookjs'),
+                      // MathJax needs to have been loaded before the extension can be used.
+                      MathJax.startup.promise,
+                    ]).then(async ([Marked, markedMathjax]) => {
+                      // @ts-ignore - addMathjaxExtension signature is complex
+                      markedMathjax.addMathjaxExtension(Marked.marked, MathJax);
+                      // @ts-ignore - nb global is not well-typed
+                      nb.markdown = Marked.marked.parse;
 
-                    // @ts-ignore - nb global is not well-typed
-                    nb.sanitizer = /** @param {string} code */ (code) =>
-                      // @ts-ignore - DOMPurify global is declared but not typed correctly
-                      DOMPurify.sanitize(code, { SANITIZE_NAMED_PROPS: true });
-                    // @ts-ignore - nb global is not well-typed
-                    const notebook = nb.parse(JSON.parse(text));
-                    const rendered = notebook.render();
+                      // @ts-ignore - nb global is not well-typed
+                      nb.sanitizer = /** @param {string} code */ (code) =>
+                        // @ts-ignore - DOMPurify global is declared but not typed correctly
+                        DOMPurify.sanitize(code, { SANITIZE_NAMED_PROPS: true });
+                      // @ts-ignore - nb global is not well-typed
+                      const notebook = nb.parse(JSON.parse(text));
+                      const rendered = notebook.render();
 
-                    if (notebookPreview) {
-                      notebookPreview.append(rendered);
-                      notebookPreview.classList.remove('d-none');
+                      if (notebookPreview) {
+                        notebookPreview.append(rendered);
+                        notebookPreview.classList.remove('d-none');
+                      }
+
+                      // Typeset any math that might be in the notebook.
+                      if (notebookPreview) {
+                        window.MathJax.typesetPromise([notebookPreview]);
+                      }
+                    });
+                  } else {
+                    if (code) {
+                      code.textContent = text;
                     }
+                    if (pre) {
+                      pre.classList.remove('d-none');
+                    }
+                  }
 
-                    // Typeset any math that might be in the notebook.
-                    window.MathJax.typesetPromise([notebookPreview]);
-                  });
+                  // Only show the expand/collapse button if the content is tall
+                  // enough where scrolling is necessary. This must be done before
+                  // auto-expansion happens below.
+                  const containerElement = /** @type {HTMLElement | null} */ (container);
+                  if (
+                    containerElement &&
+                    containerElement.scrollHeight > containerElement.clientHeight
+                  ) {
+                    if (expandButton) {
+                      expandButton.classList.remove('d-none');
+                    }
+                  }
+
+                  // Always fully expand notebook previews.
+                  if (escapedFileName.endsWith('.ipynb')) {
+                    toggleExpanded(true);
+                  }
+                } else if (type.startsWith('image/')) {
+                  const url = URL.createObjectURL(blob);
+                  if (img) {
+                    img.src = url;
+                    img.onload = () => {
+                      URL.revokeObjectURL(url);
+                    };
+                    img.classList.remove('d-none');
+                  }
+                } else if (type === 'application/pdf') {
+                  const url = URL.createObjectURL(blob);
+                  if (iframe) {
+                    iframe.src = url;
+                    iframe.onload = () => {
+                      URL.revokeObjectURL(url);
+                    };
+                    const pdfContainer = iframe.closest('.js-file-preview-pdf-container');
+                    if (pdfContainer) {
+                      pdfContainer.classList.remove('d-none');
+                    }
+                  }
                 } else {
-                  code.textContent = text;
-                  pre.classList.remove('d-none');
+                  // We can't preview this file.
+                  showInfoMessage('Content preview is not available for this type of file.');
                 }
-
-                // Only show the expand/collapse button if the content is tall
-                // enough where scrolling is necessary. This must be done before
-                // auto-expansion happens below.
-                if (container.scrollHeight > container.clientHeight) {
-                  expandButton.classList.remove('d-none');
-                }
-
-                // Always fully expand notebook previews.
-                if (escapedFileName.endsWith('.ipynb')) {
-                  toggleExpanded(true);
-                }
-              } else if (type.startsWith('image/')) {
-                const url = URL.createObjectURL(blob);
-                img.src = url;
-                img.onload = () => {
-                  URL.revokeObjectURL(url);
-                };
-                img.classList.remove('d-none');
-              } else if (type === 'application/pdf') {
-                const url = URL.createObjectURL(blob);
-                iframe.src = url;
-                iframe.onload = () => {
-                  URL.revokeObjectURL(url);
-                };
-                iframe.closest('.js-file-preview-pdf-container').classList.remove('d-none');
-              } else {
-                // We can't preview this file.
-                showInfoMessage('Content preview is not available for this type of file.');
-              }
-              wasOpened = true;
-            })
-            .catch((err) => {
-              console.error(err);
-              showErrorMessage('An error occurred while downloading the file.');
-            });
+                wasOpened = true;
+              })
+              .catch((err) => {
+                console.error(err);
+                showErrorMessage('An error occurred while downloading the file.');
+              });
           });
 
           $(preview).on('hide.bs.collapse', () => {

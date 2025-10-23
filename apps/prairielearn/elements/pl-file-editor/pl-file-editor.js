@@ -75,7 +75,7 @@ function PLFileEditor(uuid, options) {
   }
 
   this.plOptionFocus = options.plOptionFocus;
-  
+
   /** @type {Record<string, (value: string) => Promise<string> | string>} */
   this.preview = {};
 
@@ -148,10 +148,11 @@ PLFileEditor.prototype.updatePreview = async function (preview_type) {
   const editor_value = this.editor.getValue();
   const default_preview_text = '<p>Begin typing above to preview</p>';
   const previewFn = this.preview[preview_type];
-  const html_contents = editor_value && previewFn
-    ? ((await Promise.resolve(previewFn(editor_value))) ??
-      `<p>Unknown preview type: <code>${preview_type}</code></p>`)
-    : '';
+  const html_contents =
+    editor_value && previewFn
+      ? ((await Promise.resolve(previewFn(editor_value))) ??
+        `<p>Unknown preview type: <code>${preview_type}</code></p>`)
+      : '';
 
   if (html_contents.trim().length === 0) {
     shadowRoot.innerHTML = default_preview_text;
@@ -176,63 +177,60 @@ PLFileEditor.prototype.updatePreview = async function (preview_type) {
  * @param {string} uuid
  */
 PLFileEditor.prototype.initSettingsButton = function (uuid) {
+  const self = this;
   this.settingsButton.click(() => {
-    // @ts-ignore - ace.require signature doesn't match types
-    ace.require(['ace/ext/themelist'], /** @param {{ themesByName: Record<string, { caption: string; theme: string }> }} themeList */ (themeList) => {
-        const themeSelect = this.modal.find('#modal-' + uuid + '-themes');
-        themeSelect.empty();
-        for (const entries in themeList.themesByName) {
-          const caption = themeList.themesByName[entries].caption;
-          const theme = themeList.themesByName[entries].theme;
+    // @ts-ignore - ace.require types are incorrect for the callback parameter
+    ace.require(['ace/ext/themelist'], function (themeList) {
+      const themeSelect = self.modal.find('#modal-' + uuid + '-themes');
+      themeSelect.empty();
+      for (const entries in themeList.themesByName) {
+        const caption = themeList.themesByName[entries].caption;
+        const theme = themeList.themesByName[entries].theme;
 
-          themeSelect.append(
-            $('<option>', {
-              value: theme,
-              text: caption,
-              selected: localStorage.getItem('pl-file-editor-theme') === theme,
-            }),
-          );
-        }
+        themeSelect.append(
+          $('<option>', {
+            value: theme,
+            text: caption,
+            selected: localStorage.getItem('pl-file-editor-theme') === theme,
+          }),
+        );
+      }
 
-        const fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
-        const fontSelect = this.modal.find('#modal-' + uuid + '-fontsize');
-        fontSelect.empty();
-        for (const entries in fontSizeList) {
-          fontSelect.append(
-            $('<option>', {
-              value: fontSizeList[entries],
-              text: fontSizeList[entries],
-              selected: localStorage.getItem('pl-file-editor-fontsize') === fontSizeList[entries],
-            }),
-          );
-        }
+      const fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
+      const fontSelect = self.modal.find('#modal-' + uuid + '-fontsize');
+      fontSelect.empty();
+      for (const entries in fontSizeList) {
+        fontSelect.append(
+          $('<option>', {
+            value: fontSizeList[entries],
+            text: fontSizeList[entries],
+            selected: localStorage.getItem('pl-file-editor-fontsize') === fontSizeList[entries],
+          }),
+        );
+      }
 
-        const keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
-        const keyboardHandlerSelect = this.modal.find('#modal-' + uuid + '-keyboardHandler');
-        keyboardHandlerSelect.empty();
-        for (const index in keyboardHandlerList) {
-          const keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
+      const keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
+      const keyboardHandlerSelect = self.modal.find('#modal-' + uuid + '-keyboardHandler');
+      keyboardHandlerSelect.empty();
+      for (const index in keyboardHandlerList) {
+        const keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
 
-          keyboardHandlerSelect.append(
-            $('<option>', {
-              value: keyboardHandler,
-              text: keyboardHandlerList[index],
-              selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyboardHandler,
-            }),
-          );
-        }
-      },
-    );
-    this.modal.modal('show');
-    sessionStorage.setItem('pl-file-editor-theme-current', this.editor.getTheme());
+        keyboardHandlerSelect.append(
+          $('<option>', {
+            value: keyboardHandler,
+            text: keyboardHandlerList[index],
+            selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyboardHandler,
+          }),
+        );
+      }
+    });
+    self.modal.modal('show');
+    sessionStorage.setItem('pl-file-editor-theme-current', self.editor.getTheme());
     // @ts-ignore - getFontSize exists at runtime but not in types
     sessionStorage.setItem('pl-file-editor-fontsize-current', String(this.editor.getFontSize()));
     const savedHandler = localStorage.getItem('pl-file-editor-keyboardHandler');
     if (savedHandler) {
-      sessionStorage.setItem(
-        'pl-file-editor-keyboardHandler-current',
-        savedHandler,
-      );
+      sessionStorage.setItem('pl-file-editor-keyboardHandler-current', savedHandler);
     }
 
     this.modal.find('#modal-' + uuid + '-themes').change((e) => {
@@ -255,8 +253,12 @@ PLFileEditor.prototype.initSettingsButton = function (uuid) {
     const keyboardHandlerValue = this.modal.find('#modal-' + uuid + '-keyboardHandler').val();
 
     if (typeof themeValue === 'string') localStorage.setItem('pl-file-editor-theme', themeValue);
-    if (typeof fontsizeValue === 'string') localStorage.setItem('pl-file-editor-fontsize', fontsizeValue);
-    if (typeof keyboardHandlerValue === 'string') localStorage.setItem('pl-file-editor-keyboardHandler', keyboardHandlerValue);
+    if (typeof fontsizeValue === 'string') {
+      localStorage.setItem('pl-file-editor-fontsize', fontsizeValue);
+    }
+    if (typeof keyboardHandlerValue === 'string') {
+      localStorage.setItem('pl-file-editor-keyboardHandler', keyboardHandlerValue);
+    }
     if (keyboardHandlerValue === 'ace/keyboard/default') {
       localStorage.removeItem('pl-file-editor-keyboardHandler');
     }
@@ -268,7 +270,7 @@ PLFileEditor.prototype.initSettingsButton = function (uuid) {
     const theme = localStorage.getItem('pl-file-editor-theme');
     const fontSize = localStorage.getItem('pl-file-editor-fontsize');
     const handler = localStorage.getItem('pl-file-editor-keyboardHandler');
-    
+
     if (theme) this.editor.setTheme(theme);
     if (fontSize) this.editor.setFontSize(fontSize);
     if (handler) this.editor.setKeyboardHandler(handler);
@@ -281,7 +283,7 @@ PLFileEditor.prototype.initSettingsButton = function (uuid) {
     const theme = sessionStorage.getItem('pl-file-editor-theme-current');
     const fontSize = sessionStorage.getItem('pl-file-editor-fontsize-current');
     const handler = sessionStorage.getItem('pl-file-editor-keyboardHandler-current');
-    
+
     if (theme) this.editor.setTheme(theme);
     if (fontSize) this.editor.setFontSize(fontSize);
     if (handler) this.editor.setKeyboardHandler(handler);
@@ -290,12 +292,12 @@ PLFileEditor.prototype.initSettingsButton = function (uuid) {
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
     sessionStorage.removeItem('pl-file-editor-keyboardHandler-current');
   });
-  
+
   this.modal.on('hidden.bs.modal', () => {
     const theme = sessionStorage.getItem('pl-file-editor-theme-current');
     const fontSize = sessionStorage.getItem('pl-file-editor-fontsize-current');
     const handler = sessionStorage.getItem('pl-file-editor-keyboardHandler-current');
-    
+
     if (theme) this.editor.setTheme(theme);
     if (fontSize) this.editor.setFontSize(fontSize);
     if (handler) this.editor.setKeyboardHandler(handler);
