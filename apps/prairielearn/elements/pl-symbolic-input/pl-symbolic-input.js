@@ -108,6 +108,9 @@
 
     // If the allow-trig attribute is set, basic trig functions are added to the virtual keyboard
     const allowTrig = mf.getAttribute('allow-trig');
+    // Swap virtual keyboard labels based on display settings
+    const logAsLn = mf.getAttribute('log-as-ln');
+    const imaginaryUnit = mf.getAttribute('imaginary-unit') ?? 'i';
 
     mf.menuItems = [
       {
@@ -145,8 +148,18 @@
         rows: [
           [
             { class: 'small', latex: '{#@}^{#?}', width: 1 },
-            { class: 'small', latex: '{#@}^{2}', width: 1 },
-            { class: 'small', latex: '\\frac{#@}{#0}', width: 1.3 },
+            {
+              class: 'small',
+              latex: '{#@}^{2}',
+              width: 1,
+              variants: [{ class: 'small', latex: '{#@}^{3}', width: 1 }],
+            },
+            {
+              class: 'small',
+              latex: '\\frac{#@}{#0}',
+              width: 1.3,
+              variants: [{ class: 'small', latex: '\\frac{1}{#@}', width: 1 }],
+            },
             '[separator]',
             '7',
             '8',
@@ -159,12 +172,17 @@
           ],
           [
             { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#0}', width: 1 },
-            {
-              class: 'small',
-              latex: '\\ln',
-              insert: '\\ln({#0})',
-              variants: [{ class: 'small', latex: '\\log', insert: '\\log({#0})' }],
-            },
+            logAsLn
+              ? {
+                  class: 'small',
+                  latex: '\\ln',
+                  insert: '\\ln({#0})',
+                }
+              : {
+                  class: 'small',
+                  latex: '\\log',
+                  insert: '\\log({#0})',
+                },
             { class: 'small', latex: '!', width: 1 },
             '[separator]',
             '4',
@@ -174,7 +192,7 @@
             '[separator]',
             { latex: 'x' },
             { latex: 'y' },
-            '=',
+            imaginaryUnit,
           ],
           [
             { class: 'small', latex: '|#0|', insert: '\\abs({#0})' },
@@ -206,6 +224,11 @@
                     { class: 'small', latex: '\\arcsin', insert: '\\arcsin({#0})' },
                     {
                       class: 'small',
+                      latex: '\\mathrm{sinh}',
+                      insert: '\\operatorname{sinh}({#0})',
+                    },
+                    {
+                      class: 'small',
                       latex: '\\mathrm{asinh}',
                       insert: '\\operatorname{asinh}({#0})',
                     },
@@ -223,6 +246,11 @@
                     { class: 'small', latex: '\\arccos', insert: '\\arccos({#0})' },
                     {
                       class: 'small',
+                      latex: '\\mathrm{cosh}',
+                      insert: '\\operatorname{cosh}({#0})',
+                    },
+                    {
+                      class: 'small',
                       latex: '\\mathrm{acosh}',
                       insert: '\\operatorname{acosh}({#0})',
                     },
@@ -238,6 +266,11 @@
                   variants: [
                     { class: 'small', latex: '\\cot', insert: '\\cot({#0})' },
                     { class: 'small', latex: '\\arctan', insert: '\\arctan({#0})' },
+                    {
+                      class: 'small',
+                      latex: '\\mathrm{tanh}',
+                      insert: '\\operatorname{tanh}({#0})',
+                    },
                     {
                       class: 'small',
                       latex: '\\mathrm{atanh}',
