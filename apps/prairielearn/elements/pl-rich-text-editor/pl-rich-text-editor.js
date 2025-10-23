@@ -1,7 +1,7 @@
 /* global Quill, he, MathJax, QuillMarkdown, DOMPurify, bootstrap */
 
 (() => {
-  // @ts-ignore - DOMPurify global is declared but not typed correctly
+  // @ts-expect-error - DOMPurify global is declared but not typed correctly
   const rtePurify = DOMPurify();
   const rtePurifyConfig = { SANITIZE_NAMED_PROPS: true };
 
@@ -12,12 +12,13 @@
      * @param {any} data
      */
     (node, data) => {
-    if (data.tagName === 'span' && node.classList.contains('ql-formula')) {
-      // Quill formulas don't need their SVG content in the sanitized version,
-      // as they are re-rendered upon loading.
-      node.innerText = `$${node.dataset.value}$`;
-    }
-  });
+      if (data.tagName === 'span' && node.classList.contains('ql-formula')) {
+        // Quill formulas don't need their SVG content in the sanitized version,
+        // as they are re-rendered upon loading.
+        node.innerText = `$${node.dataset.value}$`;
+      }
+    },
+  );
 
   class Counter {
     /**
@@ -59,7 +60,7 @@
     }
   }
 
-  // @ts-ignore - Quill global is declared but not fully typed
+  // @ts-expect-error - Quill global is declared but not fully typed
   const Clipboard = Quill.import('modules/clipboard');
   class PotentiallyDisabledClipboard extends Clipboard {
     /**
@@ -67,7 +68,7 @@
      * @param {boolean} [isCut]
      */
     onCaptureCopy(e, isCut = false) {
-      // @ts-ignore - options is available on clipboard modules
+      // @ts-expect-error - options is available on clipboard modules
       if (this.options.enabled ?? true) return super.onCaptureCopy(e, isCut);
       if (!e.defaultPrevented) e.preventDefault();
       this.showToast();
@@ -77,7 +78,7 @@
      * @param {ClipboardEvent} e
      */
     onCapturePaste(e) {
-      // @ts-ignore - options is available on clipboard modules
+      // @ts-expect-error - options is available on clipboard modules
       if (this.options.enabled ?? true) return super.onCapturePaste(e);
       if (!e.defaultPrevented) e.preventDefault();
       this.showToast();
@@ -85,10 +86,12 @@
 
     showToast() {
       if (!this.toast) {
-        // @ts-ignore - options is available on clipboard modules
+        // @ts-expect-error - options is available on clipboard modules
         const toastElement = document.getElementById(this.options.toast_id);
-        // @ts-ignore - bootstrap global is declared but not fully typed
-        this.toast = toastElement ? new bootstrap.Toast(toastElement, { autohide: true, delay: 2000 }) : null;
+        // @ts-expect-error - bootstrap global is declared but not fully typed
+        this.toast = toastElement
+          ? new bootstrap.Toast(toastElement, { autohide: true, delay: 2000 })
+          : null;
       }
       if (this.toast) {
         this.toast.show();
@@ -96,13 +99,13 @@
     }
   }
 
-  // @ts-ignore - Quill global is declared but not fully typed
+  // @ts-expect-error - Quill global is declared but not fully typed
   Quill.register('modules/clipboard', PotentiallyDisabledClipboard, true);
 
   /**
    * @param {string} uuid
    */
-  // @ts-ignore - TypeScript doesn't recognize PLRTE as a valid property
+  // @ts-expect-error - TypeScript doesn't recognize PLRTE as a valid property
   window.PLRTE = async function (uuid) {
     const baseElement = document.getElementById(`rte-${uuid}`);
     if (!baseElement) throw new Error(`Element not found: rte-${uuid}`);
@@ -149,11 +152,11 @@
     options.bounds = baseElement.closest('.question-container');
 
     const inputElement = $('#rte-input-' + uuid);
-    // @ts-ignore - Quill global is declared but not fully typed
+    // @ts-expect-error - Quill global is declared but not fully typed
     const quill = new Quill(baseElement, options);
     initializeFormulaPopover(quill, uuid);
 
-    // @ts-ignore - QuillMarkdown global is declared but not fully typed
+    // @ts-expect-error - QuillMarkdown global is declared but not fully typed
     if (options.markdownShortcuts && !options.readOnly) new QuillMarkdown(quill, {});
 
     const inputValue = inputElement.val();
@@ -197,7 +200,7 @@
         : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
       inputElement.val(
         btoa(
-          // @ts-ignore - he global is declared but not typed
+          // @ts-expect-error - he global is declared but not typed
           he.encode(contents, {
             allowUnsafeSymbols: true, // HTML tags should be kept
             useNamedReferences: true,
@@ -217,7 +220,7 @@
 
   // Override default implementation of 'formula'
 
-  // @ts-ignore - Quill global is declared but not fully typed
+  // @ts-expect-error - Quill global is declared but not fully typed
   const Embed = Quill.import('blots/embed');
 
   class MathFormula extends Embed {
@@ -238,8 +241,8 @@
      */
     static updateNode(node, value) {
       node.setAttribute('data-value', value);
-      MathJax.startup.promise.then(async () => {
-        // @ts-ignore - MathJax promise methods are not typed
+      void MathJax.startup.promise.then(async () => {
+        // @ts-expect-error - MathJax promise methods are not typed
         const html = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
         node.innerHTML = html.innerHTML;
         node.contentEditable = 'false';
@@ -257,7 +260,7 @@
   MathFormula.className = 'ql-formula';
   MathFormula.tagName = 'SPAN';
 
-  // @ts-ignore - Quill global is declared but not fully typed
+  // @ts-expect-error - Quill global is declared but not fully typed
   Quill.register('formats/formula', MathFormula, true);
 })();
 
@@ -282,7 +285,7 @@ function initializeFormulaPopover(quill, uuid) {
     <button type="submit" class="btn btn-primary">Confirm</button>
   `;
 
-  // @ts-ignore - bootstrap global is declared but not fully typed
+  // @ts-expect-error - bootstrap global is declared but not fully typed
   const popover = new bootstrap.Popover(formulaButton, {
     content: popoverContent,
     html: true,
@@ -294,11 +297,10 @@ function initializeFormulaPopover(quill, uuid) {
   });
 
   const input = /** @type {HTMLInputElement} */ (popoverContent.querySelector('input'));
-  if (!input) throw new Error('Formula input not found');
   input.addEventListener('input', () => {
     const value = input.value.trim();
-    MathJax.startup.promise.then(async () => {
-      // @ts-ignore - MathJax promise methods are not typed
+    void MathJax.startup.promise.then(async () => {
+      // @ts-expect-error - MathJax promise methods are not typed
       const result = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
       const html = value
         ? result.outerHTML
@@ -332,13 +334,16 @@ function initializeFormulaPopover(quill, uuid) {
     quill.focus();
   });
 
-  quill.getModule('toolbar').addHandler('formula', /** @param {boolean} enabled */ (enabled) => {
-    if (!enabled) return;
-    const range = quill.getSelection(true);
-    // If there is a selection, set the input value to the selected text
-    input.value = range?.length ? quill.getText(range.index, range.length) : '';
-    // Trigger input event to show initial preview or clear previous preview
-    input.dispatchEvent(new InputEvent('input'));
-    popover.show();
-  });
+  quill.getModule('toolbar').addHandler(
+    'formula',
+    /** @param {boolean} enabled */ (enabled) => {
+      if (!enabled) return;
+      const range = quill.getSelection(true);
+      // If there is a selection, set the input value to the selected text
+      input.value = range?.length ? quill.getText(range.index, range.length) : '';
+      // Trigger input event to show initial preview or clear previous preview
+      input.dispatchEvent(new InputEvent('input'));
+      popover.show();
+    },
+  );
 }

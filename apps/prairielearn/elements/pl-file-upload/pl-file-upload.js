@@ -35,12 +35,16 @@
       /** @type {any[]} */
       this.files = [];
       this.requiredFiles = options.requiredFiles || [];
-      this.requiredFilesLowerCase = this.requiredFiles.map(/** @param {string} f */ (f) => f.toLowerCase());
+      this.requiredFilesLowerCase = this.requiredFiles.map(
+        /** @param {string} f */ (f) => f.toLowerCase(),
+      );
       this.requiredFilesRegex = options.requiredFilesRegex || [];
       // Initialized after files are downloaded
       this.requiredFilesUnmatchedRegex = this.requiredFilesRegex.slice();
       this.optionalFiles = options.optionalFiles || [];
-      this.optionalFilesLowerCase = this.optionalFiles.map(/** @param {string} f */ (f) => f.toLowerCase());
+      this.optionalFilesLowerCase = this.optionalFiles.map(
+        /** @param {string} f */ (f) => f.toLowerCase(),
+      );
       this.optionalFilesRegex = options.optionalFilesRegex || [];
 
       // Checks whether a file name is acceptable
@@ -50,13 +54,21 @@
         if (this.requiredFilesLowerCase.includes(fileName)) {
           return this.requiredFiles[this.requiredFilesLowerCase.indexOf(fileName)];
         }
-        if (this.requiredFilesUnmatchedRegex.some(/** @param {any} f */ (f) => new RegExp(f[0], 'i').test(fileName))) {
+        if (
+          this.requiredFilesUnmatchedRegex.some(
+            /** @param {any} f */ (f) => new RegExp(f[0], 'i').test(fileName),
+          )
+        ) {
           return fileName;
         }
         if (this.optionalFilesLowerCase.includes(fileName)) {
           return this.optionalFiles[this.optionalFilesLowerCase.indexOf(fileName)];
         }
-        if (this.optionalFilesRegex.some(/** @param {any} f */ (f) => new RegExp(f[0], 'i').test(fileName))) {
+        if (
+          this.optionalFilesRegex.some(
+            /** @param {any} f */ (f) => new RegExp(f[0], 'i').test(fileName),
+          )
+        ) {
           return fileName;
         }
         return null;
@@ -67,21 +79,23 @@
 
       const elementId = '#file-upload-' + uuid;
       this.element = $(elementId);
-      if (!this.element) {
+      if (this.element.length === 0) {
         throw new Error(`File upload element ${elementId} was not found!`);
       }
 
       if (options.submittedFileNames) {
-        options.submittedFileNames.forEach(/** @param {string} n */ (n) => {
-          if (this.requiredFiles.includes(n)) return;
-          const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(/** @param {any} f */ (f) =>
-            new RegExp(f[0], 'i').test(n),
-          );
-          if (matchingRegex !== -1) {
-            this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
-          }
-        });
-        this.downloadExistingFiles(options.submittedFileNames).then(() => {
+        options.submittedFileNames.forEach(
+          /** @param {string} n */ (n) => {
+            if (this.requiredFiles.includes(n)) return;
+            const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(
+              /** @param {any} f */ (f) => new RegExp(f[0], 'i').test(n),
+            );
+            if (matchingRegex !== -1) {
+              this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
+            }
+          },
+        );
+        void this.downloadExistingFiles(options.submittedFileNames).then(() => {
           this.syncFilesToHiddenInput();
         });
       }
@@ -101,7 +115,7 @@
       fileNames.forEach(/** @param {string} file */ (file) => this.pendingFileDownloads.add(file));
 
       await Promise.all(
-        fileNames.map(async /** @param {string} file */ (file) => {
+        fileNames.map(async (/** @param {string} file */ file) => {
           const escapedFileName = escapePath(file);
           const path = `${submissionFilesUrl}/${escapedFileName}`;
           try {
@@ -109,7 +123,7 @@
             if (!res.ok) {
               throw new Error(`Failed to download file: ${res.status}`);
             }
-            if (!res) {
+            if (res.status !== 200) {
               this.pendingFileDownloads.delete(file);
               this.failedFileDownloads.add(file);
               this.renderFileList();
@@ -137,7 +151,7 @@
     initializeTemplate() {
       const $dropTarget = this.element.find('.upload-dropzone');
 
-      // @ts-ignore - dropzone is a jQuery plugin
+      // @ts-expect-error - dropzone is a jQuery plugin
       $dropTarget.dropzone({
         url: '/none',
         autoProcessQueue: false,
@@ -283,15 +297,17 @@
      */
     refreshRequiredRegex() {
       this.requiredFilesUnmatchedRegex = this.requiredFilesRegex.slice();
-      this.files.forEach(/** @param {any} n */ (n) => {
-        if (this.requiredFiles.includes(n.name)) return;
-        const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(/** @param {any} f */ (f) =>
-          new RegExp(f[0], 'i').test(n.name),
-        );
-        if (matchingRegex !== -1) {
-          this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
-        }
-      });
+      this.files.forEach(
+        /** @param {any} n */ (n) => {
+          if (this.requiredFiles.includes(n.name)) return;
+          const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(
+            /** @param {any} f */ (f) => new RegExp(f[0], 'i').test(n.name),
+          );
+          if (matchingRegex !== -1) {
+            this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
+          }
+        },
+      );
     }
 
     /**
@@ -487,22 +503,27 @@
       const matchedRegexFiles = [];
       this.files
         .map(/** @param {any} f */ (f) => f.name)
-        .filter(/** @param {string} n */ (n) => {
-          if (this.requiredFiles.includes(n)) return false;
-          const matchingRegex = this.requiredFilesRegex.findIndex(
-            /** @param {any} f */ (f) => new RegExp(f[0], 'i').test(n) && !matchedRegex.includes(f),
-          );
-          if (matchingRegex !== -1) {
-            matchedRegex.push(this.requiredFilesRegex[matchingRegex]);
-            matchedRegexFiles.push(n);
-            return true;
-          } else {
-            return false;
-          }
-        })
+        .filter(
+          /** @param {string} n */ (n) => {
+            if (this.requiredFiles.includes(n)) return false;
+            const matchingRegex = this.requiredFilesRegex.findIndex(
+              /** @param {any} f */ (f) =>
+                new RegExp(f[0], 'i').test(n) && !matchedRegex.includes(f),
+            );
+            if (matchingRegex !== -1) {
+              matchedRegex.push(this.requiredFilesRegex[matchingRegex]);
+              matchedRegexFiles.push(n);
+              return true;
+            } else {
+              return false;
+            }
+          },
+        )
         .forEach(/** @param {string} n */ (n) => renderFileListEntry(n));
       // ...then unmatched required regexes ...
-      this.requiredFilesUnmatchedRegex.forEach(/** @param {any} n */ (n) => renderFileListEntry(n[1], false, true));
+      this.requiredFilesUnmatchedRegex.forEach(
+        /** @param {any} n */ (n) => renderFileListEntry(n[1], false, true),
+      );
       // ...then optional file names...
       this.optionalFiles.forEach(/** @param {string} n */ (n) => renderFileListEntry(n, true));
       // ...then all remaining uploaded files (matching a wildcard regex)...
@@ -516,7 +537,9 @@
         )
         .forEach(/** @param {string} n */ (n) => renderFileListEntry(n, true));
       // ...and finally all wildcard patterns (which might accept an arbitrary number of uploads)
-      this.optionalFilesRegex.map(/** @param {any} n */ (n) => n[1]).forEach(/** @param {string} n */ (n) => renderFileListEntry(n, true, true));
+      this.optionalFilesRegex
+        .map(/** @param {any} n */ (n) => n[1])
+        .forEach(/** @param {string} n */ (n) => renderFileListEntry(n, true, true));
     }
 
     /**
@@ -610,6 +633,6 @@
     }
   }
 
-  // @ts-ignore - TypeScript doesn't recognize PLFileUpload as a valid property
+  // @ts-expect-error - TypeScript doesn't recognize PLFileUpload as a valid property
   window.PLFileUpload = PLFileUpload;
 })();

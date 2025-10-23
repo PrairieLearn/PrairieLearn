@@ -4,11 +4,10 @@
  * @param {string} uuid
  */
 function PLMultipleChoice(uuid) {
-  const selectElement = document.getElementById('pl-multiple-choice-select-' + uuid);
-  if (!selectElement) throw new Error(`Element not found: pl-multiple-choice-select-${uuid}`);
+  const selectElement = /** @type {HTMLSelectElement} */ (document.getElementById('pl-multiple-choice-select-' + uuid));
   const container = selectElement.closest('.pl-multiple-choice-dropdown');
 
-  const select = new TomSelect(/** @type {HTMLSelectElement} */ (selectElement), {
+  const select = new TomSelect(selectElement, {
     plugins: ['no_backspace_delete', 'dropdown_input'],
     allowEmptyOption: true,
 
@@ -52,7 +51,7 @@ function PLMultipleChoice(uuid) {
       // to ensure that the options are present.
       setTimeout(() => {
         if ('typesetPromise' in MathJax) {
-          MathJax.typesetPromise([dropdown]);
+          void MathJax.typesetPromise([dropdown]);
         }
       }, 0);
     },
@@ -61,7 +60,7 @@ function PLMultipleChoice(uuid) {
       // In case the dropdown items contain math, render it when the
       // dropdown is opened or closed.
       if ('typesetPromise' in MathJax && container) {
-        MathJax.typesetPromise([container]);
+        void MathJax.typesetPromise([container]);
       }
     },
   });

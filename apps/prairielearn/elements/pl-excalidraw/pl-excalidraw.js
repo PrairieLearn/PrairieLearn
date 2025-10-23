@@ -1,5 +1,5 @@
 // This module is redefined in the import map with the same name
-// @ts-ignore - no types available for this internal package
+// @ts-expect-error - no types available for this internal package
 import { ExcalidrawLib, React, ReactDOM } from '@prairielearn/excalidraw-builds';
 
 const elt = React.createElement;
@@ -31,23 +31,23 @@ const Footer = ({ unsaved, readOnly }) => {
 
 /**
  * @typedef {object} ExcalidrawMetadata
- * @property {boolean} read_only
- * @property {string} [initial_content]
- * @property {object} [scene]
- * @property {string} width
- * @property {string} height
+ * @property {boolean} read_only - Whether the drawing is read-only
+ * @property {string} [initial_content] - Initial content for the drawing
+ * @property {object} [scene] - The scene configuration
+ * @property {string} width - The width of the drawing canvas
+ * @property {string} height - The height of the drawing canvas
  */
 
 /**
  * @typedef ExcalidrawAPI
- * @property {() => readonly ExcalidrawElement[]} getSceneElements
- * @property {() => Record<string, unknown>} getAppState
- * @property {() => Record<string, unknown>} getFiles
+ * @property {() => readonly ExcalidrawElement[]} getSceneElements - Gets the scene elements
+ * @property {() => Record<string, unknown>} getAppState - Gets the app state
+ * @property {() => Record<string, unknown>} getFiles - Gets the files
  */
 
 /**
  * @typedef ExcalidrawElement
- * @property {number} version
+ * @property {number} version - The version of the element
  */
 
 /**
@@ -116,31 +116,29 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
 
 /**
  * @typedef ReactRoot
- * @property {(element: unknown) => void} render
+ * @property {(element: unknown) => void} render - Renders the element
  */
 
 /**
  * @param {string} uuid
  * @param {string} name
  * @param {ExcalidrawMetadata} metadata
- * @returns {Promise<{ name: string; state: null; node: HTMLElement | null; root: ReactRoot }>}
+ * @returns {Promise<{ name: string; state: null; node: HTMLElement | null; root: ReactRoot }>} - The initialized Excalidraw instance
  */
 export async function initializeExcalidraw(uuid, name, metadata) {
-  const rootElement = document.getElementById(`excalidraw-${uuid}`);
+  const rootElement = /** @type {HTMLElement} */ (document.getElementById(`excalidraw-${uuid}`));
 
-  const hiddenInput = document.getElementById(`excalidraw-input-${uuid}`);
+  const hiddenInput = /** @type {HTMLInputElement} */ (document.getElementById(`excalidraw-input-${uuid}`));
   /** @param {string} value */
   const setHiddenInput = (value) => {
-    if (hiddenInput) {
-      /** @type {HTMLInputElement} */ (hiddenInput).value = value;
-    }
+    hiddenInput.value = value;
   };
 
   if (metadata.initial_content) {
     metadata.scene = await ExcalidrawLib.loadFromBlob(new Blob([metadata.initial_content]));
   }
 
-  const root = ReactDOM.createRoot(/** @type {HTMLElement} */ (rootElement));
+  const root = ReactDOM.createRoot(rootElement);
   root.render(
     elt(
       React.StrictMode,

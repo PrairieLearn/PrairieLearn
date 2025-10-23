@@ -51,7 +51,7 @@ const MAX_ZOOM_SCALE = 5;
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
-        this.loadSubmission();
+        void this.loadSubmission();
         this.handwritingEnhancementListeners();
         return;
       }
@@ -62,7 +62,7 @@ const MAX_ZOOM_SCALE = 5;
 
       this.createLocalCameraCaptureListeners();
 
-      this.loadSubmission();
+      void this.loadSubmission();
       this.createDeletionListeners();
 
       if (this.mobile_capture_enabled) {
@@ -131,7 +131,7 @@ const MAX_ZOOM_SCALE = 5;
         '.js-cancel-local-camera-button',
       );
 
-      const applyChangesButton = this.imageCaptureDiv.querySelector('.js-apply-changes-button');
+      const applyChangesButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-apply-changes-button'));
 
       this.ensureElementsExist({
         captureLocalCameraImageButton,
@@ -141,13 +141,13 @@ const MAX_ZOOM_SCALE = 5;
 
       for (const localCaptureButton of localCaptureButtons) {
         localCaptureButton.addEventListener('click', () => {
-          this.startLocalCameraCapture();
+          void this.startLocalCameraCapture();
         });
       }
 
       if (captureLocalCameraImageButton) {
         captureLocalCameraImageButton.addEventListener('click', () => {
-          this.handleCaptureImage();
+          void this.handleCaptureImage();
         });
       }
 
@@ -157,11 +157,9 @@ const MAX_ZOOM_SCALE = 5;
         });
       }
 
-      if (applyChangesButton) {
-        applyChangesButton.addEventListener('click', () => {
-          this.confirmCropRotateChanges();
-        });
-      }
+      applyChangesButton.addEventListener('click', () => {
+        void this.confirmCropRotateChanges();
+      });
     }
 
     /** Retrieve the local capture button elements for the horizontal and dropdown layouts. */
@@ -199,25 +197,25 @@ const MAX_ZOOM_SCALE = 5;
       /** Whether or not the image is flipped vertically */
       this.flippedY = false;
 
-      const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
-      const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
-      const cancelCropRotateButton = this.imageCaptureDiv.querySelector(
+      const cropRotateButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-crop-rotate-button'));
+      const rotationSlider = /** @type {HTMLInputElement} */ (this.imageCaptureDiv.querySelector('.js-rotation-slider'));
+      const cancelCropRotateButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
         '.js-cancel-crop-rotate-button',
-      );
+      ));
 
-      const rotateClockwiseButton = this.imageCaptureDiv.querySelector(
+      const rotateClockwiseButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
         '.js-rotate-clockwise-button',
-      );
-      const rotateCounterclockwiseButton = this.imageCaptureDiv.querySelector(
+      ));
+      const rotateCounterclockwiseButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
         '.js-rotate-counterclockwise-button',
-      );
+      ));
 
-      const flipHorizontalButton = this.imageCaptureDiv.querySelector('.js-flip-horizontal-button');
-      const flipVerticalButton = this.imageCaptureDiv.querySelector('.js-flip-vertical-button');
+      const flipHorizontalButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-flip-horizontal-button'));
+      const flipVerticalButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-flip-vertical-button'));
 
-      const cropRotateResetButton = this.imageCaptureDiv.querySelector(
+      const cropRotateResetButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
         '.js-crop-rotate-reset-button',
-      );
+      ));
 
       this.ensureElementsExist({
         cropRotateButton,
@@ -231,11 +229,11 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       // After ensureElementsExist, these are guaranteed to be non-null
-      /** @type {HTMLElement} */ (cropRotateButton).addEventListener('click', () => {
-        this.startCropRotate();
+      cropRotateButton.addEventListener('click', () => {
+        void this.startCropRotate();
       });
 
-      /** @type {HTMLInputElement} */ (rotationSlider).addEventListener('input', (event) => {
+      rotationSlider.addEventListener('input', (event) => {
         const target = /** @type {HTMLInputElement} */ (event.target);
         const newRotationAngle = Number.parseFloat(target.value);
         if (Number.isNaN(newRotationAngle)) {
@@ -244,27 +242,27 @@ const MAX_ZOOM_SCALE = 5;
         this.setRotationOffset(newRotationAngle);
       });
 
-      /** @type {HTMLElement} */ (rotateClockwiseButton).addEventListener('click', () => {
+      rotateClockwiseButton.addEventListener('click', () => {
         this.handleRotate90Degrees(true);
       });
 
-      /** @type {HTMLElement} */ (rotateCounterclockwiseButton).addEventListener('click', () => {
+      rotateCounterclockwiseButton.addEventListener('click', () => {
         this.handleRotate90Degrees(false);
       });
 
-      /** @type {HTMLElement} */ (flipHorizontalButton).addEventListener('click', () => {
+      flipHorizontalButton.addEventListener('click', () => {
         this.handleFlip(true);
       });
 
-      /** @type {HTMLElement} */ (flipVerticalButton).addEventListener('click', () => {
+      flipVerticalButton.addEventListener('click', () => {
         this.handleFlip(false);
       });
 
-      /** @type {HTMLElement} */ (cancelCropRotateButton).addEventListener('click', () => {
+      cancelCropRotateButton.addEventListener('click', () => {
         this.cancelCropRotate();
       });
 
-      /** @type {HTMLElement} */ (cropRotateResetButton).addEventListener('click', () => {
+      cropRotateResetButton.addEventListener('click', () => {
         this.resetAllCropRotation();
       });
     }
@@ -384,7 +382,7 @@ const MAX_ZOOM_SCALE = 5;
       );
 
       // Displays an interface for cropping and rotating the captured image.
-      const cropRotateContainer = this.imageCaptureDiv.querySelector('.js-crop-rotate-container');
+      const cropRotateContainer = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-crop-rotate-container'));
 
       this.ensureElementsExist({
         capturePreviewContainer,
@@ -447,7 +445,7 @@ const MAX_ZOOM_SCALE = 5;
       }
 
       for (const qrCode of qrCodes) {
-        // @ts-ignore - QRCode is a UMD global
+        // @ts-expect-error - QRCode is a UMD global
         qrCode.innerHTML = new QRCode({
           content: this.external_image_capture_url,
           container: 'svg-viewbox',
@@ -459,7 +457,7 @@ const MAX_ZOOM_SCALE = 5;
      * Listen for external image captures submitted from the user's mobile device.
      */
     listenForExternalImageCapture() {
-      // @ts-ignore - io is a UMD global from socket.io-client
+      // @ts-expect-error - io is a UMD global from socket.io-client
       const socket = io('/external-image-capture');
       const questionContainer = /** @type {HTMLElement | null} */ (
         document.querySelector('.question-container')
@@ -514,7 +512,7 @@ const MAX_ZOOM_SCALE = 5;
 
           // Dismiss the QR code popover if it is open.
           for (const mobileCaptureButton of mobileCaptureButtons) {
-            // @ts-ignore - bootstrap is a UMD global
+            // @ts-expect-error - bootstrap is a UMD global
             const popover = bootstrap.Popover.getInstance(mobileCaptureButton);
             if (popover) {
               popover.hide();
@@ -618,13 +616,13 @@ const MAX_ZOOM_SCALE = 5;
 
     /** @param {string} dataUrl */
     setHiddenCaptureInputValue(dataUrl) {
-      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+      const hiddenCaptureInput = /** @type {HTMLInputElement} */ (this.imageCaptureDiv.querySelector('.js-hidden-capture-input'));
 
       this.ensureElementsExist({
         hiddenCaptureInput,
       });
 
-      const hiddenInput = /** @type {HTMLInputElement} */ (hiddenCaptureInput);
+      const hiddenInput = hiddenCaptureInput;
 
       if (dataUrl && !hiddenInput.value) {
         this.updateCaptureButtons(true);
@@ -736,13 +734,13 @@ const MAX_ZOOM_SCALE = 5;
       if (this.editable) {
         this.setShowDeletionButton(dataUrl ? true : false);
       } else {
-        const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
-        const viewerRotateClockwiseButton = this.imageCaptureDiv.querySelector(
+        const zoomButtonsContainer = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-zoom-buttons'));
+        const viewerRotateClockwiseButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
           '.js-viewer-rotate-clockwise-button',
-        );
+        ));
 
-        const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
-        const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
+        const zoomInButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-zoom-in-button'));
+        const zoomOutButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-zoom-out-button'));
 
         this.ensureElementsExist({
           zoomButtonsContainer,
@@ -764,7 +762,7 @@ const MAX_ZOOM_SCALE = 5;
         if (!this.imageCapturePreviewPanzoom) {
           // Initialize Panzoom on the parent of the captured image element, since
           // the image itself may be rotated.
-          // @ts-ignore - Panzoom is a UMD global
+          // @ts-expect-error - Panzoom is a UMD global
           this.imageCapturePreviewPanzoom = Panzoom(capturePreviewParent, {
             contain: 'outside',
             minScale: MIN_ZOOM_SCALE,
@@ -815,7 +813,7 @@ const MAX_ZOOM_SCALE = 5;
                 : Math.min(clientHeight / photoWidth, clientWidth / photoHeight);
 
             capturePreviewImgElement.style.transform = `rotate(${rotation}deg) scale(${scaleFactor})`;
-            // @ts-ignore - Panzoom type definitions are incomplete
+            // @ts-expect-error - Panzoom type definitions are incomplete
             this.imageCapturePreviewPanzoom?.reset({ animate: true });
           });
 
@@ -855,8 +853,8 @@ const MAX_ZOOM_SCALE = 5;
             }
           });
         } else {
-          // @ts-ignore - Panzoom type definitions are incomplete
-          this.imageCapturePreviewPanzoom?.reset({ animate: false });
+          // @ts-expect-error - Panzoom type definitions are incomplete
+          this.imageCapturePreviewPanzoom.reset({ animate: false });
         }
       }
 
@@ -940,11 +938,11 @@ const MAX_ZOOM_SCALE = 5;
         localCameraCaptureContainer?.querySelector('.js-local-camera-error-message')
       );
 
-      const localCameraVideo = this.imageCaptureDiv.querySelector('.js-local-camera-video');
+      const localCameraVideo = /** @type {HTMLVideoElement} */ (this.imageCaptureDiv.querySelector('.js-local-camera-video'));
 
-      const localCameraInstructions = this.imageCaptureDiv.querySelector(
+      const localCameraInstructions = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
         '.js-local-camera-instructions',
-      );
+      ));
 
       this.ensureElementsExist({
         capturePreviewContainer,
@@ -1006,10 +1004,10 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     deactivateVideoStream() {
-      const localCameraVideo = this.imageCaptureDiv.querySelector('.js-local-camera-video');
-      const captureLocalCameraImageButton = this.imageCaptureDiv.querySelector(
+      const localCameraVideo = /** @type {HTMLVideoElement} */ (this.imageCaptureDiv.querySelector('.js-local-camera-video'));
+      const captureLocalCameraImageButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector(
         '.js-capture-local-camera-image-button',
-      );
+      ));
 
       this.ensureElementsExist({
         localCameraVideo,
@@ -1031,7 +1029,7 @@ const MAX_ZOOM_SCALE = 5;
       captureButton.setAttribute('disabled', 'disabled');
     }
 
-    async handleCaptureImage() {
+    handleCaptureImage() {
       const localCameraCaptureContainer = this.imageCaptureDiv.querySelector(
         '.js-local-camera-capture-container',
       );
@@ -1041,7 +1039,7 @@ const MAX_ZOOM_SCALE = 5;
       const localCameraVideo = /** @type {HTMLVideoElement | null} */ (
         localCameraCaptureContainer?.querySelector('.js-local-camera-video')
       );
-      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+      const hiddenCaptureInput = /** @type {HTMLInputElement} */ (this.imageCaptureDiv.querySelector('.js-hidden-capture-input'));
 
       this.ensureElementsExist({
         localCameraCaptureContainer,
@@ -1121,15 +1119,15 @@ const MAX_ZOOM_SCALE = 5;
      * @param {boolean} show If true, shows the crop rotate button. Otherwise, hides it.
      */
     setShowCropRotateButton(show) {
-      const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
+      const cropRotateButton = /** @type {HTMLElement} */ (this.imageCaptureDiv.querySelector('.js-crop-rotate-button'));
 
       this.ensureElementsExist({
         cropRotateButton,
       });
-      /** @type {HTMLElement} */ (cropRotateButton).classList.toggle('d-none', !show);
+      cropRotateButton.classList.toggle('d-none', !show);
     }
 
-    async startCropRotate() {
+    startCropRotate() {
       const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
         '.js-hidden-capture-changed-flag',
       );
@@ -1162,7 +1160,7 @@ const MAX_ZOOM_SCALE = 5;
 
         cropperImageElement.src = hiddenOriginalInputElement.value;
 
-        // @ts-ignore - Cropper is a UMD global
+        // @ts-expect-error - Cropper is a UMD global
         this.cropper = new Cropper.default(
           `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`,
         );
@@ -1224,10 +1222,10 @@ const MAX_ZOOM_SCALE = 5;
       });
       // Store references to the listener functions for proper removal
       this.cropperSelectionChangeHandler = () => {
-        this.saveCropperSelectionToHiddenInput();
+        void this.saveCropperSelectionToHiddenInput();
       };
       this.cropperImageTransformHandler = () => {
-        this.saveCropperSelectionToHiddenInput();
+        void this.saveCropperSelectionToHiddenInput();
       };
 
       // Handles changes to the cropping of the image.
@@ -1440,14 +1438,14 @@ const MAX_ZOOM_SCALE = 5;
      *
      * Debounced by 200ms to avoid excessive updates while the user is making changes.
      */
-    async saveCropperSelectionToHiddenInput() {
+    saveCropperSelectionToHiddenInput() {
       if (this.selectedContainerName !== 'crop-rotate') {
         return;
       }
 
       if (this.timeoutId) clearTimeout(this.timeoutId);
-      this.timeoutId = setTimeout(async () => {
-        await this.saveCropperSelectionToHiddenInputHelper();
+      this.timeoutId = setTimeout(() => {
+        void this.saveCropperSelectionToHiddenInputHelper();
       }, 200);
     }
 
@@ -1496,7 +1494,7 @@ const MAX_ZOOM_SCALE = 5;
         return;
       }
 
-      // @ts-ignore - Cropper transformation type is complex
+      // @ts-expect-error - Cropper transformation type is complex
       this.cropper
         .getCropperImage()
         .$setTransform(
@@ -1528,7 +1526,7 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       /** @type {HTMLInputElement} */ (rotationSlider).value = String(
-        this.offsetRotationAngle ?? 0,
+        this.offsetRotationAngle || 0,
       );
     }
 
@@ -1556,7 +1554,7 @@ const MAX_ZOOM_SCALE = 5;
     /**
      * Enhances handwriting in the captured image by applying black-and-white and contrast filters.
      */
-    async enhanceHandwriting() {
+    enhanceHandwriting() {
       if (this.editable) {
         throw new Error('Handwriting enhancement is not allowed if pl-image-capture is editable.');
       }
@@ -1590,11 +1588,11 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       /** @type {HTMLElement} */ (enhanceHandwritingButton).addEventListener('click', () => {
-        this.enhanceHandwriting();
+        void this.enhanceHandwriting();
       });
     }
   }
 
-  // @ts-ignore - enhanceImage method may be added in the future
+  // @ts-expect-error - enhanceImage method may be added in the future
   window.PLImageCapture = PLImageCapture;
 })();

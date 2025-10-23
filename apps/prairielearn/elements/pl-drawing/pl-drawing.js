@@ -2,18 +2,18 @@
 
 /**
  * @typedef {object} PLDrawingOptions
- * @property {string} type
- * @property {string} width
- * @property {string} height
- * @property {Record<string, string>} element_client_files
- * @property {boolean} editable
- * @property {number} render_scale
- * @property {number} grid_size
+ * @property {string} type - The type of drawing element
+ * @property {string} width - The width of the drawing canvas
+ * @property {string} height - The height of the drawing canvas
+ * @property {Record<string, string>} element_client_files - Client files for the element
+ * @property {boolean} editable - Whether the drawing is editable
+ * @property {number} render_scale - The scale factor for rendering
+ * @property {number} grid_size - The size of the grid
  */
 
 /**
  * @typedef {object} PLDrawingSubmittedAnswer
- * @property {Record<string, PLDrawingOptions & Record<string, unknown>>} _answerData
+ * @property {Record<string, PLDrawingOptions & Record<string, unknown>>} _answerData - The submitted answer data
  */
 
 /**
@@ -65,7 +65,7 @@ class PLDrawingBaseElement {
 /**
  * Base functions to be used by element objects and extensions.
  */
-// @ts-ignore - PLDrawingApi is added to window
+// @ts-expect-error - PLDrawingApi is added to window
 window.PLDrawingApi = {
   _idCounter: 0,
 
@@ -109,7 +109,7 @@ window.PLDrawingApi = {
    * @param {Record<string, typeof PLDrawingBaseElement>} dictionary Dictionary of elements to register.
    */
   registerElements(extensionName, dictionary) {
-    // @ts-ignore - _ (lodash) is a UMD global
+    // @ts-expect-error - _ (lodash) is a UMD global
     _.extend(this.elements, dictionary);
     Object.keys(dictionary).forEach((elem) => {
       this.elementModule[elem] = extensionName;
@@ -201,7 +201,7 @@ window.PLDrawingApi = {
     drawing_btns.each(function (i, btn) {
       const img = btn.children[0];
       const opts = parseElemOptions(/** @type {HTMLElement} */ (img.parentNode));
-      // @ts-ignore - PLDrawingApi is added to window
+      // @ts-expect-error - PLDrawingApi is added to window
       const elem = window.PLDrawingApi.getElement(opts.type);
       const elem_name = opts.type;
       if (elem !== null) {
@@ -211,7 +211,7 @@ window.PLDrawingApi = {
             image_filename += '.svg';
           }
           let base = clientFilesBase;
-          // @ts-ignore - PLDrawingApi is added to window
+          // @ts-expect-error - PLDrawingApi is added to window
           const api = window.PLDrawingApi;
           if (api.elementModule[elem_name] !== '_base') {
             base = element_base_url[api.elementModule[elem_name]] + '/';
@@ -237,15 +237,15 @@ window.PLDrawingApi = {
 
     /** @type {fabric.Canvas} */
     let canvas;
-    // @ts-ignore - fabric is a UMD global
+    // @ts-expect-error - fabric is a UMD global
     if (elem_options.editable) {
-      // @ts-ignore - fabric is a UMD global
+      // @ts-expect-error - fabric is a UMD global
       canvas = new fabric.Canvas(canvas_elem);
     } else {
-      // @ts-ignore - fabric is a UMD global
+      // @ts-expect-error - fabric is a UMD global
       canvas = new fabric.StaticCanvas(canvas_elem);
     }
-    // @ts-ignore - selection property exists on Canvas but not StaticCanvas
+    // @ts-expect-error - selection property exists on Canvas but not StaticCanvas
     canvas.selection = false; // disable group selection
 
     // Re-scale the html elements
@@ -262,15 +262,15 @@ window.PLDrawingApi = {
 
     canvas.on('object:added', (ev) => {
       if (ev.target) {
-        // @ts-ignore - cornerSize and borderColor exist on fabric objects
+        // @ts-expect-error - cornerSize and borderColor exist on fabric objects
         ev.target.cornerSize *= renderScale;
-        // @ts-ignore
+        // @ts-expect-error - borderColor exists on fabric objects
         ev.target.borderColor = 'rgba(102,153,255,1.0)';
       }
     });
 
     if (elem_options.grid_size > 0) {
-      // @ts-ignore - mechanicsObjects is in excluded file
+      // @ts-expect-error - mechanicsObjects is in excluded file
       mechanicsObjects.addCanvasBackground(
         canvas,
         canvas_width,
@@ -284,7 +284,7 @@ window.PLDrawingApi = {
     canvas.on('object:moving', function (e) {
       const obj = e.target;
       if (!obj) return;
-      // @ts-ignore - currentHeight and currentWidth are fabric.js properties
+      // @ts-expect-error - currentHeight and currentWidth are fabric.js properties
       // if object is too big ignore,
       if (obj.currentHeight > canvas_width || obj.currentWidth > canvas_height) {
         return;
@@ -302,7 +302,7 @@ window.PLDrawingApi = {
         obj.left = Math.min(obj.left ?? 0, canvas_width - rect.width + (obj.left ?? 0) - rect.left);
       }
       // snap the element to the grid if enabled
-      // @ts-ignore - snap_to_grid is on elem_options
+      // @ts-expect-error - snap_to_grid is on elem_options
       if (elem_options.snap_to_grid) {
         obj.top = Math.round((obj.top ?? 0) / elem_options.grid_size) * elem_options.grid_size;
         obj.left = Math.round((obj.left ?? 0) / elem_options.grid_size) * elem_options.grid_size;
@@ -311,9 +311,9 @@ window.PLDrawingApi = {
       obj.setCoords();
     });
 
-    // @ts-ignore - fabric is a UMD global
+    // @ts-expect-error - fabric is a UMD global
     fabric.util.addListener(canvas.upperCanvasEl, 'dblclick', function (e) {
-      // @ts-ignore - findTarget signature varies
+      // @ts-expect-error - findTarget signature varies
       const target = canvas.findTarget(e);
       if (target !== undefined) {
         target.fire('dblclick', { e });
@@ -323,9 +323,9 @@ window.PLDrawingApi = {
     // Restore existing answer if it exists
     const submittedAnswer = new PLDrawingAnswerState(html_input);
     if (existing_answer_submission != null) {
-      // @ts-ignore - type signature of existing_answer_submission varies
+      // @ts-expect-error - type signature of existing_answer_submission varies
       submittedAnswer._set(existing_answer_submission);
-      // @ts-ignore - PLDrawingApi is added to window
+      // @ts-expect-error - PLDrawingApi is added to window
       window.PLDrawingApi.restoreAnswer(canvas, submittedAnswer);
     }
   },
@@ -386,7 +386,7 @@ class PLDrawingAnswerState {
    * @returns {(PLDrawingOptions & Record<string, unknown>) | null} The object, if found.  Null otherwise.
    */
   getObject(id) {
-    return this._answerData[id] || null;
+    return this._answerData[id] ?? null;
   }
 
   /**
@@ -394,7 +394,7 @@ class PLDrawingAnswerState {
    * @param {(PLDrawingOptions & Record<string, unknown> & { id: string | number }) | string | number} object The object to delete, or its ID.
    */
   deleteObject(object) {
-    if (object != null && typeof object === 'object') {
+    if (typeof object === 'object') {
       object = object.id;
     }
     delete this._answerData[object];
@@ -420,10 +420,10 @@ class PLDrawingAnswerState {
     const submitted_object = { ...options, id: 0 };
     if (!('id' in submitted_object) || submitted_object.id === 0) {
       if (!('id' in object)) {
-        // @ts-ignore - PLDrawingApi is added to window
+        // @ts-expect-error - PLDrawingApi is added to window
         submitted_object.id = window.PLDrawingApi.generateID();
       } else {
-        // @ts-ignore - object.id is a valid id
+        // @ts-expect-error - object.id is a valid id
         submitted_object.id = object.id;
       }
     }
@@ -446,7 +446,7 @@ class PLDrawingAnswerState {
       'id',
     ]);
 
-    // @ts-ignore - submitted_object has id after initialization
+    // @ts-expect-error - submitted_object has id after initialization
     this.updateObject(submitted_object);
     object.on('modified', () => {
       if (modifyHandler) {
@@ -458,15 +458,15 @@ class PLDrawingAnswerState {
           }
         }
       }
-      // @ts-ignore - submitted_object has id after initialization
+      // @ts-expect-error - submitted_object has id after initialization
       this.updateObject(submitted_object);
     });
     object.on('removed', () => {
       if (removeHandler) {
-        // @ts-ignore - removeHandler can accept more parameters but we don't use them
+        // @ts-expect-error - removeHandler can accept more parameters but we don't use them
         removeHandler(submitted_object, object);
       }
-      // @ts-ignore - submitted_object has id after initialization
+      // @ts-expect-error - submitted_object has id after initialization
       this.deleteObject(submitted_object);
     });
   }
@@ -474,7 +474,7 @@ class PLDrawingAnswerState {
 
 // Set up built-in buttons
 (() => {
-  // @ts-ignore - class extensions are correct but TypeScript has issues with method overrides
+  // @ts-expect-error - class extensions are correct but TypeScript has issues with method overrides
   class DrawingDeleteButton extends PLDrawingBaseElement {
     /** @param {PLDrawingOptions} _options */
     static get_button_icon(_options) {
@@ -498,7 +498,7 @@ class PLDrawingAnswerState {
       }
     }
   }
-  // @ts-ignore - class extensions are correct but TypeScript has issues with method overrides
+  // @ts-expect-error - class extensions are correct but TypeScript has issues with method overrides
   class DrawingHelpLineButton extends PLDrawingBaseElement {
     /**
      * @param {fabric.Canvas} canvas
@@ -521,7 +521,7 @@ class PLDrawingAnswerState {
         graded: false,
       };
       const opts = { ...def, ...options, type: 'pl-line' };
-      // @ts-ignore - PLDrawingApi is added to window
+      // @ts-expect-error - PLDrawingApi is added to window
       window.PLDrawingApi.createElement(canvas, opts, submittedAnswer);
     }
 
@@ -541,6 +541,6 @@ class PLDrawingAnswerState {
     'help-line': DrawingHelpLineButton,
   };
 
-  // @ts-ignore - PLDrawingApi is added to window
+  // @ts-expect-error - PLDrawingApi is added to window
   window.PLDrawingApi.registerElements('_base', builtins);
 })();

@@ -24,5 +24,3 @@ declare global {
     onDropdownClose?: () => void;
   }
 }
-
-export {};

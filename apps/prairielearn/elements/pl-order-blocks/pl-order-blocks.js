@@ -10,9 +10,7 @@ function PLOrderBlocks(uuid, options) {
 
   const optionsElementId = '#order-blocks-options-' + uuid;
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
-  const fullContainerRaw = document.querySelector('.pl-order-blocks-question-' + uuid);
-  if (!fullContainerRaw) throw new Error(`Container not found: .pl-order-blocks-question-${uuid}`);
-  const fullContainer = /** @type {Element} */ (fullContainerRaw);
+  const fullContainer = /** @type {Element} */ (document.querySelector('.pl-order-blocks-question-' + uuid));
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -31,7 +29,7 @@ function PLOrderBlocks(uuid, options) {
 
   /** @param {HTMLElement} block */
   function getIndentation(block) {
-    return Math.round(Number.parseInt(block.style.marginLeft.replace('px', ''), 10) / TABWIDTH);
+    return Math.round(Number.parseInt(block.style.marginLeft.replace('px', '')) / TABWIDTH);
   }
 
   /**
@@ -217,10 +215,7 @@ function PLOrderBlocks(uuid, options) {
         const answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
         let answerIndent = null;
         if (enableIndentation) {
-          const answerIndentRaw = Number.parseInt(
-            $(answerObj).css('marginLeft').replace('px', ''),
-            10,
-          );
+          const answerIndentRaw = Number.parseInt($(answerObj).css('marginLeft').replace('px', ''));
           answerIndent = Math.round(answerIndentRaw / TABWIDTH); // get how many times the answer is indented
         }
 
@@ -251,7 +246,7 @@ function PLOrderBlocks(uuid, options) {
     leftDiff = Math.round(leftDiff / TABWIDTH) * TABWIDTH;
     const currentIndent = ui.item[0].style.marginLeft;
     if (currentIndent !== '') {
-      leftDiff += Number.parseInt(currentIndent, 10);
+      leftDiff += Number.parseInt(currentIndent);
     }
 
     // limit leftDiff to be in within the bounds of the drag and drop box

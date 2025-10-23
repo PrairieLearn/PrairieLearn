@@ -181,21 +181,21 @@
                       // importing DOMPurify sets the global variable `DOMPurify`.
                       import('dompurify'),
                       // importing the notebookjs library sets the global variable `nb`.
-                      // @ts-ignore - notebookjs has no types
+                      // @ts-expect-error - notebookjs has no types
                       import('notebookjs'),
                       // MathJax needs to have been loaded before the extension can be used.
                       MathJax.startup.promise,
-                    ]).then(async ([Marked, markedMathjax]) => {
-                      // @ts-ignore - addMathjaxExtension signature is complex
+                    ]).then(([Marked, markedMathjax]) => {
+                      // @ts-expect-error - addMathjaxExtension signature is complex
                       markedMathjax.addMathjaxExtension(Marked.marked, MathJax);
-                      // @ts-ignore - nb global is not well-typed
+                      // @ts-expect-error - nb global is not well-typed
                       nb.markdown = Marked.marked.parse;
 
-                      // @ts-ignore - nb global is not well-typed
+                      // @ts-expect-error - nb global is not well-typed
                       nb.sanitizer = /** @param {string} code */ (code) =>
-                        // @ts-ignore - DOMPurify global is declared but not typed correctly
+                        // @ts-expect-error - DOMPurify global is declared but not typed correctly
                         DOMPurify.sanitize(code, { SANITIZE_NAMED_PROPS: true });
-                      // @ts-ignore - nb global is not well-typed
+                      // @ts-expect-error - nb global is not well-typed
                       const notebook = nb.parse(JSON.parse(text));
                       const rendered = notebook.render();
 
@@ -206,7 +206,7 @@
 
                       // Typeset any math that might be in the notebook.
                       if (notebookPreview) {
-                        window.MathJax.typesetPromise([notebookPreview]);
+                        void window.MathJax.typesetPromise([notebookPreview]);
                       }
                     });
                   } else {
@@ -278,6 +278,6 @@
     }
   }
 
-  // @ts-ignore - TypeScript doesn't recognize PLFilePreview as a valid property
+  // @ts-expect-error - TypeScript doesn't recognize PLFilePreview as a valid property
   window.PLFilePreview = PLFilePreview;
 })();

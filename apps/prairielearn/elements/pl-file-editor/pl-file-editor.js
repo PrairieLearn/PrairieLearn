@@ -8,10 +8,10 @@
 function PLFileEditor(uuid, options) {
   const elementId = '#file-editor-' + uuid;
   this.element = $(elementId);
-  if (!this.element) {
+  if (this.element.length === 0) {
     throw new Error('File upload element ' + elementId + ' was not found!');
   }
-  this.originalContents = options.originalContents || '';
+  this.originalContents = options.originalContents ?? '';
 
   this.inputElement = this.element.find('input');
   this.editorElement = this.element.find('.editor');
@@ -23,7 +23,7 @@ function PLFileEditor(uuid, options) {
   this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
   this.restoreOriginalCancel = this.element.find('.restore-original-cancel');
-  // @ts-ignore - ace types don't accept second parameter but it exists
+  // @ts-expect-error - ace types don't accept second parameter but it exists
   this.editor = ace.edit(this.editorElement.get(0), {
     enableKeyboardAccessibility: true,
   });
@@ -69,7 +69,7 @@ function PLFileEditor(uuid, options) {
   }
 
   if (options.autoResize) {
-    // @ts-ignore - setAutoScrollEditorIntoView is not in the ace types
+    // @ts-expect-error - setAutoScrollEditorIntoView is not in the ace types
     this.editor.setAutoScrollEditorIntoView(true);
     this.editor.setOption('maxLines', Infinity);
   }
@@ -87,7 +87,7 @@ function PLFileEditor(uuid, options) {
 
   if (options.preview) {
     this.editor.session.on('change', () => this.updatePreview(options.preview || ''));
-    this.updatePreview(options.preview);
+    void this.updatePreview(options.preview);
   }
 
   this.syncSettings();
@@ -138,7 +138,7 @@ PLFileEditor.prototype.updatePreview = async function (preview_type) {
     // default, so we need to manually adopt the MathJax styles.
     await MathJax.startup.promise;
     const mjxStyles = document.getElementById('MJX-SVG-styles');
-    if (mjxStyles && mjxStyles.textContent) {
+    if (mjxStyles?.textContent) {
       const style = new CSSStyleSheet();
       style.replaceSync(mjxStyles.textContent);
       shadowRoot.adoptedStyleSheets.push(style);
@@ -148,16 +148,12 @@ PLFileEditor.prototype.updatePreview = async function (preview_type) {
   const editor_value = this.editor.getValue();
   const default_preview_text = '<p>Begin typing above to preview</p>';
   const previewFn = this.preview[preview_type];
-  const html_contents =
-    editor_value && previewFn
-      ? ((await Promise.resolve(previewFn(editor_value))) ??
-        `<p>Unknown preview type: <code>${preview_type}</code></p>`)
-      : '';
+  const html_contents = await Promise.resolve(previewFn(editor_value));
 
   if (html_contents.trim().length === 0) {
     shadowRoot.innerHTML = default_preview_text;
   } else {
-    // @ts-ignore - DOMPurify is declared in global comment
+    // @ts-expect-error - DOMPurify is declared in global comment
     const sanitized_contents = DOMPurify.sanitize(html_contents);
     shadowRoot.innerHTML = sanitized_contents;
     if (
@@ -167,7 +163,7 @@ PLFileEditor.prototype.updatePreview = async function (preview_type) {
       sanitized_contents.includes('\\[') ||
       sanitized_contents.includes('\\]')
     ) {
-      MathJax.typesetPromise([...shadowRoot.children]);
+      void MathJax.typesetPromise([...shadowRoot.children]);
     }
   }
 };
@@ -177,11 +173,10 @@ PLFileEditor.prototype.updatePreview = async function (preview_type) {
  * @param {string} uuid
  */
 PLFileEditor.prototype.initSettingsButton = function (uuid) {
-  const self = this;
   this.settingsButton.click(() => {
-    // @ts-ignore - ace.require types are incorrect for the callback parameter
-    ace.require(['ace/ext/themelist'], function (themeList) {
-      const themeSelect = self.modal.find('#modal-' + uuid + '-themes');
+    // @ts-expect-error - ace.require types are incorrect for the callback parameter
+    ace.require(['ace/ext/themelist'], (themeList) => {
+      const themeSelect = this.modal.find('#modal-' + uuid + '-themes');
       themeSelect.empty();
       for (const entries in themeList.themesByName) {
         const caption = themeList.themesByName[entries].caption;
@@ -197,36 +192,36 @@ PLFileEditor.prototype.initSettingsButton = function (uuid) {
       }
 
       const fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
-      const fontSelect = self.modal.find('#modal-' + uuid + '-fontsize');
+      const fontSelect = this.modal.find('#modal-' + uuid + '-fontsize');
       fontSelect.empty();
-      for (const entries in fontSizeList) {
+      for (const fontSize of fontSizeList) {
         fontSelect.append(
           $('<option>', {
-            value: fontSizeList[entries],
-            text: fontSizeList[entries],
-            selected: localStorage.getItem('pl-file-editor-fontsize') === fontSizeList[entries],
+            value: fontSize,
+            text: fontSize,
+            selected: localStorage.getItem('pl-file-editor-fontsize') === fontSize,
           }),
         );
       }
 
       const keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
-      const keyboardHandlerSelect = self.modal.find('#modal-' + uuid + '-keyboardHandler');
+      const keyboardHandlerSelect = this.modal.find('#modal-' + uuid + '-keyboardHandler');
       keyboardHandlerSelect.empty();
-      for (const index in keyboardHandlerList) {
-        const keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
+      for (const keyboardHandlerName of keyboardHandlerList) {
+        const keyboardHandler = 'ace/keyboard/' + keyboardHandlerName.toLowerCase();
 
         keyboardHandlerSelect.append(
           $('<option>', {
             value: keyboardHandler,
-            text: keyboardHandlerList[index],
+            text: keyboardHandlerName,
             selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyboardHandler,
           }),
         );
       }
     });
-    self.modal.modal('show');
-    sessionStorage.setItem('pl-file-editor-theme-current', self.editor.getTheme());
-    // @ts-ignore - getFontSize exists at runtime but not in types
+    this.modal.modal('show');
+    sessionStorage.setItem('pl-file-editor-theme-current', this.editor.getTheme());
+    // @ts-expect-error - getFontSize exists at runtime but not in types
     sessionStorage.setItem('pl-file-editor-fontsize-current', String(this.editor.getFontSize()));
     const savedHandler = localStorage.getItem('pl-file-editor-keyboardHandler');
     if (savedHandler) {
@@ -402,7 +397,7 @@ PLFileEditor.prototype.preview = {
       if (marked == null) {
         marked = (await import('marked')).marked;
         await MathJax.startup.promise;
-        // @ts-ignore - addMathjaxExtension signature is complex
+        // @ts-expect-error - addMathjaxExtension signature is complex
         (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
       }
       return marked.parse(value);
@@ -422,7 +417,7 @@ PLFileEditor.prototype.preview = {
           })();
         }
         const viz = await vizPromise;
-        // @ts-ignore - viz-js types are not well-defined
+        // @ts-expect-error - viz-js types are not well-defined
         return viz.renderString(value, { format: 'svg' });
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
@@ -434,5 +429,5 @@ PLFileEditor.prototype.preview = {
 };
 
 /** @type {new (uuid: string, options: PLFileEditorOptions) => PLFileEditor} */
-// @ts-ignore - TypeScript has difficulty with constructor functions
+// @ts-expect-error - TypeScript has difficulty with constructor functions
 window.PLFileEditor = PLFileEditor;

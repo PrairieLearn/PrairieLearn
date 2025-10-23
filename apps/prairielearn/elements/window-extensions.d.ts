@@ -42,7 +42,7 @@ declare global {
     restoreOriginalConfirmContainer: JQuery;
     restoreOriginalConfirm: JQuery;
     restoreOriginalCancel: JQuery;
-    editor: import('ace-builds').Ace.Editor;
+    editor: any;
     plOptionFocus?: boolean;
     preview: Record<string, (content: string) => string | Promise<string>>;
 
@@ -55,5 +55,3 @@ declare global {
     b64DecodeUnicode(str: string): string;
   }
 }
-
-export {};
