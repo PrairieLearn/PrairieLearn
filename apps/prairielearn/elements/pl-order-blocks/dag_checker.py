@@ -392,8 +392,6 @@ def collapse_multigraph(
         for color in edges:
             partially_collapsed = deepcopy(graph)
             partially_collapsed[node] = color
-
-            # Either linked_color is the same or it is assigned once here
             collapsing_graphs.append(partially_collapsed)
 
 
