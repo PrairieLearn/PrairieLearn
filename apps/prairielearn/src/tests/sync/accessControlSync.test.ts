@@ -999,6 +999,112 @@ describe('Access control syncing', () => {
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       assert.equal(syncedRules.length, 0, 'Rule with invalid date should not be synced');
     });
+
+    it('rejects sync when non-assignment-level rule specifies prairieTestControl', async () => {
+      const courseData = util.getCourseData();
+      const groupUuid = uuidv4();
+
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+
+      // create group
+      await createAccessControlGroup(util.COURSE_INSTANCE_ID, groupUuid);
+
+      // create an assignment-level rule without prairieTestControl
+      // and a group-level rule WITH prairieTestControl (which should be invalid)
+      const assignmentRule = makeAccessControlRule({
+        dateControl: { durationMinutes: 60 },
+      });
+      const groupRuleWithPrairieTest = makeAccessControlRule({
+        targets: [groupUuid],
+        dateControl: { durationMinutes: 90 },
+        prairieTestControl: {
+          exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+        },
+      });
+
+      util.setAccessControlRules(courseData, util.ASSESSMENT_ID, [
+        assignmentRule,
+        groupRuleWithPrairieTest,
+      ]);
+
+      await util.writeCourseToDirectory(courseData, courseDir);
+      const syncResults = await util.syncCourseData(courseDir);
+
+      // verify that sync failed with errors
+      assert.equal(syncResults.status, 'complete');
+      if (syncResults.status === 'complete') {
+        assert.isTrue(
+          syncResults.hadJsonErrors,
+          'Sync should have JSON errors when non-assignment-level rule specifies prairieTestControl',
+        );
+
+        // verify the specific error message
+        const accessControlRules =
+          syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessmentAccessControl?.[
+            util.ASSESSMENT_ID
+          ];
+        assert.isOk(accessControlRules, 'Access control rules should exist in courseData');
+
+        // second rule (index 1) is the group-level rule with prairieTestControl
+        const groupRuleErrors = accessControlRules[1].errors;
+        assert.isTrue(
+          groupRuleErrors.some((error) =>
+            error.includes(
+              'Only the assignment-level rule (without targets) is allowed to specify prairieTestControl',
+            ),
+          ),
+          'Should have specific error about prairieTestControl on non-assignment-level rule',
+        );
+      }
+
+      // verify that no rules were synced due to validation error
+      const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+      assert.equal(
+        syncedRules.length,
+        0,
+        'Should not sync any rules when a non-assignment-level rule specifies prairieTestControl',
+      );
+    });
+
+    it('allows assignment-level rule to specify prairieTestControl', async () => {
+      const courseData = util.getCourseData();
+      const groupUuid = uuidv4();
+
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+
+      // create group
+      await createAccessControlGroup(util.COURSE_INSTANCE_ID, groupUuid);
+
+      // create an assignment-level rule WITH prairieTestControl (should be valid)
+      // and a group-level rule WITHOUT prairieTestControl
+      const assignmentRuleWithPrairieTest = makeAccessControlRule({
+        dateControl: { durationMinutes: 60 },
+        prairieTestControl: {
+          exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+        },
+      });
+      const groupRule = makeAccessControlRule({
+        targets: [groupUuid],
+        dateControl: { durationMinutes: 90 },
+      });
+
+      util.setAccessControlRules(courseData, util.ASSESSMENT_ID, [
+        assignmentRuleWithPrairieTest,
+        groupRule,
+      ]);
+
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+      // verify that both rules were synced successfully
+      const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+      assert.equal(
+        syncedRules.length,
+        2,
+        'Should sync all rules when only assignment-level rule has prairieTestControl',
+      );
+    });
   });
 
   // TODO: should we make more constants in util.ts for this?

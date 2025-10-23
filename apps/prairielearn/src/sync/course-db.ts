@@ -1513,6 +1513,18 @@ export function validateAccessControlArray({
     });
   }
 
+  // check that only assignment-level rule specifies prairieTestControl
+  accessControlJsonArray.forEach((rule, index) => {
+    const isAssignmentLevel = !rule.targets || rule.targets.length === 0;
+    const hasPrairieTestControl = rule.prairieTestControl !== undefined;
+
+    if (!isAssignmentLevel && hasPrairieTestControl) {
+      results[index].errors.push(
+        'Only the assignment-level rule (without targets) is allowed to specify prairieTestControl.',
+      );
+    }
+  });
+
   return results;
 }
 
@@ -1777,14 +1789,14 @@ export async function loadAccessControl({
       ];
     }
 
-    // Parse all rules with Zod schema
+    // parse with Zod schema
     const parsedRules: { result: z.SafeParseReturnType<any, AccessControlJson>; index: number }[] =
       json.map((ruleJson, index) => ({
         result: schemas.AccessControlJsonSchema.safeParse(ruleJson),
         index,
       }));
 
-    // Separate successfully parsed rules from those with parse errors
+    // separate successfully parsed rules from those with parse errors
     const successfullyParsedRules: AccessControlJson[] = [];
     const infoFiles: InfoFile<AccessControlJson>[] = [];
 
@@ -1804,16 +1816,17 @@ export async function loadAccessControl({
       }
     });
 
-    // Run validation on successfully parsed rules (includes multi-rule validation)
+    // TODO: Is this the behaviour we want? Should we fail entirely if we encounter any validation error?
+    // run validation on successfully parsed rules (includes multi-rule validation)
     if (successfullyParsedRules.length > 0) {
       const validationResults = validateAccessControlArray({
         accessControlJsonArray: successfullyParsedRules,
       });
 
-      // Apply validation results to corresponding infoFiles
+      // apply validation results to corresponding infoFiles
       let successfulRuleIndex = 0;
       infoFiles.forEach((infoFile, _) => {
-        // Only apply validation to successfully parsed rules
+        // only apply validation to successfully parsed rules
         if (infoFile.data) {
           const validationResult = validationResults[successfulRuleIndex];
           infofile.addErrors(infoFile, validationResult.errors);
