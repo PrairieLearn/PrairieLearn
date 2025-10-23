@@ -469,6 +469,7 @@ export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
 export const AuditEventSchema = z.object({
   action: EnumAuditEventActionSchema,
+  // See audit-event.types.ts for the list of supported action_detail values based on the table.
   action_detail: z.string().nullable(),
   agent_authn_user_id: IdSchema.nullable(),
   agent_user_id: IdSchema.nullable(),

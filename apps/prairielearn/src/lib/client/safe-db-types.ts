@@ -221,6 +221,17 @@ export const StudentEnrollmentSchema = RawStudentEnrollmentSchema.brand<'Student
 export type StudentEnrollment = z.infer<typeof StudentEnrollmentSchema>;
 
 /** Institutions */
+export const RawAdminInstitutionSchema = RawInstitutionSchema.pick({
+  default_authn_provider_id: true,
+  display_timezone: true,
+  id: true,
+  long_name: true,
+  short_name: true,
+  uid_regexp: true,
+});
+export const AdminInstitutionSchema = RawAdminInstitutionSchema.brand<'AdminInstitution'>();
+export type AdminInstitution = z.infer<typeof AdminInstitutionSchema>;
+
 export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
   default_authn_provider_id: true,
   display_timezone: true,
