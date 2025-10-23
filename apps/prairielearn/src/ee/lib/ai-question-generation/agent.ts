@@ -78,8 +78,9 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
     ],
     [
       'Parameters can be read in `question.html` with Mustache syntax.',
-      'For instance, if `server.py` contains `data["params"]["answer"]`,',
-      'it can be read with `{{ params.answer }}` in `question.html`.',
+      'For instance, if `server.py` contains `data["params"]["answer"]`, it can be read with `{{ params.answer }}` in `question.html`.',
+      'You can use triple braces `{{{ ... }}}` to avoid HTML-escaping if necessary.',
+      'Use this carefully to avoid XSS vulnerabilities.',
     ],
     [
       'If a `question.html` file includes Mustache templates, a `server.py` should be provided to generate the necessary parameters.',

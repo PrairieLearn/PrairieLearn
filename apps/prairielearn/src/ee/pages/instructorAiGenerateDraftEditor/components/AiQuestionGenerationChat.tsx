@@ -447,37 +447,40 @@ export function AiQuestionGenerationChat({
   }, []);
 
   return (
-    <div ref={containerRef} class="app-chat px-2 pb-2 bg-light border-end">
-      <StickToBottom class="app-chat-history pt-2" resize="smooth" initial="smooth">
-        <StickToBottom.Content>
-          <Messages
-            messages={messages}
-            urlPrefix={urlPrefix}
-            showJobLogsLink={showJobLogsLink}
-            showSpinner={showSpinner}
-          />
-        </StickToBottom.Content>
+    <StickToBottom class="app-chat-container" resize="smooth" initial="smooth">
+      <div ref={containerRef} class="app-chat px-2 pb-2 bg-light border-end">
+        <div class="app-chat-history">
+          <StickToBottom.Content class="app-chat-history pt-2 position-relative">
+            <Messages
+              messages={messages}
+              urlPrefix={urlPrefix}
+              showJobLogsLink={showJobLogsLink}
+              showSpinner={showSpinner}
+            />
+          </StickToBottom.Content>
 
-        <ScrollToBottomButton />
-      </StickToBottom>
-      <div class="app-chat-prompt mt-2">
-        {error && (
-          <div class="alert alert-danger mb-2" role="alert">
-            {run(() => {
-              if (error instanceof RateLimitError) {
-                return 'Rate limit exceeded. Please try again later.';
-              }
-              return 'An error occurred. Please try again.';
-            })}
-          </div>
-        )}
-        <PromptInput
-          sendMessage={sendMessage}
-          disabled={status !== 'ready' && status !== 'error'}
-        />
+          <ScrollToBottomButton />
+        </div>
+
+        <div class="app-chat-prompt mt-2">
+          {error && (
+            <div class="alert alert-danger mb-2" role="alert">
+              {run(() => {
+                if (error instanceof RateLimitError) {
+                  return 'Rate limit exceeded. Please try again later.';
+                }
+                return 'An error occurred. Please try again.';
+              })}
+            </div>
+          )}
+          <PromptInput
+            sendMessage={sendMessage}
+            disabled={status !== 'ready' && status !== 'error'}
+          />
+        </div>
+        <div ref={resizerRef} class="app-chat-resizer" aria-label="Resize chat" role="separator" />
       </div>
-      <div ref={resizerRef} class="app-chat-resizer" aria-label="Resize chat" role="separator" />
-    </div>
+    </StickToBottom>
   );
 }
 

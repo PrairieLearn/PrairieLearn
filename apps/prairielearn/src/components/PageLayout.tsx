@@ -169,6 +169,7 @@ export function PageLayout({
                         resLocals,
                         page: navContext.page,
                         subPage: navContext.subPage,
+                        sideNavExpanded,
                         persistToggleState: resolvedOptions.persistNavToggleState,
                       })}
                     </div>

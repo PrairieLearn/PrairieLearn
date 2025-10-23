@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-// import { useStickToBottomContext } from 'use-stick-to-bottom';
+import { useStickToBottomContext } from 'use-stick-to-bottom';
 
 export function PromptInput({
   sendMessage,
@@ -9,7 +9,7 @@ export function PromptInput({
   disabled: boolean;
 }) {
   const [input, setInput] = useState('');
-  // const { scrollToBottom } = useStickToBottomContext();
+  const { scrollToBottom } = useStickToBottomContext();
 
   return (
     <form
@@ -17,7 +17,7 @@ export function PromptInput({
         e.preventDefault();
         const trimmedInput = input.trim();
         if (trimmedInput) {
-          // void scrollToBottom();
+          void scrollToBottom();
           sendMessage({ text: trimmedInput });
           setInput('');
         }

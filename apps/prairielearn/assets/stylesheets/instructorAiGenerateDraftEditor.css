@@ -14,14 +14,16 @@
   grid-template-columns: var(--chat-width, 400px) 1fr;
 }
 
-.app-chat {
+.app-chat-container {
   grid-area: chat;
+  min-height: 0;
+}
 
+.app-chat {
   display: grid;
   grid-template-areas: 'history' 'prompt';
   grid-template-rows: 1fr min-content;
-  min-height: 0;
-  position: relative;
+  height: 100%;
 }
 
 .app-back {
@@ -30,9 +32,9 @@
 
 .app-chat-history {
   grid-area: history;
-  overflow-y: auto;
-  scrollbar-color: var(--bs-secondary) transparent;
   position: relative;
+  min-width: 0;
+  min-height: 0;
 }
 
 .app-chat-prompt {
@@ -86,30 +88,6 @@
 
 .editor-pane-python {
   grid-area: python;
-}
-
-.revert-to-revision-button {
-  /**
-   * We hide the button by setting its opacity instead of controlling its
-   * visibility with `display: none` or `visibility: hidden` because we need
-   * the button to be focusable for keyboard navigation.
-   */
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.prompt-response:hover .revert-to-revision-button,
-.prompt-response:focus-within .revert-to-revision-button {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-@media (hover: none) {
-  .revert-to-revision-button {
-    opacity: 1;
-    pointer-events: auto;
-  }
 }
 
 /* Reflow to a vertical layout on narrow viewports */
