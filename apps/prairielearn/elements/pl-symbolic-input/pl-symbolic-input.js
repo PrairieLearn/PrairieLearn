@@ -94,6 +94,214 @@
     'tan',
     'tanh',
   ];
+
+  // The English and Greek alphabet virtual keyboards are always the same for all elements,
+  // so we initialize them once and only swap out the math symbol keyboard per-element.
+  const defaultKeyboardLayouts = [
+    {
+      label: 'abc',
+      rows: [
+        [
+          { label: 'q', class: 'MLK__tex hide-shift', shift: 'Q' },
+          { label: 'w', class: 'MLK__tex hide-shift', shift: 'W' },
+          { label: 'e', class: 'MLK__tex hide-shift', shift: 'E' },
+          { label: 'r', class: 'MLK__tex hide-shift', shift: 'R' },
+          { label: 't', class: 'MLK__tex hide-shift', shift: 'T' },
+          { label: 'y', class: 'MLK__tex hide-shift', shift: 'Y' },
+          { label: 'u', class: 'MLK__tex hide-shift', shift: 'U' },
+          { label: 'i', class: 'MLK__tex hide-shift', shift: 'I' },
+          { label: 'o', class: 'MLK__tex hide-shift', shift: 'O' },
+          { label: 'p', class: 'MLK__tex hide-shift', shift: 'P' },
+        ],
+        [
+          { label: 'a', class: 'MLK__tex hide-shift', shift: 'A' },
+          { label: 's', class: 'MLK__tex hide-shift', shift: 'S' },
+          { label: 'd', class: 'MLK__tex hide-shift', shift: 'D' },
+          { label: 'f', class: 'MLK__tex hide-shift', shift: 'F' },
+          { label: 'g', class: 'MLK__tex hide-shift', shift: 'G' },
+          { label: 'h', class: 'MLK__tex hide-shift', shift: 'H' },
+          { label: 'j', class: 'MLK__tex hide-shift', shift: 'J' },
+          { label: 'k', class: 'MLK__tex hide-shift', shift: 'K' },
+          { label: 'l', class: 'MLK__tex hide-shift', shift: 'L' },
+          { label: '[backspace]' },
+        ],
+        [
+          { label: '[shift]', width: 1 },
+          { label: 'z', class: 'MLK__tex hide-shift', shift: 'Z' },
+          { label: 'x', class: 'MLK__tex hide-shift', shift: 'X' },
+          { label: 'c', class: 'MLK__tex hide-shift', shift: 'C' },
+          { label: 'v', class: 'MLK__tex hide-shift', shift: 'V' },
+          { label: 'b', class: 'MLK__tex hide-shift', shift: 'B' },
+          { label: 'n', class: 'MLK__tex hide-shift', shift: 'N' },
+          { label: 'm', class: 'MLK__tex hide-shift', shift: 'M' },
+          '[left]',
+          '[right]',
+        ],
+      ],
+    },
+    {
+      label: '&alpha;&beta;&gamma;',
+      rows: [
+        [
+          {
+            label: '<i>&#x03f5;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\epsilon',
+            shift: '\u0395',
+          },
+          {
+            label: '<i>&rho;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\rho',
+            shift: '\u03A1',
+          },
+          {
+            label: '<i>&tau;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\tau',
+            shift: '\u03A4',
+          },
+          {
+            label: '<i>&upsilon;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\upsilon',
+            shift: '\\Upsilon',
+          },
+          {
+            label: '<i>&theta;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\theta',
+            shift: '\\Theta',
+          },
+          {
+            label: '<i>&iota;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\iota',
+            shift: '\u0399',
+          },
+          {
+            label: '<i>&omicron;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\omicron',
+            shift: '\u039F',
+          },
+          {
+            label: '<i>&pi;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\pi',
+            shift: '\\Pi',
+          },
+          '[separator-5]',
+        ],
+        [
+          '[separator-5]',
+          {
+            label: '<i>&alpha;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\alpha',
+            shift: '\u0391',
+          },
+          {
+            label: '<i>&sigma;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\sigma',
+            shift: '\\Sigma',
+          },
+          {
+            label: '<i>&delta;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\delta',
+            shift: '\\Delta',
+          },
+          {
+            latex: '\\phi',
+            class: 'MLK__tex hide-shift',
+            insert: '\\phi',
+            shift: '\\Phi',
+          },
+          {
+            label: '<i>&gamma;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\gamma',
+            shift: '\\Gamma',
+          },
+          {
+            label: '<i>&eta;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\eta',
+            shift: '\u0397',
+          },
+          {
+            label: '<i>&xi;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\xi',
+            shift: '\\Xi',
+          },
+          {
+            label: '<i>&kappa;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\kappa',
+            shift: '\u039A',
+          },
+          {
+            label: '<i>&lambda;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\lambda',
+            shift: '\\Lambda',
+          },
+          { label: '[backspace]', width: 1 },
+        ],
+        [
+          { label: '[shift]', width: 1 },
+          {
+            label: '<i>&zeta;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\zeta',
+            shift: '\u0396',
+          },
+          {
+            label: '<i>&chi;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\chi',
+            shift: '\u03A7',
+          },
+          {
+            label: '<i>&psi;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\psi',
+            shift: '\\Psi',
+          },
+          {
+            label: '<i>&omega;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\omega',
+            shift: '\\Omega',
+          },
+          {
+            label: '<i>&beta;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\beta',
+            shift: '\u0392',
+          },
+          {
+            label: '<i>&nu;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\nu',
+            shift: '\u039D',
+          },
+          {
+            label: '<i>&mu;</i>',
+            class: 'MLK__tex hide-shift',
+            insert: '\\mu',
+            shift: '\u039C',
+          },
+          '[left]',
+          '[right]',
+        ],
+      ],
+    },
+  ];
+
   /**
    * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
    *
@@ -142,362 +350,162 @@
       ...endMenuItems,
     ];
 
-    mathVirtualKeyboard.layouts = [
-      {
-        label: 'math',
-        rows: [
-          [
-            { class: 'small', latex: '{#@}^{#?}', width: 1 },
-            {
-              class: 'small',
-              latex: '{#@}^{2}',
-              width: 1,
-              variants: [{ class: 'small', latex: '{#@}^{3}', width: 1 }],
-            },
-            {
-              class: 'small',
-              latex: '\\frac{#@}{#0}',
-              width: 1.3,
-              variants: [{ class: 'small', latex: '\\frac{1}{#@}', width: 1 }],
-            },
-            '[separator]',
-            '7',
-            '8',
-            '9',
-            '+',
-            '[separator]',
-            'e',
-            '\\infty',
-            '\\pi',
-          ],
-          [
-            { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#0}', width: 1 },
-            logAsLn
-              ? {
-                  class: 'small',
-                  latex: '\\ln',
-                  insert: '\\ln({#0})',
-                }
-              : {
-                  class: 'small',
-                  latex: '\\log',
-                  insert: '\\log({#0})',
-                },
-            { class: 'small', latex: '!', width: 1 },
-            '[separator]',
-            '4',
-            '5',
-            '6',
-            '-',
-            '[separator]',
-            { latex: 'x' },
-            { latex: 'y' },
-            imaginaryUnit,
-          ],
-          [
-            { class: 'small', latex: '|#0|', insert: '\\abs({#0})' },
-            { class: 'small', latex: '\\min', insert: '\\min({#0})' },
-            { class: 'small', latex: '\\max', insert: '\\max({#0})' },
-            '[separator]',
-            '1',
-            '2',
-            '3',
-            { latex: '\\times', insert: '\\cdot' },
-            '[separator]',
-            '(',
-            ')',
-            {
-              class: 'small',
-              latex: '\\mathrm{sign}',
-              insert: '\\operatorname{sign}({#0})',
-            },
-          ],
-          [
-            allowTrig
-              ? {
-                  class: 'small',
-                  latex: '\\sin',
-                  insert: '\\sin({#0})',
-                  width: 1,
-                  variants: [
-                    { class: 'small', latex: '\\csc', insert: '\\csc({#0})' },
-                    { class: 'small', latex: '\\arcsin', insert: '\\arcsin({#0})' },
-                    {
-                      class: 'small',
-                      latex: '\\mathrm{sinh}',
-                      insert: '\\operatorname{sinh}({#0})',
-                    },
-                    {
-                      class: 'small',
-                      latex: '\\mathrm{asinh}',
-                      insert: '\\operatorname{asinh}({#0})',
-                    },
-                  ],
-                }
-              : '[separator]',
-            allowTrig
-              ? {
-                  class: 'small',
-                  latex: '\\cos',
-                  insert: '\\cos({#0})',
-                  width: 1,
-                  variants: [
-                    { class: 'small', latex: '\\sec', insert: '\\sec({#0})' },
-                    { class: 'small', latex: '\\arccos', insert: '\\arccos({#0})' },
-                    {
-                      class: 'small',
-                      latex: '\\mathrm{cosh}',
-                      insert: '\\operatorname{cosh}({#0})',
-                    },
-                    {
-                      class: 'small',
-                      latex: '\\mathrm{acosh}',
-                      insert: '\\operatorname{acosh}({#0})',
-                    },
-                  ],
-                }
-              : '[separator]',
-            allowTrig
-              ? {
-                  class: 'small',
-                  latex: '\\tan',
-                  insert: '\\tan({#0})',
-                  width: 1,
-                  variants: [
-                    { class: 'small', latex: '\\cot', insert: '\\cot({#0})' },
-                    { class: 'small', latex: '\\arctan', insert: '\\arctan({#0})' },
-                    {
-                      class: 'small',
-                      latex: '\\mathrm{tanh}',
-                      insert: '\\operatorname{tanh}({#0})',
-                    },
-                    {
-                      class: 'small',
-                      latex: '\\mathrm{atanh}',
-                      insert: '\\operatorname{atanh}({#0})',
-                    },
-                    {
-                      class: 'small',
-                      latex: '\\mathrm{arctan2}',
-                      insert: '\\operatorname{arctan2}({#0})',
-                    },
-                  ],
-                }
-              : '[separator]',
-            '[separator]',
-            { label: '0', width: 2 },
-            '.',
-            '/',
-            '[separator]',
-            { label: '[left]' },
-            { label: '[right]' },
-            { label: '[backspace]', width: 1 },
-          ],
+    const elementKeyboardLayout = {
+      label: 'math',
+      rows: [
+        [
+          { class: 'small', latex: '{#@}^{#?}', width: 1 },
+          {
+            class: 'small',
+            latex: '{#@}^{2}',
+            width: 1,
+            variants: [{ class: 'small', latex: '{#@}^{3}', width: 1 }],
+          },
+          {
+            class: 'small',
+            latex: '\\frac{#@}{#0}',
+            width: 1.3,
+            variants: [{ class: 'small', latex: '\\frac{1}{#@}', width: 1 }],
+          },
+          '[separator]',
+          '7',
+          '8',
+          '9',
+          '+',
+          '[separator]',
+          'e',
+          '\\infty',
+          '\\pi',
         ],
-      },
-      {
-        label: 'abc',
-        rows: [
-          [
-            { label: 'q', class: 'MLK__tex hide-shift', shift: 'Q' },
-            { label: 'w', class: 'MLK__tex hide-shift', shift: 'W' },
-            { label: 'e', class: 'MLK__tex hide-shift', shift: 'E' },
-            { label: 'r', class: 'MLK__tex hide-shift', shift: 'R' },
-            { label: 't', class: 'MLK__tex hide-shift', shift: 'T' },
-            { label: 'y', class: 'MLK__tex hide-shift', shift: 'Y' },
-            { label: 'u', class: 'MLK__tex hide-shift', shift: 'U' },
-            { label: 'i', class: 'MLK__tex hide-shift', shift: 'I' },
-            { label: 'o', class: 'MLK__tex hide-shift', shift: 'O' },
-            { label: 'p', class: 'MLK__tex hide-shift', shift: 'P' },
-          ],
-          [
-            { label: 'a', class: 'MLK__tex hide-shift', shift: 'A' },
-            { label: 's', class: 'MLK__tex hide-shift', shift: 'S' },
-            { label: 'd', class: 'MLK__tex hide-shift', shift: 'D' },
-            { label: 'f', class: 'MLK__tex hide-shift', shift: 'F' },
-            { label: 'g', class: 'MLK__tex hide-shift', shift: 'G' },
-            { label: 'h', class: 'MLK__tex hide-shift', shift: 'H' },
-            { label: 'j', class: 'MLK__tex hide-shift', shift: 'J' },
-            { label: 'k', class: 'MLK__tex hide-shift', shift: 'K' },
-            { label: 'l', class: 'MLK__tex hide-shift', shift: 'L' },
-            { label: '[backspace]' },
-          ],
-          [
-            { label: '[shift]', width: 1 },
-            { label: 'z', class: 'MLK__tex hide-shift', shift: 'Z' },
-            { label: 'x', class: 'MLK__tex hide-shift', shift: 'X' },
-            { label: 'c', class: 'MLK__tex hide-shift', shift: 'C' },
-            { label: 'v', class: 'MLK__tex hide-shift', shift: 'V' },
-            { label: 'b', class: 'MLK__tex hide-shift', shift: 'B' },
-            { label: 'n', class: 'MLK__tex hide-shift', shift: 'N' },
-            { label: 'm', class: 'MLK__tex hide-shift', shift: 'M' },
-            '[left]',
-            '[right]',
-          ],
+        [
+          { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#0}', width: 1 },
+          logAsLn
+            ? {
+                class: 'small',
+                latex: '\\ln',
+                insert: '\\ln({#0})',
+              }
+            : {
+                class: 'small',
+                latex: '\\log',
+                insert: '\\log({#0})',
+              },
+          { class: 'small', latex: '!', width: 1 },
+          '[separator]',
+          '4',
+          '5',
+          '6',
+          '-',
+          '[separator]',
+          { latex: 'x' },
+          { latex: 'y' },
+          imaginaryUnit,
         ],
-      },
-      {
-        label: '&alpha;&beta;&gamma;',
-        rows: [
-          [
-            {
-              label: '<i>&#x03f5;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\epsilon',
-              shift: '\u0395',
-            },
-            {
-              label: '<i>&rho;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\rho',
-              shift: '\u03A1',
-            },
-            {
-              label: '<i>&tau;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\tau',
-              shift: '\u03A4',
-            },
-            {
-              label: '<i>&upsilon;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\upsilon',
-              shift: '\\Upsilon',
-            },
-            {
-              label: '<i>&theta;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\theta',
-              shift: '\\Theta',
-            },
-            {
-              label: '<i>&iota;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\iota',
-              shift: '\u0399',
-            },
-            {
-              label: '<i>&omicron;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\omicron',
-              shift: '\u039F',
-            },
-            {
-              label: '<i>&pi;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\pi',
-              shift: '\\Pi',
-            },
-            '[separator-5]',
-          ],
-          [
-            '[separator-5]',
-            {
-              label: '<i>&alpha;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\alpha',
-              shift: '\u0391',
-            },
-            {
-              label: '<i>&sigma;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\sigma',
-              shift: '\\Sigma',
-            },
-            {
-              label: '<i>&delta;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\delta',
-              shift: '\\Delta',
-            },
-            {
-              latex: '\\phi',
-              class: 'MLK__tex hide-shift',
-              insert: '\\phi',
-              shift: '\\Phi',
-            },
-            {
-              label: '<i>&gamma;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\gamma',
-              shift: '\\Gamma',
-            },
-            {
-              label: '<i>&eta;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\eta',
-              shift: '\u0397',
-            },
-            {
-              label: '<i>&xi;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\xi',
-              shift: '\\Xi',
-            },
-            {
-              label: '<i>&kappa;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\kappa',
-              shift: '\u039A',
-            },
-            {
-              label: '<i>&lambda;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\lambda',
-              shift: '\\Lambda',
-            },
-            { label: '[backspace]', width: 1 },
-          ],
-          [
-            { label: '[shift]', width: 1 },
-            {
-              label: '<i>&zeta;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\zeta',
-              shift: '\u0396',
-            },
-            {
-              label: '<i>&chi;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\chi',
-              shift: '\u03A7',
-            },
-            {
-              label: '<i>&psi;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\psi',
-              shift: '\\Psi',
-            },
-            {
-              label: '<i>&omega;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\omega',
-              shift: '\\Omega',
-            },
-            {
-              label: '<i>&beta;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\beta',
-              shift: '\u0392',
-            },
-            {
-              label: '<i>&nu;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\nu',
-              shift: '\u039D',
-            },
-            {
-              label: '<i>&mu;</i>',
-              class: 'MLK__tex hide-shift',
-              insert: '\\mu',
-              shift: '\u039C',
-            },
-            '[left]',
-            '[right]',
-          ],
+        [
+          { class: 'small', latex: '|#0|', insert: '\\abs({#0})' },
+          { class: 'small', latex: '\\min', insert: '\\min({#0})' },
+          { class: 'small', latex: '\\max', insert: '\\max({#0})' },
+          '[separator]',
+          '1',
+          '2',
+          '3',
+          { latex: '\\times', insert: '\\cdot' },
+          '[separator]',
+          '(',
+          ')',
+          {
+            class: 'small',
+            latex: '\\mathrm{sign}',
+            insert: '\\operatorname{sign}({#0})',
+          },
         ],
-      },
-    ];
+        [
+          allowTrig
+            ? {
+                class: 'small',
+                latex: '\\sin',
+                insert: '\\sin({#0})',
+                width: 1,
+                variants: [
+                  { class: 'small', latex: '\\csc', insert: '\\csc({#0})' },
+                  { class: 'small', latex: '\\arcsin', insert: '\\arcsin({#0})' },
+                  {
+                    class: 'small',
+                    latex: '\\mathrm{sinh}',
+                    insert: '\\operatorname{sinh}({#0})',
+                  },
+                  {
+                    class: 'small',
+                    latex: '\\mathrm{asinh}',
+                    insert: '\\operatorname{asinh}({#0})',
+                  },
+                ],
+              }
+            : '[separator]',
+          allowTrig
+            ? {
+                class: 'small',
+                latex: '\\cos',
+                insert: '\\cos({#0})',
+                width: 1,
+                variants: [
+                  { class: 'small', latex: '\\sec', insert: '\\sec({#0})' },
+                  { class: 'small', latex: '\\arccos', insert: '\\arccos({#0})' },
+                  {
+                    class: 'small',
+                    latex: '\\mathrm{cosh}',
+                    insert: '\\operatorname{cosh}({#0})',
+                  },
+                  {
+                    class: 'small',
+                    latex: '\\mathrm{acosh}',
+                    insert: '\\operatorname{acosh}({#0})',
+                  },
+                ],
+              }
+            : '[separator]',
+          allowTrig
+            ? {
+                class: 'small',
+                latex: '\\tan',
+                insert: '\\tan({#0})',
+                width: 1,
+                variants: [
+                  { class: 'small', latex: '\\cot', insert: '\\cot({#0})' },
+                  { class: 'small', latex: '\\arctan', insert: '\\arctan({#0})' },
+                  {
+                    class: 'small',
+                    latex: '\\mathrm{tanh}',
+                    insert: '\\operatorname{tanh}({#0})',
+                  },
+                  {
+                    class: 'small',
+                    latex: '\\mathrm{atanh}',
+                    insert: '\\operatorname{atanh}({#0})',
+                  },
+                  {
+                    class: 'small',
+                    latex: '\\mathrm{arctan2}',
+                    insert: '\\operatorname{arctan2}({#0})',
+                  },
+                ],
+              }
+            : '[separator]',
+          '[separator]',
+          { label: '0', width: 2 },
+          '.',
+          '/',
+          '[separator]',
+          { label: '[left]' },
+          { label: '[right]' },
+          { label: '[backspace]', width: 1 },
+        ],
+      ],
+    };
+
+    mf.addEventListener('focus', () => {
+      mathVirtualKeyboard.layouts = [elementKeyboardLayout, ...defaultKeyboardLayouts];
+    });
 
     setUpSymbolicInputMacros(mf);
 
