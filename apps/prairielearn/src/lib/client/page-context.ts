@@ -200,21 +200,13 @@ export function getAssessmentContext(resLocals: Record<string, any>): StaffAsses
 }
 
 export interface DangerousAuthzData {
-  authn_user: {
-    user_id: null;
-  };
-  user: {
-    user_id: null;
-  };
+  authn_user: true;
+  user: true;
 }
 
 export function dangerousFullAuthzPermissions(): DangerousAuthzData {
   return {
-    authn_user: {
-      user_id: null,
-    },
-    user: {
-      user_id: null,
-    },
+    authn_user: true,
+    user: true,
   };
 }
