@@ -98,10 +98,7 @@ export interface ResLocalsCourseInstance extends ResLocalsCourse {
 }
 
 export async function authzCourseOrInstance(req: Request, res: Response) {
-  const isCourseInstance = Boolean(req.params.course_instance_id);
-
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (req.params.course_id == null && req.params.course_instance_id == null) {
+  if (!req.params.course_id || !req.params.course_instance_id) {
     throw new HttpStatusError(
       403,
       'Access denied (both course_id and course_instance_id are null)',
@@ -131,8 +128,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.course = authzCourse;
   res.locals.institution = authzInstitution;
   res.locals.user = authzData.user;
-  res.locals.course_instance = authzCourseInstance;
-
+  if (req.params.course_instance_id) {
+    res.locals.course_instance = authzCourseInstance;
+  }
   // The session middleware does not run for API requests.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true; // The side nav is expanded by default.
@@ -247,7 +245,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       sql.select_user,
       {
         uid: req.cookies.pl2_requested_uid,
-        course_instance_id: isCourseInstance ? res.locals.course_instance.id : null,
+        course_instance_id: req.params.course_instance_id ? res.locals.course_instance.id : null,
       },
       SelectUserSchema,
     );
@@ -273,7 +271,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
                   </a>
                   first and then try the emulation again.
                 </div>
-                ${isCourseInstance
+                ${req.params.course_instance_id
                   ? html`
                       <p>
                         To auto-generate many users for testing, see
@@ -340,7 +338,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     debug(`effective req_date = ${req_date}`);
   }
 
-  const effectiveParams = {
+  const effectiveAuthzData = await selectAuthzData({
     user_id: user.user_id,
     course_id: req.params.course_id || null,
     course_instance_id: req.params.course_instance_id || null,
@@ -351,9 +349,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     req_mode: res.locals.authz_data.mode,
     req_course_role: req.cookies.pl2_requested_course_role || null,
     req_course_instance_role: req.cookies.pl2_requested_course_instance_role || null,
-  };
-
-  const effectiveAuthzData = await selectAuthzData(effectiveParams);
+  });
 
   // If the authn user were denied access, then we would return an error. Here,
   // we simply return (without error). This allows the authn user to keep access
@@ -371,7 +367,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     res.locals.authz_data.has_course_permission_edit = false;
     res.locals.authz_data.has_course_permission_own = false;
 
-    if (isCourseInstance) {
+    if (req.params.course_instance_id) {
       res.locals.authz_data.course_instance_role = 'None';
       res.locals.authz_data.has_course_instance_permission_view = false;
       res.locals.authz_data.has_course_instance_permission_edit = false;
@@ -391,7 +387,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // administrator status, and not the authn user's administrator status.
     res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
-    res.locals.authz_data.mode = effectiveParams.req_mode;
     res.locals.req_date = req_date;
     return;
   }
@@ -474,7 +469,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  if (isCourseInstance) {
+  if (req.params.course_instance_id) {
     // The effective user is a Student Data Viewer and the authn_user is not -
     // remove all override cookies and return with error
     if (
@@ -582,7 +577,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.authz_data.has_course_permission_own =
     effectiveAuthzData.permissions_course.has_course_permission_own;
 
-  if (isCourseInstance) {
+  if (req.params.course_instance_id) {
     res.locals.authz_data.course_instance_role =
       effectiveAuthzData.permissions_course_instance.course_instance_role;
     res.locals.authz_data.has_course_instance_permission_view =
