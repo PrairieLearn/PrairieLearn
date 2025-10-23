@@ -2,7 +2,8 @@ import { useChat } from '@ai-sdk/react';
 import { type Signal, useSignal } from '@preact/signals';
 import { Show } from '@preact/signals/utils';
 import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import clsx from 'clsx';
+import { useEffect, useRef } from 'preact/hooks';
 import Markdown from 'react-markdown';
 import { StickToBottom, useStickToBottomContext } from 'use-stick-to-bottom';
 
@@ -12,6 +13,8 @@ import type {
   QuestionGenerationToolUIPart,
   QuestionGenerationUIMessage,
 } from '../../../lib/ai-question-generation/agent.types.js';
+
+import { PromptInput } from './PromptInput.js';
 
 function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
   return part.type.startsWith('tool-');
@@ -27,7 +30,7 @@ function ToolCallStatus({
   children?: preact.ComponentChildren;
 }) {
   return (
-    <div class="border rounded p-2">
+    <div class="border rounded p-1 small">
       <div class="d-flex flex-row align-items-center gap-2">
         {run(() => {
           if (state === 'input-streaming' || state === 'input-available') {
@@ -210,7 +213,7 @@ function MessageParts({ parts }: { parts: QuestionGenerationUIMessage['parts'] }
     } else if (part.type === 'reasoning') {
       if (!part.text) return '';
       return (
-        <div key={key} class="d-flex flex-column gap-2 border rounded p-2">
+        <div key={key} class="d-flex flex-column gap-2 border rounded p-1 small">
           <div class="d-flex flex-row gap-2 mb-1">
             <i class="bi bi-lightbulb" aria-hidden="true" />
             <span>Thinking...</span>
@@ -240,12 +243,26 @@ function ScrollToBottomButton() {
     !isAtBottom && (
       <button
         type="button"
-        class="position-absolute bottom-0 start-50 translate-middle rounded-circle btn btn-primary"
+        class={clsx(
+          'position-absolute',
+          'bottom-0',
+          'start-50',
+          'translate-middle',
+          'rounded-circle',
+          'bg-primary',
+          'text-white',
+          'p-2',
+          'd-flex',
+          'align-items-center',
+          'justify-content-center',
+          'border-0',
+          'fs-3',
+        )}
         style={{ aspectRatio: '1 / 1' }}
         aria-label="Scroll to bottom"
         onClick={() => scrollToBottom()}
       >
-        <i class="bi bi-arrow-down-circle-fill" aria-hidden="true" />
+        <i class="bi bi-arrow-down-circle-fill lh-1" aria-hidden="true" />
       </button>
     )
   );
@@ -382,7 +399,6 @@ export function AiQuestionGenerationChat({
 
   const showSpinner = useShowSpinner({ status, messages });
 
-  const [input, setInput] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const resizerRef = useRef<HTMLDivElement>(null);
 
@@ -455,42 +471,10 @@ export function AiQuestionGenerationChat({
             })}
           </div>
         )}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const trimmedInput = input.trim();
-            if (trimmedInput) {
-              void sendMessage({ text: trimmedInput });
-              setInput('');
-            }
-          }}
-        >
-          <textarea
-            id="user-prompt-llm"
-            class="form-control mb-2"
-            placeholder="What would you like to revise?"
-            aria-label="Modification instructions"
-            value={input}
-            required
-            onInput={(e) => setInput((e.target as HTMLTextAreaElement).value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                e.currentTarget.closest('form')?.requestSubmit();
-              }
-            }}
-          />
-          <button
-            type="submit"
-            class="btn btn-dark w-100"
-            disabled={status !== 'ready' && status !== 'error'}
-          >
-            Revise question
-          </button>
-          <div class="text-muted small text-center mt-1">
-            AI can make mistakes. Review the generated question.
-          </div>
-        </form>
+        <PromptInput
+          sendMessage={sendMessage}
+          disabled={status !== 'ready' && status !== 'error'}
+        />
       </div>
       <div ref={resizerRef} class="app-chat-resizer" aria-label="Resize chat" role="separator" />
     </div>
