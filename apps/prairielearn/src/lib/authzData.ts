@@ -182,21 +182,29 @@ export async function buildAuthzData({
 export type CourseInstanceRole = 'None' | 'Student Data Viewer' | 'Student Data Editor' | 'Student';
 
 export interface DangerousAuthzData {
-  authn_user: true;
-  user: true;
+  authn_user: {
+    user_id: null;
+  };
+  user: {
+    user_id: null;
+  };
 }
 
 export function dangerousFullAuthzPermissions(): DangerousAuthzData {
   return {
-    authn_user: true,
-    user: true,
+    authn_user: {
+      user_id: null,
+    },
+    user: {
+      user_id: null,
+    },
   };
 }
 
 export function isDangerousFullAuthzPermissions(
   authzData: RawAuthzData | DangerousAuthzData,
 ): authzData is DangerousAuthzData {
-  if (authzData.authn_user === true) {
+  if (authzData.authn_user.user_id === null) {
     return true;
   }
   return false;
