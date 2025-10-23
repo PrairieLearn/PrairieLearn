@@ -1,7 +1,7 @@
 /* global ace, MathJax, DOMPurify */
 
 /**
- * @typedef {Object} PLFileEditorOptions
+ * @typedef {object} PLFileEditorOptions
  * @property {string} [originalContents]
  * @property {Record<string, (content: string) => string | Promise<string>>} [preview]
  * @property {string} [preview_type]
@@ -85,7 +85,7 @@ function PLFileEditor(uuid, options) {
   }
 
   if (options.autoResize) {
-    // @ts-expect-error - setAutoScrollEditorIntoView is not in the ace types
+    // @ts-expect-error - setAutoScrollEditorIntoView method exists but not in types
     this.editor.setAutoScrollEditorIntoView(true);
     this.editor.setOption('maxLines', Infinity);
   }
@@ -102,8 +102,9 @@ function PLFileEditor(uuid, options) {
   this.setEditorContents(currentContents, { resetUndo: true });
 
   if (options.preview) {
-    this.editor.session.on('change', () => this.updatePreview(options.preview || ''));
-    void this.updatePreview(options.preview);
+    const previewType = typeof options.preview === 'string' ? options.preview : 'default';
+    this.editor.session.on('change', () => this.updatePreview(previewType));
+    void this.updatePreview(previewType);
   }
 
   this.syncSettings();
@@ -236,7 +237,7 @@ PLFileEditor.prototype.initSettingsButton = function (uuid) {
     });
     this.modal.modal('show');
     sessionStorage.setItem('pl-file-editor-theme-current', this.editor.getTheme());
-    // @ts-expect-error - getFontSize exists at runtime but not in types
+    // @ts-expect-error - getFontSize method exists but not in types
     sessionStorage.setItem('pl-file-editor-fontsize-current', String(this.editor.getFontSize()));
     const savedHandler = localStorage.getItem('pl-file-editor-keyboardHandler');
     if (savedHandler) {

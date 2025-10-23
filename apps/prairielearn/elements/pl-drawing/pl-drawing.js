@@ -238,6 +238,7 @@ window.PLDrawingApi = {
     } else {
       canvas = new fabric.StaticCanvas(canvas_elem);
     }
+    // @ts-expect-error - selection property exists on Canvas but not in types
     canvas.selection = false; // disable group selection
 
     // Re-scale the html elements
@@ -302,6 +303,7 @@ window.PLDrawingApi = {
       /** @type {any} */ (canvas).upperCanvasEl,
       'dblclick',
       function (/** @type {any} */ e) {
+        // @ts-expect-error - findTarget method exists on Canvas but not in types
         const target = canvas.findTarget(e);
         if (target !== undefined) {
           target.fire('dblclick', { e });
@@ -415,7 +417,7 @@ class PLDrawingAnswerState {
       if (!('id' in canvasObject)) {
         submitted_object.id = window.PLDrawingApi.generateID();
       } else {
-        submitted_object.id = canvasObject.id;
+        submitted_object.id = /** @type {string | number} */ (canvasObject.id);
       }
     }
 

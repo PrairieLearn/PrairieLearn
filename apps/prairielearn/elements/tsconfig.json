@@ -5,6 +5,7 @@
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "noEmit": true,
+    "outDir": "../dist",
     "rootDir": "../",
     "types": [
       "jquery",
@@ -14,6 +15,7 @@
       "bootstrap",
       "cropperjs",
       "dompurify",
+      "socket.io-client",
       "quill",
       "he",
       "ace",

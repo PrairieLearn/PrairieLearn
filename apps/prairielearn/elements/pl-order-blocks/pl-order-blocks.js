@@ -1,4 +1,11 @@
 /**
+ * @typedef {Object} PLOrderBlocksOptions
+ * @property {number} maxIndent
+ * @property {boolean} enableIndentation
+ * @property {boolean} [inline]
+ */
+
+/**
  * @param {string} uuid
  * @param {PLOrderBlocksOptions} options
  */

@@ -175,7 +175,9 @@ const MAX_ZOOM_SCALE = 5;
         throw new Error('Mobile capture is not enabled, cannot get mobile capture buttons');
       }
 
-      return this.imageCaptureDiv.querySelectorAll('.js-capture-with-mobile-device-button');
+      return /** @type {NodeListOf<HTMLElement>} */ (
+        this.imageCaptureDiv.querySelectorAll('.js-capture-with-mobile-device-button')
+      );
     }
 
     createCropRotateListeners() {

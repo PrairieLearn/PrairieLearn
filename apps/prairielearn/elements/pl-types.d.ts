@@ -1,58 +1,51 @@
-// Type definitions for PrairieLearn element options
-
 // Import existing type definition files
 import './notebookjs.d.ts';
 import './panzoom.d.ts';
 import './socket-io.d.ts';
-import './tom-select.d.ts';
 import './window-extensions.d.ts';
+
+import type { DOMPurify } from 'dompurify';
+import type { TomSelect } from 'tom-select';
+
+/**
+ * Options for PLFileEditor
+ */
+interface PLFileEditorOptions {
+  originalContents?: string;
+  preview?: Record<string, (content: string) => string | Promise<string>>;
+  preview_type?: string;
+  readOnly?: boolean;
+  aceMode?: string;
+  aceTheme?: string;
+  fontSize?: number;
+  minLines?: number;
+  maxLines?: number;
+  autoResize?: boolean;
+  plOptionFocus?: boolean;
+  currentContents?: string;
+}
+
+/**
+ * Options for PLOrderBlocks
+ */
+interface PLOrderBlocksOptions {
+  maxIndent: number;
+  enableIndentation: boolean;
+  inline?: boolean;
+}
 
 /** Global declarations for external libraries */
 declare global {
-  /** Global variables - using proper type definitions */
-  const DOMPurify: {
-    sanitize(dirty: string, config?: { SANITIZE_NAMED_PROPS?: boolean }): string;
-  };
+  const DOMPurify: DOMPurify;
+  const TomSelect: TomSelect;
+  /** jQuery plugin extensions */
+  interface JQuery {
+    modal(action?: string): JQuery;
+    popover(options?: any): JQuery;
+  }
+
   const mechanicsObjects: {
     addCanvasBackground(canvas: any, width: number, height: number, gridSize: number): void;
-  };
-  const fabric: {
-    Canvas: new (element: HTMLElement) => any;
-    StaticCanvas: new (element: HTMLElement) => any;
-    Object: any;
-    util: {
-      addListener(element: HTMLElement, event: string, handler: (e: Event) => void): void;
-    };
-  };
-  const bootstrap: {
-    Popover: {
-      getInstance(element: HTMLElement): { hide(): void } | null;
-    };
-    Toast: new (
-      element: HTMLElement,
-      options?: { autohide?: boolean; delay?: number },
-    ) => { show(): void };
-  };
-  const he: {
-    encode(
-      text: string,
-      options?: { allowUnsafeSymbols?: boolean; useNamedReferences?: boolean },
-    ): string;
-  };
-  const nb: {
-    markdown: (text: string) => string;
-    sanitizer: (code: string) => string;
-    parse: (data: any) => { render(): HTMLElement };
-  };
-  const Panzoom: (
-    element: HTMLElement,
-    options?: any,
-  ) => {
-    zoomIn(opts?: any): void;
-    zoomOut(opts?: any): void;
-    zoom(scale: number, opts?: any): void;
-    getScale(): number;
-    reset(options?: { animate?: boolean }): void;
   };
 
   interface Window {
@@ -77,6 +70,4 @@ declare global {
   function PLFileEditor(uuid: string, options: PLFileEditorOptions): void;
 
   function PLOrderBlocks(uuid: string, options: PLOrderBlocksOptions): void;
-
-  function TomSelect(element: HTMLElement, options?: TomSelectOptions): TomSelect;
 }

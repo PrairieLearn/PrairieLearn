@@ -4,7 +4,9 @@
  * @param {string} uuid
  */
 function PLMultipleChoice(uuid) {
-  const selectElement = /** @type {HTMLSelectElement} */ (document.getElementById('pl-multiple-choice-select-' + uuid));
+  const selectElement = /** @type {HTMLSelectElement} */ (
+    document.getElementById('pl-multiple-choice-select-' + uuid)
+  );
   const container = selectElement.closest('.pl-multiple-choice-dropdown');
 
   const select = new TomSelect(selectElement, {
