@@ -1,27 +1,15 @@
 (() => {
   const greekLetters = new Set([
-    'Alpha',
-    'Beta',
     'Gamma',
     'Delta',
-    'Epsilon',
-    'Zeta',
-    'Eta',
     'Theta',
-    'Iota',
     'Kappa',
     'Lambda',
-    'Mu',
-    'Nu',
     'Xi',
-    'Omicron',
     'Pi',
-    'Rho',
     'Sigma',
-    'Tau',
     'Upsilon',
     'Phi',
-    'Chi',
     'Psi',
     'Omega',
     'alpha',
@@ -49,6 +37,25 @@
     'psi',
     'omega',
   ]);
+
+  // Some uppercase unicode characters don't have matching built-in Latex macros. We need a lookup
+  // of the correct unicode equivalent to set up the inline replacement as for the other letters.
+  const greekLettersToUnicode = new Map(
+    Object.entries({
+      Alpha: '391',
+      Beta: '392',
+      Zeta: '396',
+      Eta: '397',
+      Iota: '399',
+      Mu: '39C',
+      Nu: '39D',
+      Omicron: '39F',
+      Rho: '3A1',
+      Tau: '3A4',
+      Chi: '3A7',
+      Epsilon: '190',
+    }),
+  );
 
   // Note that we include trigonometric functions in this list, even if they are disabled for grading
   // Otherwise, an accidental function call like "sin" would be converted into "s*i*n", which leads to
@@ -304,19 +311,19 @@
               label: '<i>&#x03f5;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\epsilon',
-              shift: '\\char"0190',
+              shift: '\u0190',
             },
             {
               label: '<i>&rho;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\rho',
-              shift: '\\char"3A1',
+              shift: '\u03A1',
             },
             {
               label: '<i>&tau;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\tau',
-              shift: '\\char"3A4',
+              shift: '\u03A4',
             },
             {
               label: '<i>&upsilon;</i>',
@@ -334,13 +341,13 @@
               label: '<i>&iota;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\iota',
-              shift: '\\char"399',
+              shift: '\u0399',
             },
             {
               label: '<i>&omicron;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\omicron',
-              shift: '\\char"39F',
+              shift: '\u039F',
             },
             {
               label: '<i>&pi;</i>',
@@ -356,7 +363,7 @@
               label: '<i>&alpha;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\alpha',
-              shift: '\\char"391',
+              shift: '\u0391',
             },
             {
               label: '<i>&sigma;</i>',
@@ -386,7 +393,7 @@
               label: '<i>&eta;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\eta',
-              shift: '\\char"397',
+              shift: '\u0397',
             },
             {
               label: '<i>&xi;</i>',
@@ -414,13 +421,13 @@
               label: '<i>&zeta;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\zeta',
-              shift: '\\char"396',
+              shift: '\u0396',
             },
             {
               label: '<i>&chi;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\chi',
-              shift: '\\char"3A7',
+              shift: '\u03A7',
             },
             {
               label: '<i>&psi;</i>',
@@ -438,19 +445,19 @@
               label: '<i>&beta;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\beta',
-              shift: '\\char"392',
+              shift: '\u0392',
             },
             {
               label: '<i>&nu;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\nu',
-              shift: '\\char"39D',
+              shift: '\u039D',
             },
             {
               label: '<i>&mu;</i>',
               class: 'MLK__tex hide-shift',
               insert: '\\mu',
-              shift: '\\char"39C',
+              shift: '\u039C',
             },
             '[left]',
             '[right]',
@@ -584,11 +591,15 @@
 
     const macros = {};
     [...customFunctions].map((fun) => (macros[fun] = `\\operatorname{${fun}}`));
+    [...greekLettersToUnicode].map(
+      ([letter, unicode]) => (macros[letter] = String.fromCodePoint(Number.parseInt(unicode, 16))),
+    );
+
     mf.macros = macros;
 
     mf.onInlineShortcut = (mf, s) => {
       if (customFunctions.has(s)) return `\\${s}({#0})`;
-      if (greekLetters.has(s)) return `\\${s}`;
+      if (greekLetters.has(s) || greekLettersToUnicode.has(s)) return `\\${s}`;
       return '';
     };
   }
