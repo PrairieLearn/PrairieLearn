@@ -2,6 +2,7 @@ import z from 'zod';
 
 import {
   callRow,
+  execute,
   executeRow,
   loadSqlEquiv,
   queryOptionalRow,
@@ -299,6 +300,9 @@ async function updateInstanceQuestionGrade({
       grading_job_id,
       authn_user_id,
     });
-    await callRow('instance_questions_calculate_stats', [instance_question_id], z.unknown());
+    await updateInstanceQuestionStats({ instance_question_id });
   });
 }
+
+export async function updateInstanceQuestionStats({instance_question_id}: {instance_question_id: string}) {
+  await execute(sql.recalculate_instance_question_stats, {instance_question_id});

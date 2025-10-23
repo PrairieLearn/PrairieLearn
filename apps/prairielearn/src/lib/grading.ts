@@ -7,7 +7,11 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
-import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
+import {
+  insertGradingJob,
+  updateGradingJobAfterGrading,
+  updateInstanceQuestionStats,
+} from '../models/grading-job.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -163,7 +167,7 @@ export async function insertSubmission({
         status: gradable ? 'saved' : 'invalid',
         requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
       });
-      await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
+      await updateInstanceQuestionStats({ instance_question_id: variant.instance_question_id! });
     }
 
     return { submission_id, variant };
