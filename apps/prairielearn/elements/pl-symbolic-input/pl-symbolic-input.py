@@ -454,7 +454,7 @@ def format_formula_editor_submission_for_sympy(
     known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
 
     # Replace Greek unicode letters with spaced ASCII for consistent handling further on
-    text = _greek_transform(text)
+    text = "".join([_greek_transform(char) for char in text])
 
     # Merge space-separated characters into proper tokens (e.g., "s i n" -> "sin")
     text = _merge_spaced_tokens(text, known_tokens)
@@ -507,7 +507,7 @@ def _greek_transform(text: str) -> str:
     Returns:
         The string with Greek unicode letters replaced by spaced-out English spelling
     """  # noqa: RUF002
-    return " ".join(psu.greek_unicode_transform(text))
+    return " ".join(psu.greek_unicode_transform(text)) + " "
 
 
 def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
