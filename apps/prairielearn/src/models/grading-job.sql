@@ -95,6 +95,7 @@ SELECT
   s.credit,
   v.id AS variant_id,
   iq.id AS instance_question_id,
+  iq.open AS instance_question_open,
   ai.id AS assessment_instance_id,
   EXISTS (
     SELECT
@@ -182,3 +183,44 @@ WHERE
   id = $grading_job_id
 RETURNING
   *;
+
+-- BLOCK update_instance_question_grade
+WITH
+  updated_instance_question AS (
+    UPDATE instance_questions AS iq
+    SET
+      open = $open,
+      status = $status,
+      auto_points = $auto_points,
+      points = $points,
+      score_perc = $score_perc,
+      highest_submission_score = $highest_submission_score,
+      current_value = $current_value,
+      points_list = $points_list,
+      variants_points_list = $variants_points_list,
+      number_attempts = iq.number_attempts + 1
+    WHERE
+      iq.id = $instance_question_id
+  )
+INSERT INTO
+  question_score_logs (
+    instance_question_id,
+    auth_user_id,
+    max_points,
+    max_auto_points,
+    points,
+    auto_points,
+    score_perc,
+    grading_job_id
+  )
+VALUES
+  (
+    $instance_question_id,
+    $authn_user_id,
+    $max_points,
+    $max_auto_points,
+    $points,
+    $auto_points,
+    $score_perc,
+    $grading_job_id
+  );

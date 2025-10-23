@@ -2,6 +2,7 @@ import z from 'zod';
 
 import {
   callRow,
+  executeRow,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
@@ -9,13 +10,16 @@ import {
 } from '@prairielearn/postgres';
 
 import {
+  AssessmentQuestionSchema,
   type GradingJob,
   GradingJobSchema,
   IdSchema,
+  InstanceQuestionSchema,
   SprocAssessmentInstancesGradeSchema,
   type Submission,
   SubmissionSchema,
 } from '../lib/db-types.js';
+import { insertIssue } from '../lib/issues.js';
 
 import { lockSubmission } from './submission.js';
 
@@ -36,6 +40,7 @@ const VariantForGradingJobUpdateSchema = z.object({
   credit: SubmissionSchema.shape.credit,
   variant_id: IdSchema,
   instance_question_id: IdSchema.nullable(),
+  instance_question_open: z.boolean().nullable(),
   assessment_instance_id: IdSchema.nullable(),
   has_newer_submission: z.boolean(),
 });
@@ -144,6 +149,7 @@ export async function updateGradingJobAfterGrading({
     const {
       has_newer_submission,
       instance_question_id,
+      instance_question_open,
       assessment_instance_id,
       variant_id,
       credit,
@@ -192,11 +198,14 @@ export async function updateGradingJobAfterGrading({
     if (gradable) {
       await callRow('variants_update_after_grading', [variant_id, gradingJob.correct], z.unknown());
       if (instance_question_id != null && assessment_instance_id != null) {
-        await callRow(
-          'instance_questions_grade',
-          [instance_question_id, gradingJob.score, gradingJob.id, gradingJob.auth_user_id],
-          z.unknown(),
-        );
+        await updateInstanceQuestionGrade({
+          variant_id,
+          instance_question_id,
+          instance_question_open: instance_question_open ?? false,
+          submission_score: gradingJob.score ?? 0,
+          grading_job_id,
+          authn_user_id: gradingJob.auth_user_id,
+        });
         await callRow(
           'assessment_instances_grade',
           [assessment_instance_id, gradingJob.auth_user_id, credit],
@@ -206,5 +215,69 @@ export async function updateGradingJobAfterGrading({
     }
 
     return gradingJob;
+  });
+}
+
+const InstanceQuestionsPointsSchema = InstanceQuestionSchema.pick({
+  open: true,
+  status: true,
+  auto_points: true,
+  points: true,
+  score_perc: true,
+  highest_submission_score: true,
+  current_value: true,
+  points_list: true,
+  variants_points_list: true,
+}).extend({
+  max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+  max_points: AssessmentQuestionSchema.shape.max_points,
+});
+
+async function updateInstanceQuestionGrade({
+  variant_id,
+  instance_question_id,
+  instance_question_open,
+  submission_score,
+  grading_job_id,
+  authn_user_id,
+}: {
+  variant_id: string;
+  instance_question_id: string;
+  instance_question_open: boolean;
+  submission_score: number;
+  grading_job_id: string;
+  authn_user_id: string | null;
+}) {
+  await runInTransactionAsync(async () => {
+    if (!instance_question_open) {
+      // This has been copied from legacy code. We should actually work to
+      // prevent this from happening farther upstream, and avoid recording
+      // an issue here.
+      await insertIssue({
+        variantId: variant_id,
+        studentMessage: 'Submission received after question closed; grade not updated.',
+        instructorMessage: '',
+        manuallyReported: false,
+        courseCaused: false,
+        courseData: { grading_job_id },
+        systemData: {},
+        userId: authn_user_id,
+        authnUserId: authn_user_id,
+      });
+      return;
+    }
+
+    const points = await callRow(
+      'instance_questions_points',
+      [instance_question_id, submission_score],
+      InstanceQuestionsPointsSchema,
+    );
+    await executeRow(sql.update_instance_question_grade, {
+      instance_question_id,
+      ...points,
+      grading_job_id,
+      authn_user_id,
+    });
+    await callRow('instance_questions_calculate_stats', [instance_question_id], z.unknown());
   });
 }
