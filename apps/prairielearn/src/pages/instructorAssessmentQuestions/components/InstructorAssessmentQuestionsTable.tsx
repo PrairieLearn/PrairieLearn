@@ -108,35 +108,33 @@ function questionDisplayName(course: StaffCourse, question: StaffAssessmentQuest
 function maxPointsText({
   max_auto_points,
   max_manual_points,
-  points_list,
-  init_points,
+  auto_points,
   assessmentType,
 }: {
-  max_auto_points: number | null;
+  max_auto_points: number | number[] | null;
   max_manual_points: number | null;
-  points_list: number | number[] | null;
-  init_points: number | number[] | null;
+  auto_points: number | number[] | null;
   assessmentType: EnumAssessmentType;
 }) {
-  if (max_auto_points || !max_manual_points) {
+  if (auto_points || !max_manual_points) {
     if (assessmentType === 'Exam') {
-      const pointsArray = Array.isArray(points_list)
-        ? points_list
-        : [points_list ?? max_manual_points];
+      const pointsArray = Array.isArray(auto_points)
+        ? auto_points
+        : [auto_points ?? max_manual_points];
       return pointsArray.map((p) => (p ?? 0) - (max_manual_points ?? 0)).join(',');
     }
     if (assessmentType === 'Homework') {
-      const initPointsValue = Array.isArray(init_points) ? init_points[0] : init_points;
-      return `${(initPointsValue ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
+      const initPointsValue = Array.isArray(auto_points) ? auto_points[0] : auto_points;
+      const maxAutoPointsValue = Array.isArray(max_auto_points)
+        ? max_auto_points[0]
+        : max_auto_points;
+      return `${(initPointsValue ?? 0) - (max_manual_points ?? 0)}/${maxAutoPointsValue ?? 0}`;
     }
   } else {
     return '—';
   }
 }
 
-// TODO: add tests for this function. Something like: for each example/test course
-// assessment, load the rows, map through here, generate JSON out the other side,
-// and make sure it matches the original.
 function mapQuestions(
   course: StaffCourse,
   rows: StaffAssessmentQuestionRow[],
@@ -172,7 +170,7 @@ function mapQuestions(
 
     // Use the count as the position within the zone
     const positionInZone = zoneAlternativeGroupCounts[zoneNumber];
-    if (zones[zoneNumber - 1].questions[positionInZone] == null) {
+    if (!zones[zoneNumber - 1].questions[positionInZone]) {
       zones[zoneNumber - 1].questions[positionInZone] ??= {
         id: row.alternative_group.id ? questionDisplayName(course, row) : undefined,
         comment: row.alternative_group.json_comment ?? undefined,
@@ -220,16 +218,14 @@ function mapQuestions(
   return zones;
 }
 
-// TODO: maybe better name?
+/** TODO: maybe better name? */
 function AssessmentQuestion({
   id,
   alternative,
-  // TODO: currently unused. We need to be using this instead of the data off of `questionMap`.
   alternativeGroup,
   zoneNumber,
   alternativeGroupNumber,
   alternativeNumber,
-  nTableCols,
   questionMap,
   editMode,
   urlPrefix,
@@ -242,6 +238,7 @@ function AssessmentQuestion({
   handleResetButtonClick,
   questionNumber,
   displayAlternativeNumber,
+  alternativeGroupAutoPoints,
 }: {
   id?: string;
   alternative?: QuestionAlternativeJson;
@@ -273,17 +270,31 @@ function AssessmentQuestion({
   handleDeleteQuestion: (
     zoneNumber: number,
     alternativeGroupNumber: number,
-    alternativeNumber?: number,
+    questionId: string,
+    numberInAlternativeGroup?: number,
   ) => void;
   handleResetButtonClick: (questionId: string) => void;
   questionNumber: number;
   displayAlternativeNumber?: number;
+  alternativeGroupAutoPoints?: number | number[] | null;
 }) {
   const question = alternative ?? alternativeGroup;
   const questionId = alternative?.id ?? id;
   if (questionId == null) throw new Error('Either ID or question is required');
 
   const questionData = questionMap[questionId];
+
+  let maxAutoPoints: number | number[] | null = null;
+  if (assessmentType === 'Exam') {
+    maxAutoPoints = question.points ?? question.autoPoints ?? null;
+  } else {
+    maxAutoPoints =
+      question.maxPoints ??
+      question.maxAutoPoints ??
+      alternativeGroup.maxPoints ??
+      alternativeGroup.maxAutoPoints ??
+      null;
+  }
 
   return (
     <Fragment>
@@ -312,7 +323,12 @@ function AssessmentQuestion({
                 class="btn btn-sm btn-ghost"
                 type="button"
                 onClick={() =>
-                  handleDeleteQuestion(zoneNumber, alternativeGroupNumber, alternativeNumber)
+                  handleDeleteQuestion(
+                    zoneNumber,
+                    alternativeGroupNumber,
+                    questionId,
+                    alternativeNumber,
+                  )
                 }
               >
                 <i class="fa fa-trash text-danger" aria-hidden="true" />
@@ -332,7 +348,7 @@ function AssessmentQuestion({
           />
           <IssueBadge
             urlPrefix={urlPrefix}
-            count={questionData.open_issue_count ?? 0}
+            count={questionData.open_issue_count}
             issueQid={questionData.question.qid}
           />
         </td>
@@ -354,11 +370,11 @@ function AssessmentQuestion({
         </td>
         <td>
           {maxPointsText({
-            max_auto_points: question.maxPoints ?? question.maxAutoPoints ?? null,
+            max_auto_points: maxAutoPoints ?? null,
             max_manual_points: question.manualPoints ?? null,
-            points_list: question.points ?? question.autoPoints ?? null,
-            init_points: question.points ?? question.autoPoints ?? null,
-            assessmentType: assessmentType,
+            auto_points:
+              question.points ?? question.autoPoints ?? alternativeGroupAutoPoints ?? null,
+            assessmentType,
           })}
         </td>
         <td>{question.manualPoints || '—'}</td>
@@ -377,12 +393,12 @@ function AssessmentQuestion({
           ''
         )}
         <td>
-          {questionData.assessment_question?.mean_question_score
+          {questionData.assessment_question.mean_question_score
             ? `${questionData.assessment_question.mean_question_score.toFixed(3)} %`
             : ''}
         </td>
         <td class="text-center">
-          {questionData.assessment_question?.number_submissions_hist ? (
+          {questionData.assessment_question.number_submissions_hist ? (
             <HistMini
               data={questionData.assessment_question.number_submissions_hist}
               options={{ width: 60, height: 20 }}
@@ -483,13 +499,14 @@ function AlternativeGroup({
   handleDeleteQuestion: (
     zoneNumber: number,
     alternativeGroupNumber: number,
-    alternativeNumber?: number,
+    questionId: string,
+    numberInAlternativeGroup?: number,
   ) => void;
   handleResetButtonClick: (questionId: string) => void;
   getNextQuestionNumber: () => number;
 }) {
   const hasAlternatives =
-    alternativeGroup.alternatives?.length && alternativeGroup.alternatives?.length > 1;
+    alternativeGroup.alternatives?.length && alternativeGroup.alternatives.length > 1;
   // Get the question number once per alternative group
   const currentQuestionNumber = getNextQuestionNumber();
   return (
@@ -548,6 +565,9 @@ function AlternativeGroup({
               handleResetButtonClick={handleResetButtonClick}
               questionNumber={currentQuestionNumber}
               displayAlternativeNumber={alternativeNumber}
+              alternativeGroupAutoPoints={
+                alternativeGroup.points ?? alternativeGroup.autoPoints ?? null
+              }
             />
           );
         });
@@ -600,7 +620,8 @@ function Zone({
   handleDeleteQuestion: (
     zoneNumber: number,
     alternativeGroupNumber: number,
-    alternativeNumber?: number,
+    questionId: string,
+    numberInAlternativeGroup?: number,
   ) => void;
   handleResetButtonClick: (questionId: string) => void;
   getNextQuestionNumber: () => number;
@@ -610,8 +631,7 @@ function Zone({
       <ZoneHeader zone={zone} zoneNumber={zoneNumber} nTableCols={nTableCols} />
       {zone.questions.map((alternativeGroup, index) => (
         <AlternativeGroup
-          // TODO: better key
-          key={index}
+          key={alternativeGroup.id}
           alternativeGroup={alternativeGroup}
           alternativeGroupNumber={index + 1}
           nTableCols={nTableCols}
@@ -676,7 +696,7 @@ export function InstructorAssessmentQuestionsTable({
   );
 
   // TODO: name better; memoize?
-  const [mappedQuestions, setMappedQuestion] = useState(() => mapQuestions(course, questionRows));
+  const [mappedQuestions, setMappedQuestions] = useState(() => mapQuestions(course, questionRows));
 
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
   const [showResetModal, setShowResetModal] = useState(false);
@@ -695,6 +715,7 @@ export function InstructorAssessmentQuestionsTable({
   const [selectedAlternativeGroup, setSelectedAlternativeGroup] = useState<ZoneQuestionJson | null>(
     null,
   );
+  const [qidValidationError, setQidValidationError] = useState<string>('');
   let questionNumber = 0;
   const getNextQuestionNumber = () => {
     questionNumber++;
@@ -728,6 +749,7 @@ export function InstructorAssessmentQuestionsTable({
       alternativeGroupNumber,
       alternativeNumber: alternativeNumber ?? undefined,
     });
+    setQidValidationError(''); // Clear any previous validation errors
     setShowEditModal(true);
   };
 
@@ -738,6 +760,7 @@ export function InstructorAssessmentQuestionsTable({
       zoneNumber,
       alternativeGroupNumber: mappedQuestions[zoneNumber - 1].questions.length + 1,
     });
+    setQidValidationError(''); // Clear any previous validation errors
     setAddQuestion(true);
     setShowEditModal(true);
   };
@@ -752,6 +775,18 @@ export function InstructorAssessmentQuestionsTable({
     gradingMethod?: 'auto' | 'manual',
   ) => {
     if (!updatedQuestion.id) return;
+    if (!selectedQuestionPosition) return;
+
+    // Check if QID already exists in the assessment
+    // Allow if: 1) it's the same as the original question being edited, or 2) it's in the current position
+    const isOriginalQid = !addQuestion && updatedQuestion.id === selectedQuestionDisplayName;
+    const isDuplicateQid = !isOriginalQid && questionMap[updatedQuestion.id];
+
+    if (isDuplicateQid) {
+      setQidValidationError('QID already exists in this assessment');
+      return;
+    }
+
     let questionData;
     if (updatedQuestion.id !== selectedQuestion?.id) {
       const res = await fetch(`${window.location.pathname}/${updatedQuestion.id}`, {
@@ -761,13 +796,18 @@ export function InstructorAssessmentQuestionsTable({
         throw new Error('Failed to save question');
       }
       questionData = await res.json();
+      // Check if the question data is null (invalid QID)
+      if (questionData === null || !questionData) {
+        setQidValidationError('Invalid QID');
+        return;
+      }
       questionData.assessment = assessment;
       questionData.assessment_question = {
-        number: selectedQuestionPosition?.alternativeGroupNumber,
-        number_in_alternative_group: selectedQuestionPosition?.alternativeNumber,
+        number: selectedQuestionPosition.alternativeGroupNumber,
+        number_in_alternative_group: selectedQuestionPosition.alternativeNumber,
       };
       questionData.alternative_group = {
-        number: selectedQuestionPosition?.alternativeGroupNumber,
+        number: selectedQuestionPosition.alternativeGroupNumber,
       };
       questionData.alternative_group_size = 1;
       questionData.alternative_group_size = 1;
@@ -776,23 +816,41 @@ export function InstructorAssessmentQuestionsTable({
         [updatedQuestion.id!]: questionData,
       }));
     }
-    if (!selectedQuestionPosition) return;
+    // Clear validation error if we got this far
+    setQidValidationError('');
+
+    // For homework assessments, clean up conflicting point attributes based on grading method
+    // Set to undefined (not delete) so they override old values when spreading
+    if (assessmentType === 'Homework' && gradingMethod) {
+      if (gradingMethod === 'manual') {
+        // Manual grading: remove auto-related attributes
+        updatedQuestion.points = undefined;
+        updatedQuestion.autoPoints = undefined;
+        updatedQuestion.maxPoints = undefined;
+        updatedQuestion.maxAutoPoints = undefined;
+      } else {
+        // Auto grading: remove manual attributes
+        updatedQuestion.manualPoints = undefined;
+      }
+    }
+
     const { zoneNumber, alternativeGroupNumber, alternativeNumber } = selectedQuestionPosition;
     // Update the mappedQuestions state
-    setMappedQuestion((prevZones) => {
-      const newZones = JSON.parse(JSON.stringify(prevZones)); // Deep clone
+    setMappedQuestions((prevZones) => {
+      const newZones = structuredClone(prevZones); // Deep clone
       const zone = newZones[zoneNumber - 1];
-      if (!zone) return prevZones;
 
-      const question = zone.questions[alternativeGroupNumber - 1];
-
-      // If we're adding a new question (question doesn't exist yet)
-      if (!question && addQuestion) {
-        zone.questions.push(updatedQuestion);
+      // If we're adding a new question
+      if (addQuestion) {
+        zone.questions.push({
+          ...updatedQuestion,
+          canSubmit: [],
+          canView: [],
+        });
         return newZones;
       }
 
-      if (!question) return prevZones;
+      const question = zone.questions[alternativeGroupNumber - 1];
 
       // Check if we're editing an alternative or the alternative group itself
       if (alternativeNumber !== undefined) {
@@ -819,12 +877,17 @@ export function InstructorAssessmentQuestionsTable({
   const handleDeleteQuestion = (
     zoneNumber: number,
     alternativeGroupNumber: number,
+    questionId: string,
     numberInAlternativeGroup?: number,
   ) => {
-    setMappedQuestion((prevZones) => {
-      const newZones = JSON.parse(JSON.stringify(prevZones));
+    setQuestionMap((prev) => {
+      const newMap = { ...prev };
+      delete newMap[questionId];
+      return newMap;
+    });
+    setMappedQuestions((prevZones) => {
+      const newZones = structuredClone(prevZones);
       const zone = newZones[zoneNumber - 1];
-      if (!zone) return prevZones;
       if (numberInAlternativeGroup) {
         zone.questions[alternativeGroupNumber - 1].alternatives?.splice(
           numberInAlternativeGroup - 1,
@@ -841,7 +904,6 @@ export function InstructorAssessmentQuestionsTable({
   const showAdvanceScorePercCol = questionRows.some(
     (q) => q.assessment_question.effective_advance_score_perc !== 0,
   );
-
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
   return (
     <>
@@ -899,8 +961,7 @@ export function InstructorAssessmentQuestionsTable({
               {mappedQuestions.map((zone, index) => {
                 return (
                   <Zone
-                    // TODO: better key?
-                    key={index}
+                    key={`zone-${index + 1}-${zone.title || 'untitled'}`}
                     zone={zone}
                     zoneNumber={index + 1}
                     nTableCols={nTableCols}
@@ -942,6 +1003,7 @@ export function InstructorAssessmentQuestionsTable({
           questionDisplayName={selectedQuestionDisplayName}
           addQuestion={addQuestion}
           handleUpdateQuestion={handleUpdateQuestion}
+          qidValidationError={qidValidationError}
           onHide={handleCloseEditModal}
         />
       ) : null}

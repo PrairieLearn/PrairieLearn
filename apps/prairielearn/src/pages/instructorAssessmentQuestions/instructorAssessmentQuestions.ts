@@ -7,80 +7,28 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+import * as sqldb from '@prairielearn/postgres';
 
+import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import {
+  StaffQuestionSchema,
+  StaffTagSchema,
+  StaffTopicSchema,
+} from '../../lib/client/safe-db-types.js';
 import { FileModifyEditor, MultiEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
-import * as sqldb from '@prairielearn/postgres';
-import {
-  StaffQuestionSchema,
-  StaffTopicSchema,
-  StaffTagSchema,
-} from '../../lib/client/safe-db-types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-// Zod schema for parsing zones data
-const ZoneQuestionAlternativeSchema = z.object({
-  id: z.string(),
-  autoPoints: z.union([z.number(), z.array(z.number())]).nullable(),
-  maxAutoPoints: z.number().nullable(),
-  manualPoints: z.number().nullable(),
-  triesPerVariant: z.number().nullable(),
-  advanceScorePerc: z.number().nullable(),
-  gradeRateMinutes: z.number().nullable(),
-});
-
-// Schema for a single question (without alternatives)
-const ZoneQuestionSingleSchema = z.object({
-  id: z.string(),
-  comment: z.string().optional(),
-  points: z.union([z.number(), z.array(z.number())]).nullable(),
-  autoPoints: z.union([z.number(), z.array(z.number())]).nullable(),
-  maxPoints: z.union([z.number(), z.array(z.number())]).nullable(),
-  maxAutoPoints: z.number().nullable(),
-  manualPoints: z.number().nullable(),
-  forceMaxPoints: z.boolean().nullable(),
-  triesPerVariant: z.number().nullable(),
-  advanceScorePerc: z.number().nullable(),
-  gradeRateMinutes: z.number().nullable(),
-  allowRealTimeGrading: z.boolean().nullable(),
-  canSubmit: z.array(z.string()).nullable(),
-  canView: z.array(z.string()).nullable(),
-});
-
-// Schema for an alternative group
-const ZoneQuestionAlternativeGroupSchema = z.object({
-  numberChoose: z.number().nullable(),
-  alternatives: z.array(ZoneQuestionAlternativeSchema),
-});
-
-// Union schema for questions (either single question or alternative group)
-const ZoneQuestionSchema = z.union([ZoneQuestionSingleSchema, ZoneQuestionAlternativeGroupSchema]);
-
-const ZoneSchema = z.object({
-  title: z.string().nullable(),
-  comment: z.string().optional(),
-  maxPoints: z.number().nullable(),
-  numberChoose: z.number().nullable(),
-  bestQuestions: z.number().nullable(),
-  advanceScorePerc: z.number().nullable(),
-  gradeRateMinutes: z.number().nullable(),
-  allowRealTimeGrading: z.boolean().nullable(),
-  canSubmit: z.array(z.string()).nullable(),
-  canView: z.array(z.string()).nullable(),
-  questions: z.array(ZoneQuestionSchema),
-});
 
 const SaveQuestionsSchema = z.object({
   __action: z.literal('save_questions'),
@@ -243,7 +191,6 @@ router.post(
           // Check if this is a single question or an alternative group
           const filteredQuestion: any = {};
           if ('alternatives' in question) {
-            console.log('alternatives in question');
             // This is an alternative group
 
             filteredQuestion.numberChoose = propertyValueWithDefault(

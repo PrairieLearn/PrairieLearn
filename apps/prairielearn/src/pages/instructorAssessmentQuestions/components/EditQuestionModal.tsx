@@ -1,6 +1,7 @@
 import { Modal } from 'react-bootstrap';
 
-import { useState, useEffect } from '@prairielearn/preact-cjs/hooks';
+import { useEffect, useMemo, useState } from '@prairielearn/preact-cjs/hooks';
+
 import type { QuestionAlternativeJson, ZoneQuestionJson } from '../../../schemas/infoAssessment.js';
 
 export function EditQuestionModal({
@@ -10,8 +11,8 @@ export function EditQuestionModal({
   onHide,
   handleUpdateQuestion,
   assessmentType,
-  questionDisplayName,
   addQuestion,
+  qidValidationError,
 }: {
   question: ZoneQuestionJson | QuestionAlternativeJson;
   alternativeGroup?: ZoneQuestionJson | null;
@@ -21,6 +22,7 @@ export function EditQuestionModal({
   assessmentType: 'Homework' | 'Exam';
   questionDisplayName: string;
   addQuestion?: boolean;
+  qidValidationError?: string;
 }) {
   // Helper to get the effective value (own value or inherited from group)
   const getEffectiveValue = <T,>(
@@ -41,8 +43,8 @@ export function EditQuestionModal({
     if (question.autoPoints !== undefined) return 'autoPoints';
     // Check inherited from alternative group
     if (isAlternative) {
-      if (alternativeGroup!.points !== undefined) return 'points';
-      if (alternativeGroup!.autoPoints !== undefined) return 'autoPoints';
+      if (alternativeGroup.points !== undefined) return 'points';
+      if (alternativeGroup.autoPoints !== undefined) return 'autoPoints';
     }
     // Default to 'autoPoints' for homework, 'points' for exams
     return assessmentType === 'Exam' ? 'points' : 'autoPoints';
@@ -59,20 +61,24 @@ export function EditQuestionModal({
 
     // Check inherited from alternative group
     if (isAlternative) {
-      if (alternativeGroup!.maxAutoPoints !== undefined) return 'maxAutoPoints';
-      if (alternativeGroup!.maxPoints !== undefined) return 'maxPoints';
+      if (alternativeGroup.maxAutoPoints !== undefined) return 'maxAutoPoints';
+      if (alternativeGroup.maxPoints !== undefined) return 'maxPoints';
     }
 
     // Default: match the points property
     return pointsProp === 'points' ? 'maxPoints' : 'maxAutoPoints';
   };
 
-  const [originalPointsProperty] = useState<'points' | 'autoPoints'>(
-    determineOriginalPointsProperty(),
+  const originalPointsProperty = useMemo<'points' | 'autoPoints'>(
+    () => determineOriginalPointsProperty(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
 
-  const [originalMaxProperty] = useState<'maxPoints' | 'maxAutoPoints'>(
-    determineOriginalMaxProperty(),
+  const originalMaxProperty = useMemo<'maxPoints' | 'maxAutoPoints'>(
+    () => determineOriginalMaxProperty(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
 
   // Determine initial grading method based on manual points
@@ -82,34 +88,13 @@ export function EditQuestionModal({
   );
   const [autoGraded, setAutoGraded] = useState(!effectiveManualPoints);
   const [localQuestion, setLocalQuestion] = useState<ZoneQuestionJson | QuestionAlternativeJson>(
-    JSON.parse(JSON.stringify(question)),
+    () => structuredClone(question),
   );
-  const [localQuestionId, setLocalQuestionId] = useState(questionDisplayName);
-  const [homeworkAutoPoints, setHomeworkAutoPoints] = useState<number>(
-    localQuestion.points ?? localQuestion.autoPoints,
-  );
-  const [examAutoPoints, setExamAutoPoints] = useState<string | number>(getExamAutoPoints());
-  if (!question) {
-    return null;
-  }
-
-  function getExamAutoPoints() {
-    if (assessmentType === 'Exam') {
-      if (localQuestion.points && Array.isArray(localQuestion.points)) {
-        return localQuestion.points.join(',');
-      } else if (localQuestion.autoPoints && Array.isArray(localQuestion.autoPoints)) {
-        return localQuestion.autoPoints.join(',');
-      } else {
-        return localQuestion.points ?? localQuestion.autoPoints ?? 0;
-      }
-    }
-    return 0;
-  }
 
   // Check if a value is inherited (only for alternatives)
   const isInherited = (fieldName: keyof ZoneQuestionJson | keyof QuestionAlternativeJson) => {
     if (!isAlternative) return false;
-    return localQuestion[fieldName] === undefined && alternativeGroup![fieldName] !== undefined;
+    return localQuestion[fieldName] === undefined && alternativeGroup[fieldName] !== undefined;
   };
 
   // Check if points/autoPoints is inherited (special case since we track which one to use)
@@ -117,7 +102,7 @@ export function EditQuestionModal({
     if (!isAlternative) return false;
     return (
       localQuestion[originalPointsProperty] === undefined &&
-      alternativeGroup![originalPointsProperty] !== undefined
+      alternativeGroup[originalPointsProperty] !== undefined
     );
   };
 
@@ -128,11 +113,21 @@ export function EditQuestionModal({
     return String(value);
   };
 
-  // Parse auto points from input (handles both single numbers and arrays)
-  const parseAutoPoints = (value: string): number | number[] => {
+  // Parse auto points from string to array (only used on save, not on every keystroke)
+  const parseAutoPointsForSave = (value: string | number | number[]): number | number[] => {
+    // If it's already a number or array, return as-is
+    if (typeof value !== 'string') {
+      return value;
+    }
+
     if (assessmentType === 'Exam') {
-      // For exams, parse as array
-      return value.split(',').map((v) => Number(v.trim()));
+      // For exams, parse string as array
+      const trimmed = value.trim();
+      if (trimmed === '') return [];
+      return trimmed
+        .split(',')
+        .map((v) => Number(v.trim()))
+        .filter((v) => !Number.isNaN(v));
     }
     // For homework, parse as single number
     return Number(value);
@@ -146,17 +141,24 @@ export function EditQuestionModal({
       return formatAutoPoints(ownValue);
     }
     if (isAlternative) {
-      const inheritedValue = alternativeGroup![originalPointsProperty];
+      const inheritedValue = alternativeGroup[originalPointsProperty];
       if (inheritedValue !== undefined) {
         return formatAutoPoints(inheritedValue);
       }
     }
     return '';
   };
+
   useEffect(() => {
-    setLocalQuestion(JSON.parse(JSON.stringify(question)));
-    setAutoGraded(!effectiveManualPoints);
-  }, [question]);
+    const newQuestion = structuredClone(question);
+    const isAuto = !effectiveManualPoints;
+    // Batch state updates
+    void Promise.resolve().then(() => {
+      setLocalQuestion(newQuestion);
+      setAutoGraded(isAuto);
+    });
+  }, [question, effectiveManualPoints]);
+
   // Get the max auto points value to display (own or inherited)
   // Uses the originalMaxProperty to determine which field to check
   const getMaxAutoPointsDisplayValue = () => {
@@ -165,7 +167,7 @@ export function EditQuestionModal({
       return ownValue;
     }
     if (isAlternative) {
-      const inheritedValue = alternativeGroup![originalMaxProperty];
+      const inheritedValue = alternativeGroup[originalMaxProperty];
       if (inheritedValue !== undefined) {
         return inheritedValue;
       }
@@ -178,38 +180,9 @@ export function EditQuestionModal({
     if (!isAlternative) return false;
     return (
       localQuestion[originalMaxProperty] === undefined &&
-      alternativeGroup![originalMaxProperty] !== undefined
+      alternativeGroup[originalMaxProperty] !== undefined
     );
   };
-
-  // const homeworkAutoPoints = () => {
-  //   if (assessmentType === 'Homework') {
-  //     return localQuestion.points ?? localQuestion.autoPoints;
-  //   }
-  //   return null;
-  // };
-
-  // const examAutoPoints = () => {
-  //   if (assessmentType === 'Exam') {
-  //     return localQuestion.points?.toString() ?? localQuestion.autoPoints?.toString();
-  //   }
-  //   return null;
-  // };
-
-  // const handleSave = async () => {
-  //   if (localQuestion.id === question.id) {
-  //     console.log('update');
-  //   } else {
-  //     const res = await fetch(`${window.location.pathname}/${localQuestion.id}`, {
-  //       method: 'GET',
-  //     });
-  //     if (!res.ok) {
-  //       throw new Error('Failed to save question');
-  //     }
-  //     const data = await res.json();
-  //     console.log(data);
-  //   }
-  // };
 
   return (
     <Modal show={showEditModal} onHide={onHide}>
@@ -222,19 +195,23 @@ export function EditQuestionModal({
           <div class="input-group">
             <input
               type="text"
-              class="form-control"
+              class={`form-control ${qidValidationError ? 'is-invalid' : ''}`}
               id="qidInput"
               name="qid"
-              aria-describedby="qidHelp"
+              aria-describedby="qidHelp qidError"
               value={localQuestion.id}
               onChange={(e) => {
                 const newId = (e.target as HTMLInputElement).value;
-                setLocalQuestionId(newId);
                 setLocalQuestion((prev) => ({ ...prev, id: newId }));
               }}
             />
           </div>
-          <small id="uidHelp" class="form-text text-muted">
+          {qidValidationError && (
+            <div id="qidError" class="invalid-feedback d-block">
+              {qidValidationError}
+            </div>
+          )}
+          <small id="qidHelp" class="form-text text-muted">
             {' '}
             This is the unique question ID.{' '}
           </small>
@@ -251,7 +228,7 @@ export function EditQuestionModal({
                 name="gradingMethod"
                 value={autoGraded ? 'auto' : 'manual'}
                 onChange={(e) => {
-                  const isAuto = (e.target as HTMLSelectElement)?.value === 'auto';
+                  const isAuto = (e.target as HTMLSelectElement).value === 'auto';
                   setAutoGraded(isAuto);
                   // Clear opposing values when switching grading method for Homework
                   setLocalQuestion((prev) => {
@@ -376,7 +353,7 @@ export function EditQuestionModal({
                     value={
                       localQuestion.triesPerVariant !== undefined
                         ? localQuestion.triesPerVariant
-                        : isAlternative && alternativeGroup?.triesPerVariant !== undefined
+                        : isAlternative && alternativeGroup.triesPerVariant !== undefined
                           ? alternativeGroup.triesPerVariant
                           : ''
                     }
@@ -417,7 +394,7 @@ export function EditQuestionModal({
                   value={
                     localQuestion.manualPoints !== undefined
                       ? localQuestion.manualPoints
-                      : isAlternative && alternativeGroup?.manualPoints !== undefined
+                      : isAlternative && alternativeGroup.manualPoints !== undefined
                         ? alternativeGroup.manualPoints
                         : ''
                   }
@@ -466,12 +443,34 @@ export function EditQuestionModal({
                 class="form-control points-list"
                 id="autoPointsInput"
                 name="autoPoints"
-                value={localQuestion.points ?? localQuestion.autoPoints ?? ''}
+                value={
+                  // Check autoPoints first if we have manual points (since points + manualPoints can't coexist)
+                  localQuestion.manualPoints !== undefined
+                    ? typeof localQuestion.autoPoints === 'string'
+                      ? localQuestion.autoPoints
+                      : formatAutoPoints(localQuestion.autoPoints)
+                    : typeof localQuestion[originalPointsProperty] === 'string'
+                      ? localQuestion[originalPointsProperty]
+                      : formatAutoPoints(localQuestion.points ?? localQuestion.autoPoints)
+                }
                 onChange={(e) => {
-                  setLocalQuestion((prev) => ({
-                    ...prev,
-                    points: parseAutoPoints((e.target as HTMLInputElement).value),
-                  }));
+                  const value = (e.target as HTMLInputElement).value;
+                  setLocalQuestion((prev) => {
+                    const updated = { ...prev };
+                    // Clear conflicting properties
+                    delete updated.points;
+                    delete updated.autoPoints;
+
+                    // For exams with manual points, we must use 'autoPoints' not 'points'
+                    // because 'points' and 'manualPoints' cannot coexist
+                    const propertyToUse =
+                      updated.manualPoints !== undefined ? 'autoPoints' : originalPointsProperty;
+
+                    // Store as string while editing (will be converted to array on save)
+                    // Type assertion needed because we temporarily store as string
+                    updated[propertyToUse] = value as any;
+                    return updated;
+                  });
                 }}
               />
               <small id="autoPointsHelp" class="form-text text-muted">
@@ -495,7 +494,7 @@ export function EditQuestionModal({
                 value={
                   localQuestion.manualPoints !== undefined
                     ? localQuestion.manualPoints
-                    : isAlternative && alternativeGroup?.manualPoints !== undefined
+                    : isAlternative && alternativeGroup.manualPoints !== undefined
                       ? alternativeGroup.manualPoints
                       : ''
                 }
@@ -511,7 +510,12 @@ export function EditQuestionModal({
                     const numValue = (e.target as HTMLInputElement).valueAsNumber;
                     setLocalQuestion((prev) => {
                       const updated = { ...prev };
-                      // For exams, manual points can coexist with auto points
+                      // For exams, manual points can coexist with autoPoints but NOT with points
+                      // So if we have 'points' set, we need to convert it to 'autoPoints'
+                      if (updated.points !== undefined) {
+                        updated.autoPoints = updated.points;
+                        delete updated.points;
+                      }
                       updated.manualPoints = numValue;
                       return updated;
                     });
@@ -532,15 +536,51 @@ export function EditQuestionModal({
         )}
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" className="btn btn-secondary" onClick={onHide}>
+        <button type="button" class="btn btn-secondary" onClick={onHide}>
           Close
         </button>
         <button
           type="button"
-          className="btn btn-primary"
+          class="btn btn-primary"
           onClick={() => {
+            // For exam assessments, convert string points back to number array
+            const questionToSave = { ...localQuestion };
+            if (assessmentType === 'Exam') {
+              // Determine which property actually has the value
+              // (it might have been converted from points to autoPoints if manual points were added)
+              const pointsValue = questionToSave.points ?? questionToSave.autoPoints;
+
+              if (pointsValue !== undefined) {
+                const parsedValue = parseAutoPointsForSave(pointsValue);
+
+                // If we have manual points, we must use 'autoPoints' (not 'points')
+                // because 'points' and 'manualPoints' cannot coexist
+                if (questionToSave.manualPoints !== undefined) {
+                  delete questionToSave.points;
+                  questionToSave.autoPoints = parsedValue;
+                } else {
+                  // No manual points, so we can use the original property preference
+                  // Clean up the conflicting property
+                  if (originalPointsProperty === 'points') {
+                    delete questionToSave.autoPoints;
+                    questionToSave.points = parsedValue;
+                  } else {
+                    delete questionToSave.points;
+                    questionToSave.autoPoints = parsedValue;
+                  }
+                }
+              } else {
+                // If no auto points value, still clean up any stray points/autoPoints
+                // to ensure we don't have conflicting properties
+                if (questionToSave.manualPoints !== undefined) {
+                  // With manual points, we can't have 'points'
+                  delete questionToSave.points;
+                }
+              }
+            }
+
             handleUpdateQuestion(
-              localQuestion,
+              questionToSave,
               assessmentType === 'Homework' ? (autoGraded ? 'auto' : 'manual') : undefined,
             );
           }}
