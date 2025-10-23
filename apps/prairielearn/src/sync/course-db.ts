@@ -1480,6 +1480,11 @@ function validateCourseInstance({
   const usingLegacyAllowAccess = courseInstance.allowAccess.length > 0;
   const usingModernPublishing = courseInstance.publishing != null;
 
+  // TODO: Remove this once the UI is merged
+  if (usingModernPublishing) {
+    errors.push('"publishing" is not configurable yet.');
+  }
+
   if (usingLegacyAllowAccess && usingModernPublishing) {
     errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
   } else if (usingModernPublishing) {

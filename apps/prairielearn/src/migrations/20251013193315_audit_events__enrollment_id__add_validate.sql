@@ -1,0 +1,1 @@
+ALTER TABLE audit_events VALIDATE CONSTRAINT audit_events_enrollment_id_fkey;

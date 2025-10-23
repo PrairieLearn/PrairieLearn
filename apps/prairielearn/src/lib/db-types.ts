@@ -491,6 +491,7 @@ export const AuditEventSchema = z.object({
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString,
+  enrollment_id: IdSchema.nullable(),
   group_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
@@ -609,6 +610,7 @@ export const CourseInstanceSchema = z.object({
   publishing_start_date: DateFromISOString.nullable(),
   self_enrollment_enabled: z.boolean(),
   self_enrollment_enabled_before_date: DateFromISOString.nullable(),
+  self_enrollment_restrict_to_institution: z.boolean(),
   self_enrollment_use_enrollment_code: z.boolean(),
   share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
@@ -631,21 +633,9 @@ export const CourseInstanceAccessRuleSchema = z.object({
 });
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
 
-export const CourseInstancePublishingRuleSchema = z.object({
-  course_instance_id: IdSchema,
-  end_date: DateFromISOString.nullable(),
-  id: IdSchema,
-  institution: z.string().nullable(),
-  json_comment: JsonCommentSchema.nullable(),
-  number: z.number().nullable(),
-  start_date: DateFromISOString.nullable(),
-  uids: z.string().array().nullable(),
-});
-export type CourseInstancePublishingRule = z.infer<typeof CourseInstancePublishingRuleSchema>;
-
 export const CourseInstancePublishingExtensionSchema = z.object({
-  end_date: DateFromISOString,
   course_instance_id: IdSchema,
+  end_date: DateFromISOString,
   id: IdSchema,
   name: z.string().nullable(),
 });

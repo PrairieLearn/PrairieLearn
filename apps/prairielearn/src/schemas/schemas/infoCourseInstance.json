@@ -49,6 +49,11 @@
           "description": "If true, self-enrollment requires an enrollment code to enroll. If false, any link to the course instance will allow self-enrollment.",
           "type": "boolean",
           "default": false
+        },
+        "restrictToInstitution": {
+          "description": "If true, self-enrollment is restricted to the institution. If false, self-enrollment is not restricted to the institution.",
+          "type": "boolean",
+          "default": true
         }
       },
       "default": {}

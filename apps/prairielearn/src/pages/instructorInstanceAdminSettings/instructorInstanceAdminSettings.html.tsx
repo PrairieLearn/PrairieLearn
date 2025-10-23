@@ -20,6 +20,7 @@ export function InstructorInstanceAdminSettings({
   hasEnhancedNavigation,
   canEdit,
   courseInstance,
+  institution,
   shortNames,
   availableTimezones,
   origHash,
@@ -36,6 +37,7 @@ export function InstructorInstanceAdminSettings({
   hasEnhancedNavigation: boolean;
   canEdit: boolean;
   courseInstance: StaffCourseInstanceContext['course_instance'];
+  institution: StaffCourseInstanceContext['institution'];
   shortNames: string[];
   availableTimezones: Timezone[];
   origHash: string;
@@ -55,6 +57,7 @@ export function InstructorInstanceAdminSettings({
       courseInstance.hide_in_enroll_page == null ? true : !courseInstance.hide_in_enroll_page,
     self_enrollment_enabled: courseInstance.self_enrollment_enabled,
     self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
+    self_enrollment_restrict_to_institution: courseInstance.self_enrollment_restrict_to_institution,
     self_enrollment_enabled_before_date_enabled:
       !!courseInstance.self_enrollment_enabled_before_date,
     self_enrollment_enabled_before_date: courseInstance.self_enrollment_enabled_before_date
@@ -216,7 +219,9 @@ export function InstructorInstanceAdminSettings({
             enrollmentManagementEnabled={enrollmentManagementEnabled}
             studentLink={studentLink}
             selfEnrollLink={selfEnrollLink}
+            enrollmentCode={courseInstance.enrollment_code}
             csrfToken={csrfToken}
+            institution={institution}
           />
 
           <h2 class="h4">Sharing</h2>

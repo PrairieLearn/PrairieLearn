@@ -10,7 +10,8 @@ import {
 } from '../../lib/client/safe-db-types.js';
 import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
 
-import { StudentCoursesCard } from './StudentCoursesCard.js';
+import { EmptyStateCards } from './components/EmptyStateCards.js';
+import { StudentCoursesCard } from './components/StudentCoursesCard.js';
 
 export const InstructorHomePageCourseSchema = z.object({
   id: RawStudentCourseSchema.shape.id,
@@ -51,6 +52,7 @@ export function Home({
   adminInstitutions,
   urlPrefix,
   isDevMode,
+  enrollmentManagementEnabled,
 }: {
   canAddCourses: boolean;
   csrfToken: string;
@@ -59,6 +61,7 @@ export function Home({
   adminInstitutions: StaffInstitution[];
   urlPrefix: string;
   isDevMode: boolean;
+  enrollmentManagementEnabled: boolean;
 }) {
   const listedStudentCourses = studentCourses.filter(
     (ci) => ci.enrollment.status === 'joined' || ci.enrollment.status === 'invited',
@@ -69,8 +72,6 @@ export function Home({
   return (
     <>
       <h1 class="visually-hidden">PrairieLearn Homepage</h1>
-      {hasCourses && <ActionsHeader urlPrefix={urlPrefix} />}
-
       <div class="container pt-5">
         <DevModeCard isDevMode={isDevMode} />
         <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
@@ -85,57 +86,20 @@ export function Home({
                 csrfToken={csrfToken}
                 urlPrefix={urlPrefix}
                 isDevMode={isDevMode}
+                enrollmentManagementEnabled={enrollmentManagementEnabled}
               />
             </Hydrate>
           </>
         ) : (
-          <EmptyStateCards urlPrefix={urlPrefix} />
+          <Hydrate>
+            <EmptyStateCards
+              urlPrefix={urlPrefix}
+              enrollmentManagementEnabled={enrollmentManagementEnabled}
+            />
+          </Hydrate>
         )}
       </div>
     </>
-  );
-}
-
-function ActionsHeader({ urlPrefix }: { urlPrefix: string }) {
-  return (
-    <div class="container">
-      <div class="row">
-        <div class="col-md-6">
-          <div class="card rounded-pill my-1">
-            <div class="card-body d-flex align-items-center p-2">
-              <span class="fa-stack fa-1x me-1" aria-hidden="true">
-                <i class="fas fa-circle fa-stack-2x text-secondary" />
-                <i class="fas fa-user-graduate fa-stack-1x text-light" />
-              </span>
-              <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Students</h2>
-              <a href={`${urlPrefix}/enroll`} class="btn btn-xs btn-outline-primary">
-                Add or remove courses
-              </a>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card rounded-pill my-1">
-            <div class="card-body d-flex align-items-center p-2">
-              <span class="fa-stack fa-1x me-1" aria-hidden="true">
-                <i class="fas fa-circle fa-stack-2x text-secondary" />
-                <i class="fas fa-user-tie fa-stack-1x text-light" />
-              </span>
-              <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Instructors</h2>
-              <a href={`${urlPrefix}/request_course`} class="btn btn-xs btn-outline-primary">
-                Request course
-              </a>
-              <a
-                href="https://prairielearn.readthedocs.io/en/latest"
-                class="btn btn-xs btn-outline-primary ms-2"
-              >
-                View docs
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -203,8 +167,17 @@ function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCours
 
   return (
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
         <h2>Courses with instructor access</h2>
+        <a
+          href="https://prairielearn.readthedocs.io/en/latest"
+          class="btn btn-light btn-sm ms-auto"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <i class="bi bi-journal-text me-sm-1" aria-hidden="true" />
+          <span class="d-none d-sm-inline">View docs</span>
+        </a>
       </div>
 
       <div class="table-responsive">
@@ -265,64 +238,6 @@ function CourseInstanceList({ courseInstances, urlPrefix }: CourseInstanceListPr
           {courseInstance.long_name}
         </a>
       ))}
-    </div>
-  );
-}
-
-function EmptyStateCards({ urlPrefix }: { urlPrefix: string }) {
-  return (
-    <div class="row">
-      <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-          <div class="card-body text-center d-flex flex-column">
-            <div class="mb-3">
-              <i class="bi bi-person-badge text-primary" style="font-size: 3rem;" />
-            </div>
-            <h3 class="card-title mb-3">Students</h3>
-            <p class="card-text mb-4">Add a course and start learning.</p>
-            <div class="mt-auto">
-              <a
-                href={`${urlPrefix}/enroll`}
-                class="btn btn-primary d-flex gap-2 justify-content-center"
-              >
-                <i class="bi bi-plus-circle" />
-                Add course
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-          <div class="card-body text-center d-flex flex-column">
-            <div class="mb-3">
-              <i class="bi bi-mortarboard text-primary" style="font-size: 3rem;" />
-            </div>
-            <h3 class="card-title mb-3">Instructors</h3>
-            <p class="card-text mb-4">Create and manage courses for your students.</p>
-            <div class="mt-auto">
-              <div class="d-flex flex-wrap gap-2">
-                <a
-                  href={`${urlPrefix}/request_course`}
-                  class="btn btn-primary flex-fill d-flex gap-2 justify-content-center"
-                >
-                  <i class="bi bi-book" />
-                  Request course
-                </a>
-                <a
-                  href="https://prairielearn.readthedocs.io/en/latest"
-                  class="btn btn-outline-primary flex-fill d-flex gap-2 justify-content-center"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <i class="bi bi-journal-text" />
-                  View docs
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

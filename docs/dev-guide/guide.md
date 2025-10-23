@@ -469,7 +469,54 @@ FOR NO KEY UPDATE;
 
 - All state-modifying requests must (normally) be POST and all associated data must be in the body. GET requests may use query parameters for viewing options only.
 
+## Safely interacting with the database
+
+??? note
+
+    This pattern is currently being rolled out as a gradual refactor of existing code on a model-by-model basis.
+
+Almost every page is dealing with database data, so it is important to understand how to interact with the database securely. Data in `res.locals` has already been validated and is safe to use. However, it is recommended to type this data using the `page-context` helpers for extra type safety. For example,
+
+```typescript
+const { authz_data } = getPageContext(res.locals);
+const { course_instance: courseInstance } = getCourseInstance(res.locals, 'student');
+```
+
+For most API/POST handlers, we want to lookup or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. To help with this, we are moving to a pattern where model functions should accept full, typed row objects as parameters. For example,
+
+```typescript
+await updateEnrollmentStatus({
+  enrollment: my_enrollment,
+  status: 'joined',
+});
+```
+
+This is good, because in order to perform an update, you need to pass in a full row object, and a request body won't have enough information for this. It is assumed that the only way to get a full, typed row object is to call a model function that performs the correct authorization checks. For example,
+
+```typescript
+const enrollment = await selectEnrollment({
+  id: enrollment_id,
+  courseInstance,
+  authLevel: 'student',
+});
+```
+
+Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks. For example, in the above example, the `selectEnrollment` function requires the caller to pass in the `course_instance` and `authLevel` parameters, so it can throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollment`).
+
+```typescript
+const enrollment = await dangerouslySelectEnrollment({ id: enrollment_id });
+```
+
+There also may exist versions of these functions that don't require the caller to pass in the `course_instance` and `authLevel` parameters, like `dangerouslySelectEnrollment`, but these should be avoided if possible.
+
 ## State-modifying POST requests
+
+??? note
+
+    This section is outdated. It is now preferred to do the following things:
+
+    1. Use a Zod schema to validate the request body.
+    2. Call model functions instead of directly executing SQL (see above).
 
 - Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern for all state modification. This means that the initial GET should render the page with a `<form>` that has no `action` set, so it will submit back to the current page. This should be handled by a POST handler that performs the state modification and then issues a redirect back to the same page as a GET:
 
