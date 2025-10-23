@@ -14,19 +14,14 @@ const sampleAccessControl: AccessControlJson[] = [
 
     dateControl: {
       enabled: true,
-      releaseDateEnabled: true,
       releaseDate: '2025-03-14T00:01',
-
-      dueDateEnabled: true,
       dueDate: '2025-03-21T23:59',
 
-      earlyDeadlinesEnabled: true,
       earlyDeadlines: [
         { date: '2025-03-17T23:59', credit: 120 },
         { date: '2025-03-20T23:59', credit: 110 },
       ],
 
-      lateDeadlinesEnabled: true,
       lateDeadlines: [
         { date: '2025-03-23T23:59', credit: 80 },
         { date: '2025-03-30T23:59', credit: 50 },
@@ -34,17 +29,11 @@ const sampleAccessControl: AccessControlJson[] = [
 
       /* If allowSubmissions is true, the afterComplete section will never apply */
       afterLastDeadline: {
-        /* If allowSubmissions is false, it doesn't make sense for creditEnabled or credit to be set */
         allowSubmissions: true,
-        creditEnabled: true /* Is credit text box value enabled and considered? */,
         credit: 30,
       },
 
-      durationMinutesEnabled: true,
       durationMinutes: 60,
-      passwordEnabled: true,
-      /* If the passwordEnabled field is missing, then if password is set,
-        passwordEnabled is true, otherwise it is inherited. */
       password: 'superSecret',
     },
     prairieTestControl: {
@@ -55,11 +44,11 @@ const sampleAccessControl: AccessControlJson[] = [
       ],
     },
 
-    /* 
+    /*
       If you can't answer questions on it, the assessment is complete.
       This typically happens for a couple reasons:
            - durationMinutes was set, and you ran out of time
-           - the oldest late deadline, or due date if no late deadlines. 
+           - the oldest late deadline, or due date if no late deadlines.
            - PrairieTest says that the assessment is complete?
       The completion date can be different for different students.
    */
@@ -67,14 +56,11 @@ const sampleAccessControl: AccessControlJson[] = [
     afterComplete: {
       hideQuestions: true,
       hideQuestionsDateControl: {
-        showAgainDateEnabled: true,
         showAgainDate: '2025-03-23T23:59',
-        hideAgainDateEnabled: true,
         hideAgainDate: '2025-03-23T23:59',
       },
       hideScore: true,
       hideScoreDateControl: {
-        showAgainDateEnabled: true,
         showAgainDate: '2025-03-23T23:59',
       },
     },

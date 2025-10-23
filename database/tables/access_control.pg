@@ -32,7 +32,7 @@ columns
 
 indexes
     access_control_pkey: PRIMARY KEY (id) USING btree (id)
-    access_control_course_instance_id_assessment_id_order_key: UNIQUE (course_instance_id, assessment_id, "order") USING btree (course_instance_id, assessment_id, "order")
+    access_control_course_instance_id_assessment_id_order_key: UNIQUE (course_instance_id, assessment_id, "order") DEFERRABLE USING btree (course_instance_id, assessment_id, "order")
 
 foreign-key constraints
     access_control_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

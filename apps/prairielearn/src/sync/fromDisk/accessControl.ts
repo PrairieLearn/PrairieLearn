@@ -45,7 +45,7 @@ export async function syncAccessControl(
   );
   const validGroupIds = new Map(existingGroups.map((g) => [g.uuid.toString(), g.id]));
 
-  // First pass: validate all rules and check for errors
+  // validate all rules and check for errors
   for (const ruleInfo of accessControlRules) {
     if (infofile.hasErrors(ruleInfo) || !ruleInfo.data) continue;
 
@@ -177,9 +177,9 @@ export async function syncAccessControl(
         {
           course_instance_id: courseInstanceId,
           assessment_id: assessmentId,
-          enabled: enabled.value ?? true,
-          block_access: blockAccess.value ?? false,
-          list_before_release: listBeforeRelease.value ?? true,
+          enabled: enabled.value,
+          block_access: blockAccess.value,
+          list_before_release: listBeforeRelease.value,
           order,
 
           // Date control

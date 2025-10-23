@@ -28,23 +28,10 @@ export function MainRuleForm({ control, trigger, courseInstance, setValue }: Mai
     name: 'mainRule.blockAccess',
   });
 
-  // Watch Date Control enabled state
-  const dateControlEnabled = useWatch({
+  // Watch actual field values to determine if controls are active
+  const releaseDate = useWatch({
     control,
-    name: 'mainRule.dateControl.enabled',
-  });
-
-  // Watch release date enabled state
-  const releaseDateEnabled = useWatch({
-    control,
-    name: 'mainRule.dateControl.releaseDateEnabled' as const,
-    defaultValue: false,
-  });
-
-  // Watch PrairieTest Control enabled state
-  const prairieTestControlEnabled = useWatch({
-    control,
-    name: 'mainRule.prairieTestControl.enabled',
+    name: 'mainRule.dateControl.releaseDate',
   });
 
   // Watch PrairieTest exams
@@ -55,10 +42,11 @@ export function MainRuleForm({ control, trigger, courseInstance, setValue }: Mai
   });
 
   // Check if date-based release is available
-  const hasDateRelease = dateControlEnabled && releaseDateEnabled;
+  const hasDateRelease = releaseDate !== undefined && releaseDate !== null;
 
   // Check if PrairieTest-based release is available
-  const hasPrairieTestRelease = prairieTestControlEnabled && (prairieTestExams?.length ?? 0) > 0;
+  const hasPrairieTestRelease =
+    prairieTestExams !== undefined && (prairieTestExams?.length ?? 0) > 0;
 
   return (
     <div>
@@ -105,7 +93,7 @@ export function MainRuleForm({ control, trigger, courseInstance, setValue }: Mai
                 courseInstance={courseInstance}
                 setValue={setValue}
               />
-              <PrairieTestControlForm control={control} namePrefix="mainRule" />
+              <PrairieTestControlForm control={control} namePrefix="mainRule" setValue={setValue} />
 
               <AfterCompleteForm
                 control={control}

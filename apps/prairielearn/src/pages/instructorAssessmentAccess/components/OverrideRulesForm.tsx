@@ -9,7 +9,6 @@ import {
 
 import { AfterCompleteForm } from './AfterCompleteForm.js';
 import { DateControlForm } from './DateControlForm.js';
-import { PrairieTestControlForm } from './PrairieTestControlForm.js';
 import type { AccessControlFormData } from './types.js';
 
 interface OverrideRulesFormProps {
@@ -67,7 +66,8 @@ export function OverrideRulesForm({
             <div>
               <strong>Inheritance:</strong> Override rules inherit settings from the main rule. Only
               the settings you explicitly configure here will override the main rule. Date control,
-              PrairieTest control, and after-completion settings are inherited from the main rule.
+              PrairieTest control, and after-completion settings are inherited from the main rule
+              unless explicitly overridden.
             </div>
           </div>
         </Collapse>
@@ -87,6 +87,17 @@ export function OverrideRulesForm({
         const override = watchedOverrides[index];
         const isEnabled = override?.enabled;
         const blockAccess = override?.blockAccess;
+
+        // Check if specific sections are overridden
+        const hasDateControlOverride =
+          override?.dateControl?.releaseDate !== undefined ||
+          override?.dateControl?.dueDate !== undefined ||
+          override?.dateControl?.durationMinutes !== undefined ||
+          override?.dateControl?.password !== undefined;
+
+        const hasAfterCompleteOverride =
+          override?.afterComplete?.hideQuestions !== undefined ||
+          override?.afterComplete?.hideScore !== undefined;
 
         return (
           <Card key={field.id} class="mb-4">
@@ -147,15 +158,17 @@ export function OverrideRulesForm({
                     control={control}
                     namePrefix={`overrides.${index}`}
                     setValue={setValue}
-                    showOverrideButton={override?.dateControl?.enabled === undefined}
+                    showOverrideButton={!hasDateControlOverride}
                     title="Date Control"
                     description="Control access and credit to your exam based on a schedule"
                     collapsible={true}
-                    defaultExpanded={true}
+                    defaultExpanded={hasDateControlOverride}
                     onOverride={() => {
-                      setValue(`overrides.${index}.dateControl.enabled`, true);
-                      setValue(`overrides.${index}.dateControl.releaseDateEnabled`, true);
-                      setValue(`overrides.${index}.dateControl.dueDateEnabled`, true);
+                      // Initialize with empty values - user will fill them in
+                      setValue(`overrides.${index}.dateControl.releaseDate`, '');
+                      setValue(`overrides.${index}.dateControl.dueDate`, '');
+                      setValue(`overrides.${index}.dateControl.durationMinutes`, 0);
+                      setValue(`overrides.${index}.dateControl.password`, '');
                     }}
                   />
 
@@ -164,31 +177,15 @@ export function OverrideRulesForm({
                     control={control}
                     namePrefix={`overrides.${index}`}
                     setValue={setValue}
-                    showOverrideButton={
-                      override?.afterComplete?.hideQuestions === undefined &&
-                      override?.afterComplete?.hideScore === undefined
-                    }
+                    showOverrideButton={!hasAfterCompleteOverride}
                     title="After Completion Behavior"
                     description="Configure what happens after students complete the assessment"
                     collapsible={true}
-                    defaultExpanded={true}
+                    defaultExpanded={hasAfterCompleteOverride}
                     onOverride={() => {
+                      // Initialize with reasonable defaults
                       setValue(`overrides.${index}.afterComplete.hideQuestions`, true);
-                      setValue(`overrides.${index}.afterComplete.hideScore`, true);
-                    }}
-                  />
-
-                  {/* PrairieTest Integration Section */}
-                  <PrairieTestControlForm
-                    control={control}
-                    namePrefix={`overrides.${index}`}
-                    showOverrideButton={override?.prairieTestControl?.enabled === undefined}
-                    title="PrairieTest Integration"
-                    description="Integrate with PrairieTest exams for access control"
-                    collapsible={true}
-                    defaultExpanded={true}
-                    onOverride={() => {
-                      setValue(`overrides.${index}.prairieTestControl.enabled`, true);
+                      setValue(`overrides.${index}.afterComplete.hideScore`, false);
                     }}
                   />
                 </div>

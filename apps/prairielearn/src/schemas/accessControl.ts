@@ -122,8 +122,7 @@ export const AccessControlJsonSchema = z.object({
   listBeforeRelease: z
     .boolean()
     .optional()
-    .describe('Whether students can see the title and click into the assessment before release')
-    .default(true),
+    .describe('Whether students can see the title and click into the assessment before release'),
 
   dateControl: DateControlJsonSchema,
   prairieTestControl: PrairieTestControlJsonSchema,

@@ -67,9 +67,7 @@ export function AccessControlForm({
       enabled: true,
       blockAccess: false,
       targets: [],
-      dateControl: {
-        releaseDateEnabled: false,
-      },
+      dateControl: {},
       prairieTestControl: {},
       afterComplete: {},
     });
