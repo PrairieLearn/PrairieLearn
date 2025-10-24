@@ -16,7 +16,6 @@ import { useMemo, useState } from 'preact/compat';
 import { Button, Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { Hydrate } from '@prairielearn/preact/server';
 import {
   CategoricalColumnFilter,
   MultiSelectColumnFilter,
@@ -822,20 +821,18 @@ function AssessmentQuestionTable({
   return (
     <>
       <div class="mb-3">
-        <Hydrate>
-          <RubricSettings
-            assessmentQuestion={assessmentQuestion}
-            rubricData={rubricData}
-            csrfToken={csrfToken}
-            aiGradingStats={aiGradingStats}
-            context={{
-              course_short_name: course.short_name,
-              course_instance_short_name: courseInstance.short_name,
-              assessment_tid: assessmentTid,
-              question_qid: questionQid,
-            }}
-          />
-        </Hydrate>
+        <RubricSettings
+          assessmentQuestion={assessmentQuestion}
+          rubricData={rubricData}
+          csrfToken={csrfToken}
+          aiGradingStats={aiGradingStats}
+          context={{
+            course_short_name: course.short_name,
+            course_instance_short_name: courseInstance.short_name,
+            assessment_tid: assessmentTid,
+            question_qid: questionQid,
+          }}
+        />
       </div>
       <TanstackTableCard
         table={table}
