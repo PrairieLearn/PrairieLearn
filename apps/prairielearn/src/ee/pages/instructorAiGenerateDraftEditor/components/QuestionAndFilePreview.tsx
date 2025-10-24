@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'preact/hooks';
+
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import RichTextEditor from '../RichTextEditor/index.js';
 
@@ -14,10 +16,97 @@ export function QuestionAndFilePreview({
   questionContainerHtml: string;
   csrfToken: string;
 }) {
+  const questionWrapperRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const questionWrapper = questionWrapperRef.current;
+    if (!questionWrapper) return;
+
+    function handleSubmit(e: Event) {
+      const target = e.target as HTMLElement;
+
+      // Check if the event target is a form with class 'question-form'.
+      // This is necessary because we're using event delegation.
+      if (!(target instanceof HTMLFormElement) || !target.classList.contains('question-form')) {
+        return;
+      }
+
+      const form = target;
+      const submitEvent = e as SubmitEvent;
+      const formData = new FormData(form);
+
+      // Copy over the submitter button's name/value if present.
+      const submitter = submitEvent.submitter;
+      if (submitter instanceof HTMLButtonElement && submitter.name && submitter.value) {
+        formData.append(submitter.name, submitter.value);
+      }
+
+      e.preventDefault();
+      const data = Object.fromEntries(formData.entries());
+      fetch(form.action, {
+        method: form.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`Server returned status ${res.status}`);
+
+          const text = await res.text();
+
+          // Parse the HTML response to extract the .question-container
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(text, 'text/html');
+          const newQuestionContainer = doc.querySelector('.question-container');
+
+          if (!newQuestionContainer) {
+            throw new Error('No .question-container found in response');
+          }
+
+          // Find and replace the existing .question-container
+          const oldQuestionContainer = questionWrapper.querySelector('.question-container');
+          if (!oldQuestionContainer) {
+            throw new Error('No existing .question-container found');
+          }
+
+          // Replace the old container with the new one
+          oldQuestionContainer.replaceWith(newQuestionContainer);
+
+          // Execute any scripts in the new container
+          const scripts = newQuestionContainer.querySelectorAll('script');
+          scripts.forEach((oldScript) => {
+            const newScript = document.createElement('script');
+
+            // Copy all attributes
+            Array.from(oldScript.attributes).forEach((attr) => {
+              newScript.setAttribute(attr.name, attr.value);
+            });
+
+            // Copy script content
+            newScript.textContent = oldScript.textContent;
+
+            // Replace the old script with the new one to trigger execution
+            oldScript.replaceWith(newScript);
+          });
+        })
+        .catch((err) => {
+          console.error('Error submitting question', err);
+        });
+    }
+
+    // Use event delegation - listen on the wrapper for submit events
+    questionWrapper.addEventListener('submit', handleSubmit, true);
+
+    return () => {
+      questionWrapper.removeEventListener('submit', handleSubmit, true);
+    };
+  }, [questionContainerHtml]);
+
   return (
     <div class="tab-content" style="height: 100%">
       <div role="tabpanel" id="question-preview" class="tab-pane active" style="height: 100%">
         <div
+          ref={questionWrapperRef}
           class="question-wrapper mx-auto p-3"
           // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{ __html: questionContainerHtml }}
