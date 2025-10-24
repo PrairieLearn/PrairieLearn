@@ -199,7 +199,7 @@ export function getAssessmentContext(resLocals: Record<string, any>): StaffAsses
   return schema.parse(resLocals);
 }
 
-export interface DangerousAuthzData {
+export interface DangerousSystemAuthzData {
   authn_user: {
     user_id: null;
   };
@@ -208,7 +208,7 @@ export interface DangerousAuthzData {
   };
 }
 
-export function dangerousFullAuthzPermissions(): DangerousAuthzData {
+export function dangerousFullAuthzAsSystem(): DangerousSystemAuthzData {
   return {
     authn_user: {
       user_id: null,
