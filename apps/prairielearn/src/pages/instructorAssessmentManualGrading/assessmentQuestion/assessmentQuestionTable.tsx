@@ -359,9 +359,13 @@ function AssessmentQuestionTable({
             onChange={row.getToggleSelectedHandler()}
           />
         ),
+        size: 40,
+        minSize: 40,
+        maxSize: 40,
         enableSorting: false,
         enableHiding: false,
         enablePinning: false,
+        enableResizing: false,
       }),
 
       // Instance number column
