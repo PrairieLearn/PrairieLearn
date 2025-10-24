@@ -332,18 +332,26 @@ export function TanstackTable<RowDataModel>({
                               ? null
                               : flexRender(header.column.columnDef.header, header.getContext())}
                             {canSort && (
-                              <span class="ms-2" aria-hidden="true">
-                                <SortIcon sortMethod={sortDirection || false} />
-                              </span>
-                            )}
-                            {canSort && (
                               <span class="visually-hidden">
                                 , {getAriaSort(sortDirection)}, click to sort
                               </span>
                             )}
                           </button>
 
-                          {canFilter && filters[header.column.id]?.({ header })}
+                          <div class="d-flex align-items-center">
+                            {canSort && (
+                              <button
+                                type="button"
+                                class="btn btn-link text-muted p-0 ms-2"
+                                aria-label={`Sort ${columnName.toLowerCase()}`}
+                                title={`Sort ${columnName.toLowerCase()}`}
+                                onClick={header.column.getToggleSortingHandler()}
+                              >
+                                <SortIcon sortMethod={sortDirection || false} />
+                              </button>
+                            )}
+                            {canFilter && filters[header.column.id]?.({ header })}
+                          </div>
                         </div>
                         {tableRect?.width &&
                         tableRect.width > table.getTotalSize() &&
