@@ -12,26 +12,35 @@ import {
 } from './base64-util.js';
 
 describe('base64 encoding/decoding equivalence', () => {
-  // Test cases covering various Unicode scenarios
   const testCases: { name: string; value: string }[] = [
+    // ASCII cases
     { name: 'simple ASCII string', value: 'hello' },
     { name: 'string with punctuation', value: 'Hello, World!' },
-    { name: 'long ASCII sentence', value: 'The quick brown fox jumps over the lazy dog' },
     { name: 'numeric string', value: '123456789' },
-    { name: 'special characters', value: 'special!@#$%^&*()' },
-    { name: 'Chinese characters', value: '你好世界' },
-    { name: 'Arabic characters', value: 'مرحبا بالعالم' },
-    { name: 'Russian characters', value: 'Привет мир' },
-    { name: 'emoji', value: '🎉🎊🎈' },
-    { name: 'mixed scripts', value: 'Mixed: hello 世界 مرحبا' },
-    { name: 'empty string', value: '' },
-    { name: 'single character', value: 'a' },
-    { name: 'Japanese hiragana', value: 'あ' },
-    { name: 'Greek characters', value: 'Ελληνικά' },
+
+    // Whitespace and escapes
     { name: 'whitespace characters', value: '\n\t\r' },
     { name: 'escaped whitespace strings', value: '\\n\\t\\r' },
+
+    // Symbols and specials
+    { name: 'special characters', value: 'special!@#$%^&*()' },
     { name: 'symbols', value: '©®™' },
     { name: 'null character', value: 'null\x00char' },
+
+    // Non-Latin scripts
+    { name: 'Arabic characters', value: 'مرحبا بالعالم' },
+    { name: 'Chinese characters', value: '你好世界' },
+    { name: 'Greek characters', value: 'Ελληνικά' },
+    { name: 'Japanese hiragana', value: 'あ' },
+    { name: 'Russian characters', value: 'Привет мир' },
+
+    // Emoji and mixed
+    { name: 'emoji', value: '🎉🎊🎈' },
+    { name: 'mixed scripts', value: 'Mixed: hello 世界 مرحبا' },
+
+    // Edge cases
+    { name: 'empty string', value: '' },
+    { name: 'single character', value: 'a' },
   ];
 
   it.each(testCases)('Handles $name correctly', ({ value: testStr }) => {
