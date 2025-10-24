@@ -95,7 +95,6 @@ SELECT
   s.credit,
   v.id AS variant_id,
   iq.id AS instance_question_id,
-  iq.open AS instance_question_open,
   ai.id AS assessment_instance_id,
   EXISTS (
     SELECT

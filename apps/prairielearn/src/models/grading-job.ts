@@ -37,7 +37,6 @@ const VariantForGradingJobUpdateSchema = z.object({
   credit: SubmissionSchema.shape.credit,
   variant_id: IdSchema,
   instance_question_id: IdSchema.nullable(),
-  instance_question_open: z.boolean().nullable(),
   assessment_instance_id: IdSchema.nullable(),
   has_newer_submission: z.boolean(),
 });
@@ -146,7 +145,6 @@ export async function updateGradingJobAfterGrading({
     const {
       has_newer_submission,
       instance_question_id,
-      instance_question_open,
       assessment_instance_id,
       variant_id,
       credit,
@@ -198,7 +196,6 @@ export async function updateGradingJobAfterGrading({
         await updateInstanceQuestionGrade({
           variant_id,
           instance_question_id,
-          instance_question_open: instance_question_open ?? false,
           submission_score: gradingJob.score ?? 0,
           grading_job_id,
           authn_user_id: gradingJob.auth_user_id,

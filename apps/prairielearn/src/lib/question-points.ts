@@ -35,20 +35,32 @@ type InstanceQuestionsPoints = Pick<
 export async function updateInstanceQuestionGrade({
   variant_id,
   instance_question_id,
-  instance_question_open,
   submission_score,
   grading_job_id,
   authn_user_id,
 }: {
   variant_id: string;
   instance_question_id: string;
-  instance_question_open: boolean;
   submission_score: number;
   grading_job_id: string;
   authn_user_id: string | null;
 }) {
   await runInTransactionAsync(async () => {
-    if (!instance_question_open) {
+    const {
+      assessment,
+      instance_question: instanceQuestion,
+      assessment_question: assessmentQuestion,
+    } = await queryRow(
+      sql.select_info_for_instance_question_grade,
+      { instance_question_id },
+      z.object({
+        assessment: AssessmentSchema,
+        instance_question: InstanceQuestionSchema,
+        assessment_question: AssessmentQuestionSchema,
+      }),
+    );
+
+    if (!instanceQuestion.open) {
       // This has been copied from legacy code. We should actually work to
       // prevent this from happening farther upstream, and avoid recording
       // an issue here.
@@ -65,20 +77,6 @@ export async function updateInstanceQuestionGrade({
       });
       return;
     }
-
-    const {
-      assessment,
-      instance_question: instanceQuestion,
-      assessment_question: assessmentQuestion,
-    } = await queryRow(
-      sql.select_info_for_instance_question_grade,
-      { instance_question_id },
-      z.object({
-        assessment: AssessmentSchema,
-        instance_question: InstanceQuestionSchema,
-        assessment_question: AssessmentQuestionSchema,
-      }),
-    );
 
     const computedPoints = await run(() => {
       if (assessment.type === 'Exam') {
