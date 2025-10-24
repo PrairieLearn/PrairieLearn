@@ -181,7 +181,7 @@ export async function buildAuthzData({
 
 export type CourseInstanceRole = 'None' | 'Student Data Viewer' | 'Student Data Editor' | 'Student';
 
-export interface DangerousAuthzData {
+export interface DangerousSystemAuthzData {
   authn_user: {
     user_id: null;
   };
@@ -190,9 +190,11 @@ export interface DangerousAuthzData {
   };
 }
 
-export function dangerousFullAuthzPermissions(): DangerousAuthzData {
+export function dangerousFullAuthzForTesting(): DangerousSystemAuthzData {
   return {
     authn_user: {
+      // We use this structure with a user_id of null to indicate that the user is the system.
+      // Inserts into the audit_events table as a system user have a user_id of null.
       user_id: null,
     },
     user: {
@@ -201,20 +203,17 @@ export function dangerousFullAuthzPermissions(): DangerousAuthzData {
   };
 }
 
-export function isDangerousFullAuthzPermissions(
-  authzData: RawAuthzData | DangerousAuthzData,
-): authzData is DangerousAuthzData {
-  if (authzData.authn_user.user_id === null) {
-    return true;
-  }
-  return false;
+export function isDangerousFullAuthzForTesting(
+  authzData: RawAuthzData | DangerousSystemAuthzData,
+): authzData is DangerousSystemAuthzData {
+  return authzData.authn_user.user_id === null;
 }
 
 export function hasRole(
-  authzData: RawAuthzData | DangerousAuthzData,
+  authzData: RawAuthzData | DangerousSystemAuthzData,
   requestedRole: CourseInstanceRole,
 ): boolean {
-  if (isDangerousFullAuthzPermissions(authzData)) {
+  if (isDangerousFullAuthzForTesting(authzData)) {
     return true;
   }
 
@@ -251,7 +250,7 @@ export function hasRole(
  * @param allowedRoles - The allowed roles for the model function.
  */
 export function assertHasRole(
-  authzData: RawAuthzData | DangerousAuthzData,
+  authzData: RawAuthzData | DangerousSystemAuthzData,
   requestedRole: CourseInstanceRole,
   allowedRoles: CourseInstanceRole[],
 ): void {

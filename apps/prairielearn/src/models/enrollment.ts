@@ -13,10 +13,10 @@ import {
 } from '../ee/models/enrollment.js';
 import {
   type CourseInstanceRole,
-  type DangerousAuthzData,
+  type DangerousSystemAuthzData,
   assertHasRole,
-  dangerousFullAuthzPermissions,
-  isDangerousFullAuthzPermissions,
+  dangerousFullAuthzForTesting,
+  isDangerousFullAuthzForTesting,
 } from '../lib/authzData.js';
 import {
   type RawAuthzData,
@@ -68,9 +68,9 @@ function assertEnrollmentInCourseInstance(
 
 function assertEnrollmentBelongsToUser(
   enrollment: Enrollment,
-  authzData: RawAuthzData | DangerousAuthzData,
+  authzData: RawAuthzData | DangerousSystemAuthzData,
 ) {
-  if (isDangerousFullAuthzPermissions(authzData)) {
+  if (isDangerousFullAuthzForTesting(authzData)) {
     return;
   }
   // We only check this for enrollments that have a user_id (e.g. non-pending enrollments)
@@ -95,7 +95,7 @@ async function _enrollUserInCourseInstanceWithLock({
   userId: string;
   actionDetail: SupportedActionsForTable<'enrollments'>;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
 }): Promise<Enrollment> {
   assertHasRole(authzData, requestedRole, ['Student']);
 
@@ -140,7 +140,7 @@ export async function ensureEnrollment({
 }: {
   userId: string;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
   courseInstance: CourseInstanceContext;
   actionDetail: SupportedActionsForTable<'enrollments'>;
 }): Promise<Enrollment | null> {
@@ -267,7 +267,7 @@ export async function selectOptionalEnrollmentByUserId({
 }: {
   userId: string;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment | null> {
   assertHasRole(authzData, requestedRole, [
@@ -297,7 +297,7 @@ export async function selectOptionalEnrollmentByPendingUid({
 }: {
   pendingUid: string;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment | null> {
   assertHasRole(authzData, requestedRole, [
@@ -337,7 +337,7 @@ export async function generateAndEnrollUsers({
         // but this function is only used in test code where we don't care about
         // the role the caller requests.
         requestedRole: 'Student',
-        authzData: dangerousFullAuthzPermissions(),
+        authzData: dangerousFullAuthzForTesting(),
         actionDetail: 'implicit_joined',
       });
     }
@@ -354,7 +354,7 @@ export async function selectEnrollmentById({
   id: string;
   courseInstance: CourseInstanceContext;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
 }) {
   assertHasRole(authzData, requestedRole, [
     'Student',
@@ -382,7 +382,7 @@ export async function selectOptionalEnrollmentByUid({
 }: {
   uid: string;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
   courseInstance: CourseInstanceContext;
 }) {
   assertHasRole(authzData, requestedRole, [
@@ -417,7 +417,7 @@ async function _inviteExistingEnrollmentLocked({
 }: {
   enrollment: Enrollment;
   pendingUid: string;
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
   requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
   assertHasRole(authzData, requestedRole, ['Student Data Editor']);
@@ -451,7 +451,7 @@ async function inviteNewEnrollment({
   requestedRole,
 }: {
   pendingUid: string;
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
   courseInstance: CourseInstanceContext;
   requestedRole: CourseInstanceRole;
 }) {
@@ -489,7 +489,7 @@ export async function inviteStudentByUid({
 }: {
   uid: string;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
@@ -541,7 +541,7 @@ export async function setEnrollmentStatus({
 }: {
   enrollment: Enrollment;
   status: 'rejected' | 'blocked' | 'removed' | 'joined';
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
   requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
   const transitionInformation: {
@@ -627,7 +627,7 @@ export async function deleteEnrollment({
 }: {
   enrollment: Enrollment;
   actionDetail: SupportedActionsForTable<'enrollments'>;
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
   requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
   assertHasRole(authzData, requestedRole, ['Student Data Editor']);
@@ -671,7 +671,7 @@ export async function inviteEnrollment({
 }: {
   enrollment: Enrollment;
   pendingUid: string;
-  authzData: RawAuthzData | DangerousAuthzData;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
   requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {

@@ -2,7 +2,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { dangerousFullAuthzPermissions } from '../../lib/authzData.js';
+import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
 import { config } from '../../lib/config.js';
 import {
   InstanceQuestionSchema,
@@ -68,7 +68,7 @@ describe('student data access', { timeout: 60_000 }, function () {
     await ensureEnrollment({
       userId: '3',
       courseInstance,
-      authzData: dangerousFullAuthzPermissions(),
+      authzData: dangerousFullAuthzForTesting(),
       requestedRole: 'Student',
       actionDetail: 'implicit_joined',
     });

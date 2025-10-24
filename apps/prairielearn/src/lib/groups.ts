@@ -10,7 +10,7 @@ import { selectCourseById } from '../models/course.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
-import { dangerousFullAuthzPermissions } from './authzData.js';
+import { dangerousFullAuthzForTesting } from './authzData.js';
 import {
   type GroupConfig,
   GroupConfigSchema,
@@ -222,7 +222,7 @@ async function selectUserInCourseInstance({
       courseInstance,
       userId: user.user_id,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzPermissions(),
+      authzData: dangerousFullAuthzForTesting(),
     }))
   ) {
     return user;
