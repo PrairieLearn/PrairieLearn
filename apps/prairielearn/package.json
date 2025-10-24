@@ -279,6 +279,7 @@
     "@types/klaw": "^3.0.7",
     "@types/lodash": "^4.17.20",
     "@types/loopbench": "^1.2.4",
+    "@types/mdast": "^4.0.4",
     "@types/memorystream": "^0.3.4",
     "@types/mime": "^4.0.0",
     "@types/minimist": "^1.2.5",
