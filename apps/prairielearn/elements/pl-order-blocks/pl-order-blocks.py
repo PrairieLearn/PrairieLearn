@@ -105,7 +105,7 @@ def extract_multigraph(
 def solve_problem(
     answers_list: list[OrderBlocksAnswerData],
     grading_method: GradingMethodType,
-    has_optional_lines: bool,
+    has_optional_blocks: bool,
 ) -> list[OrderBlocksAnswerData]:
     if (
         grading_method is GradingMethodType.EXTERNAL
@@ -116,11 +116,11 @@ def solve_problem(
     elif grading_method is GradingMethodType.RANKING:
         return sorted(answers_list, key=lambda x: int(x["ranking"]))
     elif grading_method is GradingMethodType.DAG:
-        if not has_optional_lines:
+        if not has_optional_blocks:
             depends_graph, group_belonging = extract_dag(answers_list)
             solution = solve_dag(depends_graph, group_belonging)
             return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
-        if has_optional_lines:
+        if has_optional_blocks:
             depends_graph, final = extract_multigraph(answers_list)
             solution = solve_multigraph(depends_graph, final)[0]
             answers_list = list(filter(lambda x: x["tag"] in solution, answers_list))
@@ -220,12 +220,12 @@ def prepare(html: str, data: pl.QuestionData) -> None:
 
     if (
         data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1
-        and not order_blocks_options.has_optional_lines
+        and not order_blocks_options.has_optional_blocks
     ):
         data["correct_answers"][order_blocks_options.answers_name] = solve_problem(
             correct_answers,
             order_blocks_options.grading_method,
-            order_blocks_options.has_optional_lines,
+            order_blocks_options.has_optional_blocks,
         )
 
 
@@ -246,7 +246,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     inline = order_blocks_options.inline
     dropzone_layout = order_blocks_options.solution_placement
     correct_answers = data["correct_answers"][answer_name]
-    has_optional_lines = order_blocks_options.has_optional_lines
+    has_optional_blocks = order_blocks_options.has_optional_blocks
 
     block_formatting = (
         "pl-order-blocks-code"
@@ -422,8 +422,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "indent": max(0, (solution["indent"] or 0) * TAB_SIZE_PX),
             }
             for solution in (
-                solve_problem(correct_answers, grading_method, has_optional_lines)
-                if order_blocks_options.has_optional_lines
+                solve_problem(correct_answers, grading_method, has_optional_blocks)
+                if order_blocks_options.has_optional_blocks
                 else correct_answers
             )
         ]
@@ -617,7 +617,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             )
         elif (
             grading_method is GradingMethodType.DAG
-            and not order_blocks_options.has_optional_lines
+            and not order_blocks_options.has_optional_blocks
         ):
             depends_graph, group_belonging = extract_dag(true_answer_list)
             num_initial_correct, true_answer_length = grade_dag(
@@ -625,7 +625,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             )
         elif (
             grading_method is GradingMethodType.DAG
-            and order_blocks_options.has_optional_lines
+            and order_blocks_options.has_optional_blocks
         ):
             depends_multigraph, final = extract_multigraph(true_answer_list)
             num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
@@ -719,8 +719,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     grading_method = order_block_options.grading_method
     answer_name = order_block_options.answers_name
     answer_name_field = answer_name + "-input"
-    correct_answers = data["correct_answers"][answer_name]
-    has_optional_lines = order_block_options.has_optional_lines
+    correct_answers = deepcopy(data["correct_answers"][answer_name])
+    has_optional_blocks = order_block_options.has_optional_blocks
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This
@@ -733,9 +733,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # correct answers, we should check them at random instead of just the provided solution
     elif data["test_type"] == "correct":
         answer = (
-            solve_problem(deepcopy(correct_answers), grading_method, has_optional_lines)
-            if order_block_options.has_optional_lines
-            else deepcopy(correct_answers)
+            solve_problem(correct_answers, grading_method, has_optional_blocks)
+            if order_block_options.has_optional_blocks
+            else correct_answers
         )
         data["raw_submitted_answers"][answer_name_field] = json.dumps(answer)
         data["partial_scores"][answer_name] = {
@@ -748,9 +748,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data["test_type"] == "incorrect":
         answer = (
-            solve_problem(deepcopy(correct_answers), grading_method, has_optional_lines)
-            if order_block_options.has_optional_lines
-            else deepcopy(correct_answers)
+            solve_problem(correct_answers, grading_method, has_optional_blocks)
+            if order_block_options.has_optional_blocks
+            else correct_answers
         )
         answer.pop(0)
         score = 0
