@@ -844,7 +844,8 @@ function AssessmentQuestionTable({
       headerButtons={
         <>
           <Button variant="light" size="sm" onClick={toggleStudentInfo}>
-            <i class="fa-eye" aria-hidden="true" /> Show student info
+            <i class={showStudentInfo ? 'fa-eye-slash' : 'fa-eye'} aria-hidden="true" />{' '}
+            {showStudentInfo ? 'Hide student info' : 'Show student info'}
           </Button>
           {authzData.has_course_instance_permission_edit && (
             <Dropdown>
