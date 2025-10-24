@@ -1,5 +1,5 @@
 import type { Row, Table } from '@tanstack/react-table';
-import * as React from 'preact/compat';
+import type * as React from 'preact/compat';
 import { useCallback, useState } from 'preact/compat';
 
 /**
