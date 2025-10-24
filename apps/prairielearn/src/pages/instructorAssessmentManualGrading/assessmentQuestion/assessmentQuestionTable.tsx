@@ -252,17 +252,29 @@ function AssessmentQuestionTable({
   const [showStudentInfo, setShowStudentInfo] = useState(false);
 
   const columnFilters = useMemo(() => {
-    return [
+    const filters = [
       { id: 'requires_manual_grading', value: gradingStatusFilter },
       { id: 'assigned_grader_name', value: assignedGraderFilter },
       { id: 'last_grader_name', value: gradedByFilter },
-      { id: 'instance_question_group_name', value: submissionGroupFilter },
-      { id: 'rubric_grading_item_ids', value: rubricItemsFilter },
       { id: 'manual_points', value: manualPointsFilter },
-      { id: 'auto_points', value: autoPointsFilter },
       { id: 'points', value: totalPointsFilter },
-      { id: 'score_perc', value: scoreFilter },
     ];
+
+    // Only add filters for columns that exist
+    if (aiGradingMode && instanceQuestionGroups.length > 0) {
+      filters.push({ id: 'instance_question_group_name', value: submissionGroupFilter });
+    }
+    if (rubricData) {
+      filters.push({ id: 'rubric_grading_item_ids', value: rubricItemsFilter });
+    }
+    if (assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0) {
+      filters.push({ id: 'auto_points', value: autoPointsFilter });
+    }
+    if (!aiGradingMode) {
+      filters.push({ id: 'score_perc', value: scoreFilter });
+    }
+
+    return filters;
   }, [
     gradingStatusFilter,
     assignedGraderFilter,
@@ -273,6 +285,10 @@ function AssessmentQuestionTable({
     autoPointsFilter,
     totalPointsFilter,
     scoreFilter,
+    aiGradingMode,
+    instanceQuestionGroups.length,
+    rubricData,
+    assessmentQuestion.max_auto_points,
   ]);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
