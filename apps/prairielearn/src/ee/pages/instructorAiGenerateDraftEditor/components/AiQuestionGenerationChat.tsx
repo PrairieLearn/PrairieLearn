@@ -30,8 +30,8 @@ function ToolCallStatus({
   children?: preact.ComponentChildren;
 }) {
   return (
-    <div class="border rounded p-1 small">
-      <div class="d-flex flex-row align-items-center gap-2">
+    <div class="small text-muted">
+      <div class="d-flex flex-row align-items-center gap-1">
         {run(() => {
           if (state === 'input-streaming' || state === 'input-available') {
             return (
@@ -40,9 +40,9 @@ function ToolCallStatus({
               </div>
             );
           } else if (state === 'output-available') {
-            return <i class="bi bi-check-circle-fill text-success" aria-hidden="true" />;
+            return <i class="bi bi-check-lg text-success" aria-hidden="true" />;
           } else {
-            return <i class="bi bi-x-circle-fill text-danger" aria-hidden="true" />;
+            return <i class="bi bi-x text-danger" aria-hidden="true" />;
           }
         })}
         <span>{statusText}</span>
