@@ -261,6 +261,14 @@ export function generateSubmissionMessage({
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
+  // div
+  //    <div data-image-capture-uuid="..."></div>
+  // /div
+
+  // Split by image capture
+  // Non-image capture -> text parts
+  // Image capture parts -> image parts
+
   const processNode = (node: AnyNode) => {
     const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
 
