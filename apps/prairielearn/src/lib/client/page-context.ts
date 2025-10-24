@@ -208,9 +208,11 @@ export interface DangerousSystemAuthzData {
   };
 }
 
-export function dangerousFullAuthzAsSystem(): DangerousSystemAuthzData {
+export function dangerousFullAuthzForTesting(): DangerousSystemAuthzData {
   return {
     authn_user: {
+      // We use this structure with a user_id of null to indicate that the user is the system.
+      // Inserts into the audit_events table as a system user have a user_id of null.
       user_id: null,
     },
     user: {
