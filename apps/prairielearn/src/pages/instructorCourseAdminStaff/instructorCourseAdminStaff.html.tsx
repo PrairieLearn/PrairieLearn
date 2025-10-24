@@ -356,6 +356,33 @@ function CoursePermissionsDeleteNonOwnersForm({ csrfToken }: { csrfToken: string
   `;
 }
 
+function CoursePermissionsRemoveStaffForm({
+  courseUser,
+  csrfToken,
+}: {
+  courseUser: CourseUsersRow;
+  csrfToken: string;
+}) {
+  return html`
+    <form name="student-data-access-remove-${courseUser.user.user_id}" method="POST">
+      <input type="hidden" name="__action" value="course_permissions_delete" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+
+      <div class="mb-3">
+        <p class="form-text">
+          Taking this action will remove ${courseUser.user.name ?? 'this user'} from course staff.
+        </p>
+      </div>
+
+      <div class="text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-primary">Remove staff</button>
+      </div>
+    </form>
+  `;
+}
+
 function StaffTable({
   csrfToken,
   courseUsers,
@@ -456,17 +483,26 @@ function StaffTable({
                 <td class="align-middle">
                   ${courseUser.course_permission.course_role !== 'Owner' || isAdministrator
                     ? html`
-                        <form
-                          name="student-data-access-remove-${courseUser.user.user_id}"
-                          method="POST"
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-dark"
+                          aria-label="Remove ${courseUser.user.name ?? 'staff'}"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Remove ${courseUser.user.name ?? 'staff'}"
+                          data-bs-content="${escapeHtml(
+                            CoursePermissionsRemoveStaffForm({
+                              csrfToken,
+                              courseUser,
+                            }),
+                          )}"
+                          data-bs-custom-class="popover-wide"
+                          data-testid="remove-staff-button"
                         >
-                          <input type="hidden" name="__action" value="course_permissions_delete" />
-                          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                          <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
-                          <button type="submit" class="btn btn-sm btn-outline-dark">
-                            <i class="fa fa-times"></i> Delete user
-                          </button>
-                        </form>
+                          <i class="fa fa-times"></i>Remove staff
+                        </button>
                       `
                     : ''}
                 </td>
