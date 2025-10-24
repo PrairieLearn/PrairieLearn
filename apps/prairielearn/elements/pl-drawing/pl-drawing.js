@@ -254,8 +254,10 @@ window.PLDrawingApi = {
     }
 
     canvas.on('object:added', (ev) => {
-      if (ev.target && ev.target.cornerSize !== undefined) {
-        ev.target.cornerSize *= renderScale;
+      if (ev.target) {
+        if (ev.target.cornerSize !== undefined) {
+          ev.target.cornerSize *= renderScale;
+        }
         ev.target.borderColor = 'rgba(102,153,255,1.0)';
       }
     });
@@ -273,7 +275,6 @@ window.PLDrawingApi = {
     // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
     canvas.on('object:moving', function (e) {
       const obj = /** @type {any} */ (e.target);
-      if (!obj) return;
       // if object is too big ignore,
       if (obj.currentHeight > canvas_width || obj.currentWidth > canvas_height) {
         return;
@@ -282,18 +283,18 @@ window.PLDrawingApi = {
 
       // top-left  corner
       if (rect.top < 0 || rect.left < 0) {
-        obj.top = Math.max(obj.top ?? 0, (obj.top ?? 0) - rect.top);
-        obj.left = Math.max(obj.left ?? 0, (obj.left ?? 0) - rect.left);
+        obj.top = Math.max(obj.top, obj.top - rect.top);
+        obj.left = Math.max(obj.left, obj.left - rect.left);
       }
       // bot-right corner
       if (rect.top + rect.height > canvas_height || rect.left + rect.width > canvas_width) {
-        obj.top = Math.min(obj.top ?? 0, canvas_height - rect.height + (obj.top ?? 0) - rect.top);
-        obj.left = Math.min(obj.left ?? 0, canvas_width - rect.width + (obj.left ?? 0) - rect.left);
+        obj.top = Math.min(obj.top, canvas_height - rect.height + obj.top - rect.top);
+        obj.left = Math.min(obj.left, canvas_width - rect.width + obj.left - rect.left);
       }
       // snap the element to the grid if enabled
       if (elem_options.snap_to_grid) {
-        obj.top = Math.round((obj.top ?? 0) / elem_options.grid_size) * elem_options.grid_size;
-        obj.left = Math.round((obj.left ?? 0) / elem_options.grid_size) * elem_options.grid_size;
+        obj.top = Math.round(obj.top / elem_options.grid_size) * elem_options.grid_size;
+        obj.left = Math.round(obj.left / elem_options.grid_size) * elem_options.grid_size;
       }
 
       obj.setCoords();
@@ -384,7 +385,8 @@ class PLDrawingAnswerState {
    * @param {(PLDrawingOptions & Record<string, unknown> & { id: string | number }) | string | number} object The object to delete, or its ID.
    */
   deleteObject(object) {
-    if (typeof object === 'object') {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (object != null && typeof object === 'object') {
       object = object.id;
     }
     delete this._answerData[object];

@@ -51,78 +51,76 @@
         const escapedFileName = escapePath(file);
         const path = `${submissionFilesUrl}/${escapedFileName}`;
 
-        const infoMessage = item.querySelector('.js-info-alert');
-        const errorMessage = item.querySelector('.js-error-alert');
+        const infoMessage = /** @type {HTMLElement} */ (item.querySelector('.js-info-alert'));
+        const errorMessage = /** @type {HTMLElement} */ (item.querySelector('.js-error-alert'));
 
         /**
          * @param {string} message
          */
         function showInfoMessage(message) {
-          if (infoMessage) {
-            infoMessage.textContent = message;
-            infoMessage.classList.remove('d-none');
-          }
+          infoMessage.textContent = message;
+          infoMessage.classList.remove('d-none');
         }
 
         /**
          * @param {string} message
          */
         function showErrorMessage(message) {
-          if (errorMessage) {
-            errorMessage.textContent = message;
-            errorMessage.classList.remove('d-none');
-          }
+          errorMessage.textContent = message;
+          errorMessage.classList.remove('d-none');
         }
 
         function hideErrorMessage() {
-          if (errorMessage) {
-            errorMessage.classList.add('d-none');
-          }
+          errorMessage.classList.add('d-none');
         }
 
-        const toggleShowPreviewText = item.querySelector('.js-toggle-show-preview-text');
-        const toggleExpandPreviewText = item.querySelector('.js-toggle-expand-preview-text');
+        const toggleShowPreviewText = /** @type {HTMLElement} */ (
+          item.querySelector('.js-toggle-show-preview-text')
+        );
+        const toggleExpandPreviewText = /** @type {HTMLElement} */ (
+          item.querySelector('.js-toggle-expand-preview-text')
+        );
 
-        const preview = item.querySelector('.file-preview');
-        const container = /** @type {HTMLElement | null} */ (
+        const preview = /** @type {HTMLElement} */ (item.querySelector('.file-preview'));
+        const container = /** @type {HTMLElement} */ (
           item.querySelector('.file-preview-container')
         );
         const notebookPreview = item.querySelector('.js-notebook-preview');
-        const pre = preview ? preview.querySelector('pre') : null;
+        const pre = /** @type {HTMLElement} */ (preview.querySelector('pre'));
 
-        const downloadButton = item.querySelector('.file-preview-download');
-        if (downloadButton) {
-          downloadButton.addEventListener('click', () => {
-            downloadFile(path, file)
-              .then(() => {
-                hideErrorMessage();
-              })
-              .catch((err) => {
-                console.error(err);
-                showErrorMessage('An error occurred while downloading the file.');
-              });
-          });
-        }
+        const downloadButton = /** @type {HTMLElement} */ (
+          item.querySelector('.file-preview-download')
+        );
+        downloadButton.addEventListener('click', () => {
+          downloadFile(path, file)
+            .then(() => {
+              hideErrorMessage();
+            })
+            .catch((err) => {
+              console.error(err);
+              showErrorMessage('An error occurred while downloading the file.');
+            });
+        });
 
-        const expandButton = item.querySelector('.file-preview-expand');
+        const expandButton = /** @type {HTMLElement} */ (
+          item.querySelector('.file-preview-expand')
+        );
 
         /**
          * @param {boolean} expanded
          */
         function updateExpandButton(expanded) {
-          if (toggleExpandPreviewText) {
-            toggleExpandPreviewText.textContent = expanded ? 'Collapse' : 'Expand';
-          }
-          if (expandButton) {
-            const expandIcon = expandButton.querySelector('.fa-expand');
-            const compressIcon = expandButton.querySelector('.fa-compress');
-            if (expanded) {
-              if (expandIcon) expandIcon.classList.add('d-none');
-              if (compressIcon) compressIcon.classList.remove('d-none');
-            } else {
-              if (expandIcon) expandIcon.classList.remove('d-none');
-              if (compressIcon) compressIcon.classList.add('d-none');
-            }
+          toggleExpandPreviewText.textContent = expanded ? 'Collapse' : 'Expand';
+          const expandIcon = /** @type {HTMLElement} */ (expandButton.querySelector('.fa-expand'));
+          const compressIcon = /** @type {HTMLElement} */ (
+            expandButton.querySelector('.fa-compress')
+          );
+          if (expanded) {
+            expandIcon.classList.add('d-none');
+            compressIcon.classList.remove('d-none');
+          } else {
+            expandIcon.classList.remove('d-none');
+            compressIcon.classList.add('d-none');
           }
         }
 
@@ -130,146 +128,126 @@
          * @param {boolean | undefined} [expanded]
          */
         function toggleExpanded(expanded) {
-          const shouldExpand = expanded ?? (container ? !container.style.maxHeight : false);
+          const shouldExpand = expanded ?? !container.style.maxHeight;
 
           // The container has a class with a `max-height` set which will only take
           // effect if there is no `max-height` set via the `style` attribute.
-          if (container) {
-            if (shouldExpand) {
-              container.style.maxHeight = 'none';
-              updateExpandButton(true);
-            } else {
-              container.style.removeProperty('max-height');
-              updateExpandButton(false);
-            }
+          if (shouldExpand) {
+            container.style.maxHeight = 'none';
+            updateExpandButton(true);
+          } else {
+            container.style.removeProperty('max-height');
+            updateExpandButton(false);
           }
         }
 
-        if (expandButton) {
-          expandButton.addEventListener('click', () => toggleExpanded());
-        }
+        expandButton.addEventListener('click', () => toggleExpanded());
 
         let wasOpened = false;
 
-        if (preview) {
-          $(preview).on('show.bs.collapse', () => {
-            if (toggleShowPreviewText) {
-              toggleShowPreviewText.textContent = 'Hide preview';
-            }
+        $(preview).on('show.bs.collapse', () => {
+          toggleShowPreviewText.textContent = 'Hide preview';
 
-            if (wasOpened) return;
+          if (wasOpened) return;
 
-            const code = preview.querySelector('code');
-            const img = preview.querySelector('img');
-            const iframe = preview.querySelector('iframe');
+          const code = /** @type {HTMLElement} */ (preview.querySelector('code'));
+          const img = /** @type {HTMLImageElement} */ (preview.querySelector('img'));
+          const iframe = /** @type {HTMLIFrameElement} */ (preview.querySelector('iframe'));
 
-            fetch(path, { method: 'GET' })
-              .then((result) => {
-                if (!result.ok) {
-                  throw new Error(`Failed to download file: ${result.status}`);
-                }
-                return result.blob();
-              })
-              .then(async (blob) => {
-                hideErrorMessage();
+          fetch(path, { method: 'GET' })
+            .then((result) => {
+              if (!result.ok) {
+                throw new Error(`Failed to download file: ${result.status}`);
+              }
+              return result.blob();
+            })
+            .then(async (blob) => {
+              hideErrorMessage();
 
-                const type = blob.type;
-                if (type === 'text/plain') {
-                  const text = await blob.text();
-                  if (escapedFileName.endsWith('.ipynb')) {
-                    await Promise.all([
-                      import('marked'),
-                      import('@prairielearn/marked-mathjax'),
-                      // importing DOMPurify sets the global variable `DOMPurify`.
-                      import('dompurify'),
-                      // importing the notebookjs library sets the global variable `nb`.
-                      // @ts-expect-error - notebookjs has no types
-                      import('notebookjs'),
-                      // MathJax needs to have been loaded before the extension can be used.
-                      MathJax.startup.promise,
-                    ]).then(([Marked, markedMathjax]) => {
-                      // @ts-expect-error - addMathjaxExtension signature is complex
-                      markedMathjax.addMathjaxExtension(Marked.marked, MathJax);
-                      // @ts-expect-error - nb global is not well-typed
-                      nb.markdown = Marked.marked.parse;
+              const type = blob.type;
+              if (type === 'text/plain') {
+                const text = await blob.text();
+                if (escapedFileName.endsWith('.ipynb')) {
+                  await Promise.all([
+                    import('marked'),
+                    import('@prairielearn/marked-mathjax'),
+                    // importing DOMPurify sets the global variable `DOMPurify`.
+                    import('dompurify'),
+                    // importing the notebookjs library sets the global variable `nb`.
+                    // @ts-expect-error - notebookjs has no types
+                    import('notebookjs'),
+                    // MathJax needs to have been loaded before the extension can be used.
+                    MathJax.startup.promise,
+                  ]).then(([Marked, markedMathjax]) => {
+                    // @ts-expect-error - addMathjaxExtension signature is complex
+                    markedMathjax.addMathjaxExtension(Marked.marked, MathJax);
+                    // @ts-expect-error - nb global is not well-typed
+                    nb.markdown = Marked.marked.parse;
 
-                      // @ts-expect-error - nb global is not well-typed
-                      nb.sanitizer = /** @param {string} code */ (code) =>
-                        DOMPurify.sanitize(code, { SANITIZE_NAMED_PROPS: true });
-                      const notebook = nb.parse(JSON.parse(text));
-                      const rendered = notebook.render();
+                    // @ts-expect-error - nb global is not well-typed
+                    nb.sanitizer = /** @param {string} code */ (code) =>
+                      DOMPurify.sanitize(code, { SANITIZE_NAMED_PROPS: true });
+                    const notebook = nb.parse(JSON.parse(text));
+                    const rendered = notebook.render();
 
-                      if (notebookPreview) {
-                        notebookPreview.append(rendered);
-                        notebookPreview.classList.remove('d-none');
-                      }
-
-                      // Typeset any math that might be in the notebook.
-                      if (notebookPreview) {
-                        void window.MathJax.typesetPromise([notebookPreview]);
-                      }
-                    });
-                  } else {
-                    if (code) {
-                      code.textContent = text;
+                    if (notebookPreview) {
+                      notebookPreview.append(rendered);
+                      notebookPreview.classList.remove('d-none');
                     }
-                    if (pre) {
-                      pre.classList.remove('d-none');
-                    }
-                  }
 
-                  // Only show the expand/collapse button if the content is tall
-                  // enough where scrolling is necessary. This must be done before
-                  // auto-expansion happens below.
-                  if (container && container.scrollHeight > container.clientHeight) {
-                    if (expandButton) {
-                      expandButton.classList.remove('d-none');
+                    // Typeset any math that might be in the notebook.
+                    if (notebookPreview) {
+                      void window.MathJax.typesetPromise([notebookPreview]);
                     }
-                  }
-
-                  // Always fully expand notebook previews.
-                  if (escapedFileName.endsWith('.ipynb')) {
-                    toggleExpanded(true);
-                  }
-                } else if (type.startsWith('image/')) {
-                  const url = URL.createObjectURL(blob);
-                  if (img) {
-                    img.src = url;
-                    img.onload = () => {
-                      URL.revokeObjectURL(url);
-                    };
-                    img.classList.remove('d-none');
-                  }
-                } else if (type === 'application/pdf') {
-                  const url = URL.createObjectURL(blob);
-                  if (iframe) {
-                    iframe.src = url;
-                    iframe.onload = () => {
-                      URL.revokeObjectURL(url);
-                    };
-                    const pdfContainer = iframe.closest('.js-file-preview-pdf-container');
-                    if (pdfContainer) {
-                      pdfContainer.classList.remove('d-none');
-                    }
-                  }
+                  });
                 } else {
-                  // We can't preview this file.
-                  showInfoMessage('Content preview is not available for this type of file.');
+                  code.textContent = text;
+                  pre.classList.remove('d-none');
                 }
-                wasOpened = true;
-              })
-              .catch((err) => {
-                console.error(err);
-                showErrorMessage('An error occurred while downloading the file.');
-              });
-          });
 
-          $(preview).on('hide.bs.collapse', () => {
-            if (toggleShowPreviewText) {
-              toggleShowPreviewText.textContent = 'Show preview';
-            }
-          });
-        }
+                // Only show the expand/collapse button if the content is tall
+                // enough where scrolling is necessary. This must be done before
+                // auto-expansion happens below.
+                if (container.scrollHeight > container.clientHeight) {
+                  expandButton.classList.remove('d-none');
+                }
+
+                // Always fully expand notebook previews.
+                if (escapedFileName.endsWith('.ipynb')) {
+                  toggleExpanded(true);
+                }
+              } else if (type.startsWith('image/')) {
+                const url = URL.createObjectURL(blob);
+                img.src = url;
+                img.onload = () => {
+                  URL.revokeObjectURL(url);
+                };
+                img.classList.remove('d-none');
+              } else if (type === 'application/pdf') {
+                const url = URL.createObjectURL(blob);
+                iframe.src = url;
+                iframe.onload = () => {
+                  URL.revokeObjectURL(url);
+                };
+                const pdfContainer = /** @type {HTMLElement} */ (
+                  iframe.closest('.js-file-preview-pdf-container')
+                );
+                pdfContainer.classList.remove('d-none');
+              } else {
+                // We can't preview this file.
+                showInfoMessage('Content preview is not available for this type of file.');
+              }
+              wasOpened = true;
+            })
+            .catch((err) => {
+              console.error(err);
+              showErrorMessage('An error occurred while downloading the file.');
+            });
+        });
+
+        $(preview).on('hide.bs.collapse', () => {
+          toggleShowPreviewText.textContent = 'Show preview';
+        });
       });
     }
   }

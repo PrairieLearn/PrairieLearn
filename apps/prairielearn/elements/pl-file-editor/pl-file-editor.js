@@ -102,7 +102,7 @@ function PLFileEditor(uuid, options) {
   this.setEditorContents(currentContents, { resetUndo: true });
 
   if (options.preview) {
-    const previewType = typeof options.preview === 'string' ? options.preview : 'default';
+    const previewType = options.preview_type ?? 'default';
     this.editor.session.on('change', () => this.updatePreview(previewType));
     void this.updatePreview(previewType);
   }
@@ -114,7 +114,7 @@ function PLFileEditor(uuid, options) {
   this.initRestoreOriginalButton();
 }
 
-PLFileEditor.prototype.syncSettings = function () {
+window.PLFileEditor.prototype.syncSettings = function () {
   window.addEventListener('storage', (event) => {
     if (event.key === 'pl-file-editor-theme' && event.newValue) {
       this.editor.setTheme(event.newValue);
@@ -164,7 +164,9 @@ PLFileEditor.prototype.updatePreview = async function (preview_type) {
   const editor_value = this.editor.getValue();
   const default_preview_text = '<p>Begin typing above to preview</p>';
   const previewFn = this.preview[preview_type];
-  const html_contents = await Promise.resolve(previewFn(editor_value));
+  const html_contents = editor_value
+    ? await Promise.resolve(previewFn(editor_value))
+    : `<p>Unknown preview type: <code>${preview_type}</code></p>`;
 
   if (html_contents.trim().length === 0) {
     shadowRoot.innerHTML = default_preview_text;
