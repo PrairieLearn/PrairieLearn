@@ -114,7 +114,7 @@
   }
 }
 
-.markdown-body :last-child {
+.markdown-body > :last-child {
   margin-bottom: 0;
 }
 
