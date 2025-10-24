@@ -39,10 +39,13 @@ def solve_dag(
 ) -> list[str]:
     """
     Solve the given problem
-    :param depends_graph: The dependency graph between blocks specified in the question
-    :param group_belonging: which pl-block-group each block belongs to, specified in the question
-    :return: a list that is a topological sort of the input DAG with blocks in the same group occuring
-    contiguously, making it a solution to the given problem
+
+    - depends_graph: The dependency graph between blocks specified in the question
+    - group_belonging: which pl-block-group each block belongs to, specified in the question
+
+    Returns:
+        - A list that is a topological sort of the input DAG with blocks in the same group occuring
+          contiguously, making it a solution to the given problem
     """
     graph = dag_to_nx(depends_graph, group_belonging)
     sort = list(nx.topological_sort(graph))
@@ -66,9 +69,12 @@ def solve_multigraph(
     final: str,
 ) -> list[list[str]]:
     """Solve the given problem
-    :param depends_multi_graph: the dependency multi graph specified in the question
-    :param final: the sink of the multigraph
-    :return: a list of lists that are a topological sort of the input MDAG making it a solution to the given problem
+
+    - depends_multi_graph: the dependency multi graph specified in the question
+    - final: the sink of the multigraph
+
+    Returns:
+        - A list of lists that are a topological sort of the input MDAG making it a solution to the given problem
     """
     graphs = [
         dag_to_nx(graph, {})
@@ -82,9 +88,11 @@ def check_topological_sorting(
     submission: Sequence[str | None], graph: nx.DiGraph
 ) -> int:
     """
-    :param submission: candidate for topological sorting
-    :param graph: graph to check topological sorting over
-    :return: index of first element not topologically sorted, or length of list if sorted
+    - submission: candidate for topological sorting
+    - graph: graph to check topological sorting over
+
+    Returns:
+        - Index of first element not topologically sorted, or length of list if sorted
     """
     seen = set()
     for i, node in enumerate(submission):
@@ -98,10 +106,12 @@ def check_grouping(
     submission: Sequence[str | None], group_belonging: Mapping[str, str | None]
 ) -> int:
     """
-    :param submission: candidate solution
-    :param group_belonging: group that each block belongs to
-    :return: index of first element breaking condition that members of the same group must be
-    adjacent, or length of list if they all meet the condition
+    - submission: candidate solution
+    - group_belonging: group that each block belongs to
+
+    Returns:
+        - Index of first element breaking condition that members of the same group must be
+          adjacent, or length of list if they all meet the condition
     """
     group_sizes = Counter(group_belonging.values())
     cur_group = None
@@ -183,11 +193,14 @@ def grade_dag(
     In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
-    :param submission: the block ordering given by the student
-    :param depends_graph: The dependency graph between blocks specified in the question
-    :param group_belonging: which pl-block-group each block belongs to, specified in the question
-    :return: tuple containing length of list that meets both correctness conditions, starting from the beginning,
-    and the length of any correct solution
+
+    - submission: the block ordering given by the student
+    - depends_graph: The dependency graph between blocks specified in the question
+    - group_belonging: which pl-block-group each block belongs to, specified in the question
+
+    Returns:
+        - tuple containing length of list that meets both correctness conditions, starting from the beginning,
+          and the length of any correct solution
     """
     graph = dag_to_nx(depends_graph, group_belonging)
 
@@ -219,6 +232,9 @@ def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """
     Taken from
     https://docs.ocean.dwavesys.com/en/stable/docs_dnx/reference/algorithms/generated/dwave_networkx.algorithms.cover.is_vertex_cover.html
+
+    Returns:
+        - If the iterable list of nodes is a vertex cover of the provided graph.
     """
     cover = set(vertex_cover)
     return all(u in cover or v in cover for u, v in G.edges)
@@ -244,10 +260,12 @@ def lcs_partial_credit(
         4. Once we know the minimum required deletions, you may simply add nodes to the student
         solution until it is the correct solution, so you can directly calculate the edit distance.
     For more details, see the paper: https://arxiv.org/abs/2204.04196
-    :param submission: the block ordering given by the student
-    :param depends_graph: The dependency graph between blocks specified in the question
-    :param group_belonging: which pl-block-group each block belongs to, specified in the question
-    :return: edit distance from the student submission to some correct solution
+    - submission: the block ordering given by the student
+    - depends_graph: The dependency graph between blocks specified in the question
+    - group_belonging: which pl-block-group each block belongs to, specified in the question
+
+    Returns:
+        - Edit distance from the student submission to some correct solution
     """
     graph = dag_to_nx(depends_graph, group_belonging)
     trans_clos = nx.transitive_closure(graph)
@@ -321,11 +339,16 @@ def dfs_until(
     """
     Depth-First searches a multigraph until a node meets some specified requirements and then halts
     searching and returns the node or the reason for halting.
-    :param multigraph: the multigraph being searched.
-    :param start: the starting point for the search.
-    :return: the reason or node that halted the search with the nodes and their corresponding
-    edges the DFS was able to reach before halting.
-    :raises ValueError: If a cycle is found in the multigraph.
+
+    - multigraph: the multigraph being searched.
+    - start: the starting point for the search.
+
+    Returns:
+        The reason or node that halted the search with the nodes and their corresponding
+        edges the DFS was able to reach before halting.
+
+    Raises:
+        - If a cycle is found in the multigraph.
     """  # noqa: DOC501 (false positive)
     # ruff throws an error for sphinx style doc strings: https://github.com/astral-sh/ruff/issues/12434
     stack: list[tuple[str, list[str]]] = []
@@ -371,11 +394,14 @@ def collapse_multigraph(
         4. If the entire graph has been traversed it is a valid DAG and it can
            be returned.
     For more details, see the paper: https://arxiv.org/abs/2510.11999
-    :param multigraph: a dependency graph that contains nodes with multiple colored
-    edges.
-    :param final: the sink in the multigraph, necessary to know the sink so that we have
-    a starting point for the DFS to search for DAGs through the multigraph.
-    :yield dag: yields a "fully collapsed" DAG once a DAG has been found.
+    - multigraph: a dependency graph that contains nodes with multiple colored
+      edges.
+    - final: the sink in the multigraph, necessary to know the sink so that we
+      have a starting point for the DFS to search for DAGs through the
+      multigraph.
+
+    Yields:
+        - yields a "fully collapsed" DAG once a DAG has been found.
     """
     collapsing_graphs: list[Multigraph] = [multigraph]
     while collapsing_graphs:
