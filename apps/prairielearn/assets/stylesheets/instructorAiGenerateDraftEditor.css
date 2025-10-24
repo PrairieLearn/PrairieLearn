@@ -24,6 +24,7 @@
   grid-template-areas: 'history' 'prompt';
   grid-template-rows: 1fr min-content;
   height: 100%;
+  position: relative;
 }
 
 .app-back {

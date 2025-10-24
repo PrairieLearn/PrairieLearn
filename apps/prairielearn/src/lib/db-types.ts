@@ -1562,6 +1562,7 @@ export const TableNames = [
   'access_tokens',
   'administrators',
   'ai_grading_jobs',
+  'ai_question_generation_messages',
   'ai_question_generation_prompts',
   'alternative_groups',
   'assessment_access_rules',
