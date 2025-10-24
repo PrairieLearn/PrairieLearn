@@ -14,6 +14,7 @@ import {
   getCourseOwners,
 } from '../../lib/course.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { InstructorGradebook } from './instructorGradebook.html.js';
@@ -78,6 +79,7 @@ router.get(
         csvFilename,
         courseAssessments,
         gradebookRows,
+        search: getUrl(req).search,
       }),
     );
   }),

@@ -1,11 +1,12 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { compiledStylesheetTag } from '../../lib/assets.js';
 
-import { InstructorGradebook as InstructorGradebookTable } from './components/GradebookTable.js';
+import { InstructorGradebookTable } from './components/InstructorGradebookTable.js';
 import { type CourseAssessmentRow, type GradebookRow } from './instructorGradebook.types.js';
 
 export function InstructorGradebook({
@@ -13,11 +14,13 @@ export function InstructorGradebook({
   csvFilename,
   courseAssessments,
   gradebookRows,
+  search,
 }: {
   resLocals: Record<string, any>;
   csvFilename: string;
   courseAssessments: CourseAssessmentRow[];
   gradebookRows: GradebookRow[];
+  search: string;
 }) {
   const { authz_data, urlPrefix, __csrf_token } = resLocals;
 
@@ -31,30 +34,32 @@ export function InstructorGradebook({
     },
     options: {
       fullWidth: true,
+      fullHeight: true,
     },
-    content: html`
-      ${renderHtml(
+    headContent: html` ${compiledStylesheetTag('tanstackTable.css')} `,
+    content: (
+      <>
         <CourseInstanceSyncErrorsAndWarnings
           authzData={authz_data}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
           urlPrefix={urlPrefix}
-        />,
-      )}
-      ${renderHtml(
-        <InstructorGradebookTable
-          authzData={authz_data}
-          csrfToken={__csrf_token}
-          courseAssessments={courseAssessments}
-          gradebookRows={gradebookRows}
-          urlPrefix={urlPrefix}
-          csvFilename={csvFilename}
-          search={resLocals.query ?? ''}
-          isDevMode={resLocals.devMode}
-        />,
-      )}
-      ${RoleDescriptionModal()}
-    `,
+        />
+        <Hydrate fullHeight>
+          <InstructorGradebookTable
+            authzData={authz_data}
+            csrfToken={__csrf_token}
+            courseAssessments={courseAssessments}
+            gradebookRows={gradebookRows}
+            urlPrefix={urlPrefix}
+            csvFilename={csvFilename}
+            search={search}
+            isDevMode={process.env.NODE_ENV === 'development'}
+          />
+        </Hydrate>
+      </>
+    ),
+    postContent: [RoleDescriptionModal()],
   });
 }
 

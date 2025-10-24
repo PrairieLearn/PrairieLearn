@@ -13,7 +13,6 @@ import {
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import * as React from 'preact/compat';
 import { useMemo, useState } from 'preact/compat';
-import { Button } from 'react-bootstrap';
 import { z } from 'zod';
 
 import { CategoricalColumnFilter, TanstackTableCard } from '@prairielearn/ui';
@@ -53,7 +52,7 @@ interface GradebookTableProps {
 }
 
 function GradebookTable({
-  authzData,
+  authzData: _authzData,
   csrfToken,
   courseAssessments,
   gradebookRows: initialGradebookRows,
@@ -75,6 +74,7 @@ function GradebookTable({
   );
 
   const [studentsOnlyFilter, setStudentsOnlyFilter] = useState(false);
+  const [hideEmptyAssessments, setHideEmptyAssessments] = useState(false);
 
   const [editScoreModal, setEditScoreModal] = useState<{
     show: boolean;
@@ -107,7 +107,7 @@ function GradebookTable({
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
-  const { data: gradebookRows = initialGradebookRows } = useQuery<GradebookRow[]>({
+  const { data: gradebookRows } = useQuery<GradebookRow[]>({
     queryKey: ['gradebook', urlPrefix],
     queryFn: async () => {
       const res = await fetch(`${urlPrefix}/instance_admin/gradebook/raw_data.json`);
@@ -155,6 +155,9 @@ function GradebookTable({
       // Role column
       columnHelper.accessor('role', {
         id: 'role',
+        meta: {
+          label: 'Role',
+        },
         header: () => (
           <span>
             Role{' '}
@@ -189,16 +192,18 @@ function GradebookTable({
           },
           {
             id: `assessment_${assessment.assessment_id}`,
+            size: 100,
+            minSize: 100,
+            maxSize: 120,
+            meta: {
+              label: assessment.label,
+            },
             header: () => (
               <a
                 href={`${urlPrefix}/assessment/${assessment.assessment_id}`}
                 onClick={(e) => e.stopPropagation()}
               >
-                <span
-                  class="badge text-white"
-                  style={{ backgroundColor: assessment.color }}
-                  title={assessment.label}
-                >
+                <span class={`badge color-${assessment.color}`} title={assessment.label}>
                   {assessment.label}
                 </span>
               </a>
@@ -213,10 +218,10 @@ function GradebookTable({
                 return '—';
               }
 
-              const editButton = authzData.has_course_instance_permission_edit ? (
+              const editButton = (
                 <button
                   type="button"
-                  class="btn btn-xs btn-secondary edit-score ms-1"
+                  class="btn btn-xs btn-ghost edit-score ms-1"
                   aria-label="Edit score"
                   onClick={() =>
                     setEditScoreModal({
@@ -229,7 +234,7 @@ function GradebookTable({
                 >
                   <i class="bi-pencil-square" aria-hidden="true" />
                 </button>
-              ) : null;
+              );
 
               return (
                 <span class="text-nowrap">
@@ -247,16 +252,54 @@ function GradebookTable({
         ),
       ),
     ],
-    [courseAssessments, authzData, urlPrefix],
+    [courseAssessments, urlPrefix],
   );
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
   const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
 
+  // Determine which assessment columns have no scores for any student
+  const emptyAssessmentColumns = useMemo(() => {
+    const empty = new Set<string>();
+    courseAssessments.forEach((assessment) => {
+      const hasAnyScore = gradebookRows.some((row) => {
+        const data = row.scores[assessment.assessment_id];
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        return data?.score_perc != null;
+      });
+      if (!hasAnyScore) {
+        empty.add(`assessment_${assessment.assessment_id}`);
+      }
+    });
+    return empty;
+  }, [courseAssessments, gradebookRows]);
+
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
+
+  // Update column visibility when hideEmptyAssessments changes
+  React.useEffect(() => {
+    if (hideEmptyAssessments) {
+      // Hide empty assessment columns
+      const newVisibility = { ...columnVisibility };
+      emptyAssessmentColumns.forEach((colId) => {
+        newVisibility[colId] = false;
+      });
+      void setColumnVisibility(newVisibility);
+    } else {
+      // Show all columns that were previously hidden due to being empty
+      const newVisibility = { ...columnVisibility };
+      emptyAssessmentColumns.forEach((colId) => {
+        if (newVisibility[colId] === false) {
+          newVisibility[colId] = true;
+        }
+      });
+      void setColumnVisibility(newVisibility);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hideEmptyAssessments]);
 
   const table = useReactTable({
     data: gradebookRows,
@@ -300,24 +343,36 @@ function GradebookTable({
         title="Gradebook"
         headerButtons={
           <>
-            <Button
-              variant="light"
-              size="sm"
-              class={studentsOnlyFilter ? 'active' : ''}
+            <button
+              type="button"
+              class={`btn btn-sm btn-light ${studentsOnlyFilter ? 'active' : ''}`}
               onClick={() => setStudentsOnlyFilter(!studentsOnlyFilter)}
             >
               <i class="fa fa-user-graduate" aria-hidden="true" />{' '}
               {studentsOnlyFilter ? 'Show All' : 'Students Only'}
-            </Button>
-            <Button
-              variant="light"
-              size="sm"
+            </button>
+            <button
+              type="button"
+              class={`btn btn-sm btn-light ${hideEmptyAssessments ? 'active' : ''}`}
+              title={
+                hideEmptyAssessments
+                  ? 'Show all assessment columns'
+                  : 'Hide assessment columns with no scores'
+              }
+              onClick={() => setHideEmptyAssessments(!hideEmptyAssessments)}
+            >
+              <i class="fa fa-eye-slash" aria-hidden="true" />{' '}
+              {hideEmptyAssessments ? 'Show Empty' : 'Hide Empty'}
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-light"
               onClick={() => {
                 window.location.href = `${urlPrefix}/instance_admin/gradebook/${csvFilename}`;
               }}
             >
               <i class="fa fa-download" aria-hidden="true" /> Download
-            </Button>
+            </button>
           </>
         }
         globalFilter={{
@@ -356,7 +411,7 @@ function GradebookTable({
 /**
  * Wrapper component for GradebookTable with React Query and NuqsAdapter
  */
-export function InstructorGradebook({
+export function InstructorGradebookTable({
   authzData,
   csrfToken,
   courseAssessments,
@@ -389,4 +444,4 @@ export function InstructorGradebook({
   );
 }
 
-InstructorGradebook.displayName = 'InstructorGradebook';
+InstructorGradebookTable.displayName = 'InstructorGradebookTable';
