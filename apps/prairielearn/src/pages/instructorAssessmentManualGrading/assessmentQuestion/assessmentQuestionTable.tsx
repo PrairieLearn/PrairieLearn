@@ -32,6 +32,7 @@ import {
   NuqsAdapter,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsNumericFilter,
   parseAsSortingState,
 } from '../../../lib/client/nuqs.js';
 import type {
@@ -39,6 +40,7 @@ import type {
   StaffCourseInstanceContext,
 } from '../../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
+import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../lib/db-types.js';
 import { formatPoints } from '../../../lib/format.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
@@ -232,20 +234,20 @@ function AssessmentQuestionTable({
   );
 
   const [manualPointsFilter, setManualPointsFilter] = useQueryState(
-    'manual_points_filter',
-    parseAsString.withDefault(''),
+    'manual_points',
+    parseAsNumericFilter.withDefault(''),
   );
   const [autoPointsFilter, setAutoPointsFilter] = useQueryState(
-    'auto_points_filter',
-    parseAsString.withDefault(''),
+    'auto_points',
+    parseAsNumericFilter.withDefault(''),
   );
   const [totalPointsFilter, setTotalPointsFilter] = useQueryState(
-    'total_points_filter',
-    parseAsString.withDefault(''),
+    'total_points',
+    parseAsNumericFilter.withDefault(''),
   );
   const [scoreFilter, setScoreFilter] = useQueryState(
-    'score_filter',
-    parseAsString.withDefault(''),
+    'score',
+    parseAsNumericFilter.withDefault(''),
   );
 
   const [showStudentInfo, setShowStudentInfo] = useState(false);
@@ -455,7 +457,15 @@ function AssessmentQuestionTable({
       columnHelper.accessor('uid', {
         id: 'uid',
         header: groupWork ? 'UIDs' : 'UID',
-        cell: (info) => info.getValue() || '—',
+        cell: (info) => {
+          const uid = info.getValue();
+          const enrollmentId = info.row.original.enrollment_id;
+          if (!uid) return '—';
+          if (enrollmentId) {
+            return <a href={getStudentEnrollmentUrl(urlPrefix, enrollmentId)}>{uid}</a>;
+          }
+          return uid;
+        },
         enableHiding: true,
       }),
 
@@ -840,182 +850,184 @@ function AssessmentQuestionTable({
       </div>
       <TanstackTableCard
         table={table}
-      title="Student instance questions"
-      headerButtons={
-        <>
-          <Button variant="light" size="sm" onClick={toggleStudentInfo}>
-            <i class={showStudentInfo ? 'fa-eye-slash' : 'fa-eye'} aria-hidden="true" />{' '}
-            {showStudentInfo ? 'Hide student info' : 'Show student info'}
-          </Button>
-          {authzData.has_course_instance_permission_edit && (
-            <Dropdown>
-              <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
-                <i class="fas fa-tags" aria-hidden="true" /> Tag for grading
-              </Dropdown.Toggle>
-              <Dropdown.Menu align="end">
-                <Dropdown.Header>Assign for grading</Dropdown.Header>
-                {courseStaff.map((grader) => (
-                  <Dropdown.Item
-                    key={grader.user_id}
-                    onClick={() => handleBatchAction({ assigned_grader: grader.user_id })}
-                  >
-                    <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
+        title="Student instance questions"
+        headerButtons={
+          <>
+            <Button variant="light" size="sm" onClick={toggleStudentInfo}>
+              <i class={showStudentInfo ? 'bi bi-eye-slash' : 'bi bi-eye'} aria-hidden="true" />{' '}
+              {showStudentInfo ? 'Hide student info' : 'Show student info'}
+            </Button>
+            {authzData.has_course_instance_permission_edit && (
+              <Dropdown>
+                <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
+                  <i class="fas fa-tags" aria-hidden="true" /> Tag for grading
+                </Dropdown.Toggle>
+                <Dropdown.Menu align="end">
+                  <Dropdown.Header>Assign for grading</Dropdown.Header>
+                  {courseStaff.map((grader) => (
+                    <Dropdown.Item
+                      key={grader.user_id}
+                      onClick={() => handleBatchAction({ assigned_grader: grader.user_id })}
+                    >
+                      <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
+                    </Dropdown.Item>
+                  ))}
+                  <Dropdown.Item onClick={() => handleBatchAction({ assigned_grader: null })}>
+                    <i class="fas fa-user-slash" /> Remove grader assignment
                   </Dropdown.Item>
-                ))}
-                <Dropdown.Item onClick={() => handleBatchAction({ assigned_grader: null })}>
-                  <i class="fas fa-user-slash" /> Remove grader assignment
-                </Dropdown.Item>
-                <Dropdown.Divider />
-                <Dropdown.Item onClick={() => handleBatchAction({ requires_manual_grading: true })}>
-                  <i class="fas fa-tag" /> Tag as required grading
-                </Dropdown.Item>
-                <Dropdown.Item
-                  onClick={() => handleBatchAction({ requires_manual_grading: false })}
-                >
-                  <i class="fas fa-check-square" /> Tag as graded
-                </Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
-          )}
-        </>
-      }
-      globalFilter={{
-        value: globalFilter,
-        setValue: setGlobalFilter,
-        placeholder: 'Search by name, UID...',
-      }}
-      tableOptions={{
-        rowHeight: 48,
-        filters: {
-          requires_manual_grading: ({ header }) => (
-            <CategoricalColumnFilter
-              columnId={header.column.id}
-              columnLabel="Status"
-              allColumnValues={GRADING_STATUS_VALUES}
-              renderValueLabel={({ value }) => <span>{value}</span>}
-              columnValuesFilter={gradingStatusFilter}
-              setColumnValuesFilter={setGradingStatusFilter}
-            />
-          ),
-          assigned_grader_name: ({ header }) => (
-            <CategoricalColumnFilter
-              columnId={header.column.id}
-              columnLabel="Assigned Grader"
-              allColumnValues={[...allGraders, '—']}
-              renderValueLabel={({ value }) => <span>{value}</span>}
-              columnValuesFilter={assignedGraderFilter}
-              setColumnValuesFilter={setAssignedGraderFilter}
-            />
-          ),
-          last_grader_name: ({ header }) => (
-            <CategoricalColumnFilter
-              columnId={header.column.id}
-              columnLabel="Graded By"
-              allColumnValues={[...allGraders, '—']}
-              renderValueLabel={({ value }) => <span>{value}</span>}
-              columnValuesFilter={gradedByFilter}
-              setColumnValuesFilter={setGradedByFilter}
-            />
-          ),
-          ...(aiGradingMode && instanceQuestionGroups.length > 0
-            ? {
-                instance_question_group_name: ({
-                  header,
-                }: {
-                  header: Header<InstanceQuestionRow, unknown>;
-                }) => (
-                  <CategoricalColumnFilter
-                    columnId={header.column.id}
-                    columnLabel="Submission Group"
-                    allColumnValues={[...allSubmissionGroups, 'No Group']}
-                    renderValueLabel={({ value }) => <span>{value}</span>}
-                    columnValuesFilter={submissionGroupFilter}
-                    setColumnValuesFilter={setSubmissionGroupFilter}
-                  />
-                ),
-              }
-            : {}),
-          manual_points: ({ header }) => (
-            <NumericInputColumnFilter
-              columnId={header.column.id}
-              columnLabel="Manual Points"
-              value={manualPointsFilter}
-              onChange={setManualPointsFilter}
-            />
-          ),
-          ...(assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0
-            ? {
-                auto_points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
-                  <NumericInputColumnFilter
-                    columnId={header.column.id}
-                    columnLabel="Auto Points"
-                    value={autoPointsFilter}
-                    onChange={setAutoPointsFilter}
-                  />
-                ),
-              }
-            : {}),
-          points: ({ header }) => (
-            <NumericInputColumnFilter
-              columnId={header.column.id}
-              columnLabel="Total Points"
-              value={totalPointsFilter}
-              onChange={setTotalPointsFilter}
-            />
-          ),
-          ...(!aiGradingMode
-            ? {
-                score_perc: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
-                  <NumericInputColumnFilter
-                    columnId={header.column.id}
-                    columnLabel="Score"
-                    value={scoreFilter}
-                    onChange={setScoreFilter}
-                  />
-                ),
-              }
-            : {}),
-          ...(rubricData
-            ? {
-                rubric_grading_item_ids: ({
-                  header,
-                }: {
-                  header: Header<InstanceQuestionRow, unknown>;
-                }) => (
-                  <MultiSelectColumnFilter
-                    columnId={header.column.id}
-                    columnLabel="Rubric Items"
-                    allColumnValues={allRubricItems}
-                    renderValueLabel={({ value }) => {
-                      const item = rubricData.rubric_items.find((i) => i.id === value);
-                      return <span>{item?.description || value}</span>;
-                    }}
-                    columnValuesFilter={rubricItemsFilter}
-                    setColumnValuesFilter={setRubricItemsFilter}
-                  />
-                ),
-              }
-            : {}),
-        },
-      }}
-      downloadButtonOptions={{
-        filenameBase: `manual_grading_${questionQid}`,
-        pluralLabel: 'submissions',
-        mapRowToData: (row) => ({
-          Instance: row.id,
-          [groupWork ? 'Group Name' : 'Name']: row.user_or_group_name || '',
-          [groupWork ? 'UIDs' : 'UID']: row.uid || '',
-          'Grading Status': row.requires_manual_grading ? 'Requires grading' : 'Graded',
-          'Assigned Grader': row.assigned_grader_name || '',
-          'Auto Points': row.auto_points != null ? row.auto_points.toString() : '',
-          'Manual Points': row.manual_points != null ? row.manual_points.toString() : '',
-          'Total Points': row.points != null ? row.points.toString() : '',
-          'Score %': row.score_perc != null ? row.score_perc.toString() : '',
-          'Graded By': row.last_grader_name || '',
-          'Modified At': row.modified_at.toISOString(),
-        }),
-      }}
-    />
+                  <Dropdown.Divider />
+                  <Dropdown.Item
+                    onClick={() => handleBatchAction({ requires_manual_grading: true })}
+                  >
+                    <i class="fas fa-tag" /> Tag as required grading
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={() => handleBatchAction({ requires_manual_grading: false })}
+                  >
+                    <i class="fas fa-check-square" /> Tag as graded
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            )}
+          </>
+        }
+        globalFilter={{
+          value: globalFilter,
+          setValue: setGlobalFilter,
+          placeholder: 'Search by name, UID...',
+        }}
+        tableOptions={{
+          rowHeight: 48,
+          filters: {
+            requires_manual_grading: ({ header }) => (
+              <CategoricalColumnFilter
+                columnId={header.column.id}
+                columnLabel="Status"
+                allColumnValues={GRADING_STATUS_VALUES}
+                renderValueLabel={({ value }) => <span>{value}</span>}
+                columnValuesFilter={gradingStatusFilter}
+                setColumnValuesFilter={setGradingStatusFilter}
+              />
+            ),
+            assigned_grader_name: ({ header }) => (
+              <CategoricalColumnFilter
+                columnId={header.column.id}
+                columnLabel="Assigned Grader"
+                allColumnValues={[...allGraders, '—']}
+                renderValueLabel={({ value }) => <span>{value}</span>}
+                columnValuesFilter={assignedGraderFilter}
+                setColumnValuesFilter={setAssignedGraderFilter}
+              />
+            ),
+            last_grader_name: ({ header }) => (
+              <CategoricalColumnFilter
+                columnId={header.column.id}
+                columnLabel="Graded By"
+                allColumnValues={[...allGraders, '—']}
+                renderValueLabel={({ value }) => <span>{value}</span>}
+                columnValuesFilter={gradedByFilter}
+                setColumnValuesFilter={setGradedByFilter}
+              />
+            ),
+            ...(aiGradingMode && instanceQuestionGroups.length > 0
+              ? {
+                  instance_question_group_name: ({
+                    header,
+                  }: {
+                    header: Header<InstanceQuestionRow, unknown>;
+                  }) => (
+                    <CategoricalColumnFilter
+                      columnId={header.column.id}
+                      columnLabel="Submission Group"
+                      allColumnValues={[...allSubmissionGroups, 'No Group']}
+                      renderValueLabel={({ value }) => <span>{value}</span>}
+                      columnValuesFilter={submissionGroupFilter}
+                      setColumnValuesFilter={setSubmissionGroupFilter}
+                    />
+                  ),
+                }
+              : {}),
+            manual_points: ({ header }) => (
+              <NumericInputColumnFilter
+                columnId={header.column.id}
+                columnLabel="Manual Points"
+                value={manualPointsFilter}
+                onChange={setManualPointsFilter}
+              />
+            ),
+            ...(assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0
+              ? {
+                  auto_points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
+                    <NumericInputColumnFilter
+                      columnId={header.column.id}
+                      columnLabel="Auto Points"
+                      value={autoPointsFilter}
+                      onChange={setAutoPointsFilter}
+                    />
+                  ),
+                }
+              : {}),
+            points: ({ header }) => (
+              <NumericInputColumnFilter
+                columnId={header.column.id}
+                columnLabel="Total Points"
+                value={totalPointsFilter}
+                onChange={setTotalPointsFilter}
+              />
+            ),
+            ...(!aiGradingMode
+              ? {
+                  score_perc: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
+                    <NumericInputColumnFilter
+                      columnId={header.column.id}
+                      columnLabel="Score"
+                      value={scoreFilter}
+                      onChange={setScoreFilter}
+                    />
+                  ),
+                }
+              : {}),
+            ...(rubricData
+              ? {
+                  rubric_grading_item_ids: ({
+                    header,
+                  }: {
+                    header: Header<InstanceQuestionRow, unknown>;
+                  }) => (
+                    <MultiSelectColumnFilter
+                      columnId={header.column.id}
+                      columnLabel="Rubric Items"
+                      allColumnValues={allRubricItems}
+                      renderValueLabel={({ value }) => {
+                        const item = rubricData.rubric_items.find((i) => i.id === value);
+                        return <span>{item?.description || value}</span>;
+                      }}
+                      columnValuesFilter={rubricItemsFilter}
+                      setColumnValuesFilter={setRubricItemsFilter}
+                    />
+                  ),
+                }
+              : {}),
+          },
+        }}
+        downloadButtonOptions={{
+          filenameBase: `manual_grading_${questionQid}`,
+          pluralLabel: 'submissions',
+          mapRowToData: (row) => ({
+            Instance: row.id,
+            [groupWork ? 'Group Name' : 'Name']: row.user_or_group_name || '',
+            [groupWork ? 'UIDs' : 'UID']: row.uid || '',
+            'Grading Status': row.requires_manual_grading ? 'Requires grading' : 'Graded',
+            'Assigned Grader': row.assigned_grader_name || '',
+            'Auto Points': row.auto_points != null ? row.auto_points.toString() : '',
+            'Manual Points': row.manual_points != null ? row.manual_points.toString() : '',
+            'Total Points': row.points != null ? row.points.toString() : '',
+            'Score %': row.score_perc != null ? row.score_perc.toString() : '',
+            'Graded By': row.last_grader_name || '',
+            'Modified At': row.modified_at.toISOString(),
+          }),
+        }}
+      />
     </>
   );
 }

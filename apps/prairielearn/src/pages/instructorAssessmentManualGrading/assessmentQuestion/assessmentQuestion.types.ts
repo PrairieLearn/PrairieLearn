@@ -18,6 +18,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
   rubric_grading_item_ids: z.array(IdSchema),
+  enrollment_id: IdSchema.nullable(),
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
