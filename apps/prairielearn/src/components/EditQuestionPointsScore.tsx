@@ -36,7 +36,7 @@ export function EditQuestionPointsScoreButton({
 
   return html`<button
     type="button"
-    class="btn btn-xs btn-secondary"
+    class="btn btn-link p-0 text-body"
     data-bs-toggle="popover"
     data-bs-container="body"
     data-bs-html="true"
@@ -45,7 +45,7 @@ export function EditQuestionPointsScoreButton({
     data-bs-content="${escapeHtml(editForm)}"
     data-testid="edit-question-points-score-button-${field}"
   >
-    <i class="fa fa-edit" aria-hidden="true"></i>
+    <i class="bi bi-pencil-square" aria-hidden="true"></i>
   </button>`;
 }
 

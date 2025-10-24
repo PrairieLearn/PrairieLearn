@@ -8,3 +8,4 @@ export {
   parseNumericFilter,
   numericColumnFilterFn,
 } from './components/NumericInputColumnFilter.js';
+export { useShiftClickCheckbox } from './components/useShiftClickCheckbox.js';

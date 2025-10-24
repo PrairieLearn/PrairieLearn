@@ -223,6 +223,47 @@ export function TanstackTable<RowDataModel>({
     document.body.classList.toggle('no-user-select', isTableResizing);
   }, [isTableResizing]);
 
+  // Dismiss popovers when their triggering element scrolls out of view
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollElement = parentRef.current;
+      if (!scrollElement) return;
+
+      // Find and check all open popovers
+      const popovers = document.querySelectorAll('.popover.show');
+      popovers.forEach((popover) => {
+        // Find the trigger element for this popover
+        const triggerElement = document.querySelector(`[aria-describedby="${popover.id}"]`);
+        if (!triggerElement) return;
+
+        // Check if the trigger element is still visible in the scroll container
+        const scrollRect = scrollElement.getBoundingClientRect();
+        const triggerRect = triggerElement.getBoundingClientRect();
+
+        // Check if trigger is outside the visible scroll area
+        const isOutOfView =
+          triggerRect.bottom < scrollRect.top ||
+          triggerRect.top > scrollRect.bottom ||
+          triggerRect.right < scrollRect.left ||
+          triggerRect.left > scrollRect.right;
+
+        if (isOutOfView) {
+          // Use Bootstrap's Popover API to properly hide it
+          const popoverInstance = (window as any).bootstrap?.Popover?.getInstance(triggerElement);
+          if (popoverInstance) {
+            popoverInstance.hide();
+          }
+        }
+      });
+    };
+
+    const scrollElement = parentRef.current;
+    if (scrollElement) {
+      scrollElement.addEventListener('scroll', handleScroll);
+      return () => scrollElement.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
   // Helper function to get aria-sort value
   const getAriaSort = (sortDirection: false | SortDirection) => {
     switch (sortDirection) {
@@ -299,9 +340,19 @@ export function TanstackTable<RowDataModel>({
                         aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
                         role="columnheader"
                       >
-                        <div class="d-flex align-items-center justify-content-between gap-2">
+                        <div
+                          class={clsx(
+                            'd-flex align-items-center',
+                            canSort || canFilter
+                              ? 'justify-content-between'
+                              : 'justify-content-center',
+                          )}
+                        >
                           <button
-                            class="text-nowrap flex-grow-1 text-start"
+                            class={clsx(
+                              'text-nowrap text-start',
+                              canSort || canFilter ? 'flex-grow-1' : '',
+                            )}
                             style={{
                               cursor: canSort ? 'pointer' : 'default',
                               overflow: 'hidden',
@@ -338,20 +389,22 @@ export function TanstackTable<RowDataModel>({
                             )}
                           </button>
 
-                          <div class="d-flex align-items-center">
-                            {canSort && (
-                              <button
-                                type="button"
-                                class="btn btn-link text-muted p-0 ms-2"
-                                aria-label={`Sort ${columnName.toLowerCase()}`}
-                                title={`Sort ${columnName.toLowerCase()}`}
-                                onClick={header.column.getToggleSortingHandler()}
-                              >
-                                <SortIcon sortMethod={sortDirection || false} />
-                              </button>
-                            )}
-                            {canFilter && filters[header.column.id]?.({ header })}
-                          </div>
+                          {(canSort || canFilter) && (
+                            <div class="d-flex align-items-center">
+                              {canSort && (
+                                <button
+                                  type="button"
+                                  class="btn btn-link text-muted p-0 ms-2"
+                                  aria-label={`Sort ${columnName.toLowerCase()}`}
+                                  title={`Sort ${columnName.toLowerCase()}`}
+                                  onClick={header.column.getToggleSortingHandler()}
+                                >
+                                  <SortIcon sortMethod={sortDirection || false} />
+                                </button>
+                              )}
+                              {canFilter && filters[header.column.id]?.({ header })}
+                            </div>
+                          )}
                         </div>
                         {tableRect?.width &&
                         tableRect.width > table.getTotalSize() &&
@@ -377,34 +430,42 @@ export function TanstackTable<RowDataModel>({
 
                 return (
                   <tr key={row.id} style={{ height: rowHeight }}>
-                    {visibleCells.map((cell, colIdx) => (
-                      <td
-                        key={cell.id}
-                        // You can tab to the most-recently focused cell.
-                        tabIndex={focusedCell.row === rowIdx && focusedCell.col === colIdx ? 0 : -1}
-                        // We store this so you can navigate around the grid.
-                        data-grid-cell-row={rowIdx}
-                        data-grid-cell-col={colIdx}
-                        style={{
-                          width:
-                            cell.column.id === lastColumnId
-                              ? `max(100%, ${cell.column.getSize()}px)`
-                              : cell.column.getSize(),
-                          position: cell.column.getIsPinned() === 'left' ? 'sticky' : undefined,
-                          left:
-                            cell.column.getIsPinned() === 'left'
-                              ? cell.column.getStart()
-                              : undefined,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                        onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })}
-                        onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
+                    {visibleCells.map((cell, colIdx) => {
+                      const canSort = cell.column.getCanSort();
+                      const canFilter = cell.column.getCanFilter();
+
+                      return (
+                        <td
+                          key={cell.id}
+                          // You can tab to the most-recently focused cell.
+                          tabIndex={
+                            focusedCell.row === rowIdx && focusedCell.col === colIdx ? 0 : -1
+                          }
+                          // We store this so you can navigate around the grid.
+                          data-grid-cell-row={rowIdx}
+                          data-grid-cell-col={colIdx}
+                          class={clsx(!canSort && !canFilter && 'text-center')}
+                          style={{
+                            width:
+                              cell.column.id === lastColumnId
+                                ? `max(100%, ${cell.column.getSize()}px)`
+                                : cell.column.getSize(),
+                            position: cell.column.getIsPinned() === 'left' ? 'sticky' : undefined,
+                            left:
+                              cell.column.getIsPinned() === 'left'
+                                ? cell.column.getStart()
+                                : undefined,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                          onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })}
+                          onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}

@@ -12,7 +12,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import * as React from 'preact/compat';
-import { useMemo, useState } from 'preact/compat';
+import { useEffect, useMemo, useState } from 'preact/compat';
 import { Button, Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -22,6 +22,7 @@ import {
   NumericInputColumnFilter,
   TanstackTableCard,
   numericColumnFilterFn,
+  useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
 import { EditQuestionPointsScoreButton } from '../../../components/EditQuestionPointsScore.js';
@@ -251,6 +252,7 @@ function AssessmentQuestionTable({
   );
 
   const [showStudentInfo, setShowStudentInfo] = useState(false);
+  const { createCheckboxProps } = useShiftClickCheckbox<InstanceQuestionRow>();
 
   const columnFilters = useMemo(() => {
     const filters = [
@@ -353,14 +355,10 @@ function AssessmentQuestionTable({
             onChange={table.getToggleAllRowsSelectedHandler()}
           />
         ),
-        cell: ({ row }) => (
-          <input
-            type="checkbox"
-            checked={row.getIsSelected()}
-            disabled={!row.getCanSelect()}
-            onChange={row.getToggleSelectedHandler()}
-          />
-        ),
+        cell: ({ row, table }) => {
+          const checkboxProps = createCheckboxProps(row, table);
+          return <input type="checkbox" {...checkboxProps} />;
+        },
         size: 40,
         minSize: 40,
         maxSize: 40,
@@ -486,11 +484,11 @@ function AssessmentQuestionTable({
       columnHelper.accessor('assigned_grader_name', {
         id: 'assigned_grader_name',
         header: 'Assigned grader',
-        cell: (info) => info.getValue() || '—',
+        cell: (info) => info.getValue() || 'Unassigned',
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
           const current = row.getValue(columnId);
-          if (!current) return filterValues.includes('—');
+          if (!current) return filterValues.includes('Unassigned');
           return filterValues.includes(current as string);
         },
       }),
@@ -591,7 +589,7 @@ function AssessmentQuestionTable({
               </span>
             );
           } else {
-            if (!info.getValue()) return '—';
+            if (!info.getValue()) return 'Unassigned';
             if (row.is_ai_graded) {
               return (
                 <span class="badge rounded-pill text-bg-light border">
@@ -605,7 +603,7 @@ function AssessmentQuestionTable({
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
           const current = row.getValue(columnId);
-          if (!current) return filterValues.includes('—');
+          if (!current) return filterValues.includes('Unassigned');
           const rowData = row.original;
 
           // Check AI grader
@@ -723,6 +721,7 @@ function AssessmentQuestionTable({
       csrfToken,
       assessmentId,
       rubricData,
+      createCheckboxProps,
     ],
   );
 
@@ -739,6 +738,20 @@ function AssessmentQuestionTable({
     'columns',
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
+
+  // Update column visibility when AI grading mode changes
+  useEffect(() => {
+    void setColumnVisibility((prev) => ({
+      ...prev,
+      // Hide these columns in AI grading mode
+      requires_manual_grading: !aiGradingMode,
+      assigned_grader_name: !aiGradingMode,
+      score_perc: !aiGradingMode,
+      // Show these columns in AI grading mode
+      instance_question_group_name: aiGradingMode,
+      rubric_difference: aiGradingMode,
+    }));
+  }, [aiGradingMode, setColumnVisibility]);
 
   const table = useReactTable({
     data: instanceQuestions,
@@ -913,7 +926,7 @@ function AssessmentQuestionTable({
               <CategoricalColumnFilter
                 columnId={header.column.id}
                 columnLabel="Assigned Grader"
-                allColumnValues={[...allGraders, '—']}
+                allColumnValues={[...allGraders, 'Unassigned']}
                 renderValueLabel={({ value }) => <span>{value}</span>}
                 columnValuesFilter={assignedGraderFilter}
                 setColumnValuesFilter={setAssignedGraderFilter}
@@ -923,7 +936,7 @@ function AssessmentQuestionTable({
               <CategoricalColumnFilter
                 columnId={header.column.id}
                 columnLabel="Graded By"
-                allColumnValues={[...allGraders, '—']}
+                allColumnValues={[...allGraders, 'Unassigned']}
                 renderValueLabel={({ value }) => <span>{value}</span>}
                 columnValuesFilter={gradedByFilter}
                 setColumnValuesFilter={setGradedByFilter}
