@@ -1,0 +1,19 @@
+columns
+    created_at: timestamp with time zone not null default now()
+    id: bigint not null default nextval('ai_question_generation_messages_id_seq'::regclass)
+    job_sequence_id: bigint
+    parts: jsonb default '[]'::jsonb
+    question_id: bigint not null
+    role: enum_ai_question_generation_message_role not null
+    status: enum_ai_question_generation_message_status not null default 'pending'::enum_ai_question_generation_message_status
+    updated_at: timestamp with time zone not null default now()
+    usage_input_tokens: integer not null default 0
+    usage_output_tokens: integer not null default 0
+    usage_total_tokens: integer not null default 0
+
+indexes
+    ai_question_generation_messages_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    ai_question_generation_messages_job_sequence_id_fkey: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
+    ai_question_generation_messages_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
