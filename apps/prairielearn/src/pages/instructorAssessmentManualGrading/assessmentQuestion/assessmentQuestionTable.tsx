@@ -294,7 +294,7 @@ function AssessmentQuestionTable({
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowSelection, setRowSelection] = useState({});
 
-  const { data: instanceQuestions } = useQuery<InstanceQuestionRow[]>({
+  const { data: instanceQuestions = initialInstanceQuestions } = useQuery<InstanceQuestionRow[]>({
     queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
     queryFn: async () => {
       const res = await fetch(
