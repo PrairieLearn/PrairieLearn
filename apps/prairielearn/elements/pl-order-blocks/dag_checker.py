@@ -321,7 +321,7 @@ def dfs_until(
     """
     Depth-First searches a multigraph until a node meets some specified requirements and then halts
     searching and returns the node or the reason for halting.
-    :param graph: the graph being searched.
+    :param multigraph: the multigraph being searched.
     :param start: the starting point for the search.
     :return: the reason or node that halted the search with the nodes and their corresponding
     edges the DFS was able to reach before halting.
