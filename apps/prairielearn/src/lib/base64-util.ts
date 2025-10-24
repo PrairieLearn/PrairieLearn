@@ -1,8 +1,3 @@
-//
-
-/**
- * @internal
- */
 export function b64EncodeUnicodeBrowser(str: string) {
   // (1) use encodeURIComponent to get percent-encoded UTF-8
   // (2) convert percent encodings to raw bytes
@@ -34,6 +29,9 @@ export function b64DecodeUnicodeNode(str: string) {
   return Buffer.from(str, 'base64').toString('utf-8');
 }
 
+/**
+ * Encodes a Unicode string into a Base64-encoded string.
+ */
 export function b64EncodeUnicode(str: string) {
   if (typeof Buffer !== 'undefined') {
     return b64EncodeUnicodeNode(str);
@@ -42,6 +40,9 @@ export function b64EncodeUnicode(str: string) {
   return b64EncodeUnicodeBrowser(str);
 }
 
+/**
+ * Decodes a Base64-encoded string into a Unicode string.
+ */
 export function b64DecodeUnicode(str: string) {
   if (typeof Buffer !== 'undefined') {
     return b64DecodeUnicodeNode(str);
