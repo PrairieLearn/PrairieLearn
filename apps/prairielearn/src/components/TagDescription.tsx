@@ -2,7 +2,7 @@ import { type Tag } from '../lib/db-types.js';
 
 export function TagDescription({ tag }: { tag: Tag }) {
   if (!tag.implicit) {
-    return <>{tag.description}</>;
+    return tag.description;
   }
 
   return (

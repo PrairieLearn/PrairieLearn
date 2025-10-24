@@ -16,7 +16,6 @@ export function InstructorCourseAdminTags({
   resLocals: Record<string, any>;
   tags: Tag[];
 }) {
-  const StaffTags = z.array(StaffTagSchema).parse(tags);
   return PageLayout({
     resLocals,
     pageTitle: 'Tags',
@@ -36,7 +35,7 @@ export function InstructorCourseAdminTags({
           urlPrefix={resLocals.urlPrefix}
         />
         <Hydrate>
-          <InstructorCourseAdminTagsTable tags={StaffTags} />
+          <InstructorCourseAdminTagsTable tags={z.array(StaffTagSchema).parse(tags)} />
         </Hydrate>
       </>
     ),
