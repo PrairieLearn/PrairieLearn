@@ -367,7 +367,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    if a_sub.strip() == "":
+    if isinstance(a_sub, str) and a_sub.strip() == "":
         if allow_blank:
             a_sub = blank_value
             if a_sub.strip() == "":  # Handle blank case
