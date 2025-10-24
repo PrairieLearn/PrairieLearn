@@ -16,10 +16,12 @@ export function QuestionAndFilePreview({
   questionContainerHtml: string;
   csrfToken: string;
 }) {
+  // TODO: we need to wire up new variant generation.
   const questionWrapperRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (!questionWrapperRef.current) return;
+
     const questionWrapper = questionWrapperRef.current;
-    if (!questionWrapper) return;
 
     function handleSubmit(e: Event) {
       const target = e.target as HTMLElement;
@@ -29,6 +31,8 @@ export function QuestionAndFilePreview({
       if (!(target instanceof HTMLFormElement) || !target.classList.contains('question-form')) {
         return;
       }
+
+      e.preventDefault();
 
       const form = target;
       const submitEvent = e as SubmitEvent;
@@ -40,14 +44,15 @@ export function QuestionAndFilePreview({
         formData.append(submitter.name, submitter.value);
       }
 
-      e.preventDefault();
-      const data = Object.fromEntries(formData.entries());
+      // TODO: It's kind of wasteful to render the entire page, including fetching all
+      // past AI chat messages, just to get the updated question HTML. We should consider
+      // building a special dedicated route for this.
       fetch(form.action, {
         method: form.method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(Object.fromEntries(formData.entries())),
       })
         .then(async (res) => {
           if (!res.ok) throw new Error(`Server returned status ${res.status}`);
@@ -88,9 +93,12 @@ export function QuestionAndFilePreview({
             // Replace the old script with the new one to trigger execution
             oldScript.replaceWith(newScript);
           });
+
+          // TODO: we should update the URL with the new variant ID.
         })
         .catch((err) => {
           console.error('Error submitting question', err);
+          // TODO: error handling, prompt the user to refresh the page?
         });
     }
 

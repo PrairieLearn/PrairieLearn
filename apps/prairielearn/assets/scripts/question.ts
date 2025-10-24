@@ -1,6 +1,7 @@
+import { observe } from 'selector-observer';
 import { type Socket, io } from 'socket.io-client';
 
-import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
+import { decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
 
 import type {
   StatusMessage,
@@ -14,67 +15,59 @@ import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
 import { mathjaxTypeset } from './lib/mathjax.js';
 
-onDocumentReady(() => {
-  const questionContainer = document.querySelector<HTMLElement>('.question-container');
-  if (questionContainer?.dataset.gradingMethod === 'External') {
-    externalGradingLiveUpdate();
-  }
+// We use `selector-observer` here to handle the case of updating the page's
+// contents without reloading the whole page. At the time of writing, this was
+// used on the AI question generation draft editor page.
+observe('.question-container', {
+  constructor: HTMLDivElement,
+  // TODO: do we need to clean up anything on removal for long-lived pages?
+  initialize(container) {
+    // TODO: is this the correct sequencing of MathJax?
+    void mathjaxTypeset([container]);
 
-  const questionForm = document.querySelector<HTMLFormElement>('form.question-form');
-  if (questionForm) {
-    confirmOnUnload(questionForm);
-  }
-
-  const markdownBody = document.querySelector<HTMLDivElement>('.markdown-body');
-  const revealFade = document.querySelector<HTMLDivElement>('.reveal-fade');
-  const expandButtonContainer = document.querySelector('.js-expand-button-container');
-  const expandButton = expandButtonContainer?.querySelector('button');
-
-  let readMeExpanded = false;
-
-  function toggleExpandReadMe() {
-    if (!markdownBody || !expandButton) return;
-    readMeExpanded = !readMeExpanded;
-    expandButton.textContent = readMeExpanded ? 'Collapse' : 'Expand';
-    revealFade?.classList.toggle('d-none');
-    markdownBody.classList.toggle('max-height');
-  }
-
-  expandButton?.addEventListener('click', toggleExpandReadMe);
-
-  if (markdownBody && markdownBody.scrollHeight > 150) {
-    markdownBody.classList.add('max-height');
-    revealFade?.classList.remove('d-none');
-    expandButtonContainer?.classList.remove('d-none');
-    expandButtonContainer?.classList.add('d-flex');
-  }
-
-  setupDynamicObjects();
-  disableOnSubmit();
-
-  $<HTMLDivElement>('.js-submission-body.render-pending').on('show.bs.collapse', (e) => {
-    loadPendingSubmissionPanel(e.currentTarget, false);
-  });
-
-  document.addEventListener('show.bs.collapse', (e) => {
-    if ((e.target as HTMLElement).classList.contains('js-collapsible-card-body')) {
-      (e.target as HTMLElement)
-        .closest('.card')
-        ?.querySelector<HTMLDivElement>('.collapsible-card-header')
-        ?.classList.remove('border-bottom-0');
+    if (container.dataset.gradingMethod === 'External') {
+      externalGradingLiveUpdate();
     }
-  });
-  document.addEventListener('hidden.bs.collapse', (e) => {
-    if ((e.target as HTMLElement).classList.contains('js-collapsible-card-body')) {
-      (e.target as HTMLElement)
-        .closest('.card')
-        ?.querySelector<HTMLDivElement>('.collapsible-card-header')
-        ?.classList.add('border-bottom-0');
-    }
-  });
 
-  const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
-  copyContentModal(copyQuestionForm);
+    const questionForm = container.querySelector<HTMLFormElement>('form.question-form');
+    if (questionForm) {
+      confirmOnUnload(questionForm);
+    }
+
+    const markdownBody = container.querySelector<HTMLDivElement>('.markdown-body');
+    const revealFade = container.querySelector<HTMLDivElement>('.reveal-fade');
+    const expandButtonContainer = container.querySelector('.js-expand-button-container');
+    const expandButton = expandButtonContainer?.querySelector('button');
+
+    let readMeExpanded = false;
+
+    function toggleExpandReadMe() {
+      if (!markdownBody || !expandButton) return;
+      readMeExpanded = !readMeExpanded;
+      expandButton.textContent = readMeExpanded ? 'Collapse' : 'Expand';
+      revealFade?.classList.toggle('d-none');
+      markdownBody.classList.toggle('max-height');
+    }
+
+    expandButton?.addEventListener('click', toggleExpandReadMe);
+
+    if (markdownBody && markdownBody.scrollHeight > 150) {
+      markdownBody.classList.add('max-height');
+      revealFade?.classList.remove('d-none');
+      expandButtonContainer?.classList.remove('d-none');
+      expandButtonContainer?.classList.add('d-flex');
+    }
+
+    setupDynamicObjects();
+    disableOnSubmit();
+
+    $<HTMLDivElement>('.js-submission-body.render-pending').on('show.bs.collapse', (e) => {
+      loadPendingSubmissionPanel(e.currentTarget, false);
+    });
+
+    const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
+    copyContentModal(copyQuestionForm);
+  },
 });
 
 function externalGradingLiveUpdate() {
