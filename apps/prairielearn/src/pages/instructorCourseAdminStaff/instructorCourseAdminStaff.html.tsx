@@ -371,7 +371,8 @@ function CoursePermissionsRemoveStaffForm({
 
       <div class="mb-3">
         <p class="form-text">
-          Taking this action will remove ${courseUser.user.name ?? 'this user'} from course staff.
+          Taking this action will remove ${courseUser.user.name ?? 'this staff member'} from course
+          staff.
         </p>
       </div>
 
@@ -501,7 +502,7 @@ function StaffTable({
                           data-bs-custom-class="popover-wide"
                           data-testid="remove-staff-button"
                         >
-                          <i class="fa fa-times"></i>Remove staff
+                          <i class="fa fa-times"></i> Remove staff
                         </button>
                       `
                     : ''}
