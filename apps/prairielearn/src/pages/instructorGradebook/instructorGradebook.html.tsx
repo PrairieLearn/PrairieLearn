@@ -1,29 +1,23 @@
-import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import {
-  compiledScriptTag,
-  compiledStylesheetTag,
-  nodeModulesAssetPath,
-} from '../../lib/assets.js';
 
-import {
-  type CourseAssessmentRow,
-  type InstructorGradebookData,
-} from './instructorGradebook.types.js';
+import { InstructorGradebook as InstructorGradebookTable } from './components/GradebookTable.js';
+import { type CourseAssessmentRow, type GradebookRow } from './instructorGradebook.types.js';
 
 export function InstructorGradebook({
   resLocals,
   csvFilename,
   courseAssessments,
+  gradebookRows,
 }: {
   resLocals: Record<string, any>;
   csvFilename: string;
   courseAssessments: CourseAssessmentRow[];
+  gradebookRows: GradebookRow[];
 }) {
   const { authz_data, urlPrefix, __csrf_token } = resLocals;
 
@@ -38,34 +32,6 @@ export function InstructorGradebook({
     options: {
       fullWidth: true,
     },
-    headContent: html`
-      <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
-        from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
-      <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
-      <link
-        href="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.css')}"
-        rel="stylesheet"
-      />
-      <link
-        href="${nodeModulesAssetPath(
-          'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css',
-        )}"
-        rel="stylesheet"
-      />
-      ${compiledScriptTag('bootstrap-table-sticky-header.js')}
-      ${compiledScriptTag('instructorGradebookClient.ts')}
-      ${compiledStylesheetTag('instructorGradebook.css')}
-      ${EncodedData<InstructorGradebookData>(
-        {
-          urlPrefix,
-          csvFilename,
-          csrfToken: __csrf_token,
-          hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit,
-          courseAssessments,
-        },
-        'gradebook-data',
-      )}
-    `,
     content: html`
       ${renderHtml(
         <CourseInstanceSyncErrorsAndWarnings
@@ -75,16 +41,18 @@ export function InstructorGradebook({
           urlPrefix={urlPrefix}
         />,
       )}
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <h1>Gradebook</h1>
-        </div>
-        <table id="gradebook-table" aria-label="Gradebook"></table>
-
-        <div class="spinning-wheel card-body spinner-border">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-      </div>
+      ${renderHtml(
+        <InstructorGradebookTable
+          authzData={authz_data}
+          csrfToken={__csrf_token}
+          courseAssessments={courseAssessments}
+          gradebookRows={gradebookRows}
+          urlPrefix={urlPrefix}
+          csvFilename={csvFilename}
+          search={resLocals.query ?? ''}
+          isDevMode={resLocals.devMode}
+        />,
+      )}
       ${RoleDescriptionModal()}
     `,
   });
