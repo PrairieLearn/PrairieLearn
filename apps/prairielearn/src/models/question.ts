@@ -40,6 +40,16 @@ export async function selectQuestionByUuid({
   return await queryRow(sql.select_question_by_uuid, { course_id, uuid }, QuestionSchema);
 }
 
+export async function selectOptionalQuestionByUuid({
+  course_id,
+  uuid,
+}: {
+  course_id: string;
+  uuid: string;
+}) {
+  return await queryOptionalRow(sql.select_question_by_uuid, { course_id, uuid }, QuestionSchema);
+}
+
 export async function selectQuestionByInstanceQuestionId(
   instance_question_id: string,
 ): Promise<Question> {
