@@ -465,7 +465,7 @@ export function AiQuestionGenerationChat({
           })}
         >
           {hasMessages ? (
-            <div ref={stickToBottom.scrollRef} class="overflow-y-auto w-100 h-100">
+            <div ref={stickToBottom.scrollRef} class="overflow-y-auto w-100 h-100 pe-2">
               <div ref={stickToBottom.contentRef} class="pt-2">
                 <Messages
                   messages={messages}
