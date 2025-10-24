@@ -16,6 +16,7 @@ import { useMemo, useState } from 'preact/compat';
 import { Button, Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { z } from 'zod';
 
+import { Hydrate } from '@prairielearn/preact/server';
 import {
   CategoricalColumnFilter,
   MultiSelectColumnFilter,
@@ -25,7 +26,9 @@ import {
 } from '@prairielearn/ui';
 
 import { EditQuestionPointsScoreButton } from '../../../components/EditQuestionPointsScore.js';
+import { RubricSettings } from '../../../components/RubricSettings.js';
 import { ScorebarHtml } from '../../../components/Scorebar.js';
+import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import {
   NuqsAdapter,
   parseAsColumnPinningState,
@@ -40,9 +43,6 @@ import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../lib/db-types.js';
 import { formatPoints } from '../../../lib/format.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
-import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
-import { RubricSettings } from '../../../components/RubricSettings.js';
-import { Hydrate } from '@prairielearn/preact/server';
 
 import { GRADING_STATUS_VALUES, type GradingStatusValue } from './assessmentQuestion.shared.js';
 import {
@@ -675,6 +675,7 @@ function AssessmentQuestionTable({
               enableHiding: true,
               filterFn: (row, columnId, filterValues: string[]) => {
                 if (filterValues.length === 0) return true;
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
                 const rowItemIds = row.getValue(columnId) as string[];
                 // ALL selected items must be present (AND logic)
                 return filterValues.every((itemId) => rowItemIds.includes(itemId));
