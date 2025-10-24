@@ -1,8 +1,8 @@
--- BLOCK select_type_and_points_for_instance_question
+-- BLOCK select_info_for_instance_question_grade
 SELECT
-  a.type AS assessment_type,
-  iq.manual_points,
-  aq.max_points
+  to_json(a) AS assessment,
+  to_json(aq) AS assessment_question,
+  to_json(iq) AS instance_question
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
