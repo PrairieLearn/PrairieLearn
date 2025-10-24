@@ -1,5 +1,17 @@
 (() => {
   /**
+   * @typedef {object} FileEntry
+   * @property {string} name - The name of the file
+   * @property {number} size - The size of the file in bytes
+   * @property {Date | null} date - The date when the file was uploaded (null if downloaded)
+   * @property {string} contents - The base64-encoded contents of the file
+   */
+
+  /**
+   * @typedef {[string, string]} RegexEntry
+   */
+
+  /**
    * @param {string} name
    */
   function escapeFileName(name) {
@@ -32,19 +44,22 @@
      */
     constructor(uuid, options) {
       this.uuid = uuid;
-      /** @type {any[]} */
+      /** @type {FileEntry[]} */
       this.files = [];
       this.requiredFiles = options.requiredFiles || [];
       this.requiredFilesLowerCase = this.requiredFiles.map(
         /** @param {string} f */ (f) => f.toLowerCase(),
       );
+      /** @type {RegexEntry[]} */
       this.requiredFilesRegex = options.requiredFilesRegex || [];
       // Initialized after files are downloaded
+      /** @type {RegexEntry[]} */
       this.requiredFilesUnmatchedRegex = this.requiredFilesRegex.slice();
       this.optionalFiles = options.optionalFiles || [];
       this.optionalFilesLowerCase = this.optionalFiles.map(
         /** @param {string} f */ (f) => f.toLowerCase(),
       );
+      /** @type {RegexEntry[]} */
       this.optionalFilesRegex = options.optionalFilesRegex || [];
 
       // Checks whether a file name is acceptable
@@ -56,7 +71,7 @@
         }
         if (
           this.requiredFilesUnmatchedRegex.some(
-            /** @param {any} f */ (f) => new RegExp(f[0], 'i').test(fileName),
+            /** @param {RegexEntry} f */ (f) => new RegExp(f[0], 'i').test(fileName),
           )
         ) {
           return fileName;
@@ -66,7 +81,7 @@
         }
         if (
           this.optionalFilesRegex.some(
-            /** @param {any} f */ (f) => new RegExp(f[0], 'i').test(fileName),
+            /** @param {RegexEntry} f */ (f) => new RegExp(f[0], 'i').test(fileName),
           )
         ) {
           return fileName;
@@ -87,8 +102,8 @@
         options.submittedFileNames.forEach(
           /** @param {string} n */ (n) => {
             if (this.requiredFiles.includes(n)) return;
-            const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(
-              /** @param {any} f */ (f) => new RegExp(f[0], 'i').test(n),
+            const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
+              new RegExp(f[0], 'i').test(n),
             );
             if (matchingRegex !== -1) {
               this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
@@ -155,7 +170,7 @@
       $dropTarget.dropzone({
         url: '/none',
         autoProcessQueue: false,
-        accept: /** @param {any} file @param {(error?: string) => void} done */ (file, done) => {
+        accept: /** @param {File} file @param {(error?: string) => void} done */ (file, done) => {
           // fuzzy case match
           const fileNameLowerCase = file.name.toLowerCase();
           if (this.findAcceptedFileName(fileNameLowerCase)) {
@@ -163,7 +178,7 @@
           }
           return done('invalid file');
         },
-        addedfile: /** @param {any} file */ (file) => {
+        addedfile: /** @param {File} file */ (file) => {
           const existingFileSize = this.files.reduce((prev, next) => prev + next.size, 0);
           if (existingFileSize + file.size > this.maxFileSizeMB * 1024 * 1024) {
             this.addWarningMessage(
@@ -272,7 +287,7 @@
      * @returns {string | null} The file's contents, or null if the file was not found
      */
     getSubmittedFileContents(name) {
-      const file = this.files.find(/** @param {any} file */ (file) => file.name === name);
+      const file = this.files.find(/** @param {FileEntry} file */ (file) => file.name === name);
       return file ? file.contents : null;
     }
 
@@ -298,10 +313,10 @@
     refreshRequiredRegex() {
       this.requiredFilesUnmatchedRegex = this.requiredFilesRegex.slice();
       this.files.forEach(
-        /** @param {any} n */ (n) => {
+        /** @param {FileEntry} n */ (n) => {
           if (this.requiredFiles.includes(n.name)) return;
           const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(
-            /** @param {any} f */ (f) => new RegExp(f[0], 'i').test(n.name),
+            /** @param {RegexEntry} f */ (f) => new RegExp(f[0], 'i').test(n.name),
           );
           if (matchingRegex !== -1) {
             this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
@@ -401,8 +416,8 @@
         } else if (!fileData) {
           $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
         } else {
-          const uploadDate = this.files.find((file) => file.name === fileName).date;
-          if (uploadDate !== null) {
+          const uploadDate = this.files.find((file) => file.name === fileName)?.date;
+          if (uploadDate !== null && uploadDate !== undefined) {
             $fileStatusContainerLeft.append(
               `<p class="file-status">uploaded at ${uploadDate.toLocaleString()}</p>`,
             );
@@ -497,17 +512,17 @@
       // First list required files...
       this.requiredFiles.forEach(/** @param {string} n */ (n) => renderFileListEntry(n));
       // ... then uploaded files matching a required regex (in 1:1 mapping) ...
-      /** @type {any[]} */
+      /** @type {RegexEntry[]} */
       const matchedRegex = [];
       /** @type {string[]} */
       const matchedRegexFiles = [];
       this.files
-        .map(/** @param {any} f */ (f) => f.name)
+        .map(/** @param {FileEntry} f */ (f) => f.name)
         .filter(
           /** @param {string} n */ (n) => {
             if (this.requiredFiles.includes(n)) return false;
             const matchingRegex = this.requiredFilesRegex.findIndex(
-              /** @param {any} f */ (f) =>
+              /** @param {RegexEntry} f */ (f) =>
                 new RegExp(f[0], 'i').test(n) && !matchedRegex.includes(f),
             );
             if (matchingRegex !== -1) {
@@ -522,13 +537,13 @@
         .forEach(/** @param {string} n */ (n) => renderFileListEntry(n));
       // ...then unmatched required regexes ...
       this.requiredFilesUnmatchedRegex.forEach(
-        /** @param {any} n */ (n) => renderFileListEntry(n[1], false, true),
+        /** @param {RegexEntry} n */ (n) => renderFileListEntry(n[1], false, true),
       );
       // ...then optional file names...
       this.optionalFiles.forEach(/** @param {string} n */ (n) => renderFileListEntry(n, true));
       // ...then all remaining uploaded files (matching a wildcard regex)...
       this.files
-        .map(/** @param {any} f */ (f) => f.name)
+        .map(/** @param {FileEntry} f */ (f) => f.name)
         .filter(
           /** @param {string} n */ (n) =>
             !this.requiredFiles.includes(n) &&
@@ -538,7 +553,7 @@
         .forEach(/** @param {string} n */ (n) => renderFileListEntry(n, true));
       // ...and finally all wildcard patterns (which might accept an arbitrary number of uploads)
       this.optionalFilesRegex
-        .map(/** @param {any} n */ (n) => n[1])
+        .map(/** @param {RegexEntry} n */ (n) => n[1])
         .forEach(/** @param {string} n */ (n) => renderFileListEntry(n, true, true));
     }
 

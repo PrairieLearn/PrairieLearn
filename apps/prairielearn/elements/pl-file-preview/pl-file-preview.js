@@ -26,7 +26,7 @@
     return path
       .replace(/^\//, '')
       .split('/')
-      .map(/** @param {string} part */ (part) => encodeURIComponent(part))
+      .map((part) => encodeURIComponent(part))
       .join('/');
   }
 
@@ -43,8 +43,10 @@
       const submissionFilesUrl = filePreview.dataset.submissionFilesUrl;
       if (!submissionFilesUrl) throw new Error('submissionFilesUrl not found');
 
-      filePreview.querySelectorAll('.js-file-preview-item').forEach((item) => {
-        const file = /** @type {HTMLElement} */ (item).dataset.file;
+      /** @type {NodeListOf<HTMLElement>} */ (
+        filePreview.querySelectorAll('.js-file-preview-item')
+      ).forEach((item) => {
+        const file = item.dataset.file;
         if (!file) return;
         const escapedFileName = escapePath(file);
         const path = `${submissionFilesUrl}/${escapedFileName}`;
@@ -82,7 +84,9 @@
         const toggleExpandPreviewText = item.querySelector('.js-toggle-expand-preview-text');
 
         const preview = item.querySelector('.file-preview');
-        const container = item.querySelector('.file-preview-container');
+        const container = /** @type {HTMLElement | null} */ (
+          item.querySelector('.file-preview-container')
+        );
         const notebookPreview = item.querySelector('.js-notebook-preview');
         const pre = preview ? preview.querySelector('pre') : null;
 
@@ -126,18 +130,16 @@
          * @param {boolean | undefined} [expanded]
          */
         function toggleExpanded(expanded) {
-          const containerElement = /** @type {HTMLElement | null} */ (container);
-          const shouldExpand =
-            expanded ?? (containerElement ? !containerElement.style.maxHeight : false);
+          const shouldExpand = expanded ?? (container ? !container.style.maxHeight : false);
 
           // The container has a class with a `max-height` set which will only take
           // effect if there is no `max-height` set via the `style` attribute.
-          if (containerElement) {
+          if (container) {
             if (shouldExpand) {
-              containerElement.style.maxHeight = 'none';
+              container.style.maxHeight = 'none';
               updateExpandButton(true);
             } else {
-              containerElement.style.removeProperty('max-height');
+              container.style.removeProperty('max-height');
               updateExpandButton(false);
             }
           }
@@ -219,11 +221,7 @@
                   // Only show the expand/collapse button if the content is tall
                   // enough where scrolling is necessary. This must be done before
                   // auto-expansion happens below.
-                  const containerElement = /** @type {HTMLElement | null} */ (container);
-                  if (
-                    containerElement &&
-                    containerElement.scrollHeight > containerElement.clientHeight
-                  ) {
+                  if (container && container.scrollHeight > container.clientHeight) {
                     if (expandButton) {
                       expandButton.classList.remove('d-none');
                     }

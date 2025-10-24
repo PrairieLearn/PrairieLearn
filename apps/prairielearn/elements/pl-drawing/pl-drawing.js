@@ -11,6 +11,7 @@
  * @property {number} grid_size - The size of the grid
  */
 
+
 /**
  * @typedef {object} PLDrawingSubmittedAnswer
  * @property {Record<string, PLDrawingOptions & Record<string, unknown>>} _answerData - The submitted answer data
@@ -302,7 +303,7 @@ window.PLDrawingApi = {
     fabric.util.addListener(
       /** @type {any} */ (canvas).upperCanvasEl,
       'dblclick',
-      function (/** @type {any} */ e) {
+      function (/** @type {MouseEvent} */ e) {
         // @ts-expect-error - findTarget method exists on Canvas but not in types
         const target = canvas.findTarget(e);
         if (target !== undefined) {

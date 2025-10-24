@@ -261,7 +261,11 @@
 })();
 
 /**
- * @param {any} quill
+ * @typedef {any} Quill
+ */
+
+/**
+ * @param {Quill} quill
  * @param {string} uuid
  */
 function initializeFormulaPopover(quill, uuid) {
