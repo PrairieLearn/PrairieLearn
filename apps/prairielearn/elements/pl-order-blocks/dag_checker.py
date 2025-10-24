@@ -43,9 +43,10 @@ def solve_dag(
     - depends_graph: The dependency graph between blocks specified in the question
     - group_belonging: which pl-block-group each block belongs to, specified in the question
 
-    Returns: 
-        - A list that is a topological sort of the input DAG with blocks in the same group occuring
-          contiguously, making it a solution to the given problem
+    Returns:
+        - A list that is a topological sort of the input DAG with blocks in the
+          same group occuring contiguously, making it a solution to the given
+          problem
     """
     graph = dag_to_nx(depends_graph, group_belonging)
     sort = list(nx.topological_sort(graph))
@@ -74,7 +75,8 @@ def solve_multigraph(
     - final: the sink of the multigraph
 
     Returns:
-        - A list of lists that are a topological sort of the input MDAG making it a solution to the given problem
+        - A list of lists that are a topological sort of the input MDAG making
+          it a solution to the given problem
     """
     graphs = [
         dag_to_nx(graph, {})
@@ -91,8 +93,9 @@ def check_topological_sorting(
     - submission: candidate for topological sorting
     - graph: graph to check topological sorting over
 
-    Returns: 
-        - Index of first element not topologically sorted, or length of list if sorted
+    Returns:
+        - Index of first element not topologically sorted, or length of list if
+          sorted
     """
     seen = set()
     for i, node in enumerate(submission):
@@ -110,8 +113,9 @@ def check_grouping(
     - group_belonging: group that each block belongs to
 
     Returns:
-        - Index of first element breaking condition that members of the same group must be
-          adjacent, or length of list if they all meet the condition
+        - Index of first element breaking condition that members of the same
+          group must be adjacent, or length of list if they all meet the
+          condition
     """
     group_sizes = Counter(group_belonging.values())
     cur_group = None
@@ -199,8 +203,9 @@ def grade_dag(
     - group_belonging: which pl-block-group each block belongs to, specified in the question
 
     Returns:
-        - Tuple containing length of list that meets both correctness conditions, starting from the beginning,
-          and the length of any correct solution
+        - Tuple containing the length of list that meets both correctness
+          conditions, starting from the beginning, and the length of any
+          correct solution
     """
     graph = dag_to_nx(depends_graph, group_belonging)
 
@@ -234,7 +239,8 @@ def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     https://docs.ocean.dwavesys.com/en/stable/docs_dnx/reference/algorithms/generated/dwave_networkx.algorithms.cover.is_vertex_cover.html
 
     Returns:
-        - If the set of vertices contains at least one end point of every edge of the provided graph.
+        - If the set of vertices contains at least one end point of every edge
+          of the provided graph.
     """
     cover = set(vertex_cover)
     return all(u in cover or v in cover for u, v in G.edges)
@@ -343,9 +349,9 @@ def dfs_until(
     - multigraph: the multigraph being searched.
     - start: the starting point for the search.
 
-    Returns: 
-        The reason or node that halted the search with the nodes and their corresponding
-        edges the DFS was able to reach before halting.
+    Returns:
+        The reason or node that halted the search with the nodes and their
+        corresponding edges the DFS was able to reach before halting.
 
     Raises:
         - If a cycle is found in the multigraph.
