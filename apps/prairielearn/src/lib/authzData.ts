@@ -239,15 +239,22 @@ export function hasRole(
   return false;
 }
 
+/**
+ * Asserts that the user has the requested role. It also asserts that
+ * the requested role is one of the allowed roles.
+ *
+ * For staff roles, it checks that you have at least the requested role.
+ * role. If you have a more permissive role, you are allowed to perform the action.
+ *
+ * @param authzData - The authorization data of the user.
+ * @param requestedRole - The requested role from the caller of the model function.
+ * @param allowedRoles - The allowed roles for the model function.
+ */
 export function assertHasRole(
   authzData: RawAuthzData | DangerousAuthzData,
   requestedRole: CourseInstanceRole,
   allowedRoles: CourseInstanceRole[],
 ): void {
-  if (isDangerousFullAuthzPermissions(authzData)) {
-    return;
-  }
-
   if (!allowedRoles.includes(requestedRole)) {
     // This suggests the code was called incorrectly (internal error).
     throw new Error(
@@ -255,11 +262,7 @@ export function assertHasRole(
     );
   }
 
-  if (requestedRole === 'Student' && authzData.has_student_access) {
-    return;
-  }
-
-  if (authzData.course_instance_role === requestedRole) {
+  if (hasRole(authzData, requestedRole)) {
     return;
   }
 
