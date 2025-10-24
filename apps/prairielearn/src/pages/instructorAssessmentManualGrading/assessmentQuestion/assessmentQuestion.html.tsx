@@ -1,12 +1,10 @@
 import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
-import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
-import { RubricSettings } from '../../../components/RubricSettings.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import { compiledStylesheetTag } from '../../../lib/assets.js';

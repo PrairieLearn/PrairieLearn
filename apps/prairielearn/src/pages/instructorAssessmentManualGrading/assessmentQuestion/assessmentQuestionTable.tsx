@@ -231,7 +231,6 @@ function AssessmentQuestionTable({
     'rubric_items',
     parseAsArrayOf(parseAsString).withDefault(DEFAULT_RUBRIC_ITEMS_FILTER),
   );
-  const [rubricMatchMode, setRubricMatchMode] = useState<'any' | 'all'>('all');
 
   const [manualPointsFilter, setManualPointsFilter] = useQueryState(
     'manual_points_filter',
@@ -677,14 +676,8 @@ function AssessmentQuestionTable({
               filterFn: (row, columnId, filterValues: string[]) => {
                 if (filterValues.length === 0) return true;
                 const rowItemIds = row.getValue(columnId) as string[];
-
-                if (rubricMatchMode === 'all') {
-                  // ALL selected items must be present
-                  return filterValues.every((itemId) => rowItemIds.includes(itemId));
-                } else {
-                  // ANY selected item must be present
-                  return filterValues.some((itemId) => rowItemIds.includes(itemId));
-                }
+                // ALL selected items must be present (AND logic)
+                return filterValues.every((itemId) => rowItemIds.includes(itemId));
               },
             }),
           ]
@@ -700,7 +693,6 @@ function AssessmentQuestionTable({
       csrfToken,
       assessmentId,
       rubricData,
-      rubricMatchMode,
     ],
   );
 
@@ -981,8 +973,6 @@ function AssessmentQuestionTable({
                     }}
                     columnValuesFilter={rubricItemsFilter}
                     setColumnValuesFilter={setRubricItemsFilter}
-                    matchMode={rubricMatchMode}
-                    setMatchMode={setRubricMatchMode}
                   />
                 ),
               }
