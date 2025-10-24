@@ -656,12 +656,15 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     try:
         pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
     except ValueError as e:
-        # We only want to catch the intger string conversion limit ValueError. Others might be outside of the student's control and should error like normal.
+        # We only want to catch the integer string conversion limit ValueError. Others might be outside of the student's control and should error like normal.
         if "integer string conversion" in str(e):
-            data["format_errors"][name] = ("Your expression expands integers longer than 4000 digits, try a simpler expression, or report an issue if you believe this is a correct answer.")
+            data["format_errors"][name] = (
+                "Your expression expands integers longer than 4000 digits, "
+                "try a simpler expression, or report an issue if you believe this is a correct answer."
+            )
         else:
             raise
-    
+
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
