@@ -4,7 +4,7 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import type { StatusMessage } from '../../src/lib/externalImageCaptureSocket.types.js';
 
-const MAX_IMAGE_SIDE_LENGTH = 1000;
+const MAX_IMAGE_SIDE_LENGTH = 2000;
 const SOCKET_TIMEOUT_MS = 10 * 1000; // 10 seconds
 
 onDocumentReady(() => {
@@ -178,7 +178,6 @@ onDocumentReady(() => {
 
     socket.on('externalImageCaptureAck', (msg: StatusMessage | null) => {
       clearTimeout(timeout);
-      socket.disconnect();
 
       if (!msg) {
         changeState('failed');

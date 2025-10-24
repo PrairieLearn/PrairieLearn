@@ -40,6 +40,9 @@ import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../lib/db-types.js';
 import { formatPoints } from '../../../lib/format.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
+import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
+import { RubricSettings } from '../../../components/RubricSettings.js';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { GRADING_STATUS_VALUES, type GradingStatusValue } from './assessmentQuestion.shared.js';
 import {
@@ -167,12 +170,14 @@ interface AssessmentQuestionTableProps {
   assessmentId: string;
   assessmentQuestionId: string;
   assessmentQuestion: AssessmentQuestion;
+  assessmentTid: string;
   questionQid: string;
   aiGradingMode: boolean;
   groupWork: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: InstanceQuestionGroup[];
   courseStaff: { user_id: string; name: string | null; uid: string }[];
+  aiGradingStats: AiGradingGeneralStats | null;
 }
 
 function AssessmentQuestionTable({
@@ -183,12 +188,16 @@ function AssessmentQuestionTable({
   assessmentId,
   assessmentQuestionId,
   assessmentQuestion,
+  assessmentTid,
   questionQid,
   aiGradingMode,
   groupWork,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
+  course,
+  courseInstance,
+  aiGradingStats,
 }: AssessmentQuestionTableProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
@@ -802,8 +811,25 @@ function AssessmentQuestionTable({
   };
 
   return (
-    <TanstackTableCard
-      table={table}
+    <>
+      <div class="mb-3">
+        <Hydrate>
+          <RubricSettings
+            assessmentQuestion={assessmentQuestion}
+            rubricData={rubricData}
+            csrfToken={csrfToken}
+            aiGradingStats={aiGradingStats}
+            context={{
+              course_short_name: course.short_name,
+              course_instance_short_name: courseInstance.short_name,
+              assessment_tid: assessmentTid,
+              question_qid: questionQid,
+            }}
+          />
+        </Hydrate>
+      </div>
+      <TanstackTableCard
+        table={table}
       title="Student instance questions"
       headerButtons={
         <>
@@ -981,6 +1007,7 @@ function AssessmentQuestionTable({
         }),
       }}
     />
+    </>
   );
 }
 
@@ -995,12 +1022,14 @@ function AssessmentQuestionManualGrading({
   assessmentId,
   assessmentQuestionId,
   assessmentQuestion,
+  assessmentTid,
   questionQid,
   aiGradingMode,
   groupWork,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
+  aiGradingStats,
   isDevMode,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
@@ -1023,12 +1052,14 @@ function AssessmentQuestionManualGrading({
           assessmentId={assessmentId}
           assessmentQuestionId={assessmentQuestionId}
           assessmentQuestion={assessmentQuestion}
+          assessmentTid={assessmentTid}
           questionQid={questionQid}
           aiGradingMode={aiGradingMode}
           groupWork={groupWork}
           rubricData={rubricData}
           instanceQuestionGroups={instanceQuestionGroups}
           courseStaff={courseStaff}
+          aiGradingStats={aiGradingStats}
         />
       </QueryClientProviderDebug>
     </NuqsAdapter>
