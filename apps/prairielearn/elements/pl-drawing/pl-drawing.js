@@ -11,7 +11,6 @@
  * @property {number} grid_size - The size of the grid
  */
 
-
 /**
  * @typedef {object} PLDrawingSubmittedAnswer
  * @property {Record<string, PLDrawingOptions & Record<string, unknown>>} _answerData - The submitted answer data
@@ -254,7 +253,7 @@ window.PLDrawingApi = {
       $(canvas_elem.parentElement).children('canvas').height(canvas_height);
     }
 
-    canvas.on('object:added', (/** @type {any} */ ev) => {
+    canvas.on('object:added', (ev) => {
       if (ev.target && ev.target.cornerSize !== undefined) {
         ev.target.cornerSize *= renderScale;
         ev.target.borderColor = 'rgba(102,153,255,1.0)';
@@ -272,8 +271,8 @@ window.PLDrawingApi = {
 
     // Restrict objects from being able to be dragged off-canvas
     // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
-    canvas.on('object:moving', function (/** @type {any} */ e) {
-      const obj = e.target;
+    canvas.on('object:moving', function (e) {
+      const obj = /** @type {any} */ (e.target);
       if (!obj) return;
       // if object is too big ignore,
       if (obj.currentHeight > canvas_width || obj.currentWidth > canvas_height) {
