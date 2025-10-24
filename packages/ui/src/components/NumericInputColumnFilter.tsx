@@ -25,18 +25,22 @@ export function NumericInputColumnFilter({
   onChange,
 }: NumericInputColumnFilterProps) {
   const hasActiveFilter = value.trim().length > 0;
+  const isInvalid = hasActiveFilter && parseNumericFilter(value) === null;
 
   return (
     <Dropdown align="end">
       <Dropdown.Toggle
         variant="link"
-        class={clsx('text-muted p-0 ms-2', hasActiveFilter && 'text-primary')}
+        class={clsx('text-muted p-0 ms-2', hasActiveFilter && (isInvalid ? 'text-warning' : 'text-primary'))}
         id={`filter-${columnId}`}
         aria-label={`Filter ${columnLabel.toLowerCase()}`}
         title={`Filter ${columnLabel.toLowerCase()}`}
       >
         <i
-          class={clsx('bi', hasActiveFilter ? 'bi-funnel-fill' : 'bi-funnel')}
+          class={clsx(
+            'bi',
+            isInvalid ? 'bi-exclamation-triangle' : hasActiveFilter ? 'bi-funnel-fill' : 'bi-funnel',
+          )}
           aria-hidden="true"
         />
       </Dropdown.Toggle>
@@ -45,7 +49,7 @@ export function NumericInputColumnFilter({
           <label class="form-label small fw-semibold mb-2">{columnLabel}</label>
           <input
             type="text"
-            class="form-control form-control-sm"
+            class={clsx('form-control form-control-sm', isInvalid && 'is-invalid')}
             placeholder="e.g., >0, <5, =10"
             value={value}
             onInput={(e) => {
@@ -55,12 +59,19 @@ export function NumericInputColumnFilter({
             }}
             onClick={(e) => e.stopPropagation()}
           />
-          <div class="form-text small mt-2">
-            Use operators: <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>,{' '}
-            <code>&gt;=</code>, <code>=</code>
-            <br />
-            Example: <code>&gt;5</code> or <code>&lt;=10</code>
-          </div>
+          {isInvalid && (
+            <div class="invalid-feedback d-block">
+              Invalid filter format. Use operators like <code>&gt;5</code> or <code>&lt;=10</code>
+            </div>
+          )}
+          {!isInvalid && (
+            <div class="form-text small mt-2">
+              Use operators: <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>,{' '}
+              <code>&gt;=</code>, <code>=</code>
+              <br />
+              Example: <code>&gt;5</code> or <code>&lt;=10</code>
+            </div>
+          )}
           {hasActiveFilter && (
             <button
               type="button"
