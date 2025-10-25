@@ -6,6 +6,9 @@ const MIN_ZOOM_SCALE = 1;
 /** Maximum zoom scale for the submitted image preview */
 const MAX_ZOOM_SCALE = 5;
 
+/** Maximum side length for the captured image */
+const MAX_IMAGE_SIDE_LENGTH = 2000;
+
 (() => {
   class PLImageCapture {
     constructor(uuid) {
@@ -43,6 +46,10 @@ const MAX_ZOOM_SCALE = 5;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
       this.handwritingEnhanced = false;
+
+      /** Resizing canvas and context used for image scaling */
+      this.resizingCanvas = null;
+      this.resizingCtx = null;
 
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
@@ -585,7 +592,33 @@ const MAX_ZOOM_SCALE = 5;
       }
 
       if (dataUrl) {
-        hiddenCaptureInput.value = dataUrl;
+        // Perform scaling to ensure that user-uploaded images are not too large.
+        // The scale factor ensures that the width and height of the image do not exceed 2000px.
+        // If the image width and height are both less than 2000px, no scaling is applied.
+        const image = new Image();
+        image.src = dataUrl;
+        
+        image.onload = () => {
+          const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
+          const targetWidth = Math.round(image.width * imageScaleFactor);
+          const targetHeight = Math.round(image.height * imageScaleFactor);
+
+          if (!this.resizingCanvas) {
+            this.resizingCanvas = document.createElement('canvas');
+          }
+          if (!this.resizingCtx) {
+            this.resizingCtx = this.resizingCanvas.getContext('2d');
+            if (!this.resizingCtx) {
+              throw new Error('Failed to get canvas context');
+            }
+          }
+
+          this.resizingCanvas.width = targetWidth;
+          this.resizingCanvas.height = targetHeight;
+          this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+          hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg', 0.9);
+        }
       } else {
         hiddenCaptureInput.removeAttribute('value');
       }
@@ -886,10 +919,26 @@ const MAX_ZOOM_SCALE = 5;
         // Stream the local camera video to the video element
         this.localCameraStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            width: { ideal: 2000 },
-            height: { ideal: 2000 },
-          },
+            advanced: [
+              { width: { min: 640 } },
+              { width: { min: 800 } },
+              { width: { min: 900 } },
+              { width: { min: 1024 } },
+              { width: { min: 1080 } },
+              { width: { min: 1280 } },
+              { width: { min: 1920 } },
+              { width: { min: 2560 } },
+              { width: { min: 3840 } },
+              { width: { min: 4096 } },
+              { width: { min: 5120 } },
+              { width: { min: 7680 } }
+            ]
+          }
         });
+
+        const settings = this.localCameraStream.getVideoTracks()[0]
+            .getSettings();
+            
         localCameraVideo.srcObject = this.localCameraStream;
 
         await localCameraVideo.play();
@@ -977,7 +1026,7 @@ const MAX_ZOOM_SCALE = 5;
 
       this.deactivateVideoStream();
       this.loadCapturePreviewFromDataUrl({
-        dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg'),
+        dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg', 1),
       });
       this.setCaptureChangedFlag(true);
       this.openContainer('capture-preview');
@@ -1320,7 +1369,7 @@ const MAX_ZOOM_SCALE = 5;
       let dataUrl;
       try {
         const canvas = await selection.$toCanvas();
-        dataUrl = canvas.toDataURL('image/jpeg');
+        dataUrl = canvas.toDataURL('image/jpeg', 1);
       } catch {
         throw new Error('Failed to convert cropper selection to canvas');
       }
@@ -1354,7 +1403,7 @@ const MAX_ZOOM_SCALE = 5;
       let dataUrl;
       try {
         const canvas = await selection.$toCanvas();
-        dataUrl = canvas.toDataURL('image/jpeg');
+        dataUrl = canvas.toDataURL('image/jpeg', 1);
       } catch {
         throw new Error('Failed to convert cropper selection to canvas');
       }
