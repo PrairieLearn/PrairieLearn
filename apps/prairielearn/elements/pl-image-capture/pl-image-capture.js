@@ -597,7 +597,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         // If the image width and height are both less than 2000px, no scaling is applied.
         const image = new Image();
         image.src = dataUrl;
-        
+
         image.onload = () => {
           const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
           const targetWidth = Math.round(image.width * imageScaleFactor);
@@ -618,7 +618,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
           this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
 
           hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg', 0.9);
-        }
+        };
       } else {
         hiddenCaptureInput.removeAttribute('value');
       }
@@ -919,26 +919,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         // Stream the local camera video to the video element
         this.localCameraStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            advanced: [
-              { width: { min: 640 } },
-              { width: { min: 800 } },
-              { width: { min: 900 } },
-              { width: { min: 1024 } },
-              { width: { min: 1080 } },
-              { width: { min: 1280 } },
-              { width: { min: 1920 } },
-              { width: { min: 2560 } },
-              { width: { min: 3840 } },
-              { width: { min: 4096 } },
-              { width: { min: 5120 } },
-              { width: { min: 7680 } }
-            ]
-          }
+            width: { ideal: 7680 }
+          },
         });
 
-        const settings = this.localCameraStream.getVideoTracks()[0]
-            .getSettings();
-            
         localCameraVideo.srcObject = this.localCameraStream;
 
         await localCameraVideo.play();
