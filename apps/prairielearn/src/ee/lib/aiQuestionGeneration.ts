@@ -25,7 +25,7 @@ import {
   logResponseUsage,
   mergeUsage,
 } from '../../lib/ai.js';
-import * as b64Util from '../../lib/base64-util.js';
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
@@ -681,10 +681,10 @@ async function regenInternal({
 
   const files: Record<string, string> = {};
   if (html) {
-    files['question.html'] = b64Util.b64EncodeUnicode(html);
+    files['question.html'] = b64EncodeUnicode(html);
   }
   if (python) {
-    files['server.py'] = b64Util.b64EncodeUnicode(python);
+    files['server.py'] = b64EncodeUnicode(python);
   }
 
   const courseFilesClient = getCourseFilesClient();
