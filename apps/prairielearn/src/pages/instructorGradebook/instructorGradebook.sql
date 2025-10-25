@@ -51,7 +51,7 @@ WITH
   ),
   user_ids AS (
     -- Select all users that:
-    -- 1. Are enrolled in the course instance;
+    -- 1. Are enrolled in the course instance and have status 'joined';
     -- 2. Have at least one assessment instance in the course (typically previously enrolled);
     -- 3. Have some staff permission in the course or instance.
     (
@@ -68,6 +68,7 @@ WITH
         enrollments
       WHERE
         course_instance_id = $course_instance_id
+        AND status = 'joined'
     )
     UNION
     (
