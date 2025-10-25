@@ -1,7 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "additionalProperties": false,
   "properties": {
     "startServer": {
       "type": "boolean",
@@ -12,8 +11,15 @@
       "default": "postgres"
     },
     "postgresqlPassword": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "postgresqlDatabase": {
       "type": "string",
@@ -45,18 +51,38 @@
               "default": true
             },
             "ca": {
-              "type": ["string", "null"]
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "key": {
-              "type": ["string", "null"]
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "cert": {
-              "type": ["string", "null"]
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         }
-      ],
-      "default": false
+      ]
     },
     "namedLocksRenewIntervalMs": {
       "type": "number",
@@ -64,9 +90,6 @@
     },
     "courseDirs": {
       "type": "array",
-      "items": {
-        "type": "string"
-      },
       "default": [
         "/course",
         "/course2",
@@ -77,7 +100,10 @@
         "/course7",
         "/course8",
         "/course9"
-      ]
+      ],
+      "items": {
+        "type": "string"
+      }
     },
     "courseRepoDefaultBranch": {
       "type": "string",
@@ -100,36 +126,85 @@
       "default": "/data1/courses"
     },
     "redisUrl": {
-      "type": ["string", "null"],
-      "default": "redis://localhost:6379/"
+      "default": "redis://localhost:6379/",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "nonVolatileRedisUrl": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "logFilename": {
       "type": "string",
       "default": "server.log"
     },
     "logErrorFilename": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "authUid": {
-      "type": ["string", "null"],
-      "default": "dev@example.com"
+      "default": "dev@example.com",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "authName": {
-      "type": ["string", "null"],
-      "default": "Dev User"
+      "default": "Dev User",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "authUin": {
-      "type": ["string", "null"],
-      "default": "000000000"
+      "default": "000000000",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "authEmail": {
-      "type": ["string", "null"],
-      "default": "dev@example.com"
+      "default": "dev@example.com",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "authnCookieMaxAgeMilliseconds": {
       "type": "number",
@@ -144,6 +219,7 @@
       "default": 3600
     },
     "sessionCookieSameSite": {
+      "default": "lax",
       "anyOf": [
         {
           "type": "boolean"
@@ -152,17 +228,23 @@
           "type": "string",
           "enum": ["none", "lax", "strict"]
         }
-      ],
-      "default": "lax"
+      ]
     },
     "cookieDomain": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "serverType": {
       "type": "string",
-      "enum": ["http", "https"],
-      "default": "http"
+      "default": "http",
+      "enum": ["http", "https"]
     },
     "serverPort": {
       "type": "string",
@@ -177,8 +259,15 @@
       "default": 65000
     },
     "serverCanonicalHost": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "runMigrations": {
       "type": "boolean",
@@ -222,8 +311,8 @@
     },
     "fileStoreStorageTypeDefault": {
       "type": "string",
-      "enum": ["S3", "FileSystem"],
-      "default": "S3"
+      "default": "S3",
+      "enum": ["S3", "FileSystem"]
     },
     "initNewsItems": {
       "type": "boolean",
@@ -234,6 +323,7 @@
       "default": true
     },
     "cronEnabledJobs": {
+      "default": null,
       "anyOf": [
         {
           "type": "array",
@@ -244,10 +334,10 @@
         {
           "type": "null"
         }
-      ],
-      "default": null
+      ]
     },
     "cronDisabledJobs": {
+      "default": null,
       "anyOf": [
         {
           "type": "array",
@@ -258,12 +348,18 @@
         {
           "type": "null"
         }
-      ],
-      "default": null
+      ]
     },
     "cronOverrideAllIntervalsSec": {
-      "type": ["number", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "cronIntervalAutoFinishExamsSec": {
       "type": "number",
@@ -338,20 +434,48 @@
       "default": "THIS_IS_THE_SECRET_KEY"
     },
     "secretSlackOpsBotEndpoint": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "secretSlackToken": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "secretSlackCourseRequestChannel": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "githubClientToken": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "githubCourseOwner": {
       "type": "string",
@@ -366,8 +490,15 @@
       "default": "machine"
     },
     "gitSshCommand": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "externalGradingUseAws": {
       "type": "boolean",
@@ -382,16 +513,37 @@
       "default": "grading_results_dev"
     },
     "externalGradingJobsDeadLetterQueueName": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "externalGradingResultsDeadLetterQueueName": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "externalGradingAutoScalingGroupName": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "externalGradingS3Bucket": {
       "type": "string",
@@ -434,16 +586,30 @@
       "default": false
     },
     "cacheImageRegistry": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "fileEditorUseGit": {
       "type": "boolean",
       "default": false
     },
     "workersCount": {
-      "type": ["number", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "workersPerCpu": {
       "type": "number",
@@ -451,8 +617,8 @@
     },
     "workersExecutionMode": {
       "type": "string",
-      "enum": ["container", "native", "disabled"],
-      "default": "native"
+      "default": "native",
+      "enum": ["container", "native", "disabled"]
     },
     "workerUseQueue": {
       "type": "boolean",
@@ -467,12 +633,26 @@
       "default": 60000
     },
     "workerExecutorImageRepository": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "workerExecutorImageTag": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "ensureExecutorImageAtStartup": {
       "type": "boolean",
@@ -525,7 +705,10 @@
     "awsServiceGlobalOptions": {
       "type": "object",
       "additionalProperties": {},
-      "default": {}
+      "default": {},
+      "propertyNames": {
+        "type": "string"
+      }
     },
     "hasShib": {
       "type": "boolean",
@@ -545,68 +728,7 @@
     },
     "shibLinkColors": {
       "type": "object",
-      "additionalProperties": false,
       "required": ["normal", "hover", "active", "focus"],
-      "properties": {
-        "normal": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["background", "border", "text"],
-          "properties": {
-            "background": {
-              "type": "string"
-            },
-            "border": {
-              "type": "string"
-            },
-            "text": {
-              "type": "string"
-            }
-          }
-        },
-        "hover": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["background", "border", "text"],
-          "properties": {
-            "background": {
-              "type": "string"
-            },
-            "border": {
-              "type": "string"
-            },
-            "text": {
-              "type": "string"
-            }
-          }
-        },
-        "active": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["background", "border", "text"],
-          "properties": {
-            "background": {
-              "type": "string"
-            },
-            "border": {
-              "type": "string"
-            },
-            "text": {
-              "type": "string"
-            }
-          }
-        },
-        "focus": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["shadow"],
-          "properties": {
-            "shadow": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "default": {
         "normal": {
           "background": "#E84A27",
@@ -626,6 +748,62 @@
         "focus": {
           "shadow": "rgba(255, 83, 0, 0.35)"
         }
+      },
+      "properties": {
+        "normal": {
+          "type": "object",
+          "required": ["background", "border", "text"],
+          "properties": {
+            "background": {
+              "type": "string"
+            },
+            "border": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        },
+        "hover": {
+          "type": "object",
+          "required": ["background", "border", "text"],
+          "properties": {
+            "background": {
+              "type": "string"
+            },
+            "border": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        },
+        "active": {
+          "type": "object",
+          "required": ["background", "border", "text"],
+          "properties": {
+            "background": {
+              "type": "string"
+            },
+            "border": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        },
+        "focus": {
+          "type": "object",
+          "required": ["shadow"],
+          "properties": {
+            "shadow": {
+              "type": "string"
+            }
+          }
+        }
       }
     },
     "hasAzure": {
@@ -637,16 +815,37 @@
       "default": false
     },
     "googleClientId": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "googleClientSecret": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "googleRedirectUrl": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "syncExamIdAccessRules": {
       "type": "boolean",
@@ -661,6 +860,7 @@
       "default": false
     },
     "questionRenderCacheType": {
+      "default": null,
       "anyOf": [
         {
           "type": "string",
@@ -669,18 +869,17 @@
         {
           "type": "null"
         }
-      ],
-      "default": null
+      ]
     },
     "cacheType": {
       "type": "string",
-      "enum": ["none", "redis", "memory"],
-      "default": "none"
+      "default": "none",
+      "enum": ["none", "redis", "memory"]
     },
     "nonVolatileCacheType": {
       "type": "string",
-      "enum": ["none", "redis", "memory"],
-      "default": "none"
+      "default": "none",
+      "enum": ["none", "redis", "memory"]
     },
     "cacheKeyPrefix": {
       "type": "string",
@@ -691,14 +890,21 @@
       "default": 3600
     },
     "ltiRedirectUrl": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "lti13InstancePlatforms": {
       "type": "array",
+      "default": [],
       "items": {
         "type": "object",
-        "additionalProperties": false,
         "required": ["platform"],
         "properties": {
           "platform": {
@@ -711,28 +917,51 @@
           "issuer_params": {},
           "custom_fields": {}
         }
-      },
-      "default": []
+      }
     },
     "filesRoot": {
       "type": "string",
       "default": "/files"
     },
     "trustProxy": {
-      "type": ["boolean", "number", "string"],
-      "default": false
+      "default": false,
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        }
+      ]
     },
     "workspaceLogsS3Bucket": {
-      "type": ["string", "null"],
-      "default": "workspace-logs"
+      "default": "workspace-logs",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "workspaceLogsFlushIntervalSec": {
       "type": "number",
       "default": 60
     },
     "workspaceLogsExpirationDays": {
-      "type": ["number", "null"],
-      "default": 120
+      "default": 120,
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "workspaceAuthzCookieMaxAgeMilliseconds": {
       "type": "number",
@@ -795,8 +1024,15 @@
       "default": 40
     },
     "workspaceLoadLaunchTemplateId": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "workspaceLoadLaunchTag": {
       "type": "string",
@@ -855,16 +1091,37 @@
       "default": 20
     },
     "chunksAutoScalingGroupName": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "chunksLoadBalancerDimensionName": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "chunksTargetGroupDimensionName": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "chunksHostAutoScalingHistoryIntervalSec": {
       "type": "number",
@@ -895,6 +1152,7 @@
       "default": false
     },
     "openTelemetryExporter": {
+      "default": null,
       "anyOf": [
         {
           "type": "string",
@@ -903,10 +1161,10 @@
         {
           "type": "null"
         }
-      ],
-      "default": null
+      ]
     },
     "openTelemetryMetricExporter": {
+      "default": null,
       "anyOf": [
         {
           "type": "string",
@@ -915,8 +1173,7 @@
         {
           "type": "null"
         }
-      ],
-      "default": null
+      ]
     },
     "openTelemetryMetricExportIntervalMillis": {
       "type": "number",
@@ -924,60 +1181,137 @@
     },
     "openTelemetrySamplerType": {
       "type": "string",
-      "enum": ["always-on", "always-off", "trace-id-ratio"],
-      "default": "always-on"
+      "default": "always-on",
+      "enum": ["always-on", "always-off", "trace-id-ratio"]
     },
     "openTelemetrySampleRate": {
       "type": "number",
       "default": 1
     },
     "honeycombApiKey": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "honeycombDataset": {
-      "type": ["string", "null"],
-      "default": "prairielearn-dev"
+      "default": "prairielearn-dev",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "sentryDsn": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "sentryEnvironment": {
       "type": "string",
       "default": "development"
     },
     "titleOverride": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "homepageFooterText": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "homepageFooterTextHref": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "announcementHtml": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "announcementColor": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "autoScalingGroupName": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "autoScalingLaunchingLifecycleHookName": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "autoScalingTerminatingLifecycleHookName": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "serverJobHeartbeatIntervalSec": {
       "type": "number",
@@ -1013,9 +1347,9 @@
     },
     "azureCookieEncryptionKeys": {
       "type": "array",
+      "default": [],
       "items": {
         "type": "object",
-        "additionalProperties": false,
         "required": ["key", "iv"],
         "properties": {
           "key": {
@@ -1029,28 +1363,44 @@
             "maxLength": 12
           }
         }
-      },
-      "default": []
+      }
     },
     "azureLoggingLevel": {
       "type": "string",
-      "enum": ["error", "warn", "info"],
-      "default": "warn"
+      "default": "warn",
+      "enum": ["error", "warn", "info"]
     },
     "azureResourceURL": {
-      "type": ["string", "null"],
-      "default": "https://graph.windows.net"
+      "default": "https://graph.windows.net",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "azureDestroySessionUrl": {
-      "type": ["string", "null"],
-      "default": "https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000"
+      "default": "https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "features": {
       "type": "object",
       "additionalProperties": {
         "type": "boolean"
       },
-      "default": {}
+      "default": {},
+      "propertyNames": {
+        "type": "string"
+      }
     },
     "checkSharingOnSync": {
       "type": "boolean",
@@ -1061,35 +1411,80 @@
       "default": false
     },
     "stripeSecretKey": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "stripeWebhookSigningSecret": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "stripeProductIds": {
       "type": "object",
       "additionalProperties": {
         "type": "string"
       },
-      "default": {}
+      "default": {},
+      "propertyNames": {
+        "type": "string"
+      }
     },
     "aiGradingOpenAiApiKey": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "aiGradingOpenAiOrganization": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "aiQuestionGenerationOpenAiApiKey": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "aiQuestionGenerationOpenAiOrganization": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
@@ -1104,25 +1499,50 @@
       "default": false
     },
     "pyroscopeServerAddress": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "pyroscopeBasicAuthUser": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "pyroscopeBasicAuthPassword": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "pyroscopeTags": {
       "type": "object",
       "additionalProperties": {
         "type": "string"
       },
-      "default": {}
+      "default": {},
+      "propertyNames": {
+        "type": "string"
+      }
     },
     "trpcSecretKeys": {
+      "default": null,
       "anyOf": [
         {
           "type": "array",
@@ -1133,33 +1553,54 @@
         {
           "type": "null"
         }
-      ],
-      "default": null
+      ]
     },
     "courseFilesApiTransport": {
       "type": "string",
-      "enum": ["process", "network"],
-      "default": "process"
+      "default": "process",
+      "enum": ["process", "network"]
     },
     "courseFilesApiUrl": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "pythonVenvSearchPaths": {
       "type": "array",
+      "default": [".venv"],
       "items": {
         "type": "string"
-      },
-      "default": [".venv"]
+      }
     },
     "costPerMillionTokens": {
       "type": "object",
-      "additionalProperties": false,
       "required": ["gpt-5-2025-08-07", "gpt-5-mini-2025-08-07", "gpt-4o-2024-11-20"],
+      "default": {
+        "gpt-5-2025-08-07": {
+          "input": 1.25,
+          "cachedInput": 0.125,
+          "output": 10
+        },
+        "gpt-5-mini-2025-08-07": {
+          "input": 0.25,
+          "cachedInput": 0.025,
+          "output": 2
+        },
+        "gpt-4o-2024-11-20": {
+          "input": 2.5,
+          "cachedInput": 1.25,
+          "output": 10
+        }
+      },
       "properties": {
         "gpt-5-2025-08-07": {
           "type": "object",
-          "additionalProperties": false,
           "required": ["input", "cachedInput", "output"],
           "properties": {
             "input": {
@@ -1177,27 +1618,40 @@
           }
         },
         "gpt-5-mini-2025-08-07": {
-          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
+          "type": "object",
+          "required": ["input", "cachedInput", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
         },
         "gpt-4o-2024-11-20": {
-          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
-        }
-      },
-      "default": {
-        "gpt-5-2025-08-07": {
-          "input": 1.25,
-          "cachedInput": 0.125,
-          "output": 10
-        },
-        "gpt-5-mini-2025-08-07": {
-          "input": 0.25,
-          "cachedInput": 0.025,
-          "output": 2
-        },
-        "gpt-4o-2024-11-20": {
-          "input": 2.5,
-          "cachedInput": 1.25,
-          "output": 10
+          "type": "object",
+          "required": ["input", "cachedInput", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
         }
       }
     }

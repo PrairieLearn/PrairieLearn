@@ -2,7 +2,7 @@ import { writeFile } from 'node:fs/promises';
 
 import { withFile } from 'tmp-promise';
 import { assert, describe, it } from 'vitest';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 import { ConfigLoader, makeFileConfigSource, makeLiteralConfigSource } from './index.js';
 

@@ -4349,7 +4349,7 @@ __metadata:
     xml2js: "npm:^0.6.2"
     y-protocols: "npm:^1.0.6"
     yjs: "npm:^13.6.27"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.1.12"
     zod-to-json-schema: "npm:^3.24.6"
   languageName: unknown
   linkType: soft
@@ -18988,10 +18988,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^4.1.11":
-  version: 4.1.11
-  resolution: "zod@npm:4.1.11"
-  checksum: 10c0/ce6a4c4acfbf51d7dd0f2669c82f207d62a1f00264eef608994b94eb99d86a74c99f59b0dd3e61ef82909ee136631378b709e0908f0a02a2d5c21d0c497de5db
+"zod@npm:^4.1.11, zod@npm:^4.1.12":
+  version: 4.1.12
+  resolution: "zod@npm:4.1.12"
+  checksum: 10c0/b64c1feb19e99d77075261eaf613e0b2be4dfcd3551eff65ad8b4f2a079b61e379854d066f7d447491fcf193f45babd8095551a9d47973d30b46b6d8e2c46774
   languageName: node
   linkType: hard
 

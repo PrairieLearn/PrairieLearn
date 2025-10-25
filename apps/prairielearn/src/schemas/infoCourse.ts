@@ -87,7 +87,7 @@ export type AssessmentSetJson = z.infer<typeof AssessmentSetJsonSchema>;
 export type AssessmentSetJsonInput = z.input<typeof AssessmentSetJsonSchema>;
 
 export const CourseOptionsJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     useNewQuestionRenderer: z
       .boolean()
@@ -103,13 +103,12 @@ export const CourseOptionsJsonSchema = z
       .describe('Feature flags to enable/disable in development mode.')
       .optional(),
   })
-  .strict()
   .describe('Options for this course.');
 
 export type CourseOptionsJson = z.infer<typeof CourseOptionsJsonSchema>;
 
 export const CourseJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
@@ -152,7 +151,6 @@ export const CourseJsonSchema = z
       .describe('Sharing sets')
       .optional(),
   })
-  .strict()
   .describe('The specification file for a course.');
 
 export type CourseJson = z.infer<typeof CourseJsonSchema>;
