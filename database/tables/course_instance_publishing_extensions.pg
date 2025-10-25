@@ -1,0 +1,20 @@
+columns
+    end_date: timestamp with time zone not null
+    course_instance_id: bigint not null
+    enabled: boolean not null default true
+    id: bigint not null default nextval('course_instance_publishing_extensions_id_seq'::regclass)
+    name: text
+
+indexes
+    course_instance_publishing_extensions_pkey: PRIMARY KEY (id) USING btree (id)
+    course_instance_publishing_extensions_course_instance_id_name_u: UNIQUE (course_instance_id, name) USING btree (course_instance_id, name)
+    course_instance_publishing_extensions_course_instance_id_idx: USING btree (course_instance_id)
+
+check constraints
+    course_instance_publishing_extensions_name_not_empty: CHECK (name IS NULL OR name <> ''::text)
+
+foreign-key constraints
+    course_instance_publishing_extensions_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    course_instance_publishing_enrollment_extensions: FOREIGN KEY (course_instance_publishing_extension_id) REFERENCES course_instance_publishing_extensions(id) ON UPDATE CASCADE ON DELETE CASCADE

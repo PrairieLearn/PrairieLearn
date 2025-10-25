@@ -74,6 +74,12 @@ export function Enroll({
               })}
             </tbody>
           </table>
+          <div class="card-footer">
+            <p>
+              Course not showing up? This page only shows courses using the legacy access system.
+              For courses using the modern publishing system, enroll via the home page.
+            </p>
+          </div>
         </div>
       </div>
     `,

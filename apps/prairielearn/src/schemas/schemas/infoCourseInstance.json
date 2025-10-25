@@ -42,7 +42,7 @@
           "default": true
         },
         "restrictToInstitution": {
-          "description": "If true, self-enrollment is restricted to users from the same institution as the course. If false, any user can self-enroll.",
+          "description": "If true, self-enrollment is restricted to the institution. If false, self-enrollment is not restricted to the institution.",
           "type": "boolean",
           "default": true
         },
@@ -69,6 +69,19 @@
       "additionalProperties": {},
       "properties": {},
       "deprecated": true
+    },
+    "publishing": {
+      "type": "object",
+      "properties": {
+        "startDate": {
+          "description": "When the course instance is published. If specified, endDate must also be specified.",
+          "type": "string"
+        },
+        "endDate": {
+          "description": "When the course instance is unpublished. If specified, startDate must also be specified.",
+          "type": "string"
+        }
+      }
     },
     "allowAccess": {
       "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied.",
