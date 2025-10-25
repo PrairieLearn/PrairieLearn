@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "outDir": "../dist",
+    "rootDir": "../",
+    "types": [
+      "jquery",
+      "jqueryui",
+      "fabric",
+      "mathjax",
+      "sylvester",
+      "bootstrap",
+      "cropperjs",
+      "dompurify",
+      "socket.io-client",
+      "quill",
+      "he",
+      "ace",
+      "qrcode",
+      "three",
+      "lodash"
+    ],
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "skipLibCheck": true
+  },
+  "include": ["**/*.js", "**/*.d.ts"],
+  "exclude": ["pl-threejs/**", "pl-drawing/mechanicsObjects.js"]
+}

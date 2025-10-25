@@ -4,15 +4,27 @@
   const rtePurify = DOMPurify();
   const rtePurifyConfig = { SANITIZE_NAMED_PROPS: true };
 
-  rtePurify.addHook('uponSanitizeElement', (node, data) => {
-    if (data.tagName === 'span' && node.classList.contains('ql-formula')) {
-      // Quill formulas don't need their SVG content in the sanitized version,
-      // as they are re-rendered upon loading.
-      node.innerText = `$${node.dataset.value}$`;
-    }
-  });
+  rtePurify.addHook(
+    'uponSanitizeElement',
+    /**
+     * @param {any} node
+     * @param {any} data
+     */
+    (node, data) => {
+      if (data.tagName === 'span' && node.classList.contains('ql-formula')) {
+        // Quill formulas don't need their SVG content in the sanitized version,
+        // as they are re-rendered upon loading.
+        node.innerText = `$${node.dataset.value}$`;
+      }
+    },
+  );
 
   class Counter {
+    /**
+     * @param {string} unit
+     * @param {string} uuid
+     * @param {() => string} getText
+     */
     constructor(unit, uuid, getText) {
       this.unit = unit;
       this.container = document.getElementById(`rte-counter-${uuid}`);
@@ -22,6 +34,9 @@
       this.update();
     }
 
+    /**
+     * @param {string} text
+     */
     calculate(text) {
       if (this.unit === 'word') {
         const trimmed = text.trim();
@@ -36,21 +51,33 @@
     }
 
     update() {
-      const length = this.calculate(this.getText());
+      const length = this.calculate(this.getText()) || 0;
       const label = `${this.unit}${length === 1 ? '' : 's'}`;
-      this.container.innerText = `${length} ${label}`;
+      if (this.container) {
+        this.container.innerText = `${length} ${label}`;
+      }
     }
   }
 
+  // @ts-expect-error - Quill global is declared but not fully typed
   const Clipboard = Quill.import('modules/clipboard');
   class PotentiallyDisabledClipboard extends Clipboard {
+    /**
+     * @param {ClipboardEvent} e
+     * @param {boolean} [isCut]
+     */
     onCaptureCopy(e, isCut = false) {
+      // @ts-expect-error - options is available on clipboard modules
       if (this.options.enabled ?? true) return super.onCaptureCopy(e, isCut);
       if (!e.defaultPrevented) e.preventDefault();
       this.showToast();
     }
 
+    /**
+     * @param {ClipboardEvent} e
+     */
     onCapturePaste(e) {
+      // @ts-expect-error - options is available on clipboard modules
       if (this.options.enabled ?? true) return super.onCapturePaste(e);
       if (!e.defaultPrevented) e.preventDefault();
       this.showToast();
@@ -58,18 +85,29 @@
 
     showToast() {
       if (!this.toast) {
-        const toastElement = document.getElementById(this.options.toast_id);
-        this.toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 2000 });
+        const toastElement = document.getElementById(/** @type {any} */ (this).options.toast_id);
+        this.toast = toastElement
+          ? new bootstrap.Toast(toastElement, { autohide: true, delay: 2000 })
+          : null;
       }
-      this.toast.show();
+      if (this.toast) {
+        this.toast.show();
+      }
     }
   }
 
+  // @ts-expect-error - Quill global is declared but not fully typed
   Quill.register('modules/clipboard', PotentiallyDisabledClipboard, true);
 
+  /**
+   * @param {string} uuid
+   */
+  // @ts-expect-error - TypeScript doesn't recognize PLRTE as a valid property
   window.PLRTE = async function (uuid) {
     const baseElement = document.getElementById(`rte-${uuid}`);
-    const options = JSON.parse(baseElement.dataset.options);
+    if (!baseElement) throw new Error(`Element not found: rte-${uuid}`);
+    /** @type {any} */
+    const options = JSON.parse(baseElement.dataset.options || '{}');
 
     if (!options.modules) options.modules = {};
     if (!options.modules.clipboard) options.modules.clipboard = {};
@@ -111,15 +149,19 @@
     options.bounds = baseElement.closest('.question-container');
 
     const inputElement = $('#rte-input-' + uuid);
+    // @ts-expect-error - Quill global is declared but not fully typed
     const quill = new Quill(baseElement, options);
     initializeFormulaPopover(quill, uuid);
 
+    // @ts-expect-error - QuillMarkdown global is declared but not fully typed
     if (options.markdownShortcuts && !options.readOnly) new QuillMarkdown(quill, {});
 
-    let contents = atob(inputElement.val());
+    const inputValue = inputElement.val();
+    let contents = typeof inputValue === 'string' ? atob(inputValue) : '';
     if (contents && options.format === 'markdown') {
       const marked = (await import('marked')).marked;
-      contents = marked.parse(contents);
+      const parsed = await marked.parse(contents);
+      contents = typeof parsed === 'string' ? parsed : contents;
     }
     contents = rtePurify.sanitize(contents, rtePurifyConfig);
 
@@ -174,9 +216,13 @@
 
   // Override default implementation of 'formula'
 
+  // @ts-expect-error - Quill global is declared but not fully typed
   const Embed = Quill.import('blots/embed');
 
   class MathFormula extends Embed {
+    /**
+     * @param {string} value
+     */
     static create(value) {
       const node = super.create(value);
       if (typeof value === 'string') {
@@ -185,15 +231,23 @@
       return node;
     }
 
+    /**
+     * @param {HTMLElement} node
+     * @param {string} value
+     */
     static updateNode(node, value) {
       node.setAttribute('data-value', value);
-      MathJax.startup.promise.then(async () => {
+      void MathJax.startup.promise.then(async () => {
+        // @ts-expect-error - MathJax promise methods are not typed
         const html = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
         node.innerHTML = html.innerHTML;
         node.contentEditable = 'false';
       });
     }
 
+    /**
+     * @param {HTMLElement} domNode
+     */
     static value(domNode) {
       return domNode.getAttribute('data-value');
     }
@@ -202,9 +256,18 @@
   MathFormula.className = 'ql-formula';
   MathFormula.tagName = 'SPAN';
 
+  // @ts-expect-error - Quill global is declared but not fully typed
   Quill.register('formats/formula', MathFormula, true);
 })();
 
+/**
+ * @typedef {any} Quill
+ */
+
+/**
+ * @param {Quill} quill
+ * @param {string} uuid
+ */
 function initializeFormulaPopover(quill, uuid) {
   const formulaButton = quill.getModule('toolbar')?.container?.querySelector('.ql-formula');
   // If the formula button is not present (e.g., the editor is read-only), do not initialize the popover
@@ -232,14 +295,19 @@ function initializeFormulaPopover(quill, uuid) {
     customClass: 'mw-100',
   });
 
-  const input = popoverContent.querySelector('input');
+  const input = /** @type {HTMLInputElement} */ (popoverContent.querySelector('input'));
   input.addEventListener('input', () => {
     const value = input.value.trim();
-    MathJax.startup.promise.then(async () => {
+    void MathJax.startup.promise.then(async () => {
+      // @ts-expect-error - MathJax promise methods are not typed
+      const result = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
       const html = value
-        ? (await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value)).outerHTML
+        ? result.outerHTML
         : '<div class="text-muted">Type a Latex formula, e.g., <code>e=mc^2</code></div>';
-      popoverContent.querySelector(`#rte-formula-input-preview-${uuid}`).innerHTML = html;
+      const previewElement = popoverContent.querySelector(`#rte-formula-input-preview-${uuid}`);
+      if (previewElement) {
+        previewElement.innerHTML = html;
+      }
       // Adjust the popover position if the content changes the size of the popover
       popover.update();
     });
@@ -265,13 +333,16 @@ function initializeFormulaPopover(quill, uuid) {
     quill.focus();
   });
 
-  quill.getModule('toolbar').addHandler('formula', (enabled) => {
-    if (!enabled) return;
-    const range = quill.getSelection(true);
-    // If there is a selection, set the input value to the selected text
-    input.value = range?.length ? quill.getText(range.index, range.length) : '';
-    // Trigger input event to show initial preview or clear previous preview
-    input.dispatchEvent(new InputEvent('input'));
-    popover.show();
-  });
+  quill.getModule('toolbar').addHandler(
+    'formula',
+    /** @param {boolean} enabled */ (enabled) => {
+      if (!enabled) return;
+      const range = quill.getSelection(true);
+      // If there is a selection, set the input value to the selected text
+      input.value = range?.length ? quill.getText(range.index, range.length) : '';
+      // Trigger input event to show initial preview or clear previous preview
+      input.dispatchEvent(new InputEvent('input'));
+      popover.show();
+    },
+  );
 }
