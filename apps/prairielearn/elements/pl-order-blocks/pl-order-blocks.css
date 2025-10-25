@@ -153,3 +153,26 @@ div.pl-order-blocks-header {
   outline: 3px solid #ff6200;
   outline-offset: -3px;
 }
+
+.pl-order-block-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.pl-order-block-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -6px;
+}
+
+.pl-order-block-content {
+  overflow-x: auto;
+  margin-top: 2px;
+  white-space: normal;
+  min-width: 0;
+  width: 100%;
+  padding: 0.25em 0 0.25em 0;
+}
