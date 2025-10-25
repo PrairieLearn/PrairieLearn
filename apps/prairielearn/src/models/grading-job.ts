@@ -34,7 +34,6 @@ export function gradingJobStatus(gradingJob: GradingJob | null): GradingJobStatu
 
 const VariantForGradingJobUpdateSchema = z.object({
   credit: SubmissionSchema.shape.credit,
-  variant_id: IdSchema,
   instance_question_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema.nullable(),
   has_newer_submission: z.boolean(),
@@ -141,17 +140,12 @@ export async function updateGradingJobAfterGrading({
     // re-grades.
     if (originalGradingJob.graded_at != null) return originalGradingJob;
 
-    const {
-      has_newer_submission,
-      instance_question_id,
-      assessment_instance_id,
-      variant_id,
-      credit,
-    } = await queryRow(
-      sql.select_variant_for_grading_job_update,
-      { submission_id: originalGradingJob.submission_id },
-      VariantForGradingJobUpdateSchema,
-    );
+    const { has_newer_submission, instance_question_id, assessment_instance_id, credit } =
+      await queryRow(
+        sql.select_variant_for_grading_job_update,
+        { submission_id: originalGradingJob.submission_id },
+        VariantForGradingJobUpdateSchema,
+      );
 
     // Bail out if there's a newer submission, regardless of grading status.
     // This only applies to student questions - that is, where there's an
@@ -189,20 +183,17 @@ export async function updateGradingJobAfterGrading({
       GradingJobSchema,
     );
 
-    if (gradable) {
-      await callRow('variants_update_after_grading', [variant_id, gradingJob.correct], z.unknown());
-      if (instance_question_id != null && assessment_instance_id != null) {
-        await callRow(
-          'instance_questions_grade',
-          [instance_question_id, gradingJob.score, gradingJob.id, gradingJob.auth_user_id],
-          z.unknown(),
-        );
-        await callRow(
-          'assessment_instances_grade',
-          [assessment_instance_id, gradingJob.auth_user_id, credit],
-          SprocAssessmentInstancesGradeSchema,
-        );
-      }
+    if (gradable && instance_question_id != null && assessment_instance_id != null) {
+      await callRow(
+        'instance_questions_grade',
+        [instance_question_id, gradingJob.score, gradingJob.id, gradingJob.auth_user_id],
+        z.unknown(),
+      );
+      await callRow(
+        'assessment_instances_grade',
+        [assessment_instance_id, gradingJob.auth_user_id, credit],
+        SprocAssessmentInstancesGradeSchema,
+      );
     }
 
     return gradingJob;
