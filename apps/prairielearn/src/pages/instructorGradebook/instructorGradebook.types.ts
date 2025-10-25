@@ -18,14 +18,6 @@ export const CourseAssessmentRowSchema = z.object({
 });
 export type CourseAssessmentRow = z.infer<typeof CourseAssessmentRowSchema>;
 
-export interface InstructorGradebookData {
-  urlPrefix: string;
-  csvFilename: string;
-  csrfToken: string;
-  hasCourseInstancePermissionEdit: boolean;
-  courseAssessments: CourseAssessmentRow[];
-}
-
 export const AssessmentInstanceScoreResultSchema = z.object({
   user_id: UserSchema.shape.user_id,
   assessment_id: AssessmentInstanceSchema.shape.assessment_id,

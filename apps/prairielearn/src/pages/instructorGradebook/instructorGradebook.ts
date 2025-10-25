@@ -14,6 +14,7 @@ import {
   getCourseOwners,
 } from '../../lib/course.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { InstructorGradebook } from './instructorGradebook.html.js';
@@ -67,11 +68,18 @@ router.get(
       { course_instance_id: res.locals.course_instance.id },
       CourseAssessmentRowSchema,
     );
+    const gradebookRows = await queryRows(
+      sql.user_scores,
+      { course_id: res.locals.course.id, course_instance_id: res.locals.course_instance.id },
+      GradebookRowSchema,
+    );
     res.send(
       InstructorGradebook({
         resLocals: res.locals,
         csvFilename,
         courseAssessments,
+        gradebookRows,
+        search: getUrl(req).search,
       }),
     );
   }),
