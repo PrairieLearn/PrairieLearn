@@ -4,12 +4,13 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
+import { dangerousFullAuthzForTesting } from './authzData.js';
 import {
   type GroupConfig,
   GroupConfigSchema,
@@ -207,17 +208,21 @@ async function selectUserInCourseInstance({
   const user = await selectOptionalUserByUid(uid);
   if (!user) return null;
 
+  const courseInstance = await selectCourseInstanceById(course_instance_id);
+
   // To be part of a group, the user needs to either be enrolled in the course
   // instance, or be an instructor
   if (
     (await sqldb.callRow(
       'users_is_instructor_in_course_instance',
-      [user.user_id, course_instance_id],
+      [user.user_id, courseInstance.id],
       z.boolean(),
     )) ||
     (await selectOptionalEnrollmentByUserId({
-      course_instance_id,
-      user_id: user.user_id,
+      courseInstance,
+      userId: user.user_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
     }))
   ) {
     return user;
@@ -225,12 +230,9 @@ async function selectUserInCourseInstance({
 
   // In the example course, any user with instructor access in any other
   // course should have access and thus be allowed to be added to a group.
-  const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
-  if (course_instance) {
-    const course = await selectCourseById(course_instance.course_id);
-    if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
-      return user;
-    }
+  const course = await selectCourseById(courseInstance.course_id);
+  if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+    return user;
   }
 
   // We do not distinguish between an invalid user and a user that is not in the course instance

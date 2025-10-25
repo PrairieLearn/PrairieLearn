@@ -14,9 +14,8 @@ import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
 import {
-  deleteEnrollmentById,
-  enrollUserInCourseInstance,
-  inviteEnrollmentById,
+  deleteEnrollment,
+  inviteEnrollment,
   selectEnrollmentById,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
@@ -128,13 +127,20 @@ router.post(
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
+    const { authz_data: authzData } = getPageContext(res.locals);
+
     const { course_instance } = getCourseInstanceContext(res.locals, 'instructor');
 
     const action = req.body.__action;
     const enrollment_id = req.params.enrollment_id;
 
     // assert that the enrollment belongs to the course instance
-    const enrollment = await selectEnrollmentById({ id: enrollment_id });
+    const enrollment = await selectEnrollmentById({
+      id: enrollment_id,
+      courseInstance: course_instance,
+      requestedRole: 'Student Data Editor',
+      authzData,
+    });
     if (enrollment.course_instance_id !== course_instance.id) {
       throw new HttpStatusError(400, 'Enrollment does not belong to the course instance');
     }
@@ -145,11 +151,10 @@ router.post(
           throw new HttpStatusError(400, 'Enrollment is not joined');
         }
         await setEnrollmentStatus({
+          enrollment,
           status: 'blocked',
-          enrollment_id,
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
-          required_status: 'joined',
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
         res.redirect(req.originalUrl);
         break;
@@ -158,11 +163,11 @@ router.post(
         if (enrollment.status !== 'blocked') {
           throw new HttpStatusError(400, 'Enrollment is not blocked');
         }
-        await enrollUserInCourseInstance({
-          enrollment_id,
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
-          action_detail: 'unblocked',
+        await setEnrollmentStatus({
+          enrollment,
+          status: 'joined',
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
         res.redirect(req.originalUrl);
         break;
@@ -171,11 +176,11 @@ router.post(
         if (enrollment.status !== 'invited') {
           throw new HttpStatusError(400, 'Enrollment is not invited');
         }
-        await deleteEnrollmentById({
-          enrollment_id,
-          action_detail: 'invitation_deleted',
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
+        await deleteEnrollment({
+          enrollment,
+          actionDetail: 'invitation_deleted',
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
         res.redirect(
           `/pl/course_instance/${course_instance.id}/instructor/instance_admin/students`,
@@ -187,7 +192,7 @@ router.post(
           throw new HttpStatusError(400, 'Enrollment is not rejected or removed');
         }
 
-        const pending_uid = await run(async () => {
+        const pendingUid = await run(async () => {
           if (enrollment.pending_uid) {
             return enrollment.pending_uid;
           }
@@ -197,11 +202,12 @@ router.post(
           }
           throw new HttpStatusError(400, 'Enrollment does not have a pending UID or user ID');
         });
-        await inviteEnrollmentById({
-          enrollment_id,
-          pending_uid,
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
+
+        await inviteEnrollment({
+          enrollment,
+          pendingUid,
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
         res.redirect(req.originalUrl);
         break;

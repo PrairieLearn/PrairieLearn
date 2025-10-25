@@ -2,6 +2,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
 import { config } from '../../lib/config.js';
 import {
   InstanceQuestionSchema,
@@ -9,6 +10,7 @@ import {
   VariantSchema,
 } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -61,12 +63,14 @@ describe('student data access', { timeout: 60_000 }, function () {
       course_role: 'Owner',
       authn_user_id: '1',
     });
+    const courseInstance = await selectCourseInstanceById('1');
+
     await ensureEnrollment({
-      user_id: '3',
-      course_instance_id: '1',
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      userId: '3',
+      courseInstance,
+      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'Student',
+      actionDetail: 'implicit_joined',
     });
   });
 
