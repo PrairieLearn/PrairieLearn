@@ -24,8 +24,8 @@ symbolic_input = importlib.import_module("pl-symbolic-input")
     ],
 )
 def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> None:
-    out = symbolic_input.format_submission_for_sympy(sub)
-    assert (out, None) == expected
+    out, error_msg = symbolic_input.format_submission_for_sympy(sub)
+    assert (out, error_msg) == (expected, None)
 
 
 @pytest.mark.parametrize(
