@@ -1,11 +1,11 @@
-import * as cheerio from 'cheerio';
-import { type OpenAI } from 'openai';
 import type {
-  ParsedResponse,
-  ResponseInput,
-  ResponseInputItem,
-  ResponseInputMessageContentList,
-} from 'openai/resources/responses/responses';
+  EmbeddingModel,
+  GenerateObjectResult,
+  GenerateTextResult,
+  ModelMessage,
+  UserContent,
+} from 'ai';
+import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
 import {
@@ -19,7 +19,7 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
+import { type OpenAIModelId, calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
   type Course,
@@ -46,7 +46,7 @@ import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const AI_GRADING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAI.Chat.ChatModel;
+export const AI_GRADING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAIModelId;
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -75,14 +75,14 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
-}): Promise<ResponseInput> {
-  const input: ResponseInput = [];
+}): Promise<ModelMessage[]> {
+  const input: ModelMessage[] = [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
     input.push(
       {
-        role: 'developer',
+        role: 'system',
         content: formatPrompt([
           [
             "You are an instructor for a course, and you are grading a student's response to a question.",
@@ -113,7 +113,7 @@ export async function generatePrompt({
     );
   } else {
     input.push({
-      role: 'developer',
+      role: 'system',
       content: formatPrompt([
         "You are an instructor for a course, and you are grading a student's response to a question.",
         'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
@@ -126,7 +126,7 @@ export async function generatePrompt({
 
   input.push(
     {
-      role: 'developer',
+      role: 'system',
       content: 'This is the question for which you will be grading a response:',
     },
     {
@@ -138,7 +138,7 @@ export async function generatePrompt({
   if (questionAnswer.trim()) {
     input.push(
       {
-        role: 'developer',
+        role: 'system',
         content: 'The instructor has provided the following answer for this question:',
       },
       {
@@ -151,13 +151,13 @@ export async function generatePrompt({
   if (example_submissions.length > 0) {
     if (rubric_items.length > 0) {
       input.push({
-        role: 'developer',
+        role: 'system',
         content:
           'Here are some example student responses and their corresponding selected rubric items.',
       });
     } else {
       input.push({
-        role: 'developer',
+        role: 'system',
         content:
           'Here are some example student responses and their corresponding scores and feedback.',
       });
@@ -214,7 +214,7 @@ export async function generatePrompt({
 
   input.push(
     {
-      role: 'developer',
+      role: 'system',
       content: 'The student made the following submission:',
     },
     generateSubmissionMessage({
@@ -222,7 +222,7 @@ export async function generatePrompt({
       submitted_answer,
     }),
     {
-      role: 'developer',
+      role: 'system',
       content: 'Please grade the submission according to the above instructions.',
     },
   );
@@ -250,8 +250,8 @@ export function generateSubmissionMessage({
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
-}): ResponseInputItem {
-  const content: ResponseInputMessageContentList = [];
+}): ModelMessage {
+  const content: UserContent = [];
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
@@ -269,7 +269,7 @@ export function generateSubmissionMessage({
         if (submissionTextSegment) {
           // Push and reset the current text segment before adding the image.
           content.push({
-            type: 'input_text',
+            type: 'text',
             text: submissionTextSegment.trim(),
           });
           submissionTextSegment = '';
@@ -288,7 +288,6 @@ export function generateSubmissionMessage({
           return options?.submitted_file_name;
         });
 
-        // `submitted_answer` contains the base-64 encoded image URL for the image capture.
         if (!submitted_answer) {
           throw new Error('No submitted answers found.');
         }
@@ -297,21 +296,28 @@ export function generateSubmissionMessage({
           throw new Error('No file name found.');
         }
 
-        if (!submitted_answer[fileName]) {
+        const fileData = submitted_answer._files?.find((file) => file.name === fileName);
+
+        if (fileData) {
+          // fileData.contents does not contain the MIME type header, so we add it.
+          content.push({
+            type: 'image',
+            image: `data:image/jpeg;base64,${fileData.contents}`,
+            providerOptions: {
+              openai: {
+                imageDetail: 'auto',
+              },
+            },
+          });
+        } else {
           // If the submitted answer doesn't contain the image, the student likely
           // didn't capture an image.
           content.push({
-            type: 'input_text',
+            type: 'text',
             text: `Image capture with ${fileName} was not captured.`,
           });
           return;
         }
-
-        content.push({
-          type: 'input_image',
-          image_url: submitted_answer[fileName],
-          detail: 'auto',
-        });
       } else {
         submissionTextSegment += $submission_html(node).text();
       }
@@ -319,7 +325,7 @@ export function generateSubmissionMessage({
 
   if (submissionTextSegment) {
     content.push({
-      type: 'input_text',
+      type: 'text',
       text: submissionTextSegment.trim(),
     });
   }
@@ -335,13 +341,13 @@ export async function generateSubmissionEmbedding({
   question,
   instance_question,
   urlPrefix,
-  openai,
+  embeddingModel,
 }: {
   question: Question;
   course: Course;
   instance_question: InstanceQuestion;
   urlPrefix: string;
-  openai: OpenAI;
+  embeddingModel: EmbeddingModel;
 }): Promise<SubmissionGradingContextEmbedding> {
   const question_course = await getQuestionCourse(question, course);
   const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
@@ -360,7 +366,7 @@ export async function generateSubmissionEmbedding({
     locals,
   );
   const submission_text = render_submission_results.data.submissionHtmls[0];
-  const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
+  const embedding = await createEmbedding(embeddingModel, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
     sql.create_embedding_for_submission,
@@ -447,8 +453,8 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  prompt: ResponseInput;
-  response: ParsedResponse<any>;
+  prompt: ModelMessage[];
+  response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
@@ -458,8 +464,8 @@ export async function insertAiGradingJob({
     prompt: JSON.stringify(prompt),
     completion: response,
     model: AI_GRADING_OPENAI_MODEL,
-    prompt_tokens: response.usage?.input_tokens ?? 0,
-    completion_tokens: response.usage?.output_tokens ?? 0,
+    prompt_tokens: response.usage.inputTokens ?? 0,
+    completion_tokens: response.usage.outputTokens ?? 0,
     cost: calculateResponseCost({ model: AI_GRADING_OPENAI_MODEL, usage: response.usage }),
     course_id,
     course_instance_id,

@@ -33,6 +33,13 @@
     <pl-symbolic-input answers-name="lnx" variables="x" display-log-as-ln="true" label="$\dfrac{d}{dx} ln(x)*x =$"></pl-symbolic-input>
 </pl-card>
 
+<pl-card header="An example that uses the formula editor input">
+    <pl-question-panel>
+        <p>Submit $test(\sqrt{\frac{x^2}{e^x}})$</p>
+    </pl-question-panel>
+    <pl-symbolic-input label="$y = $" aria-label="Function expression" formula-editor="true" answers-name="formula_editor" variables="x" show-score="false" custom-functions="test"></pl-symbolic-input>
+</pl-card>
+
 <pl-card header="An example in which we disable the display of simplified student submissions (&lt;code&gt;display-simplified-expression=&quot;false&quot;&lt;/code&gt;)">
     <pl-question-panel>
         <p>Write the expression $sin(atan(x))$.</p>
@@ -57,6 +64,14 @@
         <p>Simplify the expression $x^2+x+1$, or leave it blank if the expression cannot be simplified further.</p>
     </pl-question-panel>
     <pl-symbolic-input aria-label="Simplified expression for x" answers-name="simplify" variables="x" allow-blank="true" blank-value="x^2+x+1" placeholder="symbolic expression (blank is allowed)"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example in which a blank answer is the only correct answer">
+    <pl-question-panel>
+        <p>When <code>allow-blank="true"</code> is set, truly empty answers are also supported by setting <code>blank-value=""</code> (and potentially <code>correct-answer=""</code>).</p>
+        <p>Find a value for $x \in \mathbb{R}$ so that $x^2 = -1$. If there is no solution, leave the answer blank.</p>
+    </pl-question-panel>
+    <pl-symbolic-input aria-label="Simplified expression for x" correct-answer="" answers-name="simplify_blank" variables="x" allow-blank="true" blank-value="" placeholder="symbolic expression (blank is allowed)"></pl-symbolic-input>
 </pl-card>
 
 <pl-card header="An example where we use assumptions">

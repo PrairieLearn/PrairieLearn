@@ -85,17 +85,26 @@ function ResizeHandle<RowDataModel>({
   );
 }
 
-const DefaultEmptyState = (
+const DefaultNoResultsState = (
   <>
     <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
     <p class="mb-0">No results found matching your search criteria.</p>
   </>
 );
 
+const DefaultEmptyState = (
+  <>
+    <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true" />
+    <p class="mb-0">No results found.</p>
+  </>
+);
+
 interface TanstackTableProps<RowDataModel> {
   table: Table<RowDataModel>;
+  title: string;
   filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
   rowHeight?: number;
+  noResultsState?: JSX.Element;
   emptyState?: JSX.Element;
 }
 
@@ -108,6 +117,7 @@ const DEFAULT_FILTER_MAP = {};
  * @param params.title - The title of the table
  * @param params.filters - The filters for the table
  * @param params.rowHeight - The height of the rows in the table
+ * @param params.noResultsState - The no results state for the table
  * @param params.emptyState - The empty state for the table
  */
 export function TanstackTable<RowDataModel>({
@@ -115,14 +125,9 @@ export function TanstackTable<RowDataModel>({
   title,
   filters = DEFAULT_FILTER_MAP,
   rowHeight = 42,
+  noResultsState = DefaultNoResultsState,
   emptyState = DefaultEmptyState,
-}: {
-  table: Table<RowDataModel>;
-  title: string;
-  emptyState?: JSX.Element;
-  rowHeight?: number;
-  filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
-}) {
+}: TanstackTableProps<RowDataModel>) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
@@ -229,6 +234,9 @@ export function TanstackTable<RowDataModel>({
         return 'none';
     }
   };
+
+  const displayedCount = table.getRowModel().rows.length;
+  const totalCount = table.getCoreRowModel().rows.length;
 
   return (
     <div style={{ position: 'relative' }} class="d-flex flex-column h-100">
@@ -422,7 +430,7 @@ export function TanstackTable<RowDataModel>({
           </div>
         </div>
       )}
-      {table.getRowModel().rows.length === 0 && (
+      {displayedCount === 0 && (
         <div
           class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
           style={{
@@ -436,7 +444,7 @@ export function TanstackTable<RowDataModel>({
           role="status"
           aria-live="polite"
         >
-          {emptyState}
+          {totalCount > 0 ? noResultsState : emptyState}
         </div>
       )}
     </div>
@@ -507,6 +515,9 @@ export function TanstackTableCard<RowDataModel>({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  const displayedCount = table.getRowModel().rows.length;
+  const totalCount = table.getCoreRowModel().rows.length;
+
   return (
     <div class="card d-flex flex-column h-100">
       <div class="card-header bg-primary text-white">
@@ -557,8 +568,7 @@ export function TanstackTableCard<RowDataModel>({
           {!isMediumOrLarger && <ColumnManager table={table} />}
           <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
             <div class="text-muted text-nowrap">
-              Showing {table.getRowModel().rows.length} of {table.getCoreRowModel().rows.length}{' '}
-              {title.toLowerCase()}
+              Showing {displayedCount} of {totalCount} {title.toLowerCase()}
             </div>
           </div>
         </div>
