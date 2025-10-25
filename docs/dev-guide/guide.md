@@ -547,7 +547,7 @@ In this example, instructors are typically allowed to read the enrollment record
 In some cases, you may not have access to `authzData`, e.g. if you are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullAuthzForTesting` function to build a dummy `authzData` object that allows you to perform the action as the system. NOTE: We need to revisit this concept as we build out this pattern.
 
 ```typescript
-const authzData = updateEnrollmentStatus({
+await updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
   requestedRole: 'Student Data Viewer',
