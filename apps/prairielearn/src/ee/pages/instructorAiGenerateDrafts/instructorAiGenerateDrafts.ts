@@ -1,4 +1,3 @@
-import { createOpenAI } from '@ai-sdk/openai';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -9,17 +8,15 @@ import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
+import { editQuestionWithAgent, getAgenticModel } from '../../lib/ai-question-generation/agent.js';
 import {
   QUESTION_GENERATION_OPENAI_MODEL,
-  addCompletionCostToIntervalUsage,
   approximatePromptCost,
-  generateQuestion,
   getIntervalUsage,
 } from '../../lib/aiQuestionGeneration.js';
 
 import {
   DraftMetadataWithQidSchema,
-  GenerationFailure,
   InstructorAIGenerateDrafts,
   RateLimitExceeded,
 } from './instructorAiGenerateDrafts.html.js';
@@ -96,11 +93,6 @@ router.post(
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
-    const openai = createOpenAI({
-      apiKey: config.aiQuestionGenerationOpenAiApiKey,
-      organization: config.aiQuestionGenerationOpenAiOrganization,
-    });
-
     if (req.body.__action === 'generate_question') {
       const intervalCost = await getIntervalUsage({
         userId: res.locals.authn_user.user_id,
@@ -125,35 +117,19 @@ router.post(
         return;
       }
 
-      const result = await generateQuestion({
-        model: openai(QUESTION_GENERATION_OPENAI_MODEL),
-        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
-        courseId: res.locals.course.id,
-        authnUserId: res.locals.authn_user.user_id,
-        prompt: req.body.prompt,
-        userId: res.locals.authn_user.user_id,
+      const result = await editQuestionWithAgent({
+        model: getAgenticModel(),
+        course: res.locals.course,
+        user: res.locals.authn_user,
+        authnUser: res.locals.authn_user,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+        prompt: req.body.prompt,
       });
 
-      await addCompletionCostToIntervalUsage({
-        userId: res.locals.authn_user.user_id,
-        usage: result.usage,
-        intervalCost,
+      res.set({
+        'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_editor/${result.question.id}`,
       });
-
-      if (result.htmlResult) {
-        res.set({
-          'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_editor/${result.questionId}`,
-        });
-        res.send();
-      } else {
-        res.send(
-          GenerationFailure({
-            urlPrefix: res.locals.urlPrefix,
-            jobSequenceId: result.jobSequenceId,
-          }),
-        );
-      }
+      res.send();
     } else if (req.body.__action === 'delete_drafts') {
       const questions = await queryRows(
         sql.select_draft_questions_by_course_id,

@@ -1,0 +1,515 @@
+import { useChat } from '@ai-sdk/react';
+import { type Signal, useSignal } from '@preact/signals';
+import { Show } from '@preact/signals/utils';
+import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
+import clsx from 'clsx';
+import { useEffect, useRef } from 'preact/hooks';
+import Markdown from 'react-markdown';
+import { useStickToBottom } from 'use-stick-to-bottom';
+
+import { run } from '@prairielearn/run';
+
+import type {
+  QuestionGenerationToolUIPart,
+  QuestionGenerationUIMessage,
+} from '../../../lib/ai-question-generation/agent.types.js';
+
+import { PromptInput } from './PromptInput.js';
+
+function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
+  return part.type.startsWith('tool-');
+}
+
+function ToolCallStatus({
+  state,
+  statusText,
+  children,
+}: {
+  state: ToolUIPart['state'];
+  statusText: preact.ComponentChildren;
+  children?: preact.ComponentChildren;
+}) {
+  return (
+    <div class="small text-muted">
+      <div class="d-flex flex-row align-items-center gap-1">
+        {run(() => {
+          if (state === 'input-streaming' || state === 'input-available') {
+            return (
+              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            );
+          } else if (state === 'output-available') {
+            return <i class="bi bi-check-lg text-success" aria-hidden="true" />;
+          } else {
+            return <i class="bi bi-x text-danger" aria-hidden="true" />;
+          }
+        })}
+        <span>{statusText}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
+  const toolName = part.type.slice('tool-'.length);
+
+  const statusText = run(() => {
+    if (part.type === 'tool-getElementDocumentation') {
+      if (part.state === 'input-streaming') {
+        return <span>Getting element documentation...</span>;
+      } else if (part.state === 'input-available') {
+        return (
+          <span>
+            Getting documentation for <code>&lt;{part.input.elementName}&gt;</code>...
+          </span>
+        );
+      } else if (part.state === 'output-available') {
+        return (
+          <span>
+            Got documentation for <code>&lt;{part.input.elementName}&gt;</code>
+          </span>
+        );
+      } else {
+        return <span>Error getting element documentation</span>;
+      }
+    }
+
+    if (part.type === 'tool-listElementExamples') {
+      if (part.state === 'input-streaming') {
+        return <span>Listing element examples...</span>;
+      } else if (part.state === 'input-available') {
+        return (
+          <span>
+            Listing examples for <code>&lt;{part.input.elementName}&gt;</code>...
+          </span>
+        );
+      } else if (part.state === 'output-available') {
+        return (
+          <span>
+            Listed examples for <code>&lt;{part.input.elementName}&gt;</code>
+          </span>
+        );
+      } else {
+        return <span>Error listing element examples</span>;
+      }
+    }
+
+    if (part.type === 'tool-getExampleQuestions') {
+      const questionCount = part.input?.qids?.length || 0;
+      const pluralQuestions = questionCount === 1 ? 'question' : 'questions';
+      if (part.state === 'input-streaming') {
+        return <span>Getting example questions...</span>;
+      } else if (part.state === 'input-available') {
+        return (
+          <span>
+            Getting {questionCount} example {pluralQuestions}...
+          </span>
+        );
+      } else if (part.state === 'output-available') {
+        return (
+          <span>
+            Got {questionCount} example {pluralQuestions}
+          </span>
+        );
+      } else {
+        return <span>Error getting example questions</span>;
+      }
+    }
+
+    if (part.type === 'tool-writeFile') {
+      if (part.state === 'input-streaming') {
+        return <span>Writing file...</span>;
+      } else if (part.state === 'input-available') {
+        return (
+          <span>
+            Writing file <code>{part.input.path}</code>...
+          </span>
+        );
+      } else if (part.state === 'output-available') {
+        return (
+          <span>
+            Wrote file <code>{part.input.path}</code>
+          </span>
+        );
+      } else {
+        return (
+          <span>
+            Error writing file <code>{part.input?.path}</code>
+          </span>
+        );
+      }
+    }
+
+    if (part.type === 'tool-readFile') {
+      if (part.state === 'input-streaming') {
+        return <span>Reading file...</span>;
+      } else if (part.state === 'input-available') {
+        return (
+          <span>
+            Reading file <code>{part.input.path}</code>...
+          </span>
+        );
+      } else if (part.state === 'output-available') {
+        return (
+          <span>
+            Read file <code>{part.input.path}</code>
+          </span>
+        );
+      } else {
+        return (
+          <span>
+            Error reading file <code>{part.input?.path}</code>
+          </span>
+        );
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (part.type === 'tool-saveAndValidateQuestion') {
+      if (part.state === 'input-streaming') {
+        return <span>Saving and validating question...</span>;
+      } else if (part.state === 'input-available') {
+        return <span>Saving and validating question...</span>;
+      } else if (part.state === 'output-available') {
+        // TODO: check output for validation results.
+        return <span>Saved and validated question</span>;
+      } else {
+        return <span>Error saving and validating question</span>;
+      }
+    }
+
+    return <span>{toolName}</span>;
+  });
+
+  return (
+    <ToolCallStatus state={part.state} statusText={statusText}>
+      {/* <>
+        <pre>
+          <code>{JSON.stringify(part.input, null, 2)}</code>
+        </pre>
+        {part.output && (
+          <pre>
+            <code>{JSON.stringify(part.output, null, 2)}</code>
+          </pre>
+        )}
+      </> */}
+    </ToolCallStatus>
+  );
+}
+
+function MessageParts({ parts }: { parts: QuestionGenerationUIMessage['parts'] }) {
+  return parts.map((part, index) => {
+    const key = `part-${index}`;
+    if (isToolPart(part)) {
+      return <ToolCall key={key} part={part} />;
+    } else if (part.type === 'text') {
+      return (
+        <div key={key} class="markdown-body">
+          <Markdown>{part.text}</Markdown>
+        </div>
+      );
+    } else if (part.type === 'reasoning') {
+      if (!part.text) return '';
+      return (
+        <div key={key} class="d-flex flex-column gap-2 border rounded p-1 small">
+          <div class="d-flex flex-row gap-2 mb-1">
+            <i class="bi bi-lightbulb" aria-hidden="true" />
+            <span>Thinking...</span>
+          </div>
+
+          <div class="markdown-body">
+            <Markdown>{part.text}</Markdown>
+          </div>
+        </div>
+      );
+    } else if (['reasoning', 'step-start'].includes(part.type)) {
+      return '';
+    } else {
+      return (
+        <pre key={key}>
+          <code>{JSON.stringify(part, null, 2)}</code>
+        </pre>
+      );
+    }
+  });
+}
+
+function ScrollToBottomButton({
+  isAtBottom,
+  scrollToBottom,
+}: {
+  isAtBottom?: boolean;
+  scrollToBottom: () => void;
+}) {
+  return (
+    !isAtBottom && (
+      <button
+        type="button"
+        class={clsx(
+          'position-absolute',
+          'bottom-0',
+          'start-50',
+          'translate-middle',
+          'rounded-circle',
+          'bg-primary',
+          'text-white',
+          'p-2',
+          'd-flex',
+          'align-items-center',
+          'justify-content-center',
+          'border-0',
+          'fs-3',
+        )}
+        style={{ aspectRatio: '1 / 1' }}
+        aria-label="Scroll to bottom"
+        onClick={() => scrollToBottom()}
+      >
+        <i class="bi bi-arrow-down-circle-fill lh-1" aria-hidden="true" />
+      </button>
+    )
+  );
+}
+
+function Messages({
+  messages,
+  showJobLogsLink,
+  showSpinner,
+  urlPrefix,
+}: {
+  messages: QuestionGenerationUIMessage[];
+  showJobLogsLink: boolean;
+  showSpinner: Signal<boolean>;
+  urlPrefix: string;
+}) {
+  return messages.map((message, index) => {
+    if (message.role === 'user') {
+      return (
+        <div key={message.id} class="d-flex flex-row-reverse mb-3">
+          <div
+            class="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
+            style="max-width: 90%"
+          >
+            <MessageParts parts={message.parts} />
+          </div>
+        </div>
+      );
+    }
+
+    const jobLogsUrl = run(() => {
+      if (!showJobLogsLink) return null;
+
+      const job_sequence_id = message.metadata?.job_sequence_id;
+      if (!job_sequence_id) return null;
+
+      return urlPrefix + '/jobSequence/' + job_sequence_id;
+    });
+
+    return (
+      <div key={message.id} class="d-flex flex-column gap-2 mb-3">
+        <MessageParts parts={message.parts} />
+        {index === messages.length - 1 && (
+          <Show when={showSpinner}>
+            <div class="d-flex flex-row align-items-center gap-2 mb-3 small">
+              <div class="spinner-border spinner-border-sm" role="status" />
+              Working...
+            </div>
+          </Show>
+        )}
+        {jobLogsUrl && (
+          <a class="small" href={jobLogsUrl} target="_blank">
+            {' '}
+            View job logs{' '}
+          </a>
+        )}
+      </div>
+    );
+  });
+}
+
+class RateLimitError extends Error {}
+
+function useShowSpinner({
+  status,
+  messages,
+}: {
+  status: string;
+  messages: QuestionGenerationUIMessage[];
+}) {
+  const signal = useSignal<boolean>(false);
+
+  // Ideally this would use `onData` in `useChat(...)` but that seems to be broken:
+  // https://github.com/vercel/ai/issues/8597
+  // Instead, we'll watch for changes to `messages` here.
+  //
+  // Queue a show of the spinner after a delay when messages change
+  useEffect(() => {
+    if (status !== 'streaming' && status !== 'submitted') {
+      signal.value = false;
+      return;
+    }
+
+    signal.value = false;
+
+    const id = setTimeout(() => {
+      signal.value = true;
+    }, 800);
+
+    return () => clearTimeout(id);
+  }, [signal, status, messages]);
+
+  return signal;
+}
+
+export function AiQuestionGenerationChat({
+  initialMessages,
+  questionId,
+  showJobLogsLink,
+  urlPrefix,
+  csrfToken,
+}: {
+  initialMessages: QuestionGenerationUIMessage[];
+  questionId: string;
+  showJobLogsLink: boolean;
+  urlPrefix: string;
+  csrfToken: string;
+}) {
+  const { messages, sendMessage, status, error } = useChat<QuestionGenerationUIMessage>({
+    // Currently, we assume one chat per question. This should change in the future.
+    id: questionId,
+    messages: initialMessages,
+    resume: true,
+    transport: new DefaultChatTransport({
+      api: `${urlPrefix}/ai_generate_editor/${questionId}/chat`,
+      headers: { 'X-CSRF-Token': csrfToken },
+      prepareReconnectToStreamRequest: ({ id }) => {
+        return {
+          api: `${urlPrefix}/ai_generate_editor/${id}/chat/stream`,
+        };
+      },
+      async fetch(input, init) {
+        const res = await fetch(input, init);
+        if (res.status === 429) {
+          throw new RateLimitError();
+        }
+        return res;
+      },
+    }),
+    onError(error) {
+      console.error('Chat error:', error);
+    },
+  });
+
+  const showSpinner = useShowSpinner({ status, messages });
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const resizerRef = useRef<HTMLDivElement>(null);
+  const stickToBottom = useStickToBottom({
+    initial: 'smooth',
+    resize: 'smooth',
+  });
+
+  // Chat width resizing
+  useEffect(() => {
+    const container = containerRef.current?.closest<HTMLElement>('.app-container');
+    const resizer = resizerRef.current;
+
+    if (!container || !resizer) return;
+
+    const minWidth = 260;
+    const maxWidth = 800;
+    let startX = 0;
+    let startWidth = 0;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - startX;
+      const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidth + dx));
+      container.style.setProperty('--chat-width', `${newWidth}px`);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.classList.remove('user-select-none');
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      startX = e.clientX;
+      const styles = getComputedStyle(container);
+      const current = styles.getPropertyValue('--chat-width').trim() || '400px';
+      startWidth =
+        Number.parseInt(current) || containerRef.current?.getBoundingClientRect().width || 400;
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+      document.body.classList.add('user-select-none');
+    };
+
+    resizer.addEventListener('mousedown', onMouseDown);
+
+    return () => {
+      resizer.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
+
+  const hasMessages = messages.length > 0;
+
+  return (
+    <div class="app-chat-container">
+      <div ref={containerRef} class="app-chat px-2 pb-2 bg-light border-end">
+        <div
+          class={clsx('app-chat-history', {
+            'd-flex align-items-center justify-content-center': !hasMessages,
+          })}
+        >
+          {hasMessages ? (
+            <div ref={stickToBottom.scrollRef} class="overflow-y-auto w-100 h-100 pe-2">
+              <div ref={stickToBottom.contentRef} class="pt-2">
+                <Messages
+                  messages={messages}
+                  urlPrefix={urlPrefix}
+                  showJobLogsLink={showJobLogsLink}
+                  showSpinner={showSpinner}
+                />
+              </div>
+            </div>
+          ) : (
+            // If this is an old draft question that was using `ai_question_generation_prompts`,
+            // we won't have any messages to display. That's fine, just warn the user.
+            <div class="text-muted my-5">Message history unavailable.</div>
+          )}
+
+          <ScrollToBottomButton
+            isAtBottom={stickToBottom.isAtBottom}
+            scrollToBottom={stickToBottom.scrollToBottom}
+          />
+        </div>
+
+        <div class="app-chat-prompt mt-2">
+          {error && (
+            <div class="alert alert-danger mb-2" role="alert">
+              {run(() => {
+                if (error instanceof RateLimitError) {
+                  return 'Rate limit exceeded. Please try again later.';
+                }
+                return 'An error occurred. Please try again.';
+              })}
+            </div>
+          )}
+          <PromptInput
+            sendMessage={(message: { text: string }) => {
+              void sendMessage(message);
+              void stickToBottom.scrollToBottom();
+            }}
+            disabled={status !== 'ready' && status !== 'error'}
+          />
+        </div>
+        <div ref={resizerRef} class="app-chat-resizer" aria-label="Resize chat" role="separator" />
+      </div>
+    </div>
+  );
+}
+
+AiQuestionGenerationChat.displayName = 'AiQuestionGenerationChat';

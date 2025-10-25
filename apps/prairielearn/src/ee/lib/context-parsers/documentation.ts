@@ -1,10 +1,11 @@
+import type { Root } from 'mdast';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';
 
 const DEPRECATED_ELEMENTS = new Set(['pl-prairiedraw-figure', 'pl-threejs', 'pl-variable-score']);
-const ALLOWED_ELEMENTS = new Set([
+export const ALLOWED_ELEMENTS = new Set([
   'pl-question-panel',
   'pl-multiple-choice',
   'pl-checkbox',
@@ -31,7 +32,7 @@ function stringify(content: any) {
   });
 }
 
-function extractElementSections(ast: any) {
+function extractElementSections(ast: Root) {
   const elementSections: ElementSection[] = [];
 
   // Find the first level-three heading.
