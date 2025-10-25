@@ -8,6 +8,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
+import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   selectLastSubmissionId,
   selectRubricGradingItems,
@@ -45,7 +46,6 @@ import {
   GradingJobDataSchema,
   InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
-import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -227,6 +227,10 @@ router.get(
         aiGradingEnabled,
         aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
         aiGradingInfo,
+        aiGradingStats:
+          aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
+            ? await calculateAiGradingStats(res.locals.assessment_question)
+            : null,
         skipGradedSubmissions: req.session.skip_graded_submissions,
       }),
     );
@@ -296,8 +300,18 @@ router.get(
         ...locals,
         context: 'main',
       }).toString();
-      const rubricSettings = RubricSettingsModal(locals).toString();
-      res.send({ gradingPanel, rubricSettings });
+      const rubric_data = await manualGrading.selectRubricData({
+        assessment_question: res.locals.assessment_question,
+      });
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      res.send({
+        gradingPanel,
+        rubric_data,
+        aiGradingStats:
+          aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
+            ? await calculateAiGradingStats(res.locals.assessment_question)
+            : null,
+      });
     } catch (err) {
       res.send({ err: String(err) });
     }
@@ -347,10 +361,10 @@ const PostBodySchema = z.union([
     min_points: z.coerce.number(),
     max_extra_points: z.coerce.number(),
     tag_for_manual_grading: z
-      .literal('true')
+      .enum(['true', 'false'])
       .optional()
       .transform((val) => val === 'true'),
-    rubric_item: z
+    rubric_items: z
       .record(
         z.string(),
         z.object({
@@ -603,7 +617,7 @@ router.post(
           body.starting_points,
           body.min_points,
           body.max_extra_points,
-          Object.values(body.rubric_item), // rubric items
+          Object.values(body.rubric_items), // rubric items
           body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
         );

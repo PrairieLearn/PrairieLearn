@@ -4,19 +4,23 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
+import { hydrateHtml } from '@prairielearn/preact/server';
 
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
+import { RubricSettings } from '../../../components/RubricSettings.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
-import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
+import type {
+  AiGradingGeneralStats,
+  InstanceQuestionAIGradingInfo,
+} from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
-import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
   score_perc: z.number().nullable(),
@@ -34,6 +38,7 @@ export function InstanceQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
+  aiGradingStats,
   instanceQuestionGroups,
   skipGradedSubmissions,
 }: {
@@ -51,12 +56,14 @@ export function InstanceQuestion({
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  aiGradingStats: AiGradingGeneralStats | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skipGradedSubmissions: boolean;
 }) {
   const instanceQuestionGroupsExist = instanceQuestionGroups
     ? instanceQuestionGroups.length > 0
     : false;
+  const { __csrf_token, assessment_question, rubric_data } = resLocals;
 
   return PageLayout({
     resLocals: {
@@ -164,6 +171,26 @@ export function InstanceQuestion({
             `
           : ''}
       </div>
+
+      <div class="mb-3">
+        ${hydrateHtml(
+          <RubricSettings
+            assessmentQuestion={assessment_question}
+            rubricData={rubric_data}
+            csrfToken={__csrf_token}
+            aiGradingStats={aiGradingStats}
+            context={{
+              course_short_name: resLocals.course.short_name,
+              course_instance_short_name: resLocals.course_instance.short_name,
+              assessment_tid: resLocals.assessment.tid,
+              question_qid: resLocals.question.qid,
+              variant_params: resLocals.variant.params,
+              variant_true_answer: resLocals.variant.true_answer,
+              submission_submitted_answer: resLocals.submission?.submitted_answer,
+            }}
+          />,
+        )}
+      </div>
       ${conflict_grading_job
         ? ConflictGradingJobModal({
             resLocals,
@@ -233,7 +260,6 @@ export function InstanceQuestion({
         </div>
       </div>
     `,
-    postContent: RubricSettingsModal({ resLocals }),
   });
 }
 
