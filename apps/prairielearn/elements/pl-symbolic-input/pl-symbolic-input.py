@@ -351,12 +351,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
-    a_sub = data["submitted_answers"].get(name, None)
-    if allow_blank and a_sub is not None and a_sub.strip() == "":
-        a_sub = blank_value
+    submitted_answer = data["submitted_answers"].get(name, None)
 
     # Pre-processing to make submission parseable by SymPy
-    a_sub, error_msg = format_submission_for_sympy(a_sub)
+    a_sub, error_msg = format_submission_for_sympy(submitted_answer)
     if error_msg is not None:
         data["format_errors"][name] = error_msg
         data["submitted_answers"][name] = None
