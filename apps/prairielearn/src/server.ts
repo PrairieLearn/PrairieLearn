@@ -3,8 +3,8 @@
 /* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
+import * as opentelemetry from '@prairielearn/opentelemetry';
 /* eslint-enable import-x/order */
 
 import * as fs from 'node:fs';
@@ -47,6 +47,7 @@ import {
 import * as namedLocks from '@prairielearn/named-locks';
 import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
@@ -2192,7 +2193,17 @@ if (isHMR && isServerPending()) {
   throw new Error('The server was restarted, but it was not fully initialized.');
 }
 
-if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
+const isPlaywrightTest = process.env.TEST_WORKER_INDEX !== undefined;
+
+const shouldStartServer = run(() => {
+  if (isPlaywrightTest) return true;
+  if (!config.startServer) return false;
+  if (esMain(import.meta)) return true;
+  if (isHMR && !isServerInitialized()) return true;
+  return false;
+});
+
+if (shouldStartServer) {
   try {
     setServerState('pending');
     logger.verbose('PrairieLearn server start');
@@ -2216,6 +2227,17 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // Load config immediately so we can use it configure everything else.
     await loadConfig(configPaths);
 
+    // Override the server port if PORT environment variable is set
+    if (process.env.PORT) {
+      config.serverPort = process.env.PORT;
+    }
+
+    // For Playwright tests, set up the database
+    if (isPlaywrightTest) {
+      const { before: setupDatabase } = await import('./tests/helperDb.js');
+      await setupDatabase();
+    }
+
     // This should be done as soon as we load our config so that we can
     // start exporting spans.
     await opentelemetry.init({
@@ -2229,6 +2251,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       // is used, 100% of traces will be sent to Sentry, despite us never having set
       // `tracesSampleRate` in the Sentry configuration.
       contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
+      ...(isPlaywrightTest ? { openTelemetryEnabled: false } : {}),
     });
 
     // Same with Sentry configuration.
@@ -2312,17 +2335,19 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       errorOnUnusedParameters: config.devMode,
     };
 
-    logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+    // For Playwright tests, the database pool and named locks are already initialized
+    // by setupDatabases() in helperDb.ts
+    if (!isPlaywrightTest) {
+      logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+      await sqldb.initAsync(pgConfig, idleErrorHandler);
 
-    await sqldb.initAsync(pgConfig, idleErrorHandler);
-
-    // Our named locks code maintains a separate pool of database connections.
-    // This ensures that we avoid deadlocks.
-    await namedLocks.init(pgConfig, idleErrorHandler, {
-      renewIntervalMs: config.namedLocksRenewIntervalMs,
-    });
-
-    logger.verbose('Successfully connected to database');
+      // Our named locks code maintains a separate pool of database connections.
+      // This ensures that we avoid deadlocks.
+      await namedLocks.init(pgConfig, idleErrorHandler, {
+        renewIntervalMs: config.namedLocksRenewIntervalMs,
+      });
+      logger.verbose('Successfully connected to database');
+    }
 
     if (argv['refresh-workspace-hosts-and-exit']) {
       logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
@@ -2653,6 +2678,12 @@ export async function close() {
   await stopBatchedMigrations();
   await namedLocks.close();
   await sqldb.closeAsync();
+
+  // For Playwright tests, clean up the database
+  if (isPlaywrightTest) {
+    const { after: cleanupDatabase } = await import('./tests/helperDb.js');
+    await cleanupDatabase();
+  }
 }
 
 export const viteExpressApp = app;

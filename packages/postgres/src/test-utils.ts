@@ -46,7 +46,7 @@ async function createDatabase(
   await client.connect();
 
   const escapedDatabase = client.escapeIdentifier(
-    database ?? getDatabaseNameForCurrentMochaWorker(options.database),
+    database ?? getDatabaseNameForCurrentTestWorker(options.database),
   );
   if (dropExistingDatabase ?? true) {
     await client.query(`DROP DATABASE IF EXISTS ${escapedDatabase}`);
@@ -68,7 +68,7 @@ async function createDatabase(
       {
         user: options.user ?? POSTGRES_USER,
         host: options.host ?? POSTGRES_HOST,
-        database: getDatabaseNameForCurrentMochaWorker(options.database),
+        database: getDatabaseNameForCurrentTestWorker(options.database),
         // Offer sensible default, but these can be overridden by `options.poolConfig`.
         max: 10,
         idleTimeoutMillis: 30000,
@@ -110,7 +110,7 @@ async function dropDatabase(
     await defaultPool.closeAsync();
   }
 
-  const databaseName = database ?? getDatabaseNameForCurrentMochaWorker(options.database);
+  const databaseName = database ?? getDatabaseNameForCurrentTestWorker(options.database);
   if ('PL_KEEP_TEST_DB' in process.env && !force) {
     // eslint-disable-next-line no-console
     console.log(`PL_KEEP_TEST_DB environment variable set, not dropping database ${databaseName}`);
@@ -126,8 +126,9 @@ async function dropDatabase(
   await client.end();
 }
 
-function getDatabaseNameForCurrentMochaWorker(namespace: string): string {
-  const workerId = process.env.MOCHA_WORKER_ID ?? process.env.VITEST_POOL_ID ?? '1';
+function getDatabaseNameForCurrentTestWorker(namespace: string): string {
+  // https://playwright.dev/docs/test-parallel#isolate-test-data-between-parallel-workers
+  const workerId = process.env.TEST_WORKER_INDEX ?? process.env.VITEST_POOL_ID ?? '1';
   return `${namespace}_${workerId}`;
 }
 
@@ -135,7 +136,7 @@ function getPoolConfig(options: PostgresTestUtilsOptions): pg.PoolConfig {
   return {
     user: options.user ?? POSTGRES_USER,
     host: options.host ?? POSTGRES_HOST,
-    database: getDatabaseNameForCurrentMochaWorker(options.database),
+    database: getDatabaseNameForCurrentTestWorker(options.database),
   };
 }
 
@@ -143,7 +144,7 @@ export interface PostgresTestUtils {
   createDatabase: (options?: CreateDatabaseOptions) => Promise<void>;
   resetDatabase: () => Promise<void>;
   dropDatabase: (options?: DropDatabaseOptions) => Promise<void>;
-  getDatabaseNameForCurrentMochaWorker: () => string;
+  getDatabaseNameForCurrentTestWorker: () => string;
   getPoolConfig: () => pg.PoolConfig;
 }
 
@@ -153,8 +154,8 @@ export function makePostgresTestUtils(options: PostgresTestUtilsOptions): Postgr
       createDatabase(options, createOptions),
     resetDatabase: () => resetDatabase(options),
     dropDatabase: (dropOptions?: DropDatabaseOptions) => dropDatabase(options, dropOptions),
-    getDatabaseNameForCurrentMochaWorker: () =>
-      getDatabaseNameForCurrentMochaWorker(options.database),
+    getDatabaseNameForCurrentTestWorker: () =>
+      getDatabaseNameForCurrentTestWorker(options.database),
     getPoolConfig: () => getPoolConfig(options),
   };
 }
