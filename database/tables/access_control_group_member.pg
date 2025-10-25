@@ -1,0 +1,12 @@
+columns
+    group_id: bigint not null
+    id: bigint not null default nextval('access_control_group_member_id_seq'::regclass)
+    user_id: bigint not null
+
+indexes
+    access_control_group_member_pkey: PRIMARY KEY (id) USING btree (id)
+    access_control_group_member_group_id_user_id_key: UNIQUE (group_id, user_id) USING btree (group_id, user_id)
+
+foreign-key constraints
+    access_control_group_member_group_id_fkey: FOREIGN KEY (group_id) REFERENCES access_control_groups(id) ON UPDATE CASCADE ON DELETE CASCADE
+    access_control_group_member_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
