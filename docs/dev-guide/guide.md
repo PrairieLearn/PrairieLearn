@@ -536,13 +536,13 @@ await updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
   // What role are we trying to authorize as?
-  requiredRoleOptions: 'Student',
+  requestedRole: 'Student',
   // Information to prove we are authorized to write the record
   authzData: res.locals.authz_data,
 });
 ```
 
-In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `requiredRoleOptions` parameter is `'Student'`, but the current user is an instructor, so it would throw an error.
+In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `requestedRole` parameter is `'Student'`, but the current user is an instructor, so it would throw an error.
 
 In some cases, you may not have access to `authzData`, e.g. if are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullAuthzForTesting` function to build a dummy `authzData` object that allows you to perform the action as the system. NOTE: We need to revisit this concept as we build out this pattern.
 
@@ -550,7 +550,7 @@ In some cases, you may not have access to `authzData`, e.g. if are pulling data 
 const authzData = updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
-  requiredRoleOptions: ['Student Data Viewer', 'Student Data Editor'],
+  requestedRole: 'Student Data Viewer',
   authzData: dangerousFullAuthzForTesting(),
 });
 ```
