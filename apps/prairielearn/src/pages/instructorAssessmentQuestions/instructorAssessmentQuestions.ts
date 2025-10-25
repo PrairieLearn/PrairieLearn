@@ -1,14 +1,50 @@
+import * as path from 'path';
+
+import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
+import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
 import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+import * as sqldb from '@prairielearn/postgres';
 
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import {
+  StaffQuestionSchema,
+  StaffTagSchema,
+  StaffTopicSchema,
+} from '../../lib/client/safe-db-types.js';
+import { FileModifyEditor, MultiEditor, propertyValueWithDefault } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
+import { getPaths } from '../../lib/instructorFiles.js';
+import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
+import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
 
 const router = Router();
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+const SaveQuestionsSchema = z.object({
+  __action: z.literal('save_questions'),
+  __csrf_token: z.string(),
+  orig_hash: z.string(),
+  zones: z
+    .string()
+    .transform((str) => {
+      try {
+        return JSON.parse(str);
+      } catch {
+        throw new Error('Invalid JSON in zones field');
+      }
+    })
+    .pipe(z.array(ZoneAssessmentJsonSchema)),
+});
 
 router.get(
   '/',
@@ -16,7 +52,56 @@ router.get(
     const questionRows = await selectAssessmentQuestions({
       assessment_id: res.locals.assessment.id,
     });
-    res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questionRows }));
+
+    const assessmentPath = path.join(
+      res.locals.course.path,
+      'courseInstances',
+      res.locals.course_instance.short_name,
+      'assessments',
+      res.locals.assessment.tid,
+      'infoAssessment.json',
+    );
+
+    const assessmentPathExists = await fs.pathExists(assessmentPath);
+
+    let origHash = '';
+    if (assessmentPathExists) {
+      origHash = sha256(b64EncodeUnicode(await fs.readFile(assessmentPath, 'utf8'))).toString();
+    }
+
+    const editorEnabled = await features.enabledFromLocals(
+      'assessment-questions-editor',
+      res.locals,
+    );
+
+    res.send(
+      InstructorAssessmentQuestions({
+        resLocals: res.locals,
+        questionRows,
+        origHash,
+        editorEnabled,
+      }),
+    );
+  }),
+);
+
+router.get(
+  '/:qid',
+  asyncHandler(async (req, res) => {
+    const assessmentQuestion = await sqldb.queryOptionalRow(
+      sql.select_assessment_question,
+      {
+        qid: req.params.qid,
+        course_id: res.locals.course.id,
+      },
+      z.object({
+        question: StaffQuestionSchema,
+        topic: StaffTopicSchema,
+        open_issue_count: z.number(),
+        tags: z.array(StaffTagSchema),
+      }),
+    );
+    res.json(assessmentQuestion);
   }),
 );
 
@@ -35,6 +120,226 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
       });
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'save_questions') {
+      const body = SaveQuestionsSchema.parse(req.body);
+
+      const assessmentPath = path.join(
+        res.locals.course.path,
+        'courseInstances',
+        res.locals.course_instance.short_name,
+        'assessments',
+        res.locals.assessment.tid,
+        'infoAssessment.json',
+      );
+
+      if (!(await fs.pathExists(assessmentPath))) {
+        throw new error.HttpStatusError(400, 'infoAssessment.json does not exist');
+      }
+
+      const paths = getPaths(undefined, res.locals);
+      const assessmentInfo = JSON.parse(await fs.readFile(assessmentPath, 'utf8'));
+
+      // Filter out default values from zones data
+      const filteredZones = body.zones.map((zone) => {
+        const filteredZone: any = {};
+
+        // Filter zone title
+        filteredZone.title = propertyValueWithDefault(
+          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.title,
+          zone.title,
+          null,
+        );
+
+        // Filter zone-level properties
+        filteredZone.maxPoints = propertyValueWithDefault(
+          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.maxPoints,
+          zone.maxPoints,
+          null,
+        );
+        filteredZone.numberChoose = propertyValueWithDefault(
+          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.numberChoose,
+          zone.numberChoose,
+          null,
+        );
+        filteredZone.bestQuestions = propertyValueWithDefault(
+          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.bestQuestions,
+          zone.bestQuestions,
+          null,
+        );
+        filteredZone.advanceScorePerc = propertyValueWithDefault(
+          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.advanceScorePerc,
+          zone.advanceScorePerc,
+          null,
+        );
+        filteredZone.gradeRateMinutes = propertyValueWithDefault(
+          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.gradeRateMinutes,
+          zone.gradeRateMinutes,
+          null,
+        );
+        filteredZone.canSubmit = propertyValueWithDefault(
+          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.canSubmit,
+          zone.canSubmit,
+          (v) => !v || v.length === 0,
+        );
+        filteredZone.canView = propertyValueWithDefault(
+          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.canView,
+          zone.canView,
+          (v) => !v || v.length === 0,
+        );
+        // Filter questions/alternative groups
+        filteredZone.questions = zone.questions.map((question) => {
+          // Check if this is a single question or an alternative group
+          const filteredQuestion: any = {};
+          if ('alternatives' in question) {
+            // This is an alternative group
+
+            filteredQuestion.numberChoose = propertyValueWithDefault(
+              undefined,
+              question.numberChoose,
+              1,
+            );
+
+            // Filter alternatives
+            filteredQuestion.alternatives = question.alternatives?.map((alternative) => {
+              const filteredAlternative: any = {
+                id: alternative.id,
+              };
+
+              filteredAlternative.points = propertyValueWithDefault(
+                undefined,
+                alternative.points,
+                0,
+              );
+              filteredAlternative.autoPoints = propertyValueWithDefault(
+                undefined,
+                alternative.autoPoints,
+                0,
+              );
+              filteredAlternative.maxPoints = propertyValueWithDefault(
+                undefined,
+                alternative.maxPoints,
+                0,
+              );
+              filteredAlternative.maxAutoPoints = propertyValueWithDefault(
+                undefined,
+                alternative.maxAutoPoints,
+                0,
+              );
+              filteredAlternative.manualPoints = propertyValueWithDefault(
+                undefined,
+                alternative.manualPoints,
+                0,
+              );
+              filteredAlternative.triesPerVariant = propertyValueWithDefault(
+                undefined,
+                alternative.triesPerVariant,
+                1,
+              );
+              filteredAlternative.advanceScorePerc = propertyValueWithDefault(
+                undefined,
+                alternative.advanceScorePerc,
+                null,
+              );
+              filteredAlternative.gradeRateMinutes = propertyValueWithDefault(
+                undefined,
+                alternative.gradeRateMinutes,
+                null,
+              );
+
+              return filteredAlternative;
+            });
+          } else {
+            // This is a single question
+            filteredQuestion.id = question.id;
+          }
+          filteredQuestion.comment = propertyValueWithDefault(undefined, question.comment, null);
+          filteredQuestion.allowRealTimeGrading = propertyValueWithDefault(
+            undefined,
+            question.allowRealTimeGrading,
+            null,
+          );
+          filteredQuestion.canSubmit = propertyValueWithDefault(
+            undefined,
+            question.canSubmit,
+            (v) => !v || v.length === 0,
+          );
+          filteredQuestion.canView = propertyValueWithDefault(
+            undefined,
+            question.canView,
+            (v) => !v || v.length === 0,
+          );
+          filteredQuestion.points = propertyValueWithDefault(undefined, question.points, 0);
+          filteredQuestion.autoPoints = propertyValueWithDefault(undefined, question.autoPoints, 0);
+          filteredQuestion.maxPoints = propertyValueWithDefault(
+            undefined,
+            question.maxPoints,
+            null,
+          );
+          filteredQuestion.maxAutoPoints = propertyValueWithDefault(
+            undefined,
+            question.maxAutoPoints,
+            0,
+          );
+          filteredQuestion.manualPoints = propertyValueWithDefault(
+            undefined,
+            question.manualPoints,
+            0,
+          );
+          filteredQuestion.triesPerVariant = propertyValueWithDefault(
+            undefined,
+            question.triesPerVariant,
+            1,
+          );
+          filteredQuestion.advanceScorePerc = propertyValueWithDefault(
+            undefined,
+            question.advanceScorePerc,
+            null,
+          );
+          filteredQuestion.gradeRateMinutes = propertyValueWithDefault(
+            undefined,
+            question.gradeRateMinutes,
+            null,
+          );
+
+          return filteredQuestion;
+        });
+
+        return filteredZone;
+      });
+
+      // Update the zones with the filtered data
+      assessmentInfo.zones = filteredZones;
+
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
+
+      const editor = new MultiEditor(
+        {
+          locals: res.locals as any,
+          description: `Update assessment questions for ${res.locals.assessment.tid}`,
+        },
+        [
+          new FileModifyEditor({
+            locals: res.locals as any,
+            container: {
+              rootPath: paths.rootPath,
+              invalidRootPaths: paths.invalidRootPaths,
+            },
+            filePath: assessmentPath,
+            editContents: b64EncodeUnicode(formattedJson),
+            origHash: body.orig_hash,
+          }),
+        ],
+      );
+
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch {
+        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+      }
+
+      flash('success', 'Assessment questions updated successfully');
+      return res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

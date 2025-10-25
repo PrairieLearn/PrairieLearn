@@ -17,6 +17,7 @@ const featureNames = [
   // Should only be applied globally.
   'legacy-navigation-user-toggle',
   // Can be applied to any context.
+  'assessment-questions-editor',
   'enrollment-management',
   'rich-text-editor',
   'legacy-navigation',
