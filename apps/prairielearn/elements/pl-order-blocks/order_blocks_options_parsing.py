@@ -3,6 +3,7 @@ from typing import TypedDict
 
 import lxml.html
 import prairielearn as pl
+from dag_checker import ColoredEdges, Edges
 from lxml.etree import _Comment
 
 
@@ -75,13 +76,44 @@ SPEC_CHAR_STR = "*&^$@!~[]{}()|:@?/\\"
 SPEC_CHAR = frozenset(SPEC_CHAR_STR)
 
 
+def is_multigraph(element: lxml.html.HtmlElement) -> bool:
+    for html_tag in element:  # iterate through the html tags inside pl-order-blocks
+        if isinstance(html_tag, _Comment):
+            continue
+        has_colors = "|" in pl.get_string_attrib(html_tag, "depends", "")
+        if has_colors:
+            return True
+    return False
+
+
 def get_graph_info(
     html_tag: lxml.html.HtmlElement,
-) -> tuple[str, list[str]]:
+) -> tuple[str, Edges]:
     tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tag, "depends", "")
     depends = [tag.strip() for tag in depends.split(",")] if depends else []
     return tag, depends
+
+
+def get_multigraph_info(
+    html_tag: lxml.html.HtmlElement,
+) -> tuple[str, Edges | ColoredEdges, bool]:
+    tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
+    depends = pl.get_string_attrib(html_tag, "depends", "")
+    final = pl.get_boolean_attrib(html_tag, "final", False)
+    has_colors = "|" in depends
+
+    if ":" in depends:
+        raise ValueError("The linked options feature is currently unavailable.")
+
+    if has_colors:
+        depends = [
+            [tag.strip() for tag in color.split(",") if color != ""]
+            for color in depends.split("|")
+        ]
+    else:
+        depends = [tag.strip() for tag in depends.split(",")] if depends else []
+    return tag, depends, final
 
 
 class AnswerOptions:
@@ -91,7 +123,7 @@ class AnswerOptions:
     """
 
     tag: str
-    depends: list[str]
+    depends: Edges | ColoredEdges
     correct: bool
     ranking: int
     indent: int | None
@@ -100,15 +132,21 @@ class AnswerOptions:
     ordering_feedback: str | None
     inner_html: str
     group_info: GroupInfo
+    final: bool
 
     def __init__(
         self,
         html_element: lxml.html.HtmlElement,
         group_info: GroupInfo,
         grading_method: GradingMethodType,
+        has_optional_blocks: bool,
     ) -> None:
         self._check_options(html_element, grading_method)
-        self.tag, self.depends = get_graph_info(html_element)
+        if has_optional_blocks:
+            self.tag, self.depends, self.final = get_multigraph_info(html_element)
+        else:
+            self.tag, self.depends = get_graph_info(html_element)
+            self.final = False
         self.correct = pl.get_boolean_attrib(
             html_element, "correct", ANSWER_CORRECT_DEFAULT
         )
@@ -177,43 +215,9 @@ class AnswerOptions:
                     "distractor-feedback",
                     "distractor-for",
                     "ordering-feedback",
+                    "final",
                 ],
             )
-
-
-def collect_answer_options(
-    html_element: lxml.html.HtmlElement, grading_method: GradingMethodType
-) -> list[AnswerOptions]:
-    answer_options = []
-    for inner_element in html_element:
-        if isinstance(inner_element, _Comment):
-            continue
-
-        match inner_element.tag:
-            case "pl-block-group":
-                group_tag, group_depends = get_graph_info(inner_element)
-                for answer_element in inner_element:
-                    if isinstance(answer_element, _Comment):
-                        continue
-                    options = AnswerOptions(
-                        answer_element,
-                        {"tag": group_tag, "depends": group_depends},
-                        grading_method,
-                    )
-                    answer_options.append(options)
-            case "pl-answer":
-                answer_options.append(
-                    AnswerOptions(
-                        inner_element, {"tag": None, "depends": None}, grading_method
-                    )
-                )
-            case _:
-                raise ValueError(
-                    """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
-                        Any html tags nested inside <pl-block-group> must be <pl-answer>"""
-                )
-
-    return answer_options
 
 
 class OrderBlocksOptions:
@@ -292,8 +296,10 @@ class OrderBlocksOptions:
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
+        self.has_optional_blocks = is_multigraph(html_element)
 
-        self.answer_options = collect_answer_options(html_element, self.grading_method)
+        # All necessary properties are initialized for collect_answer_options
+        self.answer_options = collect_answer_options(html_element, self)
         self.correct_answers = [
             options for options in self.answer_options if options.correct
         ]
@@ -341,6 +347,20 @@ class OrderBlocksOptions:
     def validate(self) -> None:
         self._validate_order_blocks_options()
         self._validate_answer_options()
+
+        # Check that if it is a multigraph to ensure the final tag exists
+        if self.has_optional_blocks:
+            has_final = False
+            for options in self.answer_options:
+                if options.final and has_final:
+                    raise ValueError("Multiple 'final' attributes are not allowed.")
+                if options.final and not has_final:
+                    has_final = True
+
+            if not has_final:
+                raise ValueError(
+                    "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question."
+                )
 
     def _validate_order_blocks_options(self) -> None:
         if (
@@ -404,6 +424,14 @@ class OrderBlocksOptions:
                     'Block groups only supported in the "dag" grading mode.'
                 )
 
+            if (
+                self.has_optional_blocks
+                and answer_options.group_info["tag"] is not None
+            ):
+                raise ValueError(
+                    "Block groups not supported with the optional-lines feature."
+                )
+
             if self.indentation is False and answer_options.indent is not None:
                 raise ValueError(
                     "<pl-answer> should not specify indentation if indentation is disabled."
@@ -452,3 +480,41 @@ class OrderBlocksOptions:
                     + answer_options.inner_html
                     + "</pl-code>"
                 )
+
+
+def collect_answer_options(
+    html_element: lxml.html.HtmlElement, order_blocks_options: OrderBlocksOptions
+) -> list[AnswerOptions]:
+    answer_options = []
+    for inner_element in html_element:
+        if isinstance(inner_element, _Comment):
+            continue
+
+        match inner_element.tag:
+            case "pl-block-group":
+                group_tag, group_depends = get_graph_info(inner_element)
+                for answer_element in inner_element:
+                    if isinstance(answer_element, _Comment):
+                        continue
+                    options = AnswerOptions(
+                        answer_element,
+                        {"tag": group_tag, "depends": group_depends},
+                        order_blocks_options.grading_method,
+                        order_blocks_options.has_optional_blocks,
+                    )
+                    answer_options.append(options)
+            case "pl-answer":
+                options = AnswerOptions(
+                    inner_element,
+                    {"tag": None, "depends": None},
+                    order_blocks_options.grading_method,
+                    order_blocks_options.has_optional_blocks,
+                )
+                answer_options.append(options)
+            case _:
+                raise ValueError(
+                    """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
+                        Any html tags nested inside <pl-block-group> must be <pl-answer>"""
+                )
+
+    return answer_options
