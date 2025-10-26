@@ -1,5 +1,5 @@
-DROP TABLE reservations;
+DROP TABLE IF EXISTS reservations CASCADE;
 
-DROP TABLE exams;
+DROP TABLE IF EXISTS exams CASCADE;
 
-DROP TABLE courses;
+DROP TABLE IF EXISTS courses CASCADE;
