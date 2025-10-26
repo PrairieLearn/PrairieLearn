@@ -51,6 +51,9 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.resizingCanvas = null;
       this.resizingCtx = null;
 
+      this.originalWidth = null;
+      this.originalHeight = null;
+
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
@@ -600,6 +603,11 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
         image.onload = () => {
           const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
+          if (imageScaleFactor >= 1) {
+            // Don't need to shrink the image, so just use it directly.
+            hiddenCaptureInput.value = dataUrl;
+            return;
+          }
           const targetWidth = Math.round(image.width * imageScaleFactor);
           const targetHeight = Math.round(image.height * imageScaleFactor);
 
@@ -840,6 +848,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
           if (dataUrl) {
             hiddenOriginalCaptureInput.value = dataUrl;
+            capturePreview.onload = () => {
+              this.originalImageWidth = capturePreview.naturalWidth;
+              this.originalImageHeight = capturePreview.naturalHeight;
+            }
           } else {
             hiddenOriginalCaptureInput.removeAttribute('value');
           }
@@ -919,7 +931,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         // Stream the local camera video to the video element
         this.localCameraStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            width: { ideal: 7680 }
+            width: { ideal: 7680 },
           },
         });
 
@@ -1350,9 +1362,23 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.ensureCropperExists();
       // Obtain the data URL of the image selection.
       const selection = this.cropper.getCropperSelection();
+      const cropperDims = this.cropper.getCropperCanvas().getBoundingClientRect();
+
+      // Retrieve the dimensions of the original uploaded image
+      const cropWidth = Math.floor((selection.width / cropperDims.width) * this.originalImageWidth);
+      const cropHeight = Math.floor((selection.height / cropperDims.height) * this.originalImageHeight);
+
       let dataUrl;
       try {
-        const canvas = await selection.$toCanvas();
+        const canvas = await selection.$toCanvas({
+          width: cropWidth,
+          height: cropHeight, 
+          beforeDraw: (ctx) => {
+            // Enable high-quality resampling / anti-aliasing
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+          },
+        });
         dataUrl = canvas.toDataURL('image/jpeg', 1);
       } catch {
         throw new Error('Failed to convert cropper selection to canvas');
@@ -1384,9 +1410,22 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
       // Obtain the data URL of the image selection.
       const selection = this.cropper.getCropperSelection();
+      const cropperDims = this.cropper.getCropperCanvas().getBoundingClientRect();
+
+      const cropWidth = Math.floor((selection.width / cropperDims.width) * this.originalImageWidth);
+      const cropHeight = Math.floor((selection.height / cropperDims.height) * this.originalImageHeight);
+
       let dataUrl;
       try {
-        const canvas = await selection.$toCanvas();
+        const canvas = await selection.$toCanvas({
+          width: cropWidth,
+          height: cropHeight,
+          beforeDraw: (ctx) => {
+            // Enable high-quality resampling / anti-aliasing
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+          },
+        });
         dataUrl = canvas.toDataURL('image/jpeg', 1);
       } catch {
         throw new Error('Failed to convert cropper selection to canvas');
