@@ -1362,17 +1362,12 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       const selection = this.cropper.getCropperSelection();
       const cropperDims = this.cropper.getCropperCanvas().getBoundingClientRect();
 
-      // The width and height of the selection and cropper are relative to the display dimensions.
-      // We need to scale them to be relative to the original image dimensions instead.
-      const cropWidth = Math.floor((selection.width / cropperDims.width) * this.originalImageWidth);
-      const cropHeight = Math.floor(
-        (selection.height / cropperDims.height) * this.originalImageHeight,
-      );
-
       try {
+        // The width and height of the selection and cropper are relative to the display dimensions.
+        // We need to scale them to be relative to the original image dimensions instead.
         const canvas = await selection.$toCanvas({
-          width: cropWidth,
-          height: cropHeight,
+          width: Math.floor((selection.width / cropperDims.width) * this.originalImageWidth),
+          height: Math.floor((selection.height / cropperDims.height) * this.originalImageHeight),
           beforeDraw: (ctx) => {
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
