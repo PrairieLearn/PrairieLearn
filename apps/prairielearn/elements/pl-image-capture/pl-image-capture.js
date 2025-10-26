@@ -596,7 +596,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
 
       if (dataUrl) {
-        // Perform scaling to ensure that user-uploaded images are not too large.
+        // Perform scaling to ensure that captured images are not too large.
         // The scale factor ensures that the width and height of the image do not exceed 2000px.
         // If the image width and height are both less than 2000px, no scaling is applied.
         const image = new Image();
@@ -1355,6 +1355,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
     timeoutId = null;
 
+    /** Retrieve the Base64-encoded image data of the cropper selection and its CropperJS selection object. */
     async getCropperSelection() {
       this.ensureCropperExists();
 
