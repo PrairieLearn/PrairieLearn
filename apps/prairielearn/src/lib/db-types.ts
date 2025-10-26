@@ -706,7 +706,6 @@ export const ExamModeNetworkSchema = z.object({
 });
 export type ExamModeNetwork = z.infer<typeof ExamModeNetworkSchema>;
 
-export const ExamSchema = null;
 export const FeatureGrantSchema = null;
 
 export const FileSchema = z.object({
@@ -1230,7 +1229,6 @@ export const QuestionTagSchema = z.object({
   tag_id: IdSchema,
 });
 export type QuestionTag = z.infer<typeof QuestionTagSchema>;
-export const ReservationSchema = null;
 
 export const RubricSchema = z.object({
   created_at: DateFromISOString,
