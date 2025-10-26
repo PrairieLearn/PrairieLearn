@@ -1315,14 +1315,14 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
       rotationSlider.value = 0;
 
-      const selection = this.cropper.getCropperSelection();
+      const cropperSelection = this.cropper.getCropperSelection();
       this.previousCropRotateState = {
         transformation: this.cropper.getCropperImage().$getTransform(),
         selection: {
-          x: selection.x,
-          y: selection.y,
-          width: selection.width,
-          height: selection.height,
+          x: cropperSelection.x,
+          y: cropperSelection.y,
+          width: cropperSelection.width,
+          height: cropperSelection.height,
         },
         baseRotationAngle: 0,
         offsetRotationAngle: 0,
@@ -1359,15 +1359,19 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
     async getCropperSelection() {
       this.ensureCropperExists();
 
-      const selection = this.cropper.getCropperSelection();
-      const cropperDims = this.cropper.getCropperCanvas().getBoundingClientRect();
+      const cropperSelection = this.cropper.getCropperSelection();
+      const cropperImageDims = this.cropper.getCropperImage().getBoundingClientRect();
 
       try {
         // The width and height of the selection and cropper are relative to the display dimensions.
         // We need to scale them to be relative to the original image dimensions instead.
-        const canvas = await selection.$toCanvas({
-          width: Math.floor((selection.width / cropperDims.width) * this.originalImageWidth),
-          height: Math.floor((selection.height / cropperDims.height) * this.originalImageHeight),
+        const canvas = await cropperSelection.$toCanvas({
+          width: Math.floor(
+            (cropperSelection.width / cropperImageDims.width) * this.originalImageWidth,
+          ),
+          height: Math.floor(
+            (cropperSelection.height / cropperImageDims.height) * this.originalImageHeight,
+          ),
           beforeDraw: (ctx) => {
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
@@ -1375,7 +1379,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         });
         return {
           dataUrl: canvas.toDataURL('image/jpeg'),
-          selection,
+          cropperSelection,
         };
       } catch {
         throw new Error('Failed to convert cropper selection to canvas');
@@ -1404,7 +1408,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
     async confirmCropRotateChanges() {
       this.ensureCropperExists();
 
-      const { dataUrl, selection } = await this.getCropperSelection();
+      const { dataUrl, cropperSelection } = await this.getCropperSelection();
 
       this.loadCapturePreviewFromDataUrl({
         dataUrl,
@@ -1414,10 +1418,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.previousCropRotateState = {
         transformation: this.cropper.getCropperImage().$getTransform(),
         selection: {
-          x: selection.x,
-          y: selection.y,
-          width: selection.width,
-          height: selection.height,
+          x: cropperSelection.x,
+          y: cropperSelection.y,
+          width: cropperSelection.width,
+          height: cropperSelection.height,
         },
         baseRotationAngle: this.baseRotationAngle,
         offsetRotationAngle: this.offsetRotationAngle,
