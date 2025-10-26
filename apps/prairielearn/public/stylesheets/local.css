@@ -335,6 +335,14 @@ a.badge {
   font-weight: 400;
 }
 
+/** override bootstrap's code styles with a github-like style */
+code {
+  color: black;
+  background: #80808020;
+  padding: 0.2em 0.4em;
+  border-radius: 6px;
+}
+
 .user-output,
 .user-output-invalid {
   display: inline;
