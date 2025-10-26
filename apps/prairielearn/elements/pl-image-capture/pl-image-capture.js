@@ -626,7 +626,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
           this.resizingCanvas.height = targetHeight;
           this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
 
-          hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg', 0.9);
+          hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg');
         };
       } else {
         hiddenCaptureInput.removeAttribute('value');
@@ -852,7 +852,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
             capturePreview.onload = () => {
               this.originalImageWidth = capturePreview.naturalWidth;
               this.originalImageHeight = capturePreview.naturalHeight;
-            }
+            };
           } else {
             hiddenOriginalCaptureInput.removeAttribute('value');
           }
@@ -1355,37 +1355,35 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
     timeoutId = null;
 
-    /**
-     * Helper function for saveCropperSelectionToHiddenInput to implement debounce.
-     * Do not use this function; use saveCropperSelectionToHiddenInput instead.
-     */
-    async saveCropperSelectionToHiddenInputHelper() {
+    async getCropperSelection() {
       this.ensureCropperExists();
-      // Obtain the data URL of the image selection.
+
       const selection = this.cropper.getCropperSelection();
       const cropperDims = this.cropper.getCropperCanvas().getBoundingClientRect();
 
-      // Retrieve the dimensions of the original uploaded image
+      // The width and height of the selection and cropper are relative to the display dimensions.
+      // We need to scale them to be relative to the original image dimensions instead.
       const cropWidth = Math.floor((selection.width / cropperDims.width) * this.originalImageWidth);
-      const cropHeight = Math.floor((selection.height / cropperDims.height) * this.originalImageHeight);
+      const cropHeight = Math.floor(
+        (selection.height / cropperDims.height) * this.originalImageHeight,
+      );
 
-      let dataUrl;
       try {
         const canvas = await selection.$toCanvas({
           width: cropWidth,
-          height: cropHeight, 
+          height: cropHeight,
           beforeDraw: (ctx) => {
-            // Enable high-quality resampling / anti-aliasing
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
           },
         });
-        dataUrl = canvas.toDataURL('image/jpeg');
+        return {
+          dataUrl: canvas.toDataURL('image/jpeg'),
+          selection,
+        };
       } catch {
         throw new Error('Failed to convert cropper selection to canvas');
       }
-
-      this.setHiddenCaptureInputValue(dataUrl);
     }
 
     /**
@@ -1402,35 +1400,15 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
       clearTimeout(this.timeoutId);
       this.timeoutId = setTimeout(async () => {
-        await this.saveCropperSelectionToHiddenInputHelper();
+        const { dataUrl } = await this.getCropperSelection();
+        this.setHiddenCaptureInputValue(dataUrl);
       }, 200);
     }
 
     async confirmCropRotateChanges() {
       this.ensureCropperExists();
 
-      // Obtain the data URL of the image selection.
-      const selection = this.cropper.getCropperSelection();
-      const cropperDims = this.cropper.getCropperCanvas().getBoundingClientRect();
-
-      const cropWidth = Math.floor((selection.width / cropperDims.width) * this.originalImageWidth);
-      const cropHeight = Math.floor((selection.height / cropperDims.height) * this.originalImageHeight);
-
-      let dataUrl;
-      try {
-        const canvas = await selection.$toCanvas({
-          width: cropWidth,
-          height: cropHeight,
-          beforeDraw: (ctx) => {
-            // Enable high-quality resampling / anti-aliasing
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-          },
-        });
-        dataUrl = canvas.toDataURL('image/jpeg');
-      } catch {
-        throw new Error('Failed to convert cropper selection to canvas');
-      }
+      const { dataUrl, selection } = await this.getCropperSelection();
 
       this.loadCapturePreviewFromDataUrl({
         dataUrl,
