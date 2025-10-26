@@ -1365,6 +1365,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       try {
         // The width and height of the selection and cropper are relative to the display dimensions.
         // We need to scale them to be relative to the original image dimensions instead.
+
+        // We use the dimensions of the cropper image instead of the entire canvas since the image
+        // may not fill the entire canvas (e.g. tall images viewed on wide windows).
+
         const canvas = await cropperSelection.$toCanvas({
           width: Math.floor(
             (cropperSelection.width / cropperImageDims.width) * this.originalImageWidth,
