@@ -211,6 +211,9 @@ export async function uploadSubmissions(
             RubricItemSchema,
           );
 
+          // This is a best-effort process: we attempt to match uploaded rubric items to an
+          // existing rubric item in the database. If no match is found, the uploaded item
+          // is ignored and not applied.
           const applied_rubric_item_ids: string[] = [];
 
           if (row['Rubric Grading']?.items) {
