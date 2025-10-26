@@ -51,6 +51,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.resizingCanvas = null;
       this.resizingCtx = null;
 
+      /** Original captured image width and height */
       this.originalWidth = null;
       this.originalHeight = null;
 
@@ -604,7 +605,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         image.onload = () => {
           const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
           if (imageScaleFactor >= 1) {
-            // Don't need to shrink the image, so just use it directly.
+            // If we don't need to shrink the image, just use it directly.
             hiddenCaptureInput.value = dataUrl;
             return;
           }
@@ -1022,7 +1023,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
       this.deactivateVideoStream();
       this.loadCapturePreviewFromDataUrl({
-        dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg', 1),
+        dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg'),
       });
       this.setCaptureChangedFlag(true);
       this.openContainer('capture-preview');
@@ -1379,7 +1380,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
             ctx.imageSmoothingQuality = 'high';
           },
         });
-        dataUrl = canvas.toDataURL('image/jpeg', 1);
+        dataUrl = canvas.toDataURL('image/jpeg');
       } catch {
         throw new Error('Failed to convert cropper selection to canvas');
       }
@@ -1426,7 +1427,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
             ctx.imageSmoothingQuality = 'high';
           },
         });
-        dataUrl = canvas.toDataURL('image/jpeg', 1);
+        dataUrl = canvas.toDataURL('image/jpeg');
       } catch {
         throw new Error('Failed to convert cropper selection to canvas');
       }
