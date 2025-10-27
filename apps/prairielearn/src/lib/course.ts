@@ -138,7 +138,20 @@ export async function pullAndUpdateCourse({
           await job.exec('git', ['remote', 'set-url', 'origin', repository], gitOptions);
 
           job.info('Fetch from remote git repository');
-          await job.exec('git', ['fetch'], gitOptions);
+          await job.exec('git', ['fetch'], {
+            ...gitOptions,
+            // During GitHub incidents, fetches could take a long time. We use a
+            // timeout to ensure that the sync won't hang indefinitely.
+            //
+            // Our editor code, which also interacts with GitHub, uses a shorter
+            // timeout. This is important for editors, which typically complete
+            // during the lifetime of a single request. We use a longer one here
+            // to allow a full sync to be used as a backup method if a normal
+            // fetch takes an inordinate amount of time. A full course sync occurs
+            // in a server job in the background, so we don't have to worry about
+            // serving 504 errors to clients from a long request.
+            cancelSignal: AbortSignal.timeout(30_000),
+          });
 
           job.info('Restore staged and unstaged changes');
           await job.exec('git', ['restore', '--staged', '--worktree', '.'], gitOptions);
