@@ -364,7 +364,7 @@ function CoursePermissionsRemoveStaffForm({
   csrfToken: string;
 }) {
   return html`
-    <form name="student-data-access-remove-${courseUser.user.user_id}" method="POST">
+    <form method="POST">
       <input type="hidden" name="__action" value="course_permissions_delete" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
