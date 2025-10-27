@@ -342,33 +342,33 @@ def test_partial_credit_type_conversion() -> None:
     """Test that internal enum conversion works correctly."""
     # No partial credit
     assert (
-        pl_checkbox._get_partial_credit_type(False, "PC")
+        pl_checkbox.get_partial_credit_mode(False, "PC")
         == pl_checkbox.PartialCreditType.ALL_OR_NOTHING
     )
 
     # With partial credit
     assert (
-        pl_checkbox._get_partial_credit_type(True, "PC")
+        pl_checkbox.get_partial_credit_mode(True, "PC")
         == pl_checkbox.PartialCreditType.NET_CORRECT
     )
     assert (
-        pl_checkbox._get_partial_credit_type(True, "COV")
+        pl_checkbox.get_partial_credit_mode(True, "COV")
         == pl_checkbox.PartialCreditType.COVERAGE
     )
     assert (
-        pl_checkbox._get_partial_credit_type(True, "EDC")
+        pl_checkbox.get_partial_credit_mode(True, "EDC")
         == pl_checkbox.PartialCreditType.EACH_ANSWER
     )
 
     # Invalid method
     with pytest.raises(ValueError, match="Unknown partial_credit_method"):
-        pl_checkbox._get_partial_credit_type(True, "INVALID")
+        pl_checkbox.get_partial_credit_mode(True, "INVALID")
 
 
 def test_order_type_conversion() -> None:
     """Test that internal order type enum conversion works correctly."""
-    assert pl_checkbox._get_order_type(False) == pl_checkbox.OrderType.RANDOM
-    assert pl_checkbox._get_order_type(True) == pl_checkbox.OrderType.FIXED
+    assert pl_checkbox.get_order_type(False) == pl_checkbox.OrderType.RANDOM
+    assert pl_checkbox.get_order_type(True) == pl_checkbox.OrderType.FIXED
 
 
 def test_categorize_options() -> None:
