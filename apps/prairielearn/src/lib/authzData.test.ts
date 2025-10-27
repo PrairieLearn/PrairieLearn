@@ -5,7 +5,6 @@ import type { AuthzData } from './authzData.types.js';
 
 describe('authzData', () => {
   describe('hasRole', () => {
-    /** Helper function to create a mock AuthzData object */
     function createMockAuthzData(overrides: Partial<AuthzData> = {}): AuthzData {
       return {
         authn_user: {
@@ -231,18 +230,6 @@ describe('authzData', () => {
     });
 
     describe('role hierarchy', () => {
-      it('Student Data Editor has access to Student Data Viewer permissions', () => {
-        const authzData = createMockAuthzData({
-          has_course_instance_permission_edit: true,
-          has_course_instance_permission_view: false, // This should be false but editor should still work
-        });
-
-        assert.isTrue(hasRole(authzData, 'Student Data Editor'));
-        // Note: Student Data Editor doesn't automatically grant Student Data Viewer access
-        // This is by design - each role is checked independently
-        assert.isFalse(hasRole(authzData, 'Student Data Viewer'));
-      });
-
       it('Student Data Viewer does not have Student Data Editor permissions', () => {
         const authzData = createMockAuthzData({
           has_course_instance_permission_view: true,

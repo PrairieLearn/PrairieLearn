@@ -44,7 +44,7 @@ const RawPageAuthzDataSchema = z.object({
   has_course_permission_own: z.boolean(),
   course_role: EnumCourseRoleSchema.optional(),
   course_instance_role: EnumCourseInstanceRoleSchema.optional(),
-  mode: z.string().optional(),
+  mode: EnumModeSchema.optional(),
   has_student_access: z.boolean().optional(),
   has_student_access_with_enrollment: z.boolean().optional(),
   has_course_instance_permission_view: z.boolean().optional(),
