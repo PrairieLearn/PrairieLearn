@@ -111,6 +111,7 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
         max_group_size: Number(req.body.max_group_size),
         min_group_size: Number(req.body.min_group_size),
+        authzData: res.locals.authz_data,
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {
