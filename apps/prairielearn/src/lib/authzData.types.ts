@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { type RawStaffUser, StaffUserSchema } from './client/safe-db-types.js';
+import { RawStaffUserSchema, StaffUserSchema } from './client/safe-db-types.js';
 import {
   CourseInstanceSchema,
   CourseSchema,
@@ -13,9 +13,15 @@ import {
   SprocAuthzCourseSchema,
 } from './db-types.js';
 
+/**
+ * This schema isn't used to directly validate the authz data that ends up in
+ * `res.locals.authz_data`. This (and the branded version below) only exist for
+ * the sake of "page context" functions and types.
+ */
 const RawPageAuthzDataSchema = z.object({
-  // TODO: Type these more accurately into a course instance version.
-  authn_user: StaffUserSchema,
+  // TODO: split this into "course" and "course instance" variants with the
+  // correct properties for each case.
+  authn_user: RawStaffUserSchema,
   authn_is_administrator: z.boolean(),
   authn_has_course_permission_preview: z.boolean().optional(),
   authn_has_course_permission_view: z.boolean().optional(),
@@ -28,7 +34,9 @@ const RawPageAuthzDataSchema = z.object({
   authn_has_student_access_with_enrollment: z.boolean().optional(),
   authn_has_course_instance_permission_view: z.boolean().optional(),
   authn_has_course_instance_permission_edit: z.boolean().optional(),
+
   // Authz data
+  user: RawStaffUserSchema,
   is_administrator: z.boolean(),
   has_course_permission_preview: z.boolean(),
   has_course_permission_view: z.boolean(),
@@ -41,18 +49,13 @@ const RawPageAuthzDataSchema = z.object({
   has_student_access_with_enrollment: z.boolean().optional(),
   has_course_instance_permission_view: z.boolean().optional(),
   has_course_instance_permission_edit: z.boolean().optional(),
-
-  user: StaffUserSchema,
 });
+export type RawPageAuthzData = z.infer<typeof RawPageAuthzDataSchema>;
 
-export type RawPageAuthzData = Omit<
-  z.infer<typeof RawPageAuthzDataSchema>,
-  'user' | 'authn_user'
-> & {
-  user: RawStaffUser;
-  authn_user: RawStaffUser;
-};
-export const PageAuthzDataSchema = RawPageAuthzDataSchema.brand<'PageAuthzData'>();
+export const PageAuthzDataSchema = RawPageAuthzDataSchema.extend({
+  user: StaffUserSchema,
+  authn_user: StaffUserSchema,
+}).brand<'PageAuthzData'>();
 export type PageAuthzData = z.infer<typeof PageAuthzDataSchema>;
 
 export interface DangerousSystemAuthzData {
