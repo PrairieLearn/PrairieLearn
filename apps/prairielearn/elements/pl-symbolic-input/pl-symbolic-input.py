@@ -1,13 +1,13 @@
 import random
 import re
 from enum import Enum
+from sys import get_int_max_str_digits
 
 import chevron
 import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
-from sys import get_int_max_str_digits
 from typing_extensions import assert_never
 
 
@@ -667,7 +667,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             )
         else:
             raise
-
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
