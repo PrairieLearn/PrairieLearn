@@ -29,7 +29,7 @@ import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
-import * as b64Util from './base64-util.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
@@ -1673,7 +1673,7 @@ export class QuestionModifyEditor extends Editor {
       if (contents === null) {
         await fs.remove(resolvedPath);
       } else {
-        await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+        await fs.writeFile(resolvedPath, b64DecodeUnicode(contents));
       }
     }
 
@@ -2457,14 +2457,14 @@ export class FileModifyEditor extends Editor {
 
     debug('verify disk hash matches orig hash');
     const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
-    const diskContents = b64Util.b64EncodeUnicode(diskContentsUTF);
+    const diskContents = b64EncodeUnicode(diskContentsUTF);
     const diskHash = this.getHash(diskContents);
     if (this.origHash !== diskHash) {
       throw new Error('Another user made changes to the file you were editing.');
     }
 
     debug('write file');
-    await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
+    await fs.writeFile(this.filePath, b64DecodeUnicode(this.editContents));
 
     return {
       pathsToAdd: [this.filePath],
