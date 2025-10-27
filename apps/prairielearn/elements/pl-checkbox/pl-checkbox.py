@@ -57,6 +57,118 @@ MIN_SELECT_BLANK = 0
 CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
 
 
+def generate_help_text(
+    *,
+    num_correct: int,
+    num_display_answers: int,
+    show_number_correct: bool,
+    detailed_help_text: bool,
+    has_min_select_attrib: bool,
+    has_max_select_attrib: bool,
+    min_options_to_select: int,
+    max_options_to_select: int,
+    allow_blank: bool,
+) -> str:
+    """Generate help text for checkbox element.
+
+    Args:
+        num_correct: Number of correct answers
+        num_display_answers: Total number of displayed answers
+        show_number_correct: Whether to show the number of correct options
+        detailed_help_text: Whether to show detailed help text
+        has_min_select_attrib: Whether min-select attribute is specified
+        has_max_select_attrib: Whether max-select attribute is specified
+        min_options_to_select: Minimum options that must be selected
+        max_options_to_select: Maximum options that can be selected
+        allow_blank: Whether blank (zero) selections are allowed
+
+    Returns:
+        HTML string for help text
+    """
+    # Generate number correct text if requested
+    if show_number_correct:
+        if num_correct == 1:
+            number_correct_text = (
+                " There is exactly <b>1</b> correct option in the list above."
+            )
+        else:
+            number_correct_text = f" There are exactly <b>{num_correct}</b> correct options in the list above."
+    else:
+        number_correct_text = ""
+
+    # Determine whether to show min/max select values
+    show_min_select = (
+        has_min_select_attrib and min_options_to_select != MIN_SELECT_DEFAULT
+    )
+    show_max_select = (
+        has_max_select_attrib and max_options_to_select != num_display_answers
+    )
+
+    # Generate the selection requirement text
+    if detailed_help_text or (show_min_select and show_max_select):
+        # Show both min and max
+        if min_options_to_select != max_options_to_select:
+            insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
+        else:
+            insert_text = f" exactly <b>{min_options_to_select}</b> options."
+    elif show_min_select:
+        insert_text = f" at least <b>{min_options_to_select}</b> options."
+    elif show_max_select:
+        insert_text = f" at most <b>{max_options_to_select}</b> options."
+    else:
+        # Default case - no specific requirements shown
+        insert_text = " at least 0 options." if allow_blank else " at least 1 option."
+
+    insert_text += number_correct_text
+
+    # Generate final help text
+    if detailed_help_text or show_min_select or show_max_select:
+        helptext = f'<small class="form-text text-muted">Select {insert_text}</small>'
+    else:
+        # Generic help text when no specific requirements are shown
+        helptext = f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
+
+    return helptext
+
+
+def categorize_options(
+    element: lxml.html.HtmlElement,
+) -> tuple[list[AnswerTuple], list[AnswerTuple]]:
+    """Get provided correct and incorrect answers.
+
+    Args:
+        element: The pl-checkbox HTML element
+
+    Returns:
+        Tuple of (correct_answers, incorrect_answers) as AnswerTuple lists
+    """
+    correct_answers = []
+    incorrect_answers = []
+    index = count(0)
+
+    for child in element:
+        if child.tag in ["pl-answer", "pl_answer"]:
+            pl.check_attribs(
+                child, required_attribs=[], optional_attribs=["correct", "feedback"]
+            )
+            correct = pl.get_boolean_attrib(child, "correct", False)
+            child_html = pl.inner_html(child)
+            child_feedback = pl.get_string_attrib(child, "feedback", FEEDBACK_DEFAULT)
+            answer_tuple = AnswerTuple(next(index), correct, child_html, child_feedback)
+            if correct:
+                correct_answers.append(answer_tuple)
+            else:
+                incorrect_answers.append(answer_tuple)
+        elif isinstance(child, lxml.etree._Comment):
+            continue
+        else:
+            raise ValueError(
+                f'Tags inside of pl-checkbox must be pl-answer, not "{child.tag}".'
+            )
+
+    return correct_answers, incorrect_answers
+
+
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
     """Gets order type in a backwards-compatible way. New display overwrites old."""
     if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
@@ -185,112 +297,6 @@ def validate_min_max_options(
         raise ValueError(
             f"max-select ({max_select}) is less than the maximum possible number of correct answers ({max_correct})"
         )
-
-
-def categorize_options(
-    element: lxml.html.HtmlElement,
-) -> tuple[list[AnswerTuple], list[AnswerTuple]]:
-    """Get provided correct and incorrect answers."""
-    correct_answers = []
-    incorrect_answers = []
-    index = count(0)
-
-    for child in element:
-        if child.tag in ["pl-answer", "pl_answer"]:
-            pl.check_attribs(
-                child, required_attribs=[], optional_attribs=["correct", "feedback"]
-            )
-            correct = pl.get_boolean_attrib(child, "correct", False)
-            child_html = pl.inner_html(child)
-            child_feedback = pl.get_string_attrib(child, "feedback", FEEDBACK_DEFAULT)
-            answer_tuple = AnswerTuple(next(index), correct, child_html, child_feedback)
-            if correct:
-                correct_answers.append(answer_tuple)
-            else:
-                incorrect_answers.append(answer_tuple)
-        elif isinstance(child, lxml.etree._Comment):
-            continue
-
-        else:
-            raise ValueError(
-                f'Tags inside of pl-checkbox must be pl-answer, not "{child.tag}".'
-            )
-
-    return correct_answers, incorrect_answers
-
-
-def generate_help_text(
-    *,
-    num_correct: int,
-    num_display_answers: int,
-    show_number_correct: bool,
-    detailed_help_text: bool,
-    has_min_select_attrib: bool,
-    has_max_select_attrib: bool,
-    min_options_to_select: int,
-    max_options_to_select: int,
-    allow_blank: bool,
-) -> str:
-    """Generate help text for checkbox element.
-
-    Args:
-        num_correct: Number of correct answers
-        num_display_answers: Total number of displayed answers
-        show_number_correct: Whether to show the number of correct options
-        detailed_help_text: Whether to show detailed help text
-        has_min_select_attrib: Whether min-select attribute is specified
-        has_max_select_attrib: Whether max-select attribute is specified
-        min_options_to_select: Minimum options that must be selected
-        max_options_to_select: Maximum options that can be selected
-        allow_blank: Whether blank (zero) selections are allowed
-
-    Returns:
-        HTML string for help text
-    """
-    # Generate number correct text if requested
-    if show_number_correct:
-        if num_correct == 1:
-            number_correct_text = (
-                " There is exactly <b>1</b> correct option in the list above."
-            )
-        else:
-            number_correct_text = f" There are exactly <b>{num_correct}</b> correct options in the list above."
-    else:
-        number_correct_text = ""
-
-    # Determine whether to show min/max select values
-    show_min_select = (
-        has_min_select_attrib and min_options_to_select != MIN_SELECT_DEFAULT
-    )
-    show_max_select = (
-        has_max_select_attrib and max_options_to_select != num_display_answers
-    )
-
-    # Generate the selection requirement text
-    if detailed_help_text or (show_min_select and show_max_select):
-        # Show both min and max
-        if min_options_to_select != max_options_to_select:
-            insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
-        else:
-            insert_text = f" exactly <b>{min_options_to_select}</b> options."
-    elif show_min_select:
-        insert_text = f" at least <b>{min_options_to_select}</b> options."
-    elif show_max_select:
-        insert_text = f" at most <b>{max_options_to_select}</b> options."
-    else:
-        # Default case - no specific requirements shown
-        insert_text = " at least 0 options." if allow_blank else " at least 1 option."
-
-    insert_text += number_correct_text
-
-    # Generate final help text
-    if detailed_help_text or show_min_select or show_max_select:
-        helptext = f'<small class="form-text text-muted">Select {insert_text}</small>'
-    else:
-        # Generic help text when no specific requirements are shown
-        helptext = f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
-
-    return helptext
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -660,24 +666,23 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_key = data["submitted_answers"].get(name, None)
 
     if not allow_blank:
-        submitted_key_set = set()
         # Check that at least one option was selected
         if submitted_key is None:
             data["format_errors"][name] = "You must select at least one option."
             return
-    else:
-        # Check that the selected options are a subset of the valid options
-        # FIXME: raise ValueError instead of treating as parse error?
-        submitted_key_set = set(submitted_key) if submitted_key else set()
-        all_keys_set = {a["key"] for a in data["params"][name]}
 
-        if not submitted_key_set.issubset(all_keys_set):
-            one_bad_key = submitted_key_set.difference(all_keys_set).pop()
-            one_bad_key_str = pl.escape_invalid_string(str(one_bad_key))
-            data["format_errors"][name] = (
-                f"You selected an invalid option: {one_bad_key_str}"
-            )
-            return
+    # Check that the selected options are a subset of the valid options
+    # FIXME: raise ValueError instead of treating as parse error?
+    submitted_key_set = set(submitted_key) if submitted_key else set()
+    all_keys_set = {a["key"] for a in data["params"][name]}
+
+    if not submitted_key_set.issubset(all_keys_set):
+        one_bad_key = submitted_key_set.difference(all_keys_set).pop()
+        one_bad_key_str = pl.escape_invalid_string(str(one_bad_key))
+        data["format_errors"][name] = (
+            f"You selected an invalid option: {one_bad_key_str}"
+        )
+        return
 
     # Get minimum and maximum number of options to be selected
     min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
