@@ -163,7 +163,7 @@ export async function aiGrade({
     const gradeInstanceQuestion = async (
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
-    ) => {
+    ): Promise<boolean> => {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
         (job) => job.grading_method === 'Manual',
@@ -187,7 +187,7 @@ export async function aiGrade({
         locals,
       );
       if (render_question_results.courseIssues.length > 0) {
-        logger.info(render_question_results.courseIssues.toString());
+        logger.error(render_question_results.courseIssues.toString());
         logger.error('Errors occurred while AI grading, see output for details');
         return false;
       }
