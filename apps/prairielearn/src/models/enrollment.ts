@@ -88,7 +88,7 @@ function assertEnrollmentBelongsToUser(enrollment: Enrollment | null, authzData:
  *
  * Function callers should hold a lock on the enrollment.
  */
-async function _enrollUserInCourseInstanceWithLock({
+async function _enrollUserInCourseInstance({
   lockedEnrollment,
   userId,
   actionDetail,
@@ -176,7 +176,7 @@ export async function ensureEnrollment({
     });
 
     if (lockedEnrollment && ['invited', 'removed', 'rejected'].includes(lockedEnrollment.status)) {
-      const updated = await _enrollUserInCourseInstanceWithLock({
+      const updated = await _enrollUserInCourseInstance({
         lockedEnrollment,
         userId,
         actionDetail,
