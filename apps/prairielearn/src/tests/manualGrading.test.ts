@@ -4,6 +4,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { InstanceQuestionSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -64,17 +65,6 @@ const mockStaff: MockUser[] = [
 
 const assessmentTitle = 'Homework for Internal, External, Manual grading methods';
 const manualGradingQuestionTitle = 'Manual Grading: Fibonacci function, file upload';
-
-function b64EncodeUnicode(str: string) {
-  // first we use encodeURIComponent to get percent-encoded UTF-8,
-  // then we convert the percent encodings into raw bytes which
-  // can be fed into btoa.
-  return btoa(
-    encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, (_match, p1) => {
-      return String.fromCharCode(Number(`0x${p1}`));
-    }),
-  );
-}
 
 /**
  * @param user student or instructor user to load page by

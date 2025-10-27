@@ -4,6 +4,7 @@ import { Modal } from 'react-bootstrap';
 import { downloadAsJSON } from '@prairielearn/browser-utils';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
+import { b64EncodeUnicode } from '../lib/base64-util.js';
 import type { AssessmentQuestion, RubricItem } from '../lib/db-types.js';
 import type { RubricData } from '../lib/manualGrading.types.js';
 
@@ -16,17 +17,6 @@ declare global {
     resetInstructorGradingPanel: () => any;
     mathjaxTypeset: () => Promise<any>;
   }
-}
-
-function b64EncodeUnicode(str: string) {
-  // first we use encodeURIComponent to get percent-encoded UTF-8,
-  // then we convert the percent encodings into raw bytes which
-  // can be fed into btoa.
-  return btoa(
-    encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, (_match, p1) => {
-      return String.fromCharCode(Number(`0x${p1}`));
-    }),
-  );
 }
 
 export function RubricSettings({
@@ -388,6 +378,7 @@ export function RubricSettings({
           'form[name="manual-grading-form"]',
         );
         if (!oldRubricForm) return;
+
         // Save values in grading rubric so they can be re-applied once the form is re-created.
         const rubricFormData = Array.from(new FormData(oldRubricForm).entries());
         // The CSRF token of the returned panels is not valid for the current form (it uses a
