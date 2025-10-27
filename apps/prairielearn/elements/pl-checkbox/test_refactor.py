@@ -35,63 +35,143 @@ def create_test_data(
 
 # Tests for generate_help_text() function
 @pytest.mark.parametrize(
-    ("num_correct", "num_display", "show_num", "detailed", "has_min", "has_max", "min_val", "max_val", "expected"),
+    (
+        "num_correct",
+        "num_display",
+        "show_num",
+        "detailed",
+        "has_min",
+        "has_max",
+        "min_val",
+        "max_val",
+        "expected",
+    ),
     [
         # Basic case - no options specified
         pytest.param(
-            2, 5, False, False, False, False, 1, 5,
+            2,
+            5,
+            False,
+            False,
+            False,
+            False,
+            1,
+            5,
             '<small class="form-text text-muted">Select all possible options that apply.</small>',
             id="basic_no_options",
         ),
         # Show number correct
         pytest.param(
-            1, 5, True, False, False, False, 1, 5,
+            1,
+            5,
+            True,
+            False,
+            False,
+            False,
+            1,
+            5,
             '<small class="form-text text-muted">Select all possible options that apply. There is exactly <b>1</b> correct option in the list above.</small>',
             id="show_single_correct",
         ),
         pytest.param(
-            3, 5, True, False, False, False, 1, 5,
+            3,
+            5,
+            True,
+            False,
+            False,
+            False,
+            1,
+            5,
             '<small class="form-text text-muted">Select all possible options that apply. There are exactly <b>3</b> correct options in the list above.</small>',
             id="show_multiple_correct",
         ),
         # Min select only
         pytest.param(
-            3, 5, False, False, True, False, 2, 5,
+            3,
+            5,
+            False,
+            False,
+            True,
+            False,
+            2,
+            5,
             '<small class="form-text text-muted">Select  at least <b>2</b> options.</small>',
             id="min_select_only",
         ),
         # Max select only
         pytest.param(
-            2, 5, False, False, False, True, 1, 3,
+            2,
+            5,
+            False,
+            False,
+            False,
+            True,
+            1,
+            3,
             '<small class="form-text text-muted">Select  at most <b>3</b> options.</small>',
             id="max_select_only",
         ),
         # Min and max different
         pytest.param(
-            3, 5, False, False, True, True, 2, 4,
+            3,
+            5,
+            False,
+            False,
+            True,
+            True,
+            2,
+            4,
             '<small class="form-text text-muted">Select  between <b>2</b> and <b>4</b> options.</small>',
             id="min_and_max_different",
         ),
         # Min and max same
         pytest.param(
-            3, 5, False, False, True, True, 3, 3,
+            3,
+            5,
+            False,
+            False,
+            True,
+            True,
+            3,
+            3,
             '<small class="form-text text-muted">Select  exactly <b>3</b> options.</small>',
             id="min_and_max_same",
         ),
         # Detailed help text
         pytest.param(
-            3, 5, False, True, False, False, 1, 4,
+            3,
+            5,
+            False,
+            True,
+            False,
+            False,
+            1,
+            4,
             '<small class="form-text text-muted">Select  between <b>1</b> and <b>4</b> options.</small>',
             id="detailed_help_different",
         ),
         pytest.param(
-            2, 5, False, True, False, False, 2, 2,
+            2,
+            5,
+            False,
+            True,
+            False,
+            False,
+            2,
+            2,
             '<small class="form-text text-muted">Select  exactly <b>2</b> options.</small>',
             id="detailed_help_same",
         ),
         # Combined with show number correct
         pytest.param(
-            3, 5, True, True, False, False, 2, 4,
+            3,
+            5,
+            True,
+            True,
+            False,
+            False,
+            2,
+            4,
             '<small class="form-text text-muted">Select  between <b>2</b> and <b>4</b> options. There are exactly <b>3</b> correct options in the list above.</small>',
             id="detailed_with_show_correct",
         ),
@@ -124,51 +204,108 @@ def test_generate_help_text(
 
 # Tests for grading logic with OLD API (partial-credit + partial-credit-method)
 @pytest.mark.parametrize(
-    ("partial_credit", "method", "submitted", "correct", "all_params", "expected_score"),
+    (
+        "partial_credit",
+        "method",
+        "submitted",
+        "correct",
+        "all_params",
+        "expected_score",
+    ),
     [
         # No partial credit
         pytest.param(
-            "false", None, ["a", "b"], ["a", "b"], None, 1.0,
+            "false",
+            None,
+            ["a", "b"],
+            ["a", "b"],
+            None,
+            1.0,
             id="no_pc_perfect",
         ),
         pytest.param(
-            "false", None, ["a"], ["a", "b"], None, 0.0,
+            "false",
+            None,
+            ["a"],
+            ["a", "b"],
+            None,
+            0.0,
             id="no_pc_imperfect",
         ),
         # PC method (net correct)
         pytest.param(
-            "true", "PC", ["a", "b"], ["a", "b"], None, 1.0,
+            "true",
+            "PC",
+            ["a", "b"],
+            ["a", "b"],
+            None,
+            1.0,
             id="pc_perfect",
         ),
         pytest.param(
-            "true", "PC", ["a", "b", "c"], ["a", "b"], None, 0.5,
+            "true",
+            "PC",
+            ["a", "b", "c"],
+            ["a", "b"],
+            None,
+            0.5,
             id="pc_partial",
         ),
         pytest.param(
-            "true", "PC", ["c", "d"], ["a", "b"], None, 0.0,
+            "true",
+            "PC",
+            ["c", "d"],
+            ["a", "b"],
+            None,
+            0.0,
             id="pc_zero",
         ),
         # EDC method (each answer)
         pytest.param(
-            "true", "EDC", ["a", "b"], ["a", "b"], ["a", "b", "c", "d"], 1.0,
+            "true",
+            "EDC",
+            ["a", "b"],
+            ["a", "b"],
+            ["a", "b", "c", "d"],
+            1.0,
             id="edc_perfect",
         ),
         pytest.param(
-            "true", "EDC", ["a", "c"], ["a", "b"], ["a", "b", "c", "d"], 0.5,
+            "true",
+            "EDC",
+            ["a", "c"],
+            ["a", "b"],
+            ["a", "b", "c", "d"],
+            0.5,
             id="edc_partial",
         ),
         # COV method (coverage)
         pytest.param(
-            "true", "COV", ["a", "b"], ["a", "b"], None, 1.0,
+            "true",
+            "COV",
+            ["a", "b"],
+            ["a", "b"],
+            None,
+            1.0,
             id="cov_perfect",
         ),
         pytest.param(
-            "true", "COV", ["a", "b", "c"], ["a", "b"], None, (2 / 2) * (2 / 3),
+            "true",
+            "COV",
+            ["a", "b", "c"],
+            ["a", "b"],
+            None,
+            (2 / 2) * (2 / 3),
             id="cov_guessing_penalty",
         ),
         # Default method (PC)
         pytest.param(
-            "true", None, ["a", "b", "c"], ["a", "b"], None, 0.5,
+            "true",
+            None,
+            ["a", "b", "c"],
+            ["a", "b"],
+            None,
+            0.5,
             id="default_method",
         ),
     ],
@@ -204,12 +341,24 @@ def test_grading_with_old_api(
 def test_partial_credit_type_conversion() -> None:
     """Test that internal enum conversion works correctly."""
     # No partial credit
-    assert pl_checkbox._get_partial_credit_type(False, "PC") == pl_checkbox.PartialCreditType.ALL_OR_NOTHING
+    assert (
+        pl_checkbox._get_partial_credit_type(False, "PC")
+        == pl_checkbox.PartialCreditType.ALL_OR_NOTHING
+    )
 
     # With partial credit
-    assert pl_checkbox._get_partial_credit_type(True, "PC") == pl_checkbox.PartialCreditType.NET_CORRECT
-    assert pl_checkbox._get_partial_credit_type(True, "COV") == pl_checkbox.PartialCreditType.COVERAGE
-    assert pl_checkbox._get_partial_credit_type(True, "EDC") == pl_checkbox.PartialCreditType.EACH_ANSWER
+    assert (
+        pl_checkbox._get_partial_credit_type(True, "PC")
+        == pl_checkbox.PartialCreditType.NET_CORRECT
+    )
+    assert (
+        pl_checkbox._get_partial_credit_type(True, "COV")
+        == pl_checkbox.PartialCreditType.COVERAGE
+    )
+    assert (
+        pl_checkbox._get_partial_credit_type(True, "EDC")
+        == pl_checkbox.PartialCreditType.EACH_ANSWER
+    )
 
     # Invalid method
     with pytest.raises(ValueError, match="Unknown partial_credit_method"):

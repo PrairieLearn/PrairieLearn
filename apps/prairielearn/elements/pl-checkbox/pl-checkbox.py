@@ -73,6 +73,9 @@ def _get_partial_credit_type(
 
     Returns:
         PartialCreditType enum value
+
+    Raises:
+        ValueError: If partial_credit_method is not one of "PC", "COV", or "EDC"
     """
     if not partial_credit:
         return PartialCreditType.ALL_OR_NOTHING
@@ -132,9 +135,7 @@ def generate_help_text(
                 " There is exactly <b>1</b> correct option in the list above."
             )
         else:
-            number_correct_text = (
-                f" There are exactly <b>{num_correct}</b> correct options in the list above."
-            )
+            number_correct_text = f" There are exactly <b>{num_correct}</b> correct options in the list above."
     else:
         number_correct_text = ""
 
@@ -150,9 +151,7 @@ def generate_help_text(
     if detailed_help_text or (show_min_select and show_max_select):
         # Show both min and max
         if min_options_to_select != max_options_to_select:
-            insert_text = (
-                f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
-            )
+            insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
         else:
             insert_text = f" exactly <b>{min_options_to_select}</b> options."
     elif show_min_select:
@@ -170,9 +169,7 @@ def generate_help_text(
         helptext = f'<small class="form-text text-muted">Select {insert_text}</small>'
     else:
         # Generic help text when no specific requirements are shown
-        helptext = (
-            f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
-        )
+        helptext = f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
 
     return helptext
 
@@ -665,7 +662,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     )
 
     # Convert to internal enum
-    partial_credit_type = _get_partial_credit_type(partial_credit, partial_credit_method)
+    partial_credit_type = _get_partial_credit_type(
+        partial_credit, partial_credit_method
+    )
 
     submitted_set = set(data["submitted_answers"].get(name, []))
     correct_set = {answer["key"] for answer in data["correct_answers"].get(name, [])}
@@ -716,7 +715,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     )
 
     # Convert to internal enum
-    partial_credit_type = _get_partial_credit_type(partial_credit, partial_credit_method)
+    partial_credit_type = _get_partial_credit_type(
+        partial_credit, partial_credit_method
+    )
 
     correct_keys = {answer["key"] for answer in data["correct_answers"].get(name, [])}
     number_answers = len(data["params"][name])
