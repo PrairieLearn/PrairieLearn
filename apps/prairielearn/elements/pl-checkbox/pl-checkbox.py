@@ -11,12 +11,6 @@ from typing_extensions import assert_never
 
 # Internal enums for better code organization
 class PartialCreditType(Enum):
-    """Internal enum for partial credit grading modes.
-
-    Note: This is an internal implementation detail. The external API still uses
-    partial-credit="true|false" + partial-credit-method="PC|COV|EDC"
-    """
-
     ALL_OR_NOTHING = "none"
     NET_CORRECT = "PC"
     EACH_ANSWER = "EDC"
@@ -24,12 +18,6 @@ class PartialCreditType(Enum):
 
 
 class OrderType(Enum):
-    """Internal enum for answer ordering.
-
-    Note: This is an internal implementation detail. The external API still uses
-    fixed-order="true|false"
-    """
-
     RANDOM = "random"
     FIXED = "fixed"
 
@@ -314,7 +302,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
 
-    # Use internal enum for order type
     fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
     order_type = _get_order_type(fixed_order)
 
@@ -473,7 +460,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             insert_text += number_correct_text
 
-            # Generate grading text (still uses old partial credit method strings)
             if partial_credit:
                 if partial_credit_method == "PC":
                     gradingtext = (
@@ -551,7 +537,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             answers = []
             for submitted_key in submitted_keys:
                 submitted_answer = next(
-                    filter(lambda a: a["key"] == submitted_key, display_answers)
+                    filter(lambda a: a["key"] == submitted_key, display_answers), None
                 )
                 answer_item = {
                     "key": submitted_key,
@@ -661,7 +647,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
     )
 
-    # Convert to internal enum
     partial_credit_type = _get_partial_credit_type(
         partial_credit, partial_credit_method
     )
@@ -714,7 +699,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
     )
 
-    # Convert to internal enum
     partial_credit_type = _get_partial_credit_type(
         partial_credit, partial_credit_method
     )
