@@ -1,6 +1,7 @@
 import random
 import re
 from enum import Enum
+from sys import get_int_max_str_digits
 
 import chevron
 import lxml.html
@@ -653,7 +654,23 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         return a_tru_sympy.equals(a_sub_sympy) is True, None
 
-    pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
+    try:
+        pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
+    except ValueError as e:
+        # We only want to catch the integer string conversion limit ValueError.
+        # Others might be outside of the student's control and should error like normal.
+        #
+        # Entering an expression like 2^(20000*x) will cause this error, despite the fact
+        # an expression like 2^(14000x) will render the exponent as expected. Sympy
+        # expands constants internally, so these expressions evaluate to ((2^c)^x),
+        # then 2^c is evaluated and converted to a string.
+        if "integer string conversion" in str(e):
+            data["format_errors"][name] = (
+                f"Your expression expands integers longer than {get_int_max_str_digits()} digits, "
+                "try a simpler expression."
+            )
+        else:
+            raise
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
