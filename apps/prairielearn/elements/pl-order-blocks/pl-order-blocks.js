@@ -1,4 +1,15 @@
-window.PLOrderBlocks = function (uuid, options) {
+/**
+ * @typedef {object} PLOrderBlocksOptions
+ * @property {number} maxIndent - The maximum number of times an answer block can be indented
+ * @property {boolean} enableIndentation - Whether to enable indentation
+ * @property {boolean} [inline] - Whether to display the blocks inline
+ */
+
+/**
+ * @param {string} uuid
+ * @param {PLOrderBlocksOptions} options
+ */
+function PLOrderBlocks(uuid, options) {
   const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
   // drags and indents a block
   const maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
@@ -9,7 +20,9 @@ window.PLOrderBlocks = function (uuid, options) {
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
 
   function initializeKeyboardHandling() {
-    const blocks = fullContainer.querySelectorAll('.pl-order-block');
+    const blocks = /** @type {NodeListOf<HTMLElement>} */ (
+      fullContainer?.querySelectorAll('.pl-order-block') ?? []
+    );
 
     blocks.forEach((block) => block.setAttribute('tabindex', '-1'));
     blocks[0].setAttribute('tabindex', '0'); // only the first block in the pl-order-blocks element can be focused by tabbing through
@@ -17,26 +30,39 @@ window.PLOrderBlocks = function (uuid, options) {
     blocks.forEach((block) => initializeBlockEvents(block));
   }
 
+  /** @param {HTMLElement} block */
   function inDropzone(block) {
     const parentArea = block.closest('.pl-order-blocks-connected-sortable');
-    return parentArea.classList.contains('dropzone');
+    return parentArea?.classList.contains('dropzone') ?? false;
   }
 
+  /** @param {HTMLElement} block */
   function getIndentation(block) {
-    return Math.round(Number.parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
+    return Math.round(Number.parseInt(block.style.marginLeft.replace('px', '')) / TABWIDTH);
   }
 
+  /**
+   * @param {HTMLElement} block
+   * @param {number} indentation
+   */
   function setIndentation(block, indentation) {
     if (indentation >= 0 && indentation <= maxIndent) {
       block.style.marginLeft = indentation * TABWIDTH + 'px';
     }
   }
 
+  /** @param {HTMLElement} block */
   function initializeBlockEvents(block) {
     function removeSelectedAttribute() {
       block.classList.remove('pl-order-blocks-selected');
     }
 
+    /**
+     * @param {KeyboardEvent} ev
+     * @param {HTMLElement} block
+     * @param {() => void} handle
+     * @param {boolean} [focus]
+     */
     function handleKey(ev, block, handle, focus = true) {
       // When we manipulate the location of the block, the focus is automatically removed by the browser,
       // so we immediately refocus it. In some browsers, the blur event will still fire in this case even
@@ -52,42 +78,45 @@ window.PLOrderBlocks = function (uuid, options) {
       setAnswer();
     }
 
+    /** @param {KeyboardEvent} ev */
     function handleKeyPress(ev) {
       const optionsBlocks = Array.from($(optionsElementId)[0].querySelectorAll('.pl-order-block'));
       const dropzoneBlocks = Array.from(
         $(dropzoneElementId)[0].querySelectorAll('.pl-order-block'),
       );
       if (!block.classList.contains('pl-order-blocks-selected')) {
+        /** @param {boolean} options */
         const moveBetweenOptionsOrDropzone = (options) => {
           if (options && inDropzone(block) && optionsBlocks.length > 0) {
-            optionsBlocks[0].focus();
+            /** @type {HTMLElement} */ (optionsBlocks[0]).focus();
           } else if (!options && !inDropzone(block) && dropzoneBlocks.length > 0) {
-            dropzoneBlocks[0].focus();
+            /** @type {HTMLElement} */ (dropzoneBlocks[0]).focus();
           }
         };
+        /** @param {boolean} forward */
         const moveWithinOptionsOrDropzone = (forward) => {
           if (forward) {
             if (inDropzone(block)) {
               const blockIndex = dropzoneBlocks.indexOf(block);
               if (blockIndex < dropzoneBlocks.length - 1) {
-                dropzoneBlocks[blockIndex + 1].focus();
+                /** @type {HTMLElement} */ (dropzoneBlocks[blockIndex + 1]).focus();
               }
             } else {
               const blockIndex = optionsBlocks.indexOf(block);
               if (blockIndex < optionsBlocks.length - 1) {
-                optionsBlocks[blockIndex + 1].focus();
+                /** @type {HTMLElement} */ (optionsBlocks[blockIndex + 1]).focus();
               }
             }
           } else {
             if (inDropzone(block)) {
               const blockIndex = dropzoneBlocks.indexOf(block);
               if (blockIndex > 0) {
-                dropzoneBlocks[blockIndex - 1].focus();
+                /** @type {HTMLElement} */ (dropzoneBlocks[blockIndex - 1]).focus();
               }
             } else {
               const blockIndex = optionsBlocks.indexOf(block);
               if (blockIndex > 0) {
-                optionsBlocks[blockIndex - 1].focus();
+                /** @type {HTMLElement} */ (optionsBlocks[blockIndex - 1]).focus();
               }
             }
           }
@@ -166,7 +195,7 @@ window.PLOrderBlocks = function (uuid, options) {
 
     block.addEventListener('blur', () => {
       block.setAttribute('tabindex', '-1');
-      const blocks = fullContainer.querySelectorAll('.pl-order-block');
+      const blocks = fullContainer?.querySelectorAll('.pl-order-block') ?? [];
       if (
         // Make sure one block is always focusable in each pl-order-blocks element
         Array.from(blocks).every((item) => {
@@ -178,7 +207,7 @@ window.PLOrderBlocks = function (uuid, options) {
     });
     block.addEventListener('focus', () => {
       fullContainer
-        .querySelectorAll('.pl-order-block')
+        ?.querySelectorAll('.pl-order-block')
         .forEach((item) => item.setAttribute('tabindex', '-1'));
       block.setAttribute('tabindex', '0');
     });
@@ -186,6 +215,7 @@ window.PLOrderBlocks = function (uuid, options) {
 
   function setAnswer() {
     const answerObjs = $(dropzoneElementId).children();
+    /** @type {Array<{inner_html: string | null; indent: number | null; uuid: string | null; distractor_bin: string | null}>} */
     const studentAnswers = [];
     for (const answerObj of answerObjs) {
       if (!$(answerObj).hasClass('info-fixed')) {
@@ -194,8 +224,8 @@ window.PLOrderBlocks = function (uuid, options) {
         const answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
         let answerIndent = null;
         if (enableIndentation) {
-          answerIndent = Number.parseInt($(answerObj).css('marginLeft').replace('px', ''));
-          answerIndent = Math.round(answerIndent / TABWIDTH); // get how many times the answer is indented
+          const answerIndentRaw = Number.parseInt($(answerObj).css('marginLeft').replace('px', ''));
+          answerIndent = Math.round(answerIndentRaw / TABWIDTH); // get how many times the answer is indented
         }
 
         studentAnswers.push({
@@ -211,6 +241,10 @@ window.PLOrderBlocks = function (uuid, options) {
     $(textfieldName).val(JSON.stringify(studentAnswers));
   }
 
+  /**
+   * @param {{ position: { left: number }; item: JQuery }} ui
+   * @param {JQuery} parent
+   */
   function calculateIndent(ui, parent) {
     if (!parent[0].classList.contains('dropzone') || !enableIndentation) {
       // don't indent on option panel or solution panel with indents explicitly disabled
@@ -232,6 +266,10 @@ window.PLOrderBlocks = function (uuid, options) {
     return leftDiff;
   }
 
+  /**
+   * @param {string} uuid
+   * @param {Element | null} createAt
+   */
   function getOrCreateIndicator(uuid, createAt) {
     let indicator = document.getElementById('indicator-' + uuid);
     if (!indicator) {
@@ -256,6 +294,7 @@ window.PLOrderBlocks = function (uuid, options) {
       Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')),
     );
 
+    /** @param {Element} block */
     const getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
     const distractorBins = new Set(allAns.map(getDistractorBin).filter((x) => x != null));
 
@@ -270,8 +309,9 @@ window.PLOrderBlocks = function (uuid, options) {
     }
   }
 
+  /** @param {HTMLElement} block */
   function correctPairing(block) {
-    if (block.parentElement.classList.contains('dropzone')) {
+    if (block.parentElement?.classList.contains('dropzone')) {
       // there aren't pairing indicators in the dropzone
       return;
     }
@@ -281,9 +321,9 @@ window.PLOrderBlocks = function (uuid, options) {
       ? containingIndicator.getAttribute('data-distractor-bin')
       : null;
 
-    if (!binUuid && containingIndicatorUuid) {
+    if (!binUuid && containingIndicatorUuid && containingIndicator) {
       containingIndicator.after(block);
-    } else if (binUuid !== containingIndicatorUuid) {
+    } else if (binUuid && binUuid !== containingIndicatorUuid) {
       const properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
         'inner-list',
       )[0];
@@ -291,6 +331,7 @@ window.PLOrderBlocks = function (uuid, options) {
     }
   }
 
+  /** @param {string} dropzoneElementId */
   function drawIndentLocationLines(dropzoneElementId) {
     $(dropzoneElementId)[0].style.background = 'linear-gradient(#9E9E9E, #9E9E9E) no-repeat, '
       .repeat(maxIndent + 1)
@@ -312,6 +353,7 @@ window.PLOrderBlocks = function (uuid, options) {
     cancel: 'input,textarea,button,select,option,a',
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
+    // @ts-expect-error Doesn't exist in the type definitions
     create() {
       placePairingIndicators();
       setAnswer();
@@ -319,6 +361,10 @@ window.PLOrderBlocks = function (uuid, options) {
         drawIndentLocationLines(dropzoneElementId);
       }
     },
+    /**
+     * @param {Event} event
+     * @param {{ placeholder: JQuery; item: JQuery; position: { left: number } }} ui
+     */
     sort(event, ui) {
       // update the location of the placeholder as the item is dragged
       const placeholder = ui.placeholder;
@@ -331,6 +377,10 @@ window.PLOrderBlocks = function (uuid, options) {
         placeholder[0].style.width = ui.item[0].style.width;
       }
     },
+    /**
+     * @param {Event} event
+     * @param {{ item: JQuery; position: { left: number } }} ui
+     */
     stop(event, ui) {
       // when the user stops interacting with the list
       const leftDiff = calculateIndent(ui, ui.item.parent());
@@ -340,9 +390,11 @@ window.PLOrderBlocks = function (uuid, options) {
       correctPairing(ui.item[0]);
     },
   });
-  initializeKeyboardHandling(optionsElementId, dropzoneElementId);
+  initializeKeyboardHandling();
 
   if (enableIndentation) {
     $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);
   }
-};
+}
+
+window.PLOrderBlocks = PLOrderBlocks;
