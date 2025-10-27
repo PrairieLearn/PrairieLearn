@@ -136,8 +136,7 @@ async function computeInstanceQuestionPointsExam({
   const auto_points =
     correct && currentAttemptWorth === maxAutoPoints
       ? maxAutoPoints
-      : (instanceQuestion.auto_points ?? instanceQuestion.points ?? 0) +
-        currentAttemptWorth * eligibleScoreIncrease;
+      : (instanceQuestion.auto_points ?? 0) + currentAttemptWorth * eligibleScoreIncrease;
   const highest_submission_score = Math.max(
     instanceQuestion.highest_submission_score ?? 0,
     submissionScore,
