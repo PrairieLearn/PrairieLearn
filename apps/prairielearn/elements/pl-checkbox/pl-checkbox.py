@@ -122,26 +122,24 @@ def generate_help_text(
     return helptext
 
 
-def get_order_type(fixed_order: bool) -> OrderType:
+def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
     """Convert external fixed-order attribute to internal enum.
 
     Args:
-        fixed_order: Boolean indicating if answers should be in fixed order
+        element: The pl-checkbox HTML element
 
     Returns:
         OrderType enum value
     """
+    fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
     return OrderType.FIXED if fixed_order else OrderType.RANDOM
 
 
-def get_partial_credit_mode(
-    partial_credit: bool, partial_credit_method: str
-) -> PartialCreditType:
+def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType:
     """Convert external partial credit attributes to internal enum.
 
     Args:
-        partial_credit: Boolean indicating if partial credit is enabled
-        partial_credit_method: Method string ("PC", "COV", or "EDC")
+        element: The pl-checkbox HTML element
 
     Returns:
         PartialCreditType enum value
@@ -149,6 +147,13 @@ def get_partial_credit_mode(
     Raises:
         ValueError: If partial_credit_method is not one of "PC", "COV", or "EDC"
     """
+    partial_credit = pl.get_boolean_attrib(
+        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
+    )
+    partial_credit_method = pl.get_string_attrib(
+        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
+    )
+
     if not partial_credit:
         return PartialCreditType.ALL_OR_NOTHING
 
@@ -163,21 +168,26 @@ def get_partial_credit_mode(
 
 
 def validate_min_max_options(
-    *,
-    min_select: int,
-    max_select: int,
-    number_answers: int,
     min_correct: int,
     max_correct: int,
+    len_correct: int,
+    len_incorrect: int,
+    number_answers: int,
+    min_select: int,
+    max_select: int,
+    min_select_default: int,
 ) -> None:
     """Validate that min/max select and correct options have sensible values.
 
     Args:
-        min_select: Minimum number of options that must be selected
-        max_select: Maximum number of options that can be selected
-        number_answers: Total number of answers to display
         min_correct: Minimum number of correct answers
         max_correct: Maximum number of correct answers
+        len_correct: Total number of correct answers available
+        len_incorrect: Total number of incorrect answers available
+        number_answers: Total number of answers to display
+        min_select: Minimum number of options that must be selected
+        max_select: Maximum number of options that can be selected
+        min_select_default: Default value for min_select
 
     Raises:
         ValueError: If any validation constraints are violated
@@ -315,11 +325,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
     validate_min_max_options(
-        min_select=min_select,
-        max_select=max_select,
-        number_answers=number_answers,
         min_correct=min_correct,
         max_correct=max_correct,
+        len_correct=len_correct,
+        len_incorrect=len_incorrect,
+        number_answers=number_answers,
+        min_select=min_select,
+        max_select=max_select,
+        min_select_default=MIN_SELECT_DEFAULT,
     )
 
     number_correct = random.randint(min_correct, max_correct)
@@ -331,8 +344,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
 
-    fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
-    order_type = get_order_type(fixed_order)
+    order_type = get_order_type(element)
 
     if order_type is OrderType.FIXED:
         # we can't simply skip the shuffle because we already broke the original
@@ -671,16 +683,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     number_answers = len(data["params"][name])
 
-    partial_credit = pl.get_boolean_attrib(
-        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
-    )
-    partial_credit_method = pl.get_string_attrib(
-        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
-    )
-
-    partial_credit_type = get_partial_credit_mode(
-        partial_credit, partial_credit_method
-    )
+    partial_credit_type = get_partial_credit_mode(element)
 
     submitted_set = set(data["submitted_answers"].get(name, []))
     correct_set = {answer["key"] for answer in data["correct_answers"].get(name, [])}
@@ -723,16 +726,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
-    partial_credit = pl.get_boolean_attrib(
-        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
-    )
-    partial_credit_method = pl.get_string_attrib(
-        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
-    )
-
-    partial_credit_type = get_partial_credit_mode(
-        partial_credit, partial_credit_method
-    )
+    partial_credit_type = get_partial_credit_mode(element)
 
     correct_keys = {answer["key"] for answer in data["correct_answers"].get(name, [])}
     number_answers = len(data["params"][name])
