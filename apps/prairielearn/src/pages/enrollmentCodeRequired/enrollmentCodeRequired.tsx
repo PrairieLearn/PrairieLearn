@@ -2,8 +2,10 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { Hydrate } from '@prairielearn/preact/server';
+import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { hasRole } from '../../lib/authzData.js';
 import { getCourseInstanceContext } from '../../lib/client/page-context.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import {
@@ -27,11 +29,14 @@ router.get(
     const redirectUrl =
       typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url : null;
     // Lookup if they have an existing enrollment
-    const existingEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: res.locals.authn_user.user_id,
-      courseInstance,
-      requestedRole: 'Student',
-      authzData: res.locals.authz_data,
+    const existingEnrollment = await run(async () => {
+      if (!hasRole(res.locals.authz_data, 'Student')) return null;
+      return await selectOptionalEnrollmentByUserId({
+        userId: res.locals.authn_user.user_id,
+        courseInstance,
+        requestedRole: 'Student',
+        authzData: res.locals.authz_data,
+      });
     });
 
     if (
