@@ -233,7 +233,8 @@ export async function ensureCheckedEnrollment({
   requestedRole: CourseInstanceRole;
   actionDetail: SupportedActionsForTable<'enrollments'>;
 }) {
-  // If the current user is not a student, bail
+  // If the current user is not a student, bail.
+  // We don't want to give instructors an enrollment.
   if (!hasRole(authzData, 'Student')) return;
 
   if (isEnterprise()) {

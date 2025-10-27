@@ -228,6 +228,8 @@ export function hasRole(
     authzData.has_student_access &&
     // If the user is an instructor, and the requestedRole is student, this should fail.
     // We want to prevent instructors from calling functions that are only meant for students.
+
+    // This can happen if the instructor is in 'Student view' (with access restrictions) as well.
     authzData.course_instance_role === 'None'
   ) {
     return true;

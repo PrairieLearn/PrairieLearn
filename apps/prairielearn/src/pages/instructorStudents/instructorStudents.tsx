@@ -57,7 +57,7 @@ router.get(
     const enrollment = await selectOptionalEnrollmentByUid({
       courseInstance,
       uid,
-      requestedRole: 'Student',
+      requestedRole: 'Student Data Viewer',
       authzData: res.locals.authz_data,
     });
     const staffEnrollment = StaffEnrollmentSchema.nullable().parse(enrollment);
@@ -87,7 +87,7 @@ router.post(
       const existingEnrollment = await selectOptionalEnrollmentByUid({
         courseInstance,
         uid: body.uid,
-        requestedRole: 'Student',
+        requestedRole: 'Student Data Viewer',
         authzData: res.locals.authz_data,
       });
 

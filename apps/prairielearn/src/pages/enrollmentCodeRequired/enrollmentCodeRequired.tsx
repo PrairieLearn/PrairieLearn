@@ -30,6 +30,7 @@ router.get(
       typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url : null;
     // Lookup if they have an existing enrollment
     const existingEnrollment = await run(async () => {
+      // We don't want to 403 instructors
       if (!hasRole(res.locals.authz_data, 'Student')) return null;
       return await selectOptionalEnrollmentByUserId({
         userId: res.locals.authn_user.user_id,
