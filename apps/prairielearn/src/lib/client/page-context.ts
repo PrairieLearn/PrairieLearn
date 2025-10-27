@@ -198,3 +198,25 @@ export function getAssessmentContext(resLocals: Record<string, any>): StaffAsses
   const schema = StaffAssessmentContextSchema;
   return schema.parse(resLocals);
 }
+
+export interface DangerousSystemAuthzData {
+  authn_user: {
+    user_id: null;
+  };
+  user: {
+    user_id: null;
+  };
+}
+
+export function dangerousFullAuthzForTesting(): DangerousSystemAuthzData {
+  return {
+    authn_user: {
+      // We use this structure with a user_id of null to indicate that the user is the system.
+      // Inserts into the audit_events table as a system user have a user_id of null.
+      user_id: null,
+    },
+    user: {
+      user_id: null,
+    },
+  };
+}
