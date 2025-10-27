@@ -8,7 +8,6 @@ on the master branch, providing a safety net for refactoring.
 import importlib
 from typing import Any
 
-import lxml.html
 import pytest
 
 pl_checkbox = importlib.import_module("pl-checkbox")
