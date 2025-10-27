@@ -1,20 +1,6 @@
+/* eslint-disable jsdoc/require-returns-type */
+/* eslint-disable jsdoc/require-param-type */
 /* global _, fabric, mechanicsObjects */
-
-/**
- * @typedef {object} PLDrawingOptions
- * @property {string} type - The type of drawing element
- * @property {string} width - The width of the drawing canvas
- * @property {string} height - The height of the drawing canvas
- * @property {Record<string, string>} element_client_files - Client files for the element
- * @property {boolean} editable - Whether the drawing is editable
- * @property {number} render_scale - The scale factor for rendering
- * @property {number} grid_size - The size of the grid
- */
-
-/**
- * @typedef {object} PLDrawingSubmittedAnswer
- * @property {Record<string, PLDrawingOptions & Record<string, unknown>>} _answerData - The submitted answer data
- */
 
 /**
  * Base element class.
@@ -24,9 +10,9 @@ class PLDrawingBaseElement {
   /**
    * Generates a canvas representation of an element from given options.
    * This should set up all handlers for saving the element to the submittedAnswer.
-   * @param {typeof fabric.Canvas} _canvas Fabric canvas to create the object onto.
-   * @param {PLDrawingOptions} _options Element options
-   * @param {PLDrawingSubmittedAnswer} _submittedAnswer Answer state.
+   * @param _canvas Fabric canvas to create the object onto.
+   * @param _options Element options
+   * @param _submittedAnswer Answer state.
    */
   static generate(_canvas, _options, _submittedAnswer) {
     return null;
@@ -35,9 +21,9 @@ class PLDrawingBaseElement {
   /**
    * Function that is called on pressing this element's control button.
    * You can usually leave this as the default.
-   * @param {typeof fabric.Canvas} canvas Fabric canvas to create the object onto.
-   * @param {PLDrawingOptions} options Element options
-   * @param {PLDrawingSubmittedAnswer} submittedAnswer Answer state.
+   * @param canvas Fabric canvas to create the object onto.
+   * @param options Element options
+   * @param submittedAnswer Answer state.
    */
   static button_press(canvas, options, submittedAnswer) {
     return this.generate(canvas, options, submittedAnswer);
@@ -46,7 +32,7 @@ class PLDrawingBaseElement {
   /**
    * Get the filename for this element's button icon.  This is relative to the clientFiles directory.
    * You can leave this as the default if your element's icon has the same name as its type.
-   * @param {PLDrawingOptions} options Element options.
+   * @param options Element options.
    */
   static get_button_icon(options) {
     return options.type;
@@ -55,7 +41,7 @@ class PLDrawingBaseElement {
   /**
    * Get the "tooltip" for the element button.  This is displayed when the user hovers their mouse
    * over the button.
-   * @param {PLDrawingOptions} options Element options.
+   * @param options Element options.
    */
   static get_button_tooltip(options) {
     return `Add ${options.type}`;
@@ -70,10 +56,7 @@ window.PLDrawingApi = {
 
   // This will be used to load `.svg` files from the `clientFilesElement` directory.
   clientFilesBase: (() => {
-    const currentScript = window.document.currentScript;
-    if (!currentScript) throw new Error('currentScript is null');
-    const scriptElement = /** @type {HTMLScriptElement} */ (currentScript);
-    const url = new URL(scriptElement.src);
+    const url = new URL(window.document.currentScript.src);
 
     // Strip any search or hash parameters from the URL.
     url.search = '';
@@ -96,16 +79,14 @@ window.PLDrawingApi = {
     return this._idCounter++;
   },
 
-  /** @type {Record<string, typeof PLDrawingBaseElement>} */
   elements: {},
-  /** @type {Record<string, string>} */
   elementModule: {},
   /**
    * Register a dictionary of elements.  These should map element names
    * to a static class corresponding to the element itself.
    * Python options dictionary.
-   * @param {string} extensionName Name of the extension/group of elements.
-   * @param {Record<string, typeof PLDrawingBaseElement>} dictionary Dictionary of elements to register.
+   * @param extensionName Name of the extension/group of elements.
+   * @param dictionary Dictionary of elements to register.
    */
   registerElements(extensionName, dictionary) {
     _.extend(this.elements, dictionary);
@@ -116,9 +97,9 @@ window.PLDrawingApi = {
 
   /**
    * Generate an element from an options dictionary.
-   * @param {typeof fabric.Canvas} canvas Canvas to create the element on.
-   * @param {PLDrawingOptions} options Element options.  Must contain a 'type' key.
-   * @param {PLDrawingSubmittedAnswer} submittedAnswer Answer state object.
+   * @param canvas Canvas to create the element on.
+   * @param options Element options.  Must contain a 'type' key.
+   * @param submittedAnswer Answer state object.
    */
   createElement(canvas, options, submittedAnswer) {
     const name = options.type;
@@ -136,8 +117,8 @@ window.PLDrawingApi = {
 
   /**
    * Get an element definition by its name.
-   * @param {string} name Name of the element to look up.
-   * @returns {typeof PLDrawingBaseElement} The element, if found.  Silently fails with the base element otherwise.
+   * @param name Name of the element to look up.
+   * @returns The element, if found.  Silently fails with the base element otherwise.
    */
   getElement(name) {
     let ret = PLDrawingBaseElement;
@@ -152,8 +133,8 @@ window.PLDrawingApi = {
 
   /**
    * Restore the drawing canvas state from a submitted answer.
-   * @param {typeof fabric.Canvas} canvas Canvas to restore state onto.
-   * @param {PLDrawingSubmittedAnswer} submittedAnswer Answer state to restore from.
+   * @param canvas Canvas to restore state onto.
+   * @param submittedAnswer Answer state to restore from.
    */
   restoreAnswer(canvas, submittedAnswer) {
     for (const [id, obj] of Object.entries(submittedAnswer._answerData)) {
@@ -166,9 +147,9 @@ window.PLDrawingApi = {
   /**
    * Main entrypoint for the drawing element.
    * Creates canvas at a given root element.
-   * @param {HTMLElement} root_elem DIV that holds the canvas.
-   * @param {PLDrawingOptions & Record<string, unknown>} elem_options Any options to give to the element
-   * @param {PLDrawingSubmittedAnswer} [existing_answer_submission] Existing submission to place on the canvas.
+   * @param root_elem DIV that holds the canvas.
+   * @param elem_options Any options to give to the element
+   * @param existing_answer_submission Existing submission to place on the canvas.
    */
   setupCanvas(root_elem, elem_options, existing_answer_submission) {
     const canvas_elem = $(root_elem).find('canvas')[0];
@@ -176,11 +157,8 @@ window.PLDrawingApi = {
     const canvas_height = Number.parseFloat(elem_options.height);
     const html_input = $(root_elem).find('input');
 
-    /** @param {HTMLElement} elem */
     const parseElemOptions = function (elem) {
-      const optsStr = elem.getAttribute('opts');
-      if (!optsStr) throw new Error('opts attribute not found');
-      const opts = JSON.parse(optsStr);
+      const opts = JSON.parse(elem.getAttribute('opts'));
 
       // Parse any numerical options from string to floating point
       for (const key in opts) {
@@ -194,11 +172,11 @@ window.PLDrawingApi = {
 
     // Set all button icons
     const drawing_btns = $(root_elem).find('button');
-    const element_base_url = elem_options.element_client_files;
+    const element_base_url = elem_options['element_client_files'];
     const clientFilesBase = this.clientFilesBase;
     drawing_btns.each(function (i, btn) {
       const img = btn.children[0];
-      const opts = parseElemOptions(/** @type {HTMLElement} */ (img.parentNode));
+      const opts = parseElemOptions(img.parentNode);
       const elem = window.PLDrawingApi.getElement(opts.type);
       const elem_name = opts.type;
       if (elem !== null) {
@@ -208,9 +186,8 @@ window.PLDrawingApi = {
             image_filename += '.svg';
           }
           let base = clientFilesBase;
-          const api = window.PLDrawingApi;
-          if (api.elementModule[elem_name] !== '_base') {
-            base = element_base_url[api.elementModule[elem_name]] + '/';
+          if (window.PLDrawingApi.elementModule[elem_name] !== '_base') {
+            base = element_base_url[window.PLDrawingApi.elementModule[elem_name]] + '/';
           }
           img.setAttribute('src', base + image_filename);
         }
@@ -227,44 +204,34 @@ window.PLDrawingApi = {
     });
 
     // Render at a higher resolution if requested
-    const renderScale = elem_options.render_scale;
+    const renderScale = elem_options['render_scale'];
     canvas_elem.width = canvas_width * renderScale;
     canvas_elem.height = canvas_height * renderScale;
 
-    /** @type {InstanceType<typeof fabric.Canvas> | InstanceType<typeof fabric.StaticCanvas>} */
     let canvas;
     if (elem_options.editable) {
       canvas = new fabric.Canvas(canvas_elem);
     } else {
       canvas = new fabric.StaticCanvas(canvas_elem);
     }
-    // @ts-expect-error - selection property exists on Canvas but not in types
     canvas.selection = false; // disable group selection
 
     // Re-scale the html elements
-    if (canvas.viewportTransform) {
-      canvas.viewportTransform[0] = renderScale;
-      canvas.viewportTransform[3] = renderScale;
-    }
-    if (canvas_elem.parentElement) {
-      canvas_elem.parentElement.style.width = canvas_width + 'px';
-      canvas_elem.parentElement.style.height = canvas_height + 'px';
-      $(canvas_elem.parentElement).children('canvas').width(canvas_width);
-      $(canvas_elem.parentElement).children('canvas').height(canvas_height);
-    }
+    canvas.viewportTransform[0] = renderScale;
+    canvas.viewportTransform[3] = renderScale;
+    canvas_elem.parentElement.style.width = canvas_width + 'px';
+    canvas_elem.parentElement.style.height = canvas_height + 'px';
+    $(canvas_elem.parentElement).children('canvas').width(canvas_width);
+    $(canvas_elem.parentElement).children('canvas').height(canvas_height);
 
     canvas.on('object:added', (ev) => {
-      if (ev.target) {
-        if (ev.target.cornerSize !== undefined) {
-          ev.target.cornerSize *= renderScale;
-        }
-        ev.target.borderColor = 'rgba(102,153,255,1.0)';
-      }
+      ev.target.cornerSize *= renderScale;
+      ev.target.borderColor = 'rgba(102,153,255,1.0)';
     });
 
     if (elem_options.grid_size > 0) {
       mechanicsObjects.addCanvasBackground(
-        /** @type {HTMLCanvasElement} */ (canvas.getElement()),
+        canvas,
         canvas_width,
         canvas_height,
         elem_options.grid_size,
@@ -274,7 +241,7 @@ window.PLDrawingApi = {
     // Restrict objects from being able to be dragged off-canvas
     // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
     canvas.on('object:moving', function (e) {
-      const obj = /** @type {any} */ (e.target);
+      const obj = e.target;
       // if object is too big ignore,
       if (obj.currentHeight > canvas_width || obj.currentWidth > canvas_height) {
         return;
@@ -300,22 +267,16 @@ window.PLDrawingApi = {
       obj.setCoords();
     });
 
-    fabric.util.addListener(
-      /** @type {any} */ (canvas).upperCanvasEl,
-      'dblclick',
-      function (/** @type {MouseEvent} */ e) {
-        // @ts-expect-error - findTarget method exists on Canvas but not in types
-        const target = canvas.findTarget(e);
-        if (target !== undefined) {
-          target.fire('dblclick', { e });
-        }
-      },
-    );
+    fabric.util.addListener(canvas.upperCanvasEl, 'dblclick', function (e) {
+      const target = canvas.findTarget(e);
+      if (target !== undefined) {
+        target.fire('dblclick', { e });
+      }
+    });
 
     // Restore existing answer if it exists
     const submittedAnswer = new PLDrawingAnswerState(html_input);
     if (existing_answer_submission != null) {
-      // @ts-expect-error - type signature of existing_answer_submission varies
       submittedAnswer._set(existing_answer_submission);
       window.PLDrawingApi.restoreAnswer(canvas, submittedAnswer);
     }
@@ -327,18 +288,11 @@ window.PLDrawingApi = {
  * The contents of this are what will be eventually submitted to PrairieLearn.
  */
 class PLDrawingAnswerState {
-  /** @type {Record<string, PLDrawingOptions & Record<string, unknown>>} */
-  _answerData;
-  /** @type {JQuery} */
-  _htmlInput;
-
-  /** @param {JQuery} html_input */
   constructor(html_input) {
     this._answerData = {};
     this._htmlInput = html_input;
   }
 
-  /** @param {Array<PLDrawingOptions & Record<string, unknown> & { id: string | number }>} obj_ary */
   _set(obj_ary) {
     obj_ary.forEach((object) => {
       this._answerData[object.id] = object;
@@ -353,7 +307,7 @@ class PLDrawingAnswerState {
 
   /**
    * Update an object in the submitted answer state.
-   * @param {PLDrawingOptions & Record<string, unknown> & { id: string | number }} object Object to update.
+   * @param object Object to update.
    */
   updateObject(object) {
     if (object.id in this._answerData) {
@@ -373,19 +327,18 @@ class PLDrawingAnswerState {
 
   /**
    * Find an object by its ID.
-   * @param {string | number} id Numeric id to search by.
-   * @returns {(PLDrawingOptions & Record<string, unknown>) | null} The object, if found.  Null otherwise.
+   * @param id Numeric id to search by.
+   * @returns The object, if found.  Null otherwise.
    */
   getObject(id) {
-    return this._answerData[id] ?? null;
+    return this._answerData[id] || null;
   }
 
   /**
    * Remove an object from the submitted answer.
-   * @param {(PLDrawingOptions & Record<string, unknown> & { id: string | number }) | string | number} object The object to delete, or its ID.
+   * @param object The object to delete, or its ID.
    */
   deleteObject(object) {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (object != null && typeof object === 'object') {
       object = object.id;
     }
@@ -398,28 +351,22 @@ class PLDrawingAnswerState {
    * This maintains a "submission" object that is separate from the canvas object.
    * By default, all properties from the canvas object are copied to the submission object.
    *
-   * @param {PLDrawingOptions & Record<string, unknown>} options Options that were passed to the 'generate()' function.
-   * @param {InstanceType<typeof fabric.Object>} canvasObject Canvas object that was created and should be saved.
-   * @param {((submitted_object: PLDrawingOptions & Record<string, unknown>, canvas_object: InstanceType<typeof fabric.Object>) => void)} [modifyHandler] Function that is run whenever the canvas object is modified.
+   * @param options Options that were passed to the 'generate()' function.
+   * @param object Canvas object that was created and should be saved.
+   * @param modifyHandler {optional} Function that is run whenever the canvas object is modified.
    * This has the signature of (submitted_object, canvas_object).
    * Any properties that should be saved should be copied from canvas_object into
    * submitted_object.  If this is omitted, all properties from the canvas object
    * are copied as-is.
-   * @param {((submitted_object: PLDrawingOptions & Record<string, unknown>, canvas_object: InstanceType<typeof fabric.Object>) => void)} [removeHandler] Function that is run whenever the canvas object is deleted.
+   * @param removeHandler {optional} Function that is run whenever the canvas object is deleted.
    */
-  registerAnswerObject(
-    options,
-    /** @type {InstanceType<typeof fabric.Object>} */ canvasObject,
-    modifyHandler,
-    removeHandler,
-  ) {
-    /** @type {PLDrawingOptions & Record<string, unknown> & { id: string | number }} */
-    const submitted_object = { ...options, id: 0 };
-    if (!('id' in submitted_object) || submitted_object.id === 0) {
-      if (!('id' in canvasObject)) {
+  registerAnswerObject(options, object, modifyHandler, removeHandler) {
+    const submitted_object = { ...options };
+    if (!('id' in submitted_object)) {
+      if (!('id' in object)) {
         submitted_object.id = window.PLDrawingApi.generateID();
       } else {
-        submitted_object.id = /** @type {string | number} */ (canvasObject.id);
+        submitted_object.id = object.id;
       }
     }
 
@@ -442,21 +389,21 @@ class PLDrawingAnswerState {
     ]);
 
     this.updateObject(submitted_object);
-    canvasObject.on('modified', () => {
+    object.on('modified', () => {
       if (modifyHandler) {
-        modifyHandler(submitted_object, canvasObject);
+        modifyHandler(submitted_object, object);
       } else {
-        for (const [key, value] of Object.entries(canvasObject)) {
-          if (!key.startsWith('_') && !blocked_keys.has(key)) {
+        for (const [key, value] of Object.entries(object)) {
+          if (key[0] !== '_' && !blocked_keys.has(key)) {
             submitted_object[key] = value;
           }
         }
       }
       this.updateObject(submitted_object);
     });
-    canvasObject.on('removed', () => {
+    object.on('removed', () => {
       if (removeHandler) {
-        removeHandler(submitted_object, canvasObject);
+        removeHandler(submitted_object, object);
       }
       this.deleteObject(submitted_object);
     });
@@ -465,41 +412,20 @@ class PLDrawingAnswerState {
 
 // Set up built-in buttons
 (() => {
-  // @ts-expect-error - class extensions are correct but TypeScript has issues with method overrides
   class DrawingDeleteButton extends PLDrawingBaseElement {
-    /** @param {PLDrawingOptions} _options */
-    static get_button_icon(_options) {
+    static get_button_icon() {
       return 'delete';
     }
 
-    /** @param {PLDrawingOptions} _options */
-    static get_button_tooltip(_options) {
+    static get_button_tooltip() {
       return 'Delete selected object';
     }
 
-    /**
-     * @param {typeof fabric.Canvas} canvasInstance
-     * @param {PLDrawingOptions} _options
-     * @param {PLDrawingSubmittedAnswer} _submittedAnswer
-     */
-    static button_press(
-      /** @type {InstanceType<typeof fabric.Canvas>} */ canvasInstance,
-      _options,
-      _submittedAnswer,
-    ) {
-      const activeObj = canvasInstance.getActiveObject();
-      if (activeObj) {
-        canvasInstance.remove(activeObj);
-      }
+    static button_press(canvas, _options, _submittedAnswer) {
+      canvas.remove(canvas.getActiveObject());
     }
   }
-  // @ts-expect-error - class extensions are correct but TypeScript has issues with method overrides
   class DrawingHelpLineButton extends PLDrawingBaseElement {
-    /**
-     * @param {typeof fabric.Canvas} canvas
-     * @param {PLDrawingOptions} options
-     * @param {PLDrawingSubmittedAnswer} submittedAnswer
-     */
     static generate(canvas, options, submittedAnswer) {
       const def = {
         left: 40,
@@ -519,13 +445,11 @@ class PLDrawingAnswerState {
       window.PLDrawingApi.createElement(canvas, opts, submittedAnswer);
     }
 
-    /** @param {PLDrawingOptions} _options */
-    static get_button_icon(_options) {
+    static get_button_icon() {
       return 'help-line';
     }
 
-    /** @param {PLDrawingOptions} _options */
-    static get_button_tooltip(_options) {
+    static get_button_tooltip() {
       return 'Add help line';
     }
   }
