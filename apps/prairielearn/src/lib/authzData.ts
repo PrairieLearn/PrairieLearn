@@ -223,9 +223,13 @@ export function hasRole(
     return true;
   }
 
-  // If the user is an instructor, and the requestedRole is student, this should fail.
-  // We want to prevent instructors from calling functions that are only meant for students.
-  if ((requestedRole === 'Student' || requestedRole === 'Any') && authzData.has_student_access) {
+  if (
+    (requestedRole === 'Student' || requestedRole === 'Any') &&
+    authzData.has_student_access &&
+    // If the user is an instructor, and the requestedRole is student, this should fail.
+    // We want to prevent instructors from calling functions that are only meant for students.
+    authzData.course_instance_role === 'None'
+  ) {
     return true;
   }
 
@@ -266,8 +270,11 @@ export function assertHasRole(
   requestedRole: CourseInstanceRole,
   allowedRoles: CourseInstanceRole[],
 ): void {
-  if (requestedRole === 'Any' || !allowedRoles.includes(requestedRole)) {
+  if (requestedRole !== 'Any' && !allowedRoles.includes(requestedRole)) {
     // This suggests the code was called incorrectly (internal error).
+    console.error(
+      `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
+    );
     throw new Error(
       `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
     );
@@ -276,7 +283,6 @@ export function assertHasRole(
   if (hasRole(authzData, requestedRole)) {
     return;
   }
-
   // This suggests that the user is not authorized to perform the action.
   throw new error.HttpStatusError(403, 'Access denied');
 }
