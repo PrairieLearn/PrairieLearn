@@ -663,7 +663,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         if "integer string conversion" in str(e):
             data["format_errors"][name] = (
                 f"Your expression expands integers longer than {get_int_max_str_digits()} digits, "
-                "and could not be graded."
+                "try a simpler expression."
             )
         else:
             raise
