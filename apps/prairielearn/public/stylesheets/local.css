@@ -337,7 +337,7 @@ a.badge {
 
 /** override bootstrap's code styles with a github-like style */
 code {
-  color: black;
+  color: var(--bs-body-color);
   background: var(--bs-secondary-bg);
   padding: 0.2em 0.4em;
   border-radius: 6px;
