@@ -179,7 +179,12 @@ export async function buildAuthzData({
   };
 }
 
-export type CourseInstanceRole = 'None' | 'Student Data Viewer' | 'Student Data Editor' | 'Student';
+export type CourseInstanceRole =
+  | 'None'
+  | 'Student Data Viewer'
+  | 'Student Data Editor'
+  | 'Student'
+  | 'Any';
 
 export interface DangerousSystemAuthzData {
   authn_user: {
@@ -219,15 +224,21 @@ export function hasRole(
 
   // If the user is an instructor, and the requestedRole is student, this should fail.
   // We want to prevent instructors from calling functions that are only meant for students.
-  if (requestedRole === 'Student' && authzData.has_student_access) {
+  if ((requestedRole === 'Student' || requestedRole === 'Any') && authzData.has_student_access) {
     return true;
   }
 
-  if (requestedRole === 'Student Data Viewer' && authzData.has_course_instance_permission_view) {
+  if (
+    (requestedRole === 'Student Data Viewer' || requestedRole === 'Any') &&
+    authzData.has_course_instance_permission_view
+  ) {
     return true;
   }
 
-  if (requestedRole === 'Student Data Editor' && authzData.has_course_instance_permission_edit) {
+  if (
+    (requestedRole === 'Student Data Editor' || requestedRole === 'Any') &&
+    authzData.has_course_instance_permission_edit
+  ) {
     return true;
   }
 
@@ -254,7 +265,7 @@ export function assertHasRole(
   requestedRole: CourseInstanceRole,
   allowedRoles: CourseInstanceRole[],
 ): void {
-  if (!allowedRoles.includes(requestedRole)) {
+  if (requestedRole === 'Any' || !allowedRoles.includes(requestedRole)) {
     // This suggests the code was called incorrectly (internal error).
     throw new Error(
       `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,

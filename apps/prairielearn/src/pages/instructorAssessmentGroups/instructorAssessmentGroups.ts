@@ -99,6 +99,7 @@ router.post(
         req.file,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
+        res.locals.authz_data,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'random_assessment_groups') {
@@ -122,6 +123,7 @@ router.post(
         assessment_id,
         parseUidsString(req.body.uids, MAX_UIDS),
         res.locals.authn_user.user_id,
+        res.locals.authz_data,
       ).catch((err) => {
         if (err instanceof GroupOperationError) {
           flash('error', err.message);
@@ -142,6 +144,7 @@ router.post(
             uid,
             authn_user_id: res.locals.authn_user.user_id,
             enforceGroupSize: false, // Enforce group size limits (instructors can override limits)
+            authzData: res.locals.authz_data,
           });
         } catch (err) {
           if (err instanceof GroupOperationError) {

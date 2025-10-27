@@ -10,7 +10,8 @@ import { selectCourseById } from '../models/course.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
-import { dangerousFullAuthzForTesting } from './authzData.js';
+import { type DangerousSystemAuthzData } from './authzData.js';
+import type { RawAuthzData } from './client/page-context.js';
 import {
   type GroupConfig,
   GroupConfigSchema,
@@ -201,9 +202,11 @@ export async function getUserRoles(group_id: string, user_id: string) {
 async function selectUserInCourseInstance({
   uid,
   course_instance_id,
+  authzData,
 }: {
   uid: string;
   course_instance_id: string;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
 }) {
   const user = await selectOptionalUserByUid(uid);
   if (!user) return null;
@@ -221,8 +224,8 @@ async function selectUserInCourseInstance({
     (await selectOptionalEnrollmentByUserId({
       courseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'Any',
+      authzData,
     }))
   ) {
     return user;
@@ -245,12 +248,14 @@ export async function addUserToGroup({
   uid,
   authn_user_id,
   enforceGroupSize,
+  authzData,
 }: {
   assessment_id: string;
   group_id: string;
   uid: string;
   authn_user_id: string;
   enforceGroupSize: boolean;
+  authzData: RawAuthzData | DangerousSystemAuthzData;
 }) {
   await sqldb.runInTransactionAsync(async () => {
     const group = await sqldb.queryOptionalRow(
@@ -265,6 +270,7 @@ export async function addUserToGroup({
     const user = await selectUserInCourseInstance({
       uid,
       course_instance_id: group.course_instance_id,
+      authzData,
     });
     if (!user) {
       throw new GroupOperationError(`User ${uid} is not enrolled in this course.`);
@@ -310,6 +316,7 @@ export async function joinGroup(
   assessment_id: string,
   uid: string,
   authn_user_id: string,
+  authzData: RawAuthzData | DangerousSystemAuthzData,
 ): Promise<void> {
   const splitJoinCode = fullJoinCode.split('-');
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
@@ -336,6 +343,7 @@ export async function joinGroup(
         uid,
         authn_user_id,
         enforceGroupSize: true,
+        authzData,
       });
     });
   } catch (err) {
@@ -351,6 +359,7 @@ export async function createGroup(
   assessment_id: string,
   uids: string[],
   authn_user_id: string,
+  authzData: RawAuthzData | DangerousSystemAuthzData,
 ): Promise<void> {
   if (group_name) {
     if (group_name.length > 30) {
@@ -406,6 +415,7 @@ export async function createGroup(
           uid,
           authn_user_id,
           enforceGroupSize: false,
+          authzData,
         });
       }
     });
@@ -428,6 +438,7 @@ export async function createOrAddToGroup(
   assessment_id: string,
   uids: string[],
   authn_user_id: string,
+  authzData: RawAuthzData | DangerousSystemAuthzData,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     const group = await sqldb.queryOptionalRow(
@@ -436,7 +447,7 @@ export async function createOrAddToGroup(
       GroupSchema,
     );
     if (group == null) {
-      await createGroup(group_name, assessment_id, uids, authn_user_id);
+      await createGroup(group_name, assessment_id, uids, authn_user_id, authzData);
     } else {
       for (const uid of uids) {
         await addUserToGroup({
@@ -445,6 +456,7 @@ export async function createOrAddToGroup(
           uid,
           authn_user_id,
           enforceGroupSize: false,
+          authzData,
         });
       }
     }

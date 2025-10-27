@@ -181,6 +181,7 @@ router.post(
         res.locals.assessment.id,
         res.locals.user.uid,
         res.locals.authn_user.user_id,
+        res.locals.authz_data,
       ).catch((err) => {
         if (err instanceof GroupOperationError) {
           flash('error', err.message);
@@ -199,6 +200,7 @@ router.post(
         res.locals.assessment.id,
         [res.locals.user.uid],
         res.locals.authn_user.user_id,
+        res.locals.authz_data,
       ).catch((err) => {
         if (err instanceof GroupOperationError) {
           flash('error', err.message);

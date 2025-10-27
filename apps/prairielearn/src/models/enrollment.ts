@@ -16,6 +16,7 @@ import {
   type DangerousSystemAuthzData,
   assertHasRole,
   dangerousFullAuthzForTesting,
+  hasRole,
   isDangerousFullAuthzForTesting,
 } from '../lib/authzData.js';
 import {
@@ -283,7 +284,7 @@ export async function selectOptionalEnrollmentByUserId({
   if (enrollment) {
     assertEnrollmentInCourseInstance(enrollment, courseInstance);
   }
-  if (requestedRole === 'Student' && enrollment) {
+  if (hasRole(authzData, 'Student') && enrollment) {
     assertEnrollmentBelongsToUser(enrollment, authzData);
   }
   return enrollment;
@@ -313,7 +314,7 @@ export async function selectOptionalEnrollmentByPendingUid({
   if (enrollment) {
     assertEnrollmentInCourseInstance(enrollment, courseInstance);
   }
-  if (requestedRole === 'Student' && enrollment) {
+  if (hasRole(authzData, 'Student') && enrollment) {
     assertEnrollmentBelongsToUser(enrollment, authzData);
   }
   return enrollment;
@@ -363,7 +364,7 @@ export async function selectEnrollmentById({
   ]);
   const enrollment = await queryRow(sql.select_enrollment_by_id, { id }, EnrollmentSchema);
   assertEnrollmentInCourseInstance(enrollment, courseInstance);
-  if (requestedRole === 'Student') {
+  if (hasRole(authzData, 'Student')) {
     assertEnrollmentBelongsToUser(enrollment, authzData);
   }
   return enrollment;
@@ -398,7 +399,7 @@ export async function selectOptionalEnrollmentByUid({
   if (enrollment) {
     assertEnrollmentInCourseInstance(enrollment, courseInstance);
   }
-  if (requestedRole === 'Student' && enrollment) {
+  if (hasRole(authzData, 'Student') && enrollment) {
     assertEnrollmentBelongsToUser(enrollment, authzData);
   }
   return enrollment;

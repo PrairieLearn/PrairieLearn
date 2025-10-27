@@ -6,6 +6,8 @@ import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/po
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
+import { type DangerousSystemAuthzData, dangerousFullAuthzForTesting } from './authzData.js';
+import type { RawAuthzData } from './client/page-context.js';
 import { createCsvParser } from './csv.js';
 import { UserSchema } from './db-types.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
@@ -31,6 +33,7 @@ export async function uploadInstanceGroups(
   csvFile: Express.Multer.File | null | undefined,
   user_id: string,
   authn_user_id: string,
+  authzData: RawAuthzData | DangerousSystemAuthzData,
 ): Promise<string> {
   if (csvFile == null) {
     throw new Error('No CSV file uploaded');
@@ -76,7 +79,13 @@ export async function uploadInstanceGroups(
             const { uid, groupname } = record;
             if (!uid || !groupname) continue;
             totalCount++;
-            await createOrAddToGroup(groupname, assessment_id, [uid], authn_user_id).then(
+            await createOrAddToGroup(
+              groupname,
+              assessment_id,
+              [uid],
+              authn_user_id,
+              authzData,
+            ).then(
               () => successCount++,
               (err) => {
                 if (err instanceof GroupOperationError) {
@@ -193,7 +202,13 @@ export async function randomGroups(
           }
 
           for (const users of userGroups) {
-            await createGroup(null, assessment_id, users, authn_user_id).then(
+            await createGroup(
+              null,
+              assessment_id,
+              users,
+              authn_user_id,
+              dangerousFullAuthzForTesting(),
+            ).then(
               () => {
                 groupsCreated++;
                 studentsGrouped += users.length;
