@@ -4,44 +4,39 @@ from itertools import count
 from typing import Any, NamedTuple, cast
 
 import chevron
-import lxml.etree
 import lxml.html
 import prairielearn as pl
 from typing_extensions import assert_never
 
 
+# Internal enums for better code organization
 class PartialCreditType(Enum):
-    """Partial credit grading modes for checkbox questions.
-
-    - ALL_OR_NOTHING: Must get everything correct, no partial credit
-    - COVERAGE: Rewards finding correct answers without over-guessing
-    - EACH_ANSWER: Each individual answer choice is graded independently to be right or wrong
-    - NET_CORRECT: Net correct answers (correct minus incorrect selected)
-    """
-
-    ALL_OR_NOTHING = "off"
-    COVERAGE = "coverage"
-    EACH_ANSWER = "each-answer"
-    NET_CORRECT = "net-correct"
+    ALL_OR_NOTHING = "none"
+    NET_CORRECT = "PC"
+    EACH_ANSWER = "EDC"
+    COVERAGE = "COV"
 
 
 class OrderType(Enum):
     RANDOM = "random"
-    ASCEND = "ascend"
-    DESCEND = "descend"
     FIXED = "fixed"
 
 
 class AnswerTuple(NamedTuple):
+    """Represents an answer option with its properties."""
+
     idx: int
     correct: bool
     html: str
     feedback: str | None
 
 
+# Default values
 WEIGHT_DEFAULT = 1
+FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NET_CORRECT
+PARTIAL_CREDIT_METHOD_DEFAULT = "PC"
 HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
@@ -51,8 +46,6 @@ SHOW_NUMBER_CORRECT_DEFAULT = False
 MIN_CORRECT_DEFAULT = 1
 MIN_SELECT_DEFAULT = 1
 FEEDBACK_DEFAULT = None
-ALLOW_BLANK_DEFAULT = False
-MIN_SELECT_BLANK = 0
 
 CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
 
@@ -67,7 +60,6 @@ def generate_help_text(
     has_max_select_attrib: bool,
     min_options_to_select: int,
     max_options_to_select: int,
-    allow_blank: bool,
 ) -> str:
     """Generate help text for checkbox element.
 
@@ -80,7 +72,6 @@ def generate_help_text(
         has_max_select_attrib: Whether max-select attribute is specified
         min_options_to_select: Minimum options that must be selected
         max_options_to_select: Maximum options that can be selected
-        allow_blank: Whether blank (zero) selections are allowed
 
     Returns:
         HTML string for help text
@@ -117,7 +108,7 @@ def generate_help_text(
         insert_text = f" at most <b>{max_options_to_select}</b> options."
     else:
         # Default case - no specific requirements shown
-        insert_text = " at least 0 options." if allow_blank else " at least 1 option."
+        insert_text = " at least 1 option."
 
     insert_text += number_correct_text
 
@@ -129,44 +120,6 @@ def generate_help_text(
         helptext = f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
 
     return helptext
-
-
-def categorize_options(
-    element: lxml.html.HtmlElement,
-) -> tuple[list[AnswerTuple], list[AnswerTuple]]:
-    """Get provided correct and incorrect answers.
-
-    Args:
-        element: The pl-checkbox HTML element
-
-    Returns:
-        Tuple of (correct_answers, incorrect_answers) as AnswerTuple lists
-    """
-    correct_answers = []
-    incorrect_answers = []
-    index = count(0)
-
-    for child in element:
-        if child.tag in ["pl-answer", "pl_answer"]:
-            pl.check_attribs(
-                child, required_attribs=[], optional_attribs=["correct", "feedback"]
-            )
-            correct = pl.get_boolean_attrib(child, "correct", False)
-            child_html = pl.inner_html(child)
-            child_feedback = pl.get_string_attrib(child, "feedback", FEEDBACK_DEFAULT)
-            answer_tuple = AnswerTuple(next(index), correct, child_html, child_feedback)
-            if correct:
-                correct_answers.append(answer_tuple)
-            else:
-                incorrect_answers.append(answer_tuple)
-        elif isinstance(child, lxml.etree._Comment):
-            continue
-        else:
-            raise ValueError(
-                f'Tags inside of pl-checkbox must be pl-answer, not "{child.tag}".'
-            )
-
-    return correct_answers, incorrect_answers
 
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
@@ -299,6 +252,38 @@ def validate_min_max_options(
         )
 
 
+def categorize_options(
+    element: lxml.html.HtmlElement,
+) -> tuple[list[AnswerTuple], list[AnswerTuple]]:
+    """Get provided correct and incorrect answers.
+
+    Args:
+        element: The pl-checkbox HTML element
+
+    Returns:
+        Tuple of (correct_answers, incorrect_answers) as AnswerTuple lists
+    """
+    correct_answers = []
+    incorrect_answers = []
+    index = count(0)
+
+    for child in element:
+        if child.tag in ["pl-answer", "pl_answer"]:
+            pl.check_attribs(
+                child, required_attribs=[], optional_attribs=["correct", "feedback"]
+            )
+            correct = pl.get_boolean_attrib(child, "correct", False)
+            child_html = pl.inner_html(child)
+            child_feedback = pl.get_string_attrib(child, "feedback", FEEDBACK_DEFAULT)
+            answer_tuple = AnswerTuple(next(index), correct, child_html, child_feedback)
+            if correct:
+                correct_answers.append(answer_tuple)
+            else:
+                incorrect_answers.append(answer_tuple)
+
+    return correct_answers, incorrect_answers
+
+
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
 
@@ -308,30 +293,23 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "number-answers",
         "min-correct",
         "max-correct",
-        "order",
+        "fixed-order",
         "inline",
         "hide-answer-panel",
         "hide-help-text",
         "detailed-help-text",
         "partial-credit",
+        "partial-credit-method",
         "hide-letter-keys",
         "hide-score-badge",
         "min-select",
-        "allow-blank",
         "max-select",
         "show-number-correct",
-        # Legacy attributes for backward compatibility
-        "partial-credit-method",
-        "fixed-order",
     ]
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
-
-    if name in data["params"]:
-        raise ValueError(f"duplicate params variable name: {name}")
-    if name in data["correct_answers"]:
-        raise ValueError(f"Duplicate correct_answers variable name: {name}")
+    pl.check_answers_names(data, name)
 
     # Don't use value but call getter here to do validation right away.
     get_partial_credit_mode(element)
@@ -349,35 +327,48 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     min_correct = pl.get_integer_attrib(element, "min-correct", MIN_CORRECT_DEFAULT)
     max_correct = pl.get_integer_attrib(element, "max-correct", len(correct_answers))
 
-    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-
     if min_correct < 1:
         raise ValueError(
-            f"The attribute min-correct is {min_correct} but must be at least 1"
+            f"The attribute min-correct is {min_correct:d} but must be at least 1"
         )
 
-    # No longer need max number of options, this was an old limitation of the index2key function
+    # FIXME: why enforce a maximum number of options?
+    max_answers = 26  # will not display more than 26 checkbox answers
 
-    number_answers = max(0, min(len_total, number_answers))
+    number_answers = max(0, min(len_total, max_answers, number_answers))
     min_correct = min(
         len_correct, number_answers, max(0, number_answers - len_incorrect, min_correct)
     )
     max_correct = min(len_correct, number_answers, max(min_correct, max_correct))
+    if not (0 <= min_correct <= max_correct <= len_correct):
+        raise ValueError(
+            f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
+        )
+    min_incorrect = number_answers - max_correct
+    max_incorrect = number_answers - min_correct
+    if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
+        raise ValueError(
+            f"INTERNAL ERROR: incorrect number: ({min_incorrect}, {max_incorrect}, {len_incorrect}, {len_correct})"
+        )
 
-    min_select_default = MIN_SELECT_BLANK if allow_blank else MIN_SELECT_DEFAULT
-    min_select = pl.get_integer_attrib(element, "min-select", min_select_default)
-
+    min_select = pl.get_integer_attrib(element, "min-select", MIN_SELECT_DEFAULT)
     max_select = pl.get_integer_attrib(element, "max-select", number_answers)
 
+    if min_select < 1:
+        raise ValueError(
+            f"The attribute min-select is {min_select} but must be at least 1"
+        )
+
+    # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
     validate_min_max_options(
-        min_correct,
-        max_correct,
-        len_correct,
-        len_incorrect,
-        number_answers,
-        min_select,
-        max_select,
-        min_select_default,
+        min_correct=min_correct,
+        max_correct=max_correct,
+        len_correct=len_correct,
+        len_incorrect=len_incorrect,
+        number_answers=number_answers,
+        min_select=min_select,
+        max_select=max_select,
+        min_select_default=MIN_SELECT_DEFAULT,
     )
 
     number_correct = random.randint(min_correct, max_correct)
@@ -390,22 +381,21 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     random.shuffle(sampled_answers)
 
     order_type = get_order_type(element)
+
     if order_type is OrderType.FIXED:
+        # we can't simply skip the shuffle because we already broke the original
+        # order by separating into correct/incorrect lists
         sampled_answers.sort(key=lambda a: a.idx)  # sort by stored original index
-    elif order_type is OrderType.DESCEND:
-        sampled_answers.sort(key=lambda a: a.html, reverse=True)
-    elif order_type is OrderType.ASCEND:
-        sampled_answers.sort(key=lambda a: a.html, reverse=False)
     elif order_type is OrderType.RANDOM:
-        random.shuffle(sampled_answers)
+        pass  # already shuffled
     else:
         assert_never(order_type)
 
     display_answers = []
     correct_answer_list = []
-    for key, answer in zip(pl.iter_keys(), sampled_answers, strict=False):
+    for i, answer in enumerate(sampled_answers):
         keyed_answer = {
-            "key": key,
+            "key": pl.index2key(i),
             "html": answer.html,
             "feedback": answer.feedback,
         }
@@ -413,6 +403,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         if answer.correct:
             correct_answer_list.append(keyed_answer)
 
+    if name in data["params"]:
+        raise ValueError(f"duplicate params variable name: {name}")
+    if name in data["correct_answers"]:
+        raise ValueError(f"duplicate correct_answers variable name: {name}")
     data["params"][name] = display_answers
     data["correct_answers"][name] = correct_answer_list
 
@@ -438,22 +432,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     display_answers = data["params"].get(name, [])
     inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
-    submitted_keys_raw = data["submitted_answers"].get(name, [])
+    submitted_keys = data["submitted_answers"].get(name, [])
 
     # if there is only one key then it is passed as a string,
     # not as a length-one list, so we fix that next
-    if isinstance(submitted_keys_raw, str):
-        submitted_keys_raw = [submitted_keys_raw]
+    if isinstance(submitted_keys, str):
+        submitted_keys = [submitted_keys]
 
-    submitted_keys = set(submitted_keys_raw)
-
-    correct_keys = {answer["key"] for answer in data["correct_answers"].get(name, [])}
+    correct_answer_list = data["correct_answers"].get(name, [])
+    correct_keys = [answer["key"] for answer in correct_answer_list]
 
     if data["panel"] == "question":
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
-        # Change the type becasue of how this element works
-        feedback = cast(dict[str, str], partial_score.get("feedback", None))
+        feedback = cast("dict[str, Any] | None", partial_score.get("feedback", None))
 
         answerset = []
         for answer in display_answers:
@@ -465,9 +457,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 and show_answer_feedback
                 and answer["key"] in submitted_keys,
                 "display_feedback": answer["key"] in submitted_keys
-                and feedback
-                and feedback.get(answer["key"], None),
-                "feedback": feedback.get(answer["key"], None) if feedback else None,
+                and feedback is not None
+                and feedback.get(answer["key"], None) is not None,
+                "feedback": feedback.get(answer["key"], None) if feedback is not None else None,
             }
             if answer_html["display_score_badge"]:
                 answer_html["correct"] = answer["key"] in correct_keys
@@ -491,9 +483,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             show_number_correct = pl.get_boolean_attrib(
                 element, "show-number-correct", SHOW_NUMBER_CORRECT_DEFAULT
             )
-            allow_blank = pl.get_boolean_attrib(
-                element, "allow-blank", ALLOW_BLANK_DEFAULT
-            )
 
             min_options_to_select = _get_min_options_to_select(
                 element, MIN_SELECT_DEFAULT
@@ -503,7 +492,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             )
 
             helptext = generate_help_text(
-                num_correct=len(correct_keys),
+                num_correct=len(correct_answer_list),
                 num_display_answers=len(display_answers),
                 show_number_correct=show_number_correct,
                 detailed_help_text=detailed_help_text,
@@ -511,21 +500,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 has_max_select_attrib=pl.has_attrib(element, "max-select"),
                 min_options_to_select=min_options_to_select,
                 max_options_to_select=max_options_to_select,
-                allow_blank=allow_blank,
             )
 
-            # Extract insert_text for popover info
-            # This is a bit hacky but maintains backward compatibility
-            if show_number_correct:
-                if len(correct_keys) == 1:
-                    number_correct_text = (
-                        " There is exactly <b>1</b> correct option in the list above."
-                    )
-                else:
-                    number_correct_text = f" There are exactly <b>{len(correct_keys)}</b> correct options in the list above."
-            else:
-                number_correct_text = ""
-
+            # Extract insert_text for backward compatibility with info_params
+            # (This is needed for the grading text generation below)
             show_min_select = (
                 pl.has_attrib(element, "min-select")
                 and min_options_to_select != MIN_SELECT_DEFAULT
@@ -533,6 +511,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             show_max_select = pl.has_attrib(
                 element, "max-select"
             ) and max_options_to_select != len(display_answers)
+
+            if show_number_correct:
+                if len(correct_answer_list) == 1:
+                    number_correct_text = (
+                        " There is exactly <b>1</b> correct option in the list above."
+                    )
+                else:
+                    number_correct_text = f" There are exactly <b>{len(correct_answer_list)}</b> correct options in the list above."
+            else:
+                number_correct_text = ""
 
             if detailed_help_text or (show_min_select and show_max_select):
                 if min_options_to_select != max_options_to_select:
@@ -544,9 +532,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             elif show_max_select:
                 insert_text = f" at most <b>{max_options_to_select}</b> options."
             else:
-                insert_text = (
-                    " at least 0 options." if allow_blank else " at least 1 option."
-                )
+                insert_text = " at least 1 option."
 
             insert_text += number_correct_text
 
@@ -573,7 +559,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
-            html_params[score_type] = score_value
+            html_params[score_type] = bool(score_value)
 
         with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
@@ -582,16 +568,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         parse_error = data["format_errors"].get(name, None)
         if parse_error is None:
             partial_score = data["partial_scores"].get(name, {"score": None})
-
-            # Change the type becasue of how this element works
-            feedback = cast(dict[str, str], partial_score.get("feedback", None))
+            feedback = cast("dict[str, Any] | None", partial_score.get("feedback", None))
             score = partial_score.get("score", None)
 
             answers = []
             for submitted_key in submitted_keys:
                 submitted_answer = next(
-                    filter(lambda a: a["key"] == submitted_key, display_answers)
+                    filter(lambda a: a["key"] == submitted_key, display_answers), None
                 )
+                if submitted_answer is None:
+                    continue
                 answer_item = {
                     "key": submitted_key,
                     "html": submitted_answer["html"],
@@ -600,15 +586,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 if answer_item["display_score_badge"]:
                     answer_item["correct"] = submitted_key in correct_keys
                     answer_item["incorrect"] = submitted_key not in correct_keys
-                answer_item["display_feedback"] = feedback and feedback.get(
+                answer_item["display_feedback"] = feedback is not None and feedback.get(
                     submitted_key, None
-                )
+                ) is not None
                 answer_item["feedback"] = (
-                    feedback.get(submitted_key, None) if feedback else None
+                    feedback.get(submitted_key, None) if feedback is not None else None
                 )
                 answers.append(answer_item)
 
-            html_params: dict[str, Any] = {
+            html_params = {
                 "submission": True,
                 "display_score_badge": (score is not None),
                 "answers": answers,
@@ -621,7 +607,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # Add parameter for displaying overall score badge
             if score is not None:
                 score_type, score_value = pl.determine_score_params(score)
-                html_params[score_type] = score_value
+                html_params[score_type] = bool(score_value)
 
             with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
                 return chevron.render(f, html_params).strip()
@@ -662,26 +648,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
-    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     submitted_key = data["submitted_answers"].get(name, None)
 
-    if not allow_blank:
-        # Check that at least one option was selected
-        if submitted_key is None:
-            data["format_errors"][name] = "You must select at least one option."
-            return
-
-    # Check that the selected options are a subset of the valid options
-    # FIXME: raise ValueError instead of treating as parse error?
-    submitted_key_set = set(submitted_key) if submitted_key else set()
-    all_keys_set = {a["key"] for a in data["params"][name]}
-
-    if not submitted_key_set.issubset(all_keys_set):
-        one_bad_key = submitted_key_set.difference(all_keys_set).pop()
-        one_bad_key_str = pl.escape_invalid_string(str(one_bad_key))
-        data["format_errors"][name] = (
-            f"You selected an invalid option: {one_bad_key_str}"
-        )
+    # Check that at least one option was selected
+    if submitted_key is None:
+        data["format_errors"][name] = "You must select at least one option."
         return
 
     # Get minimum and maximum number of options to be selected
@@ -691,7 +662,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
 
     # Check that the number of submitted answers is in the interval [min_options_to_select, max_options_to_select].
-    if not (min_options_to_select <= len(submitted_key_set) <= max_options_to_select):
+    if not (min_options_to_select <= len(submitted_key) <= max_options_to_select):
         if min_options_to_select != max_options_to_select:
             data["format_errors"][name] = (
                 f"You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
@@ -707,7 +678,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     number_answers = len(data["params"][name])
-    partial_credit_mode = get_partial_credit_mode(element)
+
+    partial_credit_type = get_partial_credit_mode(element)
 
     submitted_set = set(data["submitted_answers"].get(name, []))
     correct_set = {answer["key"] for answer in data["correct_answers"].get(name, [])}
@@ -716,27 +688,27 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     }
 
     score = 0
-    if partial_credit_mode is PartialCreditType.ALL_OR_NOTHING:
+    if partial_credit_type is PartialCreditType.ALL_OR_NOTHING:
         score = 1 if submitted_set == correct_set else 0
-    elif partial_credit_mode is PartialCreditType.NET_CORRECT:
+    elif partial_credit_type is PartialCreditType.NET_CORRECT:
         if submitted_set == correct_set:
             score = 1
         else:
             n_correct_answers = len(correct_set) - len(correct_set - submitted_set)
             points = n_correct_answers - len(submitted_set - correct_set)
             score = max(0, points / len(correct_set))
-    elif partial_credit_mode is PartialCreditType.EACH_ANSWER:
+    elif partial_credit_type is PartialCreditType.EACH_ANSWER:
         number_wrong = len(submitted_set - correct_set) + len(
             correct_set - submitted_set
         )
         score = 1 - 1.0 * number_wrong / number_answers
-    elif partial_credit_mode is PartialCreditType.COVERAGE:
+    elif partial_credit_type is PartialCreditType.COVERAGE:
         n_correct_answers = len(correct_set & submitted_set)
         base_score = n_correct_answers / len(correct_set)
         guessing_factor = n_correct_answers / len(submitted_set)
         score = base_score * guessing_factor
     else:
-        assert_never(partial_credit_mode)
+        assert_never(partial_credit_type)
 
     data["partial_scores"][name] = {
         "score": score,
@@ -750,7 +722,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
-    partial_credit_mode = get_partial_credit_mode(element)
+    partial_credit_type = get_partial_credit_mode(element)
 
     correct_keys = {answer["key"] for answer in data["correct_answers"].get(name, [])}
     number_answers = len(data["params"][name])
@@ -790,24 +762,24 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 and min_options_to_select <= len(ans) <= max_options_to_select
             ):
                 break
-        if partial_credit_mode is not PartialCreditType.ALL_OR_NOTHING:
-            if partial_credit_mode is PartialCreditType.NET_CORRECT:
+        if partial_credit_type is not PartialCreditType.ALL_OR_NOTHING:
+            if partial_credit_type is PartialCreditType.NET_CORRECT:
                 if ans == correct_keys:
                     score = 1
                 else:
                     n_correct_answers = len(correct_keys) - len(correct_keys - ans)
                     points = n_correct_answers - len(ans - correct_keys)
                     score = max(0, points / len(correct_keys))
-            elif partial_credit_mode is PartialCreditType.EACH_ANSWER:
+            elif partial_credit_type is PartialCreditType.EACH_ANSWER:
                 number_wrong = len(ans - correct_keys) + len(correct_keys - ans)
                 score = 1 - 1.0 * number_wrong / number_answers
-            elif partial_credit_mode is PartialCreditType.COVERAGE:
+            elif partial_credit_type is PartialCreditType.COVERAGE:
                 n_correct_answers = len(correct_keys & ans)
                 base_score = n_correct_answers / len(correct_keys)
                 guessing_factor = n_correct_answers / len(ans)
                 score = base_score * guessing_factor
             else:
-                assert_never(partial_credit_mode)
+                assert_never(partial_credit_type)
         else:
             score = 0
         feedback = {
@@ -845,14 +817,10 @@ def _get_min_options_to_select(element: lxml.html.HtmlElement, default_val: int)
         element, "detailed-help-text", DETAILED_HELP_TEXT_DEFAULT
     )
 
-    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-
     if pl.has_attrib(element, "min-select"):
         min_options_to_select = pl.get_integer_attrib(element, "min-select")
     elif pl.has_attrib(element, "min-correct") and detailed_help_text:
         min_options_to_select = pl.get_integer_attrib(element, "min-correct")
-    elif allow_blank:
-        min_options_to_select = MIN_SELECT_BLANK
     else:
         min_options_to_select = default_val
 
