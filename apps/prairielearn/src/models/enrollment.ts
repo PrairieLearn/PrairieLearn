@@ -89,13 +89,13 @@ function assertEnrollmentBelongsToUser(enrollment: Enrollment | null, authzData:
  * Function callers should hold a lock on the enrollment.
  */
 async function _enrollUserInCourseInstanceWithLock({
-  enrollment,
+  lockedEnrollment,
   userId,
   actionDetail,
   requestedRole,
   authzData,
 }: {
-  enrollment: Enrollment;
+  lockedEnrollment: Enrollment;
   userId: string;
   actionDetail: SupportedActionsForTable<'enrollments'>;
   requestedRole: 'Student';
@@ -106,7 +106,7 @@ async function _enrollUserInCourseInstanceWithLock({
   const newEnrollment = await queryRow(
     sql.enroll_user,
     {
-      enrollment_id: enrollment.id,
+      enrollment_id: lockedEnrollment.id,
       user_id: userId,
     },
     EnrollmentSchema,
@@ -117,7 +117,7 @@ async function _enrollUserInCourseInstanceWithLock({
     action: 'update',
     actionDetail,
     rowId: newEnrollment.id,
-    oldRow: enrollment,
+    oldRow: lockedEnrollment,
     newRow: newEnrollment,
     agentAuthnUserId: authzData.authn_user.user_id,
     agentUserId: authzData.user.user_id,
@@ -168,13 +168,16 @@ export async function ensureEnrollment({
       });
     }
 
-    if (enrollment) {
-      await _selectAndLockEnrollment(enrollment.id);
-    }
+    const lockedEnrollment = await run(async () => {
+      if (enrollment === null) {
+        return null;
+      }
+      return await _selectAndLockEnrollment(enrollment.id);
+    });
 
-    if (enrollment && ['invited', 'removed', 'rejected'].includes(enrollment.status)) {
+    if (lockedEnrollment && ['invited', 'removed', 'rejected'].includes(lockedEnrollment.status)) {
       const updated = await _enrollUserInCourseInstanceWithLock({
-        enrollment,
+        lockedEnrollment,
         userId,
         actionDetail,
         requestedRole,
