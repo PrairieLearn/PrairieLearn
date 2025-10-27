@@ -335,6 +335,7 @@ a.badge {
   font-weight: 400;
 }
 
+/* The .user-output class is deprecated. The default <code> styles are sufficient. */
 .user-output,
 .user-output-invalid {
   display: inline;
