@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 from itertools import count
-from typing import NamedTuple
+from typing import Any, NamedTuple, cast
 
 import chevron
 import lxml.html
@@ -398,7 +398,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
-        feedback = partial_score.get("feedback", None)
+        feedback = cast("dict[str, Any] | None", partial_score.get("feedback", None))
 
         answerset = []
         for answer in display_answers:
@@ -410,16 +410,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 and show_answer_feedback
                 and answer["key"] in submitted_keys,
                 "display_feedback": answer["key"] in submitted_keys
-                and feedback
-                and feedback.get(answer["key"], None),
-                "feedback": feedback.get(answer["key"], None) if feedback else None,
+                and feedback is not None
+                and feedback.get(answer["key"], None) is not None,
+                "feedback": feedback.get(answer["key"], None) if feedback is not None else None,
             }
             if answer_html["display_score_badge"]:
                 answer_html["correct"] = answer["key"] in correct_keys
                 answer_html["incorrect"] = answer["key"] not in correct_keys
             answerset.append(answer_html)
 
-        info_params = {"format": True}
+        info_params: dict[str, Any] = {"format": True}
         # Adds decorative help text per bootstrap formatting guidelines:
         # http://getbootstrap.com/docs/4.0/components/forms/#help-text
         # Determine whether we should add a choice selection requirement
@@ -530,7 +530,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     + "Otherwise, you will receive a score of 0%."
                 )
 
-            info_params.update({"gradingtext": gradingtext})
+            info_params["gradingtext"] = gradingtext
 
         with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
@@ -551,7 +551,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
-            html_params[score_type] = score_value
+            html_params[score_type] = bool(score_value)
 
         with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
@@ -560,7 +560,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         parse_error = data["format_errors"].get(name, None)
         if parse_error is None:
             partial_score = data["partial_scores"].get(name, {"score": None})
-            feedback = partial_score.get("feedback", None)
+            feedback = cast("dict[str, Any] | None", partial_score.get("feedback", None))
             score = partial_score.get("score", None)
 
             answers = []
@@ -568,6 +568,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 submitted_answer = next(
                     filter(lambda a: a["key"] == submitted_key, display_answers), None
                 )
+                if submitted_answer is None:
+                    continue
                 answer_item = {
                     "key": submitted_key,
                     "html": submitted_answer["html"],
@@ -576,11 +578,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 if answer_item["display_score_badge"]:
                     answer_item["correct"] = submitted_key in correct_keys
                     answer_item["incorrect"] = submitted_key not in correct_keys
-                answer_item["display_feedback"] = feedback and feedback.get(
+                answer_item["display_feedback"] = feedback is not None and feedback.get(
                     submitted_key, None
-                )
+                ) is not None
                 answer_item["feedback"] = (
-                    feedback.get(submitted_key, None) if feedback else None
+                    feedback.get(submitted_key, None) if feedback is not None else None
                 )
                 answers.append(answer_item)
 
@@ -597,7 +599,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # Add parameter for displaying overall score badge
             if score is not None:
                 score_type, score_value = pl.determine_score_params(score)
-                html_params[score_type] = score_value
+                html_params[score_type] = bool(score_value)
 
             with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
                 return chevron.render(f, html_params).strip()

@@ -255,7 +255,6 @@ include = [
 ]
 ignore = [
   "./apps/prairielearn/elements/pl-drawing",            # requires refactor
-  "./apps/prairielearn/elements/pl-checkbox",           # requires refactor
   "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
   "./apps/prairielearn/elements/pl-threejs",            # deprecated
   "./exampleCourse/questions/**/tests",                 # autograder tests, use different dependencies
