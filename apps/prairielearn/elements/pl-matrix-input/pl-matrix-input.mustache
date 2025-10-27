@@ -86,7 +86,7 @@
 {{/error}}
 {{^error}}
 {{#label}}<span>{{{label}}}</span>{{/label}}
-<code class="user-output" style="white-space: break-spaces;">{{a_sub}}</code>
+<code style="white-space: break-spaces;">{{a_sub}}</code>
 {{#correct}}<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
 {{#partial}}<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
@@ -112,7 +112,7 @@
             <div role="tabpanel" class="tab-pane {{#default_is_matlab}}active{{/default_is_matlab}}" id="matlab-{{uuid}}">
                 <p>
                     {{#label}}<span>{{{label}}}</span>{{/label}}
-                    <code class="user-output" style="white-space: break-spaces;" id="matlab-data-{{uuid}}">{{matlab_data}}</code>
+                    <code style="white-space: break-spaces;" id="matlab-data-{{uuid}}">{{matlab_data}}</code>
                 </p>
                 <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#matlab-data-{{uuid}}">
                     copy this answer
@@ -121,7 +121,7 @@
             <div role="tabpanel" class="tab-pane {{#default_is_python}}active{{/default_is_python}}" id="python-{{uuid}}">
                 <p>
                     {{#label}}<span>{{{label}}}</span>{{/label}}
-                    <code class="user-output" style="white-space: break-spaces;" id="python-data-{{uuid}}">{{python_data}}</code>
+                    <code style="white-space: break-spaces;" id="python-data-{{uuid}}">{{python_data}}</code>
                 </p>
                 <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-data-{{uuid}}">
                     copy this answer
@@ -175,10 +175,10 @@ matrix {{#relabs}}(rtol={{rtol}}, atol={{atol}}){{/relabs}}{{#sigfig}}({{digits}
         Example <i>valid</i> inputs:
     </p>
     <p>
-        <code class="user-output">[[0.40, -0.60], [-0.20, -0.50]]</code>
+        <code>[[0.40, -0.60], [-0.20, -0.50]]</code>
     </p>
     <p>
-        <code class="user-output">[0.40 -0.60; -0.20 -0.50]</code>
+        <code>[0.40 -0.60; -0.20 -0.50]</code>
     </p>
     <hr>
     <small>
