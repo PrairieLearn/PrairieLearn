@@ -9,7 +9,6 @@ import prairielearn as pl
 from typing_extensions import assert_never
 
 
-# Internal enums for better code organization
 class PartialCreditType(Enum):
     ALL_OR_NOTHING = "none"
     NET_CORRECT = "PC"
@@ -31,7 +30,6 @@ class AnswerTuple(NamedTuple):
     feedback: str | None
 
 
-# Default values
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
@@ -50,7 +48,73 @@ FEEDBACK_DEFAULT = None
 CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
 
 
-def generate_help_text(
+def generate_number_correct_text(
+    *,
+    num_correct: int,
+    show_number_correct: bool,
+) -> str:
+    """Generate text for the number of correct options."""
+    if show_number_correct:
+        if num_correct == 1:
+            return " There is exactly <b>1</b> correct option in the list above."
+        else:
+            return f" There are exactly <b>{num_correct}</b> correct options in the list above."
+    else:
+        return ""
+
+
+def generate_grading_text(
+    *,
+    insert_text: str,
+    num_display_answers: int,
+    partial_credit: bool,
+    partial_credit_method: str,
+) -> str:
+    """Generate grading text for checkbox element."""
+    if partial_credit:
+        if partial_credit_method == "PC":
+            gradingtext = (
+                "You must select"
+                + insert_text
+                + " You will receive a score of <code>100% * (t - f) / n</code>, "
+                + "where <code>t</code> is the number of true options that you select, <code>f</code> "
+                + "is the number of false options that you select, and <code>n</code> is the total number of true options. "
+                + "At minimum, you will receive a score of 0%."
+            )
+        elif partial_credit_method == "EDC":
+            gradingtext = (
+                "You must select"
+                + insert_text
+                + " You will receive a score of <code>100% * (t + f) / "
+                + str(num_display_answers)
+                + "</code>, "
+                + "where <code>t</code> is the number of true options that you select and <code>f</code> "
+                + "is the number of false options that you do not select."
+            )
+        elif partial_credit_method == "COV":
+            gradingtext = (
+                "You must select"
+                + insert_text
+                + " You will receive a score of <code>100% * (t / c) * (t / n)</code>, "
+                + "where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options, "
+                + "and <code>n</code> is the total number of options you select."
+            )
+        else:
+            raise ValueError(
+                f"Unknown value for partial_credit_method: {partial_credit_method}"
+            )
+    else:
+        gradingtext = (
+            "You must select"
+            + insert_text
+            + " You will receive a score of 100% "
+            + "if you select all options that are true and no options that are false. "
+            + "Otherwise, you will receive a score of 0%."
+        )
+    return gradingtext
+
+
+def generate_insert_text(
     *,
     num_correct: int,
     num_display_answers: int,
@@ -76,18 +140,10 @@ def generate_help_text(
     Returns:
         HTML string for help text
     """
-    # Generate number correct text if requested
-    if show_number_correct:
-        if num_correct == 1:
-            number_correct_text = (
-                " There is exactly <b>1</b> correct option in the list above."
-            )
-        else:
-            number_correct_text = f" There are exactly <b>{num_correct}</b> correct options in the list above."
-    else:
-        number_correct_text = ""
+    number_correct_text = generate_number_correct_text(
+        num_correct=num_correct, show_number_correct=show_number_correct
+    )
 
-    # Determine whether to show min/max select values
     show_min_select = (
         has_min_select_attrib and min_options_to_select != MIN_SELECT_DEFAULT
     )
@@ -95,9 +151,7 @@ def generate_help_text(
         has_max_select_attrib and max_options_to_select != num_display_answers
     )
 
-    # Generate the selection requirement text
     if detailed_help_text or (show_min_select and show_max_select):
-        # Show both min and max
         if min_options_to_select != max_options_to_select:
             insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
         else:
@@ -107,19 +161,11 @@ def generate_help_text(
     elif show_max_select:
         insert_text = f" at most <b>{max_options_to_select}</b> options."
     else:
-        # Default case - no specific requirements shown
         insert_text = " at least 1 option."
 
     insert_text += number_correct_text
 
-    # Generate final help text
-    if detailed_help_text or show_min_select or show_max_select:
-        helptext = f'<small class="form-text text-muted">Select {insert_text}</small>'
-    else:
-        # Generic help text when no specific requirements are shown
-        helptext = f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
-
-    return helptext
+    return insert_text
 
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
@@ -387,7 +433,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         # order by separating into correct/incorrect lists
         sampled_answers.sort(key=lambda a: a.idx)  # sort by stored original index
     elif order_type is OrderType.RANDOM:
-        pass  # already shuffled
+        pass  # TODO: fix this
     else:
         assert_never(order_type)
 
@@ -445,7 +491,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
-        feedback = cast("dict[str, Any] | None", partial_score.get("feedback", None))
+        feedback = partial_score.get("feedback", None)
 
         answerset = []
         for answer in display_answers:
@@ -458,8 +504,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 and answer["key"] in submitted_keys,
                 "display_feedback": answer["key"] in submitted_keys
                 and feedback is not None
+                and type(feedback) is dict
                 and feedback.get(answer["key"], None) is not None,
-                "feedback": feedback.get(answer["key"], None) if feedback is not None else None,
+                "feedback": feedback.get(answer["key"], None)
+                if type(feedback) is dict
+                else feedback,
             }
             if answer_html["display_score_badge"]:
                 answer_html["correct"] = answer["key"] in correct_keys
@@ -476,7 +525,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         helptext = None
 
         if not hide_help_text:
-            # Generate help text using helper function
             detailed_help_text = pl.get_boolean_attrib(
                 element, "detailed-help-text", DETAILED_HELP_TEXT_DEFAULT
             )
@@ -491,54 +539,46 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 element, len(display_answers)
             )
 
-            helptext = generate_help_text(
+            has_min_select_attrib = pl.has_attrib(element, "min-select")
+            has_max_select_attrib = pl.has_attrib(element, "max-select")
+            num_display_answers = len(display_answers)
+
+            insert_text = generate_insert_text(
                 num_correct=len(correct_answer_list),
-                num_display_answers=len(display_answers),
+                num_display_answers=num_display_answers,
                 show_number_correct=show_number_correct,
                 detailed_help_text=detailed_help_text,
-                has_min_select_attrib=pl.has_attrib(element, "min-select"),
-                has_max_select_attrib=pl.has_attrib(element, "max-select"),
+                has_min_select_attrib=has_min_select_attrib,
+                has_max_select_attrib=has_max_select_attrib,
                 min_options_to_select=min_options_to_select,
                 max_options_to_select=max_options_to_select,
             )
 
-            # Extract insert_text for backward compatibility with info_params
-            # (This is needed for the grading text generation below)
-            show_min_select = (
-                pl.has_attrib(element, "min-select")
-                and min_options_to_select != MIN_SELECT_DEFAULT
+            number_correct_text = generate_number_correct_text(
+                num_correct=len(correct_answer_list),
+                show_number_correct=show_number_correct,
             )
-            show_max_select = pl.has_attrib(
-                element, "max-select"
-            ) and max_options_to_select != len(display_answers)
 
-            if show_number_correct:
-                if len(correct_answer_list) == 1:
-                    number_correct_text = (
-                        " There is exactly <b>1</b> correct option in the list above."
-                    )
-                else:
-                    number_correct_text = f" There are exactly <b>{len(correct_answer_list)}</b> correct options in the list above."
+            show_min_select = (
+                has_min_select_attrib and min_options_to_select != MIN_SELECT_DEFAULT
+            )
+            show_max_select = (
+                has_max_select_attrib and max_options_to_select != num_display_answers
+            )
+            if detailed_help_text or show_min_select or show_max_select:
+                helptext = (
+                    f'<small class="form-text text-muted">Select {insert_text}</small>'
+                )
             else:
-                number_correct_text = ""
+                # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
+                helptext = f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
 
-            if detailed_help_text or (show_min_select and show_max_select):
-                if min_options_to_select != max_options_to_select:
-                    insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
-                else:
-                    insert_text = f" exactly <b>{min_options_to_select}</b> options."
-            elif show_min_select:
-                insert_text = f" at least <b>{min_options_to_select}</b> options."
-            elif show_max_select:
-                insert_text = f" at most <b>{max_options_to_select}</b> options."
-            else:
-                insert_text = " at least 1 option."
-
-            insert_text += number_correct_text
-
-            info_params[partial_credit_mode.value] = True
-            info_params["insert_text"] = insert_text
-            info_params["num_display_answers"] = len(display_answers)
+            info_params["gradingtext"] = generate_grading_text(
+                insert_text=insert_text,
+                num_display_answers=num_display_answers,
+                partial_credit=partial_credit_mode is not PartialCreditType.ALL_OR_NOTHING,
+                partial_credit_method=partial_credit_mode.value,
+            )
 
         with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
@@ -568,7 +608,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         parse_error = data["format_errors"].get(name, None)
         if parse_error is None:
             partial_score = data["partial_scores"].get(name, {"score": None})
-            feedback = cast("dict[str, Any] | None", partial_score.get("feedback", None))
+            feedback = cast(
+                "dict[str, Any] | None", partial_score.get("feedback", None)
+            )
             score = partial_score.get("score", None)
 
             answers = []
@@ -586,9 +628,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 if answer_item["display_score_badge"]:
                     answer_item["correct"] = submitted_key in correct_keys
                     answer_item["incorrect"] = submitted_key not in correct_keys
-                answer_item["display_feedback"] = feedback is not None and feedback.get(
-                    submitted_key, None
-                ) is not None
+                answer_item["display_feedback"] = (
+                    feedback is not None
+                    and feedback.get(submitted_key, None) is not None
+                )
                 answer_item["feedback"] = (
                     feedback.get(submitted_key, None) if feedback is not None else None
                 )
