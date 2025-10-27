@@ -165,7 +165,7 @@ Note that in this case the `startDate` and `endDate` should _NOT_ be specified. 
 
 ## Showing/hiding closed assessments
 
-When using [time limits](#time-limits), an assessment will "close" when the time limit runs out. When an assessment closes, it automatically grades all saved answers and compute the new total score. By default, at this point students can still view the entire exam, see which questions they got correct/incorrect, and look at the questions themselves.
+When using [time limits](#time-limits), an assessment will "close" when the time limit runs out. Similarly, in [exam mode](#server-modes) for assessments with [real-time grading disabled](../assessment/index.md#disabling-real-time-grading), once the student hits "Finish assessment", the assessment will "close". When an assessment closes, it automatically grades all saved answers and compute the new total score. By default, at this point students can still view the entire exam, see which questions they got correct/incorrect, and look at the questions themselves.
 
 To block students from viewing closed assessment details, set `"showClosedAssessment": false` in the `allowAccess` rule, like this:
 
@@ -188,8 +188,6 @@ To block students from viewing closed assessment details, set `"showClosedAssess
 ```
 
 Note that the `showClosedAssessment` statement is listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`. The additional `"active": false` restriction prevents students from starting the exam after the `endDate`.
-
-The `showClosedAssessment` access rule restriction is only really useful in conjunction with [time limits](#time-limits). It is common to pair `"showClosedAssessment": false` with [disabled real-time grading](../assessment/index.md#disabling-real-time-grading).
 
 ## Showing/hiding all score information
 

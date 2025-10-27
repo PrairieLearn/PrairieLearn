@@ -22,6 +22,12 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
 });
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
+export async function selectCourseInstanceById(
+  course_instance_id: string,
+): Promise<CourseInstance> {
+  return queryRow(sql.select_course_instance_by_id, { course_instance_id }, CourseInstanceSchema);
+}
+
 export async function selectOptionalCourseInstanceById(
   course_instance_id: string,
 ): Promise<CourseInstance | null> {

@@ -255,7 +255,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
-        action_detail: 'TEST_VALUE',
+        action_detail: 'TEST_VALUE' as any,
         old_row: { test: 'old data' },
         context: { test: 'data2' },
       });
@@ -453,7 +453,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
-        action_detail: 'TEST_VALUE',
+        action_detail: 'TEST_VALUE' as any,
         old_row: { test: 'old data' },
         context: { test: 'newer' },
       });
@@ -514,7 +514,7 @@ describe('audit-event', () => {
         row_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
-        action_detail: 'TEST_VALUE',
+        action_detail: 'TEST_VALUE' as any,
         context: { test: 'full_fields' },
         old_row: { name: 'Old Name' },
         new_row: { name: 'New Name' },
