@@ -344,7 +344,9 @@ code,
   border-radius: 6px;
 }
 
-.user-output {
+.user-output,
+.user-output-invalid {
+  display: inline;
   font-size: 14px;
   display: inline;
   white-space: pre;
