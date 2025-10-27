@@ -23,7 +23,7 @@ describe('base64 encoding/decoding equivalence', () => {
     { name: 'escaped whitespace strings', value: '\\n\\t\\r' },
 
     // Symbols and specials
-    { name: 'special characters', value: 'special!@#$%^&*()' },
+    { name: 'special characters', value: 'special!@#$%^&*()<>?"\'`=+\\' },
     { name: 'symbols', value: '©®™' },
     { name: 'null character', value: 'null\x00char' },
 
