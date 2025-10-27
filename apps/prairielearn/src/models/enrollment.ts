@@ -560,13 +560,13 @@ export async function setEnrollmentStatus({
       case 'joined':
         return {
           previousStatus: 'blocked',
-          actionDetail: 'blocked',
+          actionDetail: 'unblocked',
           allowedRoles: ['Student Data Viewer', 'Student Data Editor'],
         };
       case 'removed':
         return {
           previousStatus: 'joined',
-          actionDetail: 'unblocked',
+          actionDetail: 'removed',
           allowedRoles: ['Student'],
         };
       case 'rejected':
@@ -578,7 +578,7 @@ export async function setEnrollmentStatus({
       case 'blocked':
         return {
           previousStatus: 'joined',
-          actionDetail: 'unblocked',
+          actionDetail: 'blocked',
           allowedRoles: ['Student Data Viewer', 'Student Data Editor'],
         };
       default:
