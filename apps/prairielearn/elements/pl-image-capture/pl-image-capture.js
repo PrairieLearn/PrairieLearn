@@ -849,10 +849,15 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
           if (dataUrl) {
             hiddenOriginalCaptureInput.value = dataUrl;
-            capturePreview.onload = () => {
+            if (capturePreview.complete) {
               this.originalImageWidth = capturePreview.naturalWidth;
               this.originalImageHeight = capturePreview.naturalHeight;
-            };
+            } else {
+              capturePreview.onload = () => {
+                this.originalImageWidth = capturePreview.naturalWidth;
+                this.originalImageHeight = capturePreview.naturalHeight;
+              };
+            }
           } else {
             hiddenOriginalCaptureInput.removeAttribute('value');
           }
