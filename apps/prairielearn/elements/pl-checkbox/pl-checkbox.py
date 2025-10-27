@@ -50,84 +50,6 @@ FEEDBACK_DEFAULT = None
 CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
 
 
-def get_partial_credit_mode(
-    partial_credit: bool, partial_credit_method: str
-) -> PartialCreditType:
-    """Convert external partial credit attributes to internal enum.
-
-    Args:
-        partial_credit: Boolean indicating if partial credit is enabled
-        partial_credit_method: Method string ("PC", "COV", or "EDC")
-
-    Returns:
-        PartialCreditType enum value
-
-    Raises:
-        ValueError: If partial_credit_method is not one of "PC", "COV", or "EDC"
-    """
-    if not partial_credit:
-        return PartialCreditType.ALL_OR_NOTHING
-
-    if partial_credit_method == "PC":
-        return PartialCreditType.NET_CORRECT
-    elif partial_credit_method == "COV":
-        return PartialCreditType.COVERAGE
-    elif partial_credit_method == "EDC":
-        return PartialCreditType.EACH_ANSWER
-    else:
-        raise ValueError(f"Unknown partial_credit_method: {partial_credit_method}")
-
-
-def get_order_type(fixed_order: bool) -> OrderType:
-    """Convert external fixed-order attribute to internal enum.
-
-    Args:
-        fixed_order: Boolean indicating if answers should be in fixed order
-
-    Returns:
-        OrderType enum value
-    """
-    return OrderType.FIXED if fixed_order else OrderType.RANDOM
-
-
-def validate_min_max_options(
-    *,
-    min_select: int,
-    max_select: int,
-    number_answers: int,
-    min_correct: int,
-    max_correct: int,
-) -> None:
-    """Validate that min/max select and correct options have sensible values.
-
-    Args:
-        min_select: Minimum number of options that must be selected
-        max_select: Maximum number of options that can be selected
-        number_answers: Total number of answers to display
-        min_correct: Minimum number of correct answers
-        max_correct: Maximum number of correct answers
-
-    Raises:
-        ValueError: If any validation constraints are violated
-    """
-    if min_select > max_select:
-        raise ValueError(
-            f"min-select ({min_select}) is greater than max-select ({max_select})"
-        )
-    if min_select > number_answers:
-        raise ValueError(
-            f"min-select ({min_select}) is greater than the total number of answers to display ({number_answers})"
-        )
-    if min_select > min_correct:
-        raise ValueError(
-            f"min-select ({min_select}) is greater than the minimum possible number of correct answers ({min_correct})"
-        )
-    if max_select < max_correct:
-        raise ValueError(
-            f"max-select ({max_select}) is less than the maximum possible number of correct answers ({max_correct})"
-        )
-
-
 def generate_help_text(
     *,
     num_correct: int,
@@ -198,6 +120,84 @@ def generate_help_text(
         helptext = f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
 
     return helptext
+
+
+def get_order_type(fixed_order: bool) -> OrderType:
+    """Convert external fixed-order attribute to internal enum.
+
+    Args:
+        fixed_order: Boolean indicating if answers should be in fixed order
+
+    Returns:
+        OrderType enum value
+    """
+    return OrderType.FIXED if fixed_order else OrderType.RANDOM
+
+
+def get_partial_credit_mode(
+    partial_credit: bool, partial_credit_method: str
+) -> PartialCreditType:
+    """Convert external partial credit attributes to internal enum.
+
+    Args:
+        partial_credit: Boolean indicating if partial credit is enabled
+        partial_credit_method: Method string ("PC", "COV", or "EDC")
+
+    Returns:
+        PartialCreditType enum value
+
+    Raises:
+        ValueError: If partial_credit_method is not one of "PC", "COV", or "EDC"
+    """
+    if not partial_credit:
+        return PartialCreditType.ALL_OR_NOTHING
+
+    if partial_credit_method == "PC":
+        return PartialCreditType.NET_CORRECT
+    elif partial_credit_method == "COV":
+        return PartialCreditType.COVERAGE
+    elif partial_credit_method == "EDC":
+        return PartialCreditType.EACH_ANSWER
+    else:
+        raise ValueError(f"Unknown partial_credit_method: {partial_credit_method}")
+
+
+def validate_min_max_options(
+    *,
+    min_select: int,
+    max_select: int,
+    number_answers: int,
+    min_correct: int,
+    max_correct: int,
+) -> None:
+    """Validate that min/max select and correct options have sensible values.
+
+    Args:
+        min_select: Minimum number of options that must be selected
+        max_select: Maximum number of options that can be selected
+        number_answers: Total number of answers to display
+        min_correct: Minimum number of correct answers
+        max_correct: Maximum number of correct answers
+
+    Raises:
+        ValueError: If any validation constraints are violated
+    """
+    if min_select > max_select:
+        raise ValueError(
+            f"min-select ({min_select}) is greater than max-select ({max_select})"
+        )
+    if min_select > number_answers:
+        raise ValueError(
+            f"min-select ({min_select}) is greater than the total number of answers to display ({number_answers})"
+        )
+    if min_select > min_correct:
+        raise ValueError(
+            f"min-select ({min_select}) is greater than the minimum possible number of correct answers ({min_correct})"
+        )
+    if max_select < max_correct:
+        raise ValueError(
+            f"max-select ({max_select}) is less than the maximum possible number of correct answers ({max_correct})"
+        )
 
 
 def categorize_options(
