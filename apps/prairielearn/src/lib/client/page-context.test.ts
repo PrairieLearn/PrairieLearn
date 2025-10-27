@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { type z } from 'zod';
 
+import type { PageAuthzData } from '../authzData.types.js';
+
 import {
-  type AuthzData,
   type RawPageContextWithAuthzDataSchema,
   type StaffCourseInstanceContextSchema,
   type StudentCourseInstanceContextSchema,
@@ -131,7 +132,7 @@ describe('getPageContext', () => {
           uin: '123456789',
           user_id: '1',
         } as StaffUser,
-      } as AuthzData,
+      } as PageAuthzData,
       __csrf_token: '123',
       plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',

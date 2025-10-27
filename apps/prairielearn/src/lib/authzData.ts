@@ -1,34 +1,16 @@
-import z from 'zod';
-
 import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import type { RawAuthzData } from './client/page-context.js';
 import {
-  CourseInstanceSchema,
-  CourseSchema,
-  EnumModeReasonSchema,
-  EnumModeSchema,
-  InstitutionSchema,
-  SprocAuthzCourseInstanceSchema,
-  SprocAuthzCourseSchema,
-  type User,
-} from './db-types.js';
+  type AuthzData,
+  type DangerousSystemAuthzData,
+  FullAuthzDataSchema,
+} from './authzData.types.js';
+import { type User } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-export const AuthzDataSchema = z.object({
-  mode: EnumModeSchema,
-  mode_reason: EnumModeReasonSchema,
-  course: CourseSchema,
-  institution: InstitutionSchema,
-  course_instance: CourseInstanceSchema.nullable(),
-  permissions_course: SprocAuthzCourseSchema,
-  permissions_course_instance: SprocAuthzCourseInstanceSchema,
-});
-
-export type AuthzData = z.infer<typeof AuthzDataSchema>;
 
 export async function selectAuthzData({
   user_id,
@@ -67,7 +49,7 @@ export async function selectAuthzData({
       req_course_role,
       req_course_instance_role,
     },
-    AuthzDataSchema,
+    FullAuthzDataSchema,
   );
 }
 
@@ -187,15 +169,6 @@ export type CourseInstanceRole =
   // The role 'Any' is equivalent to 'Student' OR 'Student Data Viewer' OR 'Student Data Editor'
   | 'Any';
 
-export interface DangerousSystemAuthzData {
-  authn_user: {
-    user_id: null;
-  };
-  user: {
-    user_id: null;
-  };
-}
-
 export function dangerousFullAuthzForTesting(): DangerousSystemAuthzData {
   return {
     authn_user: {
@@ -210,15 +183,12 @@ export function dangerousFullAuthzForTesting(): DangerousSystemAuthzData {
 }
 
 export function isDangerousFullAuthzForTesting(
-  authzData: RawAuthzData | DangerousSystemAuthzData,
+  authzData: AuthzData,
 ): authzData is DangerousSystemAuthzData {
-  return authzData.authn_user.user_id === null;
+  return authzData.authn_user.user_id === null && authzData.user.user_id === null;
 }
 
-export function hasRole(
-  authzData: RawAuthzData | DangerousSystemAuthzData,
-  requestedRole: CourseInstanceRole,
-): boolean {
+export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
   if (isDangerousFullAuthzForTesting(authzData)) {
     return true;
   }
@@ -228,7 +198,7 @@ export function hasRole(
     authzData.has_student_access &&
     // If the user is an instructor, and the requestedRole is student, this should fail.
     // We want to prevent instructors from calling functions that are only meant for students.
-
+    //
     // This can happen if the instructor is in 'Student view' (with access restrictions) as well.
     authzData.course_instance_role === 'None'
   ) {
@@ -268,13 +238,13 @@ export function hasRole(
  * @param allowedRoles - The allowed roles for the model function.
  */
 export function assertHasRole(
-  authzData: RawAuthzData | DangerousSystemAuthzData,
+  authzData: AuthzData,
   requestedRole: CourseInstanceRole,
   allowedRoles: CourseInstanceRole[],
 ): void {
   if (requestedRole !== 'Any' && !allowedRoles.includes(requestedRole)) {
     // This suggests the code was called incorrectly (internal error).
-    console.error(
+    logger.error(
       `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
     );
     throw new Error(
@@ -282,9 +252,7 @@ export function assertHasRole(
     );
   }
 
-  if (hasRole(authzData, requestedRole)) {
-    return;
+  if (!hasRole(authzData, requestedRole)) {
+    throw new error.HttpStatusError(403, 'Access denied');
   }
-  // This suggests that the user is not authorized to perform the action.
-  throw new error.HttpStatusError(403, 'Access denied');
 }

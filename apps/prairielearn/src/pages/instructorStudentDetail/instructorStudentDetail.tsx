@@ -141,9 +141,6 @@ router.post(
       requestedRole: 'Student Data Editor',
       authzData,
     });
-    if (enrollment.course_instance_id !== course_instance.id) {
-      throw new HttpStatusError(400, 'Enrollment does not belong to the course instance');
-    }
 
     switch (action) {
       case 'block_student': {

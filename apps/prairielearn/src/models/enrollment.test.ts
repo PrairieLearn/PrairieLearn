@@ -66,7 +66,6 @@ describe('ensureEnrollment', () => {
       email: 'invited@example.com',
     });
 
-    // Create an invited enrollment using the helper function
     await createEnrollmentWithStatus({
       userId: null,
       courseInstance,
@@ -122,7 +121,6 @@ describe('ensureEnrollment', () => {
       email: 'blocked@example.com',
     });
 
-    // Create a blocked enrollment using the helper function
     await createEnrollmentWithStatus({
       userId: user.user_id,
       courseInstance,
@@ -203,7 +201,6 @@ describe('ensureEnrollment', () => {
     });
 
     const originalJoinedAt = new Date('2023-01-01T00:00:00Z');
-    // Create an already enrolled user using the helper function
     await createEnrollmentWithStatus({
       userId: user.user_id,
       courseInstance,
@@ -255,22 +252,21 @@ describe('DB validation of enrollment', () => {
   });
 
   it('correctly validates various states of enrollments', async () => {
-    // Helper function to create enrollment with specific state for constraint testing
     const createEnrollmentWithState = async ({
-      userId,
+      user_id,
       status,
       created_at,
       first_joined_at,
-      pendingUid,
+      pending_uid,
       pending_lti13_sub,
       pending_lti13_instance_id,
       lti_managed,
     }: {
-      userId: string | null;
+      user_id: string | null;
       status: string;
       created_at: string | null;
       first_joined_at: string | null;
-      pendingUid: string | null;
+      pending_uid: string | null;
       pending_lti13_sub?: string | null;
       pending_lti13_instance_id?: number | null;
       lti_managed?: boolean;
@@ -280,12 +276,12 @@ describe('DB validation of enrollment', () => {
          VALUES ($user_id, $course_instance_id, $status, $created_at, $first_joined_at, $pending_uid, $pending_lti13_sub, $pending_lti13_instance_id, $lti_managed)
          RETURNING *`,
         {
-          user_id: userId,
+          user_id,
           course_instance_id: courseInstance.id,
           status,
           created_at,
           first_joined_at,
-          pending_uid: pendingUid,
+          pending_uid,
           pending_lti13_sub: pending_lti13_sub ?? null,
           pending_lti13_instance_id: pending_lti13_instance_id ?? null,
           lti_managed: lti_managed ?? false,
@@ -294,7 +290,6 @@ describe('DB validation of enrollment', () => {
       );
     };
 
-    // Create users for test cases that need user_id
     const user1 = await getOrCreateUser({
       uid: 'valid_user_1@example.com',
       name: 'Valid User 1',
@@ -326,87 +321,85 @@ describe('DB validation of enrollment', () => {
       email: 'valid_user_5@example.com',
     });
 
-    // Test valid states that should not violate the constraint
+    // Valid states that should not violate the constraint
     const validStates = [
       // created_at is null (old enrollments), constraint doesn't apply
       {
-        userId: user1.user_id,
+        user_id: user1.user_id,
         status: 'joined',
         created_at: null,
         first_joined_at: null,
-        pendingUid: null,
+        pending_uid: null,
       },
       {
-        userId: user2.user_id,
+        user_id: user2.user_id,
         status: 'removed',
         created_at: null,
         first_joined_at: null,
-        pendingUid: null,
+        pending_uid: null,
       },
       // status is 'invited', first_joined_at can be null or not null
       {
-        userId: null,
+        user_id: null,
         status: 'invited',
         created_at: null,
         first_joined_at: '2025-01-01',
-        pendingUid: 'invited_1@example.com',
+        pending_uid: 'invited_1@example.com',
       },
       {
-        userId: null,
+        user_id: null,
         status: 'invited',
         created_at: '2025-01-01',
         first_joined_at: null,
-        pendingUid: 'invited_2@example.com',
+        pending_uid: 'invited_2@example.com',
       },
       // status is 'rejected', first_joined_at can be null or not null
       {
-        userId: null,
+        user_id: null,
         status: 'rejected',
         created_at: '2025-01-01',
         first_joined_at: null,
-        pendingUid: 'rejected_1@example.com',
+        pending_uid: 'rejected_1@example.com',
       },
       {
-        userId: null,
+        user_id: null,
         status: 'rejected',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
-        pendingUid: 'rejected_2@example.com',
+        pending_uid: 'rejected_2@example.com',
       },
       // status is 'joined', first_joined_at must not be null
       {
-        userId: user3.user_id,
+        user_id: user3.user_id,
         status: 'joined',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
-        pendingUid: null,
+        pending_uid: null,
       },
       // status is 'removed', first_joined_at must not be null
       {
-        userId: user4.user_id,
+        user_id: user4.user_id,
         status: 'removed',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
-        pendingUid: null,
+        pending_uid: null,
       },
       // status is 'blocked', first_joined_at must not be null
       {
-        userId: user5.user_id,
+        user_id: user5.user_id,
         status: 'blocked',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
-        pendingUid: null,
+        pending_uid: null,
       },
     ];
 
-    // All valid states should insert successfully
     for (const state of validStates) {
       const enrollment = await createEnrollmentWithState(state);
       assert.isNotNull(enrollment);
       assert.equal(enrollment.status, state.status);
     }
 
-    // Create users for invalid test cases
     const invalidUser1 = await getOrCreateUser({
       uid: 'invalid_user_1@example.com',
       name: 'Invalid User 1',
@@ -420,27 +413,26 @@ describe('DB validation of enrollment', () => {
       email: 'invalid_user_2@example.com',
     });
 
-    // Test invalid states that should violate the constraint
+    // Invalid states that should violate the constraint
     const invalidStates = [
       // status is 'joined', first_joined_at is null
       {
-        userId: invalidUser1.user_id,
+        user_id: invalidUser1.user_id,
         status: 'joined',
         created_at: '2025-01-01',
         first_joined_at: null,
-        pendingUid: null,
+        pending_uid: null,
       },
       // status is 'removed', first_joined_at is null
       {
-        userId: invalidUser2.user_id,
+        user_id: invalidUser2.user_id,
         status: 'removed',
         created_at: '2025-01-01',
         first_joined_at: null,
-        pendingUid: null,
+        pending_uid: null,
       },
     ];
 
-    // All invalid states should fail with constraint violation
     for (const state of invalidStates) {
       try {
         await createEnrollmentWithState(state);

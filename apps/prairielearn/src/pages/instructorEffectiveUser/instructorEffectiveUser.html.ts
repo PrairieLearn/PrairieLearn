@@ -11,9 +11,10 @@ import {
 } from '../../lib/db-types.js';
 
 export const CourseRolesSchema = z.object({
-  available_course_roles: CoursePermissionSchema.shape.course_role.array(),
-  available_course_instance_roles:
-    CourseInstancePermissionSchema.shape.course_instance_role.array(),
+  available_course_roles: CoursePermissionSchema.shape.course_role.unwrap().array(),
+  available_course_instance_roles: CourseInstancePermissionSchema.shape.course_instance_role
+    .unwrap()
+    .array(),
   available_uids: UserSchema.shape.uid.array().nullable(),
 });
 export type CourseRoles = z.infer<typeof CourseRolesSchema>;

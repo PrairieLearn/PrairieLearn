@@ -10,8 +10,7 @@ import { selectCourseById } from '../models/course.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
-import { type DangerousSystemAuthzData } from './authzData.js';
-import type { RawAuthzData } from './client/page-context.js';
+import type { AuthzData } from './authzData.types.js';
 import {
   type GroupConfig,
   GroupConfigSchema,
@@ -206,7 +205,7 @@ async function selectUserInCourseInstance({
 }: {
   uid: string;
   course_instance_id: string;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
 }) {
   const user = await selectOptionalUserByUid(uid);
   if (!user) return null;
@@ -256,7 +255,7 @@ export async function addUserToGroup({
   uid: string;
   authn_user_id: string;
   enforceGroupSize: boolean;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
 }) {
   await sqldb.runInTransactionAsync(async () => {
     const group = await sqldb.queryOptionalRow(
@@ -317,7 +316,7 @@ export async function joinGroup(
   assessment_id: string,
   uid: string,
   authn_user_id: string,
-  authzData: RawAuthzData | DangerousSystemAuthzData,
+  authzData: AuthzData,
 ): Promise<void> {
   const splitJoinCode = fullJoinCode.split('-');
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
@@ -360,7 +359,7 @@ export async function createGroup(
   assessment_id: string,
   uids: string[],
   authn_user_id: string,
-  authzData: RawAuthzData | DangerousSystemAuthzData,
+  authzData: AuthzData,
 ): Promise<void> {
   if (group_name) {
     if (group_name.length > 30) {
@@ -439,7 +438,7 @@ export async function createOrAddToGroup(
   assessment_id: string,
   uids: string[],
   authn_user_id: string,
-  authzData: RawAuthzData | DangerousSystemAuthzData,
+  authzData: AuthzData,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     const group = await sqldb.queryOptionalRow(

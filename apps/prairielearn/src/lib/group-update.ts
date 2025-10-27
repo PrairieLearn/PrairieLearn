@@ -6,8 +6,8 @@ import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/po
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
-import { type DangerousSystemAuthzData, dangerousFullAuthzForTesting } from './authzData.js';
-import type { RawAuthzData } from './client/page-context.js';
+import { dangerousFullAuthzForTesting } from './authzData.js';
+import type { AuthzData } from './authzData.types.js';
 import { createCsvParser } from './csv.js';
 import { UserSchema } from './db-types.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
@@ -33,7 +33,7 @@ export async function uploadInstanceGroups(
   csvFile: Express.Multer.File | null | undefined,
   user_id: string,
   authn_user_id: string,
-  authzData: RawAuthzData | DangerousSystemAuthzData,
+  authzData: AuthzData,
 ): Promise<string> {
   if (csvFile == null) {
     throw new Error('No CSV file uploaded');

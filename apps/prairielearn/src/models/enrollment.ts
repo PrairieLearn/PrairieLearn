@@ -13,14 +13,13 @@ import {
 } from '../ee/models/enrollment.js';
 import {
   type CourseInstanceRole,
-  type DangerousSystemAuthzData,
   assertHasRole,
   dangerousFullAuthzForTesting,
   hasRole,
   isDangerousFullAuthzForTesting,
 } from '../lib/authzData.js';
+import type { AuthzData, PageAuthzData } from '../lib/authzData.types.js';
 import {
-  type RawAuthzData,
   type StaffCourseInstanceContext,
   type StudentCourseInstanceContext,
 } from '../lib/client/page-context.js';
@@ -67,11 +66,11 @@ function assertEnrollmentInCourseInstance(
   }
 }
 
-function assertEnrollmentBelongsToUser(
-  enrollment: Enrollment,
-  authzData: RawAuthzData | DangerousSystemAuthzData,
-) {
+function assertEnrollmentBelongsToUser(enrollment: Enrollment | null, authzData: AuthzData) {
   if (isDangerousFullAuthzForTesting(authzData)) {
+    return;
+  }
+  if (enrollment == null) {
     return;
   }
   // We only check this for enrollments that have a user_id (e.g. non-pending enrollments)
@@ -100,7 +99,7 @@ async function _enrollUserInCourseInstanceWithLock({
   userId: string;
   actionDetail: SupportedActionsForTable<'enrollments'>;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
 }): Promise<Enrollment> {
   assertHasRole(authzData, requestedRole, ['Student']);
 
@@ -145,7 +144,7 @@ export async function ensureEnrollment({
 }: {
   userId: string;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
   courseInstance: CourseInstanceContext;
   actionDetail: SupportedActionsForTable<'enrollments'>;
 }): Promise<Enrollment | null> {
@@ -214,9 +213,6 @@ export async function ensureEnrollment({
  * plan grants and if their enrollment wouldn't cause an institution or course
  * instance enrollment limit to be exceeded.
  *
- * If the user was successfully enrolled, returns true. Otherwise, returns
- * false. If false is returned, the response has already been redirected to
- * an appropriate page.
  */
 export async function ensureCheckedEnrollment({
   institution,
@@ -229,7 +225,7 @@ export async function ensureCheckedEnrollment({
   institution: Institution;
   course: Course;
   courseInstance: CourseInstance;
-  authzData: RawAuthzData;
+  authzData: PageAuthzData;
   requestedRole: CourseInstanceRole;
   actionDetail: SupportedActionsForTable<'enrollments'>;
 }) {
@@ -274,7 +270,7 @@ export async function selectOptionalEnrollmentByUserId({
 }: {
   userId: string;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment | null> {
   assertHasRole(authzData, requestedRole, [
@@ -290,7 +286,7 @@ export async function selectOptionalEnrollmentByUserId({
   if (enrollment) {
     assertEnrollmentInCourseInstance(enrollment, courseInstance);
   }
-  if (hasRole(authzData, 'Student') && enrollment) {
+  if (hasRole(authzData, 'Student')) {
     assertEnrollmentBelongsToUser(enrollment, authzData);
   }
   return enrollment;
@@ -304,7 +300,7 @@ export async function selectOptionalEnrollmentByPendingUid({
 }: {
   pendingUid: string;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment | null> {
   assertHasRole(authzData, requestedRole, [
@@ -320,7 +316,7 @@ export async function selectOptionalEnrollmentByPendingUid({
   if (enrollment) {
     assertEnrollmentInCourseInstance(enrollment, courseInstance);
   }
-  if (hasRole(authzData, 'Student') && enrollment) {
+  if (hasRole(authzData, 'Student')) {
     assertEnrollmentBelongsToUser(enrollment, authzData);
   }
   return enrollment;
@@ -361,7 +357,7 @@ export async function selectEnrollmentById({
   id: string;
   courseInstance: CourseInstanceContext;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
 }) {
   assertHasRole(authzData, requestedRole, [
     'Student',
@@ -389,7 +385,7 @@ export async function selectOptionalEnrollmentByUid({
 }: {
   uid: string;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
   courseInstance: CourseInstanceContext;
 }) {
   assertHasRole(authzData, requestedRole, [
@@ -405,7 +401,7 @@ export async function selectOptionalEnrollmentByUid({
   if (enrollment) {
     assertEnrollmentInCourseInstance(enrollment, courseInstance);
   }
-  if (hasRole(authzData, 'Student') && enrollment) {
+  if (hasRole(authzData, 'Student')) {
     assertEnrollmentBelongsToUser(enrollment, authzData);
   }
   return enrollment;
@@ -424,7 +420,7 @@ async function _inviteExistingEnrollmentLocked({
 }: {
   enrollment: Enrollment;
   pendingUid: string;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
   requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
   assertHasRole(authzData, requestedRole, ['Student Data Editor']);
@@ -458,7 +454,7 @@ async function inviteNewEnrollment({
   requestedRole,
 }: {
   pendingUid: string;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
   courseInstance: CourseInstanceContext;
   requestedRole: CourseInstanceRole;
 }) {
@@ -496,7 +492,7 @@ export async function inviteStudentByUid({
 }: {
   uid: string;
   requestedRole: CourseInstanceRole;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
@@ -548,7 +544,7 @@ export async function setEnrollmentStatus({
 }: {
   enrollment: Enrollment;
   status: 'rejected' | 'blocked' | 'removed' | 'joined';
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
   requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
   const transitionInformation: {
@@ -634,7 +630,7 @@ export async function deleteEnrollment({
 }: {
   enrollment: Enrollment;
   actionDetail: SupportedActionsForTable<'enrollments'>;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
   requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
   assertHasRole(authzData, requestedRole, ['Student Data Editor']);
@@ -678,7 +674,7 @@ export async function inviteEnrollment({
 }: {
   enrollment: Enrollment;
   pendingUid: string;
-  authzData: RawAuthzData | DangerousSystemAuthzData;
+  authzData: AuthzData;
   requestedRole: CourseInstanceRole;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
