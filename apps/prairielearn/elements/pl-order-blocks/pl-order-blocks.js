@@ -1,11 +1,4 @@
 /**
- * @typedef {object} PLOrderBlocksOptions
- * @property {number} maxIndent - The maximum number of times an answer block can be indented
- * @property {boolean} enableIndentation - Whether to enable indentation
- * @property {boolean} [inline] - Whether to display the blocks inline
- */
-
-/**
  * @param {string} uuid
  * @param {PLOrderBlocksOptions} options
  */
