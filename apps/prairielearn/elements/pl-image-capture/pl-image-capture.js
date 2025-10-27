@@ -52,8 +52,8 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.resizingCtx = null;
 
       /** Original captured image width and height */
-      this.originalWidth = null;
-      this.originalHeight = null;
+      this.originalImageWidth = null;
+      this.originalImageHeight = null;
 
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
@@ -582,7 +582,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
     }
 
-    setHiddenCaptureInputValue(dataUrl) {
+    async setHiddenCaptureInputValue(dataUrl) {
       const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
 
       this.ensureElementsExist({
@@ -602,32 +602,32 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         const image = new Image();
         image.src = dataUrl;
 
-        image.onload = () => {
-          const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
-          if (imageScaleFactor >= 1) {
-            // If we don't need to shrink the image, just use it directly.
-            hiddenCaptureInput.value = dataUrl;
-            return;
-          }
-          const targetWidth = Math.round(image.width * imageScaleFactor);
-          const targetHeight = Math.round(image.height * imageScaleFactor);
+        await image.decode();
 
-          if (!this.resizingCanvas) {
-            this.resizingCanvas = document.createElement('canvas');
-          }
+        const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
+        if (imageScaleFactor >= 1) {
+          // If we don't need to shrink the image, just use it directly.
+          hiddenCaptureInput.value = dataUrl;
+          return;
+        }
+        const targetWidth = Math.round(image.width * imageScaleFactor);
+        const targetHeight = Math.round(image.height * imageScaleFactor);
+
+        if (!this.resizingCanvas) {
+          this.resizingCanvas = document.createElement('canvas');
+        }
+        if (!this.resizingCtx) {
+          this.resizingCtx = this.resizingCanvas.getContext('2d');
           if (!this.resizingCtx) {
-            this.resizingCtx = this.resizingCanvas.getContext('2d');
-            if (!this.resizingCtx) {
-              throw new Error('Failed to get canvas context');
-            }
+            throw new Error('Failed to get canvas context');
           }
+        }
 
-          this.resizingCanvas.width = targetWidth;
-          this.resizingCanvas.height = targetHeight;
-          this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+        this.resizingCanvas.width = targetWidth;
+        this.resizingCanvas.height = targetHeight;
+        this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
 
-          hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg');
-        };
+        hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg');
       } else {
         hiddenCaptureInput.removeAttribute('value');
       }
