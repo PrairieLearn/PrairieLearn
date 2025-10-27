@@ -22,8 +22,8 @@ WITH
       score_perc = $score_perc,
       highest_submission_score = $highest_submission_score,
       current_value = $current_value,
-      points_list = $points_list,
-      variants_points_list = $variants_points_list,
+      points_list = $points_list::double precision[],
+      variants_points_list = $variants_points_list::double precision[],
       number_attempts = iq.number_attempts + 1
     WHERE
       iq.id = $instance_question_id

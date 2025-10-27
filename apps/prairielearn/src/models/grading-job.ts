@@ -196,7 +196,7 @@ export async function updateGradingJobAfterGrading({
         await updateInstanceQuestionGrade({
           variant_id,
           instance_question_id,
-          submission_score: gradingJob.score ?? 0,
+          submissionScore: gradingJob.score ?? 0,
           grading_job_id,
           authn_user_id: gradingJob.auth_user_id,
         });

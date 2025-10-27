@@ -35,13 +35,13 @@ type InstanceQuestionsPoints = Pick<
 export async function updateInstanceQuestionGrade({
   variant_id,
   instance_question_id,
-  submission_score,
+  submissionScore,
   grading_job_id,
   authn_user_id,
 }: {
   variant_id: string;
   instance_question_id: string;
-  submission_score: number;
+  submissionScore: number;
   grading_job_id: string;
   authn_user_id: string | null;
 }) {
@@ -83,7 +83,7 @@ export async function updateInstanceQuestionGrade({
         return computeInstanceQuestionPointsExam({
           assessmentQuestion,
           instanceQuestion,
-          submission_score,
+          submissionScore,
         });
       }
       if (assessment.type === 'Homework') {
@@ -91,7 +91,7 @@ export async function updateInstanceQuestionGrade({
           assessment,
           assessmentQuestion,
           instanceQuestion,
-          submission_score,
+          submissionScore,
         });
       }
       throw new Error(`Unknown assessment type: ${assessment.type}`);
@@ -103,6 +103,7 @@ export async function updateInstanceQuestionGrade({
       ...computedPoints,
       points,
       score_perc: (points / (assessmentQuestion.max_points || 1)) * 100,
+      max_auto_points: assessmentQuestion.max_auto_points,
       max_points: assessmentQuestion.max_points,
       grading_job_id,
       authn_user_id,
@@ -114,22 +115,22 @@ export async function updateInstanceQuestionGrade({
 async function computeInstanceQuestionPointsExam({
   instanceQuestion,
   assessmentQuestion,
-  submission_score,
+  submissionScore,
 }: {
   instanceQuestion: InstanceQuestion;
   assessmentQuestion: AssessmentQuestion;
-  submission_score: number;
+  submissionScore: number;
 }): Promise<InstanceQuestionsPoints> {
   const maxAutoPoints = assessmentQuestion.max_auto_points ?? 0;
   const maxManualPoints = assessmentQuestion.max_manual_points ?? 0;
 
-  const correct = submission_score >= 1;
+  const correct = submissionScore >= 1;
   const currentAttemptWorth =
     (instanceQuestion.points_list_original?.at(instanceQuestion.number_attempts) ?? 0) -
     maxManualPoints;
   const eligibleScoreIncrease = Math.max(
     0,
-    submission_score - (instanceQuestion.highest_submission_score ?? 0),
+    submissionScore - (instanceQuestion.highest_submission_score ?? 0),
   );
 
   const auto_points =
@@ -139,7 +140,7 @@ async function computeInstanceQuestionPointsExam({
         currentAttemptWorth * eligibleScoreIncrease;
   const highest_submission_score = Math.max(
     instanceQuestion.highest_submission_score ?? 0,
-    submission_score,
+    submissionScore,
   );
 
   return {
@@ -176,21 +177,21 @@ async function computeInstanceQuestionPointsHomework({
   assessment,
   instanceQuestion,
   assessmentQuestion,
-  submission_score,
+  submissionScore,
 }: {
   assessment: Assessment;
   instanceQuestion: InstanceQuestion;
   assessmentQuestion: AssessmentQuestion;
-  submission_score: number;
+  submissionScore: number;
 }): Promise<InstanceQuestionsPoints> {
   const maxAutoPoints = assessmentQuestion.max_auto_points ?? 0;
   const maxManualPoints = assessmentQuestion.max_manual_points ?? 0;
 
   const highest_submission_score = Math.max(
     instanceQuestion.highest_submission_score ?? 0,
-    submission_score,
+    submissionScore,
   );
-  const correct = submission_score >= 1;
+  const correct = submissionScore >= 1;
   let current_value =
     (correct ? instanceQuestion.current_value : assessmentQuestion.init_points) ?? 0;
 
@@ -199,7 +200,7 @@ async function computeInstanceQuestionPointsHomework({
 
   const variants_points_list = instanceQuestion.variants_points_list.map((points) => points ?? 0);
   const variantPointsOld = variants_points_list.at(-1) ?? 0;
-  const variantPointsNew = submission_score * current_auto_value;
+  const variantPointsNew = submissionScore * current_auto_value;
   if (variants_points_list.length === 0 || variantPointsOld >= init_auto_points) {
     // If this is the first submission, or if the old variant points already
     // reached got 100% of the auto points, append a new entry.
