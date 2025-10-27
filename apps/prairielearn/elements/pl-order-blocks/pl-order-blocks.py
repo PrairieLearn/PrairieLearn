@@ -401,7 +401,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if grading_method is GradingMethodType.UNORDERED:
             ordering_message = "in any order"
-        elif grading_method in [GradingMethodType.DAG, GradingMethodType.RANKING]:
+        elif grading_method is GradingMethodType.DAG:
+            if not has_optional_blocks:
+                ordering_message = "there may be other correct orders"
+            else:
+                ordering_message = "there may be other answers"
+        elif grading_method is GradingMethodType.RANKING:
             ordering_message = "there may be other correct orders"
         else:
             ordering_message = "in the specified order"
