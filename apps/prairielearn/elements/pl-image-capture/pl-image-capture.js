@@ -156,12 +156,12 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         this.handleCaptureImage();
       });
 
-      cancelLocalCameraButton.addEventListener('click', () => {
-        this.cancelLocalCameraCapture();
+      cancelLocalCameraButton.addEventListener('click', async () => {
+        await this.cancelLocalCameraCapture();
       });
 
-      applyChangesButton.addEventListener('click', () => {
-        this.confirmCropRotateChanges();
+      applyChangesButton.addEventListener('click', async () => {
+        await this.confirmCropRotateChanges();
       });
     }
 
@@ -602,7 +602,11 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         const image = new Image();
         image.src = dataUrl;
 
-        await image.decode();
+        try {
+          await image.decode();
+        } catch (error) {
+          throw new Error(`Failed to decode image: ${error.message}`);
+        }
 
         const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
         if (imageScaleFactor >= 1) {
@@ -675,12 +679,12 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
      * Sets the hidden capture input value to the capture preview, which is the last
      * image that was ready for submission.
      */
-    setHiddenCaptureInputToCapturePreview() {
+    async setHiddenCaptureInputToCapturePreview() {
       const capturePreviewImg = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container .pl-image-capture-preview',
       );
 
-      this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
+      await this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
     }
 
     loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
@@ -1034,7 +1038,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.openContainer('capture-preview');
     }
 
-    cancelLocalCameraCapture() {
+    async cancelLocalCameraCapture() {
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
         '.js-capture-preview-container',
       );
@@ -1052,7 +1056,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       });
 
       this.openContainer('capture-preview');
-      this.setHiddenCaptureInputToCapturePreview();
+      await this.setHiddenCaptureInputToCapturePreview();
 
       localCameraErrorMessage.classList.add('d-none');
 
@@ -1410,7 +1414,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       clearTimeout(this.timeoutId);
       this.timeoutId = setTimeout(async () => {
         const { dataUrl } = await this.getCropperSelection();
-        this.setHiddenCaptureInputValue(dataUrl);
+        await this.setHiddenCaptureInputValue(dataUrl);
       }, 200);
     }
 
@@ -1478,7 +1482,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       rotationSlider.value = this.offsetRotationAngle;
     }
 
-    cancelCropRotate(revertToLastImage = true) {
+    async cancelCropRotate(revertToLastImage = true) {
       this.ensureCropperExists();
 
       this.removeCropperChangeListeners();
@@ -1491,7 +1495,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
       this.openContainer('capture-preview');
       if (revertToLastImage) {
-        this.setHiddenCaptureInputToCapturePreview();
+        await this.setHiddenCaptureInputToCapturePreview();
       }
 
       // Restore the previous hidden capture changed flag value.

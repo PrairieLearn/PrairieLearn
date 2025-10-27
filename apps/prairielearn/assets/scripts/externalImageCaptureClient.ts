@@ -198,9 +198,12 @@ onDocumentReady(() => {
     const file = cameraInput.files[0];
     const url = URL.createObjectURL(file);
 
+    imagePreview.onload = () => {
+      URL.revokeObjectURL(url);
+    };
+
     displayImagePreview(url);
     changeState('form');
-    URL.revokeObjectURL(url);
   });
 
   externalImageCaptureForm.addEventListener('submit', () => {
