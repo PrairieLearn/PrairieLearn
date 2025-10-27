@@ -136,7 +136,7 @@ router.post(
       authn_user: { uid, user_id: userId },
     } = getPageContext(res.locals, { withAuthzData: false });
 
-    // TODO: Authenticate this access better.
+    // TODO: Authenticate this access better (model functions for course instances)
     const courseInstance = await selectCourseInstanceById(body.course_instance_id);
 
     const { authzData } = await buildAuthzData({

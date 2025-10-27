@@ -229,6 +229,7 @@ export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole)
 /**
  * Asserts that the user has the requested role. It also asserts that
  * the requested role is one of the allowed roles.
+ * If the model function enforces `requestedRole` at the type level, `allowedRoles` is not needed.
  *
  * For staff roles, it checks that you have at least the requested role.
  * role. If you have a more permissive role, you are allowed to perform the action.
@@ -240,9 +241,9 @@ export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole)
 export function assertHasRole(
   authzData: AuthzData,
   requestedRole: CourseInstanceRole,
-  allowedRoles: CourseInstanceRole[],
+  allowedRoles?: CourseInstanceRole[],
 ): void {
-  if (requestedRole !== 'Any' && !allowedRoles.includes(requestedRole)) {
+  if (allowedRoles && requestedRole !== 'Any' && !allowedRoles.includes(requestedRole)) {
     // This suggests the code was called incorrectly (internal error).
     logger.error(
       `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
