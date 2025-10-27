@@ -96,7 +96,7 @@ export type InsertAuditEventParams = SupportedTableActionCombination & {
  * @param params Parameters for the audit event
  * @param params.action - The action that was performed
  * @param params.actionDetail - e.g. the column name that was updated
- * @param params.agentAuthnUserId - ID of the authorized user performing the action
+ * @param params.agentAuthnUserId - ID of the authenticated user performing the action
  * @param params.agentUserId - ID of the authorized user performing the action
  * @param params.context - Additional context, typically empty
  * @param params.courseId - Inferred from `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
