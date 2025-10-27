@@ -229,7 +229,8 @@ export async function ensureCheckedEnrollment({
   requestedRole: CourseInstanceRole;
   actionDetail: SupportedActionsForTable<'enrollments'>;
 }) {
-  assertHasRole(authzData, requestedRole, ['Student']);
+  // If the current user is not a student, bail
+  if (!hasRole(authzData, 'Student')) return;
 
   if (isEnterprise()) {
     const status = await checkPotentialEnterpriseEnrollment({
