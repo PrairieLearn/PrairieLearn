@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
+    "declarationMap": true,
     "types": ["node"],
     // Use native ESM.
     "module": "NodeNext",
