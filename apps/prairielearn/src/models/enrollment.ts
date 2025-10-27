@@ -78,6 +78,10 @@ function assertEnrollmentBelongsToUser(
   if (enrollment.user_id && enrollment.user_id !== authzData.user.user_id) {
     throw new error.HttpStatusError(403, 'Access denied');
   }
+  // Check for invitations
+  if (enrollment.pending_uid && enrollment.pending_uid !== authzData.user.uid) {
+    throw new error.HttpStatusError(403, 'Access denied');
+  }
 }
 
 /**
