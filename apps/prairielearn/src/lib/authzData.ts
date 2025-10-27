@@ -1,5 +1,4 @@
 import * as error from '@prairielearn/error';
-import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
@@ -245,9 +244,6 @@ export function assertHasRole(
 ): void {
   if (allowedRoles && requestedRole !== 'Any' && !allowedRoles.includes(requestedRole)) {
     // This suggests the code was called incorrectly (internal error).
-    logger.error(
-      `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
-    );
     throw new Error(
       `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
     );
