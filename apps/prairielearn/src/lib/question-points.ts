@@ -1,12 +1,6 @@
 import z from 'zod';
 
-import {
-  execute,
-  executeRow,
-  loadSqlEquiv,
-  queryRow,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import {
@@ -98,7 +92,7 @@ export async function updateInstanceQuestionGrade({
     });
     const points = (computedPoints.auto_points ?? 0) + (instanceQuestion.manual_points ?? 0);
 
-    await executeRow(sql.update_instance_question_grade, {
+    await execute(sql.update_instance_question_grade, {
       instance_question_id,
       ...computedPoints,
       points,
