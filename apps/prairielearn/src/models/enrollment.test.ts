@@ -30,8 +30,7 @@ async function createEnrollmentWithStatus({
   firstJoinedAt?: Date | null;
   pendingUid?: string | null;
 }): Promise<Enrollment> {
-  // First create a basic enrollment
-  const enrollment = await queryRow(
+  return await queryRow(
     `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at, pending_uid)
      VALUES ($user_id, $course_instance_id, $status, $first_joined_at, $pending_uid)
      RETURNING *`,
@@ -44,8 +43,6 @@ async function createEnrollmentWithStatus({
     },
     EnrollmentSchema,
   );
-
-  return enrollment;
 }
 
 describe('ensureEnrollment', () => {
