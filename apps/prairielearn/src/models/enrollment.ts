@@ -642,13 +642,13 @@ export async function deleteEnrollment({
   return await runInTransactionAsync(async () => {
     const oldEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
+    assertEnrollmentStatus(oldEnrollment, 'invited');
+
     const deletedEnrollment = await queryRow(
       sql.delete_enrollment_by_id,
       { enrollment_id: enrollment.id },
       EnrollmentSchema,
     );
-
-    assertEnrollmentStatus(deletedEnrollment, 'invited');
 
     await insertAuditEvent({
       tableName: 'enrollments',
