@@ -181,9 +181,10 @@ export async function buildAuthzData({
 
 export type CourseInstanceRole =
   | 'None'
+  | 'Student'
   | 'Student Data Viewer'
   | 'Student Data Editor'
-  | 'Student'
+  // The role 'Any' is equivalent to 'Student' OR 'Student Data Viewer' OR 'Student Data Editor'
   | 'Any';
 
 export interface DangerousSystemAuthzData {
