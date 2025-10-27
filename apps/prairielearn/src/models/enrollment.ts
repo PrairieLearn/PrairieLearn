@@ -577,14 +577,14 @@ export async function setEnrollmentStatus({
     }
 
     // Assert that the enrollment is in the previous status.
-    assertEnrollmentStatus(enrollment, transitionInformation.previousStatus);
+    assertEnrollmentStatus(lockedEnrollment, transitionInformation.previousStatus);
 
     // Assert that the caller is authorized to perform the action.
     assertHasRole(authzData, requestedRole, transitionInformation.allowedRoles);
 
     const newEnrollment = await queryRow(
       sql.set_enrollment_status,
-      { enrollment_id: enrollment.id, status },
+      { enrollment_id: lockedEnrollment.id, status },
       EnrollmentSchema,
     );
 
@@ -593,7 +593,7 @@ export async function setEnrollmentStatus({
       action: 'update',
       actionDetail: transitionInformation.actionDetail,
       rowId: newEnrollment.id,
-      oldRow: enrollment,
+      oldRow: lockedEnrollment,
       newRow: newEnrollment,
       agentUserId: authzData.user.user_id,
       agentAuthnUserId: authzData.authn_user.user_id,
