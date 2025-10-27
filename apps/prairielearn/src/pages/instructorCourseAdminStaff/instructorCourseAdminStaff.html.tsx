@@ -371,14 +371,14 @@ function CoursePermissionsRemoveStaffForm({
 
       <div class="mb-3">
         <p class="form-text">
-          Taking this action will remove ${courseUser.user.name ?? 'this staff member'} from course
+          Taking this action will remove ${courseUser.user.name ?? courseUser.user.uid} from course
           staff.
         </p>
       </div>
 
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-danger">Remove staff</button>
+        <button type="submit" class="btn btn-danger">Remove</button>
       </div>
     </form>
   `;
@@ -487,12 +487,12 @@ function StaffTable({
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-dark"
-                          aria-label="Remove ${courseUser.user.name ?? 'staff'}"
+                          aria-label="Remove ${courseUser.user.name ?? courseUser.user.uid}"
                           data-bs-toggle="popover"
                           data-bs-container="body"
                           data-bs-html="true"
                           data-bs-placement="auto"
-                          data-bs-title="Remove ${courseUser.user.name ?? 'staff'}"
+                          data-bs-title="Remove ${courseUser.user.name ?? courseUser.user.uid}"
                           data-bs-content="${escapeHtml(
                             CoursePermissionsRemoveStaffForm({
                               csrfToken,
@@ -502,7 +502,7 @@ function StaffTable({
                           data-bs-custom-class="popover-wide"
                           data-testid="remove-staff-button"
                         >
-                          <i class="fa fa-times"></i> Remove staff
+                          <i class="fa fa-times"></i> Remove
                         </button>
                       `
                     : ''}
