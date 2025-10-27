@@ -942,6 +942,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         this.localCameraStream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: { ideal: 7680 },
+            aspectRatio: { min: 1, max: 1.9 },
           },
         });
 
