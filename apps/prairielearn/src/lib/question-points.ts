@@ -195,13 +195,13 @@ async function computeInstanceQuestionPointsHomework({
   let current_value =
     (correct ? instanceQuestion.current_value : assessmentQuestion.init_points) ?? 0;
 
-  const current_auto_value = current_value - maxManualPoints;
-  const init_auto_points = (assessmentQuestion.init_points ?? 0) - maxManualPoints;
+  const currentAutoValue = current_value - maxManualPoints;
+  const baseAutoValue = (assessmentQuestion.init_points ?? 0) - maxManualPoints;
 
   const variants_points_list = instanceQuestion.variants_points_list.map((points) => points ?? 0);
   const variantPointsOld = variants_points_list.at(-1) ?? 0;
-  const variantPointsNew = submissionScore * current_auto_value;
-  if (variants_points_list.length === 0 || variantPointsOld >= init_auto_points) {
+  const variantPointsNew = submissionScore * currentAutoValue;
+  if (variants_points_list.length === 0 || variantPointsOld >= baseAutoValue) {
     // If this is the first submission, or if the old variant points already
     // reached got 100% of the auto points, append a new entry.
     variants_points_list.push(variantPointsNew);
