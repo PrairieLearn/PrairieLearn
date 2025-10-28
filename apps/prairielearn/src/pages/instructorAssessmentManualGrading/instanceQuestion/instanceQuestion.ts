@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -328,7 +327,7 @@ const PostBodySchema = z.union([
     ]),
     submission_id: IdSchema,
     modified_at: DateFromISOString,
-    rubric_item_selected_manual: IdSchema.or(z.record(z.string(), IdSchema))
+    rubric_item_selected_manual: IdSchema.or(z.array(IdSchema))
       .nullish()
       .transform((val) =>
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
@@ -340,7 +339,7 @@ const PostBodySchema = z.union([
     score_auto_points: z.coerce.number().nullish(),
     score_auto_percent: z.coerce.number().nullish(),
     submission_note: z.string().nullish(),
-    unsafe_issue_ids_close: IdSchema.or(z.record(z.string(), IdSchema))
+    unsafe_issue_ids_close: IdSchema.or(z.array(IdSchema))
       .nullish()
       .transform((val) =>
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
@@ -370,18 +369,7 @@ router.post(
     }
 
     const body =
-      req.body.__action !== 'modify_rubric_settings'
-        ? PostBodySchema.parse(
-            // Parse using qs, which allows deep objects to be created based on parameter names
-            // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
-            // Array parsing is disabled, as it has special cases for 22+ items that
-            // we don't want to double-handle, so we always receive an object and
-            // convert it to an array if necessary
-            // (https://github.com/ljharb/qs#parsing-arrays).
-            // The order of the items in arrays is never important, so using Object.values is fine.
-            qs.parse(qs.stringify(req.body), { parseArrays: false }),
-          )
-        : req.body;
+      req.body.__action !== 'modify_rubric_settings' ? PostBodySchema.parse(req.body) : req.body;
     if (body.__action === 'add_manual_grade') {
       req.session.skip_graded_submissions = body.skip_graded_submissions;
 
