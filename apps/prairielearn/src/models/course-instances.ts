@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
+import { assertHasRole, hasRole } from '../lib/authzData.js';
+import type { AuthzData } from '../lib/authzData.types.js';
 import {
   type CourseInstance,
   type CourseInstancePermission,
@@ -22,10 +24,40 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
 });
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
-export async function selectCourseInstanceById(
-  course_instance_id: string,
-): Promise<CourseInstance> {
-  return queryRow(sql.select_course_instance_by_id, { course_instance_id }, CourseInstanceSchema);
+/**
+ * Asserts that the user can access the course instance. If the user is a student,
+ * the course instance must be published to them.
+ *
+ * @param courseInstance - The course instance to check access for.
+ * @param authzData - The authorization data of the user.
+ * @returns void
+ */
+function assertCanAccessCourseInstance(courseInstance: CourseInstance, authzData: AuthzData): void {
+  if (hasRole(authzData, 'Student')) {
+    const enrollment = await selectOptionalEnrollmentByUserId({
+      user_id: params.user_id,
+      course_instance_id: authzData.course_instance.id,
+    });
+    selectPublishingExtensionsByEnrollmentId();
+  }
+  return true;
+}
+
+export async function selectCourseInstanceById({
+  id,
+  requestedRole,
+  authzData,
+}: {
+  id: string;
+  requestedRole: 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  authzData: AuthzData;
+}): Promise<CourseInstance> {
+  assertHasRole(authzData, requestedRole);
+  return queryRow(
+    sql.select_course_instance_by_id,
+    { course_instance_id: id },
+    CourseInstanceSchema,
+  );
 }
 
 export async function selectOptionalCourseInstanceById(
@@ -38,6 +70,7 @@ export async function selectOptionalCourseInstanceById(
   );
 }
 
+/** TODO: Authenticate this model function */
 export async function selectCourseInstanceByShortName({
   course_id,
   short_name,
@@ -52,6 +85,7 @@ export async function selectCourseInstanceByShortName({
   );
 }
 
+/** TODO: Authenticate this model function */
 export async function selectOptionalCourseInstanceByEnrollmentCode(
   enrollment_code: string,
 ): Promise<CourseInstance | null> {
@@ -63,6 +97,7 @@ export async function selectOptionalCourseInstanceByEnrollmentCode(
 }
 
 /**
+ * TODO: Authenticate this model function
  * Returns all course instances to which the given user has staff access.
  *
  * If the user is emulating another user, the results will be filtered to only
@@ -105,6 +140,7 @@ export async function selectCourseInstancesWithStaffAccess({
   });
 }
 
+/** TODO: Authenticate this model function */
 export async function selectUsersWithCourseInstanceAccess({
   course_instance_id,
   minimal_role,
@@ -119,6 +155,7 @@ export async function selectUsersWithCourseInstanceAccess({
   );
 }
 
+/** TODO: Authenticate this model function */
 export async function selectCourseInstanceGraderStaff({
   course_instance_id,
 }: {
@@ -131,6 +168,7 @@ export async function selectCourseInstanceGraderStaff({
 }
 
 /**
+ * TODO: Authenticate this model function
  * Returns if the course has any non-deleted course instances.
  */
 export async function selectCourseHasCourseInstances({
@@ -141,6 +179,7 @@ export async function selectCourseHasCourseInstances({
   return await queryRow(sql.select_course_has_course_instances, { course_id }, z.boolean());
 }
 
+/** TODO: Authenticate this model function */
 export async function selectCourseInstanceIsPublic(course_instance_id: string): Promise<boolean> {
   const isPublic = await queryRow(
     sql.check_course_instance_is_public,
@@ -150,6 +189,7 @@ export async function selectCourseInstanceIsPublic(course_instance_id: string): 
   return isPublic;
 }
 
+/** TODO: Authenticate this model function */
 export async function selectCourseInstanceByUuid({
   course_id,
   uuid,
@@ -164,6 +204,7 @@ export async function selectCourseInstanceByUuid({
   );
 }
 
+/** TODO: Authenticate this model function */
 export async function selectInstanceAndCourseAndInstitution({
   course_instance_id,
 }: {
