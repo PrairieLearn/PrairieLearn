@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/vite-plugin-express",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "repository": {
     "type": "git",

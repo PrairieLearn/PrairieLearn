@@ -1,5 +1,11 @@
 # @prairielearn/bind-mount
 
+## 1.1.13
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 1.1.12
 
 ### Patch Changes
