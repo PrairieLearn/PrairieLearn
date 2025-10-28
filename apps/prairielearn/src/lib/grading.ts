@@ -156,7 +156,7 @@ export async function insertSubmission({
 
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
-    if (variant.assessment_instance_id != null) {
+    if (variant.instance_question_id != null) {
       await sqldb.execute(sql.update_instance_question_post_submission, {
         instance_question_id: variant.instance_question_id,
         assessment_instance_id: variant.assessment_instance_id,
@@ -164,7 +164,7 @@ export async function insertSubmission({
         status: gradable ? 'saved' : 'invalid',
         requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
       });
-      await updateInstanceQuestionStats(variant.instance_question_id!);
+      await updateInstanceQuestionStats(variant.instance_question_id);
     }
 
     return { submission_id, variant };
