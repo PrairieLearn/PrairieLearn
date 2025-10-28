@@ -609,7 +609,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if parse_error is None:
             partial_score = data["partial_scores"].get(name, {"score": None})
             feedback = cast(
-                "dict[str, Any] | None", partial_score.get("feedback", None)
+                dict[str, Any] | None, partial_score.get("feedback", None)
             )
             score = partial_score.get("score", None)
 
@@ -692,10 +692,21 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
 
     submitted_key = data["submitted_answers"].get(name, None)
+    all_keys = [a["key"] for a in data["params"][name]]
 
     # Check that at least one option was selected
     if submitted_key is None:
         data["format_errors"][name] = "You must select at least one option."
+        return
+
+    # Check that the selected options are a subset of the valid options
+    # FIXME: raise ValueError instead of treating as parse error?
+    submitted_key_set = set(submitted_key)
+    all_keys_set = set(all_keys)
+    if not submitted_key_set.issubset(all_keys_set):
+        one_bad_key = submitted_key_set.difference(all_keys_set).pop()
+        # FIXME: escape one_bad_key
+        data["format_errors"][name] = f"You selected an invalid option: {one_bad_key}"
         return
 
     # Get minimum and maximum number of options to be selected
@@ -720,38 +731,49 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    partial_credit = pl.get_boolean_attrib(
+        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
+    )
     number_answers = len(data["params"][name])
+    partial_credit_method = pl.get_string_attrib(
+        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
+    )
 
-    partial_credit_type = get_partial_credit_mode(element)
-
-    submitted_set = set(data["submitted_answers"].get(name, []))
-    correct_set = {answer["key"] for answer in data["correct_answers"].get(name, [])}
+    submitted_keys = data["submitted_answers"].get(name, [])
+    correct_answer_list = data["correct_answers"].get(name, [])
+    correct_keys = [answer["key"] for answer in correct_answer_list]
     feedback = {
         option["key"]: option.get("feedback", None) for option in data["params"][name]
     }
 
+    submitted_set = set(submitted_keys)
+    correct_set = set(correct_keys)
+
     score = 0
-    if partial_credit_type is PartialCreditType.ALL_OR_NOTHING:
-        score = 1 if submitted_set == correct_set else 0
-    elif partial_credit_type is PartialCreditType.NET_CORRECT:
-        if submitted_set == correct_set:
-            score = 1
+    if not partial_credit and submitted_set == correct_set:
+        score = 1
+    elif partial_credit:
+        if partial_credit_method == "PC":
+            if submitted_set == correct_set:
+                score = 1
+            else:
+                n_correct_answers = len(correct_set) - len(correct_set - submitted_set)
+                points = n_correct_answers - len(submitted_set - correct_set)
+                score = max(0, points / len(correct_set))
+        elif partial_credit_method == "EDC":
+            number_wrong = len(submitted_set - correct_set) + len(
+                correct_set - submitted_set
+            )
+            score = 1 - 1.0 * number_wrong / number_answers
+        elif partial_credit_method == "COV":
+            n_correct_answers = len(correct_set & submitted_set)
+            base_score = n_correct_answers / len(correct_set)
+            guessing_factor = n_correct_answers / len(submitted_set)
+            score = base_score * guessing_factor
         else:
-            n_correct_answers = len(correct_set) - len(correct_set - submitted_set)
-            points = n_correct_answers - len(submitted_set - correct_set)
-            score = max(0, points / len(correct_set))
-    elif partial_credit_type is PartialCreditType.EACH_ANSWER:
-        number_wrong = len(submitted_set - correct_set) + len(
-            correct_set - submitted_set
-        )
-        score = 1 - 1.0 * number_wrong / number_answers
-    elif partial_credit_type is PartialCreditType.COVERAGE:
-        n_correct_answers = len(correct_set & submitted_set)
-        base_score = n_correct_answers / len(correct_set)
-        guessing_factor = n_correct_answers / len(submitted_set)
-        score = base_score * guessing_factor
-    else:
-        assert_never(partial_credit_type)
+            raise ValueError(
+                f"Unknown value for partial_credit_method: {partial_credit_method}"
+            )
 
     data["partial_scores"][name] = {
         "score": score,
@@ -764,11 +786,17 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    partial_credit = pl.get_boolean_attrib(
+        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
+    )
+    partial_credit_method = pl.get_string_attrib(
+        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
+    )
 
-    partial_credit_type = get_partial_credit_mode(element)
-
-    correct_keys = {answer["key"] for answer in data["correct_answers"].get(name, [])}
+    correct_answer_list = data["correct_answers"].get(name, [])
+    correct_keys = [answer["key"] for answer in correct_answer_list]
     number_answers = len(data["params"][name])
+    all_keys = [pl.index2key(i) for i in range(number_answers)]
 
     min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
     max_options_to_select = _get_max_options_to_select(element, number_answers)
@@ -777,9 +805,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     if result == "correct":
         if len(correct_keys) == 1:
-            data["raw_submitted_answers"][name] = correct_keys.pop()
+            data["raw_submitted_answers"][name] = correct_keys[0]
         elif len(correct_keys) > 1:
-            data["raw_submitted_answers"][name] = list(correct_keys)
+            data["raw_submitted_answers"][name] = correct_keys
         else:
             pass  # no raw_submitted_answer if no correct keys
         feedback = {
@@ -794,42 +822,44 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif result == "incorrect":
         while True:
             # select answer keys at random
-            ans = {
-                k
-                for k in map(pl.index2key, range(number_answers))
-                if random.choice([True, False])
-            }
+            ans = [k for k in all_keys if random.choice([True, False])]
             # break and use this choice if it isn't correct
             if (
-                ans != correct_keys
+                set(ans) != set(correct_keys)
                 and min_options_to_select <= len(ans) <= max_options_to_select
             ):
                 break
-        if partial_credit_type is not PartialCreditType.ALL_OR_NOTHING:
-            if partial_credit_type is PartialCreditType.NET_CORRECT:
-                if ans == correct_keys:
+        if partial_credit:
+            if partial_credit_method == "PC":
+                if set(ans) == set(correct_keys):
                     score = 1
                 else:
-                    n_correct_answers = len(correct_keys) - len(correct_keys - ans)
-                    points = n_correct_answers - len(ans - correct_keys)
-                    score = max(0, points / len(correct_keys))
-            elif partial_credit_type is PartialCreditType.EACH_ANSWER:
-                number_wrong = len(ans - correct_keys) + len(correct_keys - ans)
+                    n_correct_answers = len(set(correct_keys)) - len(
+                        set(correct_keys) - set(ans)
+                    )
+                    points = n_correct_answers - len(set(ans) - set(correct_keys))
+                    score = max(0, points / len(set(correct_keys)))
+            elif partial_credit_method == "EDC":
+                number_wrong = len(set(ans) - set(correct_keys)) + len(
+                    set(correct_keys) - set(ans)
+                )
                 score = 1 - 1.0 * number_wrong / number_answers
-            elif partial_credit_type is PartialCreditType.COVERAGE:
-                n_correct_answers = len(correct_keys & ans)
-                base_score = n_correct_answers / len(correct_keys)
-                guessing_factor = n_correct_answers / len(ans)
+            elif partial_credit_method == "COV":
+                n_correct_answers = len(set(correct_keys) & set(ans))
+                base_score = n_correct_answers / len(set(correct_keys))
+                guessing_factor = n_correct_answers / len(set(ans))
                 score = base_score * guessing_factor
             else:
-                assert_never(partial_credit_type)
+                raise ValueError(
+                    f"Unknown value for partial_credit_method: {partial_credit_method}"
+                )
         else:
             score = 0
         feedback = {
             option["key"]: option.get("feedback", None)
             for option in data["params"][name]
         }
-        data["raw_submitted_answers"][name] = list(ans)
+        data["raw_submitted_answers"][name] = ans
         data["partial_scores"][name] = {
             "score": score,
             "weight": weight,
