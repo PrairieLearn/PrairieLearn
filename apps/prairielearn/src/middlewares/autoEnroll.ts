@@ -2,6 +2,7 @@ import asyncHandler from 'express-async-handler';
 
 import { run } from '@prairielearn/run';
 
+import { EnrollmentPage } from '../components/EnrollmentPage.js';
 import { hasRole } from '../lib/authzData.js';
 import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
@@ -73,10 +74,10 @@ export default asyncHandler(async (req, res, next) => {
       // result of this enrollment, so we can just update it directly.
       res.locals.authz_data.has_student_access_with_enrollment = true;
     } else if (existingEnrollment) {
-      // Show blocked page
+      res.send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
       return;
     } else {
-      // Show fancy 'cannot self-enroll' page
+      res.send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-disabled' }));
       return;
     }
   }

@@ -4,6 +4,7 @@ import asyncHandler from 'express-async-handler';
 import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
+import { EnrollmentPage } from '../../components/EnrollmentPage.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { hasRole } from '../../lib/authzData.js';
 import { getCourseInstanceContext } from '../../lib/client/page-context.js';
@@ -38,7 +39,7 @@ router.get(
     });
 
     if (!courseInstance.self_enrollment_enabled && !existingEnrollment) {
-      // Show fancy 'cannot self-enroll' page
+      res.send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-disabled' }));
       return;
     }
 
@@ -47,7 +48,7 @@ router.get(
       ['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status);
 
     if (existingEnrollment && !canJoin) {
-      // Show blocked page
+      res.send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
       return;
     }
 
