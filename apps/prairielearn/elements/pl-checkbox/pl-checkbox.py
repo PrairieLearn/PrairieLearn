@@ -574,7 +574,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if parse_error is None:
             partial_score = data["partial_scores"].get(name, {"score": None})
             feedback = cast(
-                "dict[str, Any] | None", partial_score.get("feedback", None)
+                dict[str, Any] | None, partial_score.get("feedback", None)
             )
             score = partial_score.get("score", None)
 
