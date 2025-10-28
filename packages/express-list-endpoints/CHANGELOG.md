@@ -1,5 +1,11 @@
 # @prairielearn/express-list-endpoints
 
+## 1.0.16
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 1.0.15
 
 ### Patch Changes

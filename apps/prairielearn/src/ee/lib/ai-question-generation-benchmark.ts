@@ -387,6 +387,7 @@ async function evaluateGeneratedQuestion({
     schema: QuestionGenerationEvaluationSchema,
     providerOptions: {
       openai: {
+        strictJsonSchema: true,
         reasoningEffort: 'low',
       } satisfies OpenAIResponsesProviderOptions,
     },

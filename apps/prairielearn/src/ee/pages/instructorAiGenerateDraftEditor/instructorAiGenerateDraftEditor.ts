@@ -15,7 +15,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
-import * as b64Util from '../../../lib/base64-util.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
@@ -73,14 +73,14 @@ async function saveRevisedQuestion({
   const client = getCourseFilesClient();
 
   const files: Record<string, string | null> = {
-    'question.html': b64Util.b64EncodeUnicode(html),
+    'question.html': b64EncodeUnicode(html),
   };
 
   // We'll delete the `server.py` file if the Python code is empty. Setting
   // it to `null` instructs the editor to delete the file.
   const trimmedPython = python?.trim() ?? '';
   if (trimmedPython !== '') {
-    files['server.py'] = b64Util.b64EncodeUnicode(trimmedPython);
+    files['server.py'] = b64EncodeUnicode(trimmedPython);
   } else {
     files['server.py'] = null;
   }
@@ -325,8 +325,8 @@ router.post(
         authn_user: res.locals.authn_user,
         authz_data: res.locals.authz_data,
         urlPrefix: res.locals.urlPrefix,
-        html: b64Util.b64DecodeUnicode(req.body.html),
-        python: b64Util.b64DecodeUnicode(req.body.python),
+        html: b64DecodeUnicode(req.body.html),
+        python: b64DecodeUnicode(req.body.python),
         prompt: 'Manually update question.',
         promptType: 'manual_change',
       });

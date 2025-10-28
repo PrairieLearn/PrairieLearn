@@ -33,6 +33,13 @@
     <pl-symbolic-input answers-name="lnx" variables="x" display-log-as-ln="true" label="$\dfrac{d}{dx} ln(x)*x =$"></pl-symbolic-input>
 </pl-card>
 
+<pl-card header="An example that uses the formula editor input">
+    <pl-question-panel>
+        <p>Submit $test(\sqrt{\frac{x^2}{e^x}})$</p>
+    </pl-question-panel>
+    <pl-symbolic-input label="$y = $" aria-label="Function expression" formula-editor="true" answers-name="formula_editor" variables="x" show-score="false" custom-functions="test"></pl-symbolic-input>
+</pl-card>
+
 <pl-card header="An example in which we disable the display of simplified student submissions (&lt;code&gt;display-simplified-expression=&quot;false&quot;&lt;/code&gt;)">
     <pl-question-panel>
         <p>Write the expression $sin(atan(x))$.</p>
@@ -101,4 +108,12 @@
         <p>Submit $beef(y) + the(y)$. We set <code>show-score=&quot;false&quot;</code> to hide the score badge and <code>suffix=&quot;$= \text{where?}$&quot;</code> to set the suffix.</p>
     </pl-question-panel>
     <pl-symbolic-input aria-label="Function expression" answers-name="custom_function_2" variables="y" show-score="false" custom-functions="beef,the" suffix="$= \text{where?}$"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example with nested absolute value expressions">
+    <pl-question-panel>
+        <p>This example demonstrates handling of nested absolute value expressions. Submit the expression $|x+|-x+1+2+3+4||$.</p>
+        <p>Note: This tests the symbolic input's ability to handle complex nested absolute value expressions with multiple terms.</p>
+    </pl-question-panel>
+    <pl-symbolic-input aria-label="Nested absolute value expression" answers-name="nested_abs" variables="x" label="$y =$"></pl-symbolic-input>
 </pl-card>

@@ -129,6 +129,7 @@ async function aiEvaluateStudentResponse({
     messages: input,
     providerOptions: {
       openai: {
+        strictJsonSchema: true,
         metadata: {
           course_id: course.id,
           course_instance_id,

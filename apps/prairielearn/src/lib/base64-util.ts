@@ -1,4 +1,4 @@
-export function b64EncodeUnicode(str: string) {
+export function b64EncodeUnicodeBrowser(str: string) {
   // (1) use encodeURIComponent to get percent-encoded UTF-8
   // (2) convert percent encodings to raw bytes
   // (3) convert raw bytes to Base64
@@ -9,7 +9,7 @@ export function b64EncodeUnicode(str: string) {
   );
 }
 
-export function b64DecodeUnicode(str: string) {
+export function b64DecodeUnicodeBrowser(str: string) {
   // Going backwards: from bytestream, to percent-encoding, to original string.
   return decodeURIComponent(
     atob(str)
@@ -19,4 +19,34 @@ export function b64DecodeUnicode(str: string) {
       })
       .join(''),
   );
+}
+
+export function b64EncodeUnicodeNode(str: string) {
+  return Buffer.from(str, 'utf-8').toString('base64');
+}
+
+export function b64DecodeUnicodeNode(str: string) {
+  return Buffer.from(str, 'base64').toString('utf-8');
+}
+
+/**
+ * Encodes a Unicode string into a Base64-encoded string.
+ */
+export function b64EncodeUnicode(str: string) {
+  if (typeof Buffer !== 'undefined') {
+    return b64EncodeUnicodeNode(str);
+  }
+
+  return b64EncodeUnicodeBrowser(str);
+}
+
+/**
+ * Decodes a Base64-encoded string into a Unicode string.
+ */
+export function b64DecodeUnicode(str: string) {
+  if (typeof Buffer !== 'undefined') {
+    return b64DecodeUnicodeNode(str);
+  }
+
+  return b64DecodeUnicodeBrowser(str);
 }

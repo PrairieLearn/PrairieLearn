@@ -178,6 +178,7 @@
     "lru-cache": "^11.2.2",
     "marked": "^16.3.0",
     "mathjax": "^3.2.2",
+    "mathlive": "^0.107.1",
     "memorystream": "^0.3.1",
     "mersenne": "0.0.4",
     "mime": "^4.1.0",
