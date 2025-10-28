@@ -1,0 +1,43 @@
+<pl-question-panel>
+  Drag and drop SOME of the following blocks to prove the statement:
+  <p>
+    Construct a python function that computes the sum of two numbers.
+  </p>
+</pl-question-panel>
+<pl-order-blocks answers-name="python-plus-equals" grading-method="dag" indentation="true" max-indent="2" format="code"
+  code-language="python" feedback="first-wrong-verbose" partial-credit="lcs">
+  <pl-answer correct="true" tag="1" depends="" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" indent="1">sum = 0</pl-answer>
+  <pl-answer correct="true" tag="3" depends="2" indent="1">sum += first</pl-answer>
+  <pl-answer correct="true" tag="4" depends="2" indent="1">sum += second</pl-answer>
+  <pl-answer correct="true" tag="5" depends="2" indent="1">sum += first + second</pl-answer>
+  <pl-answer correct="true" tag="6" depends="3,4 | 5" indent="1" final="true">return sum</pl-answer>
+</pl-order-blocks>
+
+
+<pl-question-panel>
+  Drag and drop ALL of the following blocks to prove the statement:
+  <p>
+    If $n$ is an even integer, then $n + 10$ is also an even integer.
+  </p>
+</pl-question-panel>
+
+
+<pl-order-blocks feedback="first-wrong" answers-name="even-implies-even" source-blocks-order="random"
+  grading-method="dag">
+  <pl-answer correct="true" tag="1" depends="">Let $n$ be an arbitrary even integer.</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1">By the definition of even, there exists some integer $m$ such that $n =
+    2m$.</pl-answer>
+  <pl-answer correct="true" tag="3" depends="2">Then we know that $n + 10 = 2m + 10 = 2(m + 5)$</pl-answer>
+  <pl-answer correct="true" tag="4" depends="2">Since $m$ is an integer, $m+5$ is an integer.</pl-answer>
+  <pl-answer correct="true" tag="5" depends="3,4">So $n + 10$ can be rewritten as $2$ times some integer</pl-answer>
+
+  <pl-answer correct="true" tag="7" depends="">Suppose by way of contradiction that $n + 10$ is odd.</pl-answer>
+  <pl-answer correct="true" tag="8" depends="7">Then $n + 10 = 2m + 1$ for some integer $m$</pl-answer>
+  <pl-answer correct="true" tag="9" depends="8">We can rewrite this as $n = 2m - 9 = 2(m - 5) + 1.$ </pl-answer>
+  <pl-answer correct="true" tag="10" depends="8">Since $m$ is integer, $m-5$ is integer </pl-answer>
+  <pl-answer correct="true" tag="11" depends="9, 10">Since $n$ can be written as 2 times and integer plus 1, then $n$
+    must be odd, which is a contradition.</pl-answer>
+
+  <pl-answer correct="true" tag="6" depends="5 | 11" final="true">Therefore, $n + 10$ is an even integer.</pl-answer>
+</pl-order-blocks>
