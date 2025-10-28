@@ -1,5 +1,9 @@
 /* global nb, DOMPurify, MathJax */
 (() => {
+  /**
+   * @param {string} path
+   * @param {string} name
+   */
   async function downloadFile(path, name) {
     const result = await fetch(path, { method: 'GET' });
     if (!result.ok) {
@@ -15,6 +19,9 @@
     URL.revokeObjectURL(href);
   }
 
+  /**
+   * @param {string} path
+   */
   function escapePath(path) {
     return path
       .replace(/^\//, '')
@@ -25,23 +32,39 @@
 
   // eslint-disable-next-line @typescript-eslint/no-extraneous-class
   class PLFilePreview {
+    /**
+     * @param {string} uuid
+     */
     constructor(uuid) {
-      const filePreview = document.querySelector('#file-preview-' + uuid);
+      const filePreview = /** @type {HTMLElement | null} */ (
+        document.querySelector('#file-preview-' + uuid)
+      );
+      if (!filePreview) throw new Error(`File preview element not found: #file-preview-${uuid}`);
       const submissionFilesUrl = filePreview.dataset.submissionFilesUrl;
+      if (!submissionFilesUrl) throw new Error('submissionFilesUrl not found');
 
-      filePreview.querySelectorAll('.js-file-preview-item').forEach((item) => {
+      /** @type {NodeListOf<HTMLElement>} */ (
+        filePreview.querySelectorAll('.js-file-preview-item')
+      ).forEach((item) => {
         const file = item.dataset.file;
+        if (!file) return;
         const escapedFileName = escapePath(file);
         const path = `${submissionFilesUrl}/${escapedFileName}`;
 
-        const infoMessage = item.querySelector('.js-info-alert');
-        const errorMessage = item.querySelector('.js-error-alert');
+        const infoMessage = /** @type {HTMLElement} */ (item.querySelector('.js-info-alert'));
+        const errorMessage = /** @type {HTMLElement} */ (item.querySelector('.js-error-alert'));
 
+        /**
+         * @param {string} message
+         */
         function showInfoMessage(message) {
           infoMessage.textContent = message;
           infoMessage.classList.remove('d-none');
         }
 
+        /**
+         * @param {string} message
+         */
         function showErrorMessage(message) {
           errorMessage.textContent = message;
           errorMessage.classList.remove('d-none');
@@ -51,15 +74,23 @@
           errorMessage.classList.add('d-none');
         }
 
-        const toggleShowPreviewText = item.querySelector('.js-toggle-show-preview-text');
-        const toggleExpandPreviewText = item.querySelector('.js-toggle-expand-preview-text');
+        const toggleShowPreviewText = /** @type {HTMLElement} */ (
+          item.querySelector('.js-toggle-show-preview-text')
+        );
+        const toggleExpandPreviewText = /** @type {HTMLElement} */ (
+          item.querySelector('.js-toggle-expand-preview-text')
+        );
 
-        const preview = item.querySelector('.file-preview');
-        const container = item.querySelector('.file-preview-container');
+        const preview = /** @type {HTMLElement} */ (item.querySelector('.file-preview'));
+        const container = /** @type {HTMLElement} */ (
+          item.querySelector('.file-preview-container')
+        );
         const notebookPreview = item.querySelector('.js-notebook-preview');
-        const pre = preview.querySelector('pre');
+        const pre = /** @type {HTMLElement} */ (preview.querySelector('pre'));
 
-        const downloadButton = item.querySelector('.file-preview-download');
+        const downloadButton = /** @type {HTMLElement} */ (
+          item.querySelector('.file-preview-download')
+        );
         downloadButton.addEventListener('click', () => {
           downloadFile(path, file)
             .then(() => {
@@ -71,19 +102,31 @@
             });
         });
 
-        const expandButton = item.querySelector('.file-preview-expand');
+        const expandButton = /** @type {HTMLElement} */ (
+          item.querySelector('.file-preview-expand')
+        );
 
+        /**
+         * @param {boolean} expanded
+         */
         function updateExpandButton(expanded) {
           toggleExpandPreviewText.textContent = expanded ? 'Collapse' : 'Expand';
+          const expandIcon = /** @type {HTMLElement} */ (expandButton.querySelector('.fa-expand'));
+          const compressIcon = /** @type {HTMLElement} */ (
+            expandButton.querySelector('.fa-compress')
+          );
           if (expanded) {
-            expandButton.querySelector('.fa-expand').classList.add('d-none');
-            expandButton.querySelector('.fa-compress').classList.remove('d-none');
+            expandIcon.classList.add('d-none');
+            compressIcon.classList.remove('d-none');
           } else {
-            expandButton.querySelector('.fa-expand').classList.remove('d-none');
-            expandButton.querySelector('.fa-compress').classList.add('d-none');
+            expandIcon.classList.remove('d-none');
+            compressIcon.classList.add('d-none');
           }
         }
 
+        /**
+         * @param {boolean | undefined} [expanded]
+         */
         function toggleExpanded(expanded) {
           const shouldExpand = expanded ?? !container.style.maxHeight;
 
@@ -107,9 +150,9 @@
 
           if (wasOpened) return;
 
-          const code = preview.querySelector('code');
-          const img = preview.querySelector('img');
-          const iframe = preview.querySelector('iframe');
+          const code = /** @type {HTMLElement} */ (preview.querySelector('code'));
+          const img = /** @type {HTMLImageElement} */ (preview.querySelector('img'));
+          const iframe = /** @type {HTMLIFrameElement} */ (preview.querySelector('iframe'));
 
           fetch(path, { method: 'GET' })
             .then((result) => {
@@ -131,23 +174,31 @@
                     // importing DOMPurify sets the global variable `DOMPurify`.
                     import('dompurify'),
                     // importing the notebookjs library sets the global variable `nb`.
+                    // @ts-expect-error - notebookjs has no types
                     import('notebookjs'),
                     // MathJax needs to have been loaded before the extension can be used.
                     MathJax.startup.promise,
-                  ]).then(async ([Marked, markedMathjax]) => {
+                  ]).then(([Marked, markedMathjax]) => {
+                    // @ts-expect-error - addMathjaxExtension signature is complex
                     markedMathjax.addMathjaxExtension(Marked.marked, MathJax);
+                    // @ts-expect-error - nb global is not well-typed
                     nb.markdown = Marked.marked.parse;
 
-                    nb.sanitizer = (code) =>
+                    // @ts-expect-error - nb global is not well-typed
+                    nb.sanitizer = /** @param {string} code */ (code) =>
                       DOMPurify.sanitize(code, { SANITIZE_NAMED_PROPS: true });
                     const notebook = nb.parse(JSON.parse(text));
                     const rendered = notebook.render();
 
-                    notebookPreview.append(rendered);
-                    notebookPreview.classList.remove('d-none');
+                    if (notebookPreview) {
+                      notebookPreview.append(rendered);
+                      notebookPreview.classList.remove('d-none');
+                    }
 
                     // Typeset any math that might be in the notebook.
-                    window.MathJax.typesetPromise([notebookPreview]);
+                    if (notebookPreview) {
+                      void window.MathJax.typesetPromise([notebookPreview]);
+                    }
                   });
                 } else {
                   code.textContent = text;
@@ -178,7 +229,10 @@
                 iframe.onload = () => {
                   URL.revokeObjectURL(url);
                 };
-                iframe.closest('.js-file-preview-pdf-container').classList.remove('d-none');
+                const pdfContainer = /** @type {HTMLElement} */ (
+                  iframe.closest('.js-file-preview-pdf-container')
+                );
+                pdfContainer.classList.remove('d-none');
               } else {
                 // We can't preview this file.
                 showInfoMessage('Content preview is not available for this type of file.');
@@ -198,5 +252,6 @@
     }
   }
 
+  // @ts-expect-error - TypeScript doesn't recognize PLFilePreview as a valid property
   window.PLFilePreview = PLFilePreview;
 })();
