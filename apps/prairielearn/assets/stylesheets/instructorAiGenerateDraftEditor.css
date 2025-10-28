@@ -141,5 +141,8 @@
 .bi-fw {
   width: 1em;
   height: 1em;
+}
+
+.bi-fw::before {
   vertical-align: unset;
 }

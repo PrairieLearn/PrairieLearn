@@ -37,7 +37,7 @@ function ProgressStatus({
   showSpinner?: boolean;
 }) {
   return (
-    <div class="d-flex flex-row align-items-center gap-1">
+    <div class="d-flex flex-row align-items-center gap-1 small text-muted">
       {run(() => {
         if (state === 'streaming' || showSpinner) {
           return (
@@ -68,7 +68,7 @@ function ToolCallStatus({
   children?: preact.ComponentChildren;
 }) {
   return (
-    <div class="small text-muted">
+    <div>
       <ProgressStatus
         state={run(() => {
           switch (state) {
@@ -86,7 +86,7 @@ function ToolCallStatus({
         statusText={statusText}
         showSpinner={showSpinner}
       />
-      {children}
+      <div>{children}</div>
     </div>
   );
 }
