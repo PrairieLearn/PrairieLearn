@@ -336,13 +336,13 @@ export function InstructorQuestionSettings({
                             : html`<small class="text-center">${author.origin_course}</small>`}
                         </td>
                         ${canEdit
-                          ? html`<td class="text-center align-middle">
+                          ? html`<td class="text-center align-middle align-items-center">
                               <button
                                 id="${'remove_author_' + index}"
-                                class="btn btn-secondary mb-2 remove_author_button"
+                                class="align-middle btn btn-danger remove_author_button"
                                 type="button"
                               >
-                                Remove
+                                X
                               </button>
                             </td>`
                           : null}
@@ -358,8 +358,7 @@ export function InstructorQuestionSettings({
                             Add Author
                           </button>
                           <small
-                            >Each author must have a name and one of email, orcid, and origin
-                            course</small
+                            >Each author must have one of email, orcid, and origin course</small
                           >
                         </td>
                       </tr>

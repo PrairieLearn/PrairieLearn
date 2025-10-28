@@ -2,12 +2,8 @@
   "uuid": "e11b3c85-e011-4931-96e9-be5879f15be4",
   "title": "Addition of vectors in Cartesian coordinates",
   "topic": "Vectors",
-  "tags": ["v2", "numeric"],
+  "tags": ["numeric", "v2"],
   "clientFiles": ["client.js", "question.html", "answer.html", "submission.html", "fig1.png"],
   "type": "Calculation",
-  "authors": [
-    { "name": "Jane M. Smith", "email": "wrweg@sfwef.com" },
-    { "name": "vwsgvbg", "email": "email@email.com" },
-    { "name": "item", "orcid": "0000-0000-0000-0001" }
-  ]
+  "authors": [{ "name": "John Doe", "email": "doe@example.org", "orcid": "0000-0000-0000-0001" }]
 }

@@ -48,6 +48,11 @@ import {
   SelectedAssessmentsSchema,
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
+import {
+  isValidAuthorName,
+  isValidEmail,
+  isValidOrcid,
+} from '../../lib/instructorQuestionSettingsCommon.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -340,7 +345,6 @@ router.post(
       const authorKeys = keys.filter((key) => key.includes('author'));
       const authors: JSONAuthor[] = [];
       const authorNameKeys = authorKeys.filter((key) => key.includes('author_name_'));
-
       const authorNameIndices = authorNameKeys.map((key) => {
         const lastUnderscore = key.lastIndexOf('_');
         return Number(key.slice(lastUnderscore + 1));
@@ -351,23 +355,42 @@ router.post(
         const orcid: string | undefined = bodyData['author_orcid_' + authorIndex];
         const originCourse: string | undefined = bodyData['author_origin_course_' + authorIndex];
         const newAuthor: JSONAuthor = {};
+        if (
+          (email == undefined || email == '') &&
+          (orcid == undefined || orcid == '') &&
+          (originCourse == undefined || originCourse == '')
+        ) {
+          throw new error.HttpStatusError(
+            400,
+            `Every author must have one of: email, orcid, origin course`,
+          );
+        }
         if (name !== undefined && name !== '') {
+          const nameValid = isValidAuthorName(name);
+          if (!nameValid) {
+            throw new error.HttpStatusError(400, `Invalid input for name: ${name}`);
+          }
           newAuthor.name = name;
         }
         if (email !== undefined && email !== '') {
+          const emailValid = isValidEmail(email);
+          if (!emailValid) {
+            throw new error.HttpStatusError(400, `Invalid email: ${email}`);
+          }
           newAuthor.email = email;
         }
         if (orcid !== undefined && orcid !== '') {
+          const orcidValid = isValidOrcid(orcid);
+          if (!orcidValid) {
+            throw new error.HttpStatusError(400, `Invalid ORCID: ${orcid}`);
+          }
           newAuthor.orcid = orcid;
         }
         if (originCourse !== undefined && originCourse !== '') {
           newAuthor.originCourse = originCourse;
         }
         // Only write author if at least one of the fields is nonnull
-        if (
-          name !== undefined &&
-          (email !== undefined || orcid !== undefined || originCourse !== undefined)
-        ) {
+        if (email !== undefined || orcid !== undefined || originCourse !== undefined) {
           authors.push(newAuthor);
         }
       }

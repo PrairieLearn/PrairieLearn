@@ -7,6 +7,11 @@ import { renderHtml } from '@prairielearn/preact';
 import { TagBadge } from '../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../src/components/TopicBadge.js';
 import { type Tag, type Topic } from '../../src/lib/db-types.js';
+import {
+  isValidAuthorName,
+  isValidEmail,
+  isValidOrcid,
+} from '../../src/lib/instructorQuestionSettingsCommon.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';
@@ -216,12 +221,12 @@ onDocumentReady(() => {
     newRow.append(tableData);
 
     tableData = document.createElement('td');
-    tableData.setAttribute('class', 'text-center align-middle');
+    tableData.setAttribute('class', 'text-center align-middle align-items-center');
     const removeData = document.createElement('button');
     removeData.setAttribute('type', 'button');
-    removeData.setAttribute('class', 'btn btn-secondary mb-2');
+    removeData.setAttribute('class', 'align-middle btn btn-danger remove_author_button');
     removeData.setAttribute('id', 'remove_author_' + index);
-    removeData.innerText = 'Remove';
+    removeData.innerText = 'X';
     removeData.addEventListener('click', () => {
       removeAuthorRowButtonClick(index, questionSettingsForm, saveButton);
     });
@@ -245,6 +250,8 @@ onDocumentReady(() => {
   }
 
   for (let index = 0; index < numRows; index++) {
+    const nameInput = document.querySelector<HTMLInputElement>('#author_name_' + index);
+    validateNameInput(nameInput);
     const orcidIDInput = document.querySelector<HTMLInputElement>('#author_orcid_' + index);
     addORCIDInputListener(orcidIDInput);
     const emailInput = document.querySelector<HTMLInputElement>('#author_email_' + index);
@@ -266,14 +273,23 @@ const removeAuthorRowButtonClick = (
   }
 };
 
+const validateNameInput = (nameInput: HTMLInputElement | null) => {
+  nameInput?.addEventListener('blur', () => {
+    const nameValue = nameInput.value;
+    const validName = isValidAuthorName(nameValue);
+    const inputClass = 'form-control';
+    nameInput.setAttribute(
+      'class',
+      validName ? inputClass + ' is-valid' : inputClass + ' is-invalid',
+    );
+  });
+  return;
+};
+
 const validateEmailInput = (emailInput: HTMLInputElement | null) => {
   emailInput?.addEventListener('blur', () => {
     const emailValue = emailInput.value;
-    const validEmail = String(emailValue)
-      .toLowerCase()
-      .match(
-        /^$|^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
-      );
+    const validEmail = isValidEmail(emailValue);
     const inputClass = 'form-control';
     emailInput.setAttribute(
       'class',
@@ -300,25 +316,5 @@ function validateORCID(orcid: string): boolean {
   if (orcid === '') {
     return true;
   }
-
-  // Drop any dashes
-  const digits = orcid.replaceAll('-', '');
-
-  // Sanity check that should not fail since the ORCID identifier format is baked into the JSON schema
-  if (!/^\d{15}[\dX]$/.test(digits)) {
-    return false;
-  }
-
-  // Calculate and verify checksum
-  // (adapted from Java code provided here: https://support.orcid.org/hc/en-us/articles/360006897674-Structure-of-the-ORCID-Identifier)
-  let total = 0;
-  for (let i = 0; i < 15; i++) {
-    total = (total + Number.parseInt(digits[i])) * 2;
-  }
-
-  const remainder = total % 11;
-  const result = (12 - remainder) % 11;
-  const checkDigit = result === 10 ? 'X' : String(result);
-
-  return digits[15] === checkDigit;
+  return isValidOrcid(orcid);
 }
