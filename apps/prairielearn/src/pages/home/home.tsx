@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
@@ -172,11 +173,13 @@ router.post(
         });
 
         if (!enrollment) {
-          throw new HttpStatusError(404, 'Could not find enrollment to reject');
+          flash('error', 'Failed to reject invitation');
+          break;
         }
 
-        if (enrollment.status !== 'invited') {
-          throw new HttpStatusError(403, 'User does not have access to the course instance');
+        if (!['invited', 'rejected'].includes(enrollment.status)) {
+          flash('error', 'Failed to reject invitation');
+          break;
         }
 
         await setEnrollmentStatus({
@@ -196,7 +199,13 @@ router.post(
         });
 
         if (!enrollment) {
-          throw new HttpStatusError(404, 'Could not find enrollment to unenroll');
+          flash('error', 'Failed to unenroll');
+          break;
+        }
+
+        if (!['joined', 'removed'].includes(enrollment.status)) {
+          flash('error', 'Failed to unenroll');
+          break;
         }
 
         await setEnrollmentStatus({
