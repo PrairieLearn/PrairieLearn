@@ -537,6 +537,9 @@ function testEdit(params: EditData) {
         method: 'POST',
         body: new URLSearchParams(urlParams),
       });
+      if (res.status !== 200) {
+        console.log(await res.text());
+      }
       assert.isOk(res.ok);
       currentUrl = res.url;
       currentPage$ = cheerio.load(await res.text());

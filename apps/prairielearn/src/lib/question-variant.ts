@@ -279,8 +279,7 @@ async function makeAndInsertVariant(
       if (course_instance_id != null) {
         const course_instance = await selectOptionalCourseInstanceById({
           id: course_instance_id,
-          requestedRole: 'Student',
-          // TODO: Authenticate this access better.
+          requestedRole: 'System',
           authzData: dangerousFullSystemAuthz(),
         });
         if (!course_instance || !idsEqual(course_instance.course_id, variant_course.id)) {

@@ -23,7 +23,6 @@ router.get(
     const courseInstance = await selectOptionalCourseInstanceById({
       id: req.params.course_instance_id,
       requestedRole: 'Any',
-      // TODO: is this set?
       authzData: res.locals.authz_data,
     });
     if (courseInstance === null) {

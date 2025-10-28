@@ -12,7 +12,11 @@ const router = Router();
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const courseInstance = await selectOptionalCourseInstanceById(req.body.course_instance_id);
+    const courseInstance = await selectOptionalCourseInstanceById({
+      id: req.body.course_instance_id,
+      requestedRole: 'Any',
+      authzData: res.locals.authz_data,
+    });
     if (!courseInstance?.share_source_publicly) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
