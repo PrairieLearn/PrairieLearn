@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'preact/hooks';
-import { Modal } from 'react-bootstrap';
+import { Modal, Overlay, Popover } from 'react-bootstrap';
 
 import { downloadAsJSON } from '@prairielearn/browser-utils';
 
@@ -71,6 +71,7 @@ export function RubricSettings({
   const rubricFile = useRef<HTMLInputElement>(null);
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData));
   const [modifiedAt, setModifiedAt] = useState<Date | undefined>(rubricData?.modified_at);
+  const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
 
   // Also define default for rubric-related variables
   const defaultRubricItems = useRef<RubricItemData[]>(rubricItemDataMerged);
@@ -305,15 +306,8 @@ export function RubricSettings({
       ],
       500,
     );
-    $(button)
-      .popover({
-        content: 'Copied!',
-        placement: 'right',
-      })
-      .popover('show');
-    setTimeout(function () {
-      $(button).popover('hide');
-    }, 1000);
+    setCopyPopoverTarget(button);
+    setTimeout(() => setCopyPopoverTarget(null), 1000);
   };
 
   const submitSettings = async (use_rubric: boolean) => {
@@ -767,6 +761,15 @@ export function RubricSettings({
                   </button>
                 </li>
               ))}
+              {copyPopoverTarget && (
+                <Overlay target={copyPopoverTarget} placement="right" show>
+                  {(props) => (
+                    <Popover id="dynamic-popover" {...props}>
+                      <Popover.Body>Copied!</Popover.Body>
+                    </Popover>
+                  )}
+                </Overlay>
+              )}
             </ul>
           </div>
         )}
