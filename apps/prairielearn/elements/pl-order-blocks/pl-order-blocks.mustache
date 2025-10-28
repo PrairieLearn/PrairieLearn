@@ -28,9 +28,8 @@ $(function() {
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
                         tabindex="0">
                         <div class="pl-order-block-row">
-                            <div class="pl-order-block-handle">
+                            <div class="pl-order-block-handle" aria-hidden="true" role="presentation">
                                 <i class="bi bi-grip-vertical" aria-hidden="true"></i>
-                                <span class="visually-hidden">Drag handle</span>
                             </div>
                             <div class="pl-order-block-content">
                                 {{{inner_html}}}
@@ -53,7 +52,7 @@ $(function() {
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
                         >
                         <div class="pl-order-block-row">
-                            <div class="pl-order-block-handle">
+                            <div class="pl-order-block-handle" aria-hidden="true" role="presentation">
                                 <i class="bi bi-grip-vertical" aria-hidden="true"></i>
                             </div>
                             <div class="pl-order-block-content">
