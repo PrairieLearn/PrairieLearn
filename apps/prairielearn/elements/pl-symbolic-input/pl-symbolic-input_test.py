@@ -18,7 +18,7 @@ symbolic_input = importlib.import_module("pl-symbolic-input")
         ("|x!|", "abs(x!)"),
         ("|+4|", "abs(+4)"),
         ("|x + |y||", "abs(x + abs(y))"),
-        ("|x+|x+1+2+3+4||", "abs(x+abs(x+1+2+3+4))"),
+        ("|x+|-x+1+2+3+4||", "abs(x+abs(-x+1+2+3+4))"),
         ("|x+|x+1+2+3+4 ||", "abs(x+abs(x+1+2+3+4 ))"),
         ("", ""),
     ],

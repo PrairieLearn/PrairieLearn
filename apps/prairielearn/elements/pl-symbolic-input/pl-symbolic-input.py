@@ -354,20 +354,20 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     submitted_answer = data["submitted_answers"].get(name, None)
 
+    if formula_editor:
+        submitted_answer = format_formula_editor_submission_for_sympy(
+            submitted_answer,
+            allow_trig,
+            variables,
+            custom_functions,
+        )
+
     # Pre-processing to make submission parseable by SymPy
     a_sub, error_msg = format_submission_for_sympy(submitted_answer)
     if error_msg is not None:
         data["format_errors"][name] = error_msg
         data["submitted_answers"][name] = None
         return
-
-    if formula_editor:
-        a_sub = format_formula_editor_submission_for_sympy(
-            a_sub,
-            allow_trig,
-            variables,
-            custom_functions,
-        )
 
     if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
@@ -474,7 +474,7 @@ def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None
     if "|" in sub:
         return (
             None,
-            f"The absolute value bars in your answer are mismatched or ambiguous: {original_sub}.",
+            f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_sub}</code>.",
         )
 
     return sub, None

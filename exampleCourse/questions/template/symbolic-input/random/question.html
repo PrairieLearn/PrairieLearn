@@ -9,3 +9,16 @@
   variables="{{params.x}}"
   display="block"
 ></pl-symbolic-input>
+
+<pl-question-panel>
+  <p>This template also demonstrates handling of nested absolute value expressions.</p>
+  <p>Submit the expression $|x+|-x+1+2+3+4||$.</p>
+  <p>Note: This tests the symbolic input's ability to handle complex nested absolute value expressions with multiple terms.</p>
+</pl-question-panel>
+
+<pl-symbolic-input
+  answers-name="nested_abs"
+  label="$y =$"
+  variables="x"
+  display="block"
+></pl-symbolic-input>
