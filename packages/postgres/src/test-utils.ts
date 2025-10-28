@@ -23,6 +23,12 @@ interface CreateDatabaseOptions {
   prepare?: (client: pg.Client) => Promise<void>;
 }
 
+interface CreateDatabaseResults {
+  user: string;
+  host: string;
+  database: string;
+}
+
 interface DropDatabaseOptions {
   database?: string;
   force?: boolean;
@@ -38,7 +44,7 @@ async function createDatabase(
     templateDatabase,
     prepare,
   }: CreateDatabaseOptions = {},
-): Promise<void> {
+): Promise<CreateDatabaseResults> {
   const client = new pg.Client({
     ...getPoolConfig(options),
     database: options.defaultDatabase ?? POSTGRES_DATABASE,
@@ -63,12 +69,16 @@ async function createDatabase(
 
   await prepare?.(client);
 
+  const databaseOptions = {
+    user: options.user ?? POSTGRES_USER,
+    host: options.host ?? POSTGRES_HOST,
+    database: database ?? getDatabaseNameForCurrentTestWorker(options.database),
+  };
+
   if (configurePool) {
     await defaultPool.initAsync(
       {
-        user: options.user ?? POSTGRES_USER,
-        host: options.host ?? POSTGRES_HOST,
-        database: getDatabaseNameForCurrentTestWorker(options.database),
+        ...databaseOptions,
         // Offer sensible default, but these can be overridden by `options.poolConfig`.
         max: 10,
         idleTimeoutMillis: 30000,
@@ -80,6 +90,8 @@ async function createDatabase(
       },
     );
   }
+
+  return databaseOptions;
 }
 
 async function resetDatabase(options: PostgresTestUtilsOptions): Promise<void> {
@@ -141,7 +153,7 @@ function getPoolConfig(options: PostgresTestUtilsOptions): pg.PoolConfig {
 }
 
 export interface PostgresTestUtils {
-  createDatabase: (options?: CreateDatabaseOptions) => Promise<void>;
+  createDatabase: (options?: CreateDatabaseOptions) => Promise<CreateDatabaseResults>;
   resetDatabase: () => Promise<void>;
   dropDatabase: (options?: DropDatabaseOptions) => Promise<void>;
   getDatabaseNameForCurrentTestWorker: () => string;

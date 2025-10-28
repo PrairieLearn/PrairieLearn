@@ -1,5 +1,10 @@
 /* eslint-disable react-hooks/rules-of-hooks */
+import fs from 'node:fs/promises';
+
 import { test as base } from '@playwright/test';
+import * as tmp from 'tmp-promise';
+
+import type { Config } from '../../lib/config.js';
 
 export { expect } from '@playwright/test';
 
@@ -12,7 +17,7 @@ interface WorkerFixtures {
   workerPort: number;
 }
 
-const BASE_PORT = 3000;
+const BASE_PORT = 3014;
 
 /**
  * Worker-scoped fixture that configures Playwright tests to use worker-specific ports.
@@ -29,21 +34,43 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   workerPort: [
     // eslint-disable-next-line no-empty-pattern
     async ({}, use, workerInfo) => {
-      const port = BASE_PORT + workerInfo.workerIndex;
+      // Pick a unique port based on the worker index.
+      const port = BASE_PORT + workerInfo.workerIndex + 1;
 
-      // workerIndex is 0-based, but we want our database names to start at 1.
-      process.env.TEST_WORKER_INDEX = String(workerInfo.workerIndex + 1);
-      process.env.PORT = String(port);
+      // Initialize the database with the test utils.
+      const { setupDatabases, after: destroyDatabases } = await import('../helperDb.js');
+      const setupResults = await setupDatabases({ configurePool: false });
 
-      // This import implicitly starts the server
-      const { close } = await import('../../server.js');
+      await tmp.withFile(
+        async (tmpFile) => {
+          // Construct a test-specific config and write it to disk.
+          const config: Partial<Config> = {
+            serverPort: String(port),
+            postgresqlUser: setupResults.user,
+            postgresqlDatabase: setupResults.database,
+            postgresqlHost: setupResults.host,
+          };
+          await fs.writeFile(tmpFile.path, JSON.stringify(config, null, 2));
 
-      await use(port);
+          process.env.NODE_ENV = 'test';
+          process.env.PL_CONFIG_PATH = tmpFile.path;
+          process.env.PL_START_SERVER = 'true';
 
-      // Clean up the server
-      await close();
-      delete process.env.TEST_WORKER_INDEX;
-      delete process.env.PORT;
+          // This import implicitly starts the server
+          const { close } = await import('../../server.js');
+
+          try {
+            await use(port);
+          } finally {
+            // Clean up the server
+            await close();
+
+            // Tear down the testing database.
+            await destroyDatabases();
+          }
+        },
+        { postfix: 'config.json' },
+      );
     },
     { scope: 'worker' },
   ],

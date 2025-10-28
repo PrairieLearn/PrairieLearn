@@ -2193,10 +2193,9 @@ if (isHMR && isServerPending()) {
   throw new Error('The server was restarted, but it was not fully initialized.');
 }
 
-const isPlaywrightTest = process.env.TEST_WORKER_INDEX !== undefined;
-
 const shouldStartServer = run(() => {
-  if (isPlaywrightTest) return true;
+  if (process.env.PL_START_SERVER === 'true') return true;
+  if (process.env.PL_START_SERVER === 'false') return false;
   if (!config.startServer) return false;
   if (esMain(import.meta)) return true;
   if (isHMR && !isServerInitialized()) return true;
@@ -2224,19 +2223,13 @@ if (shouldStartServer) {
       configPaths = [argv.config];
     }
 
+    // If `PL_CONFIG_PATH` is set, it takes precedence over all other config paths.
+    if (process.env.PL_CONFIG_PATH) {
+      configPaths = [process.env.PL_CONFIG_PATH];
+    }
+
     // Load config immediately so we can use it configure everything else.
     await loadConfig(configPaths);
-
-    // Override the server port if PORT environment variable is set
-    if (process.env.PORT) {
-      config.serverPort = process.env.PORT;
-    }
-
-    // For Playwright tests, set up the database
-    if (isPlaywrightTest) {
-      const { before: setupDatabase } = await import('./tests/helperDb.js');
-      await setupDatabase();
-    }
 
     // This should be done as soon as we load our config so that we can
     // start exporting spans.
@@ -2251,7 +2244,7 @@ if (shouldStartServer) {
       // is used, 100% of traces will be sent to Sentry, despite us never having set
       // `tracesSampleRate` in the Sentry configuration.
       contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
-      ...(isPlaywrightTest ? { openTelemetryEnabled: false } : {}),
+      // ...(isPlaywrightTest ? { openTelemetryEnabled: false } : {}),
     });
 
     // Same with Sentry configuration.
@@ -2335,19 +2328,15 @@ if (shouldStartServer) {
       errorOnUnusedParameters: config.devMode,
     };
 
-    // For Playwright tests, the database pool and named locks are already initialized
-    // by setupDatabases() in helperDb.ts
-    if (!isPlaywrightTest) {
-      logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
-      await sqldb.initAsync(pgConfig, idleErrorHandler);
+    logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+    await sqldb.initAsync(pgConfig, idleErrorHandler);
 
-      // Our named locks code maintains a separate pool of database connections.
-      // This ensures that we avoid deadlocks.
-      await namedLocks.init(pgConfig, idleErrorHandler, {
-        renewIntervalMs: config.namedLocksRenewIntervalMs,
-      });
-      logger.verbose('Successfully connected to database');
-    }
+    // Our named locks code maintains a separate pool of database connections.
+    // This ensures that we avoid deadlocks.
+    await namedLocks.init(pgConfig, idleErrorHandler, {
+      renewIntervalMs: config.namedLocksRenewIntervalMs,
+    });
+    logger.verbose('Successfully connected to database');
 
     if (argv['refresh-workspace-hosts-and-exit']) {
       logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
@@ -2648,9 +2637,11 @@ if (shouldStartServer) {
   });
 
   setServerState('initialized');
-  logger.info('PrairieLearn server ready, press Control-C to quit');
-  if (config.devMode) {
-    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+  if (process.env.NODE_ENV !== 'test') {
+    logger.info('PrairieLearn server ready, press Control-C to quit');
+    if (config.devMode) {
+      logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+    }
   }
 } else if (isHMR && isServerInitialized()) {
   // We need to re-initialize the server when we are running in HMR mode.
@@ -2678,12 +2669,6 @@ export async function close() {
   await stopBatchedMigrations();
   await namedLocks.close();
   await sqldb.closeAsync();
-
-  // For Playwright tests, clean up the database
-  if (isPlaywrightTest) {
-    const { after: cleanupDatabase } = await import('./tests/helperDb.js');
-    await cleanupDatabase();
-  }
 }
 
 export const viteExpressApp = app;
