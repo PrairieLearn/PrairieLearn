@@ -114,7 +114,12 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('3. Enroll student user into testCourse', function () {
     it('should succeed', async () => {
-      const courseInstance = await selectCourseInstanceById('1');
+      const courseInstance = await selectCourseInstanceById({
+        id: '1',
+        requestedRole: 'Student',
+        authzData: dangerousFullAuthzForTesting(),
+        reqDate: new Date(),
+      });
       await ensureEnrollment({
         userId: user.user_id,
         courseInstance,

@@ -329,7 +329,12 @@ export async function generateAndEnrollUsers({
   course_instance_id: string;
 }) {
   return await runInTransactionAsync(async () => {
-    const courseInstance = await selectCourseInstanceById(course_instance_id);
+    const courseInstance = await selectCourseInstanceById({
+      id: course_instance_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     const users = await generateUsers(count);
     for (const user of users) {
       await ensureEnrollment({

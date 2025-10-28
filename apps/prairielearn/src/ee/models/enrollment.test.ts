@@ -50,7 +50,12 @@ describe('getEnrollmentCountsForInstitution', () => {
       },
       CourseInstanceSchema,
     );
-    const firstCourseInstance = await selectCourseInstanceById('1');
+    const firstCourseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
 
     const freeUser = await getOrCreateUser({
       uid: 'free@example.com',
@@ -161,7 +166,12 @@ describe('getEnrollmentCountsForCourse', () => {
       uin: 'student',
       email: 'student@example.com',
     });
-    const firstCourseInstance = await selectCourseInstanceById('1');
+    const firstCourseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -184,7 +194,12 @@ describe('getEnrollmentCountsForCourse', () => {
       email: 'student@example.com',
     });
 
-    const firstCourseInstance = await selectCourseInstanceById('1');
+    const firstCourseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -217,7 +232,12 @@ describe('getEnrollmentCountsForCourse', () => {
       email: 'student@example.com',
     });
 
-    const firstCourseInstance = await selectCourseInstanceById('1');
+    const firstCourseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -267,7 +287,12 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uin: 'student',
       email: 'student@example.com',
     });
-    const firstCourseInstance = await selectCourseInstanceById('1');
+    const firstCourseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -290,7 +315,12 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       email: 'student@example.com',
     });
 
-    const firstCourseInstance = await selectCourseInstanceById('1');
+    const firstCourseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -323,7 +353,12 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       email: 'student@example.com',
     });
 
-    const firstCourseInstance = await selectCourseInstanceById('1');
+    const firstCourseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,

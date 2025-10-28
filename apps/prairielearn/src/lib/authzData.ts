@@ -11,6 +11,10 @@ import { type User } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+/**
+ * If course_id is not provided, but course_instance_id is,
+ * the function will use the course_id from the course instance.
+ */
 export async function selectAuthzData({
   user_id,
   course_id,
@@ -57,7 +61,8 @@ export async function selectAuthzData({
  *
  * @param params
  * @param params.authn_user - The authenticated user.
- * @param params.course_id - The ID of the course.
+ * @param params.course_id - The ID of the course. If not provided,
+ * but course_instance_id is provided, the function will use the course_id from the course instance.
  * @param params.course_instance_id - The ID of the course instance.
  * @param params.is_administrator - Whether the user is an administrator.
  * @param params.ip - The IP address of the request.

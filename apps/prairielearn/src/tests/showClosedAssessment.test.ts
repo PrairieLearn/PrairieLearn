@@ -52,7 +52,12 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
 
   test.sequential('enroll the test student user in the course', async () => {
     const user = await selectUserByUid('student@example.com');
-    const courseInstance = await selectCourseInstanceById('1');
+    const courseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,

@@ -106,7 +106,12 @@ describe('effective user', { timeout: 60_000 }, function () {
       email: 'student@example.com',
     });
     studentId = student.user_id;
-    courseInstance = await selectCourseInstanceById('1');
+    courseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     await ensureEnrollment({
       userId: studentId,
       courseInstance,

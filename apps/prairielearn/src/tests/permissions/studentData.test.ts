@@ -63,7 +63,12 @@ describe('student data access', { timeout: 60_000 }, function () {
       course_role: 'Owner',
       authn_user_id: '1',
     });
-    const courseInstance = await selectCourseInstanceById('1');
+    const courseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
 
     await ensureEnrollment({
       userId: '3',

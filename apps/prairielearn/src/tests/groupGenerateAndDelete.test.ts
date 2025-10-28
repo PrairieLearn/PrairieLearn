@@ -34,7 +34,12 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
 
   test.sequential('randomly assign groups', async () => {
     const assessment = await selectAssessmentById(locals.assessment_id);
-    const course_instance = await selectCourseInstanceById(assessment.course_instance_id);
+    const course_instance = await selectCourseInstanceById({
+      id: assessment.course_instance_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     const job_sequence_id = await groupUpdate.randomGroups({
       course_instance,
       assessment,

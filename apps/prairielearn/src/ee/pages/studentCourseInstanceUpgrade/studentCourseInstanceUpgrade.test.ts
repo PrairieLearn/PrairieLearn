@@ -81,7 +81,12 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    const courseInstance = await selectCourseInstanceById('1');
+    const courseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,
@@ -104,7 +109,12 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    const courseInstance = await selectCourseInstanceById('1');
+    const courseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,

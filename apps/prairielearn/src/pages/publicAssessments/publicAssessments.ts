@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
+import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
 import { getCourseInstanceCopyTargets } from '../../lib/copy-content.js';
 import { UserSchema } from '../../lib/db-types.js';
 import { selectAssessments } from '../../models/assessment.js';
@@ -20,7 +21,12 @@ const router = Router({ mergeParams: true });
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const courseInstance = await selectOptionalCourseInstanceById(req.params.course_instance_id);
+    const courseInstance = await selectOptionalCourseInstanceById({
+      id: req.params.course_instance_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     if (courseInstance === null) {
       throw new error.HttpStatusError(404, 'Not Found');
     }

@@ -1,8 +1,11 @@
+import assert from 'assert';
+
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { assertHasRole, hasRole } from '../lib/authzData.js';
+import { assertHasRole, hasRole, isDangerousFullAuthzForTesting } from '../lib/authzData.js';
 import type { AuthzData } from '../lib/authzData.types.js';
 import {
   type CourseInstance,
@@ -13,6 +16,9 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
+
+import { selectPublishingExtensionsByEnrollmentId } from './course-instance-publishing-extensions.js';
+import { selectOptionalEnrollmentByUserId } from './enrollment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -30,44 +36,144 @@ export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
  *
  * @param courseInstance - The course instance to check access for.
  * @param authzData - The authorization data of the user.
+ * @param reqDate - The date of the request.
  * @returns void
  */
-function assertCanAccessCourseInstance(courseInstance: CourseInstance, authzData: AuthzData): void {
+async function hasCourseInstanceAccess(
+  courseInstance: CourseInstance,
+  authzData: AuthzData,
+  reqDate: Date,
+) {
+  if (isDangerousFullAuthzForTesting(authzData)) {
+    return true;
+  }
+
   if (hasRole(authzData, 'Student')) {
     const enrollment = await selectOptionalEnrollmentByUserId({
-      user_id: params.user_id,
-      course_instance_id: authzData.course_instance.id,
+      userId: authzData.user.user_id,
+      requestedRole: 'Student',
+      authzData,
+      courseInstance,
     });
-    selectPublishingExtensionsByEnrollmentId();
+
+    // We only consider non-legacy publishing.
+    if (!courseInstance.modern_publishing) {
+      return true;
+    }
+
+    // Not published at all.
+    if (courseInstance.publishing_start_date == null) {
+      return false;
+    }
+    // End date is always set alongside start date
+    assert(courseInstance.publishing_end_date != null);
+
+    // Before the start date, we definitely don't have access.
+    if (reqDate < courseInstance.publishing_start_date) {
+      return false;
+    }
+
+    //If we are before the end date and after the start date, we definitely have access.
+    if (reqDate < courseInstance.publishing_end_date) {
+      return true;
+    }
+
+    // We are after the end date. We might have access if we have an extension.
+    const publishingExtensions =
+      enrollment != null ? await selectPublishingExtensionsByEnrollmentId(enrollment.id) : [];
+
+    // There are no extensions. We don't have access.
+    if (publishingExtensions.length === 0) {
+      return false;
+    }
+
+    // Consider the latest enabled date for the enrollment.
+    const allDates = publishingExtensions
+      .map((extension) => extension.end_date)
+      .sort((a, b) => {
+        return b.getTime() - a.getTime();
+      });
+    const latestDate = allDates[0];
+
+    // If we are before the latest date, we have access.
+    return reqDate < latestDate;
   }
+
+  // If we are not a student, we have access.
   return true;
+}
+
+async function assertHasCourseInstanceAccess(
+  courseInstance: CourseInstance,
+  authzData: AuthzData,
+  reqDate: Date,
+) {
+  const hasAccess = await hasCourseInstanceAccess(courseInstance, authzData, reqDate);
+  if (!hasAccess) {
+    throw new HttpStatusError(403, 'Access denied');
+  }
 }
 
 export async function selectCourseInstanceById({
   id,
   requestedRole,
   authzData,
+  reqDate,
 }: {
   id: string;
   requestedRole: 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
   authzData: AuthzData;
-}): Promise<CourseInstance> {
+  reqDate: Date;
+}) {
+  // Check access in the legacy access system.
   assertHasRole(authzData, requestedRole);
-  return queryRow(
+
+  const courseInstance = await queryRow(
     sql.select_course_instance_by_id,
     { course_instance_id: id },
     CourseInstanceSchema,
   );
+
+  // Check access in the modern access system.
+  await assertHasCourseInstanceAccess(courseInstance, authzData, reqDate);
+
+  return courseInstance;
 }
 
-export async function selectOptionalCourseInstanceById(
-  course_instance_id: string,
-): Promise<CourseInstance | null> {
-  return queryOptionalRow(
+export async function selectOptionalCourseInstanceById({
+  id,
+  requestedRole,
+  authzData,
+  reqDate,
+}: {
+  id: string;
+  requestedRole: 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  authzData: AuthzData;
+  reqDate: Date;
+}): Promise<CourseInstance | null> {
+  const courseInstance = await queryOptionalRow(
     sql.select_course_instance_by_id,
-    { course_instance_id },
+    { course_instance_id: id },
     CourseInstanceSchema,
   );
+
+  if (courseInstance === null) {
+    return null;
+  }
+
+  const isPublic = await selectCourseInstanceIsPublic(id);
+
+  if (isPublic) {
+    return courseInstance;
+  }
+
+  // Check access in the legacy access system.
+  assertHasRole(authzData, requestedRole);
+
+  // Check access in the modern access system.
+  await assertHasCourseInstanceAccess(courseInstance, authzData, reqDate);
+
+  return courseInstance;
 }
 
 /** TODO: Authenticate this model function */
@@ -85,15 +191,31 @@ export async function selectCourseInstanceByShortName({
   );
 }
 
-/** TODO: Authenticate this model function */
-export async function selectOptionalCourseInstanceByEnrollmentCode(
-  enrollment_code: string,
-): Promise<CourseInstance | null> {
-  return queryOptionalRow(
+export async function selectOptionalCourseInstanceByEnrollmentCode({
+  enrollment_code,
+  requestedRole,
+  authzData,
+  reqDate,
+}: {
+  enrollment_code: string;
+  requestedRole: 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  authzData: AuthzData;
+  reqDate: Date;
+}): Promise<CourseInstance | null> {
+  // Check access in the legacy access system.
+  assertHasRole(authzData, requestedRole);
+
+  const courseInstance = await queryOptionalRow(
     sql.select_course_instance_by_enrollment_code,
     { enrollment_code },
     CourseInstanceSchema,
   );
+
+  // Check access in the modern access system.
+  if (courseInstance) {
+    await assertHasCourseInstanceAccess(courseInstance, authzData, reqDate);
+  }
+  return courseInstance;
 }
 
 /**
@@ -181,12 +303,7 @@ export async function selectCourseHasCourseInstances({
 
 /** TODO: Authenticate this model function */
 export async function selectCourseInstanceIsPublic(course_instance_id: string): Promise<boolean> {
-  const isPublic = await queryRow(
-    sql.check_course_instance_is_public,
-    { course_instance_id },
-    z.boolean(),
-  );
-  return isPublic;
+  return await queryRow(sql.check_course_instance_is_public, { course_instance_id }, z.boolean());
 }
 
 /** TODO: Authenticate this model function */

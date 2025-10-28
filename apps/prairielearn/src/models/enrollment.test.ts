@@ -51,7 +51,12 @@ describe('ensureEnrollment', () => {
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstance = await selectCourseInstanceById('1');
+    courseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
   });
 
   afterEach(async function () {
@@ -244,7 +249,12 @@ describe('DB validation of enrollment', () => {
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstance = await selectCourseInstanceById('1');
+    courseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
   });
 
   afterEach(async function () {

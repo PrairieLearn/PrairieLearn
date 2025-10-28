@@ -185,7 +185,12 @@ describe('Self-enrollment settings transitions', () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
 
-    courseInstance = await selectCourseInstanceById('1');
+    courseInstance = await selectCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
 
     // Set uid_regexp for the default institution to allow @example.com UIDs
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
@@ -501,7 +506,12 @@ describe('Self-enrollment institution restriction transitions', () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
 
-    const instance = await selectOptionalCourseInstanceById('1');
+    const instance = await selectOptionalCourseInstanceById({
+      id: '1',
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      reqDate: new Date(),
+    });
     assert.isNotNull(instance);
 
     // Set uid_regexp for the default institution to allow @example.com UIDs
