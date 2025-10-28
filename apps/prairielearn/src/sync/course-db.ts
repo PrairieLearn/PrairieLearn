@@ -1482,7 +1482,7 @@ function validateCourseInstance({
 
   // TODO: Remove this once the UI is merged
   if (usingModernPublishing) {
-    errors.push('"publishing" is not configurable yet.');
+    warnings.push('"publishing" is not configurable yet.');
   }
 
   if (usingLegacyAllowAccess && usingModernPublishing) {
