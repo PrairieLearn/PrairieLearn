@@ -77,13 +77,13 @@ describe(
       const user = await selectUserByUid('student@example.com');
       const courseInstance = await selectCourseInstanceById({
         id: '1',
-        requestedRole: 'Student',
+        requestedRole: 'System',
         authzData: dangerousFullSystemAuthz(),
       });
       await ensureEnrollment({
         userId: user.user_id,
         courseInstance,
-        requestedRole: 'Student',
+        requestedRole: 'System',
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });

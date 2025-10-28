@@ -550,7 +550,8 @@ In some cases, you may not have access to `authzData`, e.g. if you are pulling d
 await updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
-  requestedRole: 'Student Data Viewer',
+  // We are authorizing as the system, any non-system role will throw an error.
+  requestedRole: 'System',
   authzData: dangerousFullSystemAuthz(),
 });
 ```

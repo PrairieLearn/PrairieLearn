@@ -338,10 +338,7 @@ export async function generateAndEnrollUsers({
       await ensureEnrollment({
         courseInstance,
         userId: user.user_id,
-        // Typically, model code should never set requestedRole,
-        // but this function is only used in test code where we don't care about
-        // the role the caller requests.
-        requestedRole: 'Student',
+        requestedRole: 'System',
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
@@ -361,7 +358,7 @@ export async function selectUsersAndEnrollmentsByUidsInCourseInstance({
 }: {
   uids: string[];
   courseInstance: CourseInstanceContext;
-  requestedRole: 'System' | 'Student Data Viewer';
+  requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor';
   authzData: AuthzData;
 }) {
   assertHasRole(authzData, requestedRole);

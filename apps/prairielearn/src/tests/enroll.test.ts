@@ -228,7 +228,7 @@ describe('Self-enrollment settings transitions', () => {
           userId: studentUser.user_id,
           courseInstance,
           authzData: dangerousFullSystemAuthz(),
-          requestedRole: 'Student',
+          requestedRole: 'System',
         });
         assert.isNull(initialEnrollment);
 
@@ -241,7 +241,7 @@ describe('Self-enrollment settings transitions', () => {
           userId: studentUser.user_id,
           courseInstance,
           authzData: dangerousFullSystemAuthz(),
-          requestedRole: 'Student',
+          requestedRole: 'System',
         });
         assert.isNull(finalEnrollment);
       },
@@ -277,7 +277,7 @@ describe('Self-enrollment settings transitions', () => {
           userId: studentUser.user_id,
           courseInstance,
           authzData: dangerousFullSystemAuthz(),
-          requestedRole: 'Student',
+          requestedRole: 'System',
         });
         assert.isNull(initialEnrollment);
 
@@ -290,7 +290,7 @@ describe('Self-enrollment settings transitions', () => {
           userId: studentUser.user_id,
           courseInstance,
           authzData: dangerousFullSystemAuthz(),
-          requestedRole: 'Student',
+          requestedRole: 'System',
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
@@ -335,7 +335,7 @@ describe('Self-enrollment settings transitions', () => {
           pendingUid: invitedUser.uid,
           courseInstance,
           authzData: dangerousFullSystemAuthz(),
-          requestedRole: 'Student',
+          requestedRole: 'System',
         });
         assert.isNotNull(initialEnrollment);
         assert.equal(initialEnrollment.status, 'invited');
@@ -347,7 +347,7 @@ describe('Self-enrollment settings transitions', () => {
           userId: invitedUser.user_id,
           courseInstance,
           authzData: dangerousFullSystemAuthz(),
-          requestedRole: 'Student',
+          requestedRole: 'System',
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
@@ -398,7 +398,7 @@ describe('Self-enrollment settings transitions', () => {
           userId: blockedUser.user_id,
           courseInstance,
           authzData: dangerousFullSystemAuthz(),
-          requestedRole: 'Student',
+          requestedRole: 'System',
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'blocked');
@@ -440,7 +440,7 @@ describe('Self-enrollment settings transitions', () => {
           userId: studentUser.user_id,
           courseInstance,
           authzData: dangerousFullSystemAuthz(),
-          requestedRole: 'Student',
+          requestedRole: 'System',
         });
         assert.isNull(finalEnrollment);
       },
@@ -488,7 +488,7 @@ describe('Self-enrollment settings transitions', () => {
           userId: studentUser.user_id,
           courseInstance,
           authzData: dangerousFullSystemAuthz(),
-          requestedRole: 'Student',
+          requestedRole: 'System',
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');

@@ -115,7 +115,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       userId: studentId,
       courseInstance,
       authzData: dangerousFullSystemAuthz(),
-      requestedRole: 'Student',
+      requestedRole: 'System',
       actionDetail: 'implicit_joined',
     });
   });
@@ -595,7 +595,7 @@ describe('effective user', { timeout: 60_000 }, function () {
         courseInstance,
         userId: user.user_id,
         authzData: dangerousFullSystemAuthz(),
-        requestedRole: 'Student',
+        requestedRole: 'System',
         actionDetail: 'implicit_joined',
       });
 

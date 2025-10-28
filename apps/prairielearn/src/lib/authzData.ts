@@ -285,8 +285,6 @@ export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole)
     return false;
   }
 
-  // TODO: This assumes the legacy access system.
-  // We should have some wrapper around hasRole that handles the modern access system.
   if (
     (requestedRole === 'Student' || requestedRole === 'Any') &&
     authzData.has_student_access &&

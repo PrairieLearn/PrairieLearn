@@ -10,8 +10,8 @@ AS $$
 DECLARE
     course_instance_role enum_course_instance_role;
     permissions_course_instance jsonb;
-    -- These fields will be deprecated soon. They only consider the legacy access system.
-    -- Student access with the modern publishing system is handled separately.
+    -- These fields only consider the legacy access system.
+    -- Student access with the modern publishing system is handled separately in `buildAuthzData`.
     has_student_access boolean;
     has_student_access_with_enrollment boolean;
 BEGIN

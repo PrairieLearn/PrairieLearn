@@ -111,7 +111,7 @@ describe('ensureEnrollment', () => {
     const invitedEnrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
       courseInstance,
-      requestedRole: 'Student Data Editor',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
     });
     assert.isNull(invitedEnrollment);

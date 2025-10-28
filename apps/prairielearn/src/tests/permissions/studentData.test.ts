@@ -73,7 +73,7 @@ describe('student data access', { timeout: 60_000 }, function () {
       userId: '3',
       courseInstance,
       authzData: dangerousFullSystemAuthz(),
-      requestedRole: 'Student',
+      requestedRole: 'System',
       actionDetail: 'implicit_joined',
     });
   });

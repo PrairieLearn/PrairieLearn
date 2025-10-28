@@ -122,14 +122,12 @@ export async function createPublishingExtensionWithEnrollments({
   enrollment_ids: string[];
 }): Promise<CourseInstancePublishingExtension> {
   return await runInTransactionAsync(async () => {
-    // Create the extension
     const extension = await insertPublishingExtension({
       course_instance_id,
       name,
       end_date,
     });
 
-    // Link to enrollments
     for (const enrollment_id of enrollment_ids) {
       await insertPublishingEnrollmentExtension({
         course_instance_publishing_extension_id: extension.id,

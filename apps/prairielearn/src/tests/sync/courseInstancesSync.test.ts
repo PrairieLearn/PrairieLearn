@@ -672,11 +672,8 @@ describe('Course instance syncing', () => {
   describe('syncs self-enrollment settings correctly', async () => {
     const timezone = 'America/New_York';
 
-    // We pick an arbitrary date to use.
     const date = new Date('2025-09-05T20:52:49.000Z');
 
-    // In JSON, the date must be formatted like `2025-01-01T00:00:00` and will
-    // interpreted in the course instance's timezone.
     const jsonDate = Temporal.Instant.from(date.toISOString())
       .toZonedDateTimeISO(timezone)
       .toPlainDateTime()

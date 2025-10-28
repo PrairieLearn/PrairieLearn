@@ -136,7 +136,6 @@ router.post(
       authn_user: { uid, user_id: userId },
     } = getPageContext(res.locals, { withAuthzData: false });
 
-    // We want to know if the user has access to the course instance.
     const { authzData } = await buildAuthzData({
       authn_user: res.locals.authn_user,
       course_id: null,
