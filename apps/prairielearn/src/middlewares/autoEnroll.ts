@@ -1,5 +1,8 @@
 import asyncHandler from 'express-async-handler';
 
+import { run } from '@prairielearn/run';
+
+import { hasRole } from '../lib/authzData.js';
 import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
@@ -16,9 +19,17 @@ export default asyncHandler(async (req, res, next) => {
   const courseInstance: CourseInstance = res.locals.course_instance;
 
   // We select by user UID so that we can find invited/rejected enrollments as well
-  const existingEnrollment = await selectOptionalEnrollmentByUid({
-    uid: res.locals.authn_user.uid,
-    course_instance_id: courseInstance.id,
+  const existingEnrollment = await run(async () => {
+    // We only want to even try to lookup enrollment information if the user is a student.
+    if (!hasRole(res.locals.authz_data, 'Student')) {
+      return null;
+    }
+    return await selectOptionalEnrollmentByUid({
+      uid: res.locals.authn_user.uid,
+      courseInstance,
+      requestedRole: 'Student',
+      authzData: res.locals.authz_data,
+    });
   });
 
   // Check if the self-enrollment institution restriction is satisfied
@@ -52,9 +63,10 @@ export default asyncHandler(async (req, res, next) => {
     await ensureCheckedEnrollment({
       institution: res.locals.institution,
       course: res.locals.course,
-      course_instance: res.locals.course_instance,
-      authz_data: res.locals.authz_data,
-      action_detail: 'implicit_joined',
+      courseInstance,
+      authzData: res.locals.authz_data,
+      requestedRole: 'Student',
+      actionDetail: 'implicit_joined',
     });
 
     // This is the only part of the `authz_data` that would change as a
