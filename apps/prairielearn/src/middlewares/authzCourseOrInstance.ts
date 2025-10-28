@@ -11,7 +11,10 @@ import * as sqldb from '@prairielearn/postgres';
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import { selectAuthzData } from '../lib/authzData.js';
 import type { FullAuthzData } from '../lib/authzData.types.js';
-import { buildAuthzData } from '../lib/authzDataPublishing.js';
+import {
+  buildAuthzData,
+  calculateModernCourseInstanceStudentAccess,
+} from '../lib/authzDataPublishing.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
@@ -618,6 +621,25 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.authz_data.mode = effectiveAuthzData.mode;
   res.locals.authz_data.mode_reason = effectiveAuthzData.mode_reason;
   res.locals.req_date = req_date;
+
+  // Recalculate this for the effective user as well.
+  if (
+    res.locals.course_instance?.modern_publishing &&
+    res.locals.authz_data.course_instance_role === 'None'
+  ) {
+    // We use this access system instead of the legacy access system.
+    const { has_student_access, has_student_access_with_enrollment } =
+      await calculateModernCourseInstanceStudentAccess(
+        res.locals.course_instance,
+        res.locals.authz_data,
+        req_date,
+      );
+    res.locals.authz_data.has_student_access = has_student_access;
+    res.locals.authz_data.has_student_access_with_enrollment = has_student_access_with_enrollment;
+    res.locals.authz_data.authn_has_student_access = has_student_access;
+    res.locals.authz_data.authn_has_student_access_with_enrollment =
+      has_student_access_with_enrollment;
+  }
 }
 
 export default asyncHandler(async (req, res, next) => {
