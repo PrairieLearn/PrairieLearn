@@ -34,7 +34,7 @@ python-deps: venv-setup
 
 deps:
 	@yarn
-	@yarn playwright install
+	@yarn workspace @prairielearn/prairielearn playwright install
 	@$(MAKE) python-deps build
 
 migrate:
