@@ -348,38 +348,6 @@ const PostBodySchema = z.union([
     skip_graded_submissions: z.preprocess((val) => val === 'true', z.boolean()),
   }),
   z.object({
-    __action: z.literal('modify_rubric_settings'),
-    use_rubric: z
-      .enum(['true', 'false'])
-      .optional()
-      .transform((val) => val === 'true'),
-    replace_auto_points: z
-      .enum(['true', 'false'])
-      .optional()
-      .transform((val) => val === 'true'),
-    starting_points: z.coerce.number(),
-    min_points: z.coerce.number(),
-    max_extra_points: z.coerce.number(),
-    tag_for_manual_grading: z
-      .enum(['true', 'false'])
-      .optional()
-      .transform((val) => val === 'true'),
-    rubric_items: z
-      .record(
-        z.string(),
-        z.object({
-          id: z.string().optional(),
-          order: z.coerce.number(),
-          points: z.coerce.number(),
-          description: z.string(),
-          explanation: z.string().optional(),
-          grader_note: z.string().optional(),
-          always_show_to_students: z.string().transform((val) => val === 'true'),
-        }),
-      )
-      .default({}),
-  }),
-  z.object({
     __action: z.custom<`reassign_${string}`>(
       (val) => typeof val === 'string' && val.startsWith('reassign_'),
     ),
@@ -401,16 +369,19 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
-    const body = PostBodySchema.parse(
-      // Parse using qs, which allows deep objects to be created based on parameter names
-      // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
-      // Array parsing is disabled, as it has special cases for 22+ items that
-      // we don't want to double-handle, so we always receive an object and
-      // convert it to an array if necessary
-      // (https://github.com/ljharb/qs#parsing-arrays).
-      // The order of the items in arrays is never important, so using Object.values is fine.
-      qs.parse(qs.stringify(req.body), { parseArrays: false }),
-    );
+    const body =
+      req.body.__action !== 'modify_rubric_settings'
+        ? PostBodySchema.parse(
+            // Parse using qs, which allows deep objects to be created based on parameter names
+            // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
+            // Array parsing is disabled, as it has special cases for 22+ items that
+            // we don't want to double-handle, so we always receive an object and
+            // convert it to an array if necessary
+            // (https://github.com/ljharb/qs#parsing-arrays).
+            // The order of the items in arrays is never important, so using Object.values is fine.
+            qs.parse(qs.stringify(req.body), { parseArrays: false }),
+          )
+        : req.body;
     if (body.__action === 'add_manual_grade') {
       req.session.skip_graded_submissions = body.skip_graded_submissions;
 
@@ -617,7 +588,7 @@ router.post(
           body.starting_points,
           body.min_points,
           body.max_extra_points,
-          Object.values(body.rubric_items), // rubric items
+          body.rubric_items,
           body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
         );
