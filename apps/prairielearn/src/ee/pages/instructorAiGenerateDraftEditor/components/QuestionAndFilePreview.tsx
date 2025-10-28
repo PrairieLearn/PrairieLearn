@@ -110,8 +110,6 @@ export function QuestionAndFilePreview({
     };
   }, [questionContainerHtml]);
 
-  console.log('questionFiles', questionFiles);
-
   return (
     <div class="tab-content" style="height: 100%">
       <div role="tabpanel" id="question-preview" class="tab-pane active" style="height: 100%">

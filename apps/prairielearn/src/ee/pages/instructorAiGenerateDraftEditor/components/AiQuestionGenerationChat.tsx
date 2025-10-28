@@ -215,7 +215,7 @@ function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
   // If user has taken control, use their preference. Otherwise, expand while streaming, collapse when done.
   const isExpanded = userControlled ? userExpanded : isStreaming;
 
-  if (part.state === 'done' && !part.text) return null;
+  if (!part.text) return null;
 
   const toggleExpanded = () => {
     setUserControlled(true);
@@ -223,7 +223,7 @@ function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
   };
 
   return (
-    <div class="d-flex flex-column gap-2 border rounded p-2 small">
+    <div class="d-flex flex-column gap-1 border rounded p-1 small">
       <button
         type="button"
         class="d-flex flex-row gap-2 align-items-center btn btn-link text-decoration-none p-0 text-start"
@@ -237,21 +237,11 @@ function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
           })}
           aria-hidden="true"
         />
-        {isStreaming ? (
-          <>
-            <div class="spinner-border spinner-border-sm" role="status" />
-            <span>Thinking...</span>
-          </>
-        ) : (
-          <>
-            <i class="bi bi-lightbulb text-muted" aria-hidden="true" />
-            <span class="text-muted">Reasoning</span>
-          </>
-        )}
+        <span class="small text-muted">{isStreaming ? 'Thinking...' : 'Reasoning'}</span>
       </button>
 
       {isExpanded && (
-        <div class="markdown-body">
+        <div class="markdown-body reasoning-body p-1 pt-0">
           <Markdown>{part.text}</Markdown>
         </div>
       )}
@@ -393,18 +383,20 @@ function useShowSpinner({
 }) {
   const signal = useSignal<boolean>(false);
 
-  // Ideally this would use `onData` in `useChat(...)` but that seems to be broken:
-  // https://github.com/vercel/ai/issues/8597
-  // Instead, we'll watch for changes to `messages` here.
-  //
-  // Queue a show of the spinner after a delay when messages change
+  // Queue a show of the spinner after a delay when messages change.
   useEffect(() => {
     if (status !== 'streaming' && status !== 'submitted') {
       signal.value = false;
       return;
     }
 
-    signal.value = false;
+    // We sometimes get empty thinking parts. We don't want to hide the spinner
+    // until we know that we're actually streaming thinking text.
+    const lastMessage = messages.at(-1);
+    const lastPart = lastMessage?.parts.at(-1);
+    if (!lastPart || lastPart.type !== 'reasoning' || lastPart.text) {
+      signal.value = false;
+    }
 
     const id = setTimeout(() => {
       signal.value = true;

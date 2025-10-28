@@ -125,3 +125,8 @@
 .markdown-body ul p {
   margin-bottom: 0;
 }
+
+/** The default padding looks too large for reasoning sections. */
+.reasoning-body p {
+  margin-bottom: 0.25rem;
+}
