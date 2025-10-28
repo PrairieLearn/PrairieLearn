@@ -47,44 +47,6 @@ def create_test_data(
         "expected",
     ),
     [
-        # Basic case - no options specified
-        pytest.param(
-            2,
-            5,
-            False,
-            False,
-            False,
-            False,
-            1,
-            5,
-            '<small class="form-text text-muted">Select all possible options that apply.</small>',
-            id="basic_no_options",
-        ),
-        # Show number correct
-        pytest.param(
-            1,
-            5,
-            True,
-            False,
-            False,
-            False,
-            1,
-            5,
-            '<small class="form-text text-muted">Select all possible options that apply. There is exactly <b>1</b> correct option in the list above.</small>',
-            id="show_single_correct",
-        ),
-        pytest.param(
-            3,
-            5,
-            True,
-            False,
-            False,
-            False,
-            1,
-            5,
-            '<small class="form-text text-muted">Select all possible options that apply. There are exactly <b>3</b> correct options in the list above.</small>',
-            id="show_multiple_correct",
-        ),
         # Min select only
         pytest.param(
             3,
@@ -95,7 +57,7 @@ def create_test_data(
             False,
             2,
             5,
-            '<small class="form-text text-muted">Select  at least <b>2</b> options.</small>',
+            " at least <b>2</b> options.",
             id="min_select_only",
         ),
         # Max select only
@@ -108,7 +70,7 @@ def create_test_data(
             True,
             1,
             3,
-            '<small class="form-text text-muted">Select  at most <b>3</b> options.</small>',
+            " at most <b>3</b> options.",
             id="max_select_only",
         ),
         # Min and max different
@@ -121,7 +83,7 @@ def create_test_data(
             True,
             2,
             4,
-            '<small class="form-text text-muted">Select  between <b>2</b> and <b>4</b> options.</small>',
+            " between <b>2</b> and <b>4</b> options.",
             id="min_and_max_different",
         ),
         # Min and max same
@@ -134,7 +96,7 @@ def create_test_data(
             True,
             3,
             3,
-            '<small class="form-text text-muted">Select  exactly <b>3</b> options.</small>',
+            " exactly <b>3</b> options.",
             id="min_and_max_same",
         ),
         # Detailed help text
@@ -147,7 +109,7 @@ def create_test_data(
             False,
             1,
             4,
-            '<small class="form-text text-muted">Select  between <b>1</b> and <b>4</b> options.</small>',
+            " between <b>1</b> and <b>4</b> options.",
             id="detailed_help_different",
         ),
         pytest.param(
@@ -159,7 +121,7 @@ def create_test_data(
             False,
             2,
             2,
-            '<small class="form-text text-muted">Select  exactly <b>2</b> options.</small>',
+            " exactly <b>2</b> options.",
             id="detailed_help_same",
         ),
         # Combined with show number correct
@@ -172,7 +134,7 @@ def create_test_data(
             False,
             2,
             4,
-            '<small class="form-text text-muted">Select  between <b>2</b> and <b>4</b> options. There are exactly <b>3</b> correct options in the list above.</small>',
+            " between <b>2</b> and <b>4</b> options. There are exactly <b>3</b> correct options in the list above.",
             id="detailed_with_show_correct",
         ),
     ],
@@ -189,7 +151,7 @@ def test_generate_help_text(
     expected: str,
 ) -> None:
     """Test the extracted generate_help_text function."""
-    result = pl_checkbox.generate_help_text(
+    result = pl_checkbox.generate_insert_text(
         num_correct=num_correct,
         num_display_answers=num_display,
         show_number_correct=show_num,
@@ -331,44 +293,63 @@ def test_grading_with_old_api(
 
     actual_score = data["partial_scores"]["test"]["score"]
     if isinstance(expected_score, float) and expected_score not in [0.0, 1.0]:
-        # For fractional scores, allow small floating point differences
         assert abs(actual_score - expected_score) < 0.0001
     else:
         assert actual_score == expected_score
 
 
-# Test internal enum conversions
 def test_partial_credit_type_conversion() -> None:
     """Test that internal enum conversion works correctly."""
-    # No partial credit
+
+    def build_element(
+        partial_credit: bool, method: str | None
+    ) -> lxml.html.HtmlElement:
+        attrs = 'answers-name="test"'
+        attrs += f' partial-credit="{partial_credit}"'
+        if method:
+            attrs += f' partial-credit-method="{method}"'
+        return lxml.html.fragment_fromstring(f"<pl-checkbox {attrs}></pl-checkbox>")
+
     assert (
-        pl_checkbox.get_partial_credit_mode(False, "PC")
+        pl_checkbox.get_partial_credit_mode(build_element(False, "PC"))
         == pl_checkbox.PartialCreditType.ALL_OR_NOTHING
     )
 
-    # With partial credit
     assert (
-        pl_checkbox.get_partial_credit_mode(True, "PC")
+        pl_checkbox.get_partial_credit_mode(build_element(True, "PC"))
         == pl_checkbox.PartialCreditType.NET_CORRECT
     )
     assert (
-        pl_checkbox.get_partial_credit_mode(True, "COV")
+        pl_checkbox.get_partial_credit_mode(build_element(True, "COV"))
         == pl_checkbox.PartialCreditType.COVERAGE
     )
     assert (
-        pl_checkbox.get_partial_credit_mode(True, "EDC")
+        pl_checkbox.get_partial_credit_mode(build_element(True, "EDC"))
         == pl_checkbox.PartialCreditType.EACH_ANSWER
     )
 
-    # Invalid method
     with pytest.raises(ValueError, match="Unknown partial_credit_method"):
-        pl_checkbox.get_partial_credit_mode(True, "INVALID")
+        pl_checkbox.get_partial_credit_mode(build_element(True, "INVALID"))
 
 
 def test_order_type_conversion() -> None:
     """Test that internal order type enum conversion works correctly."""
-    assert pl_checkbox.get_order_type(False) == pl_checkbox.OrderType.RANDOM
-    assert pl_checkbox.get_order_type(True) == pl_checkbox.OrderType.FIXED
+    assert (
+        pl_checkbox.get_order_type(
+            lxml.html.fragment_fromstring(
+                '<pl-checkbox fixed-order="false"></pl-checkbox>'
+            )
+        )
+        == pl_checkbox.OrderType.RANDOM
+    )
+    assert (
+        pl_checkbox.get_order_type(
+            lxml.html.fragment_fromstring(
+                '<pl-checkbox fixed-order="true"></pl-checkbox>'
+            )
+        )
+        == pl_checkbox.OrderType.FIXED
+    )
 
 
 def test_categorize_options() -> None:
@@ -391,3 +372,51 @@ def test_categorize_options() -> None:
     assert correct[1].html == "Option C"
     assert incorrect[0].html == "Option B"
     assert incorrect[1].html == "Option D"
+
+
+# Tests for generate_number_correct_text() function
+@pytest.mark.parametrize(
+    (
+        "num_correct",
+        "show_number_correct",
+        "expected",
+    ),
+    [
+        # Show number correct = False
+        pytest.param(
+            5,
+            False,
+            "",
+            id="show_false",
+        ),
+        pytest.param(
+            1,
+            True,
+            " There is exactly <b>1</b> correct option in the list above.",
+            id="show_true_singular",
+        ),
+        pytest.param(
+            0,
+            True,
+            " There are exactly <b>0</b> correct options in the list above.",
+            id="show_true_zero",
+        ),
+        pytest.param(
+            2,
+            True,
+            " There are exactly <b>2</b> correct options in the list above.",
+            id="show_true_two",
+        ),
+    ],
+)
+def test_generate_number_correct_text(
+    num_correct: int,
+    show_number_correct: bool,
+    expected: str,
+) -> None:
+    """Test the extracted generate_number_correct_text function."""
+    result = pl_checkbox.generate_number_correct_text(
+        num_correct=num_correct,
+        show_number_correct=show_number_correct,
+    )
+    assert result == expected
