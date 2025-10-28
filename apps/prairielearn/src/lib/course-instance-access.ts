@@ -92,8 +92,8 @@ export function migrateAccessRuleJsonToPublishingConfiguration(
     earliestStartDate = '2000-01-01T00:00:00';
   }
 
-  // We can't do anything with the end date if it is before 1884.
-  if (latestEndDate && new Date(latestEndDate).getFullYear() < 1884) {
+  // We can't do anything with the end date if it is before 2000.
+  if (latestEndDate && new Date(latestEndDate).getFullYear() < 2000) {
     return {
       success: false,
       error: 'Cannot migrate the end date, it is too old.',
