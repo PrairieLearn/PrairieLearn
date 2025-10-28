@@ -9,7 +9,8 @@ import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
-import { type AuthzData, buildAuthzData, selectAuthzData } from '../lib/authzData.js';
+import { buildAuthzData, selectAuthzData } from '../lib/authzData.js';
+import type { FullAuthzDataSchema } from '../lib/authzData.types.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
@@ -25,6 +26,8 @@ interface Override {
   value: string;
   cookie: string;
 }
+
+type FullAuthzData = z.infer<typeof FullAuthzDataSchema>;
 
 /**
  * Removes all override cookies from the response.
@@ -46,43 +49,43 @@ const SelectUserSchema = z.object({
 
 interface ResLocalsCourseAuthz {
   authn_user: ResLocalsAuthnUser['authn_user'];
-  authn_mode: AuthzData['mode'];
-  authn_mode_reason: AuthzData['mode_reason'];
+  authn_mode: FullAuthzData['mode'];
+  authn_mode_reason: FullAuthzData['mode_reason'];
   authn_is_administrator: ResLocalsAuthnUser['is_administrator'];
-  authn_course_role: AuthzData['permissions_course']['course_role'];
-  authn_has_course_permission_preview: AuthzData['permissions_course']['has_course_permission_preview'];
-  authn_has_course_permission_view: AuthzData['permissions_course']['has_course_permission_view'];
-  authn_has_course_permission_edit: AuthzData['permissions_course']['has_course_permission_edit'];
-  authn_has_course_permission_own: AuthzData['permissions_course']['has_course_permission_own'];
+  authn_course_role: FullAuthzData['permissions_course']['course_role'];
+  authn_has_course_permission_preview: FullAuthzData['permissions_course']['has_course_permission_preview'];
+  authn_has_course_permission_view: FullAuthzData['permissions_course']['has_course_permission_view'];
+  authn_has_course_permission_edit: FullAuthzData['permissions_course']['has_course_permission_edit'];
+  authn_has_course_permission_own: FullAuthzData['permissions_course']['has_course_permission_own'];
   user: ResLocalsAuthnUser['authn_user'];
-  mode: AuthzData['mode'];
-  mode_reason: AuthzData['mode_reason'];
+  mode: FullAuthzData['mode'];
+  mode_reason: FullAuthzData['mode_reason'];
   is_administrator: ResLocalsAuthnUser['is_administrator'];
-  course_role: AuthzData['permissions_course']['course_role'];
-  has_course_permission_preview: AuthzData['permissions_course']['has_course_permission_preview'];
-  has_course_permission_view: AuthzData['permissions_course']['has_course_permission_view'];
-  has_course_permission_edit: AuthzData['permissions_course']['has_course_permission_edit'];
-  has_course_permission_own: AuthzData['permissions_course']['has_course_permission_own'];
+  course_role: FullAuthzData['permissions_course']['course_role'];
+  has_course_permission_preview: FullAuthzData['permissions_course']['has_course_permission_preview'];
+  has_course_permission_view: FullAuthzData['permissions_course']['has_course_permission_view'];
+  has_course_permission_edit: FullAuthzData['permissions_course']['has_course_permission_edit'];
+  has_course_permission_own: FullAuthzData['permissions_course']['has_course_permission_own'];
   overrides: Override[];
 }
 
 interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
-  authn_course_instance_role: AuthzData['permissions_course_instance']['course_instance_role'];
-  authn_has_course_instance_permission_view: AuthzData['permissions_course_instance']['has_course_instance_permission_view'];
-  authn_has_course_instance_permission_edit: AuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
-  authn_has_student_access: AuthzData['permissions_course_instance']['has_student_access'];
-  authn_has_student_access_with_enrollment: AuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
-  course_instance_role: AuthzData['permissions_course_instance']['course_instance_role'];
-  has_course_instance_permission_view: AuthzData['permissions_course_instance']['has_course_instance_permission_view'];
-  has_course_instance_permission_edit: AuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
-  has_student_access_with_enrollment: AuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
-  has_student_access: AuthzData['permissions_course_instance']['has_student_access'];
+  authn_course_instance_role: FullAuthzData['permissions_course_instance']['course_instance_role'];
+  authn_has_course_instance_permission_view: FullAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
+  authn_has_course_instance_permission_edit: FullAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
+  authn_has_student_access: FullAuthzData['permissions_course_instance']['has_student_access'];
+  authn_has_student_access_with_enrollment: FullAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
+  course_instance_role: FullAuthzData['permissions_course_instance']['course_instance_role'];
+  has_course_instance_permission_view: FullAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
+  has_course_instance_permission_edit: FullAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
+  has_student_access_with_enrollment: FullAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
+  has_student_access: FullAuthzData['permissions_course_instance']['has_student_access'];
   user_with_requested_uid_has_instructor_access_to_course_instance: boolean;
 }
 
 export interface ResLocalsCourse {
-  course: AuthzData['course'];
-  institution: AuthzData['institution'];
+  course: FullAuthzData['course'];
+  institution: FullAuthzData['institution'];
   side_nav_expanded: boolean;
   authz_data: ResLocalsCourseAuthz;
   user: ResLocalsCourseAuthz['user'];
@@ -92,7 +95,7 @@ export interface ResLocalsCourse {
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {
-  course_instance: NonNullable<AuthzData['course_instance']>;
+  course_instance: NonNullable<FullAuthzData['course_instance']>;
   authz_data: ResLocalsCourseInstanceAuthz;
   user: ResLocalsCourseInstanceAuthz['user'];
 }

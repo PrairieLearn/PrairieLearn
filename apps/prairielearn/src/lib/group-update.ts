@@ -6,6 +6,7 @@ import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/po
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
+import type { AuthzData } from './authzData.types.js';
 import { createCsvParser } from './csv.js';
 import { type Assessment, type CourseInstance, UserSchema } from './db-types.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
@@ -26,6 +27,7 @@ function groupUpdateLockName(assessment_id: string): string {
  * @param params.csvFile - An object with keys {originalname, size, buffer}.
  * @param params.user_id - The current user performing the update.
  * @param params.authn_user_id - The current authenticated user.
+ * @param params.authzData - The authorization data for the current user.
  * @returns The job sequence ID.
  */
 export async function uploadInstanceGroups({
@@ -34,12 +36,14 @@ export async function uploadInstanceGroups({
   csvFile,
   user_id,
   authn_user_id,
+  authzData,
 }: {
   course_instance: CourseInstance;
   assessment: Assessment;
   csvFile: Express.Multer.File | null | undefined;
   user_id: string;
   authn_user_id: string;
+  authzData: AuthzData;
 }): Promise<string> {
   if (csvFile == null) {
     throw new Error('No CSV file uploaded');
@@ -90,6 +94,7 @@ export async function uploadInstanceGroups({
               group_name: groupname,
               uids: [uid],
               authn_user_id,
+              authzData,
             }).then(
               () => successCount++,
               (err) => {
@@ -128,6 +133,7 @@ export async function uploadInstanceGroups({
  * @param params.authn_user_id - The current authenticated user.
  * @param params.max_group_size - max size of the group
  * @param params.min_group_size - min size of the group
+ * @param params.authzData - The authorization data for the current user.
  * @returns The job sequence ID.
  */
 export async function randomGroups({
@@ -137,6 +143,7 @@ export async function randomGroups({
   authn_user_id,
   max_group_size,
   min_group_size,
+  authzData,
 }: {
   course_instance: CourseInstance;
   assessment: Assessment;
@@ -144,6 +151,7 @@ export async function randomGroups({
   authn_user_id: string;
   max_group_size: number;
   min_group_size: number;
+  authzData: AuthzData;
 }): Promise<string> {
   if (max_group_size < 2 || min_group_size < 1 || max_group_size < min_group_size) {
     throw new Error('Group Setting Requirements: max > 1; min > 0; max >= min');
@@ -222,6 +230,7 @@ export async function randomGroups({
               group_name: null,
               uids: users,
               authn_user_id,
+              authzData,
             }).then(
               () => {
                 groupsCreated++;

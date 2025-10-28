@@ -182,6 +182,7 @@ router.post(
         fullJoinCode: req.body.join_code,
         uid: res.locals.user.uid,
         authn_user_id: res.locals.authn_user.user_id,
+        authzData: res.locals.authz_data,
       }).catch((err) => {
         if (err instanceof GroupOperationError) {
           flash('error', err.message);
@@ -201,6 +202,7 @@ router.post(
         group_name: groupConfig.student_authz_choose_name ? req.body.group_name : null,
         uids: [res.locals.user.uid],
         authn_user_id: res.locals.authn_user.user_id,
+        authzData: res.locals.authz_data,
       }).catch((err) => {
         if (err instanceof GroupOperationError) {
           flash('error', err.message);
