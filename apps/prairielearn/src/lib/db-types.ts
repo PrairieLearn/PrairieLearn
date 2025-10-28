@@ -1585,6 +1585,8 @@ export const TableNames = [
   'client_fingerprints',
   'course_instance_access_rules',
   'course_instance_permissions',
+  'course_instance_publishing_enrollment_extensions',
+  'course_instance_publishing_extensions',
   'course_instance_required_plans',
   'course_instance_usages',
   'course_instances',
