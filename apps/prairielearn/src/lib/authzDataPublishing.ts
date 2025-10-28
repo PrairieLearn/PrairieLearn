@@ -40,7 +40,7 @@ export async function calculateModernCourseInstanceStudentAccess(
   if (courseInstance.publishing_start_date == null) {
     return { has_student_access: false, has_student_access_with_enrollment: false };
   }
-  k;
+
   // End date is always set alongside start date
   assert(courseInstance.publishing_end_date != null);
 
