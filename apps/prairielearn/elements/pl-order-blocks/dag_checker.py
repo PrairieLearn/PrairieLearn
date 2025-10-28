@@ -1,9 +1,15 @@
 import itertools
 from collections import Counter
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from copy import deepcopy
 
 import networkx as nx
+from typing_extensions import TypeIs
+
+ColoredEdges = list[list[str]]
+Edges = list[str]
+Multigraph = dict[str, Edges | ColoredEdges]
+Dag = dict[str, Edges]
 
 
 def validate_grouping(
@@ -33,10 +39,14 @@ def solve_dag(
 ) -> list[str]:
     """
     Solve the given problem
-    :param depends_graph: The dependency graph between blocks specified in the question
-    :param group_belonging: which pl-block-group each block belongs to, specified in the question
-    :return: a list that is a topological sort of the input DAG with blocks in the same group occuring
-    contiguously, making it a solution to the given problem
+
+    - depends_graph: The dependency graph between blocks specified in the question
+    - group_belonging: which pl-block-group each block belongs to, specified in the question
+
+    Returns:
+        - A list that is a topological sort of the input DAG with blocks in the
+          same group occuring contiguously, making it a solution to the given
+          problem
     """
     graph = dag_to_nx(depends_graph, group_belonging)
     sort = list(nx.topological_sort(graph))
@@ -55,13 +65,37 @@ def solve_dag(
     return sort
 
 
+def solve_multigraph(
+    depends_multi_graph: Multigraph,
+    final: str,
+) -> list[list[str]]:
+    """Solve the given problem
+
+    - depends_multi_graph: the dependency multi graph specified in the question
+    - final: the sink of the multigraph
+
+    Returns:
+        - A list of lists that are a topological sort of the input MDAG making
+          it a solution to the given problem
+    """
+    graphs = [
+        dag_to_nx(graph, {})
+        for graph in collapse_multigraph(depends_multi_graph, final)
+    ]
+    sort = [list(nx.topological_sort(graph)) for graph in graphs]
+    return sort
+
+
 def check_topological_sorting(
     submission: Sequence[str | None], graph: nx.DiGraph
 ) -> int:
     """
-    :param submission: candidate for topological sorting
-    :param graph: graph to check topological sorting over
-    :return: index of first element not topologically sorted, or length of list if sorted
+    - submission: candidate for topological sorting
+    - graph: graph to check topological sorting over
+
+    Returns:
+        - Index of first element not topologically sorted, or length of list if
+          sorted
     """
     seen = set()
     for i, node in enumerate(submission):
@@ -75,10 +109,13 @@ def check_grouping(
     submission: Sequence[str | None], group_belonging: Mapping[str, str | None]
 ) -> int:
     """
-    :param submission: candidate solution
-    :param group_belonging: group that each block belongs to
-    :return: index of first element breaking condition that members of the same group must be
-    adjacent, or length of list if they all meet the condition
+    - submission: candidate solution
+    - group_belonging: group that each block belongs to
+
+    Returns:
+        - Index of first element breaking condition that members of the same
+          group must be adjacent, or length of list if they all meet the
+          condition
     """
     group_sizes = Counter(group_belonging.values())
     cur_group = None
@@ -160,11 +197,15 @@ def grade_dag(
     In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
-    :param submission: the block ordering given by the student
-    :param depends_graph: The dependency graph between blocks specified in the question
-    :param group_belonging: which pl-block-group each block belongs to, specified in the question
-    :return: tuple containing length of list that meets both correctness conditions, starting from the beginning,
-    and the length of any correct solution
+
+    - submission: the block ordering given by the student
+    - depends_graph: The dependency graph between blocks specified in the question
+    - group_belonging: which pl-block-group each block belongs to, specified in the question
+
+    Returns:
+        - Tuple containing the length of list that meets both correctness
+          conditions, starting from the beginning, and the length of any
+          correct solution
     """
     graph = dag_to_nx(depends_graph, group_belonging)
 
@@ -174,10 +215,32 @@ def grade_dag(
     return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes()
 
 
+def grade_multigraph(
+    submission: list[str],
+    multigraph: Multigraph,
+    final: str,
+) -> tuple[int, int, Dag]:
+    top_sort_correctness = []
+    collapsed_dags = list(collapse_multigraph(multigraph, final))
+
+    graphs = [dag_to_nx(graph, {}) for graph in collapsed_dags]
+    for graph in graphs:
+        sub = [x if x in graph.nodes() else None for x in submission]
+        top_sort_correctness.append(check_topological_sorting(sub, graph))
+
+    max_correct = max(top_sort_correctness)
+    max_index = top_sort_correctness.index(max_correct)
+    return max_correct, graphs[max_index].number_of_nodes(), collapsed_dags[max_index]
+
+
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """
     Taken from
     https://docs.ocean.dwavesys.com/en/stable/docs_dnx/reference/algorithms/generated/dwave_networkx.algorithms.cover.is_vertex_cover.html
+
+    Returns:
+        - If the set of vertices contains at least one end point of every edge
+          of the provided graph.
     """
     cover = set(vertex_cover)
     return all(u in cover or v in cover for u, v in G.edges)
@@ -203,10 +266,12 @@ def lcs_partial_credit(
         4. Once we know the minimum required deletions, you may simply add nodes to the student
         solution until it is the correct solution, so you can directly calculate the edit distance.
     For more details, see the paper: https://arxiv.org/abs/2204.04196
-    :param submission: the block ordering given by the student
-    :param depends_graph: The dependency graph between blocks specified in the question
-    :param group_belonging: which pl-block-group each block belongs to, specified in the question
-    :return: edit distance from the student submission to some correct solution
+    - submission: the block ordering given by the student
+    - depends_graph: The dependency graph between blocks specified in the question
+    - group_belonging: which pl-block-group each block belongs to, specified in the question
+
+    Returns:
+        - Edit distance from the student submission to some correct solution
     """
     graph = dag_to_nx(depends_graph, group_belonging)
     trans_clos = nx.transitive_closure(graph)
@@ -271,3 +336,97 @@ def lcs_partial_credit(
     deletions_needed = num_distractors + mvc_size
     insertions_needed = graph.number_of_nodes() - (len(submission) - deletions_needed)
     return deletions_needed + insertions_needed
+
+
+def dfs_until(
+    multigraph: Multigraph,
+    start: str,
+) -> tuple[tuple[str, ColoredEdges] | None, Dag]:
+    """
+    Depth-First searches a multigraph until a node meets some specified requirements and then halts
+    searching and returns the node or the reason for halting.
+
+    - multigraph: the multigraph being searched.
+    - start: the starting point for the search.
+
+    Returns:
+        The reason or node that halted the search with the nodes and their
+        corresponding edges the DFS was able to reach before halting.
+
+    Raises:
+        - If a cycle is found in the multigraph.
+    """  # noqa: DOC501 (false positive)
+    # ruff throws an error for sphinx style doc strings: https://github.com/astral-sh/ruff/issues/12434
+    stack: list[tuple[str, list[str]]] = []
+    visited: list[str] = []
+    traversed: Dag = {}
+    stack.append((start, visited))
+    while stack:
+        curr, visited = stack.pop(0)
+        visited.append(curr)
+
+        edges = multigraph[curr]
+
+        if has_colored_edges(edges):
+            return (curr, edges), traversed
+
+        traversed[curr] = edges
+        for target in edges:
+            # this determines if the proposed target edge is a back edge if so it contains a cycle
+            if target in visited and visited.index(curr) >= visited.index(target):
+                raise ValueError("Cycle encountered during collapse of multigraph.")
+            if target not in visited:
+                stack.insert(0, (target, deepcopy(visited)))
+
+    return None, traversed
+
+
+def collapse_multigraph(
+    multigraph: Multigraph,
+    final: str,
+) -> Generator[Dag]:
+    """
+    This algorithm takes a directed multigraph structure where multiple edges
+    can exist from a any single node to any other single node multiple times.
+    This allows for us to encode multiple DAGs within a single structure. This
+    algorithm with its use of dfs_until allows the parsing of those valid DAGs
+    out of the multigraph. The algorithm functions as follows:
+        1. Iterate through the partially collapsed multigraphs in the
+           collapsing_graphs queue.
+        2. Perform a depth first search on the graph until either the source
+           has been found or a colored edge.
+        3. When a colored edge has been found replace the colored edges with
+           one of the enumerated colored edges in a new copy of the multigraph.
+        4. If the entire graph has been traversed it is a valid DAG and it can
+           be returned.
+    For more details, see the paper: https://arxiv.org/abs/2510.11999
+    - multigraph: a dependency graph that contains nodes with multiple colored
+      edges.
+    - final: the sink in the multigraph, necessary to know the sink so that we
+      have a starting point for the DFS to search for DAGs through the
+      multigraph.
+
+    Yields:
+        - yields a "fully collapsed" DAG once a DAG has been found.
+    """
+    collapsing_graphs: list[Multigraph] = [multigraph]
+    while collapsing_graphs:
+        graph = collapsing_graphs.pop(0)
+        reason, dag = dfs_until(graph, final)
+
+        # DFS halted because source was reached
+        if reason is None:
+            yield dag
+            continue
+
+        # DFS halted for _has_colored_edges, split graph into their respective partially collapsed graphs
+        node, edges = reason
+        for color in edges:
+            partially_collapsed = deepcopy(graph)
+            partially_collapsed[node] = color
+            collapsing_graphs.append(partially_collapsed)
+
+
+def has_colored_edges(edges: Edges | ColoredEdges) -> TypeIs[ColoredEdges]:
+    """A halting condition function for dfs_until, used to check for colored edges."""
+    return any(isinstance(edge, list) for edge in edges)

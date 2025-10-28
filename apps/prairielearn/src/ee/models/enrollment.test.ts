@@ -2,7 +2,9 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
+import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
@@ -48,6 +50,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       },
       CourseInstanceSchema,
     );
+    const firstCourseInstance = await selectCourseInstanceById('1');
 
     const freeUser = await getOrCreateUser({
       uid: 'free@example.com',
@@ -69,25 +72,25 @@ describe('getEnrollmentCountsForInstitution', () => {
     });
 
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: freeUser.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: freeUser.user_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      actionDetail: 'implicit_joined',
     });
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: paidUser1.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: paidUser1.user_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      actionDetail: 'implicit_joined',
     });
     await ensureEnrollment({
-      course_instance_id: courseInstance.id,
-      user_id: paidUser2.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance,
+      userId: paidUser2.user_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      actionDetail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
@@ -158,12 +161,13 @@ describe('getEnrollmentCountsForCourse', () => {
       uin: 'student',
       email: 'student@example.com',
     });
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      actionDetail: 'implicit_joined',
     });
 
     const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
@@ -180,12 +184,13 @@ describe('getEnrollmentCountsForCourse', () => {
       email: 'student@example.com',
     });
 
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      actionDetail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
@@ -212,12 +217,13 @@ describe('getEnrollmentCountsForCourse', () => {
       email: 'student@example.com',
     });
 
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      actionDetail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
@@ -261,12 +267,13 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uin: 'student',
       email: 'student@example.com',
     });
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      actionDetail: 'implicit_joined',
     });
 
     const result = await getEnrollmentCountsForCourseInstance('1');
@@ -283,12 +290,13 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       email: 'student@example.com',
     });
 
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      actionDetail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
@@ -315,12 +323,13 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       email: 'student@example.com',
     });
 
+    const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
-      course_instance_id: '1',
-      user_id: user.user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance: firstCourseInstance,
+      userId: user.user_id,
+      requestedRole: 'Student',
+      authzData: dangerousFullAuthzForTesting(),
+      actionDetail: 'implicit_joined',
     });
 
     await ensurePlanGrant({

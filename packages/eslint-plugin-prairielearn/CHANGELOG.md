@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 2.2.6
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 2.2.5
 
 ### Patch Changes

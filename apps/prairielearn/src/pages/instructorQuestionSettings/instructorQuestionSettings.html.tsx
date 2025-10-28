@@ -228,7 +228,7 @@ export function InstructorQuestionSettings({
                                         data-name="${tag.name}"
                                         data-description="${tag.implicit
                                           ? ''
-                                          : TagDescription(tag)}"
+                                          : renderHtml(<TagDescription tag={tag} />)}"
                                         ${questionTagNames.has(tag.name) ? 'selected' : ''}
                                       ></option>
                                     `;
