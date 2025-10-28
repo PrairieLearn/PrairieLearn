@@ -36,3 +36,10 @@ def generate(data):
     test = sympy.Function("test")
     ans2 = test(sympy.sqrt(x**2 / sympy.E**x))
     data["correct_answers"]["formula_editor"] = pl.to_json(ans2)
+
+    # Nested absolute value expression: |x+|-x+1+2+3+4||
+    x = sympy.symbols("x")
+    inner_expr = -x + 1 + 2 + 3 + 4
+    outer_expr = x + sympy.Abs(inner_expr)
+    nested_abs_expr = sympy.Abs(outer_expr)
+    data["correct_answers"]["nested_abs"] = pl.to_json(nested_abs_expr)

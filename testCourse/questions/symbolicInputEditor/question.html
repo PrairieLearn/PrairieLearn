@@ -102,3 +102,19 @@
   </pl-question-panel>
   <pl-symbolic-input formula-editor="true" aria-label="Function expression" answers-name="custom_function_2" variables="y" show-score="false" custom-functions="beef,the" suffix="$= \text{where?}$"></pl-symbolic-input>
 </pl-card>
+
+<pl-card header="Absolute value problem">
+  <pl-question-panel>
+    <p>This template also demonstrates handling of nested absolute value expressions.</p>
+    <p>Submit the expression $|x+|-x+1+2+3+4||$.</p>
+    <p>Note: This tests the symbolic input's ability to handle complex nested absolute value expressions with multiple terms.</p>
+  </pl-question-panel>
+
+  <pl-symbolic-input
+    formula-editor="true"
+    answers-name="nested_abs"
+    label="$y =$"
+    variables="x"
+    display="block"
+  ></pl-symbolic-input>
+</pl-card>
