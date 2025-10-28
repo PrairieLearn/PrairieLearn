@@ -74,6 +74,10 @@ export default asyncHandler(async (req, res, next) => {
       res.locals.authz_data.has_student_access_with_enrollment = true;
     } else if (existingEnrollment) {
       // Show blocked page
+      return;
+    } else {
+      // Show fancy 'cannot self-enroll' page
+      return;
     }
   }
 

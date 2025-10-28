@@ -8,10 +8,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { hasRole } from '../../lib/authzData.js';
 import { getCourseInstanceContext } from '../../lib/client/page-context.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
-import {
-  ensureCheckedEnrollment,
-  selectOptionalEnrollmentByUserId,
-} from '../../models/enrollment.js';
+import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
 import { EnrollmentCodeRequired } from './enrollmentCodeRequired.html.js';
 
@@ -32,17 +29,29 @@ router.get(
     const existingEnrollment = await run(async () => {
       // We don't want to 403 instructors
       if (!hasRole(res.locals.authz_data, 'Student')) return null;
-      return await selectOptionalEnrollmentByUserId({
-        userId: res.locals.authn_user.user_id,
+      return await selectOptionalEnrollmentByUid({
+        uid: res.locals.authn_user.uid,
         courseInstance,
         requestedRole: 'Student',
         authzData: res.locals.authz_data,
       });
     });
 
+    if (!courseInstance.self_enrollment_enabled && !existingEnrollment) {
+      // Show fancy 'cannot self-enroll' page
+      return;
+    }
+
+    const canJoin =
+      existingEnrollment != null &&
+      ['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status);
+
+    if (existingEnrollment && !canJoin) {
+      // Show blocked page
+      return;
+    }
+
     if (
-      // No self-enrollment enabled
-      !courseInstance.self_enrollment_enabled ||
       // No enrollment code required
       !courseInstance.self_enrollment_use_enrollment_code ||
       // Enrollment code is correct
@@ -50,13 +59,6 @@ router.get(
       // Existing enrollments can transition immediately
       existingEnrollment
     ) {
-      // 'blocked' and 'joined' enrollments don't transition.
-      // This means that blocked users will end up on the /assessments page without authorization.
-
-      const canJoin =
-        existingEnrollment != null &&
-        ['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status);
-
       if (code?.toUpperCase() === enrollmentCode.toUpperCase() || canJoin) {
         // Authorize the user for the course instance
         req.params.course_instance_id = courseInstance.id;
@@ -71,9 +73,6 @@ router.get(
           requestedRole: 'Student',
           actionDetail: 'implicit_joined',
         });
-      } else if (existingEnrollment) {
-        // Show blocked page
-        return;
       }
 
       // redirect to a different page, which will have proper authorization.
