@@ -147,7 +147,7 @@ jobs:
       - name: Install Node dependencies
         run: |
           yarn install --immutable --inline-builds
-          yarn dlx playwright install --with-deps
+          yarn playwright install chromium --with-deps
         env:
           # Disable hardened mode to eke out a little more speed.
           YARN_ENABLE_HARDENED_MODE: 0
