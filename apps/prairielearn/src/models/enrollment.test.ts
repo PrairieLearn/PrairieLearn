@@ -2,7 +2,7 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authzData.js';
 import { type CourseInstance, type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
@@ -53,8 +53,8 @@ describe('ensureEnrollment', () => {
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
     courseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
   });
 
@@ -80,8 +80,8 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'invited');
@@ -91,16 +91,16 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       courseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       courseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -112,7 +112,7 @@ describe('ensureEnrollment', () => {
       pendingUid: user.uid,
       courseInstance,
       requestedRole: 'Student Data Editor',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNull(invitedEnrollment);
   });
@@ -135,8 +135,8 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'blocked');
@@ -145,16 +145,16 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       courseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'blocked');
@@ -172,24 +172,24 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNull(initialEnrollment);
 
     await ensureEnrollment({
       courseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -215,8 +215,8 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'joined');
@@ -225,16 +225,16 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       courseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -250,8 +250,8 @@ describe('DB validation of enrollment', () => {
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
     courseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
   });
 

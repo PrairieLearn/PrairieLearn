@@ -153,9 +153,7 @@ router.post(
     const courseInstance = await selectCourseInstanceById({
       id: body.course_instance_id,
       requestedRole: 'Student',
-      // We need to check the modern access system.
       authzData,
-      reqDate: res.locals.req_date,
     });
 
     switch (body.__action) {

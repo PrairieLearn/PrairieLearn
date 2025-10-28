@@ -3,7 +3,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { dangerousFullAuthzForTesting } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authzData.js';
 import * as groupUpdate from '../lib/group-update.js';
 import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -36,8 +36,8 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
     const assessment = await selectAssessmentById(locals.assessment_id);
     const course_instance = await selectCourseInstanceById({
       id: assessment.course_instance_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     const job_sequence_id = await groupUpdate.randomGroups({
       course_instance,
@@ -46,7 +46,7 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
       authn_user_id: '1',
       max_group_size: 10,
       min_group_size: 10,
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     await helperServer.waitForJobSequenceSuccess(job_sequence_id);
   });

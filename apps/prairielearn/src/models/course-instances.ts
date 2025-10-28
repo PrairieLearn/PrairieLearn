@@ -30,7 +30,7 @@ export async function selectCourseInstanceById({
   authzData,
 }: {
   id: string;
-  requestedRole: 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  requestedRole: 'System' | 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
   authzData: AuthzData;
 }) {
   const courseInstance = await queryRow(
@@ -53,7 +53,7 @@ export async function selectOptionalCourseInstanceById({
   authzData,
 }: {
   id: string;
-  requestedRole: 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  requestedRole: 'System' | 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
   authzData: AuthzData;
 }): Promise<CourseInstance | null> {
   const courseInstance = await queryOptionalRow(
@@ -96,7 +96,7 @@ export async function selectOptionalCourseInstanceByEnrollmentCode({
   authzData,
 }: {
   enrollment_code: string;
-  requestedRole: 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  requestedRole: 'System' | 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
   authzData: AuthzData;
 }): Promise<CourseInstance | null> {
   const courseInstance = await queryOptionalRow(

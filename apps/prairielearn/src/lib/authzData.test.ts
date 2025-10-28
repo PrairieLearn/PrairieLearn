@@ -1,7 +1,7 @@
 import { assert, describe, it } from 'vitest';
 
-import { type CourseInstanceRole, dangerousFullAuthzForTesting, hasRole } from './authzData.js';
-import type { AuthzData } from './authzData.types.js';
+import { dangerousFullSystemAuthz, hasRole } from './authzData.js';
+import type { AuthzData, CourseInstanceRole } from './authzData.types.js';
 
 describe('authzData', () => {
   describe('hasRole', () => {
@@ -53,8 +53,9 @@ describe('authzData', () => {
 
     describe('dangerous full authz for testing', () => {
       it('returns true for any role when using dangerous full authz', () => {
-        const dangerousAuthz = dangerousFullAuthzForTesting();
+        const dangerousAuthz = dangerousFullSystemAuthz();
         const roles: CourseInstanceRole[] = [
+          'System',
           'None',
           'Student',
           'Student Data Viewer',

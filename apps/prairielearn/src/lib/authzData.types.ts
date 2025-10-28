@@ -80,5 +80,50 @@ export const FullAuthzDataSchema = z.object({
 
 export type FullAuthzData = z.infer<typeof FullAuthzDataSchema>;
 
-/** The user facing version that is obtained via the page context helpers. */
+export type CourseInstanceRole =
+  | 'System'
+  | 'None'
+  | 'Student'
+  | 'Student Data Viewer'
+  | 'Student Data Editor'
+  // The role 'Any' is equivalent to 'Student' OR 'Student Data Viewer' OR 'Student Data Editor'
+  | 'Any';
+
 export type AuthzData = RawPageAuthzData | DangerousSystemAuthzData;
+
+type Prettify<T> = {
+  [K in keyof T]: T[K];
+} & {}; // Force typescript to resolve the type immediately
+
+/**
+ * The user facing type for a model function that is authenticated.
+ *
+ * Do not destructure the authentication parameters in the function signature.
+ *
+ * Instead, destructure them in the function body.
+ *
+ * ```typescript
+ * function foo({ myParam1, myParam2, ...authParams }: AuthenticatedModel<...>) {
+ *   const { requestedRole } = authParams;
+ *   ...
+ * }
+ * ```
+ *
+ * @param Params - The parameters of the model function.
+ * @param Roles - The roles that are allowed to call the model function.
+ * @returns The type for the model function
+ */
+// @ts-expect-error - TODO: we want to iterate on this further
+type _AuthenticatedModel<
+  Params extends Record<string, any> & {
+    requestedRole: CourseInstanceRole;
+  },
+> = Prettify<
+  | (Params & {
+      authzData: RawPageAuthzData;
+    })
+  | (Omit<Params, 'requestedRole'> & {
+      requestedRole: undefined;
+      authzData: DangerousSystemAuthzData;
+    })
+>;

@@ -1,6 +1,6 @@
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authzData.js';
 import type { Course, CourseInstance } from '../lib/db-types.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
@@ -47,9 +47,8 @@ export default async function ({
   if (course_instance_id !== '') {
     course_instance = await selectOptionalCourseInstanceById({
       id: course_instance_id,
-      requestedRole: 'Student',
-      // TODO: is this fine?
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     if (!course_instance) {
       return { rows: [], columns };

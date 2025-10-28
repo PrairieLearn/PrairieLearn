@@ -2,7 +2,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../lib/authzData.js';
 import { config } from '../../lib/config.js';
 import {
   InstanceQuestionSchema,
@@ -65,14 +65,14 @@ describe('student data access', { timeout: 60_000 }, function () {
     });
     const courseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
 
     await ensureEnrollment({
       userId: '3',
       courseInstance,
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
       requestedRole: 'Student',
       actionDetail: 'implicit_joined',
     });

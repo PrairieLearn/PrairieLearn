@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
-import { dangerousFullAuthzForTesting } from '../../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../../lib/authzData.js';
 import { config } from '../../../lib/config.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';
 import { ensureEnrollment } from '../../../models/enrollment.js';
@@ -83,14 +83,14 @@ describe('studentCourseInstanceUpgrade', () => {
     const user = await getOrCreateUser(studentUser);
     const courseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -110,14 +110,14 @@ describe('studentCourseInstanceUpgrade', () => {
     const user = await getOrCreateUser(studentUser);
     const courseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 

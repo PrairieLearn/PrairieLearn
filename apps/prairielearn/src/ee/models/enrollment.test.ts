@@ -2,7 +2,7 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../lib/authzData.js';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
@@ -52,8 +52,8 @@ describe('getEnrollmentCountsForInstitution', () => {
     );
     const firstCourseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
 
     const freeUser = await getOrCreateUser({
@@ -78,22 +78,22 @@ describe('getEnrollmentCountsForInstitution', () => {
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: freeUser.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: paidUser1.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
     await ensureEnrollment({
       courseInstance,
       userId: paidUser2.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -167,14 +167,14 @@ describe('getEnrollmentCountsForCourse', () => {
     });
     const firstCourseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -194,14 +194,14 @@ describe('getEnrollmentCountsForCourse', () => {
 
     const firstCourseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -231,14 +231,14 @@ describe('getEnrollmentCountsForCourse', () => {
 
     const firstCourseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -285,14 +285,14 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     });
     const firstCourseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -312,14 +312,14 @@ describe('getEnrollmentCountsForCourseInstance', () => {
 
     const firstCourseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -349,14 +349,14 @@ describe('getEnrollmentCountsForCourseInstance', () => {
 
     const firstCourseInstance = await selectCourseInstanceById({
       id: '1',
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 

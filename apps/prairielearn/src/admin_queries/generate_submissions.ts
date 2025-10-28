@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authzData.js';
 import { config } from '../lib/config.js';
 import {
   CourseSchema,
@@ -71,9 +71,8 @@ export default async function ({
   if (!assessment) return { rows: [], columns };
   const courseInstance = await selectOptionalCourseInstanceById({
     id: assessment.course_instance_id,
-    requestedRole: 'Student',
-    // TODO: is this fine?
-    authzData: dangerousFullAuthzForTesting(),
+    requestedRole: 'System',
+    authzData: dangerousFullSystemAuthz(),
   });
   if (!courseInstance) return { rows: [], columns };
   const assessmentCourse = await selectCourseById(courseInstance.course_id);

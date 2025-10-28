@@ -10,7 +10,7 @@ import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../lib/authzData.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
@@ -429,16 +429,15 @@ describe('accessibility', () => {
 
     const courseInstance = await selectCourseInstanceById({
       id: STATIC_ROUTE_PARAMS.course_instance_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
 
     const enrollment = await ensureEnrollment({
       courseInstance,
       userId: user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
     assert.isNotNull(enrollment);

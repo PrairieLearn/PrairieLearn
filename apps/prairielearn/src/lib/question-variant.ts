@@ -10,7 +10,7 @@ import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
 
-import { dangerousFullAuthzForTesting } from './authzData.js';
+import { dangerousFullSystemAuthz } from './authzData.js';
 import { type Course, IdSchema, type Question, type Variant, VariantSchema } from './db-types.js';
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
@@ -281,7 +281,7 @@ async function makeAndInsertVariant(
           id: course_instance_id,
           requestedRole: 'Student',
           // TODO: Authenticate this access better.
-          authzData: dangerousFullAuthzForTesting(),
+          authzData: dangerousFullSystemAuthz(),
         });
         if (!course_instance || !idsEqual(course_instance.course_id, variant_course.id)) {
           throw new error.HttpStatusError(403, 'Course instance not found in course');
