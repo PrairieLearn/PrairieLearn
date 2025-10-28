@@ -53,11 +53,11 @@ router.get(
       // 'blocked' and 'joined' enrollments don't transition.
       // This means that blocked users will end up on the /assessments page without authorization.
 
-      if (
-        code?.toUpperCase() === enrollmentCode.toUpperCase() ||
-        (existingEnrollment &&
-          ['invited', 'rejected', 'removed'].includes(existingEnrollment.status))
-      ) {
+      const canJoin =
+        existingEnrollment != null &&
+        ['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status);
+
+      if (code?.toUpperCase() === enrollmentCode.toUpperCase() || canJoin) {
         // Authorize the user for the course instance
         req.params.course_instance_id = courseInstance.id;
         await authzCourseOrInstance(req, res);
@@ -71,7 +71,11 @@ router.get(
           requestedRole: 'Student',
           actionDetail: 'implicit_joined',
         });
+      } else if (existingEnrollment) {
+        // Show blocked page
+        return;
       }
+
       // redirect to a different page, which will have proper authorization.
       if (redirectUrl != null) {
         res.redirect(redirectUrl);

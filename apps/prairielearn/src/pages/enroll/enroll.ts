@@ -99,7 +99,10 @@ router.post('/', [
         });
       });
 
-      if (existingEnrollment && existingEnrollment.status === 'blocked') {
+      if (
+        existingEnrollment &&
+        !['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status)
+      ) {
         flash('error', 'You cannot enroll in this course.');
         res.redirect(req.originalUrl);
         return;
