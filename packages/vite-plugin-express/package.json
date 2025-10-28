@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/vite-plugin-express",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "repository": {
     "type": "git",
@@ -16,7 +16,7 @@
     "debounce": "^2.2.0",
     "picomatch": "^4.0.2",
     "strip-ansi": "^7.1.2",
-    "vite": "^7.1.7"
+    "vite": "^7.1.11"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
