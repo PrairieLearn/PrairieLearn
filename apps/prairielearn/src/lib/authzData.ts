@@ -2,6 +2,8 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
+import { hasCourseInstanceAccess } from '../models/course-instances.js';
+
 import {
   type AuthzData,
   type DangerousSystemAuthzData,
@@ -157,6 +159,14 @@ export async function buildAuthzData({
     }),
   };
 
+  if (rawAuthzData.course_instance?.modern_publishing) {
+    // We use this access system instead of the legacy access system.
+    const { has_student_access, has_student_access_with_enrollment } =
+      await hasCourseInstanceAccess(rawAuthzData.course_instance, authzData, req_date);
+    authzData.has_student_access = has_student_access;
+    authzData.has_student_access_with_enrollment = has_student_access_with_enrollment;
+  }
+
   return {
     authzData,
     authzCourse: rawAuthzData.course,
@@ -197,6 +207,8 @@ export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole)
     return true;
   }
 
+  // TODO: This assumes the legacy access system.
+  // We should have some wrapper around hasRole that handles the modern access system.
   if (
     (requestedRole === 'Student' || requestedRole === 'Any') &&
     authzData.has_student_access &&

@@ -1,93 +1,113 @@
-// import assert from 'node:assert';
+import { Temporal } from '@js-temporal/polyfill';
 
-// import { selectPublishingExtensionsByEnrollmentId } from '../models/course-instance-publishing-extensions.js';
+import { type AccessRuleJson, type PublishingJson } from '../schemas/infoCourseInstance.js';
 
-// import {
-//   type CourseInstance,
-//   type Enrollment,
-//   type EnumCourseInstanceRole,
-//   type EnumCourseRole,
-// } from './db-types.js';
+import { type CourseInstanceAccessRule } from './db-types.js';
 
-// export interface CourseInstanceAccessParams {
-//   course_instance_role: EnumCourseInstanceRole;
-//   course_role: EnumCourseRole;
-//   enrollment: Enrollment | null;
-// }
+export interface PublishingConfigurationMigrationResult {
+  success: true;
+  publishingConfiguration: PublishingJson;
+}
 
-// /**
-//  * Evaluates whether a user can access a course instance based on the course instance's
-//  * access control settings and the user's authorization context.
-//  */
-// export async function evaluateModernCourseInstanceAccess(
-//   courseInstance: CourseInstance,
-//   { course_role, course_instance_role, enrollment }: CourseInstanceAccessParams,
-//   // This is done like this for testing purposes.
-//   currentDate: Date,
-// ): Promise<
-//   | {
-//       has_instructor_access: false;
-//       has_student_access: boolean;
-//       has_student_access_with_enrollment: boolean;
-//     }
-//   | {
-//       has_instructor_access: false;
-//       has_student_access: false;
-//       has_student_access_with_enrollment: false;
-//       reason: string;
-//     }
-//   | {
-//       has_instructor_access: true;
-//       has_student_access: null;
-//       has_student_access_with_enrollment: null;
-//     }
-// > {
-//   // Staff with course or course instance roles always have access
-//   if (course_role !== 'None' || course_instance_role !== 'None') {
-//     return {
-//       has_instructor_access: true,
-//       has_student_access: true,
-//       has_student_access_with_enrollment: true,
-//     };
-//   }
+export interface PublishingConfigurationMigrationError {
+  success: false;
+  error: string;
+}
 
-//   // If no start date is set, the course instance is not published
-//   if (courseInstance.publishing_start_date == null) {
-//     return {
-//       hasAccess: false,
-//       reason: 'Course instance is not published',
-//     };
-//   }
+export type PublishingConfigurationMigrationResponse =
+  | PublishingConfigurationMigrationResult
+  | PublishingConfigurationMigrationError;
 
-//   if (currentDate < courseInstance.publishing_start_date) {
-//     return {
-//       hasAccess: false,
-//       reason: 'Course instance is not yet published',
-//     };
-//   }
+const toIsoString = (date: Date, timezone: string) => {
+  return Temporal.Instant.fromEpochMilliseconds(date.getTime())
+    .toZonedDateTimeISO(timezone)
+    .toPlainDateTime()
+    .toString();
+};
 
-//   // End date is always set alongside start date
-//   assert(courseInstance.publishing_end_date != null);
+/**
+ * Converts a database CourseInstanceAccessRule to the AccessRuleJson format.
+ */
+export function convertAccessRuleToJson(
+  accessRule: CourseInstanceAccessRule,
+  courseInstanceTimezone: string,
+): AccessRuleJson {
+  const json: AccessRuleJson = {};
 
-//   // Consider the latest enabled date for the enrollment.
-//   const publishingExtensions =
-//     enrollment != null ? await selectPublishingExtensionsByEnrollmentId(enrollment.id) : [];
+  if (accessRule.json_comment) {
+    json.comment = accessRule.json_comment;
+  }
 
-//   const allDates = [
-//     courseInstance.publishing_end_date,
-//     ...publishingExtensions.map((extension) => extension.end_date),
-//   ].sort((a, b) => {
-//     return b.getTime() - a.getTime();
-//   });
+  if (accessRule.uids && accessRule.uids.length > 0) {
+    json.uids = accessRule.uids;
+  }
 
-//   const latestDate = allDates[0];
+  if (accessRule.start_date) {
+    json.startDate = toIsoString(accessRule.start_date, courseInstanceTimezone);
+  }
 
-//   if (currentDate > latestDate) {
-//     return {
-//       hasAccess: false,
-//       reason: 'Course instance is not published',
-//     };
-//   }
+  if (accessRule.end_date) {
+    json.endDate = toIsoString(accessRule.end_date, courseInstanceTimezone);
+  }
 
-//   return { hasAccess: true, has_student_access: true, has_student_access_with_enrollment: true };
-// }
+  if (accessRule.institution) {
+    json.institution = accessRule.institution;
+  }
+
+  return json;
+}
+
+/**
+ * Attempts to migrate legacy access rules (in AccessRuleJson format) to the new publishing configuration format.
+ * Migrates if there is exactly one rule with valid dates. UID selectors are converted to overrides.
+ */
+export function migrateAccessRuleJsonToPublishingConfiguration(
+  originalAccessRules: AccessRuleJson[],
+): PublishingConfigurationMigrationResponse {
+  // Make a deep copy of the access rules
+  const accessRules = structuredClone(originalAccessRules);
+
+  const rule = accessRules[0];
+  const startDates = accessRules
+    .map((rule) => rule.startDate)
+    .filter((date) => date != null)
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  const endDates = accessRules
+    .map((rule) => rule.endDate)
+    .filter((date) => date != null)
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  const earliestStartDate = startDates.length > 0 ? startDates[0] : null;
+  const latestEndDate = endDates.length > 0 ? endDates[endDates.length - 1] : null;
+
+  // Must have both dates or neither
+  if (!earliestStartDate || !latestEndDate) {
+    return {
+      success: false,
+      error:
+        'Cannot migrate access rules since there is no start or end date that can be inferred.',
+    };
+  }
+  // The timezone offset of dates before 1884 are a little funky (https://stackoverflow.com/a/60327839).
+  // We will silently update the dates to the nearest valid date.
+  if (rule.startDate && new Date(rule.startDate).getFullYear() < 1884) {
+    rule.startDate = '2000-01-01T00:00:00';
+  }
+
+  // We can't do anything with the end date if it is before 1884.
+  if (rule.endDate && new Date(rule.endDate).getFullYear() < 1884) {
+    return {
+      success: false,
+      error: 'Cannot migrate the end date, it is too old.',
+    };
+  }
+  // Build the new access control configuration
+  const publishingConfiguration = {
+    startDate: rule.startDate,
+    endDate: rule.endDate,
+  };
+
+  return {
+    success: true,
+    publishingConfiguration,
+  };
+}
