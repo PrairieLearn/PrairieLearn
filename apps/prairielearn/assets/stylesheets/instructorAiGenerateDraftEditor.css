@@ -130,3 +130,16 @@
 .reasoning-body p {
   margin-bottom: 0.25rem;
 }
+
+.spinner-border-text {
+  margin: 0.1em;
+  --bs-spinner-width: 0.8em;
+  --bs-spinner-height: 0.8em;
+  --bs-spinner-border-width: 0.15em;
+}
+
+.bi-fw {
+  width: 1em;
+  height: 1em;
+  vertical-align: unset;
+}

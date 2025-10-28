@@ -15,6 +15,7 @@ import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
 
+import { assertNever } from '../../../../lib/types.js';
 import type {
   QuestionGenerationToolUIPart,
   QuestionGenerationUIMessage,
@@ -26,33 +27,65 @@ function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
   return part.type.startsWith('tool-');
 }
 
+function ProgressStatus({
+  state,
+  statusText,
+  showSpinner,
+}: {
+  state: 'streaming' | 'success' | 'error';
+  statusText: preact.ComponentChildren;
+  showSpinner?: boolean;
+}) {
+  return (
+    <div class="d-flex flex-row align-items-center gap-1">
+      {run(() => {
+        if (state === 'streaming' || showSpinner) {
+          return (
+            <div class="spinner-border spinner-border-text" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          );
+        } else if (state === 'success') {
+          return <i class="bi bi-fw bi-check-lg text-success" aria-hidden="true" />;
+        } else {
+          return <i class="bi bi-fw bi-x text-danger" aria-hidden="true" />;
+        }
+      })}
+      <span>{statusText}</span>
+    </div>
+  );
+}
+
 function ToolCallStatus({
   state,
   statusText,
+  showSpinner,
   children,
 }: {
   state: ToolUIPart['state'];
   statusText: preact.ComponentChildren;
+  showSpinner?: boolean;
   children?: preact.ComponentChildren;
 }) {
   return (
     <div class="small text-muted">
-      <div class="d-flex flex-row align-items-center gap-1">
-        {run(() => {
-          if (state === 'input-streaming' || state === 'input-available') {
-            return (
-              <div class="spinner-border spinner-border-sm text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-              </div>
-            );
-          } else if (state === 'output-available') {
-            return <i class="bi bi-check-lg text-success" aria-hidden="true" />;
-          } else {
-            return <i class="bi bi-x text-danger" aria-hidden="true" />;
+      <ProgressStatus
+        state={run(() => {
+          switch (state) {
+            case 'input-streaming':
+            case 'input-available':
+              return 'streaming';
+            case 'output-available':
+              return 'success';
+            case 'output-error':
+              return 'error';
+            default:
+              assertNever(state);
           }
         })}
-        <span>{statusText}</span>
-      </div>
+        statusText={statusText}
+        showSpinner={showSpinner}
+      />
       {children}
     </div>
   );
@@ -231,7 +264,7 @@ function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
         onClick={toggleExpanded}
       >
         <i
-          class={clsx('bi', {
+          class={clsx('bi small text-muted', {
             'bi-chevron-right': !isExpanded,
             'bi-chevron-down': isExpanded,
           })}
@@ -355,10 +388,7 @@ function Messages({
         <MessageParts parts={message.parts} />
         {isLastMessage && (
           <Show when={showSpinner}>
-            <div class="d-flex flex-row align-items-center gap-2 mb-3 small">
-              <div class="spinner-border spinner-border-sm" role="status" />
-              Working...
-            </div>
+            <ProgressStatus state="streaming" statusText="Working..." />
           </Show>
         )}
         {jobLogsUrl && (
