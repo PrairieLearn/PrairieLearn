@@ -343,7 +343,7 @@ code {
   border-radius: 6px;
 }
 
-/** Don't inherit those styles for pre code blocks. */
+/** However, don't use those styles for code tags in pre tags. */
 pre code {
   color: inherit;
   background: inherit;
