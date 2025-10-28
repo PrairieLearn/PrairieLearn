@@ -6,8 +6,9 @@ import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/po
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
+import type { AuthzData } from './authzData.types.js';
 import { createCsvParser } from './csv.js';
-import { UserSchema } from './db-types.js';
+import { type Assessment, type CourseInstance, UserSchema } from './db-types.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -20,29 +21,40 @@ function groupUpdateLockName(assessment_id: string): string {
 /**
  * Update groups from a CSV file.
  *
- * @param assessment_id - The assessment to update.
- * @param csvFile - An object with keys {originalname, size, buffer}.
- * @param user_id - The current user performing the update.
- * @param authn_user_id - The current authenticated user.
+ * @param params
+ * @param params.course_instance - The course instance in which the assessment exists.
+ * @param params.assessment - The assessment to update.
+ * @param params.csvFile - An object with keys {originalname, size, buffer}.
+ * @param params.user_id - The current user performing the update.
+ * @param params.authn_user_id - The current authenticated user.
+ * @param params.authzData - The authorization data for the current user.
  * @returns The job sequence ID.
  */
-export async function uploadInstanceGroups(
-  assessment_id: string,
-  csvFile: Express.Multer.File | null | undefined,
-  user_id: string,
-  authn_user_id: string,
-): Promise<string> {
+export async function uploadInstanceGroups({
+  course_instance,
+  assessment,
+  csvFile,
+  user_id,
+  authn_user_id,
+  authzData,
+}: {
+  course_instance: CourseInstance;
+  assessment: Assessment;
+  csvFile: Express.Multer.File | null | undefined;
+  user_id: string;
+  authn_user_id: string;
+  authzData: AuthzData;
+}): Promise<string> {
   if (csvFile == null) {
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_id, course_instance_id } =
-    await selectAssessmentInfoForJob(assessment_id);
+  const { assessment_label } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
-    courseId: course_id,
-    courseInstanceId: course_instance_id,
-    assessmentId: assessment_id,
+    courseId: course_instance.course_id,
+    courseInstanceId: course_instance.id,
+    assessmentId: assessment.id,
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'upload_groups',
@@ -50,7 +62,7 @@ export async function uploadInstanceGroups(
   });
 
   serverJob.executeInBackground(async (job) => {
-    const lockName = groupUpdateLockName(assessment_id);
+    const lockName = groupUpdateLockName(assessment.id);
     job.verbose(`Trying lock ${lockName}`);
     await namedLocks.doWithLock(
       lockName,
@@ -76,7 +88,14 @@ export async function uploadInstanceGroups(
             const { uid, groupname } = record;
             if (!uid || !groupname) continue;
             totalCount++;
-            await createOrAddToGroup(groupname, assessment_id, [uid], authn_user_id).then(
+            await createOrAddToGroup({
+              course_instance,
+              assessment,
+              group_name: groupname,
+              uids: [uid],
+              authn_user_id,
+              authzData,
+            }).then(
               () => successCount++,
               (err) => {
                 if (err instanceof GroupOperationError) {
@@ -107,31 +126,43 @@ export async function uploadInstanceGroups(
 /**
  * Randomly assign students to groups.
  *
- * @param assessment_id - The assessment to update.
- * @param user_id - The current user performing the update.
- * @param authn_user_id - The current authenticated user.
- * @param max_group_size - max size of the group
- * @param min_group_size - min size of the group
+ * @param params
+ * @param params.course_instance - The course instance in which the assessment exists.
+ * @param params.assessment - The assessment to update.
+ * @param params.user_id - The current user performing the update.
+ * @param params.authn_user_id - The current authenticated user.
+ * @param params.max_group_size - max size of the group
+ * @param params.min_group_size - min size of the group
+ * @param params.authzData - The authorization data for the current user.
  * @returns The job sequence ID.
  */
-export async function randomGroups(
-  assessment_id: string,
-  user_id: string,
-  authn_user_id: string,
-  max_group_size: number,
-  min_group_size: number,
-): Promise<string> {
+export async function randomGroups({
+  course_instance,
+  assessment,
+  user_id,
+  authn_user_id,
+  max_group_size,
+  min_group_size,
+  authzData,
+}: {
+  course_instance: CourseInstance;
+  assessment: Assessment;
+  user_id: string;
+  authn_user_id: string;
+  max_group_size: number;
+  min_group_size: number;
+  authzData: AuthzData;
+}): Promise<string> {
   if (max_group_size < 2 || min_group_size < 1 || max_group_size < min_group_size) {
     throw new Error('Group Setting Requirements: max > 1; min > 0; max >= min');
   }
 
-  const { assessment_label, course_id, course_instance_id } =
-    await selectAssessmentInfoForJob(assessment_id);
+  const { assessment_label } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
-    courseId: course_id,
-    courseInstanceId: course_instance_id,
-    assessmentId: assessment_id,
+    courseId: course_instance.course_id,
+    courseInstanceId: course_instance.id,
+    assessmentId: assessment.id,
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'random_generate_groups',
@@ -139,7 +170,7 @@ export async function randomGroups(
   });
 
   serverJob.executeInBackground(async (job) => {
-    const lockName = groupUpdateLockName(assessment_id);
+    const lockName = groupUpdateLockName(assessment.id);
     job.verbose(`Trying lock ${lockName}`);
     await namedLocks.doWithLock(
       lockName,
@@ -156,7 +187,7 @@ export async function randomGroups(
         job.verbose('Fetching the enrollment lists...');
         const studentsToGroup = await queryRows(
           sql.select_enrolled_students_without_group,
-          { assessment_id },
+          { assessment_id: assessment.id },
           UserSchema,
         );
         _.shuffle(studentsToGroup);
@@ -193,7 +224,14 @@ export async function randomGroups(
           }
 
           for (const users of userGroups) {
-            await createGroup(null, assessment_id, users, authn_user_id).then(
+            await createGroup({
+              course_instance,
+              assessment,
+              group_name: null,
+              uids: users,
+              authn_user_id,
+              authzData,
+            }).then(
               () => {
                 groupsCreated++;
                 studentsGrouped += users.length;

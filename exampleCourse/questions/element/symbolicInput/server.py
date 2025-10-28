@@ -32,3 +32,7 @@ def generate(data):
 
     ans = the(y) + beef(y)
     data["correct_answers"]["custom_function_2"] = pl.to_json(ans)
+
+    test = sympy.Function("test")
+    ans2 = test(sympy.sqrt(x**2 / sympy.E**x))
+    data["correct_answers"]["formula_editor"] = pl.to_json(ans2)
