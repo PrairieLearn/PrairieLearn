@@ -55,8 +55,10 @@ router.get(
       throw new HttpStatusError(400, 'UID must be a string');
     }
     const enrollment = await selectOptionalEnrollmentByUid({
-      course_instance_id: courseInstance.id,
+      courseInstance,
       uid,
+      requestedRole: 'Student Data Viewer',
+      authzData: res.locals.authz_data,
     });
     const staffEnrollment = StaffEnrollmentSchema.nullable().parse(enrollment);
     res.json(staffEnrollment);
@@ -83,8 +85,10 @@ router.post(
 
       // Try to find an existing enrollment so we can error gracefully.
       const existingEnrollment = await selectOptionalEnrollmentByUid({
-        course_instance_id: courseInstance.id,
+        courseInstance,
         uid: body.uid,
+        requestedRole: 'Student Data Viewer',
+        authzData: res.locals.authz_data,
       });
 
       if (existingEnrollment) {
@@ -100,10 +104,10 @@ router.post(
       }
 
       const enrollment = await inviteStudentByUid({
-        course_instance_id: courseInstance.id,
+        courseInstance,
         uid: body.uid,
-        agent_user_id: pageContext.authz_data.user.user_id,
-        agent_authn_user_id: pageContext.authn_user.user_id,
+        requestedRole: 'Student Data Editor',
+        authzData: res.locals.authz_data,
       });
 
       const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);

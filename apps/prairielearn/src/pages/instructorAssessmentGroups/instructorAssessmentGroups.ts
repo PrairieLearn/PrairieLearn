@@ -100,6 +100,7 @@ router.post(
         csvFile: req.file,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
+        authzData: res.locals.authz_data,
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'random_assessment_groups') {
@@ -110,6 +111,7 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
         max_group_size: Number(req.body.max_group_size),
         min_group_size: Number(req.body.min_group_size),
+        authzData: res.locals.authz_data,
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {
@@ -122,6 +124,7 @@ router.post(
         group_name: req.body.group_name,
         uids: parseUidsString(req.body.uids, MAX_UIDS),
         authn_user_id: res.locals.authn_user.user_id,
+        authzData: res.locals.authz_data,
       }).catch((err) => {
         if (err instanceof GroupOperationError) {
           flash('error', err.message);
@@ -141,6 +144,7 @@ router.post(
             uid,
             authn_user_id: res.locals.authn_user.user_id,
             enforceGroupSize: false, // Enforce group size limits (instructors can override limits)
+            authzData: res.locals.authz_data,
           });
         } catch (err) {
           if (err instanceof GroupOperationError) {

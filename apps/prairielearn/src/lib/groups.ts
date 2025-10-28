@@ -9,6 +9,7 @@ import { selectCourseById } from '../models/course.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
+import type { AuthzData } from './authzData.types.js';
 import {
   type Assessment,
   type CourseInstance,
@@ -200,10 +201,12 @@ export async function getUserRoles(group_id: string, user_id: string) {
 
 async function selectUserInCourseInstance({
   uid,
-  course_instance,
+  courseInstance,
+  authzData,
 }: {
   uid: string;
-  course_instance: CourseInstance;
+  courseInstance: CourseInstance;
+  authzData: AuthzData;
 }) {
   const user = await selectOptionalUserByUid(uid);
   if (!user) return null;
@@ -213,12 +216,15 @@ async function selectUserInCourseInstance({
   if (
     (await sqldb.callRow(
       'users_is_instructor_in_course_instance',
-      [user.user_id, course_instance.id],
+      [user.user_id, courseInstance.id],
       z.boolean(),
     )) ||
     (await selectOptionalEnrollmentByUserId({
-      course_instance_id: course_instance.id,
-      user_id: user.user_id,
+      courseInstance,
+      userId: user.user_id,
+      // The function can be called by a student or instructor
+      requestedRole: 'Any',
+      authzData,
     }))
   ) {
     return user;
@@ -226,7 +232,7 @@ async function selectUserInCourseInstance({
 
   // In the example course, any user with instructor access in any other
   // course should have access and thus be allowed to be added to a group.
-  const course = await selectCourseById(course_instance.course_id);
+  const course = await selectCourseById(courseInstance.course_id);
   if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
     return user;
   }
@@ -242,6 +248,7 @@ export async function addUserToGroup({
   uid,
   authn_user_id,
   enforceGroupSize,
+  authzData,
 }: {
   course_instance: CourseInstance;
   assessment: Assessment;
@@ -249,6 +256,7 @@ export async function addUserToGroup({
   uid: string;
   authn_user_id: string;
   enforceGroupSize: boolean;
+  authzData: AuthzData;
 }) {
   await sqldb.runInTransactionAsync(async () => {
     const group = await sqldb.queryOptionalRow(
@@ -262,7 +270,8 @@ export async function addUserToGroup({
 
     const user = await selectUserInCourseInstance({
       uid,
-      course_instance,
+      courseInstance: course_instance,
+      authzData,
     });
     if (!user) {
       throw new GroupOperationError(`User ${uid} is not enrolled in this course.`);
@@ -309,12 +318,14 @@ export async function joinGroup({
   fullJoinCode,
   uid,
   authn_user_id,
+  authzData,
 }: {
   course_instance: CourseInstance;
   assessment: Assessment;
   fullJoinCode: string;
   uid: string;
   authn_user_id: string;
+  authzData: AuthzData;
 }): Promise<void> {
   const splitJoinCode = fullJoinCode.split('-');
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
@@ -342,6 +353,7 @@ export async function joinGroup({
         uid,
         authn_user_id,
         enforceGroupSize: true,
+        authzData,
       });
     });
   } catch (err) {
@@ -358,12 +370,14 @@ export async function createGroup({
   group_name,
   uids,
   authn_user_id,
+  authzData,
 }: {
   course_instance: CourseInstance;
   assessment: Assessment;
   group_name: string | null;
   uids: string[];
   authn_user_id: string;
+  authzData: AuthzData;
 }): Promise<void> {
   if (group_name) {
     if (group_name.length > 30) {
@@ -420,6 +434,7 @@ export async function createGroup({
           uid,
           authn_user_id,
           enforceGroupSize: false,
+          authzData,
         });
       }
     });
@@ -443,12 +458,14 @@ export async function createOrAddToGroup({
   group_name,
   uids,
   authn_user_id,
+  authzData,
 }: {
   course_instance: CourseInstance;
   assessment: Assessment;
   group_name: string;
   uids: string[];
   authn_user_id: string;
+  authzData: AuthzData;
 }): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     const group = await sqldb.queryOptionalRow(
@@ -457,7 +474,14 @@ export async function createOrAddToGroup({
       GroupSchema,
     );
     if (group == null) {
-      await createGroup({ course_instance, assessment, group_name, uids, authn_user_id });
+      await createGroup({
+        course_instance,
+        assessment,
+        group_name,
+        uids,
+        authn_user_id,
+        authzData,
+      });
     } else {
       for (const uid of uids) {
         await addUserToGroup({
@@ -467,6 +491,7 @@ export async function createOrAddToGroup({
           uid,
           authn_user_id,
           enforceGroupSize: false,
+          authzData,
         });
       }
     }
