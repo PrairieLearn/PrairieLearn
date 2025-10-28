@@ -657,10 +657,21 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
 
     submitted_key = data["submitted_answers"].get(name, None)
+    all_keys = [a["key"] for a in data["params"][name]]
 
     # Check that at least one option was selected
     if submitted_key is None:
         data["format_errors"][name] = "You must select at least one option."
+        return
+
+    # Check that the selected options are a subset of the valid options
+    # FIXME: raise ValueError instead of treating as parse error?
+    submitted_key_set = set(submitted_key)
+    all_keys_set = set(all_keys)
+    if not submitted_key_set.issubset(all_keys_set):
+        one_bad_key = submitted_key_set.difference(all_keys_set).pop()
+        # FIXME: escape one_bad_key
+        data["format_errors"][name] = f"You selected an invalid option: {one_bad_key}"
         return
 
     # Get minimum and maximum number of options to be selected
