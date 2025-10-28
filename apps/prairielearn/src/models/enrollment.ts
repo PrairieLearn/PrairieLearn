@@ -417,7 +417,7 @@ async function _inviteExistingEnrollment({
   requestedRole: 'Student Data Editor';
 }): Promise<Enrollment> {
   assertHasRole(authzData, requestedRole);
-  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'removed']);
+  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'removed', 'blocked']);
 
   const newEnrollment = await queryRow(
     sql.invite_existing_enrollment,
@@ -476,6 +476,8 @@ async function inviteNewEnrollment({
  * Invite a student by uid.
  * If there is an existing enrollment with the given uid, it will be updated to a invitation.
  * If there is no existing enrollment, a new enrollment will be created.
+ *
+ * Transitions users in the 'blocked', 'rejected' or 'removed' status to 'invited'.
  */
 export async function inviteStudentByUid({
   uid,
