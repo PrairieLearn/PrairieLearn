@@ -21,4 +21,4 @@ ADD CONSTRAINT course_instances_publishing_dates_consistency_check CHECK (
     publishing_start_date IS NOT NULL
     AND publishing_end_date IS NOT NULL
   )
-);
+) NOT VALID;

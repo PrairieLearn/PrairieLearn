@@ -18,4 +18,4 @@ ALTER TABLE course_instance_publishing_extensions
 ADD CONSTRAINT course_instance_publishing_extensions_name_not_empty CHECK (
   name IS null
   OR name != ''
-);
+) NOT VALID;
