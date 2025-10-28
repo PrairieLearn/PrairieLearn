@@ -73,7 +73,7 @@ export async function selectAuthzData({
  * @param authzData - The authorization data of the user.
  * @param reqDate - The date of the request.
  */
-export async function hasModernCourseInstanceStudentAccess(
+export async function calculateModernCourseInstanceStudentAccess(
   courseInstance: CourseInstance,
   authzData: RawPageAuthzData,
   reqDate: Date,
@@ -231,12 +231,22 @@ export async function buildAuthzData({
     }),
   };
 
-  if (rawAuthzData.course_instance?.modern_publishing) {
+  // Only students (users with role 'None') should run this code.
+  if (
+    rawAuthzData.course_instance?.modern_publishing &&
+    authzData.course_instance_role === 'None'
+  ) {
     // We use this access system instead of the legacy access system.
     const { has_student_access, has_student_access_with_enrollment } =
-      await hasModernCourseInstanceStudentAccess(rawAuthzData.course_instance, authzData, req_date);
+      await calculateModernCourseInstanceStudentAccess(
+        rawAuthzData.course_instance,
+        authzData,
+        req_date,
+      );
     authzData.has_student_access = has_student_access;
     authzData.has_student_access_with_enrollment = has_student_access_with_enrollment;
+    authzData.authn_has_student_access = has_student_access;
+    authzData.authn_has_student_access_with_enrollment = has_student_access_with_enrollment;
   }
 
   return {

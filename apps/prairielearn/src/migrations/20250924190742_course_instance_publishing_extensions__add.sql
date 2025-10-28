@@ -2,8 +2,7 @@ CREATE TABLE course_instance_publishing_extensions (
   id BIGSERIAL PRIMARY KEY,
   course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,
   name TEXT,
-  end_date TIMESTAMP WITH TIME ZONE NOT NULL,
-  enabled BOOLEAN NOT NULL DEFAULT true
+  end_date TIMESTAMP WITH TIME ZONE NOT NULL
   -- These records will be hard deleted.
 );
 
@@ -12,7 +11,7 @@ CREATE INDEX course_instance_publishing_extensions_course_instance_id_idx ON cou
 
 -- Ensure names are unique within each course instance.
 ALTER TABLE course_instance_publishing_extensions
-ADD CONSTRAINT course_instance_publishing_extensions_course_instance_id_name_unique UNIQUE (course_instance_id, name);
+ADD CONSTRAINT course_instance_publishing_extensions_unique_name UNIQUE (course_instance_id, name);
 
 -- Add check constraint to prevent empty string names
 ALTER TABLE course_instance_publishing_extensions

@@ -9,10 +9,12 @@ columns
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     json_comment: jsonb
     long_name: text
+    modern_publishing: boolean not null default false
     publishing_end_date: timestamp with time zone
     publishing_start_date: timestamp with time zone
     self_enrollment_enabled: boolean default true
     self_enrollment_enabled_before_date: timestamp with time zone
+    self_enrollment_restrict_to_institution: boolean default true
     self_enrollment_use_enrollment_code: boolean default false
     share_source_publicly: boolean not null default false
     short_name: text
