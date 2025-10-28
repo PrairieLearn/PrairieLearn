@@ -301,7 +301,7 @@ function checkSettingsResults(
   test.sequential('rubric settings modal should update with new values', async () => {
     const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-    const form = $manualGradingIQPage('#rubric-editing');
+    const form = $manualGradingIQPage('#rubric-editor');
 
     assert.equal(form.find('input[name="starting_points"]').val(), starting_points.toString());
     assert.equal(form.find('input[name="max_extra_points"]').val(), max_extra_points.toString());
@@ -723,7 +723,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('#rubric-editing');
+          const form = $manualGradingIQPage('#rubric-editor');
           rubric_items = [
             { points: 6, description: 'First rubric item', always_show_to_students: true },
             {
@@ -808,7 +808,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('#rubric-editing');
+          const form = $manualGradingIQPage('#rubric-editor');
           assert.isDefined(rubric_items);
           rubric_items[2].points = 1;
           score_points = 5.4;
@@ -863,7 +863,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('#rubric-editing');
+          const form = $manualGradingIQPage('#rubric-editor');
           assert.isDefined(rubric_items);
 
           const payload = {
@@ -942,7 +942,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('#rubric-editing');
+          const form = $manualGradingIQPage('#rubric-editor');
           assert.isDefined(rubric_items);
           score_points = 6.9;
           score_percent = 115;
@@ -997,7 +997,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('#rubric-editing');
+          const form = $manualGradingIQPage('#rubric-editor');
           rubric_items = [
             { points: 0, description: 'First rubric item', always_show_to_students: true },
             {

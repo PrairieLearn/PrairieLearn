@@ -320,7 +320,7 @@ export function RubricSettings({
     // Performs validation on the required inputs
     if (use_rubric) {
       const required = document.querySelectorAll<HTMLInputElement>(
-        '#rubric-editing input[required]',
+        '#rubric-editor input[required]',
       );
       const isValid = Array.from(required).every((input) => input.reportValidity());
       if (!isValid) {
@@ -444,7 +444,7 @@ export function RubricSettings({
   };
 
   return (
-    <div id="rubric-editing" class="card overflow-hidden mb-3">
+    <div id="rubric-editor" class="card overflow-hidden mb-3">
       <div id="rubric-settings-hidden-inputs">
         <input type="hidden" name="__csrf_token" value={csrfToken} />
         <input type="hidden" name="__action" value="modify_rubric_settings" />
