@@ -60,7 +60,7 @@ export async function updateInstanceQuestionGrade({
       // an issue here.
       await insertIssue({
         variantId: variant_id,
-        studentMessage: 'Submission received after question closed; grade not updated.',
+        studentMessage: 'Submission received after instance question closed; grade not updated.',
         instructorMessage: '',
         manuallyReported: false,
         courseCaused: false,
