@@ -4,7 +4,7 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { buildAuthzData } from '../../../lib/authzData.js';
+import { buildAuthzData } from '../../../lib/authzDataPublishing.js';
 import type { CourseInstance } from '../../../lib/db-types.js';
 import { selectOptionalCourseInstanceByEnrollmentCode } from '../../../models/course-instances.js';
 
@@ -49,6 +49,7 @@ router.get(
           return;
         }
       }
+      throw error;
     }
 
     // User-facing terminology is to use "course" instead of "course instance"

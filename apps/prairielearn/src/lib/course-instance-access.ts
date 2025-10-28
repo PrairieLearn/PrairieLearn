@@ -59,7 +59,7 @@ export function convertAccessRuleToJson(
 
 /**
  * Attempts to migrate legacy access rules (in AccessRuleJson format) to the new publishing configuration format.
- * Migrates if there is exactly one rule with valid dates. UID selectors are converted to overrides.
+ * Uses the earliest start date and latest end date to determine the publishing configuration.
  */
 export function migrateAccessRuleJsonToPublishingConfiguration(
   originalAccessRules: AccessRuleJson[],
@@ -67,7 +67,6 @@ export function migrateAccessRuleJsonToPublishingConfiguration(
   // Make a deep copy of the access rules
   const accessRules = structuredClone(originalAccessRules);
 
-  const rule = accessRules[0];
   const startDates = accessRules
     .map((rule) => rule.startDate)
     .filter((date) => date != null)
@@ -76,7 +75,7 @@ export function migrateAccessRuleJsonToPublishingConfiguration(
     .map((rule) => rule.endDate)
     .filter((date) => date != null)
     .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-  const earliestStartDate = startDates.length > 0 ? startDates[0] : null;
+  let earliestStartDate = startDates.length > 0 ? startDates[0] : null;
   const latestEndDate = endDates.length > 0 ? endDates[endDates.length - 1] : null;
 
   // Must have both dates or neither
@@ -89,12 +88,12 @@ export function migrateAccessRuleJsonToPublishingConfiguration(
   }
   // The timezone offset of dates before 1884 are a little funky (https://stackoverflow.com/a/60327839).
   // We will silently update the dates to the nearest valid date.
-  if (rule.startDate && new Date(rule.startDate).getFullYear() < 1884) {
-    rule.startDate = '2000-01-01T00:00:00';
+  if (earliestStartDate && new Date(earliestStartDate).getFullYear() < 1884) {
+    earliestStartDate = '2000-01-01T00:00:00';
   }
 
   // We can't do anything with the end date if it is before 1884.
-  if (rule.endDate && new Date(rule.endDate).getFullYear() < 1884) {
+  if (latestEndDate && new Date(latestEndDate).getFullYear() < 1884) {
     return {
       success: false,
       error: 'Cannot migrate the end date, it is too old.',
@@ -102,8 +101,8 @@ export function migrateAccessRuleJsonToPublishingConfiguration(
   }
   // Build the new access control configuration
   const publishingConfiguration = {
-    startDate: rule.startDate,
-    endDate: rule.endDate,
+    startDate: earliestStartDate,
+    endDate: latestEndDate,
   };
 
   return {

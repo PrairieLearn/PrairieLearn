@@ -65,8 +65,8 @@ describe(
         userId: user.user_id,
         courseInstance,
         authzData: dangerousFullSystemAuthz(),
+        requestedRole: 'System',
         actionDetail: 'implicit_joined',
-        requestedRole: 'Student',
       });
     });
 
