@@ -155,6 +155,17 @@ router.post(
 
     switch (body.__action) {
       case 'accept_invitation': {
+        const enrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requestedRole: 'Student',
+          authzData,
+        });
+        if (enrollment && enrollment.status === 'blocked') {
+          flash('error', 'Failed to accept invitation');
+          break;
+        }
+
         await ensureEnrollment({
           courseInstance,
           userId,
@@ -172,12 +183,8 @@ router.post(
           authzData,
         });
 
+        // This is the case for joined enrollments, since they won't have a pending_uid
         if (!enrollment) {
-          flash('error', 'Failed to reject invitation');
-          break;
-        }
-
-        if (!['invited', 'rejected'].includes(enrollment.status)) {
           flash('error', 'Failed to reject invitation');
           break;
         }
@@ -200,6 +207,11 @@ router.post(
 
         if (!enrollment) {
           flash('error', 'Failed to unenroll');
+          break;
+        }
+
+        if (enrollment.status === 'blocked') {
+          // Do nothing, blocked enrollments are not visible on the home page
           break;
         }
 
