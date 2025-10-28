@@ -19,7 +19,6 @@ import { assertNever } from '../../lib/types.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   ensureEnrollment,
-  selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUid,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
@@ -161,7 +160,10 @@ router.post(
           requestedRole: 'Student',
           authzData,
         });
-        if (enrollment && enrollment.status === 'blocked') {
+        if (
+          !enrollment ||
+          !['removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
+        ) {
           flash('error', 'Failed to accept invitation');
           break;
         }
@@ -176,15 +178,14 @@ router.post(
         break;
       }
       case 'reject_invitation': {
-        const enrollment = await selectOptionalEnrollmentByPendingUid({
+        const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
-          pendingUid: uid,
+          uid,
           requestedRole: 'Student',
           authzData,
         });
 
-        // This is the case for joined enrollments, since they won't have a pending_uid
-        if (!enrollment) {
+        if (!enrollment || !['invited', 'rejected'].includes(enrollment.status)) {
           flash('error', 'Failed to reject invitation');
           break;
         }
@@ -205,17 +206,7 @@ router.post(
           authzData,
         });
 
-        if (!enrollment) {
-          flash('error', 'Failed to unenroll');
-          break;
-        }
-
-        if (enrollment.status === 'blocked') {
-          // Do nothing, blocked enrollments are not visible on the home page
-          break;
-        }
-
-        if (!['joined', 'removed'].includes(enrollment.status)) {
+        if (!enrollment || !['joined', 'removed'].includes(enrollment.status)) {
           flash('error', 'Failed to unenroll');
           break;
         }
