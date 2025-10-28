@@ -113,8 +113,8 @@ type Prettify<T> = {
  * @param Roles - The roles that are allowed to call the model function.
  * @returns The type for the model function
  */
-// @ts-expect-error - TODO: we want to iterate on this further
-type _AuthenticatedModel<
+// TODO: We want to iterate on this further.
+export type AuthenticatedModel<
   Params extends Record<string, any> & {
     requestedRole: CourseInstanceRole;
   },
