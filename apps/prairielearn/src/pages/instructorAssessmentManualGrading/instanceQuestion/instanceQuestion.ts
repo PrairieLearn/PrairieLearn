@@ -304,7 +304,7 @@ router.get(
         assessment_question: res.locals.assessment_question,
       });
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-      res.send({
+      res.json({
         gradingPanel,
         rubric_data,
         aiGradingStats:

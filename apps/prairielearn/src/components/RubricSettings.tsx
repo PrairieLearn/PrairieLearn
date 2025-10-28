@@ -438,21 +438,19 @@ export function RubricSettings({
       setWasUsingRubric(Boolean(rubricData));
       setModifiedAt(rubricData ? new Date(rubricData.modified_at) : undefined);
       onCancel();
-    } else if (contentType.includes('text/html')) {
+    } else {
       window.location.replace(res.url);
     }
   };
 
   return (
     <div id="rubric-editor" class="card overflow-hidden mb-3">
-      <div id="rubric-settings-hidden-inputs">
-        <input type="hidden" name="__csrf_token" value={csrfToken} />
-        <input type="hidden" name="__action" value="modify_rubric_settings" />
-        <input type="hidden" name="modified_at" value={modifiedAt?.toISOString() ?? ''} />
-        <input type="hidden" name="starting_points" value={startingPoints} />
-        <input type="hidden" name="max_extra_points" value={maxExtraPoints} />
-        <input type="hidden" name="min_points" value={minPoints} />
-      </div>
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
+      <input type="hidden" name="__action" value="modify_rubric_settings" />
+      <input type="hidden" name="modified_at" value={modifiedAt?.toISOString() ?? ''} />
+      <input type="hidden" name="starting_points" value={startingPoints} />
+      <input type="hidden" name="max_extra_points" value={maxExtraPoints} />
+      <input type="hidden" name="min_points" value={minPoints} />
       <div class="card-header collapsible-card-header d-flex align-items-center">
         <h2>Rubric settings</h2>
         <button
