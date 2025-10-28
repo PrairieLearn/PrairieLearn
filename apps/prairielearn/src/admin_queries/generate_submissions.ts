@@ -72,8 +72,8 @@ export default async function ({
   const courseInstance = await selectOptionalCourseInstanceById({
     id: assessment.course_instance_id,
     requestedRole: 'Student',
+    // TODO: is this fine?
     authzData: dangerousFullAuthzForTesting(),
-    reqDate: new Date(),
   });
   if (!courseInstance) return { rows: [], columns };
   const assessmentCourse = await selectCourseById(courseInstance.course_id);

@@ -38,8 +38,7 @@ router.get(
       courseInstance = await selectOptionalCourseInstanceByEnrollmentCode({
         enrollment_code: code,
         requestedRole: 'Student',
-        authzData: res.locals.authz_data,
-        reqDate: res.locals.req_date,
+        authzData,
       });
     } catch (error) {
       if (error instanceof HttpStatusError) {

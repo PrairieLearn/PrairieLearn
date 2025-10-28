@@ -79,7 +79,6 @@ describe(
         id: '1',
         requestedRole: 'Student',
         authzData: dangerousFullAuthzForTesting(),
-        reqDate: new Date(),
       });
       await ensureEnrollment({
         userId: user.user_id,

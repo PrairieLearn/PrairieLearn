@@ -56,7 +56,6 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     await ensureEnrollment({
       userId: user.user_id,

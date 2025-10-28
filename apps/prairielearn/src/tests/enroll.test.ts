@@ -189,7 +189,6 @@ describe('Self-enrollment settings transitions', () => {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
 
     // Set uid_regexp for the default institution to allow @example.com UIDs
@@ -510,7 +509,6 @@ describe('Self-enrollment institution restriction transitions', () => {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     assert.isNotNull(instance);
 

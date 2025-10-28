@@ -55,7 +55,6 @@ describe('ensureEnrollment', () => {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
   });
 
@@ -253,7 +252,6 @@ describe('DB validation of enrollment', () => {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
   });
 

@@ -333,7 +333,6 @@ export async function generateAndEnrollUsers({
       id: course_instance_id,
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     const users = await generateUsers(count);
     for (const user of users) {

@@ -54,7 +54,6 @@ describe('getEnrollmentCountsForInstitution', () => {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
 
     const freeUser = await getOrCreateUser({
@@ -170,7 +169,6 @@ describe('getEnrollmentCountsForCourse', () => {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
@@ -198,7 +196,6 @@ describe('getEnrollmentCountsForCourse', () => {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
@@ -236,7 +233,6 @@ describe('getEnrollmentCountsForCourse', () => {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
@@ -291,7 +287,6 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
@@ -319,7 +314,6 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
@@ -357,7 +351,6 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,

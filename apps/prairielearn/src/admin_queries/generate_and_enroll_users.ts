@@ -48,8 +48,8 @@ export default async function ({
     course_instance = await selectOptionalCourseInstanceById({
       id: course_instance_id,
       requestedRole: 'Student',
+      // TODO: is this fine?
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     if (!course_instance) {
       return { rows: [], columns };

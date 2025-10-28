@@ -10,7 +10,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import { buildAuthzData, selectAuthzData } from '../lib/authzData.js';
-import type { FullAuthzDataSchema } from '../lib/authzData.types.js';
+import type { FullAuthzData } from '../lib/authzData.types.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
@@ -26,8 +26,6 @@ interface Override {
   value: string;
   cookie: string;
 }
-
-type FullAuthzData = z.infer<typeof FullAuthzDataSchema>;
 
 /**
  * Removes all override cookies from the response.
@@ -73,16 +71,12 @@ interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
   authn_course_instance_role: FullAuthzData['permissions_course_instance']['course_instance_role'];
   authn_has_course_instance_permission_view: FullAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
   authn_has_course_instance_permission_edit: FullAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
-  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   authn_has_student_access: FullAuthzData['permissions_course_instance']['has_student_access'];
-  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   authn_has_student_access_with_enrollment: FullAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
   course_instance_role: FullAuthzData['permissions_course_instance']['course_instance_role'];
   has_course_instance_permission_view: FullAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
   has_course_instance_permission_edit: FullAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
-  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   has_student_access_with_enrollment: FullAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
-  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
   has_student_access: FullAuthzData['permissions_course_instance']['has_student_access'];
   user_with_requested_uid_has_instructor_access_to_course_instance: boolean;
 }

@@ -67,7 +67,6 @@ describe('student data access', { timeout: 60_000 }, function () {
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
 
     await ensureEnrollment({

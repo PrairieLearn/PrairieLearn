@@ -51,7 +51,6 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
       id: '1',
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     await ensureEnrollment({
       userId: studentOneUser.user_id,

@@ -282,7 +282,6 @@ async function makeAndInsertVariant(
           requestedRole: 'Student',
           // TODO: Authenticate this access better.
           authzData: dangerousFullAuthzForTesting(),
-          reqDate: new Date(),
         });
         if (!course_instance || !idsEqual(course_instance.course_id, variant_course.id)) {
           throw new error.HttpStatusError(403, 'Course instance not found in course');

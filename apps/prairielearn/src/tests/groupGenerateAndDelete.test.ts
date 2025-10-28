@@ -38,7 +38,6 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
       id: assessment.course_instance_id,
       requestedRole: 'Student',
       authzData: dangerousFullAuthzForTesting(),
-      reqDate: new Date(),
     });
     const job_sequence_id = await groupUpdate.randomGroups({
       course_instance,
