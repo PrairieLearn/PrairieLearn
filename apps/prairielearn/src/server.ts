@@ -3,8 +3,8 @@
 /* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-import * as Sentry from '@prairielearn/sentry';
 import * as opentelemetry from '@prairielearn/opentelemetry';
+import * as Sentry from '@prairielearn/sentry';
 /* eslint-enable import-x/order */
 
 import * as fs from 'node:fs';
@@ -2244,7 +2244,6 @@ if (shouldStartServer) {
       // is used, 100% of traces will be sent to Sentry, despite us never having set
       // `tracesSampleRate` in the Sentry configuration.
       contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
-      // ...(isPlaywrightTest ? { openTelemetryEnabled: false } : {}),
     });
 
     // Same with Sentry configuration.
@@ -2329,6 +2328,7 @@ if (shouldStartServer) {
     };
 
     logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+
     await sqldb.initAsync(pgConfig, idleErrorHandler);
 
     // Our named locks code maintains a separate pool of database connections.
@@ -2336,6 +2336,7 @@ if (shouldStartServer) {
     await namedLocks.init(pgConfig, idleErrorHandler, {
       renewIntervalMs: config.namedLocksRenewIntervalMs,
     });
+
     logger.verbose('Successfully connected to database');
 
     if (argv['refresh-workspace-hosts-and-exit']) {
