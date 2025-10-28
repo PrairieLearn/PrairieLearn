@@ -345,7 +345,7 @@ code {
 
 /** Don't inherit those styles for pre code blocks. */
 pre code {
-  /* bootstrap has a rule for color: inherit already */
+  color: inherit;
   background: inherit;
   padding: 0;
   border-radius: 0;
