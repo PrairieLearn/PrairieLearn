@@ -2,8 +2,12 @@
 CREATE TABLE course_instance_publishing_enrollment_extensions (
   id BIGSERIAL PRIMARY KEY,
   enrollment_id BIGINT NOT NULL REFERENCES enrollments ON DELETE CASCADE ON UPDATE CASCADE,
-  course_instance_publishing_extension_id BIGINT NOT NULL REFERENCES course_instance_publishing_extensions ON DELETE CASCADE ON UPDATE CASCADE
+  course_instance_publishing_extension_id BIGINT NOT NULL REFERENCES course_instance_publishing_extensions ON DELETE CASCADE ON UPDATE CASCADE,
   -- These records will be hard deleted when the enrollment is deleted.
+  UNIQUE (
+    enrollment_id,
+    course_instance_publishing_extension_id
+  )
 );
 
 -- Quickly lookup all extensions for a given enrollment.

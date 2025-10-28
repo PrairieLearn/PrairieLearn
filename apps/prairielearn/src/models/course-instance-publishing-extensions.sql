@@ -37,6 +37,10 @@ VALUES
     $course_instance_publishing_extension_id,
     $enrollment_id
   )
+ON CONFLICT (
+  course_instance_publishing_extension_id,
+  enrollment_id
+) DO NOTHING
 RETURNING
   *;
 

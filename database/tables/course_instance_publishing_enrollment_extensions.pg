@@ -5,6 +5,7 @@ columns
 
 indexes
     course_instance_publishing_enrollment_extensions_pkey: PRIMARY KEY (id) USING btree (id)
+    course_instance_publishing_en_enrollment_id_course_instance_key: UNIQUE (enrollment_id, course_instance_publishing_extension_id) USING btree (enrollment_id, course_instance_publishing_extension_id)
     course_instance_publishing_enrollment_extensions_course_instanc: USING btree (course_instance_publishing_extension_id)
     course_instance_publishing_enrollment_extensions_enrollment_id_: USING btree (enrollment_id)
 
