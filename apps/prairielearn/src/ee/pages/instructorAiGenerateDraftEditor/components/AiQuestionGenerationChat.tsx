@@ -1,9 +1,15 @@
 import { useChat } from '@ai-sdk/react';
 import { type Signal, useSignal } from '@preact/signals';
 import { Show } from '@preact/signals/utils';
-import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
+import {
+  DefaultChatTransport,
+  type ReasoningUIPart,
+  type TextUIPart,
+  type ToolUIPart,
+  type UIMessage,
+} from 'ai';
 import clsx from 'clsx';
-import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import Markdown from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
@@ -199,32 +205,78 @@ function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
   );
 }
 
+function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
+  // Track whether the user has explicitly interacted with the expand/collapse
+  const [userControlled, setUserControlled] = useState(false);
+  const [userExpanded, setUserExpanded] = useState(false);
+
+  const isStreaming = part.state === 'streaming';
+
+  // If user has taken control, use their preference. Otherwise, expand while streaming, collapse when done.
+  const isExpanded = userControlled ? userExpanded : isStreaming;
+
+  if (part.state === 'done' && !part.text) return null;
+
+  const toggleExpanded = () => {
+    setUserControlled(true);
+    setUserExpanded(!isExpanded);
+  };
+
+  return (
+    <div class="d-flex flex-column gap-2 border rounded p-2 small">
+      <button
+        type="button"
+        class="d-flex flex-row gap-2 align-items-center btn btn-link text-decoration-none p-0 text-start"
+        aria-expanded={isExpanded}
+        onClick={toggleExpanded}
+      >
+        <i
+          class={clsx('bi', {
+            'bi-chevron-right': !isExpanded,
+            'bi-chevron-down': isExpanded,
+          })}
+          aria-hidden="true"
+        />
+        {isStreaming ? (
+          <>
+            <div class="spinner-border spinner-border-sm" role="status" />
+            <span>Thinking...</span>
+          </>
+        ) : (
+          <>
+            <i class="bi bi-lightbulb text-muted" aria-hidden="true" />
+            <span class="text-muted">Reasoning</span>
+          </>
+        )}
+      </button>
+
+      {isExpanded && (
+        <div class="markdown-body">
+          <Markdown>{part.text}</Markdown>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TextPart({ part }: { part: TextUIPart }) {
+  return (
+    <div class="markdown-body">
+      <Markdown>{part.text}</Markdown>
+    </div>
+  );
+}
+
 function MessageParts({ parts }: { parts: QuestionGenerationUIMessage['parts'] }) {
   return parts.map((part, index) => {
     const key = `part-${index}`;
     if (isToolPart(part)) {
       return <ToolCall key={key} part={part} />;
     } else if (part.type === 'text') {
-      return (
-        <div key={key} class="markdown-body">
-          <Markdown>{part.text}</Markdown>
-        </div>
-      );
+      return <TextPart key={key} part={part} />;
     } else if (part.type === 'reasoning') {
-      if (!part.text) return '';
-      return (
-        <div key={key} class="d-flex flex-column gap-2 border rounded p-1 small">
-          <div class="d-flex flex-row gap-2 mb-1">
-            <i class="bi bi-lightbulb" aria-hidden="true" />
-            <span>Thinking...</span>
-          </div>
-
-          <div class="markdown-body">
-            <Markdown>{part.text}</Markdown>
-          </div>
-        </div>
-      );
-    } else if (['reasoning', 'step-start'].includes(part.type)) {
+      return <ReasoningBlock key={key} part={part} />;
+    } else if (['step-start'].includes(part.type)) {
       return '';
     } else {
       return (
@@ -284,6 +336,8 @@ function Messages({
   urlPrefix: string;
 }) {
   return messages.map((message, index) => {
+    const isLastMessage = index === messages.length - 1;
+
     if (message.role === 'user') {
       return (
         <div key={message.id} class="d-flex flex-row-reverse mb-3">
@@ -309,7 +363,7 @@ function Messages({
     return (
       <div key={message.id} class="d-flex flex-column gap-2 mb-3">
         <MessageParts parts={message.parts} />
-        {index === messages.length - 1 && (
+        {isLastMessage && (
           <Show when={showSpinner}>
             <div class="d-flex flex-row align-items-center gap-2 mb-3 small">
               <div class="spinner-border spinner-border-sm" role="status" />
@@ -407,6 +461,9 @@ export function AiQuestionGenerationChat({
   const resizerRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useStickToBottom({
     initial: 'smooth',
+    // The experience with animated collapsible sections is currently janky.
+    // Ideally a fix to this comment would allow us to improve things:
+    // https://github.com/stackblitz-labs/use-stick-to-bottom/issues/19#issuecomment-3457630069
     resize: 'smooth',
   });
 
