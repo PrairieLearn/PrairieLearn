@@ -548,7 +548,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
 
-        html_params: dict[str, Any] = {  # pyright: ignore[reportRedeclaration]
+        html_params: dict[str, Any] = {
             "question": True,
             "name": name,
             "editable": editable,
