@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { type z } from 'zod';
 
+import type { PageAuthzData } from '../authzData.types.js';
+
 import {
-  type AuthzData,
   type RawPageContextWithAuthzDataSchema,
   type StaffCourseInstanceContextSchema,
   type StudentCourseInstanceContextSchema,
@@ -31,7 +32,7 @@ describe('getPageContext', () => {
         authn_has_course_permission_own: true,
         authn_course_role: 'Owner',
         authn_course_instance_role: 'Student Data Editor',
-        authn_mode: 'edit',
+        authn_mode: 'Public',
         authn_has_student_access: false,
         authn_has_student_access_with_enrollment: false,
         authn_has_course_instance_permission_view: true,
@@ -43,7 +44,7 @@ describe('getPageContext', () => {
         has_course_permission_own: true,
         course_role: 'Owner',
         course_instance_role: 'Student Data Editor',
-        mode: 'edit',
+        mode: 'Public',
         has_student_access: false,
         has_student_access_with_enrollment: false,
         has_course_instance_permission_edit: true,
@@ -106,7 +107,7 @@ describe('getPageContext', () => {
         authn_has_course_permission_own: true,
         authn_course_role: 'Owner',
         authn_course_instance_role: 'Student Data Editor',
-        authn_mode: 'edit',
+        authn_mode: 'Public',
         authn_has_student_access: false,
         authn_has_student_access_with_enrollment: false,
         authn_has_course_instance_permission_view: true,
@@ -118,7 +119,7 @@ describe('getPageContext', () => {
         has_course_permission_own: true,
         course_role: 'Owner',
         course_instance_role: 'Student Data Editor',
-        mode: 'edit',
+        mode: 'Public',
         has_student_access: false,
         has_student_access_with_enrollment: false,
         has_course_instance_permission_edit: true,
@@ -131,7 +132,7 @@ describe('getPageContext', () => {
           uin: '123456789',
           user_id: '1',
         } as StaffUser,
-      } as AuthzData,
+      } as PageAuthzData,
       __csrf_token: '123',
       plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',

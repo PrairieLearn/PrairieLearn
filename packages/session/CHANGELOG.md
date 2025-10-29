@@ -1,5 +1,11 @@
 # @prairielearn/session
 
+## 3.0.23
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 3.0.22
 
 ### Patch Changes

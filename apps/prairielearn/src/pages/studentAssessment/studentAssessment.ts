@@ -176,12 +176,14 @@ router.post(
       if (!groupConfig.student_authz_join) {
         throw new HttpStatusError(403, 'You are not authorized to join a group.');
       }
-      await joinGroup(
-        req.body.join_code,
-        res.locals.assessment.id,
-        res.locals.user.uid,
-        res.locals.authn_user.user_id,
-      ).catch((err) => {
+      await joinGroup({
+        course_instance: res.locals.course_instance,
+        assessment: res.locals.assessment,
+        fullJoinCode: req.body.join_code,
+        uid: res.locals.user.uid,
+        authn_user_id: res.locals.authn_user.user_id,
+        authzData: res.locals.authz_data,
+      }).catch((err) => {
         if (err instanceof GroupOperationError) {
           flash('error', err.message);
         } else {
@@ -194,12 +196,14 @@ router.post(
       if (!groupConfig.student_authz_create) {
         throw new HttpStatusError(403, 'You are not authorized to create a group.');
       }
-      await createGroup(
-        groupConfig.student_authz_choose_name ? req.body.group_name : null,
-        res.locals.assessment.id,
-        [res.locals.user.uid],
-        res.locals.authn_user.user_id,
-      ).catch((err) => {
+      await createGroup({
+        course_instance: res.locals.course_instance,
+        assessment: res.locals.assessment,
+        group_name: groupConfig.student_authz_choose_name ? req.body.group_name : null,
+        uids: [res.locals.user.uid],
+        authn_user_id: res.locals.authn_user.user_id,
+        authzData: res.locals.authz_data,
+      }).catch((err) => {
         if (err instanceof GroupOperationError) {
           flash('error', err.message);
         } else {
