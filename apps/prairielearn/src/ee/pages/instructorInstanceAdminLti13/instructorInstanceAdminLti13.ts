@@ -295,7 +295,12 @@ router.post(
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        await updateLti13Scores(assessment.id, instance, job);
+        await updateLti13Scores({
+          course_instance: res.locals.course_instance,
+          unsafe_assessment_id: assessment.id,
+          instance,
+          job,
+        });
 
         await execute(sql.update_lti13_assessment_last_activity, {
           assessment_id: assessment.id,

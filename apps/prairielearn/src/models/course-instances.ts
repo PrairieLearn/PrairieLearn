@@ -105,15 +105,15 @@ export async function selectCourseInstancesWithStaffAccess({
 }
 
 export async function selectUsersWithCourseInstanceAccess({
-  course_instance_id,
+  course_instance,
   minimal_role,
 }: {
-  course_instance_id: string;
+  course_instance: CourseInstance;
   minimal_role: Exclude<CourseInstancePermission['course_instance_role'], null>;
 }) {
   return await queryRows(
     sql.select_users_with_course_instance_access,
-    { course_instance_id, minimal_role },
+    { course_instance_id: course_instance.id, minimal_role },
     UserSchema,
   );
 }
@@ -124,7 +124,7 @@ export async function selectCourseInstanceGraderStaff({
   course_instance: CourseInstance;
 }) {
   return await selectUsersWithCourseInstanceAccess({
-    course_instance_id: course_instance.id,
+    course_instance,
     minimal_role: 'Student Data Editor',
   });
 }
