@@ -84,7 +84,12 @@ router.get(
       is_administrator: res.locals.is_administrator,
     });
 
-    const course = courses.find((c) => c.id === req.query.unsafe_course_id);
+    const unsafe_course_id = req.query.unsafe_course_id?.toString();
+    if (!unsafe_course_id) {
+      throw new HttpStatusError(400, 'Missing required parameter: unsafe_course_id');
+    }
+
+    const course = courses.find((c) => c.id === unsafe_course_id);
     if (!course) {
       throw new HttpStatusError(403, 'Access denied');
     }
