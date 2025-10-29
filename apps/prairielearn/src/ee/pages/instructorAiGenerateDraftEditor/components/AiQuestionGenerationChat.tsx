@@ -101,13 +101,13 @@ function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
       } else if (part.state === 'input-available') {
         return (
           <span>
-            Getting documentation for <code>&lt;{part.input.elementName}&gt;</code>...
+            Reading documentation for <code>&lt;{part.input.elementName}&gt;</code>...
           </span>
         );
       } else if (part.state === 'output-available') {
         return (
           <span>
-            Got documentation for <code>&lt;{part.input.elementName}&gt;</code>
+            Read documentation for <code>&lt;{part.input.elementName}&gt;</code>
           </span>
         );
       } else {
@@ -143,13 +143,13 @@ function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
       } else if (part.state === 'input-available') {
         return (
           <span>
-            Getting {questionCount} example {pluralQuestions}...
+            Reading {questionCount} example {pluralQuestions}...
           </span>
         );
       } else if (part.state === 'output-available') {
         return (
           <span>
-            Got {questionCount} example {pluralQuestions}
+            Read {questionCount} example {pluralQuestions}
           </span>
         );
       } else {
@@ -270,7 +270,7 @@ function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
           })}
           aria-hidden="true"
         />
-        <span class="small text-muted">{isStreaming ? 'Thinking...' : 'Reasoning'}</span>
+        <span class="small text-muted">{isStreaming ? 'Thinking...' : 'Thinking'}</span>
       </button>
 
       {isExpanded && (
