@@ -1,5 +1,7 @@
 import z from 'zod';
 
+import * as error from '@prairielearn/error';
+
 import { RawStaffUserSchema, StaffUserSchema } from './client/safe-db-types.js';
 import {
   CourseInstanceSchema,
@@ -127,3 +129,93 @@ export type AuthenticatedModel<
       authzData: DangerousSystemAuthzData;
     })
 >;
+
+export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
+  return {
+    authn_user: {
+      // We use this structure with a user_id of null to indicate that the user is the system.
+      // Inserts into the audit_events table as a system user have a user_id of null.
+      user_id: null,
+    },
+    user: {
+      user_id: null,
+    },
+  };
+}
+
+export function isDangerousFullSystemAuthz(
+  authzData: AuthzData,
+): authzData is DangerousSystemAuthzData {
+  return authzData.authn_user.user_id === null && authzData.user.user_id === null;
+}
+
+export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
+  if (isDangerousFullSystemAuthz(authzData)) {
+    return true;
+  }
+
+  if (requestedRole === 'System') {
+    return false;
+  }
+
+  if (
+    (requestedRole === 'Student' || requestedRole === 'Any') &&
+    authzData.has_student_access &&
+    // If the user is an instructor, and the requestedRole is student, this should fail.
+    // We want to prevent instructors from calling functions that are only meant for students.
+    //
+    // This can happen if the instructor is in 'Student view' (with access restrictions) as well.
+    authzData.course_instance_role === 'None'
+  ) {
+    return true;
+  }
+
+  if (
+    (requestedRole === 'Student Data Viewer' || requestedRole === 'Any') &&
+    authzData.has_course_instance_permission_view
+  ) {
+    return true;
+  }
+
+  if (
+    (requestedRole === 'Student Data Editor' || requestedRole === 'Any') &&
+    authzData.has_course_instance_permission_edit
+  ) {
+    return true;
+  }
+
+  if (requestedRole === 'None') {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Asserts that the user has the requested role. It also asserts that
+ * the requested role is one of the allowed roles.
+ * If the model function enforces `requestedRole` at the type level, `allowedRoles` is not needed.
+ *
+ * For staff roles, it checks that you have at least the requested role.
+ * role. If you have a more permissive role, you are allowed to perform the action.
+ *
+ * @param authzData - The authorization data of the user.
+ * @param requestedRole - The requested role from the caller of the model function.
+ * @param allowedRoles - The allowed roles for the model function.
+ */
+export function assertHasRole(
+  authzData: AuthzData,
+  requestedRole: CourseInstanceRole,
+  allowedRoles?: CourseInstanceRole[],
+): void {
+  if (allowedRoles && requestedRole !== 'Any' && !allowedRoles.includes(requestedRole)) {
+    // This suggests the code was called incorrectly (internal error).
+    throw new Error(
+      `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
+    );
+  }
+
+  if (!hasRole(authzData, requestedRole)) {
+    throw new error.HttpStatusError(403, 'Access denied');
+  }
+}
