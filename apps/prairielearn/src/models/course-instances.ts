@@ -119,12 +119,12 @@ export async function selectUsersWithCourseInstanceAccess({
 }
 
 export async function selectCourseInstanceGraderStaff({
-  course_instance_id,
+  course_instance,
 }: {
-  course_instance_id: string;
+  course_instance: CourseInstance;
 }) {
   return await selectUsersWithCourseInstanceAccess({
-    course_instance_id,
+    course_instance_id: course_instance.id,
     minimal_role: 'Student Data Editor',
   });
 }
