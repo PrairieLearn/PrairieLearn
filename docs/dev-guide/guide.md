@@ -556,6 +556,16 @@ await updateEnrollmentStatus({
 });
 ```
 
+### Exceptions to the pattern
+
+Model functions for assessments, course instances and courses are a notable exception to the pattern.
+
+The only way to obtain a full row object for an assessment, course instance or course is typically through `res.locals.authz_data`.
+
+Thus, the `select*` functions are not authenticated. Using these is a red flag in most cases, as you should be able to pick information from `res.locals.authz_data` to perform the action.
+
+Alternatively, if you want to check if you _might_ be authorized to perform an action, you can use `buildAuthzData` with the a course/instance/assessment ID to get an `authzData` object that you can use for data-modifying actions.
+
 ## State-modifying POST requests
 
 ??? note
