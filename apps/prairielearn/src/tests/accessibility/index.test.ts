@@ -10,11 +10,12 @@ import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { dangerousFullSystemAuthz } from '../../lib/authzData-lib.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { assertNever } from '../../lib/types.js';
-import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
+import { selectCourseInstanceByIdWithoutAuthz } from '../../models/course-instances.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
@@ -426,17 +427,16 @@ describe('accessibility', () => {
       IdSchema,
     );
 
-    const courseInstance = await selectOptionalCourseInstanceById(
+    const courseInstance = await selectCourseInstanceByIdWithoutAuthz(
       STATIC_ROUTE_PARAMS.course_instance_id,
     );
-    assert.isNotNull(courseInstance);
 
     const enrollment = await ensureEnrollment({
-      course_instance_id: courseInstance.id,
-      user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      courseInstance,
+      userId: user_id,
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
     });
     assert.isNotNull(enrollment);
 

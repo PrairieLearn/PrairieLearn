@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
-import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
+import { selectOptionalCourseInstanceByIdWithoutAuthz } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 
 const router = Router();
@@ -12,7 +12,9 @@ const router = Router();
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const courseInstance = await selectOptionalCourseInstanceById(req.body.course_instance_id);
+    const courseInstance = await selectOptionalCourseInstanceByIdWithoutAuthz(
+      req.body.course_instance_id,
+    );
     if (!courseInstance?.share_source_publicly) {
       throw new error.HttpStatusError(404, 'Not Found');
     }

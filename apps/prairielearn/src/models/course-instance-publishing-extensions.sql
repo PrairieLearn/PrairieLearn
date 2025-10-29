@@ -1,4 +1,4 @@
--- BLOCK select_publishing_extensions_by_enrollment_id
+-- BLOCK select_latest_publishing_extension_by_enrollment_id
 SELECT
   ci_extensions.*
 FROM
@@ -7,7 +7,10 @@ FROM
     ci_enrollment_extensions.course_instance_publishing_extension_id = ci_extensions.id
   )
 WHERE
-  ci_enrollment_extensions.enrollment_id = $enrollment_id;
+  ci_enrollment_extensions.enrollment_id = $enrollment_id
+ORDER BY
+  ci_extensions.end_date DESC
+LIMIT 1;
 
 -- BLOCK select_publishing_extension_by_name
 SELECT
@@ -37,6 +40,10 @@ VALUES
     $course_instance_publishing_extension_id,
     $enrollment_id
   )
+ON CONFLICT (
+  course_instance_publishing_extension_id,
+  enrollment_id
+) DO NOTHING
 RETURNING
   *;
 

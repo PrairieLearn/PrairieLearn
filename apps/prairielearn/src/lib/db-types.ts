@@ -209,9 +209,9 @@ export const SprocAuthzCourseInstanceSchema = z.object({
   course_instance_role: EnumCourseInstanceRoleSchema,
   has_course_instance_permission_edit: z.boolean(),
   has_course_instance_permission_view: z.boolean(),
-  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
+  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
   has_student_access: z.boolean(),
-  /** @deprecated This field will be deprecated soon. It only considers the legacy access system. */
+  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
   has_student_access_with_enrollment: z.boolean(),
 });
 export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
@@ -654,7 +654,7 @@ export type CourseInstancePublishingEnrollmentExtension = z.infer<
 
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
-  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor']).nullable(),
+  course_instance_role: EnumCourseInstanceRoleSchema.nullable(),
   course_permission_id: IdSchema,
   id: IdSchema,
 });
@@ -671,7 +671,7 @@ export const CourseInstanceUsageSchema = null;
 
 export const CoursePermissionSchema = z.object({
   course_id: IdSchema,
-  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']).nullable(),
+  course_role: EnumCourseRoleSchema.nullable(),
   id: IdSchema,
   user_id: IdSchema,
 });
@@ -1585,6 +1585,8 @@ export const TableNames = [
   'client_fingerprints',
   'course_instance_access_rules',
   'course_instance_permissions',
+  'course_instance_publishing_enrollment_extensions',
+  'course_instance_publishing_extensions',
   'course_instance_required_plans',
   'course_instance_usages',
   'course_instances',

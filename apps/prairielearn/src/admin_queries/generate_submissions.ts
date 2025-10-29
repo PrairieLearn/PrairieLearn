@@ -14,7 +14,7 @@ import { saveSubmission } from '../lib/grading.js';
 import { TEST_TYPES, type TestType, createTestSubmissionData } from '../lib/question-testing.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectOptionalAssessmentById } from '../models/assessment.js';
-import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
+import { selectOptionalCourseInstanceByIdWithoutAuthz } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 
 import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './lib/util.js';
@@ -68,7 +68,9 @@ export default async function ({
 }): Promise<AdministratorQueryResult> {
   const assessment = await selectOptionalAssessmentById(assessment_id);
   if (!assessment) return { rows: [], columns };
-  const courseInstance = await selectOptionalCourseInstanceById(assessment.course_instance_id);
+  const courseInstance = await selectOptionalCourseInstanceByIdWithoutAuthz(
+    assessment.course_instance_id,
+  );
   if (!courseInstance) return { rows: [], columns };
   const assessmentCourse = await selectCourseById(courseInstance.course_id);
 
@@ -92,7 +94,7 @@ export default async function ({
         instance_question.id,
         user.user_id, // user_id
         user.user_id, // authn_user_id
-        assessment.course_instance_id,
+        courseInstance,
         assessmentCourse,
         question_course,
         { variant_seed: null },

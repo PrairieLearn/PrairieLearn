@@ -1,6 +1,6 @@
 import { useState } from 'preact/compat';
 
-import { migrateAccessRuleJsonToPublishingConfiguration } from '../../../lib/course-instance-access.shared.js';
+import { migrateAccessRuleJsonToPublishingConfiguration } from '../../../lib/course-instance-access.js';
 import type { AccessRuleJson } from '../../../schemas/infoCourseInstance.js';
 
 interface PublishingMigrationModalProps {

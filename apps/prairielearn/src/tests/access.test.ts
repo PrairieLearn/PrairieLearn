@@ -5,9 +5,11 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { dangerousFullSystemAuthz } from '../lib/authzData-lib.js';
 import { config } from '../lib/config.js';
 import { InstanceQuestionSchema, UserSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceByIdWithoutAuthz } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -114,25 +116,25 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('3. Enroll student user into testCourse', function () {
     it('should succeed', async () => {
+      const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
       await ensureEnrollment({
-        user_id: user.user_id,
-        course_instance_id: '1',
-        agent_user_id: null,
-        agent_authn_user_id: null,
-        action_detail: 'implicit_joined',
+        userId: user.user_id,
+        courseInstance,
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
+        actionDetail: 'implicit_joined',
       });
     });
   });
 
   describe('3.5. Update course instance access rules', function () {
     it('should set the correct access rule dates', async () => {
-      await sqldb.queryAsync(
+      await sqldb.execute(
         'UPDATE course_instance_access_rules SET start_date = $1::timestamptz, end_date = $2::timestamptz WHERE course_instance_id = $3',
-        ['1800-06-13T13:12:00Z', '2400-06-13T13:12:00Z', '1']
+        ['1800-06-13T13:12:00Z', '2400-06-13T13:12:00Z', '1'],
       );
     });
   });
-
 
   describe('4. GET /pl', function () {
     it('as student should contain QA 101', async () => {

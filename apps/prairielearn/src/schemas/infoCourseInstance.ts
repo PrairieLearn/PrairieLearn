@@ -77,7 +77,7 @@ export const CourseInstanceJsonSchema = z
         restrictToInstitution: z
           .boolean()
           .describe(
-            'If true, self-enrollment is restricted to the institution. If false, self-enrollment is not restricted to the institution.',
+            'If true, self-enrollment is restricted to users from the same institution as the course. If false, any user can self-enroll.',
           )
           .optional()
           .default(true),
@@ -106,7 +106,7 @@ export const CourseInstanceJsonSchema = z
       .default(false),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
     publishing: PublishingJsonSchema.optional(),
-    allowAccess: AllowAccessJsonSchema.optional().default([]),
+    allowAccess: AllowAccessJsonSchema.optional(),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(

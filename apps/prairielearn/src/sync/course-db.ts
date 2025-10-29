@@ -240,10 +240,24 @@ export async function loadFullCourse(
     // expired if it either has zero `allowAccess` rules (in which case it is never
     // accessible), or if it has one or more `allowAccess` rules and they all have
     // an `endDate` that is in the past.
-    const allowAccessRules = courseInstance.data?.allowAccess ?? [];
-    const courseInstanceExpired = allowAccessRules.every((rule) => {
-      const endDate = rule.endDate ? parseJsonDate(rule.endDate) : null;
-      return endDate && isPast(endDate);
+
+    // If the allowAccess section is not present, we instead consider publishing.endDate.
+    const allowAccessRules = courseInstance.data?.allowAccess;
+
+    const courseInstanceExpired = run(() => {
+      if (allowAccessRules !== undefined) {
+        return allowAccessRules.every((rule) => {
+          const endDate = rule.endDate ? parseJsonDate(rule.endDate) : null;
+          return endDate && isPast(endDate);
+        });
+      }
+      // We have no access rules, so we are in the modern publishing configuration.
+
+      return (
+        courseInstance.data?.publishing?.endDate == null ||
+        courseInstance.data.publishing.startDate == null ||
+        isPast(courseInstance.data.publishing.endDate)
+      );
     });
 
     const assessments = await loadAssessments({
@@ -1166,7 +1180,7 @@ function validateAssessment({
   // instances that instructors will never touch again, as they won't benefit
   // from fixing things. So, we'll only show some warnings for course instances
   // which are accessible either now or any time in the future.
-
+  //
   // NOTE (@reteps): We are deprecating `allowAccess` in favor of `publishing`.
   // So further validation will never be done here.
 
@@ -1477,12 +1491,12 @@ function validateCourseInstance({
     warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
   }
 
-  const usingLegacyAllowAccess = courseInstance.allowAccess.length > 0;
+  const usingLegacyAllowAccess = courseInstance.allowAccess != null;
   const usingModernPublishing = courseInstance.publishing != null;
 
   // TODO: Remove this once the UI is merged
   if (usingModernPublishing) {
-    errors.push('"publishing" is not configurable yet.');
+    warnings.push('"publishing" is not configurable yet.');
   }
 
   if (usingLegacyAllowAccess && usingModernPublishing) {
@@ -1528,7 +1542,7 @@ function validateCourseInstance({
   }
 
   let accessibleInFuture = false;
-  for (const rule of courseInstance.allowAccess) {
+  for (const rule of courseInstance.allowAccess ?? []) {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {
       accessibleInFuture = true;
@@ -1539,7 +1553,7 @@ function validateCourseInstance({
 
   if (accessibleInFuture) {
     // Only warn about new roles and invalid UIDs for current or future course instances.
-    courseInstance.allowAccess.forEach((rule) => {
+    courseInstance.allowAccess?.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
     });
 

@@ -1,7 +1,9 @@
 import fetch from 'node-fetch';
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
+import { dangerousFullSystemAuthz } from '../../../lib/authzData-lib.js';
 import { config } from '../../../lib/config.js';
+import { selectCourseInstanceByIdWithoutAuthz } from '../../../models/course-instances.js';
 import { ensureEnrollment } from '../../../models/enrollment.js';
 import * as helperServer from '../../../tests/helperServer.js';
 import {
@@ -29,7 +31,6 @@ const studentUser: AuthUser = {
 
 describe('studentCourseInstanceUpgrade', () => {
   enableEnterpriseEdition();
-
   beforeEach(helperServer.before());
   afterEach(helperServer.after);
 
@@ -80,12 +81,13 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
+    const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
-      user_id: user.user_id,
-      course_instance_id: '1',
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      userId: user.user_id,
+      courseInstance,
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
     });
 
     // Simulates the dev user (an instructor) using "Student view" for themselves.
@@ -102,12 +104,13 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
+    const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
-      user_id: user.user_id,
-      course_instance_id: '1',
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      userId: user.user_id,
+      courseInstance,
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
     });
 
     // Simulates the dev user (an instructor) using "Student view" for an

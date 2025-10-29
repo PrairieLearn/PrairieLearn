@@ -2,8 +2,10 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { Hydrate } from '@prairielearn/preact/server';
+import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { hasRole } from '../../lib/authzData-lib.js';
 import { getCourseInstanceContext } from '../../lib/client/page-context.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import {
@@ -27,9 +29,15 @@ router.get(
     const redirectUrl =
       typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url : null;
     // Lookup if they have an existing enrollment
-    const existingEnrollment = await selectOptionalEnrollmentByUserId({
-      user_id: res.locals.authn_user.user_id,
-      course_instance_id: courseInstance.id,
+    const existingEnrollment = await run(async () => {
+      // We don't want to 403 instructors
+      if (!hasRole(res.locals.authz_data, 'Student')) return null;
+      return await selectOptionalEnrollmentByUserId({
+        userId: res.locals.authn_user.user_id,
+        courseInstance,
+        requestedRole: 'Student',
+        authzData: res.locals.authz_data,
+      });
     });
 
     if (
@@ -58,9 +66,10 @@ router.get(
         await ensureCheckedEnrollment({
           institution: res.locals.institution,
           course: res.locals.course,
-          course_instance: res.locals.course_instance,
-          authz_data: res.locals.authz_data,
-          action_detail: 'implicit_joined',
+          courseInstance: res.locals.course_instance,
+          authzData: res.locals.authz_data,
+          requestedRole: 'Student',
+          actionDetail: 'implicit_joined',
         });
       }
       // redirect to a different page, which will have proper authorization.

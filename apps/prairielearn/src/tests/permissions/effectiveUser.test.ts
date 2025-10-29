@@ -7,8 +7,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
+import { dangerousFullSystemAuthz } from '../../lib/authzData-lib.js';
 import { config } from '../../lib/config.js';
+import type { CourseInstance } from '../../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { selectCourseInstanceByIdWithoutAuthz } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -23,6 +26,8 @@ import { getOrCreateUser } from '../utils/auth.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('effective user', { timeout: 60_000 }, function () {
+  let courseInstance: CourseInstance;
+
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
@@ -101,12 +106,13 @@ describe('effective user', { timeout: 60_000 }, function () {
       email: 'student@example.com',
     });
     studentId = student.user_id;
+    courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
-      user_id: studentId,
-      course_instance_id: '1',
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      userId: studentId,
+      courseInstance,
+      authzData: dangerousFullSystemAuthz(),
+      requestedRole: 'System',
+      actionDetail: 'implicit_joined',
     });
   });
 
@@ -181,7 +187,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await insertCourseInstancePermissions({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -196,7 +202,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -332,7 +338,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await insertCourseInstancePermissions({
       course_id: '1',
       user_id: staffId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -348,14 +354,14 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: staffId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -395,7 +401,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -411,7 +417,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -493,7 +499,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -582,11 +588,11 @@ describe('effective user', { timeout: 60_000 }, function () {
         email: 'student@example.com',
       });
       await ensureEnrollment({
-        course_instance_id: courseInstanceId,
-        agent_user_id: null,
-        agent_authn_user_id: null,
-        user_id: user.user_id,
-        action_detail: 'implicit_joined',
+        courseInstance,
+        userId: user.user_id,
+        authzData: dangerousFullSystemAuthz(),
+        requestedRole: 'System',
+        actionDetail: 'implicit_joined',
       });
 
       const headers = {

@@ -18,7 +18,7 @@ import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-
 import {
   convertAccessRuleToJson,
   migrateAccessRuleJsonToPublishingConfiguration,
-} from '../../lib/course-instance-access.shared.js';
+} from '../../lib/course-instance-access.js';
 import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -79,7 +79,9 @@ router.get(
     // Verify each UID is enrolled (matches either users.uid or enrollments.pending_uid)
     const validRecords = await selectUsersAndEnrollmentsByUidsInCourseInstance({
       uids,
-      course_instance_id: res.locals.course_instance.id,
+      courseInstance: res.locals.course_instance,
+      requestedRole: 'Student Data Viewer',
+      authzData: res.locals.authz_data,
     });
     const validUids = new Set(validRecords.map((record) => record.user.uid));
     const invalidUids = uids.filter((uid) => !validUids.has(uid));
@@ -370,7 +372,9 @@ router.post(
 
         const records = await selectUsersAndEnrollmentsByUidsInCourseInstance({
           uids: body.uids,
-          course_instance_id: res.locals.course_instance.id,
+          courseInstance: res.locals.course_instance,
+          requestedRole: 'Student Data Viewer',
+          authzData: res.locals.authz_data,
         });
 
         if (records.length === 0) {
@@ -382,7 +386,7 @@ router.post(
         if (body.name) {
           const existingExtension = await selectPublishingExtensionByName({
             name: body.name,
-            course_instance_id: res.locals.course_instance.id,
+            courseInstance: res.locals.course_instance,
           });
 
           if (existingExtension) {
@@ -393,13 +397,13 @@ router.post(
           }
         }
 
-        const enrollmentIds = records.map(({ enrollment }) => enrollment.id);
+        const enrollments = records.map(({ enrollment }) => enrollment);
 
         await createPublishingExtensionWithEnrollments({
-          course_instance_id: res.locals.course_instance.id,
+          courseInstance: res.locals.course_instance,
           name: body.name,
-          end_date: new Date(body.end_date),
-          enrollment_ids: enrollmentIds,
+          endDate: new Date(body.end_date),
+          enrollments,
         });
 
         res.status(200).json({ success: true });
@@ -414,11 +418,17 @@ router.post(
       }
     } else if (req.body.__action === 'delete_extension') {
       try {
-        const extension_id = req.body.extension_id;
+        // TODO: Add selectPublishingExtensionById
+        const extension = await selectPublishingExtensionById({
+          id: req.body.extension_id,
+          courseInstance: res.locals.course_instance,
+          requestedRole: 'Student Data Viewer',
+          authzData: res.locals.authz_data,
+        });
 
         await deletePublishingExtension({
-          extension_id,
-          course_instance_id: res.locals.course_instance.id,
+          extension,
+          courseInstance: res.locals.course_instance,
         });
 
         res.status(200).json({ success: true });
@@ -459,7 +469,7 @@ router.post(
         if (body.name) {
           const existingExtension = await selectPublishingExtensionByName({
             name: body.name,
-            course_instance_id: res.locals.course_instance.id,
+            courseInstance: res.locals.course_instance,
           });
 
           if (existingExtension && existingExtension.id !== body.extension_id) {
@@ -482,7 +492,9 @@ router.post(
           // Desired enrollments for provided UIDs
           const desiredRecords = await selectUsersAndEnrollmentsByUidsInCourseInstance({
             uids: body.uids,
-            course_instance_id: res.locals.course_instance.id,
+            courseInstance: res.locals.course_instance,
+            requestedRole: 'Student Data Viewer',
+            authzData: res.locals.authz_data,
           });
 
           if (desiredRecords.length === 0) {

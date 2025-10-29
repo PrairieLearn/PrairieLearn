@@ -3,11 +3,10 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
+  type Course,
   type CourseInstance,
   type CourseInstancePermission,
   CourseInstanceSchema,
-  CourseSchema,
-  InstitutionSchema,
   UserSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
@@ -22,38 +21,53 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
 });
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
-export async function selectOptionalCourseInstanceById(
-  course_instance_id: string,
-): Promise<CourseInstance | null> {
-  return queryOptionalRow(
+export async function selectCourseInstanceByIdWithoutAuthz(id: string) {
+  return await queryRow(
     sql.select_course_instance_by_id,
-    { course_instance_id },
+    { course_instance_id: id },
     CourseInstanceSchema,
   );
 }
 
+export async function selectOptionalCourseInstanceByIdWithoutAuthz(id: string) {
+  const courseInstance = await queryOptionalRow(
+    sql.select_course_instance_by_id,
+    { course_instance_id: id },
+    CourseInstanceSchema,
+  );
+  return courseInstance;
+}
+
 export async function selectCourseInstanceByShortName({
-  course_id,
+  course,
   short_name,
 }: {
-  course_id: string;
+  course: Course;
   short_name: string;
 }): Promise<CourseInstance> {
   return queryRow(
     sql.select_course_instance_by_short_name,
-    { course_id, short_name },
+    { course_id: course.id, short_name },
     CourseInstanceSchema,
   );
 }
 
-export async function selectOptionalCourseInstanceByEnrollmentCode(
-  enrollment_code: string,
-): Promise<CourseInstance | null> {
-  return queryOptionalRow(
+export async function selectOptionalCourseInstanceIdByEnrollmentCode({
+  enrollment_code,
+}: {
+  enrollment_code: string;
+}): Promise<string | null> {
+  const courseInstance = await queryOptionalRow(
     sql.select_course_instance_by_enrollment_code,
     { enrollment_code },
     CourseInstanceSchema,
   );
+
+  if (courseInstance == null) {
+    return null;
+  }
+
+  return courseInstance.id;
 }
 
 /**
@@ -64,13 +78,13 @@ export async function selectOptionalCourseInstanceByEnrollmentCode(
  * emulated user have access.
  */
 export async function selectCourseInstancesWithStaffAccess({
-  course_id,
+  course,
   user_id,
   authn_user_id,
   is_administrator,
   authn_is_administrator,
 }: {
-  course_id: string;
+  course: Course;
   user_id: string;
   authn_user_id: string;
   is_administrator: boolean;
@@ -78,7 +92,7 @@ export async function selectCourseInstancesWithStaffAccess({
 }) {
   const authnCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
-    { user_id: authn_user_id, is_administrator: authn_is_administrator, course_id },
+    { user_id: authn_user_id, is_administrator: authn_is_administrator, course_id: course.id },
     CourseInstanceAuthzSchema,
   );
 
@@ -88,7 +102,7 @@ export async function selectCourseInstancesWithStaffAccess({
 
   const authzCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
-    { user_id, is_administrator, course_id },
+    { user_id, is_administrator, course_id: course.id },
     CourseInstanceAuthzSchema,
   );
 
@@ -100,26 +114,26 @@ export async function selectCourseInstancesWithStaffAccess({
 }
 
 export async function selectUsersWithCourseInstanceAccess({
-  course_instance_id,
+  course_instance,
   minimal_role,
 }: {
-  course_instance_id: string;
+  course_instance: CourseInstance;
   minimal_role: Exclude<CourseInstancePermission['course_instance_role'], null>;
 }) {
   return await queryRows(
     sql.select_users_with_course_instance_access,
-    { course_instance_id, minimal_role },
+    { course_instance_id: course_instance.id, minimal_role },
     UserSchema,
   );
 }
 
 export async function selectCourseInstanceGraderStaff({
-  course_instance_id,
+  course_instance,
 }: {
-  course_instance_id: string;
+  course_instance: CourseInstance;
 }) {
   return await selectUsersWithCourseInstanceAccess({
-    course_instance_id,
+    course_instance,
     minimal_role: 'Student Data Editor',
   });
 }
@@ -128,48 +142,27 @@ export async function selectCourseInstanceGraderStaff({
  * Returns if the course has any non-deleted course instances.
  */
 export async function selectCourseHasCourseInstances({
-  course_id,
+  course,
 }: {
-  course_id: string;
+  course: Course;
 }): Promise<boolean> {
-  return await queryRow(sql.select_course_has_course_instances, { course_id }, z.boolean());
-}
-
-export async function selectCourseInstanceIsPublic(course_instance_id: string): Promise<boolean> {
-  const isPublic = await queryRow(
-    sql.check_course_instance_is_public,
-    { course_instance_id },
+  return await queryRow(
+    sql.select_course_has_course_instances,
+    { course_id: course.id },
     z.boolean(),
   );
-  return isPublic;
 }
 
 export async function selectCourseInstanceByUuid({
-  course_id,
+  course,
   uuid,
 }: {
-  course_id: string;
+  course: Course;
   uuid: string;
 }): Promise<CourseInstance> {
   return await queryRow(
     sql.select_course_instance_by_uuid,
-    { uuid, course_id },
+    { uuid, course_id: course.id },
     CourseInstanceSchema,
-  );
-}
-
-export async function selectInstanceAndCourseAndInstitution({
-  course_instance_id,
-}: {
-  course_instance_id: string;
-}) {
-  return await queryRow(
-    sql.select_instance_and_course_and_institution,
-    { course_instance_id },
-    z.object({
-      course_instance: CourseInstanceSchema,
-      course: CourseSchema,
-      institution: InstitutionSchema,
-    }),
   );
 }

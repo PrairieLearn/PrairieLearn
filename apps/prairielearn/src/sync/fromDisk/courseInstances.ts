@@ -46,7 +46,7 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
   const accessRules = courseInstance.allowAccess
-    .filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
+    ?.filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
     .map((accessRule) => ({
       uids: accessRule.uids ?? null,
       start_date: accessRule.startDate ?? null,
@@ -60,7 +60,8 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
     long_name: courseInstance.longName,
     hide_in_enroll_page: courseInstance.hideInEnrollPage,
     display_timezone: courseInstance.timezone ?? null,
-    access_rules: accessRules,
+    access_rules: accessRules ?? [],
+    modern_publishing: accessRules == null,
     self_enrollment_enabled: courseInstance.selfEnrollment.enabled,
     self_enrollment_enabled_before_date: courseInstance.selfEnrollment.beforeDate,
     self_enrollment_use_enrollment_code: courseInstance.selfEnrollment.useEnrollmentCode,
@@ -102,7 +103,7 @@ export async function sync(
       // us avoid emitting errors for very old, unused course instances.
       const instanceInstitutions = new Set(
         courseInstance.data?.allowAccess
-          .filter(isAccessRuleAccessibleInFuture)
+          ?.filter(isAccessRuleAccessibleInFuture)
           .map((accessRule) => accessRule.institution)
           .filter((institution) => institution != null),
       );

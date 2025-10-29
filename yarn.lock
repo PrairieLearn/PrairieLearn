@@ -1564,6 +1564,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@cortex-js/compute-engine@npm:0.29.1":
+  version: 0.29.1
+  resolution: "@cortex-js/compute-engine@npm:0.29.1"
+  dependencies:
+    complex-esm: "npm:^2.1.1-esm1"
+    decimal.js: "npm:^10.4.3"
+  checksum: 10c0/4f192c698006373b9f977cce878bda153c5f81f34dc7705a79f829197f92ef6a10768abffb8d517bf81904151201334d446089c276be0874e54a1459277722ac
+  languageName: node
+  linkType: hard
+
 "@cropper/element-canvas@npm:^2.0.1":
   version: 2.0.1
   resolution: "@cropper/element-canvas@npm:2.0.1"
@@ -4265,6 +4275,7 @@ __metadata:
     lru-cache: "npm:^11.2.2"
     marked: "npm:^16.3.0"
     mathjax: "npm:^3.2.2"
+    mathlive: "npm:^0.107.1"
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
     mime: "npm:^4.1.0"
@@ -8947,6 +8958,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"complex-esm@npm:^2.1.1-esm1":
+  version: 2.1.1-esm1
+  resolution: "complex-esm@npm:2.1.1-esm1"
+  checksum: 10c0/65725286ea8513785333a9d710ee5fafb6e32a24bc12648ba6ba62ab3c8cc380d79d7a8f542159c7fb5134364eb294e5446dd5e6b83aaffdb4dfeb27a227bc89
+  languageName: node
+  linkType: hard
+
 "compress-commons@npm:^6.0.2":
   version: 6.0.2
   resolution: "compress-commons@npm:6.0.2"
@@ -13437,6 +13455,15 @@ __metadata:
   version: 3.2.2
   resolution: "mathjax@npm:3.2.2"
   checksum: 10c0/26c8557f948d1ef76ce2b0bc1ad66128c9a78a7e4f3d96587f90b23dd25cfbf14c9b58a1c75a7d8d35f92b72bab054eab61873443babe646b7bfd6b40bb717e6
+  languageName: node
+  linkType: hard
+
+"mathlive@npm:^0.107.1":
+  version: 0.107.1
+  resolution: "mathlive@npm:0.107.1"
+  dependencies:
+    "@cortex-js/compute-engine": "npm:0.29.1"
+  checksum: 10c0/c5fd65f17c5dd90ff39583425dd1edf9a8b6138063cc446e547586bd77225d23f5529001aba46e36a36ee5a17ca449e9c6c108b50eba88d3d7d06407275a626d
   languageName: node
   linkType: hard
 

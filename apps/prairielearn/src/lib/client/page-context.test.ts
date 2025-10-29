@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { type z } from 'zod';
 
+import type { PageAuthzData } from '../authzData-lib.js';
+
 import {
-  type AuthzData,
   type RawPageContextWithAuthzDataSchema,
   type StaffCourseInstanceContextSchema,
   type StudentCourseInstanceContextSchema,
@@ -15,14 +16,23 @@ describe('getPageContext', () => {
   it('strips extra fields from the data', () => {
     const mockData = {
       authz_data: {
+        authn_user: {
+          name: 'Test User',
+          uid: 'test@illinois.edu',
+          email: 'test@illinois.edu',
+          institution_id: '1',
+          uin: '123456789',
+          user_id: '1',
+          foo: 'bar',
+        },
         authn_is_administrator: false,
         authn_has_course_permission_preview: true,
         authn_has_course_permission_view: true,
         authn_has_course_permission_edit: true,
         authn_has_course_permission_own: true,
-        authn_course_role: 'Instructor',
-        authn_course_instance_role: 'Instructor',
-        authn_mode: 'edit',
+        authn_course_role: 'Owner',
+        authn_course_instance_role: 'Student Data Editor',
+        authn_mode: 'Public',
         authn_has_student_access: false,
         authn_has_student_access_with_enrollment: false,
         authn_has_course_instance_permission_view: true,
@@ -32,9 +42,9 @@ describe('getPageContext', () => {
         has_course_permission_view: true,
         has_course_permission_edit: true,
         has_course_permission_own: true,
-        course_role: 'Instructor',
-        course_instance_role: 'Instructor',
-        mode: 'edit',
+        course_role: 'Owner',
+        course_instance_role: 'Student Data Editor',
+        mode: 'Public',
         has_student_access: false,
         has_student_access_with_enrollment: false,
         has_course_instance_permission_edit: true,
@@ -82,14 +92,22 @@ describe('getPageContext', () => {
 
     const expected: z.infer<typeof RawPageContextWithAuthzDataSchema> = {
       authz_data: {
+        authn_user: {
+          name: 'Test User',
+          uid: 'test@illinois.edu',
+          email: 'test@illinois.edu',
+          institution_id: '1',
+          uin: '123456789',
+          user_id: '1',
+        } as StaffUser,
         authn_is_administrator: false,
         authn_has_course_permission_preview: true,
         authn_has_course_permission_view: true,
         authn_has_course_permission_edit: true,
         authn_has_course_permission_own: true,
-        authn_course_role: 'Instructor',
-        authn_course_instance_role: 'Instructor',
-        authn_mode: 'edit',
+        authn_course_role: 'Owner',
+        authn_course_instance_role: 'Student Data Editor',
+        authn_mode: 'Public',
         authn_has_student_access: false,
         authn_has_student_access_with_enrollment: false,
         authn_has_course_instance_permission_view: true,
@@ -99,9 +117,9 @@ describe('getPageContext', () => {
         has_course_permission_view: true,
         has_course_permission_edit: true,
         has_course_permission_own: true,
-        course_role: 'Instructor',
-        course_instance_role: 'Instructor',
-        mode: 'edit',
+        course_role: 'Owner',
+        course_instance_role: 'Student Data Editor',
+        mode: 'Public',
         has_student_access: false,
         has_student_access_with_enrollment: false,
         has_course_instance_permission_edit: true,
@@ -114,7 +132,7 @@ describe('getPageContext', () => {
           uin: '123456789',
           user_id: '1',
         } as StaffUser,
-      } as AuthzData,
+      } as PageAuthzData,
       __csrf_token: '123',
       plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',
