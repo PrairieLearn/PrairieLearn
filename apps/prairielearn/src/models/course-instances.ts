@@ -7,8 +7,6 @@ import {
   type CourseInstance,
   type CourseInstancePermission,
   CourseInstanceSchema,
-  CourseSchema,
-  InstitutionSchema,
   UserSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
