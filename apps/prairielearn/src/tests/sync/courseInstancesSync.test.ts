@@ -8,6 +8,7 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
+import { selectCourseById } from '../../models/course.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
@@ -787,7 +788,7 @@ describe('Course instance syncing', () => {
         }
 
         const syncedCourseInstance = await selectCourseInstanceByUuid({
-          course_id: results.courseId,
+          course: await selectCourseById(results.courseId),
           uuid: courseInstanceUUID,
         });
         assert.isOk(syncedCourseInstance);
