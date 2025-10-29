@@ -2,7 +2,7 @@ import fetchCookie from 'fetch-cookie';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
-import { execute, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { dangerousFullAuthzForTesting } from '../lib/authzData.js';
 import { config } from '../lib/config.js';
@@ -20,6 +20,8 @@ import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 import { getCsrfToken } from './utils/csrf.js';
 
+const sql = loadSqlEquiv(import.meta.url);
+
 const siteUrl = 'http://localhost:' + config.serverPort;
 const homeUrl = siteUrl + '/';
 
@@ -36,9 +38,7 @@ async function createEnrollmentWithStatus({
   pendingUid?: string | null;
 }): Promise<Enrollment> {
   return await queryRow(
-    `INSERT INTO enrollments (user_id, course_instance_id, status, pending_uid, first_joined_at)
-     VALUES ($user_id, $course_instance_id, $status, $pending_uid, $first_joined_at)
-     RETURNING *`,
+    sql.create_enrollment_with_status,
     {
       user_id: userId,
       course_instance_id: courseInstanceId,
@@ -128,8 +128,8 @@ describe('Homepage enrollment actions', () => {
       assert.equal(finalEnrollment.status, 'joined');
     });
 
-    // Clean up
-    await execute('DELETE FROM enrollments WHERE course_instance_id = 1 AND user_id = $user_id', {
+    await execute(sql.delete_enrollment_by_course_instance_and_user, {
+      course_instance_id: '1',
       user_id: user.user_id,
     });
   });
@@ -201,11 +201,10 @@ describe('Homepage enrollment actions', () => {
       assert.equal(finalEnrollment.status, 'rejected');
     });
 
-    // Clean up
-    await execute(
-      'DELETE FROM enrollments WHERE course_instance_id = 1 AND pending_uid = $pending_uid',
-      { pending_uid: user.uid },
-    );
+    await execute(sql.delete_enrollment_by_course_instance_and_pending_uid, {
+      course_instance_id: '1',
+      pending_uid: user.uid,
+    });
   });
 
   it('shows error when rejecting after accepting invitation', async () => {
@@ -226,7 +225,6 @@ describe('Homepage enrollment actions', () => {
     });
 
     await withUser(user, async () => {
-      // Use fetchCookie to maintain session across requests
       const fetchWithCookies = fetchCookie(fetch);
 
       const csrfToken = await getCsrfToken(homeUrl);
@@ -243,7 +241,7 @@ describe('Homepage enrollment actions', () => {
       assert.equal(acceptResponse.status, 200);
       assert.equal(acceptResponse.url, homeUrl);
 
-      // Now try to reject (should fail with error) - use same fetchWithCookies to preserve session
+      // Now try to reject (should fail with error)
       const csrfToken2 = await getCsrfToken(homeUrl);
       const rejectResponse = await fetchWithCookies(homeUrl, {
         method: 'POST',
@@ -276,8 +274,8 @@ describe('Homepage enrollment actions', () => {
       assert.equal(finalEnrollment.status, 'joined');
     });
 
-    // Clean up
-    await execute('DELETE FROM enrollments WHERE course_instance_id = 1 AND user_id = $user_id', {
+    await execute(sql.delete_enrollment_by_course_instance_and_user, {
+      course_instance_id: '1',
       user_id: user.user_id,
     });
   });
@@ -349,8 +347,8 @@ describe('Homepage enrollment actions', () => {
       assert.equal(finalEnrollment.status, 'joined');
     });
 
-    // Clean up
-    await execute('DELETE FROM enrollments WHERE course_instance_id = 1 AND user_id = $user_id', {
+    await execute(sql.delete_enrollment_by_course_instance_and_user, {
+      course_instance_id: '1',
       user_id: user.user_id,
     });
   });
@@ -421,8 +419,8 @@ describe('Homepage enrollment actions', () => {
       assert.equal(finalEnrollment.status, 'removed');
     });
 
-    // Clean up
-    await execute('DELETE FROM enrollments WHERE course_instance_id = 1 AND user_id = $user_id', {
+    await execute(sql.delete_enrollment_by_course_instance_and_user, {
+      course_instance_id: '1',
       user_id: user.user_id,
     });
   });
