@@ -244,7 +244,7 @@ describe('Course instance syncing', () => {
         assert.isDefined(courseInstanceUUID);
 
         const syncedCourseInstance = await selectCourseInstanceByUuid({
-          course_id: results.courseId,
+          course: await selectCourseById(results.courseId),
           uuid: courseInstanceUUID,
         });
         assert.isOk(syncedCourseInstance);
