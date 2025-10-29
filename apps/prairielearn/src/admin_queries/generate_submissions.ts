@@ -3,7 +3,6 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { dangerousFullSystemAuthz } from '../lib/authzData.js';
 import { config } from '../lib/config.js';
 import {
   CourseSchema,
@@ -15,7 +14,7 @@ import { saveSubmission } from '../lib/grading.js';
 import { TEST_TYPES, type TestType, createTestSubmissionData } from '../lib/question-testing.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectOptionalAssessmentById } from '../models/assessment.js';
-import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
+import { selectOptionalCourseInstanceByIdWithoutAuthz } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 
 import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './lib/util.js';
@@ -69,11 +68,9 @@ export default async function ({
 }): Promise<AdministratorQueryResult> {
   const assessment = await selectOptionalAssessmentById(assessment_id);
   if (!assessment) return { rows: [], columns };
-  const courseInstance = await selectOptionalCourseInstanceById({
-    id: assessment.course_instance_id,
-    requestedRole: 'System',
-    authzData: dangerousFullSystemAuthz(),
-  });
+  const courseInstance = await selectOptionalCourseInstanceByIdWithoutAuthz(
+    assessment.course_instance_id,
+  );
   if (!courseInstance) return { rows: [], columns };
   const assessmentCourse = await selectCourseById(courseInstance.course_id);
 

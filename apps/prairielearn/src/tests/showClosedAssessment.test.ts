@@ -2,11 +2,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { dangerousFullSystemAuthz } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authzData-lib.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseInstanceByIdWithoutAuthz } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 import { selectUserByUid } from '../models/user.js';
 
@@ -52,11 +52,7 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
 
   test.sequential('enroll the test student user in the course', async () => {
     const user = await selectUserByUid('student@example.com');
-    const courseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,

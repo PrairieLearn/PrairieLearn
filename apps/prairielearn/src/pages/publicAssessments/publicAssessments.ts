@@ -6,7 +6,7 @@ import * as error from '@prairielearn/error';
 import { getCourseInstanceCopyTargets } from '../../lib/copy-content.js';
 import { UserSchema } from '../../lib/db-types.js';
 import { selectAssessments } from '../../models/assessment.js';
-import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
+import { selectOptionalCourseInstanceByIdWithoutAuthz } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../../models/question.js';
 
@@ -17,11 +17,9 @@ const router = Router({ mergeParams: true });
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const courseInstance = await selectOptionalCourseInstanceById({
-      id: req.params.course_instance_id,
-      requestedRole: 'Any',
-      authzData: res.locals.authz_data,
-    });
+    const courseInstance = await selectOptionalCourseInstanceByIdWithoutAuthz(
+      req.params.course_instance_id,
+    );
     if (courseInstance === null) {
       throw new error.HttpStatusError(404, 'Not Found');
     }

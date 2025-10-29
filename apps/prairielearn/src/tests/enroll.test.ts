@@ -2,15 +2,12 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullSystemAuthz } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authzData-lib.js';
 import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
-import {
-  selectCourseInstanceById,
-  selectOptionalCourseInstanceById,
-} from '../models/course-instances.js';
+import { selectCourseInstanceByIdWithoutAuthz } from '../models/course-instances.js';
 import {
   selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUserId,
@@ -185,11 +182,7 @@ describe('Self-enrollment settings transitions', () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
 
-    courseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
 
     // Set uid_regexp for the default institution to allow @example.com UIDs
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
@@ -505,11 +498,7 @@ describe('Self-enrollment institution restriction transitions', () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
 
-    const instance = await selectOptionalCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const instance = await selectCourseInstanceByIdWithoutAuthz('1');
     assert.isNotNull(instance);
 
     // Set uid_regexp for the default institution to allow @example.com UIDs

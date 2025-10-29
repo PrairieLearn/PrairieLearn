@@ -7,11 +7,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
-import { dangerousFullSystemAuthz } from '../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../lib/authzData-lib.js';
 import { config } from '../../lib/config.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectCourseInstanceByIdWithoutAuthz } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -106,11 +106,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       email: 'student@example.com',
     });
     studentId = student.user_id;
-    courseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
       userId: studentId,
       courseInstance,

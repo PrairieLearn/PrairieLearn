@@ -3,12 +3,12 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { dangerousFullSystemAuthz } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authzData-lib.js';
 import * as groupUpdate from '../lib/group-update.js';
 import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectAssessmentById } from '../models/assessment.js';
-import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseInstanceByIdWithoutAuthz } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -34,11 +34,9 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
 
   test.sequential('randomly assign groups', async () => {
     const assessment = await selectAssessmentById(locals.assessment_id);
-    const course_instance = await selectCourseInstanceById({
-      id: assessment.course_instance_id,
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const course_instance = await selectCourseInstanceByIdWithoutAuthz(
+      assessment.course_instance_id,
+    );
     const job_sequence_id = await groupUpdate.randomGroups({
       course_instance,
       assessment,

@@ -8,14 +8,13 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
-import { buildAuthzData } from '../../lib/authzDataPublishing.js';
+import { buildAuthzData } from '../../lib/authzData.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { assertNever } from '../../lib/types.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByPendingUid,
@@ -136,7 +135,7 @@ router.post(
       authn_user: { uid, user_id: userId },
     } = getPageContext(res.locals, { withAuthzData: false });
 
-    const { authzData } = await buildAuthzData({
+    const { authzData, authzCourseInstance: courseInstance } = await buildAuthzData({
       authn_user: res.locals.authn_user,
       course_id: null,
       course_instance_id: body.course_instance_id,
@@ -145,15 +144,9 @@ router.post(
       req_date: res.locals.req_date,
     });
 
-    if (authzData === null) {
+    if (authzData === null || courseInstance === null) {
       throw new HttpStatusError(403, 'Access denied');
     }
-
-    const courseInstance = await selectCourseInstanceById({
-      id: body.course_instance_id,
-      requestedRole: 'Student',
-      authzData,
-    });
 
     switch (body.__action) {
       case 'accept_invitation': {

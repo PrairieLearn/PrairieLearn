@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { type z } from 'zod';
 
-import type { PageAuthzData } from '../authzData.types.js';
+import type { PageAuthzData } from '../authzData-lib.js';
 
 import {
   type RawPageContextWithAuthzDataSchema,

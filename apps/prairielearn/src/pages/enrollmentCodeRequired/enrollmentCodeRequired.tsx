@@ -5,7 +5,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { hasRole } from '../../lib/authzData.js';
+import { hasRole } from '../../lib/authzData-lib.js';
 import { getCourseInstanceContext } from '../../lib/client/page-context.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import {

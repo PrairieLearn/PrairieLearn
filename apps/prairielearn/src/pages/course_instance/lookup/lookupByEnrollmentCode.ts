@@ -4,9 +4,9 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { dangerousFullSystemAuthz, hasRole } from '../../../lib/authzData.js';
-import { buildAuthzData } from '../../../lib/authzDataPublishing.js';
-import { selectOptionalCourseInstanceByEnrollmentCode } from '../../../models/course-instances.js';
+import { hasRole } from '../../../lib/authzData-lib.js';
+import { buildAuthzData } from '../../../lib/authzData.js';
+import { selectOptionalCourseInstanceIdByEnrollmentCode } from '../../../models/course-instances.js';
 
 const router = Router();
 
@@ -19,15 +19,13 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     // Parse and validate the code parameter
-    const { code, course_instance_id: courseInstanceId } = LookupCodeSchema.parse(req.query);
+    const { code, course_instance_id: courseInstanceIdToCheck } = LookupCodeSchema.parse(req.query);
 
     // Look up the course instance by enrollment code
-    const courseInstance = await selectOptionalCourseInstanceByEnrollmentCode({
+    const courseInstanceId = await selectOptionalCourseInstanceIdByEnrollmentCode({
       enrollment_code: code,
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
     });
-    if (!courseInstance) {
+    if (!courseInstanceId) {
       // User-facing terminology is to use "course" instead of "course instance"
       res.status(404).json({
         error: 'No course found with this enrollment code',
@@ -35,26 +33,26 @@ router.get(
       return;
     }
 
-    const { authzData } = await buildAuthzData({
-      authn_user: res.locals.authn_user,
-      course_id: null, // Inferred via course_instance_id
-      course_instance_id: courseInstanceId ?? null,
-      is_administrator: res.locals.is_administrator,
-      ip: req.ip ?? null,
-      req_date: res.locals.req_date,
-    });
-    if (authzData === null) {
-      throw new HttpStatusError(403, 'Access denied');
-    }
-
-    if (!hasRole(authzData, 'Student')) {
+    if (courseInstanceIdToCheck && courseInstanceId !== courseInstanceIdToCheck) {
       res.status(404).json({
         error: 'No course found with this enrollment code',
       });
       return;
     }
 
-    if (courseInstanceId && courseInstance.id !== courseInstanceId) {
+    const { authzData, authzCourseInstance: courseInstance } = await buildAuthzData({
+      authn_user: res.locals.authn_user,
+      course_id: null, // Inferred via course_instance_id
+      course_instance_id: courseInstanceId,
+      is_administrator: res.locals.is_administrator,
+      ip: req.ip ?? null,
+      req_date: res.locals.req_date,
+    });
+    if (authzData === null || courseInstance === null) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
+
+    if (!hasRole(authzData, 'Student')) {
       res.status(404).json({
         error: 'No course found with this enrollment code',
       });

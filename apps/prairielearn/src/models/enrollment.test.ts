@@ -2,14 +2,14 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullSystemAuthz } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authzData-lib.js';
 import { type CourseInstance, type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
-import { selectCourseInstanceById } from './course-instances.js';
+import { selectCourseInstanceByIdWithoutAuthz } from './course-instances.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByPendingUid,
@@ -51,11 +51,7 @@ describe('ensureEnrollment', () => {
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
   });
 
   afterEach(async function () {
@@ -248,11 +244,7 @@ describe('DB validation of enrollment', () => {
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
   });
 
   afterEach(async function () {

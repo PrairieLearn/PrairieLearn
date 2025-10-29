@@ -2,9 +2,9 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullSystemAuthz } from '../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../lib/authzData-lib.js';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectCourseInstanceByIdWithoutAuthz } from '../../models/course-instances.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
@@ -50,11 +50,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       },
       CourseInstanceSchema,
     );
-    const firstCourseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const firstCourseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
 
     const freeUser = await getOrCreateUser({
       uid: 'free@example.com',
@@ -165,11 +161,7 @@ describe('getEnrollmentCountsForCourse', () => {
       uin: 'student',
       email: 'student@example.com',
     });
-    const firstCourseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const firstCourseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -192,11 +184,7 @@ describe('getEnrollmentCountsForCourse', () => {
       email: 'student@example.com',
     });
 
-    const firstCourseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const firstCourseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -229,11 +217,7 @@ describe('getEnrollmentCountsForCourse', () => {
       email: 'student@example.com',
     });
 
-    const firstCourseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const firstCourseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -283,11 +267,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uin: 'student',
       email: 'student@example.com',
     });
-    const firstCourseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const firstCourseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -310,11 +290,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       email: 'student@example.com',
     });
 
-    const firstCourseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const firstCourseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
@@ -347,11 +323,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       email: 'student@example.com',
     });
 
-    const firstCourseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const firstCourseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,

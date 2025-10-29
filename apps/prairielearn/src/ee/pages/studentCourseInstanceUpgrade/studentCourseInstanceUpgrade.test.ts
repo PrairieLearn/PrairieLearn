@@ -1,9 +1,9 @@
 import fetch from 'node-fetch';
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
-import { dangerousFullSystemAuthz } from '../../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../../lib/authzData-lib.js';
 import { config } from '../../../lib/config.js';
-import { selectCourseInstanceById } from '../../../models/course-instances.js';
+import { selectCourseInstanceByIdWithoutAuthz } from '../../../models/course-instances.js';
 import { ensureEnrollment } from '../../../models/enrollment.js';
 import * as helperServer from '../../../tests/helperServer.js';
 import {
@@ -81,11 +81,7 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    const courseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,
@@ -108,11 +104,7 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    const courseInstance = await selectCourseInstanceById({
-      id: '1',
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-    });
+    const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,
