@@ -5,7 +5,9 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { dangerousFullAuthzForTesting } from '../lib/authzData.js';
 import { config } from '../lib/config.js';
+import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -45,21 +47,23 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
 
   beforeAll(async function () {
     const studentOneUser = await getOrCreateUser(studentOne);
+    const courseInstance = await selectOptionalCourseInstanceById('1');
+    assert.isNotNull(courseInstance);
     await ensureEnrollment({
-      user_id: studentOneUser.user_id,
-      course_instance_id: '1',
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      userId: studentOneUser.user_id,
+      courseInstance,
+      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'Student',
+      actionDetail: 'implicit_joined',
     });
 
     const studentTwoUser = await getOrCreateUser(studentTwo);
     await ensureEnrollment({
-      user_id: studentTwoUser.user_id,
-      course_instance_id: '1',
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      userId: studentTwoUser.user_id,
+      courseInstance,
+      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'Student',
+      actionDetail: 'implicit_joined',
     });
 
     await getOrCreateUser(studentNotEnrolled);

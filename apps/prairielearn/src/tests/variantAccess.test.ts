@@ -16,7 +16,7 @@ import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
-import { updateCourseSharingName } from '../models/course.js';
+import { selectCourseById, updateCourseSharingName } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -185,7 +185,10 @@ describe('Variant access', () => {
   let instructorVariantSubmissionId: string;
 
   test.sequential('get relevant entities', async () => {
-    courseInstance = await selectCourseInstanceByShortName({ course_id: '1', short_name: 'Sp15' });
+    courseInstance = await selectCourseInstanceByShortName({
+      course: await selectCourseById('1'),
+      short_name: 'Sp15',
+    });
     question = await selectQuestionByQid({ course_id: '1', qid: 'variantAccess' });
     assessment = await queryRow(
       'SELECT * FROM assessments WHERE tid = $tid',

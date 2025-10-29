@@ -1,5 +1,11 @@
 # @prairielearn/formatter
 
+## 1.4.7
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 1.4.6
 
 ### Patch Changes

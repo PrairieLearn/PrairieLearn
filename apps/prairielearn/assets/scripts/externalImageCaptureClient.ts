@@ -4,7 +4,6 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import type { StatusMessage } from '../../src/lib/externalImageCaptureSocket.types.js';
 
-const MAX_IMAGE_SIDE_LENGTH = 2000;
 const SOCKET_TIMEOUT_MS = 10 * 1000; // 10 seconds
 
 onDocumentReady(() => {
@@ -18,9 +17,6 @@ onDocumentReady(() => {
     '#external-image-capture-form',
   );
   const tryAgainButton = document.querySelector<HTMLButtonElement>('#try-again-button');
-
-  let resizingCanvas: HTMLCanvasElement | null = null;
-  let resizingCtx: CanvasRenderingContext2D | null = null;
 
   if (
     !cameraInput ||
@@ -201,60 +197,13 @@ onDocumentReady(() => {
     // Select the image the user uploaded.
     const file = cameraInput.files[0];
     const url = URL.createObjectURL(file);
-    const image = new Image();
 
-    image.src = url;
-
-    image.onload = () => {
-      // Perform scaling to ensure that user-uploaded images are not too large.
-      // The scale factor ensures that the width and height of the image do not exceed 1000px.
-      // If the image width and height are both less than 1000px, no scaling is applied.
-      const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
-
-      if (imageScaleFactor >= 1) {
-        // No scaling is necessary, so we can directly use the original image.
-        displayImagePreview(url);
-        return;
-      }
-
-      const targetWidth = Math.round(image.width * imageScaleFactor);
-      const targetHeight = Math.round(image.height * imageScaleFactor);
-
-      if (!resizingCanvas) {
-        resizingCanvas = document.createElement('canvas');
-      }
-      if (!resizingCtx) {
-        resizingCtx = resizingCanvas.getContext('2d');
-        if (!resizingCtx) {
-          throw new Error('Failed to get canvas context');
-        }
-      }
-
-      resizingCanvas.width = targetWidth;
-      resizingCanvas.height = targetHeight;
-      resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
-
-      resizingCanvas.toBlob((blob) => {
-        if (!blob) {
-          URL.revokeObjectURL(url);
-          throw new Error('Failed to create blob from canvas');
-        }
-
-        const resizedFile = new File([blob], file.name, { type: file.type });
-        const dt = new DataTransfer();
-        dt.items.add(resizedFile);
-
-        cameraInput.files = dt.files;
-
-        if (resizingCanvas) {
-          displayImagePreview(resizingCanvas.toDataURL(file.type));
-        }
-
-        changeState('form');
-      }, file.type);
-
+    imagePreview.onload = () => {
       URL.revokeObjectURL(url);
     };
+
+    displayImagePreview(url);
+    changeState('form');
   });
 
   externalImageCaptureForm.addEventListener('submit', () => {
