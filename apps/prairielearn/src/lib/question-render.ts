@@ -509,14 +509,13 @@ export async function getAndRenderVariant(
     } else {
       const require_open = !!locals.assessment && locals.assessment.type !== 'Exam';
       const instance_question_id = locals.instance_question?.id ?? null;
-      const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
       const options = { variant_seed };
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
         locals.user.user_id,
         locals.authn_user.user_id,
-        course_instance_id,
+        locals.course_instance ?? null,
         locals.course,
         question_course,
         options,

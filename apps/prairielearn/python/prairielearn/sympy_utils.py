@@ -835,6 +835,13 @@ def validate_string_as_sympy(
             "Note that the location of the syntax error is approximate."
         )
     except HasParseError as exc:
+        # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
+        # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
+        if exc.offset == -1:
+            return (
+                "Your answer has a syntax error. "
+                "This issue might be caused by mismatched parentheses or some other misplaced symbol."
+            )
         return (
             f"Your answer has a syntax error. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
