@@ -97,7 +97,7 @@ router.get(
         const shortName = getContentDir(file_transfer.from_filename, 'courseInstances');
 
         const fromCourseInstance = await selectCourseInstanceByShortName({
-          course_id: file_transfer.from_course_id,
+          course,
           short_name: shortName,
         });
 

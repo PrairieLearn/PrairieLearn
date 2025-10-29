@@ -38,15 +38,15 @@ export async function selectOptionalCourseInstanceById(
 }
 
 export async function selectCourseInstanceByShortName({
-  course_id,
+  course,
   short_name,
 }: {
-  course_id: string;
+  course: Course;
   short_name: string;
 }): Promise<CourseInstance> {
   return queryRow(
     sql.select_course_instance_by_short_name,
-    { course_id, short_name },
+    { course_id: course.id, short_name },
     CourseInstanceSchema,
   );
 }
