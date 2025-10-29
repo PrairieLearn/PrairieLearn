@@ -173,7 +173,7 @@ describe('Course instance syncing', () => {
           publishing_start_date: null,
           publishing_end_date: null,
         },
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: [],
       },
       {
@@ -181,7 +181,7 @@ describe('Course instance syncing', () => {
           endDate: jsonDate,
         },
         db: null,
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: ['"publishing.startDate" is required if "publishing.endDate" is specified.'],
       },
       {
@@ -194,7 +194,7 @@ describe('Course instance syncing', () => {
           publishing_start_date: date,
           publishing_end_date: date,
         },
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: [],
       },
       {
@@ -202,7 +202,7 @@ describe('Course instance syncing', () => {
           startDate: jsonDate,
         },
         db: null,
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: ['"publishing.endDate" is required if "publishing.startDate" is specified.'],
       },
       {
@@ -211,7 +211,7 @@ describe('Course instance syncing', () => {
           endDate: jsonDate,
         },
         db: null,
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: ['"publishing.startDate" is not a valid date.'],
       },
       {
@@ -219,7 +219,7 @@ describe('Course instance syncing', () => {
           endDate: 'not a date',
         },
         db: null,
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: [
           '"publishing.startDate" is required if "publishing.endDate" is specified.',
           '"publishing.endDate" is not a valid date.',
@@ -231,7 +231,7 @@ describe('Course instance syncing', () => {
           endDate: '2025-06-01T00:00:00',
         },
         db: null,
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: ['"publishing.startDate" must be before "publishing.endDate".'],
       },
     ];
