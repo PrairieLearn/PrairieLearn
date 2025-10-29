@@ -133,7 +133,7 @@ describe('Course instance syncing', () => {
     assert.equal(remainingRule.institution, 'Any');
   });
 
-  describe('syncs access control settings correctly', async () => {
+  describe('syncs publishing settings correctly', async () => {
     const timezone = 'America/New_York';
 
     // We pick an arbitrary date to use.
@@ -151,13 +151,25 @@ describe('Course instance syncing', () => {
       db: {
         publishing_start_date: Date | null;
         publishing_end_date: Date | null;
+        modern_publishing: boolean;
       } | null;
       errors: string[];
       warnings: string[];
     }[] = [
       {
+        json: undefined,
+        db: {
+          modern_publishing: false,
+          publishing_start_date: null,
+          publishing_end_date: null,
+        },
+        warnings: [],
+        errors: [],
+      },
+      {
         json: {},
         db: {
+          modern_publishing: true,
           publishing_start_date: null,
           publishing_end_date: null,
         },
@@ -178,6 +190,7 @@ describe('Course instance syncing', () => {
           endDate: jsonDate,
         },
         db: {
+          modern_publishing: true,
           publishing_start_date: date,
           publishing_end_date: date,
         },
@@ -256,6 +269,7 @@ describe('Course instance syncing', () => {
         const result = {
           publishing_start_date: syncedCourseInstance.publishing_start_date,
           publishing_end_date: syncedCourseInstance.publishing_end_date,
+          modern_publishing: syncedCourseInstance.modern_publishing,
         };
 
         assert.deepEqual(result, db);

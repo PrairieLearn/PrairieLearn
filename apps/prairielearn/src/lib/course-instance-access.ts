@@ -87,7 +87,7 @@ export function migrateAccessRuleJsonToPublishingConfiguration(
     };
   }
   // The timezone offset of dates before 1884 are a little funky (https://stackoverflow.com/a/60327839).
-  // We will silently update the dates to the nearest valid date.
+  // We will silently update the dates to an arbitrary date in the future.
   if (earliestStartDate && new Date(earliestStartDate).getFullYear() < 1884) {
     earliestStartDate = '2000-01-01T00:00:00';
   }

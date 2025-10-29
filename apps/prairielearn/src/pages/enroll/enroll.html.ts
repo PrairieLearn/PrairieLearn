@@ -75,12 +75,6 @@ export function Enroll({
             </tbody>
           </table>
         </div>
-        <div class="card-footer">
-          <p>
-            Course not showing up? Courses created after November 2025 that are using the modern
-            publishing system are not shown here, and you should enroll via the home page.
-          </p>
-        </div>
       </div>
     `,
   });

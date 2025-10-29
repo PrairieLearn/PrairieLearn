@@ -118,7 +118,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   }
 
   describe('no publishing dates', () => {
-    it('returns no access when publishing_start_date is null', async () => {
+    it('allows no access when publishing_start_date is null', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: null,
         publishing_end_date: null,
@@ -140,7 +140,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('before publishing start date', () => {
-    it('returns no access when request date is before publishing_start_date', async () => {
+    it('allows no access when request date is before publishing_start_date', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -160,7 +160,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       assert.isFalse(result.has_student_access_with_enrollment);
     });
 
-    it('returns no access even with enrollment when before start date', async () => {
+    it('allows no access even with enrollment when before start date', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -183,7 +183,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('between publishing dates', () => {
-    it('returns access when request date is between start and end dates without enrollment', async () => {
+    it('allows access when request date is between start and end dates without enrollment', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -203,7 +203,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       assert.isFalse(result.has_student_access_with_enrollment);
     });
 
-    it('returns access with enrollment when request date is between start and end dates', async () => {
+    it('allows access with enrollment when request date is between start and end dates', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -226,7 +226,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('after publishing end date', () => {
-    it('returns no access when request date is after end date without enrollment', async () => {
+    it('allows no access when request date is after end date without enrollment', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -246,7 +246,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       assert.isFalse(result.has_student_access_with_enrollment);
     });
 
-    it('returns no access when request date is after end date with enrollment but no extensions', async () => {
+    it('allows no access when request date is after end date with enrollment but no extensions', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -258,8 +258,8 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(enrollment);
       vi.spyOn(
         publishingExtensionsModel,
-        'selectPublishingExtensionsByEnrollmentId',
-      ).mockResolvedValue([]);
+        'selectLatestPublishingExtensionByEnrollment',
+      ).mockResolvedValue(null);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
@@ -273,7 +273,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('with publishing extensions', () => {
-    it('returns access when the request date is before the latest extension end date', async () => {
+    it('allows access when the request date is before the latest extension end date', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -281,24 +281,16 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       const authzData = createMockAuthzData();
       const reqDate = new Date('2026-02-15T12:00:00Z');
       const enrollment = createMockEnrollment();
-      const extension1 = createMockPublishingExtension({
-        id: 'extension-1',
-        end_date: new Date('2026-01-31T23:59:59Z'),
-      });
-      const extension2 = createMockPublishingExtension({
-        id: 'extension-2',
+      const extension = createMockPublishingExtension({
+        id: 'extension',
         end_date: new Date('2026-02-28T23:59:59Z'),
-      });
-      const extension3 = createMockPublishingExtension({
-        id: 'extension-3',
-        end_date: new Date('2026-02-15T00:00:00Z'),
       });
 
       vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(enrollment);
       vi.spyOn(
         publishingExtensionsModel,
-        'selectPublishingExtensionsByEnrollmentId',
-      ).mockResolvedValue([extension1, extension2, extension3]);
+        'selectLatestPublishingExtensionByEnrollment',
+      ).mockResolvedValue(extension);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
@@ -311,7 +303,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       assert.isTrue(result.has_student_access_with_enrollment);
     });
 
-    it('returns no access when request date is after all extensions', async () => {
+    it('allows no access when request date is after all extensions', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -319,20 +311,16 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       const authzData = createMockAuthzData();
       const reqDate = new Date('2026-03-01T00:00:00Z');
       const enrollment = createMockEnrollment();
-      const extension1 = createMockPublishingExtension({
-        id: 'extension-1',
-        end_date: new Date('2026-01-31T23:59:59Z'),
-      });
-      const extension2 = createMockPublishingExtension({
-        id: 'extension-2',
+      const extension = createMockPublishingExtension({
+        id: 'extension',
         end_date: new Date('2026-02-28T23:59:59Z'),
       });
 
       vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(enrollment);
       vi.spyOn(
         publishingExtensionsModel,
-        'selectPublishingExtensionsByEnrollmentId',
-      ).mockResolvedValue([extension1, extension2]);
+        'selectLatestPublishingExtensionByEnrollment',
+      ).mockResolvedValue(extension);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,

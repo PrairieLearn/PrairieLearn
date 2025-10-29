@@ -3,7 +3,7 @@ import assert from 'assert';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { selectPublishingExtensionsByEnrollmentId } from '../models/course-instance-publishing-extensions.js';
+import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 import { FullAuthzDataSchema, type RawPageAuthzData } from './authzData-lib.js';
@@ -71,17 +71,16 @@ export async function calculateModernCourseInstanceStudentAccess(
   authzData: RawPageAuthzData,
   reqDate: Date,
 ) {
+  // This function should only be called for course instances that are using
+  // modern publishing configs.
+  assert(courseInstance.modern_publishing);
+
   const enrollment = await selectOptionalEnrollmentByUserId({
     userId: authzData.user.user_id,
     requestedRole: 'Student',
     authzData,
     courseInstance,
   });
-
-  // We only consider non-legacy publishing.
-  if (!courseInstance.modern_publishing) {
-    throw new Error('Course instance is not using modern publishing');
-  }
 
   // Not published at all.
   if (courseInstance.publishing_start_date == null) {
@@ -102,26 +101,20 @@ export async function calculateModernCourseInstanceStudentAccess(
   }
 
   // We are after the end date. We might have access if we have an extension.
-  const publishingExtensions =
-    enrollment != null ? await selectPublishingExtensionsByEnrollmentId(enrollment.id) : [];
+  const latestPublishingExtension = enrollment
+    ? await selectLatestPublishingExtensionByEnrollment(enrollment)
+    : null;
 
   // There are no extensions. We don't have access.
-  if (publishingExtensions.length === 0) {
+  if (latestPublishingExtension === null) {
     return { has_student_access: false, has_student_access_with_enrollment: false };
   }
 
-  // Consider the latest enabled date for the enrollment.
-  const allDates = publishingExtensions
-    .map((extension) => extension.end_date)
-    .sort((a, b) => {
-      return b.getTime() - a.getTime();
-    });
-  const latestDate = allDates[0];
-
   // If we are before the latest date, we have access.
   return {
-    has_student_access: reqDate < latestDate,
-    has_student_access_with_enrollment: reqDate < latestDate && enrollment != null,
+    has_student_access: reqDate < latestPublishingExtension.end_date,
+    has_student_access_with_enrollment:
+      reqDate < latestPublishingExtension.end_date && enrollment != null,
   };
 }
 
@@ -226,7 +219,7 @@ export async function buildAuthzData({
     }),
   };
 
-  // Only students (users with role 'None') should run this code.
+  // Only students and instructors in 'Student view' (users with role 'None') should run this code.
   if (
     rawAuthzData.course_instance?.modern_publishing &&
     authzData.course_instance_role === 'None'
