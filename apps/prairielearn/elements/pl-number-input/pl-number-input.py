@@ -102,7 +102,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def format_true_ans(
     element: lxml.html.HtmlElement, data: pl.QuestionData, name: str
 ) -> str:
-    correct_answer = pl.from_json(data["correct_answers"].get(name, None))
+    correct_answer = pl.from_json(data["correct_answers"].get(name, ""))
     if correct_answer != "":
         # Get format and comparison parameters
         custom_format = pl.get_string_attrib(element, "custom-format", None)
