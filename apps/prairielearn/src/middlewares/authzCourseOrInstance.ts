@@ -139,7 +139,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true; // The side nav is expanded by default.
 
   res.locals.course_has_course_instances = await selectCourseHasCourseInstances({
-    course_id: res.locals.course.id,
+    course: res.locals.course,
   });
 
   const usesLegacyNavigation = await features.enabledFromLocals('legacy-navigation', res.locals);
