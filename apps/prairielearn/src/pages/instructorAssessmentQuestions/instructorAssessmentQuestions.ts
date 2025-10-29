@@ -86,7 +86,7 @@ router.get(
 );
 
 router.get(
-  '/:qid',
+  '/:qid.json',
   asyncHandler(async (req, res) => {
     const assessmentQuestion = await sqldb.queryOptionalRow(
       sql.select_assessment_question,

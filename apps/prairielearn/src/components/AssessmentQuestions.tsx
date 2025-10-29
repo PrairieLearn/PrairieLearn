@@ -4,7 +4,6 @@ import type {
   StaffAssessmentQuestion,
 } from '../lib/client/safe-db-types.js';
 import type { AlternativeGroup, AssessmentQuestion } from '../lib/db-types.js';
-import type { StaffAssessmentQuestionRow } from '../models/assessment-question.js';
 import type { ZoneAssessmentJson, ZoneQuestionJson } from '../schemas/infoAssessment.js';
 
 export function AssessmentQuestionHeaders({

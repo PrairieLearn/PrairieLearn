@@ -787,9 +787,9 @@ export function InstructorAssessmentQuestionsTable({
       return;
     }
 
-    let questionData;
+    let questionData: StaffAssessmentQuestionRow | null = null;
     if (updatedQuestion.id !== selectedQuestion?.id) {
-      const res = await fetch(`${window.location.pathname}/${updatedQuestion.id}`, {
+      const res = await fetch(`${window.location.pathname}/${updatedQuestion.id}.json`, {
         method: 'GET',
       });
       if (!res.ok) {
@@ -797,23 +797,25 @@ export function InstructorAssessmentQuestionsTable({
       }
       questionData = await res.json();
       // Check if the question data is null (invalid QID)
-      if (questionData === null || !questionData) {
+      if (questionData === null) {
         setQidValidationError('Invalid QID');
         return;
       }
-      questionData.assessment = assessment;
+      // Update the question data with the new assessment and position info
+      questionData.assessment = assessment as StaffAssessmentQuestionRow['assessment'];
       questionData.assessment_question = {
+        ...questionData.assessment_question,
         number: selectedQuestionPosition.alternativeGroupNumber,
-        number_in_alternative_group: selectedQuestionPosition.alternativeNumber,
-      };
+        number_in_alternative_group: selectedQuestionPosition.alternativeNumber ?? null,
+      } as StaffAssessmentQuestionRow['assessment_question'];
       questionData.alternative_group = {
+        ...questionData.alternative_group,
         number: selectedQuestionPosition.alternativeGroupNumber,
-      };
-      questionData.alternative_group_size = 1;
+      } as StaffAssessmentQuestionRow['alternative_group'];
       questionData.alternative_group_size = 1;
       setQuestionMap((prev) => ({
         ...prev,
-        [updatedQuestion.id!]: questionData,
+        [updatedQuestion.id!]: questionData!,
       }));
     }
     // Clear validation error if we got this far

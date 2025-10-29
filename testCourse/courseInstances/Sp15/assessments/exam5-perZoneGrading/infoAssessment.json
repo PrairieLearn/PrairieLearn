@@ -21,8 +21,8 @@
     },
     {
       "title": "Questions to test maxPoints and bestQuestions together",
-      "maxPoints": 15,
       "bestQuestions": 2,
+      "maxPoints": 15,
       "questions": [
         { "id": "partialCredit2", "points": [10, 5, 1] },
         { "id": "partialCredit3", "points": [15, 10, 5, 1] },

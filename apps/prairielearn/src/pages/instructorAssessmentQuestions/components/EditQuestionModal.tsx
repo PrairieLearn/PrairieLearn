@@ -94,7 +94,12 @@ export function EditQuestionModal({
   // Check if a value is inherited (only for alternatives)
   const isInherited = (fieldName: keyof ZoneQuestionJson | keyof QuestionAlternativeJson) => {
     if (!isAlternative) return false;
-    return localQuestion[fieldName] === undefined && alternativeGroup[fieldName] !== undefined;
+    return (
+      (!(fieldName in localQuestion) ||
+        localQuestion[fieldName as keyof typeof localQuestion] === undefined) &&
+      fieldName in alternativeGroup &&
+      alternativeGroup[fieldName as keyof typeof alternativeGroup] !== undefined
+    );
   };
 
   // Check if points/autoPoints is inherited (special case since we track which one to use)
