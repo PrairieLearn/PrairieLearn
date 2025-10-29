@@ -1,3 +1,11 @@
+-- BLOCK select_publishing_extension_by_id
+SELECT
+  *
+FROM
+  course_instance_publishing_extensions
+WHERE
+  id = $id;
+
 -- BLOCK select_latest_publishing_extension_by_enrollment_id
 SELECT
   ci_extensions.*
@@ -85,8 +93,7 @@ ORDER BY
 -- BLOCK delete_publishing_extension
 DELETE FROM course_instance_publishing_extensions
 WHERE
-  id = $extension_id
-  AND course_instance_id = $course_instance_id;
+  id = $extension_id;
 
 -- BLOCK update_publishing_extension
 UPDATE course_instance_publishing_extensions
@@ -95,6 +102,5 @@ SET
   end_date = $end_date
 WHERE
   id = $extension_id
-  AND course_instance_id = $course_instance_id
 RETURNING
   *;
