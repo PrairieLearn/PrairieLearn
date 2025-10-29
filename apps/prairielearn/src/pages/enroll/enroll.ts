@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { hasRole } from '../../lib/authzData.js';
+import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
 import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
@@ -86,16 +86,14 @@ router.post('/', [
     const courseDisplayName = `${course.short_name}: ${course.title}, ${course_instance.long_name}`;
 
     if (req.body.__action === 'enroll') {
+      // We don't have authzData yet
+
       const existingEnrollment = await run(async () => {
-        // We only want to even try to lookup enrollment information if the user is a student.
-        if (!hasRole(res.locals.authz_data, 'Student')) {
-          return null;
-        }
         return await selectOptionalEnrollmentByUid({
           uid: res.locals.authn_user.uid,
           courseInstance: course_instance,
-          requestedRole: 'Student',
-          authzData: res.locals.authz_data,
+          requestedRole: 'Student', // TODO: Should be 'System'
+          authzData: dangerousFullAuthzForTesting(),
         });
       });
 

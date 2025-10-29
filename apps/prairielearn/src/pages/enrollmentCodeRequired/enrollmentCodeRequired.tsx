@@ -38,8 +38,34 @@ router.get(
       });
     });
 
-    if (!courseInstance.self_enrollment_enabled && !existingEnrollment) {
-      res.send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-disabled' }));
+    const selfEnrollmentEnabled = courseInstance.self_enrollment_enabled;
+
+    const institutionRestrictionSatisfied =
+      !courseInstance.self_enrollment_restrict_to_institution ||
+      res.locals.authn_user.institution_id === res.locals.course.institution_id;
+
+    const selfEnrollmentExpired =
+      courseInstance.self_enrollment_enabled_before_date != null &&
+      new Date() >= courseInstance.self_enrollment_enabled_before_date;
+
+    if (!selfEnrollmentEnabled && !existingEnrollment) {
+      res
+        .status(403)
+        .send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-disabled' }));
+      return;
+    }
+
+    if (selfEnrollmentExpired && !existingEnrollment) {
+      res
+        .status(403)
+        .send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-expired' }));
+      return;
+    }
+
+    if (!institutionRestrictionSatisfied && !existingEnrollment) {
+      res
+        .status(403)
+        .send(EnrollmentPage({ resLocals: res.locals, type: 'institution-restriction' }));
       return;
     }
 
@@ -48,7 +74,7 @@ router.get(
       ['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status);
 
     if (existingEnrollment && !canJoin) {
-      res.send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
+      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
       return;
     }
 
