@@ -2,8 +2,6 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { assertHasRole } from '../lib/authzData.js';
-import type { AuthzData } from '../lib/authzData.types.js';
 import {
   type Course,
   type CourseInstance,
@@ -23,54 +21,20 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
 });
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
-export async function selectCourseInstanceById({
-  id,
-  requestedRole,
-  authzData,
-}: {
-  id: string;
-  requestedRole: 'System' | 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
-  authzData: AuthzData;
-}) {
-  const courseInstance = await queryRow(
+export async function selectCourseInstanceById(id: string) {
+  return await queryRow(
     sql.select_course_instance_by_id,
     { course_instance_id: id },
     CourseInstanceSchema,
   );
-
-  if (courseInstance.share_source_publicly) {
-    return courseInstance;
-  }
-  assertHasRole(authzData, requestedRole);
-
-  return courseInstance;
 }
 
-export async function selectOptionalCourseInstanceById({
-  id,
-  requestedRole,
-  authzData,
-}: {
-  id: string;
-  requestedRole: 'System' | 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
-  authzData: AuthzData;
-}): Promise<CourseInstance | null> {
+export async function selectOptionalCourseInstanceById(id: string) {
   const courseInstance = await queryOptionalRow(
     sql.select_course_instance_by_id,
     { course_instance_id: id },
     CourseInstanceSchema,
   );
-
-  if (courseInstance === null) {
-    return null;
-  }
-
-  if (courseInstance.share_source_publicly) {
-    return courseInstance;
-  }
-
-  assertHasRole(authzData, requestedRole);
-
   return courseInstance;
 }
 
@@ -88,15 +52,11 @@ export async function selectCourseInstanceByShortName({
   );
 }
 
-export async function selectOptionalCourseInstanceByEnrollmentCode({
+export async function selectOptionalCourseInstanceIdByEnrollmentCode({
   enrollment_code,
-  requestedRole,
-  authzData,
 }: {
   enrollment_code: string;
-  requestedRole: 'System' | 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
-  authzData: AuthzData;
-}): Promise<CourseInstance | null> {
+}): Promise<string | null> {
   const courseInstance = await queryOptionalRow(
     sql.select_course_instance_by_enrollment_code,
     { enrollment_code },
@@ -107,12 +67,7 @@ export async function selectOptionalCourseInstanceByEnrollmentCode({
     return null;
   }
 
-  if (courseInstance.share_source_publicly) {
-    return courseInstance;
-  }
-
-  assertHasRole(authzData, requestedRole);
-  return courseInstance;
+  return courseInstance.id;
 }
 
 /**
