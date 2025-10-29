@@ -26,20 +26,16 @@ describe('Instructor Students - Invite by UID', () => {
   afterAll(helperServer.after);
 
   beforeAll(async () => {
-    // Sync the example course
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
 
-    // Set uid_regexp for the default institution to allow @example.com UIDs
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
 
-    // Create an instructor user
     await callRow(
       'users_select_or_insert',
       ['instructor@example.com', 'Test Instructor', 'instructor1', 'instructor@example.com', 'dev'],
       SprocUsersSelectOrInsertSchema,
     );
 
-    // Grant instructor permissions
     const instructor = await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',
@@ -47,7 +43,6 @@ describe('Instructor Students - Invite by UID', () => {
       authn_user_id: '1',
     });
 
-    // Also grant course instance permissions
     await insertCourseInstancePermissions({
       course_id: '1',
       course_instance_id: '1',
@@ -56,7 +51,6 @@ describe('Instructor Students - Invite by UID', () => {
       authn_user_id: '1',
     });
 
-    // Get the CSRF token as the instructor
     const response = await fetchCheerio(studentsUrl, {
       headers: instructorHeaders,
     });
@@ -85,7 +79,6 @@ describe('Instructor Students - Invite by UID', () => {
   });
 
   test.sequential('should return error when user is an instructor', async () => {
-    // Create another instructor user
     await callRow(
       'users_select_or_insert',
       [
@@ -98,7 +91,6 @@ describe('Instructor Students - Invite by UID', () => {
       SprocUsersSelectOrInsertSchema,
     );
 
-    // Grant instructor permissions to the new user
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'another_instructor@example.com',
@@ -125,7 +117,6 @@ describe('Instructor Students - Invite by UID', () => {
   });
 
   test.sequential('should successfully invite a blocked user', async () => {
-    // Create a student user
     const blockedStudent = await callRow(
       'users_select_or_insert',
       [
@@ -138,7 +129,6 @@ describe('Instructor Students - Invite by UID', () => {
       SprocUsersSelectOrInsertSchema,
     );
 
-    // Create a blocked enrollment for this user
     await queryRow(
       `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
        VALUES ($user_id, $course_instance_id, 'blocked', NOW())
@@ -171,7 +161,6 @@ describe('Instructor Students - Invite by UID', () => {
   });
 
   test.sequential('should successfully invite a new student', async () => {
-    // Create a new student user without any enrollment
     await callRow(
       'users_select_or_insert',
       ['new_student@example.com', 'New Student', 'new1', 'new_student@example.com', 'dev'],
@@ -200,7 +189,6 @@ describe('Instructor Students - Invite by UID', () => {
   });
 
   test.sequential('should return error when user is already enrolled', async () => {
-    // Create a student user
     const enrolledStudent = await callRow(
       'users_select_or_insert',
       [
@@ -213,7 +201,6 @@ describe('Instructor Students - Invite by UID', () => {
       SprocUsersSelectOrInsertSchema,
     );
 
-    // Create a joined enrollment for this user
     await queryRow(
       `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
        VALUES ($user_id, $course_instance_id, 'joined', NOW())
@@ -257,7 +244,6 @@ describe('Instructor Students - Invite by UID', () => {
       SprocUsersSelectOrInsertSchema,
     );
 
-    // Create an invited enrollment for this user
     await queryRow(
       `INSERT INTO enrollments (course_instance_id, status, pending_uid)
        VALUES ($course_instance_id, 'invited', $pending_uid)
