@@ -26,6 +26,7 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import {
   createPublishingExtensionWithEnrollments,
   deletePublishingExtension,
+  selectPublishingExtensionById,
   selectPublishingExtensionByName,
   selectPublishingExtensionsWithUsersByCourseInstance,
 } from '../../models/course-instance-publishing-extensions.js';
@@ -387,6 +388,8 @@ router.post(
           const existingExtension = await selectPublishingExtensionByName({
             name: body.name,
             courseInstance: res.locals.course_instance,
+            authzData: res.locals.authz_data,
+            requestedRole: 'Student Data Viewer',
           });
 
           if (existingExtension) {
@@ -404,6 +407,8 @@ router.post(
           name: body.name,
           endDate: new Date(body.end_date),
           enrollments,
+          authzData: res.locals.authz_data,
+          requestedRole: 'Student Data Editor',
         });
 
         res.status(200).json({ success: true });
@@ -418,7 +423,6 @@ router.post(
       }
     } else if (req.body.__action === 'delete_extension') {
       try {
-        // TODO: Add selectPublishingExtensionById
         const extension = await selectPublishingExtensionById({
           id: req.body.extension_id,
           courseInstance: res.locals.course_instance,
@@ -429,6 +433,8 @@ router.post(
         await deletePublishingExtension({
           extension,
           courseInstance: res.locals.course_instance,
+          authzData: res.locals.authz_data,
+          requestedRole: 'Student Data Editor',
         });
 
         res.status(200).json({ success: true });
@@ -470,6 +476,8 @@ router.post(
           const existingExtension = await selectPublishingExtensionByName({
             name: body.name,
             courseInstance: res.locals.course_instance,
+            authzData: res.locals.authz_data,
+            requestedRole: 'Student Data Viewer',
           });
 
           if (existingExtension && existingExtension.id !== body.extension_id) {
