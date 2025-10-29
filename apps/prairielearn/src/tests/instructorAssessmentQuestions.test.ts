@@ -1,12 +1,11 @@
 import * as path from 'path';
 
+import sha256 from 'crypto-js/sha256.js';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
-
-import sha256 from 'crypto-js/sha256.js';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
@@ -26,7 +25,7 @@ const courseOriginDir = path.join(baseDir, 'courseOrigin');
 const courseLiveDir = path.join(baseDir, 'courseLive');
 const courseDevDir = path.join(baseDir, 'courseDev');
 const assessmentLiveDir = path.join(courseLiveDir, 'courseInstances', 'Fa18', 'assessments');
-let assessmentLiveInfoPath = path.join(assessmentLiveDir, 'HW1', 'infoAssessment.json');
+const assessmentLiveInfoPath = path.join(assessmentLiveDir, 'HW1', 'infoAssessment.json');
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 
@@ -70,7 +69,6 @@ describe('Editing assessment questions', () => {
     await helperServer.before(courseLiveDir)();
 
     await execute(sql.update_course_repo, { repo: courseOriginDir });
-    
   });
 
   afterAll(helperServer.after);
@@ -122,10 +120,7 @@ describe('Editing assessment questions', () => {
     );
 
     assert.equal(response.status, 200);
-    assert.equal(
-      response.url,
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
-    );
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`);
 
     // Verify the file content is unchanged (except for formatting)
     const updatedContent = await fs.readFile(assessmentLiveInfoPath, 'utf8');
@@ -167,7 +162,7 @@ describe('Editing assessment questions', () => {
     // Accept either successful redirect or edit_error (changes are still saved)
     assert.match(
       response.url,
-      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/
+      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/,
     );
   });
 
@@ -213,7 +208,7 @@ describe('Editing assessment questions', () => {
     // Accept either successful redirect or edit_error (changes are still saved)
     assert.match(
       response.url,
-      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/
+      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/,
     );
   });
 
@@ -249,10 +244,7 @@ describe('Editing assessment questions', () => {
     );
 
     assert.equal(response.status, 200);
-    assert.equal(
-      response.url,
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
-    );
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`);
   });
 
   test.sequential('verify question was removed', async () => {
@@ -288,10 +280,7 @@ describe('Editing assessment questions', () => {
     );
 
     assert.equal(response.status, 200);
-    assert.equal(
-      response.url,
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
-    );
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`);
   });
 
   test.sequential('verify question id and points were changed', async () => {
@@ -338,7 +327,7 @@ describe('Editing assessment questions', () => {
     // Accept either successful redirect or edit_error (changes are still saved)
     assert.match(
       response.url,
-      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/
+      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/,
     );
   });
 
@@ -416,7 +405,7 @@ describe('Editing assessment questions', () => {
         `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
       );
       assert.equal(questionsPageResponse.status, 200);
-      
+
       const csrfToken = questionsPageResponse.$('#test_csrf_token').text();
       // For this test, we can't calculate orig_hash normally since the file is missing
       // So we'll use a dummy hash
@@ -537,7 +526,7 @@ describe('Editing assessment questions', () => {
     // Accept either successful redirect or edit_error (changes are still saved)
     assert.match(
       response.url,
-      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/
+      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/,
     );
   });
 
@@ -548,7 +537,7 @@ describe('Editing assessment questions', () => {
     // numberChoose defaults to 1 and may be omitted from the JSON
     assert.ok(
       assessmentInfo.zones[0].questions[0].numberChoose === 1 ||
-        assessmentInfo.zones[0].questions[0].numberChoose === undefined
+        assessmentInfo.zones[0].questions[0].numberChoose === undefined,
     );
     assert.ok(assessmentInfo.zones[0].questions[0].alternatives);
     assert.equal(assessmentInfo.zones[0].questions[0].alternatives.length, 2);
@@ -596,7 +585,7 @@ describe('Editing assessment questions', () => {
     // Accept either successful redirect or edit_error (changes are still saved)
     assert.match(
       response.url,
-      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/
+      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/,
     );
   });
 
@@ -606,7 +595,7 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentInfo.zones[0].questions[0].alternatives[1].points, 25);
   });
 
-  test.sequential('test zone with maxPoints and numberChoose properties', async () => {
+  test.sequential('zone with maxPoints and numberChoose properties', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -646,7 +635,7 @@ describe('Editing assessment questions', () => {
     // Accept either successful redirect or edit_error (changes are still saved)
     assert.match(
       response.url,
-      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/
+      /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/,
     );
   });
 
@@ -659,44 +648,44 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentInfo.zones[0].questions.length, 3);
   });
 
-  test.sequential('test default value filtering - removing default points should omit field', async () => {
-    // First, set up a question with non-default points
-    let requestData = await getRequestData();
+  test.sequential(
+    'default value filtering - removing default points should omit field',
+    async () => {
+      // First, set up a question with non-default points
+      let requestData = await getRequestData();
 
-    let response = await fetch(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'save_questions',
-          __csrf_token: requestData.csrfToken,
-          orig_hash: requestData.origHash,
-          zones: JSON.stringify([
-            {
-              questions: [
-                {
-                  id: 'test/question',
-                  points: 10,
-                },
-              ],
-            },
-          ]),
-        }),
-      },
-    );
+      let response = await fetch(
+        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'save_questions',
+            __csrf_token: requestData.csrfToken,
+            orig_hash: requestData.origHash,
+            zones: JSON.stringify([
+              {
+                questions: [
+                  {
+                    id: 'test/question',
+                    points: 10,
+                  },
+                ],
+              },
+            ]),
+          }),
+        },
+      );
 
-    assert.equal(response.status, 200);
+      assert.equal(response.status, 200);
 
-    // Verify points is present
-    let assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-    assert.equal(assessmentInfo.zones[0].questions[0].points, 10);
+      // Verify points is present
+      let assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      assert.equal(assessmentInfo.zones[0].questions[0].points, 10);
 
-    // Now set points to default value (0) - it should be omitted from the JSON
-    requestData = await getRequestData();
+      // Now set points to default value (0) - it should be omitted from the JSON
+      requestData = await getRequestData();
 
-    response = await fetch(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
-      {
+      response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'save_questions',
@@ -713,15 +702,14 @@ describe('Editing assessment questions', () => {
             },
           ]),
         }),
-      },
-    );
+      });
 
-    assert.equal(response.status, 200);
+      assert.equal(response.status, 200);
 
-    // Verify points field is omitted (or is 0 if present)
-    assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
-    const points = assessmentInfo.zones[0].questions[0].points;
-    assert.ok(points === undefined || points === 0, 'Points should be omitted or 0');
-  });
+      // Verify points field is omitted (or is 0 if present)
+      assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+      const points = assessmentInfo.zones[0].questions[0].points;
+      assert.ok(points === undefined || points === 0, 'Points should be omitted or 0');
+    },
+  );
 });
-

@@ -1,12 +1,11 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
 import { render } from 'preact';
+import React, { useState } from 'preact/hooks';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
-import { useState } from '@prairielearn/preact-cjs/hooks';
-import { run } from '@prairielearn/run';
 
 import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { assertNever } from '../../src/lib/types.js';

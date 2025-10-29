@@ -4,4 +4,3 @@ SET
   repository = $repo
 WHERE
   id = 1;
-
