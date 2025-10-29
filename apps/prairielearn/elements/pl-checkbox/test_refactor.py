@@ -412,3 +412,183 @@ def test_generate_number_correct_text(case: NumberCorrectTestCase) -> None:
         show_number_correct=case.show_number_correct,
     )
     assert result == case.expected
+
+
+# Test cases for score rendering
+class ScoreRenderingTestCase(NamedTuple):
+    score: float | None
+    expected_key: str | None
+    expected_value: bool | int | None
+    id: str
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        ScoreRenderingTestCase(
+            score=1.0,
+            expected_key="correct",
+            expected_value=True,
+            id="perfect_score",
+        ),
+        ScoreRenderingTestCase(
+            score=0.0,
+            expected_key="incorrect",
+            expected_value=True,
+            id="zero_score",
+        ),
+        ScoreRenderingTestCase(
+            score=0.5,
+            expected_key="partial",
+            expected_value=50,
+            id="fifty_percent",
+        ),
+        ScoreRenderingTestCase(
+            score=0.75,
+            expected_key="partial",
+            expected_value=75,
+            id="seventy_five_percent",
+        ),
+        ScoreRenderingTestCase(
+            score=0.01,
+            expected_key="partial",
+            expected_value=1,
+            id="one_percent",
+        ),
+        ScoreRenderingTestCase(
+            score=0.999,
+            expected_key="partial",
+            expected_value=99,
+            id="ninety_nine_percent",
+        ),
+        ScoreRenderingTestCase(
+            score=0.333,
+            expected_key="partial",
+            expected_value=33,
+            id="thirty_three_percent",
+        ),
+        ScoreRenderingTestCase(
+            score=None,
+            expected_key=None,
+            expected_value=None,
+            id="none_score",
+        ),
+    ],
+    ids=lambda case: case.id,
+)
+def test_score_rendering_in_question_panel(case: ScoreRenderingTestCase) -> None:
+    """Test that score badges render correctly in the question panel.
+
+    This test verifies that partial scores display as percentages (e.g., "50%")
+    rather than as boolean True, which was a bug in the initial refactor.
+    """
+    element_html = """
+    <pl-checkbox answers-name="test">
+        <pl-answer correct="true">Option A</pl-answer>
+        <pl-answer correct="false">Option B</pl-answer>
+    </pl-checkbox>
+    """
+
+    # First call prepare() to populate params with html
+    data: dict[str, Any] = {
+        "params": {},
+        "correct_answers": {},
+        "submitted_answers": {},
+        "partial_scores": {},
+        "format_errors": {},
+        "answers_names": {},
+    }
+    pl_checkbox.prepare(element_html, data)
+
+    # Now add score information for rendering
+    data["partial_scores"]["test"] = (
+        {"score": case.score} if case.score is not None else {}
+    )
+    data["score"] = case.score
+    data["panel"] = "question"
+    data["editable"] = False
+
+    html_output = pl_checkbox.render(element_html, data)
+
+    if case.expected_key is None:
+        # When score is None, no score badge should be present
+        assert "badge text-bg-success" not in html_output
+        assert "badge text-bg-danger" not in html_output
+        assert "badge text-bg-warning" not in html_output
+    elif case.expected_key == "correct":
+        # Check for correct badge (checkmark icon)
+        assert "badge text-bg-success" in html_output
+        assert '<i class="fa fa-check"' in html_output
+    elif case.expected_key == "incorrect":
+        # Check for incorrect badge (times icon)
+        assert "badge text-bg-danger" in html_output
+        assert '<i class="fa fa-times"' in html_output
+    elif case.expected_key == "partial":
+        # Check for partial badge with the correct percentage
+        assert "badge text-bg-warning" in html_output
+        assert f"{case.expected_value}%" in html_output
+        # Ensure it's NOT showing "True%"
+        assert "True%" not in html_output
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        ScoreRenderingTestCase(
+            score=0.5,
+            expected_key="partial",
+            expected_value=50,
+            id="fifty_percent_submission",
+        ),
+        ScoreRenderingTestCase(
+            score=0.667,
+            expected_key="partial",
+            expected_value=66,
+            id="sixty_six_percent_submission",
+        ),
+        ScoreRenderingTestCase(
+            score=1.0,
+            expected_key="correct",
+            expected_value=True,
+            id="perfect_score_submission",
+        ),
+    ],
+    ids=lambda case: case.id,
+)
+def test_score_rendering_in_submission_panel(case: ScoreRenderingTestCase) -> None:
+    """Test that score badges render correctly in the submission panel."""
+    element_html = """
+    <pl-checkbox answers-name="test">
+        <pl-answer correct="true">Option A</pl-answer>
+        <pl-answer correct="false">Option B</pl-answer>
+        <pl-answer correct="true">Option C</pl-answer>
+    </pl-checkbox>
+    """
+
+    # First call prepare() to populate params with html
+    data: dict[str, Any] = {
+        "params": {},
+        "correct_answers": {},
+        "submitted_answers": {},
+        "partial_scores": {},
+        "format_errors": {},
+        "answers_names": {},
+    }
+    pl_checkbox.prepare(element_html, data)
+
+    # Now add submission and score information
+    data["submitted_answers"]["test"] = ["a", "b"]  # 1 correct, 1 incorrect
+    data["partial_scores"]["test"] = {"score": case.score}
+    data["score"] = case.score
+    data["panel"] = "submission"
+    data["editable"] = False
+
+    html_output = pl_checkbox.render(element_html, data)
+
+    if case.expected_key == "correct":
+        assert "badge text-bg-success" in html_output
+    elif case.expected_key == "partial":
+        assert "badge text-bg-warning" in html_output
+        assert f"{case.expected_value}%" in html_output
+        # Ensure it's NOT showing "True%"
+        assert "True%" not in html_output
