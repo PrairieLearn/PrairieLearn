@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
+  type Course,
   type CourseInstance,
   type CourseInstancePermission,
   CourseInstanceSchema,
@@ -151,31 +152,15 @@ export async function selectCourseInstanceIsPublic(course_instance_id: string): 
 }
 
 export async function selectCourseInstanceByUuid({
-  course_id,
+  course,
   uuid,
 }: {
-  course_id: string;
+  course: Course;
   uuid: string;
 }): Promise<CourseInstance> {
   return await queryRow(
     sql.select_course_instance_by_uuid,
-    { uuid, course_id },
+    { uuid, course_id: course.id },
     CourseInstanceSchema,
-  );
-}
-
-export async function selectInstanceAndCourseAndInstitution({
-  course_instance_id,
-}: {
-  course_instance_id: string;
-}) {
-  return await queryRow(
-    sql.select_instance_and_course_and_institution,
-    { course_instance_id },
-    z.object({
-      course_instance: CourseInstanceSchema,
-      course: CourseSchema,
-      institution: InstitutionSchema,
-    }),
   );
 }

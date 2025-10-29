@@ -114,7 +114,7 @@ router.post(
 
       const courseInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
-        course_id: res.locals.course.id,
+        course: res.locals.course,
       });
 
       flash('success', 'Course instance created successfully.');
