@@ -38,7 +38,7 @@ router.get(
     }
 
     const courseInstances: CourseInstanceAuthzRow[] = await selectCourseInstancesWithStaffAccess({
-      course_id: res.locals.course.id,
+      course: res.locals.course,
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.is_administrator,

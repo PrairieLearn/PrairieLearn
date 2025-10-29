@@ -69,13 +69,13 @@ export async function selectOptionalCourseInstanceByEnrollmentCode(
  * emulated user have access.
  */
 export async function selectCourseInstancesWithStaffAccess({
-  course_id,
+  course,
   user_id,
   authn_user_id,
   is_administrator,
   authn_is_administrator,
 }: {
-  course_id: string;
+  course: Course;
   user_id: string;
   authn_user_id: string;
   is_administrator: boolean;
@@ -83,7 +83,7 @@ export async function selectCourseInstancesWithStaffAccess({
 }) {
   const authnCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
-    { user_id: authn_user_id, is_administrator: authn_is_administrator, course_id },
+    { user_id: authn_user_id, is_administrator: authn_is_administrator, course_id: course.id },
     CourseInstanceAuthzSchema,
   );
 
@@ -93,7 +93,7 @@ export async function selectCourseInstancesWithStaffAccess({
 
   const authzCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
-    { user_id, is_administrator, course_id },
+    { user_id, is_administrator, course_id: course.id },
     CourseInstanceAuthzSchema,
   );
 
