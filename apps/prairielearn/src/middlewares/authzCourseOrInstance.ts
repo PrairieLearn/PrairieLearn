@@ -598,19 +598,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       res.locals.authz_data.user_with_requested_uid_has_instructor_access_to_course_instance =
         user_with_requested_uid_has_instructor_access_to_course_instance;
     }
-
-    // If the effective user is the same as the authenticated user and the
-    // effective user has not requested any specific role, we'll treat them
-    // as though they're enrolled in the course instance as a student. This is
-    // important because we no longer automatically enroll instructors in their
-    // own course instances when they view them.
-    if (
-      idsEqual(user.user_id, res.locals.authn_user.user_id) &&
-      !res.locals.authz_data.has_course_instance_permission_view &&
-      !res.locals.authz_data.has_course_permission_view
-    ) {
-      res.locals.authz_data.has_student_access_with_enrollment = true;
-    }
   }
 
   res.locals.authz_data.overrides = overrides;
@@ -623,22 +610,33 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.req_date = req_date;
 
   // Recalculate this for the effective user as well.
-  if (
-    res.locals.course_instance?.modern_publishing &&
-    res.locals.authz_data.course_instance_role === 'None'
-  ) {
-    // We use this access system instead of the legacy access system.
-    const { has_student_access, has_student_access_with_enrollment } =
-      await calculateModernCourseInstanceStudentAccess(
-        res.locals.course_instance,
-        res.locals.authz_data,
-        req_date,
-      );
-    res.locals.authz_data.has_student_access = has_student_access;
-    res.locals.authz_data.has_student_access_with_enrollment = has_student_access_with_enrollment;
-    res.locals.authz_data.authn_has_student_access = has_student_access;
-    res.locals.authz_data.authn_has_student_access_with_enrollment =
-      has_student_access_with_enrollment;
+  if (req.params.course_instance_id) {
+    if (
+      res.locals.course_instance?.modern_publishing &&
+      res.locals.authz_data.course_instance_role === 'None'
+    ) {
+      // We use this access system instead of the legacy access system.
+      const { has_student_access, has_student_access_with_enrollment } =
+        await calculateModernCourseInstanceStudentAccess(
+          res.locals.course_instance,
+          res.locals.authz_data,
+          req_date,
+        );
+      res.locals.authz_data.has_student_access = has_student_access;
+      res.locals.authz_data.has_student_access_with_enrollment = has_student_access_with_enrollment;
+    }
+    // If the effective user is the same as the authenticated user and the
+    // effective user has not requested any specific role, we'll treat them
+    // as though they're enrolled in the course instance as a student. This is
+    // important because we no longer automatically enroll instructors in their
+    // own course instances when they view them.
+    if (
+      idsEqual(user.user_id, res.locals.authn_user.user_id) &&
+      !res.locals.authz_data.has_course_instance_permission_view &&
+      !res.locals.authz_data.has_course_permission_view
+    ) {
+      res.locals.authz_data.has_student_access_with_enrollment = true;
+    }
   }
 }
 
