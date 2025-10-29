@@ -150,12 +150,9 @@ export function isDangerousFullSystemAuthz(
 }
 
 export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
+  // You must set the requestedRole to 'System' when you use dangerousFullSystemAuthz.
   if (isDangerousFullSystemAuthz(authzData)) {
-    return true;
-  }
-
-  if (requestedRole === 'System') {
-    return false;
+    return requestedRole === 'System';
   }
 
   if (
