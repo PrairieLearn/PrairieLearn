@@ -142,15 +142,6 @@ export async function selectCourseHasCourseInstances({
   return await queryRow(sql.select_course_has_course_instances, { course_id }, z.boolean());
 }
 
-export async function selectCourseInstanceIsPublic(course_instance_id: string): Promise<boolean> {
-  const isPublic = await queryRow(
-    sql.check_course_instance_is_public,
-    { course_instance_id },
-    z.boolean(),
-  );
-  return isPublic;
-}
-
 export async function selectCourseInstanceByUuid({
   course,
   uuid,

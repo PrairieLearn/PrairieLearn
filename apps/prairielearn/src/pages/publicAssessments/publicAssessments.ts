@@ -6,10 +6,7 @@ import * as error from '@prairielearn/error';
 import { getCourseInstanceCopyTargets } from '../../lib/copy-content.js';
 import { UserSchema } from '../../lib/db-types.js';
 import { selectAssessments } from '../../models/assessment.js';
-import {
-  selectCourseInstanceIsPublic,
-  selectOptionalCourseInstanceById,
-} from '../../models/course-instances.js';
+import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../../models/question.js';
 
@@ -24,14 +21,13 @@ router.get(
     if (courseInstance === null) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
+    if (!courseInstance.share_source_publicly) {
+      throw new error.HttpStatusError(404, 'Course instance not public.');
+    }
+
     res.locals.course_instance = courseInstance;
     const course = await selectCourseById(courseInstance.course_id);
     res.locals.course = course;
-
-    const isPublic = await selectCourseInstanceIsPublic(courseInstance.id);
-    if (!isPublic) {
-      throw new error.HttpStatusError(404, 'Course instance not public.');
-    }
 
     const courseInstanceCopyTargets = await getCourseInstanceCopyTargets({
       course,
