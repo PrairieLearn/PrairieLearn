@@ -6,7 +6,11 @@ import { run } from '@prairielearn/run';
 import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
-import { FullAuthzDataSchema, type RawPageAuthzData } from './authzData-lib.js';
+import {
+  FullAuthzDataSchema,
+  type RawPageAuthzData,
+  dangerousFullSystemAuthz,
+} from './authzData-lib.js';
 import { type CourseInstance, type User } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -102,7 +106,13 @@ export async function calculateModernCourseInstanceStudentAccess(
 
   // We are after the end date. We might have access if we have an extension.
   const latestPublishingExtension = enrollment
-    ? await selectLatestPublishingExtensionByEnrollment(enrollment)
+    ? await selectLatestPublishingExtensionByEnrollment({
+        enrollment,
+        // Our current authzData would say we can't access this, but we are actually building up
+        // authzData with this function, so we use system auth to get the latest extension.
+        authzData: dangerousFullSystemAuthz(),
+        requestedRole: 'System',
+      })
     : null;
 
   // There are no extensions. We don't have access.
