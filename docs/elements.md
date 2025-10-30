@@ -996,12 +996,6 @@ Different ordering of the blocks in the source area defined via the attribute `s
 - `ordered`: the blocks appear in the source area in the same order they appear in the HTML file.
 - `alphabetized`: the blocks are alphabetized according to their HTML contents. Take care when including HTML in blocks. For instance, `<b>cat</b>` will appear before `<i>bat</i>`.
 
-### Advanced DAG Grading Method Usage
-
----
-
-`pl-order-blocks` offers a more advanced selection of operators to the DAG grading method sepcifally within the depends attribute to write questions that manipulate the DAG structure used for grading. This can allow for multiple correct solutions taken from the same bank of `pl-answer` tags. This can be useful for concepts that don't have a one correct solution model e.g. math proofs, programming, shell commands, etc.
-
 #### Optional Blocks
 
 This feature allows users to write `pl-order-blocks` questions using the `dag` grading method to have multiple correct orderings that must include the same final block. This can extend existing questions utilizing the `dag` grading method to include blocks that can be either included or excluded in the final solution while still being correct. Pushing this concept further, this feature can be utilized to create entirely different orderings from the same greater set of blocks. You can denote an `OR` relationship between dependencies in the `depends` attribute by using the `|` operator, e.g., `depends="A|B"`.
