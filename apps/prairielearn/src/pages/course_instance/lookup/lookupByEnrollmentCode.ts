@@ -45,7 +45,7 @@ router.get(
     const existingEnrollment = await selectOptionalEnrollmentByUid({
       uid: res.locals.authn_user.uid,
       courseInstance,
-      requestedRole: 'Student', // TODO: Should be 'System'
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
     });
 
