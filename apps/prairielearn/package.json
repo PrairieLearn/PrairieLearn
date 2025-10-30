@@ -298,7 +298,6 @@
     "@types/tar": "^6.1.13",
     "@types/tmp": "^0.2.6",
     "@types/unzipper": "^0.10.11",
-    "@types/uuid": "^11.0.0",
     "@vitest/coverage-v8": "^4.0.5",
     "axe-core": "^4.10.3",
     "get-port": "^7.1.0",
