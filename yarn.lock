@@ -4511,7 +4511,7 @@ __metadata:
   resolution: "@prairielearn/preact-cjs@workspace:packages/preact-cjs"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    original-preact: "npm:preact@^10.27.0"
+    original-preact: "npm:preact@^10.27.2"
     typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft
@@ -14995,10 +14995,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"original-preact@npm:preact@^10.27.0":
-  version: 10.27.0
-  resolution: "preact@npm:10.27.0"
-  checksum: 10c0/f00d84fdceca2d6236c093afb005ab34bfc9bac7fdeac2bb83c09791034692e0c1eb431659ba1fba1b9914ca0f9918da13b0a212ffb51c3ca2c2f5e5f5f01219
+"original-preact@npm:preact@^10.27.2":
+  version: 10.27.2
+  resolution: "preact@npm:10.27.2"
+  checksum: 10c0/951b708f7afa34391e054b0f1026430e8f5f6d5de24020beef70288e17067e473b9ee5503a994e0a80ced014826f56708fea5902f80346432c22dfcf3dff4be7
   languageName: node
   linkType: hard
 
