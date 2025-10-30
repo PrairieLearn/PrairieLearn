@@ -5,7 +5,7 @@ export default defineConfig({
     dir: `${import.meta.dirname}/src`,
     coverage: {
       reporter: ['html', 'text-summary', 'cobertura'],
-      include: ['src/**/*.{js,jsx,ts,tsx,cjs,mjs}'],
+      include: ['src/**/*.{ts,tsx}'],
     },
   },
 });

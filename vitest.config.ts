@@ -134,7 +134,7 @@ export default mergeConfig(
       projects: ['{apps,packages}/*/vitest.config.ts'],
       coverage: {
         reporter: ['html', 'text-summary', 'cobertura'],
-        include: ['{apps,packages}/*/src/**/*.{js,jsx,ts,tsx,cjs,mjs}'],
+        include: ['{apps,packages}/*/src/**/*.{ts,tsx}'],
       },
     },
   }),
