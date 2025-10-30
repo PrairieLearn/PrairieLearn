@@ -5,7 +5,7 @@ import {
   type CourseInstanceRole,
   dangerousFullSystemAuthz,
   hasRole,
-} from './authzData-lib.js';
+} from './authz-data-lib.js';
 
 describe('authzData', () => {
   describe('hasRole', () => {

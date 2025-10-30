@@ -10,7 +10,7 @@ import {
   FullAuthzDataSchema,
   type RawPageAuthzData,
   dangerousFullSystemAuthz,
-} from './authzData-lib.js';
+} from './authz-data-lib.js';
 import { type CourseInstance, type User } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

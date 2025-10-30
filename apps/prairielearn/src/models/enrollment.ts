@@ -22,7 +22,7 @@ import {
   dangerousFullSystemAuthz,
   hasRole,
   isDangerousFullSystemAuthz,
-} from '../lib/authzData-lib.js';
+} from '../lib/authz-data-lib.js';
 import {
   type StaffCourseInstanceContext,
   type StudentCourseInstanceContext,

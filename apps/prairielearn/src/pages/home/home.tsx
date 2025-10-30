@@ -9,7 +9,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
-import { buildAuthzData } from '../../lib/authzData.js';
+import { buildAuthzData } from '../../lib/authz-data.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';

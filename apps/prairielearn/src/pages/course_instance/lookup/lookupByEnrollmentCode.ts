@@ -4,8 +4,8 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { hasRole } from '../../../lib/authzData-lib.js';
-import { buildAuthzData } from '../../../lib/authzData.js';
+import { hasRole } from '../../../lib/authz-data-lib.js';
+import { buildAuthzData } from '../../../lib/authz-data.js';
 import type { User } from '../../../lib/db-types.js';
 import { selectOptionalCourseInstanceIdByEnrollmentCode } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';

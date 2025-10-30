@@ -5,7 +5,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { dangerousFullSystemAuthz } from '../lib/authzData-lib.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';

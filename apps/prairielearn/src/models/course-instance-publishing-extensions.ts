@@ -8,7 +8,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { type AuthzData, assertHasRole } from '../lib/authzData-lib.js';
+import { type AuthzData, assertHasRole } from '../lib/authz-data-lib.js';
 import {
   type CourseInstance,
   type CourseInstancePublishingExtension,

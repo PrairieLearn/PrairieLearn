@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { run } from '@prairielearn/run';
 
 import { EnrollmentPage } from '../components/EnrollmentPage.js';
-import { hasRole } from '../lib/authzData-lib.js';
+import { hasRole } from '../lib/authz-data-lib.js';
 import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
