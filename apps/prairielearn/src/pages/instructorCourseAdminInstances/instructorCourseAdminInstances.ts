@@ -33,7 +33,7 @@ router.get(
       if (err.code === 'ENOENT') {
         res.locals.needToSync = true;
       } else {
-        throw new Error('Invalid course path');
+        throw new Error('Invalid course path', { cause: err });
       }
     }
 

@@ -61,7 +61,7 @@ Then, create a fork and a new branch, and update the file(s) you wish to modify.
 ```diff
 ...
 scikit-learn==1.3.0
-+scipy==1.11.1
++scipy==1.15.3
 sphinx-markdown-builder==0.6.0
 ...
 ```
