@@ -6,7 +6,7 @@ import { dangerousFullAuthzForTesting } from '../../../lib/authzData.js';
 import type { User } from '../../../lib/db-types.js';
 import { selectOptionalCourseInstanceByEnrollmentCode } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
-import { selectOptionalEnrollmentByUserId } from '../../../models/enrollment.js';
+import { selectOptionalEnrollmentByUid } from '../../../models/enrollment.js';
 
 const router = Router();
 
@@ -42,21 +42,26 @@ router.get(
 
     const authnUser: User = res.locals.authn_user;
 
-    const existingEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: res.locals.authn_user.user_id,
+    const existingEnrollment = await selectOptionalEnrollmentByUid({
+      uid: res.locals.authn_user.uid,
       courseInstance,
       requestedRole: 'Student', // TODO: Should be 'System'
       authzData: dangerousFullAuthzForTesting(),
     });
 
-    if (
-      existingEnrollment &&
-      !['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status)
-    ) {
-      res.status(403).json({
-        error: 'You are blocked from accessing this course',
-      });
-      return;
+    if (existingEnrollment) {
+      if (!['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status)) {
+        res.status(403).json({
+          error: 'You are blocked from accessing this course',
+        });
+        return;
+      } else {
+        // If the user had some other prior enrollment state, return the course instance ID.
+        res.json({
+          course_instance_id: courseInstance.id,
+        });
+        return;
+      }
     }
 
     // Check if self-enrollment is enabled for this course instance
