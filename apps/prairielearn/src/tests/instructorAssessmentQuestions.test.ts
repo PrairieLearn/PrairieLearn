@@ -11,6 +11,7 @@ import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -69,6 +70,9 @@ describe('Editing assessment questions', () => {
     await helperServer.before(courseLiveDir)();
 
     await execute(sql.update_course_repo, { repo: courseOriginDir });
+
+    // Enable the assessment-questions-editor feature flag for these tests
+    await features.enable('assessment-questions-editor');
   });
 
   afterAll(helperServer.after);
