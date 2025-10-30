@@ -182,9 +182,7 @@ export function OverviewCard({
             </div>
             <div class="modal-body">
               <p>
-                After an invitation is cancelled, the student will no longer appear in your course
-                and any progress they have made on assessments will be lost. They can still rejoin
-                the course by accepting an invitation or self-enrollment.
+                The student will no longer appear in your course and any progress they have made on assessments will be lost.
               </p>
             </div>
             <div class="modal-footer">
