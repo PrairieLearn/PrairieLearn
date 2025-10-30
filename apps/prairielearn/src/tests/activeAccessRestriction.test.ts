@@ -22,8 +22,7 @@ describe(
   { timeout: 60_000 },
   function () {
     const storedConfig: Record<string, any> = {};
-    const context: Record<string, any> = {};
-    context.siteUrl = `http://localhost:${config.serverPort}`;
+    const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
     context.baseUrl = `${context.siteUrl}/pl`;
 
     const headers: Record<string, string> = {};

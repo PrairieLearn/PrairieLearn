@@ -244,7 +244,7 @@ router.post(
         ),
         environment: propertyValueWithDefault(
           questionInfo.workspaceOptions?.environment,
-          JSON.parse(body.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
+          JSON.parse(body.workspace_environment?.replaceAll('\r\n', '\n') || '{}'),
           (val) => !val || Object.keys(val).length === 0,
         ),
       };

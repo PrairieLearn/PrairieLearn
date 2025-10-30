@@ -631,9 +631,11 @@ describe('Question syncing', () => {
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID and title of the question and re-sync
-    const newQuestion = { ...originalQuestion };
-    newQuestion.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
-    newQuestion.title = 'Changed title';
+    const newQuestion = {
+      ...originalQuestion,
+      uuid: '49c8b795-dfde-4c13-a040-0fd1ba711dc5',
+      title: 'Changed title',
+    };
     courseData.questions['repeatedQuestion'] = newQuestion;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
@@ -652,8 +654,7 @@ describe('Question syncing', () => {
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the question, add an error and re-sync
-    const newQuestion = { ...originalQuestion };
-    newQuestion.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
+    const newQuestion = { ...originalQuestion, uuid: '49c8b795-dfde-4c13-a040-0fd1ba711dc5' };
     // @ts-expect-error -- intentionally breaking the question
     delete newQuestion.title;
     courseData.questions['repeatedQuestion'] = newQuestion;

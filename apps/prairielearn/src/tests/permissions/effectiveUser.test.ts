@@ -28,8 +28,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 describe('effective user', { timeout: 60_000 }, function () {
   let courseInstance: CourseInstance;
 
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.pageUrlTestCourse = `${context.baseUrl}/course/1`;
   context.pageUrlExampleCourse = `${context.baseUrl}/course/2`;
