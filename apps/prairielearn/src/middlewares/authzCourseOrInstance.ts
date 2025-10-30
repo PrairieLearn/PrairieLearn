@@ -9,8 +9,8 @@ import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
-import { buildAuthzData, selectAuthzData } from '../lib/authz-data.js';
 import type { FullAuthzDataSchema } from '../lib/authz-data-lib.js';
+import { buildAuthzData, selectAuthzData } from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
