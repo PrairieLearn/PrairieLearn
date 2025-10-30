@@ -11,7 +11,7 @@ import { dangerousFullSystemAuthz } from '../../lib/authzData-lib.js';
 import { config } from '../../lib/config.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
-import { selectCourseInstanceByIdWithoutAuthz } from '../../models/course-instances.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -106,7 +106,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       email: 'student@example.com',
     });
     studentId = student.user_id;
-    courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+    courseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
       userId: studentId,
       courseInstance,

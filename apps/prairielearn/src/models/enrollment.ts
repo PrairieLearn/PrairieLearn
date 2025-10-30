@@ -42,7 +42,7 @@ import { assertNever } from '../lib/types.js';
 
 import { insertAuditEvent } from './audit-event.js';
 import type { SupportedActionsForTable } from './audit-event.types.js';
-import { selectCourseInstanceByIdWithoutAuthz } from './course-instances.js';
+import { selectCourseInstanceById } from './course-instances.js';
 import { generateUsers, selectAndLockUser } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -336,7 +336,7 @@ export async function generateAndEnrollUsers({
   course_instance_id: string;
 }) {
   return await runInTransactionAsync(async () => {
-    const courseInstance = await selectCourseInstanceByIdWithoutAuthz(course_instance_id);
+    const courseInstance = await selectCourseInstanceById(course_instance_id);
     const users = await generateUsers(count);
     for (const user of users) {
       await ensureEnrollment({

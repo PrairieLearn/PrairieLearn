@@ -10,7 +10,7 @@ import {
   VariantSchema,
 } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
-import { selectCourseInstanceByIdWithoutAuthz } from '../../models/course-instances.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -63,7 +63,7 @@ describe('student data access', { timeout: 60_000 }, function () {
       course_role: 'Owner',
       authn_user_id: '1',
     });
-    const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+    const courseInstance = await selectCourseInstanceById('1');
 
     await ensureEnrollment({
       userId: '3',

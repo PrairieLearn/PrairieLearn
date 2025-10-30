@@ -7,7 +7,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../lib/authzData-lib.js';
 import { config } from '../lib/config.js';
-import { selectCourseInstanceByIdWithoutAuthz } from '../models/course-instances.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -47,7 +47,7 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
 
   beforeAll(async function () {
     const studentOneUser = await getOrCreateUser(studentOne);
-    const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+    const courseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
       userId: studentOneUser.user_id,
       courseInstance,

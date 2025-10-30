@@ -8,7 +8,7 @@ import { dangerousFullSystemAuthz } from '../lib/authzData-lib.js';
 import { config } from '../lib/config.js';
 import { type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
-import { selectCourseInstanceByIdWithoutAuthz } from '../models/course-instances.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
   selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUserId,
@@ -94,7 +94,7 @@ describe('Homepage enrollment actions', () => {
       assert.equal(firstResponse.url, homeUrl);
 
       // Verify enrollment is now joined
-      const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+      const courseInstance = await selectCourseInstanceById('1');
       const enrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
@@ -167,7 +167,7 @@ describe('Homepage enrollment actions', () => {
       assert.equal(firstResponse.url, homeUrl);
 
       // Verify enrollment is now rejected
-      const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+      const courseInstance = await selectCourseInstanceById('1');
       const enrollment = await selectOptionalEnrollmentByPendingUid({
         pendingUid: user.uid,
         courseInstance,
@@ -263,7 +263,7 @@ describe('Homepage enrollment actions', () => {
       assertAlert($, 'Failed to reject invitation');
 
       // Verify enrollment is still joined
-      const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+      const courseInstance = await selectCourseInstanceById('1');
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
@@ -313,7 +313,7 @@ describe('Homepage enrollment actions', () => {
       assert.equal(rejectResponse.url, homeUrl);
 
       // Verify enrollment is rejected
-      const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+      const courseInstance = await selectCourseInstanceById('1');
       const rejectedEnrollment = await selectOptionalEnrollmentByPendingUid({
         pendingUid: user.uid,
         courseInstance,
@@ -385,7 +385,7 @@ describe('Homepage enrollment actions', () => {
       assert.equal(firstResponse.url, homeUrl);
 
       // Verify enrollment is now removed
-      const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+      const courseInstance = await selectCourseInstanceById('1');
       const enrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,

@@ -9,7 +9,7 @@ import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
-import { selectCourseInstanceByIdWithoutAuthz } from './course-instances.js';
+import { selectCourseInstanceById } from './course-instances.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByPendingUid,
@@ -51,7 +51,7 @@ describe('ensureEnrollment', () => {
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+    courseInstance = await selectCourseInstanceById('1');
   });
 
   afterEach(async function () {
@@ -250,7 +250,7 @@ describe('DB validation of enrollment', () => {
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+    courseInstance = await selectCourseInstanceById('1');
   });
 
   afterEach(async function () {
