@@ -131,7 +131,7 @@ export default mergeConfig(
   sharedConfig,
   defineConfig({
     test: {
-      projects: ['apps/grader-host', 'apps/prairielearn', 'apps/workspace-host', 'packages/*'],
+      projects: ['{apps,packages}/*/vitest.config.ts'],
       coverage: {
         reporter: ['html', 'text-summary', 'cobertura'],
         include: ['{apps,packages}/*/src/**/*.{js,jsx,ts,tsx,cjs,mjs}'],

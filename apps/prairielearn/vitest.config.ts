@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => {
     defineConfig({
       test: {
         name: '@prairielearn/prairielearn',
-        dir: isRunningOnDist ? 'dist' : 'src',
+        dir: isRunningOnDist ? `${import.meta.dirname}/dist` : `${import.meta.dirname}/src`,
         include: mode === 'docker-smoke-tests' ? dockerSmokeTests : undefined,
         globalSetup: isRunningOnDist
           ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
