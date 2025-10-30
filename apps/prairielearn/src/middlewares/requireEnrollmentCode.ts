@@ -71,7 +71,7 @@ export default asyncHandler(async (req, res, next) => {
   }
 
   // If user is blocked, don't redirect them to enrollment code page
-  if (existingEnrollment && existingEnrollment.status === 'blocked') {
+  if (existingEnrollment?.status === 'blocked') {
     // TODO: Show nice error page
     next();
     return;

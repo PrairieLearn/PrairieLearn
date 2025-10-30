@@ -135,11 +135,10 @@ function escapeIdentifier(identifier: string): string {
 function enhanceError(err: Error, sql: string, params: QueryParams): Error {
   // Copy the error so we don't end up with a circular reference in the
   // final error.
-  const sqlError = { ...err };
+  const sqlError = { ...err, message: err.message };
 
   // `message` is a non-enumerable property, so we need to copy it manually to
   // the error object.
-  sqlError.message = err.message;
 
   const errorHasPosition = err instanceof DatabaseError && err.position != null;
 
@@ -209,9 +208,9 @@ export class PostgresPool {
         return;
       } catch (err: any) {
         if (retryCount === retryTimeouts.length) {
-          throw new Error(
-            `Could not connect to Postgres after ${retryTimeouts.length} attempts: ${err.message}`,
-          );
+          throw new Error(`Could not connect to Postgres after ${retryTimeouts.length} attempts`, {
+            cause: err,
+          });
         }
 
         const timeout = retryTimeouts[retryCount];
