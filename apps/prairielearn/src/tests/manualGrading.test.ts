@@ -392,8 +392,13 @@ function buildPostPayload({
     min_points,
     max_extra_points,
     rubric_items: rubric_items.map((it, idx) => ({
+      id: it.id,
       order: idx,
-      ...it,
+      points: it.points,
+      description: it.description,
+      explanation: it.explanation,
+      grader_note: it.grader_note,
+      always_show_to_students: it.always_show_to_students,
     })),
   };
 }
