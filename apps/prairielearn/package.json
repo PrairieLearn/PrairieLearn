@@ -299,7 +299,7 @@
     "@types/tmp": "^0.2.6",
     "@types/unzipper": "^0.10.11",
     "@vitest/coverage-v8": "^4.0.5",
-    "axe-core": "^4.11.0",
+    "axe-core": "4.10.3",
     "get-port": "^7.1.0",
     "jsdom": "^27.0.1",
     "set-cookie-parser": "^2.7.2",
