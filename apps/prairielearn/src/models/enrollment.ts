@@ -14,9 +14,9 @@ import {
 import {
   type CourseInstanceRole,
   assertHasRole,
-  dangerousFullAuthzForTesting,
+  dangerousFullSystemAuthz,
   hasRole,
-  isDangerousFullAuthzForTesting,
+  isDangerousFullSystemAuthz,
 } from '../lib/authzData.js';
 import type { AuthzData, PageAuthzData } from '../lib/authzData.types.js';
 import {
@@ -67,7 +67,7 @@ function assertEnrollmentInCourseInstance(
 }
 
 function assertEnrollmentBelongsToUser(enrollment: Enrollment | null, authzData: AuthzData) {
-  if (isDangerousFullAuthzForTesting(authzData)) {
+  if (isDangerousFullSystemAuthz(authzData)) {
     return;
   }
   if (enrollment == null) {
@@ -341,7 +341,7 @@ export async function generateAndEnrollUsers({
         // but this function is only used in test code where we don't care about
         // the role the caller requests.
         requestedRole: 'Student',
-        authzData: dangerousFullAuthzForTesting(),
+        authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
     }

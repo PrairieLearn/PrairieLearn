@@ -2,7 +2,7 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authzData.js';
 import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
@@ -223,7 +223,7 @@ describe('Self-enrollment settings transitions', () => {
         const initialEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullAuthzForTesting(),
+          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'Student',
         });
         assert.isNull(initialEnrollment);
@@ -236,7 +236,7 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullAuthzForTesting(),
+          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'Student',
         });
         assert.isNull(finalEnrollment);
@@ -272,7 +272,7 @@ describe('Self-enrollment settings transitions', () => {
         const initialEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullAuthzForTesting(),
+          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'Student',
         });
         assert.isNull(initialEnrollment);
@@ -285,7 +285,7 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullAuthzForTesting(),
+          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'Student',
         });
         assert.isNotNull(finalEnrollment);
@@ -330,7 +330,7 @@ describe('Self-enrollment settings transitions', () => {
         const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
           pendingUid: invitedUser.uid,
           courseInstance,
-          authzData: dangerousFullAuthzForTesting(),
+          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'Student',
         });
         assert.isNotNull(initialEnrollment);
@@ -342,7 +342,7 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: invitedUser.user_id,
           courseInstance,
-          authzData: dangerousFullAuthzForTesting(),
+          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'Student',
         });
         assert.isNotNull(finalEnrollment);
@@ -393,7 +393,7 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: blockedUser.user_id,
           courseInstance,
-          authzData: dangerousFullAuthzForTesting(),
+          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'Student',
         });
         assert.isNotNull(finalEnrollment);
@@ -435,7 +435,7 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullAuthzForTesting(),
+          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'Student',
         });
         assert.isNull(finalEnrollment);
@@ -483,7 +483,7 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullAuthzForTesting(),
+          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'Student',
         });
         assert.isNotNull(finalEnrollment);

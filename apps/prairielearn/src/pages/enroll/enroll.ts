@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../lib/authzData.js';
 import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
@@ -93,7 +93,7 @@ router.post('/', [
           uid: res.locals.authn_user.uid,
           courseInstance: course_instance,
           requestedRole: 'Student', // TODO: Should be 'System'
-          authzData: dangerousFullAuthzForTesting(),
+          authzData: dangerousFullSystemAuthz(),
         });
       });
 

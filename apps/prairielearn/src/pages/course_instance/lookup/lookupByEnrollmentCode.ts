@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { dangerousFullAuthzForTesting } from '../../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../../lib/authzData.js';
 import type { User } from '../../../lib/db-types.js';
 import { selectOptionalCourseInstanceByEnrollmentCode } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
@@ -46,7 +46,7 @@ router.get(
       uid: res.locals.authn_user.uid,
       courseInstance,
       requestedRole: 'Student', // TODO: Should be 'System'
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
 
     if (existingEnrollment) {

@@ -2,7 +2,7 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authzData.js';
 import { type CourseInstance, type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
@@ -77,7 +77,7 @@ describe('ensureEnrollment', () => {
       pendingUid: user.uid,
       courseInstance,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'invited');
@@ -88,7 +88,7 @@ describe('ensureEnrollment', () => {
       courseInstance,
       userId: user.user_id,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -96,7 +96,7 @@ describe('ensureEnrollment', () => {
       courseInstance,
       userId: user.user_id,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -108,7 +108,7 @@ describe('ensureEnrollment', () => {
       pendingUid: user.uid,
       courseInstance,
       requestedRole: 'Student Data Editor',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNull(invitedEnrollment);
   });
@@ -132,7 +132,7 @@ describe('ensureEnrollment', () => {
       userId: user.user_id,
       courseInstance,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'blocked');
@@ -143,7 +143,7 @@ describe('ensureEnrollment', () => {
         courseInstance,
         userId: user.user_id,
         requestedRole: 'Student',
-        authzData: dangerousFullAuthzForTesting(),
+        authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
       assert.fail('Expected error to be thrown');
@@ -156,7 +156,7 @@ describe('ensureEnrollment', () => {
       userId: user.user_id,
       courseInstance,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'blocked');
@@ -175,7 +175,7 @@ describe('ensureEnrollment', () => {
       userId: user.user_id,
       courseInstance,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNull(initialEnrollment);
 
@@ -183,7 +183,7 @@ describe('ensureEnrollment', () => {
       courseInstance,
       userId: user.user_id,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -191,7 +191,7 @@ describe('ensureEnrollment', () => {
       userId: user.user_id,
       courseInstance,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -218,7 +218,7 @@ describe('ensureEnrollment', () => {
       userId: user.user_id,
       courseInstance,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'joined');
@@ -228,7 +228,7 @@ describe('ensureEnrollment', () => {
       courseInstance,
       userId: user.user_id,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -236,7 +236,7 @@ describe('ensureEnrollment', () => {
       userId: user.user_id,
       courseInstance,
       requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');

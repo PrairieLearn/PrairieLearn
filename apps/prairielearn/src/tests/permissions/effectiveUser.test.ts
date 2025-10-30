@@ -7,7 +7,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
-import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../lib/authzData.js';
 import { config } from '../../lib/config.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
@@ -110,7 +110,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await ensureEnrollment({
       userId: studentId,
       courseInstance,
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
       requestedRole: 'Student',
       actionDetail: 'implicit_joined',
     });
@@ -590,7 +590,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       await ensureEnrollment({
         courseInstance,
         userId: user.user_id,
-        authzData: dangerousFullAuthzForTesting(),
+        authzData: dangerousFullSystemAuthz(),
         requestedRole: 'Student',
         actionDetail: 'implicit_joined',
       });
