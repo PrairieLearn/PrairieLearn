@@ -408,7 +408,7 @@ export async function selectOptionalEnrollmentByUid({
   courseInstance,
 }: {
   uid: string;
-  requestedRole: 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  requestedRole: 'System' | 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
   authzData: AuthzData;
   courseInstance: CourseInstanceContext;
 }) {

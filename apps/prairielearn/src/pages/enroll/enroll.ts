@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../lib/authzData-lib.js';
 import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
@@ -87,13 +87,12 @@ router.post('/', [
 
     if (req.body.__action === 'enroll') {
       // We don't have authzData yet
-
       const existingEnrollment = await run(async () => {
         return await selectOptionalEnrollmentByUid({
           uid: res.locals.authn_user.uid,
           courseInstance: course_instance,
-          requestedRole: 'Student', // TODO: Should be 'System'
-          authzData: dangerousFullAuthzForTesting(),
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
       });
 
@@ -109,6 +108,7 @@ router.post('/', [
       // Abuse the middleware to authorize the user for the course instance.
       req.params.course_instance_id = course_instance.id;
       await authzCourseOrInstance(req, res);
+      // Now we have authzData
 
       await ensureCheckedEnrollment({
         institution,
