@@ -15,7 +15,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.920.0",
+    "@aws-sdk/client-ecr": "^3.921.0",
     "@prairielearn/logger": "workspace:^",
     "date-fns": "^4.1.0"
   },

@@ -11,10 +11,10 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.920.0",
-    "@aws-sdk/client-s3": "^3.920.0",
-    "@aws-sdk/credential-providers": "^3.920.0",
-    "@aws-sdk/lib-storage": "^3.920.0",
+    "@aws-sdk/client-ecr": "^3.921.0",
+    "@aws-sdk/client-s3": "^3.921.0",
+    "@aws-sdk/credential-providers": "^3.921.0",
+    "@aws-sdk/lib-storage": "^3.921.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
