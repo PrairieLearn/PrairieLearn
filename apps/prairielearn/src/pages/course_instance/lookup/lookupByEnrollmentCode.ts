@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { dangerousFullAuthzForTesting } from '../../../lib/authzData.js';
+import { dangerousFullAuthzForTesting } from '../../../lib/authz-data-lib.js';
 import type { User } from '../../../lib/db-types.js';
 import { selectOptionalCourseInstanceByEnrollmentCode } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';

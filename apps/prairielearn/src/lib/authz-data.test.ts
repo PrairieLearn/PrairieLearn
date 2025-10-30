@@ -1,7 +1,11 @@
 import { assert, describe, it } from 'vitest';
 
-import { type CourseInstanceRole, dangerousFullAuthzForTesting, hasRole } from './authzData.js';
-import type { AuthzData } from './authzData.types.js';
+import {
+  type AuthzData,
+  type CourseInstanceRole,
+  dangerousFullAuthzForTesting,
+  hasRole,
+} from './authz-data-lib.js';
 
 describe('authzData', () => {
   describe('hasRole', () => {

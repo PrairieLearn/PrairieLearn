@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { dangerousFullAuthzForTesting } from '../../lib/authzData.js';
+import { dangerousFullAuthzForTesting } from '../../lib/authz-data-lib.js';
 import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
