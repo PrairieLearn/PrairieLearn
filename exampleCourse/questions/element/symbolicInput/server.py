@@ -34,7 +34,7 @@ def generate(data):
     data["correct_answers"]["custom_function_2"] = pl.to_json(ans)
 
     test = sympy.Function("test")
-    ans2 = test(sympy.sqrt(x**2 / sympy.E**x))
+    ans2 = test(sympy.sqrt(sympy.E**x / x**2))
     data["correct_answers"]["formula_editor"] = pl.to_json(ans2)
 
     # Nested absolute value expression: |x+|-x+1+2+3+4||

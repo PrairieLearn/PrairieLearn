@@ -188,6 +188,11 @@ export function isDangerousFullAuthzForTesting(
 }
 
 export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (!authzData) {
+    throw new Error('authzData is not defined');
+  }
+
   if (isDangerousFullAuthzForTesting(authzData)) {
     return true;
   }
