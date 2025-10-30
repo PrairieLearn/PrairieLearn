@@ -643,13 +643,13 @@ export type CourseInstancePublishingExtension = z.infer<
   typeof CourseInstancePublishingExtensionSchema
 >;
 
-export const CourseInstancePublishingEnrollmentExtensionSchema = z.object({
+export const CourseInstancePublishingExtensionEnrollmentSchema = z.object({
   course_instance_publishing_extension_id: IdSchema,
   enrollment_id: IdSchema,
   id: IdSchema,
 });
-export type CourseInstancePublishingEnrollmentExtension = z.infer<
-  typeof CourseInstancePublishingEnrollmentExtensionSchema
+export type CourseInstancePublishingExtensionEnrollment = z.infer<
+  typeof CourseInstancePublishingExtensionEnrollmentSchema
 >;
 
 export const CourseInstancePermissionSchema = z.object({
@@ -1585,7 +1585,7 @@ export const TableNames = [
   'client_fingerprints',
   'course_instance_access_rules',
   'course_instance_permissions',
-  'course_instance_publishing_enrollment_extensions',
+  'course_instance_publishing_extension_enrollments',
   'course_instance_publishing_extensions',
   'course_instance_required_plans',
   'course_instance_usages',
