@@ -221,6 +221,7 @@ jobs:
       - name: Set up Yarn
         # We only install the dependencies in the root workspace to avoid
         # installing dependencies that won't be used.
+        # Note that this means playwright is installed in the root workspace, not the prairielearn workspace.
         run: yarn workspaces focus prairielearn
       - name: Download vitest blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v5
