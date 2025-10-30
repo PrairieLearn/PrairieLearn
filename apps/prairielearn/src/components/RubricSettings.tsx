@@ -12,6 +12,10 @@ type RubricItemData = Partial<
   RubricItem & { num_submissions: number; disagreement_count: number | null }
 >;
 
+/**
+ * Explicitly declaring these functions from the window of the instance question page
+ * so they can be called in the component.
+ */
 declare global {
   interface Window {
     resetInstructorGradingPanel: () => any;
@@ -43,17 +47,14 @@ export function RubricSettings({
         : null,
   }));
   const { variant_params, variant_true_answer, submission_submitted_answer } = context;
-  const params: string[] = [];
-  const groups = [
-    [variant_params, 'params'],
-    [variant_true_answer, 'correct_answers'],
-    [submission_submitted_answer, 'submitted_answers'],
-  ];
-  groups.forEach(([group, groupName]) =>
-    Object.keys(group || {}).forEach((key) => {
-      params.push(`{{${groupName}.${key}}}`);
-    }),
-  );
+  const groups = {
+    params: variant_params,
+    correct_answers: variant_true_answer,
+    submitted_answers: submission_submitted_answer,
+  };
+  const params = Object.entries(groups).flatMap(([groupName, groupParams]) => {
+    return Object.keys(groupParams || {}).map((groupParam) => `{{${groupName}.${groupParam}}}`);
+  });
 
   // Define states
   const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubricItemDataMerged);
@@ -70,7 +71,7 @@ export function RubricSettings({
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFile = useRef<HTMLInputElement>(null);
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData));
-  const [modifiedAt, setModifiedAt] = useState<Date | undefined>(rubricData?.modified_at);
+  const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
 
   // Also define default for rubric-related variables
@@ -430,7 +431,7 @@ export function RubricSettings({
       defaultMinPoints.current = rubricData?.min_points ?? 0;
       defaultMaxExtraPoints.current = rubricData?.max_extra_points ?? 0;
       setWasUsingRubric(Boolean(rubricData));
-      setModifiedAt(rubricData ? new Date(rubricData.modified_at) : undefined);
+      setModifiedAt(rubricData ? new Date(rubricData.modified_at) : null);
       onCancel();
     } else {
       window.location.replace(res.url);
@@ -937,6 +938,13 @@ export function RubricRow({
       <td class="align-middle">
         <textarea
           class="form-control"
+          /**
+           * In one of the previous versions, explanation wasn't displayed correctly
+           * when used this way. We fixed it by making the textarea uncontrolled and
+           * putting the explanation text in the body of the textarea element.
+           * However, this method will not work well with "Discard changes".
+           * Ditto for grader note below.
+           */
           value={item.explanation ?? ''}
           maxLength={10000}
           style="min-width:15rem"

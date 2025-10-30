@@ -369,7 +369,7 @@ router.post(
     }
 
     const body =
-      req.body.__action !== 'modify_rubric_settings' ? PostBodySchema.parse(req.body) : req.body;
+      req.body.__action === 'modify_rubric_settings' ? req.body : PostBodySchema.parse(req.body);
     if (body.__action === 'add_manual_grade') {
       req.session.skip_graded_submissions = body.skip_graded_submissions;
 
