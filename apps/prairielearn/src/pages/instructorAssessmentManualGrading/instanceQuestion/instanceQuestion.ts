@@ -87,7 +87,7 @@ async function prepareLocalsForRender(
   }
 
   const graders = await selectCourseInstanceGraderStaff({
-    course_instance_id: resLocals.course_instance.id,
+    course_instance: resLocals.course_instance,
   });
   return { resLocals, conflict_grading_job, graders };
 }
@@ -616,7 +616,7 @@ router.post(
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
-          course_instance_id: res.locals.course_instance.id,
+          course_instance: res.locals.course_instance,
         });
         if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
           throw new error.HttpStatusError(
