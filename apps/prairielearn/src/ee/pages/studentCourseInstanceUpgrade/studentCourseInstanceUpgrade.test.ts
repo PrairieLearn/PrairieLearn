@@ -85,7 +85,7 @@ describe('studentCourseInstanceUpgrade', () => {
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -108,7 +108,7 @@ describe('studentCourseInstanceUpgrade', () => {
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });

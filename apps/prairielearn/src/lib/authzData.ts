@@ -161,6 +161,7 @@ export async function buildAuthzData({
 }
 
 export type CourseInstanceRole =
+  | 'System'
   | 'None'
   | 'Student'
   | 'Student Data Viewer'

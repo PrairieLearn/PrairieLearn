@@ -68,8 +68,8 @@ describe('student data access', { timeout: 60_000 }, function () {
     await ensureEnrollment({
       userId: '3',
       courseInstance,
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
-      requestedRole: 'Student',
       actionDetail: 'implicit_joined',
     });
   });

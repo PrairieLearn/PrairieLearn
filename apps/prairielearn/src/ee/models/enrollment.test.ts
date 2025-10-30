@@ -74,21 +74,21 @@ describe('getEnrollmentCountsForInstitution', () => {
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: freeUser.user_id,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: paidUser1.user_id,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
     await ensureEnrollment({
       courseInstance,
       userId: paidUser2.user_id,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -165,7 +165,7 @@ describe('getEnrollmentCountsForCourse', () => {
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -188,7 +188,7 @@ describe('getEnrollmentCountsForCourse', () => {
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -221,7 +221,7 @@ describe('getEnrollmentCountsForCourse', () => {
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -271,7 +271,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -294,7 +294,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -327,7 +327,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     await ensureEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });

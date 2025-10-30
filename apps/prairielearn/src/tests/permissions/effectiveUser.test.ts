@@ -110,8 +110,8 @@ describe('effective user', { timeout: 60_000 }, function () {
     await ensureEnrollment({
       userId: studentId,
       courseInstance,
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
-      requestedRole: 'Student',
       actionDetail: 'implicit_joined',
     });
   });
@@ -590,8 +590,8 @@ describe('effective user', { timeout: 60_000 }, function () {
       await ensureEnrollment({
         courseInstance,
         userId: user.user_id,
+        requestedRole: 'System',
         authzData: dangerousFullSystemAuthz(),
-        requestedRole: 'Student',
         actionDetail: 'implicit_joined',
       });
 

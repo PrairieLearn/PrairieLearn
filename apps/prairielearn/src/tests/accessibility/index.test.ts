@@ -435,7 +435,7 @@ describe('accessibility', () => {
     const enrollment = await ensureEnrollment({
       courseInstance,
       userId: user_id,
-      requestedRole: 'Student',
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });

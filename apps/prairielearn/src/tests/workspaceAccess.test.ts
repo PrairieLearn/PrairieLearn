@@ -52,8 +52,8 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
     await ensureEnrollment({
       userId: studentOneUser.user_id,
       courseInstance,
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
-      requestedRole: 'Student',
       actionDetail: 'implicit_joined',
     });
 
@@ -61,8 +61,8 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
     await ensureEnrollment({
       userId: studentTwoUser.user_id,
       courseInstance,
+      requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
-      requestedRole: 'Student',
       actionDetail: 'implicit_joined',
     });
 
