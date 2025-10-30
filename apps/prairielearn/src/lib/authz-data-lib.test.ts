@@ -55,7 +55,7 @@ describe('authzData', () => {
       } as AuthzData;
     }
 
-    describe('dangerous full authz for testing', () => {
+    describe('dangerous full system authz', () => {
       it('returns true for system/any role when using dangerous full authz', () => {
         const dangerousAuthz = dangerousFullSystemAuthz();
         const goodRoles: CourseInstanceRole[] = ['System', 'Any'];
@@ -74,7 +74,6 @@ describe('authzData', () => {
         }
       });
     });
-
     describe('None role', () => {
       it('returns true for None role regardless of permissions', () => {
         const authzData = createMockAuthzData({

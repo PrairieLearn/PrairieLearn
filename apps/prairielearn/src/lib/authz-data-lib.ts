@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 
 import { RawStaffUserSchema, StaffUserSchema } from './client/safe-db-types.js';
 import {
@@ -213,6 +213,6 @@ export function assertHasRole(
   }
 
   if (!hasRole(authzData, requestedRole)) {
-    throw new error.HttpStatusError(403, 'Access denied');
+    throw new HttpStatusError(403, 'Access denied');
   }
 }

@@ -1471,16 +1471,7 @@ function validateCourseInstance({
     }
   }
 
-  // TODO: Remove these warnings once we've implemented support for the properties.
-  // These are warnings (and not errors) so that we can test syncing with the new schema.
-
-  if (courseInstance.selfEnrollment.enabled !== true) {
-    warnings.push('"selfEnrollment.enabled" is not configurable yet.');
-  }
-
   if (courseInstance.selfEnrollment.beforeDate != null) {
-    warnings.push('"selfEnrollment.beforeDate" is not configurable yet.');
-
     const date = parseJsonDate(courseInstance.selfEnrollment.beforeDate);
     if (date == null) {
       errors.push('"selfEnrollment.beforeDate" is not a valid date.');

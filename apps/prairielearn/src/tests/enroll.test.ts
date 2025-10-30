@@ -220,8 +220,8 @@ describe('Self-enrollment settings transitions', () => {
         const initialEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNull(initialEnrollment);
 
@@ -233,8 +233,8 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNull(finalEnrollment);
       },
@@ -269,8 +269,8 @@ describe('Self-enrollment settings transitions', () => {
         const initialEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNull(initialEnrollment);
 
@@ -282,8 +282,8 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
@@ -327,8 +327,8 @@ describe('Self-enrollment settings transitions', () => {
         const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
           pendingUid: invitedUser.uid,
           courseInstance,
-          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(initialEnrollment);
         assert.equal(initialEnrollment.status, 'invited');
@@ -339,8 +339,8 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: invitedUser.user_id,
           courseInstance,
-          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
@@ -390,8 +390,8 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: blockedUser.user_id,
           courseInstance,
-          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'blocked');
@@ -432,8 +432,8 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNull(finalEnrollment);
       },
@@ -480,8 +480,8 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: studentUser.user_id,
           courseInstance,
-          authzData: dangerousFullSystemAuthz(),
           requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');

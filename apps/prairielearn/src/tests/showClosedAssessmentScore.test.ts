@@ -60,8 +60,8 @@ describe(
       await ensureEnrollment({
         userId: user.user_id,
         courseInstance,
-        authzData: dangerousFullSystemAuthz(),
         requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
     });
