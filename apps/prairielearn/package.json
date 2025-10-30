@@ -250,7 +250,7 @@
     "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.0",
+    "@playwright/test": "^1.56.1",
     "@prairielearn/express-list-endpoints": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@sa11y/format": "^7.4.0",
