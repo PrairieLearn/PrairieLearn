@@ -203,7 +203,7 @@ export async function aiInstanceQuestionGrouping({
     description: 'Perform AI submission grouping',
   });
 
-  const instanceQuestionIdsSet = new Set<string>(instance_question_ids ?? []);
+  const instanceQuestionIdsSet = new Set<string>(instance_question_ids);
 
   serverJob.executeInBackground(async (job) => {
     if (!assessment_question.max_manual_points) {

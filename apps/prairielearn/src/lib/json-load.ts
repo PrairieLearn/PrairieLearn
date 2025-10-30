@@ -18,6 +18,7 @@ export async function readJSON(jsonFilename: string): Promise<any> {
   try {
     return jju.parse(data, { mode: 'json' });
   } catch (e) {
+    // eslint-disable-next-line preserve-caught-error
     throw new Error(
       `Error in JSON file format: ${jsonFilename} (line ${e.row}, column ${e.column})\n${e.name}: ${e.message}`,
     );
@@ -59,6 +60,7 @@ export async function readInfoJSON(jsonFilename: string, schema: object): Promis
     validateJSON(json, schema);
     return json;
   } catch (e) {
+    // eslint-disable-next-line preserve-caught-error
     throw new Error(`Error validating file '${jsonFilename}' against schema: ${e}`);
   }
 }
