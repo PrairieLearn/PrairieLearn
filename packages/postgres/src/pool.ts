@@ -135,10 +135,12 @@ function escapeIdentifier(identifier: string): string {
 function enhanceError(err: Error, sql: string, params: QueryParams): Error {
   // Copy the error so we don't end up with a circular reference in the
   // final error.
-  const sqlError = { ...err, message: err.message };
-
-  // `message` is a non-enumerable property, so we need to copy it manually to
-  // the error object.
+  const sqlError = {
+    ...err,
+    // `message` is a non-enumerable property, so we need to copy it manually to
+    // the error object.
+    message: err.message,
+  };
 
   const errorHasPosition = err instanceof DatabaseError && err.position != null;
 
