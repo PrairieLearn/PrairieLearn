@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../lib/authz-data-lib.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -79,8 +79,8 @@ describe(
       await ensureEnrollment({
         userId: user.user_id,
         courseInstance,
-        requestedRole: 'Student',
-        authzData: dangerousFullAuthzForTesting(),
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
     });

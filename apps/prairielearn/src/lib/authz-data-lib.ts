@@ -84,6 +84,7 @@ export const FullAuthzDataSchema = z.object({
 export type AuthzData = RawPageAuthzData | DangerousSystemAuthzData;
 
 export type CourseInstanceRole =
+  | 'System'
   | 'None'
   | 'Student'
   | 'Student Data Viewer'
@@ -91,7 +92,7 @@ export type CourseInstanceRole =
   // The role 'Any' is equivalent to 'Student' OR 'Student Data Viewer' OR 'Student Data Editor'
   | 'Any';
 
-export function dangerousFullAuthzForTesting(): DangerousSystemAuthzData {
+export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {
     authn_user: {
       // We use this structure with a user_id of null to indicate that the user is the system.
@@ -104,20 +105,16 @@ export function dangerousFullAuthzForTesting(): DangerousSystemAuthzData {
   };
 }
 
-export function isDangerousFullAuthzForTesting(
+export function isDangerousFullSystemAuthz(
   authzData: AuthzData,
 ): authzData is DangerousSystemAuthzData {
   return authzData.authn_user.user_id === null && authzData.user.user_id === null;
 }
 
 export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!authzData) {
-    throw new Error('authzData is not defined');
-  }
-
-  if (isDangerousFullAuthzForTesting(authzData)) {
-    return true;
+  // You must set the requestedRole to 'System' when you use dangerousFullSystemAuthz.
+  if (isDangerousFullSystemAuthz(authzData)) {
+    return ['System', 'Any'].includes(requestedRole);
   }
 
   if (
