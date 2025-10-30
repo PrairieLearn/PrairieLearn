@@ -108,6 +108,8 @@ async function _enrollUserInCourseInstance({
 }): Promise<Enrollment> {
   assertHasRole(authzData, requestedRole);
 
+  assertEnrollmentStatus(lockedEnrollment, ['invited', 'removed', 'rejected']);
+
   const newEnrollment = await queryRow(
     sql.enroll_user,
     {
@@ -135,10 +137,10 @@ async function _enrollUserInCourseInstance({
  * Ensures that the user is enrolled in the given course instance. If the
  * enrollment already exists, this is a no-op.
  *
- * If the user was invited to the course instance, this will set the
+ * If the user was in the 'removed', 'invited' or 'rejected' status, this will set the
  * enrollment status to 'joined'.
- * If the user was in the 'removed' status, this will set the
- * enrollment status to 'joined'.
+ *
+ * If the user was 'blocked', this will throw an error.
  */
 export async function ensureEnrollment({
   userId,
@@ -180,7 +182,11 @@ export async function ensureEnrollment({
       return await _selectAndLockEnrollment(enrollment.id);
     });
 
-    if (lockedEnrollment && ['invited', 'removed', 'rejected'].includes(lockedEnrollment.status)) {
+    if (lockedEnrollment) {
+      if (lockedEnrollment.status === 'joined') {
+        return lockedEnrollment;
+      }
+
       const updated = await _enrollUserInCourseInstance({
         lockedEnrollment,
         userId,
@@ -438,7 +444,7 @@ async function _inviteExistingEnrollment({
   requestedRole: 'Student Data Editor';
 }): Promise<Enrollment> {
   assertHasRole(authzData, requestedRole);
-  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'removed']);
+  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'removed', 'blocked']);
 
   const newEnrollment = await queryRow(
     sql.invite_existing_enrollment,
@@ -497,6 +503,8 @@ async function inviteNewEnrollment({
  * Invite a student by uid.
  * If there is an existing enrollment with the given uid, it will be updated to a invitation.
  * If there is no existing enrollment, a new enrollment will be created.
+ *
+ * Transitions users in the 'blocked', 'rejected' or 'removed' status to 'invited'.
  */
 export async function inviteStudentByUid({
   uid,

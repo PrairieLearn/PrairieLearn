@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
@@ -17,7 +18,6 @@ import { isEnterprise } from '../../lib/license.js';
 import { assertNever } from '../../lib/types.js';
 import {
   ensureEnrollment,
-  selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUid,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
@@ -150,6 +150,20 @@ router.post(
 
     switch (body.__action) {
       case 'accept_invitation': {
+        const enrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requestedRole: 'Student',
+          authzData,
+        });
+        if (
+          !enrollment ||
+          !['removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
+        ) {
+          flash('error', 'Failed to accept invitation');
+          break;
+        }
+
         await ensureEnrollment({
           courseInstance,
           userId,
@@ -160,19 +174,16 @@ router.post(
         break;
       }
       case 'reject_invitation': {
-        const enrollment = await selectOptionalEnrollmentByPendingUid({
+        const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
-          pendingUid: uid,
+          uid,
           requestedRole: 'Student',
           authzData,
         });
 
-        if (!enrollment) {
-          throw new HttpStatusError(404, 'Could not find enrollment to reject');
-        }
-
-        if (enrollment.status !== 'invited') {
-          throw new HttpStatusError(403, 'User does not have access to the course instance');
+        if (!enrollment || !['invited', 'rejected'].includes(enrollment.status)) {
+          flash('error', 'Failed to reject invitation');
+          break;
         }
 
         await setEnrollmentStatus({
@@ -191,8 +202,9 @@ router.post(
           authzData,
         });
 
-        if (!enrollment) {
-          throw new HttpStatusError(404, 'Could not find enrollment to unenroll');
+        if (!enrollment || !['joined', 'removed'].includes(enrollment.status)) {
+          flash('error', 'Failed to unenroll');
+          break;
         }
 
         await setEnrollmentStatus({
