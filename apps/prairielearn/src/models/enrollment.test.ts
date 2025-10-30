@@ -138,13 +138,19 @@ describe('ensureEnrollment', () => {
     assert.equal(initialEnrollment.status, 'blocked');
     assert.isNotNull(initialEnrollment.first_joined_at);
 
-    await ensureEnrollment({
-      courseInstance,
-      userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
-      actionDetail: 'implicit_joined',
-    });
+    try {
+      await ensureEnrollment({
+        courseInstance,
+        userId: user.user_id,
+        requestedRole: 'Student',
+        authzData: dangerousFullAuthzForTesting(),
+        actionDetail: 'implicit_joined',
+      });
+      assert.fail('Expected error to be thrown');
+    } catch (error) {
+      // The model function should throw an error if the user is blocked.
+      assert.equal(error.message, 'Access denied');
+    }
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
