@@ -34,7 +34,7 @@ python-deps: venv-setup
 
 deps:
 	@yarn
-	@yarn playwright install chromium --with-deps
+	@yarn workspace @prairielearn/prairielearn playwright install --with-deps
 	@$(MAKE) python-deps build
 
 migrate:

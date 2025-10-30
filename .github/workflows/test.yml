@@ -147,7 +147,7 @@ jobs:
       - name: Install Node dependencies
         run: |
           yarn install --immutable --inline-builds
-          yarn playwright install chromium --with-deps
+          yarn workspace @prairielearn/prairielearn playwright install chromium --with-deps
         env:
           # Disable hardened mode to eke out a little more speed.
           YARN_ENABLE_HARDENED_MODE: 0
@@ -238,7 +238,7 @@ jobs:
           pattern: playwright-blob-report-*
           merge-multiple: true
       - name: Merge playwright reports
-        run: yarn playwright merge-reports --reporter html,github test-results/blob-report
+        run: yarn workspace @prairielearn/prairielearn playwright merge-reports --reporter html,github test-results/blob-report
       - name: Upload JavaScript coverage report to Codecov
         uses: codecov/codecov-action@v5.5.1
         with:
