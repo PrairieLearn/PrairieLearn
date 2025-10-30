@@ -103,7 +103,6 @@ class CustomSequencer extends BaseSequencer {
 
 export const sharedConfig = defineConfig({
   test: {
-    exclude: ['dist/**'],
     isolate: false,
     sequence: {
       sequencer: CustomSequencer,
