@@ -263,17 +263,15 @@ export async function updateInstanceQuestionStats({
   });
 
   let pointsListIndex = 0;
-  const incremental_submission_points_array = incremental_submission_score_array.map((score) => {
-    if (score === null) return null;
-    // TODO: for homework assessments, in master this always returns an array of
-    // nulls. This version always returns all zeros. This is because
-    // points_list_original is null for homework assessments. We should (maybe?)
-    // fix this logic to handle homework assessments properly, possibly based on
-    // variants_points_list or init_points.
-    const points = instanceQuestion.points_list_original?.at(pointsListIndex) ?? 0;
-    pointsListIndex += 1;
-    return points * score;
-  });
+  const incremental_submission_points_array =
+    instanceQuestion.points_list_original === null
+      ? null // This stat is not available if there's no points list (i.e., homework assessments).
+      : incremental_submission_score_array.map((score) => {
+          if (score === null) return null;
+          const points = instanceQuestion.points_list_original?.at(pointsListIndex) ?? 0;
+          pointsListIndex += 1;
+          return points * score;
+        });
 
   await execute(sql.recalculate_instance_question_stats, {
     instance_question_id: instanceQuestion.id,
