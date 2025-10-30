@@ -182,7 +182,8 @@ export function OverviewCard({
             </div>
             <div class="modal-body">
               <p>
-                The student will no longer appear in your course and any progress they have made on assessments will be lost.
+                The student will no longer appear in your course and any progress they have made on
+                assessments will be lost.
               </p>
             </div>
             <div class="modal-footer">
