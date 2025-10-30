@@ -9,7 +9,7 @@ import { selectCourseById } from '../models/course.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
-import type { AuthzData } from './authzData.types.js';
+import type { AuthzData } from './authz-data-lib.js';
 import {
   type Assessment,
   type CourseInstance,
