@@ -6,7 +6,7 @@ import { run } from '@prairielearn/run';
 
 import { EnrollmentPage } from '../../components/EnrollmentPage.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { hasRole } from '../../lib/authzData.js';
+import { hasRole } from '../../lib/authz-data-lib.js';
 import { getCourseInstanceContext } from '../../lib/client/page-context.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
