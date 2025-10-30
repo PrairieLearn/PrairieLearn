@@ -15,6 +15,7 @@ import {
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';
+import clsx from 'clsx';
 
 onDocumentReady(() => {
   const qidField = document.querySelector<HTMLInputElement>('input[name="qid"]')!;
@@ -184,6 +185,7 @@ onDocumentReady(() => {
     nameInput.setAttribute('class', 'form-control');
     nameInput.setAttribute('id', 'author_name_' + index);
     nameInput.setAttribute('name', 'author_name_' + index);
+    validateNameInput(nameInput);
     tableData.append(nameInput);
     newRow.append(tableData);
 
@@ -277,10 +279,12 @@ const validateNameInput = (nameInput: HTMLInputElement | null) => {
   nameInput?.addEventListener('blur', () => {
     const nameValue = nameInput.value;
     const validName = isValidAuthorName(nameValue);
-    const inputClass = 'form-control';
     nameInput.setAttribute(
       'class',
-      validName ? inputClass + ' is-valid' : inputClass + ' is-invalid',
+      clsx('form-control', {
+        'is-valid': validName,
+        'is-invalid': !validName,
+      }),
     );
   });
   return;
@@ -290,10 +294,12 @@ const validateEmailInput = (emailInput: HTMLInputElement | null) => {
   emailInput?.addEventListener('blur', () => {
     const emailValue = emailInput.value;
     const validEmail = isValidEmail(emailValue);
-    const inputClass = 'form-control';
     emailInput.setAttribute(
       'class',
-      validEmail ? inputClass + ' is-valid' : inputClass + ' is-invalid',
+      clsx('form-control', {
+        'is-valid': validEmail,
+        'is-invalid': !validEmail,
+      }),
     );
   });
   return;
@@ -303,10 +309,12 @@ function addORCIDInputListener(orcidIDInput: HTMLInputElement | null): void {
   orcidIDInput?.addEventListener('blur', () => {
     const orcidIDValue = orcidIDInput.value;
     const validOrcidID = validateORCID(orcidIDValue);
-    const inputClass = 'form-control';
     orcidIDInput.setAttribute(
       'class',
-      validOrcidID ? inputClass + ' is-valid' : inputClass + ' is-invalid',
+      clsx('form-control', {
+        'is-valid': validOrcidID,
+        'is-invalid': !validOrcidID,
+      }),
     );
   });
 }
