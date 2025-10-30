@@ -61,21 +61,7 @@ jobs:
           load: true
           tags: |
             prairielearn/prairielearn:${{ env.COMMIT_SHA }}
-            prairielearn/prairielearn:latest
           cache-from: type=registry,ref=prairielearn/prairielearn:buildcache-linux-amd64
-          cache-to: ${{ github.ref == 'refs/heads/master' && 'type=registry,ref=prairielearn/prairielearn:buildcache-linux-amd64,mode=max' || '' }}
-
-      - name: Build executor image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./images/executor
-          push: false
-          load: true
-          tags: |
-            prairielearn/executor:${{ env.COMMIT_SHA }}
-            prairielearn/executor:latest
-          build-contexts: |
-            prairielearn/prairielearn=docker-image://prairielearn/prairielearn:latest
 
       # We run the following steps in this job instead of separately to avoid the
       # overhead of pulling the image another time.
@@ -96,7 +82,7 @@ jobs:
           --tmpfs=/var/postgres \
           --env HOST_JOBS_DIR=/tmp/prairielearn \
           --name=test_container \
-          prairielearn/prairielearn /bin/bash
+          prairielearn/prairielearn:${{ env.COMMIT_SHA }} /bin/bash
       - name: Run the JavaScript tests
         run: docker exec --env GITHUB_ACTIONS=true test_container sh -c "make -s -C /PrairieLearn test-prairielearn-docker-smoke-tests"
         # The JS tests hang relatively often when someone makes a mistake in a PR,
