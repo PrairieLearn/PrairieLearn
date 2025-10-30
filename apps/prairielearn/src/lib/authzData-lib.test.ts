@@ -56,19 +56,21 @@ describe('authzData', () => {
     }
 
     describe('dangerous full authz for testing', () => {
-      it('returns true for any role when using dangerous full authz', () => {
+      it('returns true for system/any role when using dangerous full authz', () => {
         const dangerousAuthz = dangerousFullSystemAuthz();
-        const roles: CourseInstanceRole[] = [
-          'System',
+        const goodRoles: CourseInstanceRole[] = ['System', 'Any'];
+        const badRoles: CourseInstanceRole[] = [
           'None',
           'Student',
           'Student Data Viewer',
           'Student Data Editor',
-          'Any',
         ];
 
-        for (const role of roles) {
+        for (const role of goodRoles) {
           assert.isTrue(hasRole(dangerousAuthz, role), `Should return true for role: ${role}`);
+        }
+        for (const role of badRoles) {
+          assert.isFalse(hasRole(dangerousAuthz, role), `Should return false for role: ${role}`);
         }
       });
     });

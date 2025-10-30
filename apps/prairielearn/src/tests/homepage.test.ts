@@ -413,7 +413,7 @@ describe('Homepage enrollment actions', () => {
         userId: user.user_id,
         courseInstance,
         authzData: dangerousFullSystemAuthz(),
-        requestedRole: 'Student',
+        requestedRole: 'System',
       });
       assert.isNotNull(finalEnrollment);
       assert.equal(finalEnrollment.status, 'removed');

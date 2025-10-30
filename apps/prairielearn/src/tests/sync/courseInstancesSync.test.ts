@@ -133,7 +133,7 @@ describe('Course instance syncing', () => {
     assert.equal(remainingRule.institution, 'Any');
   });
 
-  describe('syncs publishing settings correctly', async () => {
+  describe('syncs publishing settings correctly', () => {
     const timezone = 'America/New_York';
 
     // We pick an arbitrary date to use.
@@ -243,7 +243,7 @@ describe('Course instance syncing', () => {
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.publishing = json;
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
         // Remove allowAccess rules since we can't have both allowAccess and publishing
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [];
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = undefined;
 
         const courseDir = await util.writeCourseToTempDirectory(courseData);
         const results = await util.syncCourseData(courseDir);
