@@ -1040,7 +1040,7 @@ function validateQuestion({
       const schema = schemas[`QuestionOptions${question.type}JsonSchema`];
       schema.parse(question.options);
     } catch (err) {
-      errors.push(err.message);
+      errors.push(`Error validating question options: ${err.message}`);
     }
   }
 
