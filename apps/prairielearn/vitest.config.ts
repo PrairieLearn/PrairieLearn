@@ -23,7 +23,7 @@ const dockerSmokeTests = ['src/tests/exampleCourseQuestions.test.ts'];
 
 export default defineConfig(({ mode }) => {
   let include: string[] = configDefaults.include;
-  let exclude: string[] = configDefaults.exclude;
+  let exclude: string[] = [...configDefaults.exclude, '**/e2e/**'];
 
   // For CI, we want to run a subset of tests natively, and a subset of tests only in Docker.
   // We control this via the `mode` argument passed to the Vitest CLI
