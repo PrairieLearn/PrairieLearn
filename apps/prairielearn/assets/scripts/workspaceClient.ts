@@ -67,7 +67,7 @@ onDocumentReady(function () {
   function setMessage(message: string) {
     messageBadge.textContent = message;
     failedMessage.textContent = message;
-    stateBadge.classList.toggle('badge-prepend', message);
+    stateBadge.classList.toggle('badge-prepend', !!message);
   }
 
   let previousState: null | string = null;
