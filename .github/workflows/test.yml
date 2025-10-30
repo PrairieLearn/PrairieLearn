@@ -59,8 +59,7 @@ jobs:
           context: .
           push: false
           load: true
-          tags: |
-            prairielearn/prairielearn:${{ env.COMMIT_SHA }}
+          tags: prairielearn/prairielearn:${{ env.COMMIT_SHA }}
           cache-from: type=registry,ref=prairielearn/prairielearn:buildcache-linux-amd64
 
       # We run the following steps in this job instead of separately to avoid the
