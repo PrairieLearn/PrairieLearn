@@ -541,7 +541,7 @@ describe('Question syncing', () => {
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.isDefined(syncedQuestion);
     assert.isNotNull(syncedQuestion.sync_errors);
-    assert.match(syncedQuestion.sync_errors, /data must have required property 'incorrectAnswers'/);
+    assert.match(syncedQuestion.sync_errors, /Error validating question options/);
   });
 
   it('records a warning if same UUID is used in multiple questions', async () => {
