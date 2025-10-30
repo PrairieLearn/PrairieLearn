@@ -121,6 +121,14 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'save_questions') {
+      const editorEnabled = await features.enabledFromLocals(
+        'assessment-questions-editor',
+        res.locals,
+      );
+      if (!editorEnabled) {
+        throw new HttpStatusError(403, 'Assessment questions editor feature is not enabled');
+      }
+
       const body = SaveQuestionsSchema.parse(req.body);
 
       const assessmentPath = path.join(
@@ -140,109 +148,128 @@ router.post(
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentPath, 'utf8'));
 
       // Filter out default values from zones data
-      const filteredZones = body.zones.map((zone) => {
-        const filteredZone: any = {};
+      const filteredZones = body.zones.map((zone, i) => {
+        // Start with a shallow copy of the existing zone to preserve unknown fields
+        const existingZone = assessmentInfo.zones?.[i];
+        const filteredZone: any = existingZone ? { ...existingZone } : {};
 
-        // Filter zone title
-        filteredZone.title = propertyValueWithDefault(
-          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.title,
-          zone.title,
-          null,
-        );
-
-        // Filter zone-level properties
+        // Overwrite known fields with filtered values
+        filteredZone.title = propertyValueWithDefault(existingZone?.title, zone.title, null);
         filteredZone.maxPoints = propertyValueWithDefault(
-          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.maxPoints,
+          existingZone?.maxPoints,
           zone.maxPoints,
           null,
         );
         filteredZone.numberChoose = propertyValueWithDefault(
-          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.numberChoose,
+          existingZone?.numberChoose,
           zone.numberChoose,
           null,
         );
         filteredZone.bestQuestions = propertyValueWithDefault(
-          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.bestQuestions,
+          existingZone?.bestQuestions,
           zone.bestQuestions,
           null,
         );
         filteredZone.advanceScorePerc = propertyValueWithDefault(
-          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.advanceScorePerc,
+          existingZone?.advanceScorePerc,
           zone.advanceScorePerc,
           null,
         );
         filteredZone.gradeRateMinutes = propertyValueWithDefault(
-          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.gradeRateMinutes,
+          existingZone?.gradeRateMinutes,
           zone.gradeRateMinutes,
           null,
         );
+        filteredZone.comment = propertyValueWithDefault(existingZone?.comment, zone.comment, null);
+        filteredZone.allowRealTimeGrading = propertyValueWithDefault(
+          existingZone?.allowRealTimeGrading,
+          zone.allowRealTimeGrading,
+          null,
+        );
         filteredZone.canSubmit = propertyValueWithDefault(
-          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.canSubmit,
+          existingZone?.canSubmit,
           zone.canSubmit,
           (v) => !v || v.length === 0,
         );
         filteredZone.canView = propertyValueWithDefault(
-          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.canView,
+          existingZone?.canView,
           zone.canView,
           (v) => !v || v.length === 0,
         );
+
         // Filter questions/alternative groups
-        filteredZone.questions = zone.questions.map((question) => {
+        filteredZone.questions = zone.questions.map((question, j) => {
+          // Start with a shallow copy of the existing question to preserve unknown fields
+          const existingQuestion = existingZone?.questions?.[j];
+          const filteredQuestion: any = existingQuestion ? { ...existingQuestion } : {};
+
           // Check if this is a single question or an alternative group
-          const filteredQuestion: any = {};
           if ('alternatives' in question) {
             // This is an alternative group
-
             filteredQuestion.numberChoose = propertyValueWithDefault(
-              undefined,
+              existingQuestion?.numberChoose,
               question.numberChoose,
               1,
             );
 
             // Filter alternatives
-            filteredQuestion.alternatives = question.alternatives?.map((alternative) => {
-              const filteredAlternative: any = {
-                id: alternative.id,
-              };
+            filteredQuestion.alternatives = question.alternatives?.map((alternative, k) => {
+              // Start with a shallow copy of the existing alternative to preserve unknown fields
+              const existingAlternative = existingQuestion?.alternatives?.[k];
+              const filteredAlternative: any = existingAlternative
+                ? { ...existingAlternative }
+                : {};
 
+              // Overwrite known fields
+              filteredAlternative.id = alternative.id;
               filteredAlternative.points = propertyValueWithDefault(
-                undefined,
+                existingAlternative?.points,
                 alternative.points,
                 0,
               );
               filteredAlternative.autoPoints = propertyValueWithDefault(
-                undefined,
+                existingAlternative?.autoPoints,
                 alternative.autoPoints,
                 0,
               );
               filteredAlternative.maxPoints = propertyValueWithDefault(
-                undefined,
+                existingAlternative?.maxPoints,
                 alternative.maxPoints,
                 0,
               );
               filteredAlternative.maxAutoPoints = propertyValueWithDefault(
-                undefined,
+                existingAlternative?.maxAutoPoints,
                 alternative.maxAutoPoints,
                 0,
               );
               filteredAlternative.manualPoints = propertyValueWithDefault(
-                undefined,
+                existingAlternative?.manualPoints,
                 alternative.manualPoints,
                 0,
               );
               filteredAlternative.triesPerVariant = propertyValueWithDefault(
-                undefined,
+                existingAlternative?.triesPerVariant,
                 alternative.triesPerVariant,
                 1,
               );
               filteredAlternative.advanceScorePerc = propertyValueWithDefault(
-                undefined,
+                existingAlternative?.advanceScorePerc,
                 alternative.advanceScorePerc,
                 null,
               );
               filteredAlternative.gradeRateMinutes = propertyValueWithDefault(
-                undefined,
+                existingAlternative?.gradeRateMinutes,
                 alternative.gradeRateMinutes,
+                null,
+              );
+              filteredAlternative.allowRealTimeGrading = propertyValueWithDefault(
+                existingAlternative?.allowRealTimeGrading,
+                alternative.allowRealTimeGrading,
+                null,
+              );
+              filteredAlternative.forceMaxPoints = propertyValueWithDefault(
+                existingAlternative?.forceMaxPoints,
+                alternative.forceMaxPoints,
                 null,
               );
 
@@ -252,51 +279,70 @@ router.post(
             // This is a single question
             filteredQuestion.id = question.id;
           }
-          filteredQuestion.comment = propertyValueWithDefault(undefined, question.comment, null);
+
+          // Overwrite known question fields
+          filteredQuestion.comment = propertyValueWithDefault(
+            existingQuestion?.comment,
+            question.comment,
+            null,
+          );
           filteredQuestion.allowRealTimeGrading = propertyValueWithDefault(
-            undefined,
+            existingQuestion?.allowRealTimeGrading,
             question.allowRealTimeGrading,
             null,
           );
+          filteredQuestion.forceMaxPoints = propertyValueWithDefault(
+            existingQuestion?.forceMaxPoints,
+            question.forceMaxPoints,
+            null,
+          );
           filteredQuestion.canSubmit = propertyValueWithDefault(
-            undefined,
+            existingQuestion?.canSubmit,
             question.canSubmit,
             (v) => !v || v.length === 0,
           );
           filteredQuestion.canView = propertyValueWithDefault(
-            undefined,
+            existingQuestion?.canView,
             question.canView,
             (v) => !v || v.length === 0,
           );
-          filteredQuestion.points = propertyValueWithDefault(undefined, question.points, 0);
-          filteredQuestion.autoPoints = propertyValueWithDefault(undefined, question.autoPoints, 0);
+          filteredQuestion.points = propertyValueWithDefault(
+            existingQuestion?.points,
+            question.points,
+            0,
+          );
+          filteredQuestion.autoPoints = propertyValueWithDefault(
+            existingQuestion?.autoPoints,
+            question.autoPoints,
+            0,
+          );
           filteredQuestion.maxPoints = propertyValueWithDefault(
-            undefined,
+            existingQuestion?.maxPoints,
             question.maxPoints,
             null,
           );
           filteredQuestion.maxAutoPoints = propertyValueWithDefault(
-            undefined,
+            existingQuestion?.maxAutoPoints,
             question.maxAutoPoints,
             0,
           );
           filteredQuestion.manualPoints = propertyValueWithDefault(
-            undefined,
+            existingQuestion?.manualPoints,
             question.manualPoints,
             0,
           );
           filteredQuestion.triesPerVariant = propertyValueWithDefault(
-            undefined,
+            existingQuestion?.triesPerVariant,
             question.triesPerVariant,
             1,
           );
           filteredQuestion.advanceScorePerc = propertyValueWithDefault(
-            undefined,
+            existingQuestion?.advanceScorePerc,
             question.advanceScorePerc,
             null,
           );
           filteredQuestion.gradeRateMinutes = propertyValueWithDefault(
-            undefined,
+            existingQuestion?.gradeRateMinutes,
             question.gradeRateMinutes,
             null,
           );

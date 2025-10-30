@@ -652,7 +652,7 @@ function Zone({
       {/* Add "Add question" button at the end of each zone */}
       {editMode && (
         <tr>
-          <td colspan={nTableCols + 1}>
+          <td colspan={nTableCols}>
             <button class="btn btn-sm" type="button" onClick={() => handleAddQuestion(zoneNumber)}>
               <i class="fa fa-add" aria-hidden="true" /> Add Question to Zone
             </button>
@@ -890,13 +890,28 @@ export function InstructorAssessmentQuestionsTable({
     setMappedQuestions((prevZones) => {
       const newZones = structuredClone(prevZones);
       const zone = newZones[zoneNumber - 1];
-      if (numberInAlternativeGroup) {
-        zone.questions[alternativeGroupNumber - 1].alternatives?.splice(
-          numberInAlternativeGroup - 1,
-          1,
-        );
+      if (numberInAlternativeGroup !== undefined) {
+        const alternativeGroup = zone.questions[alternativeGroupNumber - 1];
+        alternativeGroup.alternatives?.splice(numberInAlternativeGroup, 1);
+
+        // If only one alternative remains, convert it back to a regular question
+        if (alternativeGroup.alternatives && alternativeGroup.alternatives.length === 1) {
+          const remainingAlternative = alternativeGroup.alternatives[0];
+          // Merge the remaining alternative's properties into the question
+          zone.questions[alternativeGroupNumber - 1] = {
+            ...alternativeGroup,
+            ...remainingAlternative,
+            alternatives: undefined,
+          };
+        }
       } else {
         zone.questions.splice(alternativeGroupNumber - 1, 1);
+
+        // If the zone now has no questions, remove the zone entirely
+        // (zones are required to have at least one question per schema)
+        if (zone.questions.length === 0) {
+          newZones.splice(zoneNumber - 1, 1);
+        }
       }
       return newZones;
     });
@@ -906,7 +921,8 @@ export function InstructorAssessmentQuestionsTable({
   const showAdvanceScorePercCol = questionRows.some(
     (q) => q.assessment_question.effective_advance_score_perc !== 0,
   );
-  const nTableCols = showAdvanceScorePercCol ? 12 : 11;
+  const baseCols = showAdvanceScorePercCol ? 11 : 10;
+  const nTableCols = baseCols + (editMode ? 2 : 0);
   return (
     <>
       <div class="card mb-4">

@@ -86,7 +86,7 @@ export function EditQuestionModal({
     question.manualPoints,
     alternativeGroup?.manualPoints,
   );
-  const [autoGraded, setAutoGraded] = useState(!effectiveManualPoints);
+  const [autoGraded, setAutoGraded] = useState(effectiveManualPoints == null);
   const [localQuestion, setLocalQuestion] = useState<ZoneQuestionJson | QuestionAlternativeJson>(
     () => structuredClone(question),
   );
@@ -156,7 +156,7 @@ export function EditQuestionModal({
 
   useEffect(() => {
     const newQuestion = structuredClone(question);
-    const isAuto = !effectiveManualPoints;
+    const isAuto = effectiveManualPoints == null;
     // Batch state updates
     void Promise.resolve().then(() => {
       setLocalQuestion(newQuestion);

@@ -19,14 +19,17 @@ SELECT
   to_jsonb(q.*) AS question,
   to_jsonb(top.*) AS topic,
   coalesce(ic.open_issue_count, 0)::integer AS open_issue_count,
-  (
-    SELECT
-      jsonb_agg(t.*)
-    FROM
-      tags t
-      JOIN question_tags qt ON qt.tag_id = t.id
-    WHERE
-      qt.question_id = q.id
+  COALESCE(
+    (
+      SELECT
+        jsonb_agg(t.* ORDER BY t.name)
+      FROM
+        tags t
+        JOIN question_tags qt ON qt.tag_id = t.id
+      WHERE
+        qt.question_id = q.id
+    ),
+    '[]'::jsonb
   ) AS tags
 FROM
   questions AS q

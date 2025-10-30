@@ -254,7 +254,7 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentInfo.zones[0].questions[0].points, 20);
   });
 
-  test.sequential('change question id', async () => {
+  test.sequential('change question points', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(
@@ -283,7 +283,7 @@ describe('Editing assessment questions', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`);
   });
 
-  test.sequential('verify question id and points were changed', async () => {
+  test.sequential('verify question points were changed', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.zones[0].questions[0].id, 'test/question');
     assert.equal(assessmentInfo.zones[0].questions[0].points, 25);
