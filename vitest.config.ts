@@ -134,7 +134,7 @@ export default mergeConfig(
       projects: ['apps/grader-host', 'apps/prairielearn', 'apps/workspace-host', 'packages/*'],
       coverage: {
         reporter: ['html', 'text-summary', 'cobertura'],
-        include: ['{apps,packages}/*/src/**'],
+        include: ['{apps,packages}/*/src/**/*.{js,jsx,ts,tsx,cjs,mjs}'],
       },
     },
   }),
