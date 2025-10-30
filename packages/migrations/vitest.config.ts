@@ -2,10 +2,10 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    exclude: ['dist/**'],
     coverage: {
       reporter: ['html', 'text-summary', 'cobertura'],
-      all: true,
-      include: ['src/**'],
+      include: ['src/**/*.{js,jsx,ts,tsx,cjs,mjs}'],
     },
   },
 });

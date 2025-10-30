@@ -55,8 +55,7 @@ export default defineConfig(({ mode }) => {
         testTimeout: 10_000,
 
         coverage: {
-          all: true,
-          include: ['src/**'],
+          include: ['src/**/*.{js,jsx,ts,tsx,cjs,mjs}'],
           reporter: ['html', 'text-summary', 'cobertura'],
         },
       },

@@ -42,8 +42,8 @@
     "@postgrestools/postgrestools": "^0.15.1",
     "@stylistic/eslint-plugin": "^5.4.0",
     "@tanstack/eslint-plugin-query": "^5.91.0",
-    "@vitest/coverage-v8": "^3.2.4",
-    "@vitest/eslint-plugin": "^1.3.13",
+    "@vitest/coverage-v8": "^4.0.5",
+    "@vitest/eslint-plugin": "^1.4.0",
     "dependency-cruiser": "^17.0.1",
     "eslint": "^9.38.0",
     "eslint-import-resolver-typescript": "^4.4.4",
@@ -69,7 +69,7 @@
     "turbo": "^2.5.8",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.5"
   },
   "resolutions": {
     "notebookjs/jsdom": "^25.0.0",
