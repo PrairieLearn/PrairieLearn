@@ -2,7 +2,7 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../lib/authzData.js';
+import { dangerousFullAuthzForTesting } from '../lib/authz-data-lib.js';
 import { type CourseInstance, type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
@@ -138,13 +138,19 @@ describe('ensureEnrollment', () => {
     assert.equal(initialEnrollment.status, 'blocked');
     assert.isNotNull(initialEnrollment.first_joined_at);
 
-    await ensureEnrollment({
-      courseInstance,
-      userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
-      actionDetail: 'implicit_joined',
-    });
+    try {
+      await ensureEnrollment({
+        courseInstance,
+        userId: user.user_id,
+        requestedRole: 'Student',
+        authzData: dangerousFullAuthzForTesting(),
+        actionDetail: 'implicit_joined',
+      });
+      assert.fail('Expected error to be thrown');
+    } catch (error) {
+      // The model function should throw an error if the user is blocked.
+      assert.equal(error.message, 'Access denied');
+    }
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
