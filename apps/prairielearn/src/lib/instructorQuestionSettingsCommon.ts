@@ -23,6 +23,10 @@ export function isValidOrcid(orcid: string): boolean {
 
 
 export function isValidEmail(emailValue: string): boolean {
+    // Empty strings are fine.
+  if (emailValue === '') {
+    return true;
+  }
   return String(emailValue)
         .toLowerCase()
         .match(/^([A-Z0-9_+-]+\.?)*[A-Z0-9_+-]@([A-Z0-9][A-Z0-9-]*\.)+[A-Z]{2,}$/i) != null;
@@ -31,5 +35,5 @@ export function isValidEmail(emailValue: string): boolean {
 export function isValidAuthorName(nameValue: string): boolean {
   const name = nameValue.trim();
   const nameLen = name.length;
-  return nameLen >= 3 && nameLen <= 255;
+  return nameLen === 0 || (nameLen >= 3 && nameLen <= 255);
 }

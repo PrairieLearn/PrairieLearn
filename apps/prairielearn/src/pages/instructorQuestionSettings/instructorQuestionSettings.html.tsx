@@ -89,7 +89,6 @@ export function InstructorQuestionSettings({
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const questionTagNames = new Set(questionTags.map((tag) => tag.name));
-
   const authorsData = authors.map((author) => {
     let parsedORCIDId = '';
     if (author.orcid != null) {
@@ -287,6 +286,11 @@ export function InstructorQuestionSettings({
                   </tr>
                 </thead>
                 <tbody id="author-table-body">
+                  ${authorsData.length === 0 && !canEdit
+                    ? html`<tr>
+                        <td><small class="text-center">No authors</small></td>
+                      </tr>`
+                    : null}
                   ${authorsData.map((author, index) => {
                     return html`
                       <tr class="author-row" id="${'author_row_' + index}">

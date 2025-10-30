@@ -34,6 +34,11 @@ import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import {
+  isValidAuthorName,
+  isValidEmail,
+  isValidOrcid,
+} from '../../lib/instructorQuestionSettingsCommon.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
@@ -48,11 +53,6 @@ import {
   SelectedAssessmentsSchema,
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
-import {
-  isValidAuthorName,
-  isValidEmail,
-  isValidOrcid,
-} from '../../lib/instructorQuestionSettingsCommon.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -356,13 +356,13 @@ router.post(
         const originCourse: string | undefined = bodyData['author_origin_course_' + authorIndex];
         const newAuthor: JSONAuthor = {};
         if (
-          (email == undefined || email == '') &&
-          (orcid == undefined || orcid == '') &&
-          (originCourse == undefined || originCourse == '')
+          (email === undefined || email === '') &&
+          (orcid === undefined || orcid === '') &&
+          (originCourse === undefined || originCourse === '')
         ) {
           throw new error.HttpStatusError(
             400,
-            `Every author must have one of: email, orcid, origin course`,
+            'Every author must have one of: email, orcid, origin course',
           );
         }
         if (name !== undefined && name !== '') {

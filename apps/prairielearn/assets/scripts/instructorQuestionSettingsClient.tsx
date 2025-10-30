@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import TomSelect from 'tom-select';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
@@ -15,7 +16,6 @@ import {
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';
-import clsx from 'clsx';
 
 onDocumentReady(() => {
   const qidField = document.querySelector<HTMLInputElement>('input[name="qid"]')!;
