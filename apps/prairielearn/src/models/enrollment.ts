@@ -12,13 +12,14 @@ import {
   checkPotentialEnterpriseEnrollment,
 } from '../ee/models/enrollment.js';
 import {
+  type AuthzData,
   type CourseInstanceRole,
+  type PageAuthzData,
   assertHasRole,
   dangerousFullSystemAuthz,
   hasRole,
   isDangerousFullSystemAuthz,
-} from '../lib/authzData.js';
-import type { AuthzData, PageAuthzData } from '../lib/authzData.types.js';
+} from '../lib/authz-data-lib.js';
 import {
   type StaffCourseInstanceContext,
   type StudentCourseInstanceContext,

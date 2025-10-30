@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
-import { dangerousFullSystemAuthz } from '../../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';
 import { ensureEnrollment } from '../../../models/enrollment.js';
