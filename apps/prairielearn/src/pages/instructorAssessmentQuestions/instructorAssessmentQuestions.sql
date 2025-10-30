@@ -22,7 +22,11 @@ SELECT
   COALESCE(
     (
       SELECT
-        jsonb_agg(t.* ORDER BY t.name)
+        jsonb_agg(
+          t.*
+          ORDER BY
+            t.name
+        )
       FROM
         tags t
         JOIN question_tags qt ON qt.tag_id = t.id
