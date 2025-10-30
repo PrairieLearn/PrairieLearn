@@ -8,12 +8,12 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { type AuthzData, assertHasRole } from '../lib/authzData-lib.js';
+import { type AuthzData, assertHasRole } from '../lib/authz-data-lib.js';
 import {
   type CourseInstance,
-  type CourseInstancePublishingEnrollmentExtension,
-  CourseInstancePublishingEnrollmentExtensionSchema,
   type CourseInstancePublishingExtension,
+  type CourseInstancePublishingExtensionEnrollment,
+  CourseInstancePublishingExtensionEnrollmentSchema,
   CourseInstancePublishingExtensionSchema,
   type Enrollment,
 } from '../lib/db-types.js';
@@ -163,7 +163,7 @@ export async function insertPublishingEnrollmentExtension({
   enrollment: Enrollment;
   authzData: AuthzData;
   requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
-}): Promise<CourseInstancePublishingEnrollmentExtension> {
+}): Promise<CourseInstancePublishingExtensionEnrollment> {
   assertHasRole(authzData, requestedRole);
   return await queryRow(
     sql.insert_publishing_enrollment_extension,
@@ -171,7 +171,7 @@ export async function insertPublishingEnrollmentExtension({
       course_instance_publishing_extension_id: courseInstancePublishingExtension.id,
       enrollment_id: enrollment.id,
     },
-    CourseInstancePublishingEnrollmentExtensionSchema,
+    CourseInstancePublishingExtensionEnrollmentSchema,
   );
 }
 

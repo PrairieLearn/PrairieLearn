@@ -21,7 +21,7 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
 });
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
-export async function selectCourseInstanceByIdWithoutAuthz(id: string) {
+export async function selectCourseInstanceById(id: string) {
   return await queryRow(
     sql.select_course_instance_by_id,
     { course_instance_id: id },
@@ -29,13 +29,12 @@ export async function selectCourseInstanceByIdWithoutAuthz(id: string) {
   );
 }
 
-export async function selectOptionalCourseInstanceByIdWithoutAuthz(id: string) {
-  const courseInstance = await queryOptionalRow(
+export async function selectOptionalCourseInstanceById(id: string) {
+  return await queryOptionalRow(
     sql.select_course_instance_by_id,
     { course_instance_id: id },
     CourseInstanceSchema,
   );
-  return courseInstance;
 }
 
 export async function selectCourseInstanceByShortName({

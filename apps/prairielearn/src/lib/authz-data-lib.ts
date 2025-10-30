@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 
 import { RawStaffUserSchema, StaffUserSchema } from './client/safe-db-types.js';
 import {
@@ -152,7 +152,7 @@ export function isDangerousFullSystemAuthz(
 export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
   // You must set the requestedRole to 'System' when you use dangerousFullSystemAuthz.
   if (isDangerousFullSystemAuthz(authzData)) {
-    return requestedRole === 'System';
+    return ['System', 'Any'].includes(requestedRole);
   }
 
   if (
@@ -213,6 +213,6 @@ export function assertHasRole(
   }
 
   if (!hasRole(authzData, requestedRole)) {
-    throw new error.HttpStatusError(403, 'Access denied');
+    throw new HttpStatusError(403, 'Access denied');
   }
 }

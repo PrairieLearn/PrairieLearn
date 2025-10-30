@@ -9,12 +9,12 @@ import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
-import type { FullAuthzData } from '../lib/authzData-lib.js';
+import type { FullAuthzData } from '../lib/authz-data-lib.js';
 import {
   buildAuthzData,
   calculateModernCourseInstanceStudentAccess,
   selectAuthzData,
-} from '../lib/authzData.js';
+} from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import { InstitutionSchema, UserSchema } from '../lib/db-types.js';

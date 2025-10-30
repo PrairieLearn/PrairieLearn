@@ -3,8 +3,8 @@ import { assert, beforeEach, describe, it, vi } from 'vitest';
 import * as publishingExtensionsModel from '../models/course-instance-publishing-extensions.js';
 import * as enrollmentModel from '../models/enrollment.js';
 
-import type { RawPageAuthzData } from './authzData-lib.js';
-import { calculateModernCourseInstanceStudentAccess } from './authzData.js';
+import type { RawPageAuthzData } from './authz-data-lib.js';
+import { calculateModernCourseInstanceStudentAccess } from './authz-data.js';
 import type { CourseInstance, CourseInstancePublishingExtension, Enrollment } from './db-types.js';
 
 describe('calculateModernCourseInstanceStudentAccess', () => {

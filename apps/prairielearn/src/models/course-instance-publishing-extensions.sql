@@ -18,7 +18,8 @@ WHERE
   ci_enrollment_extensions.enrollment_id = $enrollment_id
 ORDER BY
   ci_extensions.end_date DESC
-LIMIT 1;
+LIMIT
+  1;
 
 -- BLOCK select_publishing_extension_by_name
 SELECT

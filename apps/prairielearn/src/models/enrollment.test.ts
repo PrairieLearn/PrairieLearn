@@ -2,14 +2,14 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullSystemAuthz } from '../lib/authzData-lib.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { type CourseInstance, type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
-import { selectCourseInstanceByIdWithoutAuthz } from './course-instances.js';
+import { selectCourseInstanceById } from './course-instances.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByPendingUid,
@@ -51,7 +51,7 @@ describe('ensureEnrollment', () => {
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+    courseInstance = await selectCourseInstanceById('1');
   });
 
   afterEach(async function () {
@@ -138,13 +138,19 @@ describe('ensureEnrollment', () => {
     assert.equal(initialEnrollment.status, 'blocked');
     assert.isNotNull(initialEnrollment.first_joined_at);
 
-    await ensureEnrollment({
-      courseInstance,
-      userId: user.user_id,
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
-      actionDetail: 'implicit_joined',
-    });
+    try {
+      await ensureEnrollment({
+        courseInstance,
+        userId: user.user_id,
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
+        actionDetail: 'implicit_joined',
+      });
+      assert.fail('Expected error to be thrown');
+    } catch (error) {
+      // The model function should throw an error if the user is blocked.
+      assert.equal(error.message, 'Access denied');
+    }
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
@@ -244,7 +250,7 @@ describe('DB validation of enrollment', () => {
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+    courseInstance = await selectCourseInstanceById('1');
   });
 
   afterEach(async function () {

@@ -133,7 +133,7 @@ describe('Course instance syncing', () => {
     assert.equal(remainingRule.institution, 'Any');
   });
 
-  describe('syncs publishing settings correctly', async () => {
+  describe('syncs publishing settings correctly', () => {
     const timezone = 'America/New_York';
 
     // We pick an arbitrary date to use.
@@ -147,7 +147,10 @@ describe('Course instance syncing', () => {
       .toString();
 
     const schemaMappings: {
-      json: CourseInstanceJsonInput['publishing'];
+      json: {
+        publishing?: CourseInstanceJsonInput['publishing'];
+        allowAccess?: CourseInstanceJsonInput['allowAccess'];
+      };
       db: {
         publishing_start_date: Date | null;
         publishing_end_date: Date | null;
@@ -157,7 +160,7 @@ describe('Course instance syncing', () => {
       warnings: string[];
     }[] = [
       {
-        json: undefined,
+        json: { publishing: undefined, allowAccess: [] },
         db: {
           modern_publishing: false,
           publishing_start_date: null,
@@ -167,7 +170,7 @@ describe('Course instance syncing', () => {
         errors: [],
       },
       {
-        json: {},
+        json: { publishing: {} },
         db: {
           modern_publishing: true,
           publishing_start_date: null,
@@ -178,7 +181,9 @@ describe('Course instance syncing', () => {
       },
       {
         json: {
-          endDate: jsonDate,
+          publishing: {
+            endDate: jsonDate,
+          },
         },
         db: null,
         warnings: [],
@@ -186,8 +191,10 @@ describe('Course instance syncing', () => {
       },
       {
         json: {
-          startDate: jsonDate,
-          endDate: jsonDate,
+          publishing: {
+            startDate: jsonDate,
+            endDate: jsonDate,
+          },
         },
         db: {
           modern_publishing: true,
@@ -199,7 +206,9 @@ describe('Course instance syncing', () => {
       },
       {
         json: {
-          startDate: jsonDate,
+          publishing: {
+            startDate: jsonDate,
+          },
         },
         db: null,
         warnings: [],
@@ -207,8 +216,10 @@ describe('Course instance syncing', () => {
       },
       {
         json: {
-          startDate: 'not a date',
-          endDate: jsonDate,
+          publishing: {
+            startDate: 'not a date',
+            endDate: jsonDate,
+          },
         },
         db: null,
         warnings: [],
@@ -216,7 +227,9 @@ describe('Course instance syncing', () => {
       },
       {
         json: {
-          endDate: 'not a date',
+          publishing: {
+            endDate: 'not a date',
+          },
         },
         db: null,
         warnings: [],
@@ -227,8 +240,10 @@ describe('Course instance syncing', () => {
       },
       {
         json: {
-          startDate: '2025-12-01T00:00:00',
-          endDate: '2025-06-01T00:00:00',
+          publishing: {
+            startDate: '2025-12-01T00:00:00',
+            endDate: '2025-06-01T00:00:00',
+          },
         },
         db: null,
         warnings: [],
@@ -240,10 +255,11 @@ describe('Course instance syncing', () => {
     for (const { json, db, errors, warnings } of schemaMappings) {
       it(`access control configuration #${i++}`, async () => {
         const courseData = util.getCourseData();
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.publishing = json;
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.publishing =
+          json.publishing;
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess =
+          json.allowAccess;
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
-        // Remove allowAccess rules since we can't have both allowAccess and publishing
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [];
 
         const courseDir = await util.writeCourseToTempDirectory(courseData);
         const results = await util.syncCourseData(courseDir);

@@ -5,11 +5,13 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
-import { ensureCheckedEnrollment } from '../../models/enrollment.js';
+import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
 import {
   CourseInstanceRowSchema,
@@ -84,9 +86,29 @@ router.post('/', [
     const courseDisplayName = `${course.short_name}: ${course.title}, ${course_instance.long_name}`;
 
     if (req.body.__action === 'enroll') {
+      // We don't have authzData yet
+      const existingEnrollment = await run(async () => {
+        return await selectOptionalEnrollmentByUid({
+          uid: res.locals.authn_user.uid,
+          courseInstance: course_instance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
+        });
+      });
+
+      if (
+        existingEnrollment &&
+        !['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status)
+      ) {
+        flash('error', 'You cannot enroll in this course.');
+        res.redirect(req.originalUrl);
+        return;
+      }
+
       // Abuse the middleware to authorize the user for the course instance.
       req.params.course_instance_id = course_instance.id;
       await authzCourseOrInstance(req, res);
+      // Now we have authzData
 
       await ensureCheckedEnrollment({
         institution,

@@ -2,11 +2,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { dangerousFullSystemAuthz } from '../lib/authzData-lib.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceByIdWithoutAuthz } from '../models/course-instances.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 import { selectUserByUid } from '../models/user.js';
 
@@ -56,12 +56,12 @@ describe(
 
     test.sequential('enroll the test student user in the course', async () => {
       const user = await selectUserByUid('student@example.com');
-      const courseInstance = await selectCourseInstanceByIdWithoutAuthz('1');
+      const courseInstance = await selectCourseInstanceById('1');
       await ensureEnrollment({
         userId: user.user_id,
         courseInstance,
-        authzData: dangerousFullSystemAuthz(),
         requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
     });
