@@ -50,18 +50,32 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build the prairielearn docker image
-        run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      # This ensures that the `prairielearn/executor` image is built with the
-      # correct version of `prairielearn/prairielearn`.
-      - name: Tag prairielearn image as latest
-        run: docker tag prairielearn/prairielearn:${{ env.COMMIT_SHA }} prairielearn/prairielearn:latest
+      - name: Build the prairielearn docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: |
+            prairielearn/prairielearn:${{ env.COMMIT_SHA }}
+            prairielearn/prairielearn:latest
+          cache-from: type=registry,ref=prairielearn/prairielearn:buildcache-linux-amd64
+          cache-to: ${{ github.ref == 'refs/heads/master' && 'type=registry,ref=prairielearn/prairielearn:buildcache-linux-amd64,mode=max' || '' }}
 
       - name: Build executor image
-        run: docker build ./images/executor --tag prairielearn/executor:${{ env.COMMIT_SHA }}
-      - name: Tag executor image as latest
-        run: docker tag prairielearn/executor:${{ env.COMMIT_SHA }} prairielearn/executor:latest
+        uses: docker/build-push-action@v6
+        with:
+          context: ./images/executor
+          push: false
+          load: true
+          tags: |
+            prairielearn/executor:${{ env.COMMIT_SHA }}
+            prairielearn/executor:latest
+          build-contexts: |
+            prairielearn/prairielearn=docker-image://prairielearn/prairielearn:latest
 
       # We run the following steps in this job instead of separately to avoid the
       # overhead of pulling the image another time.
