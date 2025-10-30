@@ -1,4 +1,4 @@
-clang==20.1.5 # Major version must match the version of clang installed in the Dockerfile
+clang==18.1.8 # Major version must match the version of clang installed in the Dockerfile
 matplotlib==3.10.7
 numpy==1.26.4
 sympy==1.14.0
