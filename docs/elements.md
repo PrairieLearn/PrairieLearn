@@ -22,7 +22,7 @@ PrairieLearn presently provides the following templated **input field** elements
 - [`pl-matching`](#pl-matching-element): Select a matching option for each entry in a group.
 - [`pl-matrix-component-input`](#pl-matrix-component-input-element): Fill in a **matrix** using grid that has an input area for each element.
 - [`pl-matrix-input`](#pl-matrix-input-element): Supply a matrix in a supported programming language format.
-- [`pl-multiple-choice`](#pl-multiple-choice-element): Selecting only **one option** from a list.
+- [`pl-multiple-choice`](#pl-multiple-choice-element): Select only **one option** from a list.
 - [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-order-blocks`](#pl-order-blocks-element): Select and arrange given blocks of code or text.
 - [`pl-rich-text-editor`](#pl-rich-text-editor-element): Provide an in-browser formattable text editor for writing and submitting prose.
