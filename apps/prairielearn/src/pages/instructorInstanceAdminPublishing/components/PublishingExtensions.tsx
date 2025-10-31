@@ -163,7 +163,7 @@ function ExtensionModal({
     const uidError = errors.uids?.message;
     if (uidError && typeof uidError === 'string' && uidError.startsWith('UNENROLLED:')) {
       // Extract the unenrolled UIDs from the error message
-      const uidsJson = uidError.substring('UNENROLLED:'.length);
+      const uidsJson = uidError.slice('UNENROLLED:'.length);
       try {
         const parsedUids = JSON.parse(uidsJson);
         setUnenrolledUids(parsedUids);
