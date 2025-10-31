@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 
-export const QuestionCheckboxOptionsJsonSchema = z
+export const QuestionOptionsCheckboxJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     text: z.string().describe('The question HTML text that comes before the options.'),
@@ -34,4 +34,4 @@ export const QuestionCheckboxOptionsJsonSchema = z
   .strict()
   .describe('Options for a Checkbox question.');
 
-export type QuestionCheckboxOptionsJson = z.infer<typeof QuestionCheckboxOptionsJsonSchema>;
+export type QuestionOptionsCheckboxJson = z.infer<typeof QuestionOptionsCheckboxJsonSchema>;

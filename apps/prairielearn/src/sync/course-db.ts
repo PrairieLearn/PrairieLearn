@@ -15,7 +15,6 @@ import * as Sentry from '@prairielearn/sentry';
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
-import { validateJSON } from '../lib/json-load.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
@@ -1038,11 +1037,10 @@ function validateQuestion({
 
   if (question.options) {
     try {
-      const schema = schemas[`questionOptions${question.type}`];
-      const options = question.options;
-      validateJSON(options, schema);
+      const schema = schemas[`QuestionOptions${question.type}JsonSchema`];
+      schema.parse(question.options);
     } catch (err) {
-      errors.push(err.message);
+      errors.push(`Error validating question options: ${err.message}`);
     }
   }
 
