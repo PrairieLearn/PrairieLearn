@@ -144,13 +144,7 @@ onDocumentReady(() => {
     // Animate the course nav
     appContainerDiv.classList.add('animate');
 
-    if (courseNavExpanded) {
-      // Collapse the course nav
-      courseNavDiv.classList.add('mobile-collapsed');
-    } else {
-      // Expand the course nav
-      courseNavDiv.classList.remove('mobile-collapsed');
-    }
+    courseNavDiv.classList.toggle('mobile-collapsed', courseNavExpanded);
 
     function handleTransitionEnd(event: TransitionEvent) {
       // Ensure that the transition occurred on the course nav div

@@ -9,8 +9,8 @@ import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
-import { buildAuthzData, selectAuthzData } from '../lib/authzData.js';
-import type { FullAuthzDataSchema } from '../lib/authzData.types.js';
+import type { FullAuthzDataSchema } from '../lib/authz-data-lib.js';
+import { buildAuthzData, selectAuthzData } from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
@@ -139,7 +139,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true; // The side nav is expanded by default.
 
   res.locals.course_has_course_instances = await selectCourseHasCourseInstances({
-    course_id: res.locals.course.id,
+    course: res.locals.course,
   });
 
   const usesLegacyNavigation = await features.enabledFromLocals('legacy-navigation', res.locals);

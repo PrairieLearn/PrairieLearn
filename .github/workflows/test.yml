@@ -50,18 +50,17 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build the prairielearn docker image
-        run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} .
-
-      # This ensures that the `prairielearn/executor` image is built with the
-      # correct version of `prairielearn/prairielearn`.
-      - name: Tag prairielearn image as latest
-        run: docker tag prairielearn/prairielearn:${{ env.COMMIT_SHA }} prairielearn/prairielearn:latest
-
-      - name: Build executor image
-        run: docker build ./images/executor --tag prairielearn/executor:${{ env.COMMIT_SHA }}
-      - name: Tag executor image as latest
-        run: docker tag prairielearn/executor:${{ env.COMMIT_SHA }} prairielearn/executor:latest
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: prairielearn/prairielearn:${{ env.COMMIT_SHA }}
+          cache-from: type=registry,ref=prairielearn/prairielearn:buildcache-linux-amd64
 
       # We run the following steps in this job instead of separately to avoid the
       # overhead of pulling the image another time.
@@ -82,7 +81,7 @@ jobs:
           --tmpfs=/var/postgres \
           --env HOST_JOBS_DIR=/tmp/prairielearn \
           --name=test_container \
-          prairielearn/prairielearn /bin/bash
+          prairielearn/prairielearn:${{ env.COMMIT_SHA }} /bin/bash
       - name: Run the JavaScript tests
         run: docker exec --env GITHUB_ACTIONS=true test_container sh -c "make -s -C /PrairieLearn test-prairielearn-docker-smoke-tests"
         # The JS tests hang relatively often when someone makes a mistake in a PR,
