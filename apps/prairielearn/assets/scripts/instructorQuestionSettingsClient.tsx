@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import TomSelect from 'tom-select';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
@@ -7,6 +8,11 @@ import { renderHtml } from '@prairielearn/preact';
 import { TagBadge } from '../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../src/components/TopicBadge.js';
 import { type Tag, type Topic } from '../../src/lib/db-types.js';
+import {
+  isValidAuthorName,
+  isValidEmail,
+  isValidOrcid,
+} from '../../src/lib/instructorQuestionSettingsCommon.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';
@@ -163,4 +169,160 @@ onDocumentReady(() => {
       questionSettingsForm.reportValidity();
     }
   });
+
+  const addAuthorButton = document.querySelector<HTMLButtonElement>('#add-author-button');
+  const table = document.getElementById('author-table-body');
+  let nextAuthorIndex = table?.getElementsByClassName('author-row').length ?? 0;
+  addAuthorButton?.addEventListener('click', () => {
+    const index = nextAuthorIndex++;
+    const newRow = document.createElement('tr');
+    newRow.setAttribute('class', 'author-row');
+    newRow.setAttribute('id', 'author_row_' + index);
+    let tableData = document.createElement('td');
+    tableData.setAttribute('class', 'align-middle');
+    const nameInput = document.createElement('input');
+    nameInput.setAttribute('type', 'text');
+    nameInput.setAttribute('class', 'form-control');
+    nameInput.setAttribute('id', 'author_name_' + index);
+    nameInput.setAttribute('name', 'author_name_' + index);
+    validateNameInput(nameInput);
+    tableData.append(nameInput);
+    newRow.append(tableData);
+
+    tableData = document.createElement('td');
+    tableData.setAttribute('class', 'align-middle');
+    const emailInput = document.createElement('input');
+    emailInput.setAttribute('type', 'text');
+    emailInput.setAttribute('class', 'form-control');
+    emailInput.setAttribute('id', 'author_email_' + index);
+    emailInput.setAttribute('name', 'author_email_' + index);
+    validateEmailInput(emailInput);
+    tableData.append(emailInput);
+    newRow.append(tableData);
+
+    tableData = document.createElement('td');
+    tableData.setAttribute('class', 'align-middle');
+    const orcidInput = document.createElement('input');
+    orcidInput.setAttribute('type', 'text');
+    orcidInput.setAttribute('class', 'form-control');
+    orcidInput.setAttribute('id', 'author_orcid_' + index);
+    orcidInput.setAttribute('name', 'author_orcid_' + index);
+    orcidInput.setAttribute('pattern', '^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$');
+    addORCIDInputListener(orcidInput);
+    tableData.append(orcidInput);
+    newRow.append(tableData);
+
+    tableData = document.createElement('td');
+    tableData.setAttribute('class', 'align-middle');
+    const originCourseInput = document.createElement('input');
+    originCourseInput.setAttribute('type', 'text');
+    originCourseInput.setAttribute('class', 'form-control');
+    originCourseInput.setAttribute('id', 'author_origin_course_' + index);
+    originCourseInput.setAttribute('name', 'author_origin_course_' + index);
+    tableData.append(originCourseInput);
+    newRow.append(tableData);
+
+    tableData = document.createElement('td');
+    tableData.setAttribute('class', 'text-center align-middle align-items-center');
+    const removeData = document.createElement('button');
+    removeData.setAttribute('type', 'button');
+    removeData.setAttribute('class', 'align-middle btn btn-danger remove_author_button');
+    removeData.setAttribute('id', 'remove_author_' + index);
+    removeData.innerText = 'X';
+    removeData.addEventListener('click', () => {
+      removeAuthorRowButtonClick(index, questionSettingsForm, saveButton);
+    });
+    tableData.append(removeData);
+    newRow.append(tableData);
+
+    table?.append(newRow);
+  });
+
+  const rows = table?.getElementsByClassName('author-row');
+  const numRows = rows?.length ?? 0;
+  const removeAuthorButtons = document.getElementsByClassName('remove_author_button');
+  for (const removeAuthorButton of removeAuthorButtons) {
+    const removeAuthorButtonRowFinalUnderscore = removeAuthorButton.id.lastIndexOf('_');
+    const removeAuthorButtonRowIndex = Number(
+      removeAuthorButton.id.slice(removeAuthorButtonRowFinalUnderscore + 1),
+    );
+    removeAuthorButton.addEventListener('click', () => {
+      removeAuthorRowButtonClick(removeAuthorButtonRowIndex, questionSettingsForm, saveButton);
+    });
+  }
+
+  for (let index = 0; index < numRows; index++) {
+    const nameInput = document.querySelector<HTMLInputElement>('#author_name_' + index);
+    validateNameInput(nameInput);
+    const orcidIDInput = document.querySelector<HTMLInputElement>('#author_orcid_' + index);
+    addORCIDInputListener(orcidIDInput);
+    const emailInput = document.querySelector<HTMLInputElement>('#author_email_' + index);
+    validateEmailInput(emailInput);
+  }
 });
+
+const removeAuthorRowButtonClick = (
+  index: number,
+  questionSettingsForm: HTMLFormElement | null,
+  saveButton: HTMLButtonElement | null,
+) => {
+  const rowToRemove = document.querySelector<HTMLTableRowElement>(
+    '#author_row_' + index.toString(),
+  );
+  rowToRemove?.remove();
+  if (questionSettingsForm && saveButton) {
+    saveButton.removeAttribute('disabled');
+  }
+};
+
+const validateNameInput = (nameInput: HTMLInputElement | null) => {
+  nameInput?.addEventListener('blur', () => {
+    const nameValue = nameInput.value;
+    const validName = isValidAuthorName(nameValue);
+    nameInput.setAttribute(
+      'class',
+      clsx('form-control', {
+        'is-valid': validName,
+        'is-invalid': !validName,
+      }),
+    );
+  });
+  return;
+};
+
+const validateEmailInput = (emailInput: HTMLInputElement | null) => {
+  emailInput?.addEventListener('blur', () => {
+    const emailValue = emailInput.value;
+    const validEmail = isValidEmail(emailValue);
+    emailInput.setAttribute(
+      'class',
+      clsx('form-control', {
+        'is-valid': validEmail,
+        'is-invalid': !validEmail,
+      }),
+    );
+  });
+  return;
+};
+
+function addORCIDInputListener(orcidIDInput: HTMLInputElement | null): void {
+  orcidIDInput?.addEventListener('blur', () => {
+    const orcidIDValue = orcidIDInput.value;
+    const validOrcidID = validateORCID(orcidIDValue);
+    orcidIDInput.setAttribute(
+      'class',
+      clsx('form-control', {
+        'is-valid': validOrcidID,
+        'is-invalid': !validOrcidID,
+      }),
+    );
+  });
+}
+
+function validateORCID(orcid: string): boolean {
+  // Empty strings are fine.
+  if (orcid === '') {
+    return true;
+  }
+  return isValidOrcid(orcid);
+}
