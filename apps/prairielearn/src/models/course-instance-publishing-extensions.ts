@@ -44,7 +44,7 @@ export async function selectPublishingExtensionById({
   courseInstance: CourseInstance;
   authzData: AuthzData;
   requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
-}): Promise<CourseInstancePublishingExtension | null> {
+}) {
   assertHasRole(authzData, requestedRole);
   const extension = await queryRow(
     sql.select_publishing_extension_by_id,
