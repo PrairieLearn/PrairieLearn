@@ -22,8 +22,7 @@ WHERE
   );
 
 -- BLOCK update_course_instance_access_rules
-UPDATE
-  course_instance_access_rules
+UPDATE course_instance_access_rules
 SET
   start_date = $start_date::timestamptz,
   end_date = $end_date::timestamptz

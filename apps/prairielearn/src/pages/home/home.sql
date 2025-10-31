@@ -206,7 +206,8 @@ FROM
     AND users_is_instructor_in_course (u.user_id, c.id) IS FALSE
   ),
   LATERAL (
-      SELECT min(ar.start_date) AS start_date,
+    SELECT
+      min(ar.start_date) AS start_date,
       max(ar.end_date) AS end_date
     FROM
       course_instance_access_rules AS ar
@@ -229,9 +230,7 @@ SELECT
   ci.id,
   to_jsonb(e) AS enrollment,
   COALESCE(
-    jsonb_agg(
-      to_jsonb(cie)
-    ) FILTER (
+    jsonb_agg(to_jsonb(cie)) FILTER (
       -- Is this filtering necessary?
       WHERE
         cie.id IS NOT NULL
