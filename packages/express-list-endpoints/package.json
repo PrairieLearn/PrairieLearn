@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.18.8",
+    "@types/node": "^22.18.13",
     "@vitest/coverage-v8": "^4.0.5",
     "express": "^4.21.2",
     "tsx": "^4.20.6",

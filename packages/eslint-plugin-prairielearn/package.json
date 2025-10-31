@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.18.8",
+    "@types/node": "^22.18.13",
     "@typescript-eslint/rule-tester": "^8.46.2",
     "@vitest/coverage-v8": "^4.0.5",
     "tsx": "^4.20.6",
