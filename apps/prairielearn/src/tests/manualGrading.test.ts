@@ -365,7 +365,7 @@ function checkSettingsResults(
   });
 }
 
-function buildPostPayload({
+function buildRubricSettingsPayload({
   manualGradingIQPage,
   replace_auto_points,
   starting_points,
@@ -800,7 +800,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(
-              buildPostPayload({
+              buildRubricSettingsPayload({
                 manualGradingIQPage,
                 replace_auto_points: false,
                 starting_points: 0,
@@ -841,7 +841,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(
-              buildPostPayload({
+              buildRubricSettingsPayload({
                 manualGradingIQPage,
                 replace_auto_points: false,
                 starting_points: 0,
@@ -880,7 +880,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(
-              buildPostPayload({
+              buildRubricSettingsPayload({
                 manualGradingIQPage,
                 replace_auto_points: false,
                 starting_points: 0,
@@ -948,7 +948,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(
-              buildPostPayload({
+              buildRubricSettingsPayload({
                 manualGradingIQPage,
                 replace_auto_points: false,
                 starting_points: 0,
@@ -1023,7 +1023,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(
-              buildPostPayload({
+              buildRubricSettingsPayload({
                 manualGradingIQPage,
                 replace_auto_points: false,
                 starting_points: 6,
