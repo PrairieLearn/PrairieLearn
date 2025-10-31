@@ -1,16 +1,8 @@
 # PrairieLearn Elements for use in `question.html`
 
-When writing questions, there exists a core pool of elements that provides
-common structures associated with assessment items. These elements can be
-split into three distinct groups: **submission**, **decorative**, and
-**conditional**. Within this document, all of PrairieLearn's elements are
-displayed alongside links to sample elements within the example course. To
-build your own PrairieLearn element, please see [Question Element Writing](devElements.md)
-documentation.
+When writing questions, there exists a core pool of elements that provides common structures associated with assessment items. These elements can be split into three distinct groups: **submission**, **decorative**, and **conditional**. Within this document, all of PrairieLearn's elements are displayed alongside links to sample elements within the example course. To build your own PrairieLearn element, please see [Question Element Writing](devElements.md) documentation.
 
-**Submission** elements act as a way to receive a response or input from the
-student. These elements are traditionally referred to as form input fields.
-PrairieLearn presently provides the following templated **input field** elements:
+**Submission** elements act as a way to receive a response or input from the student. These elements are traditionally referred to as form input fields. PrairieLearn presently provides the following templated **input field** elements:
 
 - [`pl-big-o-input`](#pl-big-o-input-element): Fill in a **symbolic** value representing asymptotic input.
 - [`pl-checkbox`](#pl-checkbox-element): Select **multiple options** from a list.
@@ -25,34 +17,30 @@ PrairieLearn presently provides the following templated **input field** elements
 - [`pl-multiple-choice`](#pl-multiple-choice-element): Select only **one option** from a list.
 - [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-order-blocks`](#pl-order-blocks-element): Select and arrange given blocks of code or text.
-- [`pl-rich-text-editor`](#pl-rich-text-editor-element): Provide an in-browser formattable text editor for writing and submitting prose.
+- [`pl-rich-text-editor`](#pl-rich-text-editor-element): Provide an in-browser formattable text editor for open-ended responses and essays.
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value such as `"Illinois"`, `"GATTACA"`, `"computer"`, and so on.
 - [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value such as `x^2`, `sin(z)`, `mc^2`, and so on.
 - [`pl-units-input`](#pl-units-input-element): Fill in a **number** and a **unit** such as "1.5 m", "14 ms", "6.3 ft", and so on.
 
-**Decorative** elements are meant to improve how the question is displayed to
-students. Elements under this category include ways to specify question markup,
-images, files, and code display. The following **decorative** elements are available:
+**Decorative** elements are meant to improve how the question is displayed to students. Elements under this category include ways to specify question markup, images, files, and code display. The following **decorative** elements are available:
 
-- [`pl-card`](#pl-card-element): Displays content within a card-styled component.
-- [`pl-code`](#pl-code-element): Displays code rendered with the appropriate syntax highlighting.
+- [`pl-card`](#pl-card-element): Display content within a card-styled component.
+- [`pl-code`](#pl-code-element): Display code rendered with the appropriate syntax highlighting.
 - [`pl-dataframe`](#pl-dataframe-element): Display DataFrames with various options.
-- [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined collection of graphic objects.
-- [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
+- [`pl-drawing`](#pl-drawing-element): Create an image from pre-defined collection of graphic objects.
+- [`pl-external-grader-variables`](#pl-external-grader-variables-element): Display expected and given variables for externally graded questions.
 - [`pl-figure`](#pl-figure-element): Embed an image file in the question.
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for data-centric questions.
-- [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
-- [`pl-graph`](#pl-graph-element): Displays graphs, using [GraphViz DOT notation](https://graphviz.org/doc/info/lang.html), an adjacency matrix, or a [`networkx`](https://networkx.org/) graph.
-- [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using appropriate LaTeX commands for use in a mathematical expression.
-- [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
+- [`pl-file-preview`](#pl-file-preview-element): Display a preview of submitted files.
+- [`pl-graph`](#pl-graph-element): Display graphs using [GraphViz DOT notation](https://graphviz.org/doc/info/lang.html), an adjacency matrix, or a [`networkx`](https://networkx.org/) graph.
+- [`pl-matrix-latex`](#pl-matrix-latex-element): Display matrices using appropriate LaTeX commands for use in a mathematical expression.
+- [`pl-overlay`](#pl-overlay-element): Layer existing elements on top of one another in specified positions.
 - [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python variables.
-- [`pl-variable-output`](#pl-variable-output-element): Displays matrices in code form for supported programming languages.
-- [`pl-template`](#pl-template-element): Displays content from mustache templates.
-- [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
+- [`pl-variable-output`](#pl-variable-output-element): Display matrices in code form for supported programming languages.
+- [`pl-template`](#pl-template-element): Display content from mustache templates.
+- [`pl-xss-safe`](#pl-xss-safe-element): Remove potentially unsafe content from HTML code.
 
-**Conditional** elements are meant to improve the feedback and question structure.
-These elements conditionally render their content depending on the question state.
-The following **Conditional** elements are available:
+**Conditional** elements are meant to improve the feedback and question structure. These elements conditionally render their content depending on the question state. The following **Conditional** elements are available:
 
 - [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct answer to a given question.
 - [`pl-external-grader-results`](#pl-external-grader-results-element): Displays results from questions that are externally graded.
@@ -63,9 +51,7 @@ The following **Conditional** elements are available:
 - [`pl-question-panel`](#pl-question-panel-element): Displays the text of a question.
 - [`pl-submission-panel`](#pl-submission-panel-element): Displays the answer given by the student.
 
-Note: PrairieLearn Elements listed next have been
-**deprecated**. These elements are still supported for backwards
-compatibility, but they should not be used in new questions.
+Note: PrairieLearn Elements listed next have been **deprecated**. These elements are still supported for backwards compatibility, but they should not be used in new questions.
 
 - [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
   - **Deprecated**: use [`pl-multiple-choice`](#pl-multiple-choice-element) with `display="dropdown"` for individual elements, or [`pl-matching`](#pl-matching-element) for multiple dropdowns with the same set of options.
