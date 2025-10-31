@@ -105,26 +105,26 @@ export async function calculateModernCourseInstanceStudentAccess(
   }
 
   // We are after the end date. We might have access if we have an extension.
-  const latestPublishingExtension = enrollment
-    ? await selectLatestPublishingExtensionByEnrollment({
-        enrollment,
-        // Our current authzData would say we can't access this, but we are actually building up
-        // authzData with this function, so we use system auth to get the latest extension.
-        authzData: dangerousFullSystemAuthz(),
-        requestedRole: 'System',
-      })
-    : null;
-
-  // There are no extensions. We don't have access.
-  if (latestPublishingExtension === null) {
+  // Only enrolled students can have extensions.
+  if (!enrollment) {
     return { has_student_access: false, has_student_access_with_enrollment: false };
   }
 
-  // If we are before the latest date, we have access.
+  const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollment({
+    enrollment,
+    // Our current authzData would say we can't access this, but we are actually building up
+    // authzData with this function, so we use system auth to get the latest extension.
+    authzData: dangerousFullSystemAuthz(),
+    requestedRole: 'System',
+  });
+
+  // Check if we have access via extension.
+  const hasAccessViaExtension =
+    latestPublishingExtension !== null && reqDate < latestPublishingExtension.end_date;
+
   return {
-    has_student_access: reqDate < latestPublishingExtension.end_date,
-    has_student_access_with_enrollment:
-      reqDate < latestPublishingExtension.end_date && enrollment != null,
+    has_student_access: hasAccessViaExtension,
+    has_student_access_with_enrollment: hasAccessViaExtension,
   };
 }
 
@@ -133,8 +133,7 @@ export async function calculateModernCourseInstanceStudentAccess(
  *
  * @param params
  * @param params.authn_user - The authenticated user.
- * @param params.course_id - The ID of the course. If not provided,
- * but course_instance_id is provided, the function will use the course_id from the course instance.
+ * @param params.course_id - The ID of the course. Inferred from the course instance if null.
  * @param params.course_instance_id - The ID of the course instance.
  * @param params.is_administrator - Whether the user is an administrator.
  * @param params.ip - The IP address of the request.
@@ -158,6 +157,8 @@ export async function buildAuthzData({
   req_date: Date;
   req_mode?: string | null;
 }) {
+  assert(course_id !== null || course_instance_id !== null);
+
   const isCourseInstance = Boolean(course_instance_id);
 
   const rawAuthzData = await selectAuthzData({
