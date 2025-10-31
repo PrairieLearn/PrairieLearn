@@ -53,18 +53,15 @@ function ExtensionModal({
   onSaveSuccess: () => void;
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [stage, setStage] = useState<'editing' | 'confirming'>('editing');
-  const [unenrolledUids, setUnenrolledUids] = useState<string[]>([]);
+
+  // This updates asynchronously, so the validation function will see the latest value.
+  const [bypassEnrollmentCheck, setBypassEnrollmentCheck] = useState(false);
+
+  const someUnenrolledUidsPrefix = 'Not enrolled';
 
   const handleHide = () => {
-    setStage('editing');
-    setUnenrolledUids([]);
+    setBypassEnrollmentCheck(false);
     onHide();
-  };
-
-  const handleContinueEditing = () => {
-    setStage('editing');
-    setUnenrolledUids([]);
   };
 
   const {
@@ -102,6 +99,7 @@ function ExtensionModal({
     const invalidEmails = uids.filter((uid) => !z.string().email().safeParse(uid).success);
 
     if (invalidEmails.length > 0) {
+      // You can't return errors with a type from validate, so we will use a constant string prefix.
       return `The following UIDs were invalid: "${invalidEmails.join('", "')}"`;
     }
 
@@ -120,8 +118,11 @@ function ExtensionModal({
       return 'At least one of the UIDs must be enrolled';
     }
 
+    // We can bypass this final check if needed
+    if (bypassEnrollmentCheck) return true;
+
     if (data.invalidUids.length > 0) {
-      return `UNENROLLED:${JSON.stringify(data.invalidUids)}`;
+      return `${someUnenrolledUidsPrefix}: "${data.invalidUids.join('", ')}"`;
     }
     return true;
   };
@@ -147,6 +148,7 @@ function ExtensionModal({
       }
     },
     onSuccess: () => {
+      setBypassEnrollmentCheck(false);
       onSaveSuccess();
       handleHide();
     },
@@ -155,79 +157,21 @@ function ExtensionModal({
     },
   });
 
-  const onFormSubmit = async (data: ExtensionFormValues, event?: React.FormEvent) => {
-    event?.preventDefault();
-    setErrorMessage(null);
-
-    // Check if validation detected unenrolled UIDs
-    const uidError = errors.uids?.message;
-    if (uidError && typeof uidError === 'string' && uidError.startsWith('UNENROLLED:')) {
-      // Extract the unenrolled UIDs from the error message
-      const uidsJson = uidError.substring('UNENROLLED:'.length);
-      try {
-        const parsedUids = JSON.parse(uidsJson);
-        setUnenrolledUids(parsedUids);
-        setStage('confirming');
-        return;
-      } catch {
-        // If parsing fails, just proceed with save
-      }
-    }
-
-    // If we're in confirming stage or no unenrolled UIDs, proceed with save
-    void saveMutation.mutate(data);
-  };
-
-  if (stage === 'confirming') {
-    return (
-      <Modal show={show} backdrop="static" onHide={handleHide}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Unenrolled Students</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>The following UIDs are not enrolled in this course instance:</p>
-          <div class="mb-3 p-3 bg-light border rounded">
-            {unenrolledUids.map((uid) => (
-              <div key={uid}>{uid}</div>
-            ))}
-          </div>
-          <p>
-            Do you want to continue editing to remove these UIDs, or save the extension anyway?
-            Extensions for unenrolled students will not take effect until they enroll.
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <button
-            type="button"
-            class="btn btn-outline-secondary"
-            disabled={saveMutation.isPending}
-            onClick={handleContinueEditing}
-          >
-            Continue Editing
-          </button>
-          <button
-            type="button"
-            class="btn btn-warning"
-            disabled={saveMutation.isPending}
-            onClick={handleSubmit((data, event) => {
-              event?.preventDefault();
-              setErrorMessage(null);
-              void saveMutation.mutate(data);
-            })}
-          >
-            {saveMutation.isPending ? 'Saving...' : 'Save Anyway'}
-          </button>
-        </Modal.Footer>
-      </Modal>
-    );
-  }
+  const hasSomeInvalidUids =
+    errors.uids?.message?.startsWith(someUnenrolledUidsPrefix) && Object.keys(errors).length === 1;
 
   return (
     <Modal show={show} backdrop="static" onHide={handleHide}>
       <Modal.Header closeButton>
         <Modal.Title>{mode === 'add' ? 'Add Extension' : 'Edit Extension'}</Modal.Title>
       </Modal.Header>
-      <form onSubmit={handleSubmit(onFormSubmit)}>
+      <form
+        onSubmit={handleSubmit((data, event) => {
+          event?.preventDefault();
+          setErrorMessage(null);
+          void saveMutation.mutate(data);
+        })}
+      >
         <Modal.Body>
           <div class="mb-3">
             <label class="form-label" for="ext-name">
@@ -288,11 +232,12 @@ function ExtensionModal({
               placeholder="One UID per line, or comma/space separated"
               {...register('uids', {
                 validate: validateEmails,
+                onChange: () => {
+                  setBypassEnrollmentCheck(false);
+                },
               })}
             />
-            {errors.uids && !errors.uids.message?.toString().startsWith('UNENROLLED:') && (
-              <div class="text-danger small">{String(errors.uids.message)}</div>
-            )}
+            {errors.uids && <div class="text-danger small">{String(errors.uids.message)}</div>}
           </div>
         </Modal.Body>
         <Modal.Footer>
@@ -304,8 +249,29 @@ function ExtensionModal({
           >
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary" disabled={saveMutation.isPending}>
-            {saveMutation.isPending ? 'Saving...' : 'Save'}
+          <button
+            type="submit"
+            class={clsx(
+              'btn',
+              hasSomeInvalidUids && bypassEnrollmentCheck ? 'btn-warning' : 'btn-primary',
+            )}
+            disabled={saveMutation.isPending}
+            onClick={async (e) => {
+              if (hasSomeInvalidUids) {
+                if (!bypassEnrollmentCheck) {
+                  // Prevent the form from submitting
+                  e.preventDefault();
+                  await trigger('uids');
+                  setBypassEnrollmentCheck(true);
+                }
+              }
+            }}
+          >
+            {saveMutation.isPending
+              ? 'Saving...'
+              : hasSomeInvalidUids && bypassEnrollmentCheck
+                ? 'Continue Anyway'
+                : 'Save'}
           </button>
         </Modal.Footer>
       </form>
