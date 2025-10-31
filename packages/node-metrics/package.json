@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/node-metrics",
-  "version": "2.0.10",
+  "version": "2.0.11",
   "type": "module",
   "repository": {
     "type": "git",

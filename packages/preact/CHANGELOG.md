@@ -1,5 +1,17 @@
 # @prairielearn/preact
 
+## 1.0.4
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+- Updated dependencies [0425922]
+  - @prairielearn/compiled-assets@3.2.9
+  - @prairielearn/preact-cjs@1.1.6
+  - @prairielearn/error@2.0.22
+  - @prairielearn/utils@2.0.3
+  - @prairielearn/html@4.0.22
+
 ## 1.0.3
 
 ### Patch Changes

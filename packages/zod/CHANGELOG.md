@@ -1,5 +1,11 @@
 # @prairielearn/zod
 
+## 1.4.3
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
 ## 1.4.2
 
 ### Patch Changes
