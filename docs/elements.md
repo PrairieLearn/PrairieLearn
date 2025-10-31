@@ -13,7 +13,7 @@ student. These elements are traditionally referred to as form input fields.
 PrairieLearn presently provides the following templated **input field** elements:
 
 - [`pl-big-o-input`](#pl-big-o-input-element): Fill in a **symbolic** value representing asymptotic input.
-- [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a list.
+- [`pl-checkbox`](#pl-checkbox-element): Select **multiple options** from a list.
 - [`pl-excalidraw`](#pl-excalidraw-element): Draw a **vector diagram** using [excalidraw](https://github.com/excalidraw/excalidraw).
 - [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area to obtain a file with a specific naming scheme.
