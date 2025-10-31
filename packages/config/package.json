@@ -9,8 +9,8 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.899.0",
-    "@aws-sdk/client-secrets-manager": "^3.899.0",
+    "@aws-sdk/client-ec2": "^3.921.0",
+    "@aws-sdk/client-secrets-manager": "^3.921.0",
     "@prairielearn/aws-imds": "workspace:^",
     "fs-extra": "^11.3.2",
     "lodash": "^4.17.21",
@@ -20,7 +20,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
     "@types/lodash": "^4.17.20",
-    "@types/node": "^22.18.8",
+    "@types/node": "^22.18.13",
     "@vitest/coverage-v8": "^4.0.5",
     "tmp-promise": "^3.0.3",
     "tsx": "^4.20.6",
