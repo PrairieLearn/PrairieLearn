@@ -59,12 +59,14 @@ export function PublishingForm({
   canEdit,
   csrfToken,
   origHash,
+  accessControlExtensions,
 }: {
   courseInstance: StaffCourseInstance;
   hasAccessRules: boolean;
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
+  accessControlExtensions: CourseInstancePublishingExtensionWithUsers[];
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
