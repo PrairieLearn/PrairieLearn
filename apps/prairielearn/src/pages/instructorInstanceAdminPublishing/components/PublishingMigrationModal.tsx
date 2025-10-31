@@ -59,6 +59,12 @@ export function PublishingMigrationModal({
                       </pre>
                     </div>
 
+                    {migrationResult.warnings.length > 0 && (
+                      <div class="alert alert-warning" role="alert">
+                        <strong>Warnings:</strong> {migrationResult.warnings.join('\n')}
+                      </div>
+                    )}
+
                     <div class="mb-4">
                       <h6>New Access Control Configuration</h6>
                       <pre class="bg-light p-3 rounded">

@@ -6,6 +6,7 @@ import { type CourseInstanceAccessRule } from './db-types.js';
 
 export interface PublishingConfigurationMigrationResult {
   success: true;
+  warnings: string[];
   publishingConfiguration: PublishingJson;
 }
 
@@ -67,6 +68,24 @@ export function migrateAccessRuleJsonToPublishingConfiguration(
   // Make a deep copy of the access rules
   const accessRules = structuredClone(originalAccessRules);
 
+  const warnings: string[] = [];
+
+  const hasInstitutionConfig = accessRules.some((rule) => rule.institution != null);
+
+  if (hasInstitutionConfig) {
+    warnings.push(
+      "The 'institution' property is configured separately in self-enrollment settings. It will not be automatically migrated.",
+    );
+  }
+
+  const hasUidsConfig = accessRules.some((rule) => rule.uids != null && rule.uids.length > 0);
+
+  if (hasUidsConfig) {
+    warnings.push(
+      "The 'uids' property is configured separately as a publishing extension. It will not be automatically migrated.",
+    );
+  }
+
   const startDates = accessRules
     .map((rule) => rule.startDate)
     .filter((date) => date != null)
@@ -107,6 +126,7 @@ export function migrateAccessRuleJsonToPublishingConfiguration(
 
   return {
     success: true,
+    warnings,
     publishingConfiguration,
   };
 }
