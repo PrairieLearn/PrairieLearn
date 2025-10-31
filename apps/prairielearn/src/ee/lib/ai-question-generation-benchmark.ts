@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { type EmbeddingModel, type LanguageModel, generateObject } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
@@ -387,9 +387,9 @@ async function evaluateGeneratedQuestion({
     schema: QuestionGenerationEvaluationSchema,
     providerOptions: {
       openai: {
-        reasoningEffort: 'low',
         strictJsonSchema: true,
-      } satisfies OpenAIChatLanguageModelOptions,
+        reasoningEffort: 'low',
+      } satisfies OpenAIResponsesProviderOptions,
     },
   });
 

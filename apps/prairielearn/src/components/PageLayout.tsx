@@ -50,6 +50,12 @@ export function PageLayout({
     hxExt?: string;
     /** Sets the html and body tag heights to 100% */
     fullHeight?: boolean;
+    /** Whether or not to include padding around the content. */
+    contentPadding?: boolean;
+    /** The default state of the side navigation toggle. */
+    defaultNavToggleState?: boolean;
+    /** Whether or not to persist the navigation toggle state. Defaults to true. */
+    persistNavToggleState?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
@@ -65,6 +71,8 @@ export function PageLayout({
     paddingBottom: true,
     fullHeight: false,
     fullWidth: false,
+    contentPadding: true,
+    persistToggleState: true,
     ...options,
   };
 
@@ -78,7 +86,8 @@ export function PageLayout({
     const sideNavEnabled =
       resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
 
-    const sideNavExpanded = sideNavEnabled && resLocals.side_nav_expanded;
+    const sideNavExpanded =
+      sideNavEnabled && (resolvedOptions.defaultNavToggleState ?? resLocals.side_nav_expanded);
 
     let showContextNavigation = true;
 
@@ -160,6 +169,8 @@ export function PageLayout({
                         resLocals,
                         page: navContext.page,
                         subPage: navContext.subPage,
+                        sideNavExpanded,
+                        persistToggleState: resolvedOptions.persistNavToggleState,
                       })}
                     </div>
                   </nav>
@@ -188,11 +199,15 @@ export function PageLayout({
                 <main
                   id="content"
                   class="${clsx(
-                    resolvedOptions.fullWidth ? 'container-fluid' : 'container',
-                    resolvedOptions.paddingBottom && 'pb-4',
+                    resolvedOptions.contentPadding
+                      ? resolvedOptions.fullWidth
+                        ? 'container-fluid'
+                        : 'container'
+                      : null,
+                    resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
                     resolvedOptions.fullHeight && 'h-100',
-                    'pt-3',
-                    sideNavEnabled && 'px-3',
+                    resolvedOptions.contentPadding && 'pt-3',
+                    resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
                   )}"
                 >
                   ${contentString}
@@ -231,8 +246,12 @@ export function PageLayout({
             id="content"
             class="
             ${clsx(
-              resolvedOptions.fullWidth ? 'container-fluid' : 'container',
-              resolvedOptions.paddingBottom && 'pb-4',
+              resolvedOptions.contentPadding
+                ? resolvedOptions.fullWidth
+                  ? 'container-fluid'
+                  : 'container'
+                : null,
+              resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
               resolvedOptions.fullHeight && 'flex-grow-1',
             )}
           "

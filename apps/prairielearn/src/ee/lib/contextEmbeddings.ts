@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
 import fs from 'fs-extra';
 import klaw from 'klaw';
@@ -55,7 +55,7 @@ export async function createEmbedding(
     providerOptions: {
       openai: {
         user: openAiUser,
-      } satisfies OpenAIChatLanguageModelOptions,
+      } satisfies OpenAIResponsesProviderOptions,
     },
   });
 
@@ -124,12 +124,12 @@ export async function syncContextDocuments(embeddingModel: EmbeddingModel, authn
       const filename = path.basename(file.path);
       if (filename !== 'question.html') continue;
 
-      const fileText = await buildContextForQuestion(path.dirname(file.path));
-      if (fileText) {
+      const questionContext = await buildContextForQuestion(path.dirname(file.path));
+      if (questionContext) {
         await insertDocumentChunk(
           embeddingModel,
           path.relative(REPOSITORY_ROOT_PATH, file.path),
-          { text: fileText, chunkId: '' },
+          { text: questionContext.context, chunkId: '' },
           job,
           openAiUserFromAuthn(authnUserId),
         );
