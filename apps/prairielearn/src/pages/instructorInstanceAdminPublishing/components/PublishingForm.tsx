@@ -1,5 +1,4 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { QueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useEffect, useState } from 'preact/compat';
 import { Alert } from 'react-bootstrap';
@@ -7,18 +6,12 @@ import { useForm } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
 import {
   DateToPlainDateTime,
   nowDateInTimezone,
   plainDateTimeStringToDate,
 } from '../utils/dateUtils.js';
-
-import { PublishingExtensions } from './PublishingExtensions.js';
-
-// Create QueryClient outside component to ensure stability
-const queryClient = new QueryClient();
 
 type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
 
@@ -617,21 +610,6 @@ export function PublishingForm({
             </div>
           )}
         </form>
-
-        {/* Access Control Extensions Section */}
-        {startDate && (
-          <>
-            <hr class="my-4" />
-            <QueryClientProviderDebug client={queryClient} isDevMode={false}>
-              <PublishingExtensions
-                courseInstance={courseInstance}
-                initialExtensions={accessControlExtensions}
-                canEdit={canEdit}
-                csrfToken={csrfToken}
-              />
-            </QueryClientProviderDebug>
-          </>
-        )}
       </div>
     </>
   );
