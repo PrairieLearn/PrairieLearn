@@ -118,7 +118,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   }
 
   describe('no publishing dates', () => {
-    it('allows no access when publishing_start_date is null', async () => {
+    it('forbids access when publishing_start_date is null', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: null,
         publishing_end_date: null,
@@ -140,7 +140,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('before publishing start date', () => {
-    it('allows no access when request date is before publishing_start_date', async () => {
+    it('forbids access when request date is before publishing_start_date', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -160,7 +160,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       assert.isFalse(result.has_student_access_with_enrollment);
     });
 
-    it('allows no access even with enrollment when before start date', async () => {
+    it('forbids access even with enrollment when before start date', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -226,7 +226,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('after publishing end date', () => {
-    it('allows no access when request date is after end date without enrollment', async () => {
+    it('forbids access when request date is after end date without enrollment', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -246,7 +246,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       assert.isFalse(result.has_student_access_with_enrollment);
     });
 
-    it('allows no access when request date is after end date with enrollment but no extensions', async () => {
+    it('forbids access when request date is after end date with enrollment but no extensions', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
@@ -303,7 +303,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       assert.isTrue(result.has_student_access_with_enrollment);
     });
 
-    it('allows no access when request date is after all extensions', async () => {
+    it('forbids access when request date is after all extensions', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
