@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
-import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
 import {
   DateToPlainDateTime,
   nowDateInTimezone,
@@ -52,14 +51,12 @@ export function PublishingForm({
   canEdit,
   csrfToken,
   origHash,
-  accessControlExtensions,
 }: {
   courseInstance: StaffCourseInstance;
   hasAccessRules: boolean;
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
-  accessControlExtensions: CourseInstancePublishingExtensionWithUsers[];
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

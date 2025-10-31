@@ -94,10 +94,6 @@ router.get(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const accessControlExtensions = await selectPublishingExtensionsWithUsersByCourseInstance(
-      res.locals.course_instance.id,
-    );
-
     const {
       authz_data: {
         has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
@@ -155,7 +151,6 @@ router.get(
             />
             <InstructorInstanceAdminPublishing
               isExampleCourse={course.example_course}
-              accessControlExtensions={accessControlExtensions}
               courseInstance={courseInstance}
               hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
               hasCourseInstancePermissionView={hasCourseInstancePermissionView}
