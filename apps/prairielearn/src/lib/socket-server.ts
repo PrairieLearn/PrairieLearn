@@ -52,6 +52,7 @@ export function init(server: http.Server) {
   io = new Server(server);
   if (config.redisUrl) {
     // Use redis to mirror broadcasts via all servers.
+    //
     // We set `disableClientInfo: true` to work around this bug:
     // https://github.com/redis/ioredis/issues/2037
     pub = new Redis(config.redisUrl, { disableClientInfo: true });
