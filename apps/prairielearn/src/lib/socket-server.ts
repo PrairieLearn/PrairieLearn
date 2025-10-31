@@ -51,10 +51,11 @@ export function init(server: http.Server) {
   debug('init(): creating socket server');
   io = new Server(server);
   if (config.redisUrl) {
-    // Use redis to mirror broadcasts via all servers
-    debug('init(): initializing redis pub/sub clients');
-    pub = new Redis(config.redisUrl);
-    sub = new Redis(config.redisUrl);
+    // Use redis to mirror broadcasts via all servers.
+    // We set `disableClientInfo: true` to work around this bug:
+    // https://github.com/redis/ioredis/issues/2037
+    pub = new Redis(config.redisUrl, { disableClientInfo: true });
+    sub = new Redis(config.redisUrl, { disableClientInfo: true });
 
     attachEventListeners(pub, 'pub');
     attachEventListeners(sub, 'sub');

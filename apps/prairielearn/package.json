@@ -160,7 +160,7 @@
     "htmx.org": "^2.0.7",
     "http-proxy-middleware": "^3.0.5",
     "http-status": "^2.1.0",
-    "ioredis": "^5.8.0",
+    "ioredis": "^5.8.2",
     "is-plain-obj": "^4.1.0",
     "isbinaryfile": "^5.0.6",
     "jju": "^1.4.0",
