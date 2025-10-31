@@ -3763,7 +3763,7 @@ __metadata:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    ioredis: "npm:^5.8.2"
+    ioredis: "npm:^5.8.0"
     lru-cache: "npm:^11.2.2"
     typescript: "npm:^5.9.3"
     zod: "npm:^3.25.76"
@@ -4394,13 +4394,13 @@ __metadata:
     he: "npm:^1.2.0"
     highlight.js: "npm:^11.11.1"
     html-rewriter-wasm: "npm:^0.4.1"
-    html-validate: "npm:^10.2.1"
+    html-validate: "npm:^10.0.0"
     htmx-ext-loading-states: "npm:^2.0.2"
     htmx-ext-morphdom-swap: "npm:^2.0.2"
     htmx.org: "npm:^2.0.8"
     http-proxy-middleware: "npm:^3.0.5"
     http-status: "npm:^2.1.0"
-    ioredis: "npm:^5.8.2"
+    ioredis: "npm:^5.8.0"
     is-plain-obj: "npm:^4.1.0"
     isbinaryfile: "npm:^5.0.6"
     jju: "npm:^1.4.0"
@@ -4706,7 +4706,7 @@ __metadata:
     express: "npm:^4.21.2"
     express-async-handler: "npm:^1.2.0"
     fast-glob: "npm:^3.3.3"
-    ioredis: "npm:^5.8.2"
+    ioredis: "npm:^5.8.0"
     lodash: "npm:^4.17.21"
     minimist: "npm:^1.2.8"
     node-fetch: "npm:3.3.2"
@@ -11970,9 +11970,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html-validate@npm:^10.2.1":
-  version: 10.2.1
-  resolution: "html-validate@npm:10.2.1"
+"html-validate@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "html-validate@npm:10.0.0"
   dependencies:
     "@html-validate/stylish": "npm:^4.1.0"
     "@sidvind/better-ajv-errors": "npm:4.0.0"
@@ -11986,7 +11986,7 @@ __metadata:
     jest: ^28.1.3 || ^29.0.3 || ^30.0.0
     jest-diff: ^28.1.3 || ^29.0.3 || ^30.0.0
     jest-snapshot: ^28.1.3 || ^29.0.3 || ^30.0.0
-    vitest: ^1.0.0 || ^2.0.0 || ^3.0.0 || ^4.0.0
+    vitest: ^1.0.0 || ^2.0.0 || ^3.0.0
   peerDependenciesMeta:
     jest:
       optional: true
@@ -11998,7 +11998,7 @@ __metadata:
       optional: true
   bin:
     html-validate: bin/html-validate.mjs
-  checksum: 10c0/f2eb91d14fb3d6c34475d083762b73630bcb86f65e2ea027b7e2b7df35f23df8b3f4333a6a71405deb70fbfc08ff34ebdf429acc1642c5155838e139a6b9c639
+  checksum: 10c0/39af9649a1990b0a70993951ed29ac5c7c769a0434c2e4248f0b66b2d6e04a27ee15f850f3f8e4e2eb62494bf2606f45af9f5193c11196056594fdbf29b8bc0e
   languageName: node
   linkType: hard
 
@@ -12349,9 +12349,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ioredis@npm:^5.8.2":
-  version: 5.8.2
-  resolution: "ioredis@npm:5.8.2"
+"ioredis@npm:^5.8.0":
+  version: 5.8.0
+  resolution: "ioredis@npm:5.8.0"
   dependencies:
     "@ioredis/commands": "npm:1.4.0"
     cluster-key-slot: "npm:^1.1.0"
@@ -12362,7 +12362,7 @@ __metadata:
     redis-errors: "npm:^1.2.0"
     redis-parser: "npm:^3.0.0"
     standard-as-callback: "npm:^2.1.0"
-  checksum: 10c0/305e385f811d49908899e32c2de69616cd059f909afd9e0a53e54f596b1a5835ee3449bfc6a3c49afbc5a2fd27990059e316cc78f449c94024957bd34c826d88
+  checksum: 10c0/66fad6283c6d9052b4aa0987d592c1bf6c9471304eb0edf0c9d18024b1b38028adf29c05f1cf114b90f5bdb516576f897a654946e8c29568f404ac33cd3b9d19
   languageName: node
   linkType: hard
 
