@@ -16,7 +16,7 @@
     "debounce": "^2.2.0",
     "picomatch": "^4.0.2",
     "strip-ansi": "^7.1.2",
-    "vite": "^7.1.11"
+    "vite": "^7.1.12"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
