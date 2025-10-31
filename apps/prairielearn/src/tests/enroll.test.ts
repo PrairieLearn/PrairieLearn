@@ -7,10 +7,7 @@ import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
-import {
-  selectCourseInstanceById,
-  selectOptionalCourseInstanceById,
-} from '../models/course-instances.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
   selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUserId,
@@ -501,7 +498,7 @@ describe('Self-enrollment institution restriction transitions', () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
 
-    const instance = await selectOptionalCourseInstanceById('1');
+    const instance = await selectCourseInstanceById('1');
     assert.isNotNull(instance);
 
     // Set uid_regexp for the default institution to allow @example.com UIDs

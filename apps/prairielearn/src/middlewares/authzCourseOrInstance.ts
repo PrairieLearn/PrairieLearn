@@ -9,8 +9,12 @@ import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
-import type { FullAuthzDataSchema } from '../lib/authz-data-lib.js';
-import { buildAuthzData, selectAuthzData } from '../lib/authz-data.js';
+import type { FullAuthzData } from '../lib/authz-data-lib.js';
+import {
+  buildAuthzData,
+  calculateModernCourseInstanceStudentAccess,
+  selectAuthzData,
+} from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
@@ -26,8 +30,6 @@ interface Override {
   value: string;
   cookie: string;
 }
-
-type FullAuthzData = z.infer<typeof FullAuthzDataSchema>;
 
 /**
  * Removes all override cookies from the response.
@@ -596,7 +598,33 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       res.locals.authz_data.user_with_requested_uid_has_instructor_access_to_course_instance =
         user_with_requested_uid_has_instructor_access_to_course_instance;
     }
+  }
 
+  res.locals.authz_data.overrides = overrides;
+
+  res.locals.user = res.locals.authz_data.user;
+  res.locals.is_administrator = res.locals.authz_data.is_administrator;
+
+  res.locals.authz_data.mode = effectiveAuthzData.mode;
+  res.locals.authz_data.mode_reason = effectiveAuthzData.mode_reason;
+  res.locals.req_date = req_date;
+
+  // Recalculate this for the effective user as well.
+  if (req.params.course_instance_id) {
+    if (
+      res.locals.course_instance?.modern_publishing &&
+      res.locals.authz_data.course_instance_role === 'None'
+    ) {
+      // We use this access system instead of the legacy access system.
+      const { has_student_access, has_student_access_with_enrollment } =
+        await calculateModernCourseInstanceStudentAccess(
+          res.locals.course_instance,
+          res.locals.authz_data,
+          req_date,
+        );
+      res.locals.authz_data.has_student_access = has_student_access;
+      res.locals.authz_data.has_student_access_with_enrollment = has_student_access_with_enrollment;
+    }
     // If the effective user is the same as the authenticated user and the
     // effective user has not requested any specific role, we'll treat them
     // as though they're enrolled in the course instance as a student. This is
@@ -610,15 +638,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       res.locals.authz_data.has_student_access_with_enrollment = true;
     }
   }
-
-  res.locals.authz_data.overrides = overrides;
-
-  res.locals.user = res.locals.authz_data.user;
-  res.locals.is_administrator = res.locals.authz_data.is_administrator;
-
-  res.locals.authz_data.mode = effectiveAuthzData.mode;
-  res.locals.authz_data.mode_reason = effectiveAuthzData.mode_reason;
-  res.locals.req_date = req_date;
 }
 
 export default asyncHandler(async (req, res, next) => {

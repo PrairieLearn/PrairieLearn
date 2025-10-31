@@ -52,3 +52,8 @@ export function assertNever(value: never): never {
   // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   throw new Error(`Unexpected value: ${value}`);
 }
+
+/** Force typescript to resolve the type immediately */
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+} & {};

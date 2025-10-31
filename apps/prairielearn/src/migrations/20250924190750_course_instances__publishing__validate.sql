@@ -1,0 +1,3 @@
+ALTER TABLE course_instances VALIDATE CONSTRAINT course_instances_publishing_dates_consistency_check;
+
+ALTER TABLE course_instance_publishing_extensions VALIDATE CONSTRAINT course_instance_publishing_extensions_name_not_empty;

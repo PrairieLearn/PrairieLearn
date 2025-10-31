@@ -1,11 +1,24 @@
+import assert from 'assert';
+
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { FullAuthzDataSchema } from './authz-data-lib.js';
-import { type User } from './db-types.js';
+import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
+import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
+
+import {
+  FullAuthzDataSchema,
+  type RawPageAuthzData,
+  dangerousFullSystemAuthz,
+} from './authz-data-lib.js';
+import { type CourseInstance, type User } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+/**
+ * If course_id is not provided, but course_instance_id is,
+ * the function will use the course_id from the course instance.
+ */
 export async function selectAuthzData({
   user_id,
   course_id,
@@ -48,11 +61,79 @@ export async function selectAuthzData({
 }
 
 /**
+ * Checks if the user has access to the course instance. If the user is a student,
+ * the course instance must be published to them.
+ *
+ * This function is only used by authzData.ts
+ *
+ * @param courseInstance - The course instance to check access for.
+ * @param authzData - The authorization data of the user.
+ * @param reqDate - The date of the request.
+ */
+export async function calculateModernCourseInstanceStudentAccess(
+  courseInstance: CourseInstance,
+  authzData: RawPageAuthzData,
+  reqDate: Date,
+) {
+  // This function should only be called for course instances that are using
+  // modern publishing configs.
+  assert(courseInstance.modern_publishing);
+
+  const enrollment = await selectOptionalEnrollmentByUserId({
+    userId: authzData.user.user_id,
+    requestedRole: 'Student',
+    authzData,
+    courseInstance,
+  });
+
+  // Not published at all.
+  if (courseInstance.publishing_start_date == null) {
+    return { has_student_access: false, has_student_access_with_enrollment: false };
+  }
+
+  // End date is always set alongside start date
+  assert(courseInstance.publishing_end_date != null);
+
+  // Before the start date, we definitely don't have access.
+  if (reqDate < courseInstance.publishing_start_date) {
+    return { has_student_access: false, has_student_access_with_enrollment: false };
+  }
+
+  // If we are before the end date and after the start date, we definitely have access.
+  if (reqDate < courseInstance.publishing_end_date) {
+    return { has_student_access: true, has_student_access_with_enrollment: enrollment != null };
+  }
+
+  // We are after the end date. We might have access if we have an extension.
+  // Only enrolled students can have extensions.
+  if (!enrollment) {
+    return { has_student_access: false, has_student_access_with_enrollment: false };
+  }
+
+  const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollment({
+    enrollment,
+    // Our current authzData would say we can't access this, but we are actually building up
+    // authzData with this function, so we use system auth to get the latest extension.
+    authzData: dangerousFullSystemAuthz(),
+    requestedRole: 'System',
+  });
+
+  // Check if we have access via extension.
+  const hasAccessViaExtension =
+    latestPublishingExtension !== null && reqDate < latestPublishingExtension.end_date;
+
+  return {
+    has_student_access: hasAccessViaExtension,
+    has_student_access_with_enrollment: hasAccessViaExtension,
+  };
+}
+
+/**
  * Builds the authorization data for a user on a page.
  *
  * @param params
  * @param params.authn_user - The authenticated user.
- * @param params.course_id - The ID of the course.
+ * @param params.course_id - The ID of the course. Inferred from the course instance if null.
  * @param params.course_instance_id - The ID of the course instance.
  * @param params.is_administrator - Whether the user is an administrator.
  * @param params.ip - The IP address of the request.
@@ -76,6 +157,8 @@ export async function buildAuthzData({
   req_date: Date;
   req_mode?: string | null;
 }) {
+  assert(course_id !== null || course_instance_id !== null);
+
   const isCourseInstance = Boolean(course_instance_id);
 
   const rawAuthzData = await selectAuthzData({
@@ -146,6 +229,24 @@ export async function buildAuthzData({
       };
     }),
   };
+
+  // Only students and instructors in 'Student view' (users with role 'None') should run this code.
+  if (
+    rawAuthzData.course_instance?.modern_publishing &&
+    authzData.course_instance_role === 'None'
+  ) {
+    // We use this access system instead of the legacy access system.
+    const { has_student_access, has_student_access_with_enrollment } =
+      await calculateModernCourseInstanceStudentAccess(
+        rawAuthzData.course_instance,
+        authzData,
+        req_date,
+      );
+    authzData.has_student_access = has_student_access;
+    authzData.has_student_access_with_enrollment = has_student_access_with_enrollment;
+    authzData.authn_has_student_access = has_student_access;
+    authzData.authn_has_student_access_with_enrollment = has_student_access_with_enrollment;
+  }
 
   return {
     authzData,

@@ -1,3 +1,4 @@
+import { isFuture, parseISO } from 'date-fns';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -403,9 +404,16 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   if (!courseInstance) return false;
 
   // If there are no access rules, the course instance is not accessible.
-  if (courseInstance.allowAccess.length === 0) return false;
+  if (courseInstance.allowAccess) {
+    if (courseInstance.allowAccess.length === 0) return false;
+    return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
+  }
 
-  return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
+  if (courseInstance.publishing?.endDate == null || courseInstance.publishing.startDate == null) {
+    return false;
+  }
+
+  return isFuture(parseISO(courseInstance.publishing.endDate));
 }
 
 export async function sync(

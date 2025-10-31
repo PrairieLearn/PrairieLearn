@@ -1,8 +1,11 @@
+import z from 'zod';
+
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
+  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -31,6 +34,7 @@ import {
   EnrollmentSchema,
   type EnumEnrollmentStatus,
   type Institution,
+  UserSchema,
 } from '../lib/db-types.js';
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
@@ -338,9 +342,6 @@ export async function generateAndEnrollUsers({
       await ensureEnrollment({
         courseInstance,
         userId: user.user_id,
-        // Typically, model code should never set requestedRole,
-        // but this function is only used in test code where we don't care about
-        // the role the caller requests.
         requestedRole: 'System',
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
@@ -348,6 +349,31 @@ export async function generateAndEnrollUsers({
     }
     return users;
   });
+}
+
+/**
+ * Gets enrollments and associated users for the given UIDs in a course instance.
+ */
+export async function selectUsersAndEnrollmentsByUidsInCourseInstance({
+  uids,
+  courseInstance,
+  requestedRole,
+  authzData,
+}: {
+  uids: string[];
+  courseInstance: CourseInstanceContext;
+  requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor';
+  authzData: AuthzData;
+}) {
+  assertHasRole(authzData, requestedRole);
+  return await queryRows(
+    sql.select_enrollments_by_uids_in_course_instance,
+    { uids, course_instance_id: courseInstance.id },
+    z.object({
+      enrollment: EnrollmentSchema,
+      user: UserSchema,
+    }),
+  );
 }
 
 export async function selectEnrollmentById({
@@ -358,7 +384,7 @@ export async function selectEnrollmentById({
 }: {
   id: string;
   courseInstance: CourseInstanceContext;
-  requestedRole: 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  requestedRole: 'System' | 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
   authzData: AuthzData;
 }) {
   assertHasRole(authzData, requestedRole);

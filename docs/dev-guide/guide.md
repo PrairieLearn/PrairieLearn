@@ -550,10 +550,21 @@ In some cases, you may not have access to `authzData`, e.g. if you are pulling d
 await updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
+  // We are authorizing as the system, any non-system role will throw an error.
   requestedRole: 'System',
   authzData: dangerousFullSystemAuthz(),
 });
 ```
+
+### Exceptions to the pattern
+
+Model functions for assessments, course instances and courses are a notable exception to the pattern.
+
+The only way to obtain a full row object for an assessment, course instance or course is typically through `res.locals.authz_data`.
+
+Thus, the `select*` functions are not authenticated. Using these is a red flag in most cases, as you should be able to pick information from `res.locals.authz_data` to perform the action.
+
+Alternatively, if you want to check if you _might_ be authorized to perform an action, you can use `buildAuthzData` with the a course/instance/assessment ID to get an `authzData` object that you can use for data-modifying actions.
 
 ## State-modifying POST requests
 

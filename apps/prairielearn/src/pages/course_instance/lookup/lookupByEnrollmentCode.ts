@@ -2,9 +2,12 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { dangerousFullSystemAuthz } from '../../../lib/authz-data-lib.js';
+import { HttpStatusError } from '@prairielearn/error';
+
+import { hasRole } from '../../../lib/authz-data-lib.js';
+import { buildAuthzData } from '../../../lib/authz-data.js';
 import type { User } from '../../../lib/db-types.js';
-import { selectOptionalCourseInstanceByEnrollmentCode } from '../../../models/course-instances.js';
+import { selectOptionalCourseInstanceIdByEnrollmentCode } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
 import { selectOptionalEnrollmentByUid } from '../../../models/enrollment.js';
 
@@ -19,23 +22,42 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     // Parse and validate the code parameter
-    const { code, course_instance_id: courseInstanceId } = LookupCodeSchema.parse(req.query);
+    const { code, course_instance_id: courseInstanceIdToCheck } = LookupCodeSchema.parse(req.query);
 
     // Look up the course instance by enrollment code
-    const courseInstance = await selectOptionalCourseInstanceByEnrollmentCode(code);
-
-    // User-facing terminology is to use "course" instead of "course instance"
-
-    if (!courseInstance) {
+    const courseInstanceId = await selectOptionalCourseInstanceIdByEnrollmentCode({
+      enrollment_code: code,
+    });
+    if (!courseInstanceId) {
+      // User-facing terminology is to use "course" instead of "course instance"
       res.status(404).json({
         error: 'No course found with this enrollment code',
       });
       return;
     }
 
-    if (courseInstanceId && courseInstance.id !== courseInstanceId) {
+    if (courseInstanceIdToCheck && courseInstanceId !== courseInstanceIdToCheck) {
       res.status(404).json({
         error: 'This enrollment code is for a different course',
+      });
+      return;
+    }
+
+    const { authzData, authzCourseInstance: courseInstance } = await buildAuthzData({
+      authn_user: res.locals.authn_user,
+      course_id: null, // Inferred via course_instance_id
+      course_instance_id: courseInstanceId,
+      is_administrator: res.locals.is_administrator,
+      ip: req.ip ?? null,
+      req_date: res.locals.req_date,
+    });
+    if (authzData === null || courseInstance === null) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
+
+    if (!hasRole(authzData, 'Student')) {
+      res.status(404).json({
+        error: 'Only students can lookup course instances',
       });
       return;
     }
@@ -45,8 +67,8 @@ router.get(
     const existingEnrollment = await selectOptionalEnrollmentByUid({
       uid: res.locals.authn_user.uid,
       courseInstance,
-      requestedRole: 'System',
-      authzData: dangerousFullSystemAuthz(),
+      requestedRole: 'Student',
+      authzData,
     });
 
     if (existingEnrollment) {
