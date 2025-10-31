@@ -572,7 +572,7 @@ export default tseslint.config([
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['vite.config.ts', 'vitest.config.ts'],
+          allowDefaultProject: ['playwright.config.ts', 'vite.config.ts', 'vitest.config.ts'],
         },
         tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
       },
