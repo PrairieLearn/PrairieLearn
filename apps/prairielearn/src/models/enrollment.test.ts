@@ -2,7 +2,7 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { type CourseInstance, type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
@@ -76,8 +76,8 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'invited');
@@ -87,16 +87,16 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       courseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       courseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -107,8 +107,8 @@ describe('ensureEnrollment', () => {
     const invitedEnrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
       courseInstance,
-      requestedRole: 'Student Data Editor',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNull(invitedEnrollment);
   });
@@ -131,8 +131,8 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'blocked');
@@ -142,8 +142,8 @@ describe('ensureEnrollment', () => {
       await ensureEnrollment({
         courseInstance,
         userId: user.user_id,
-        requestedRole: 'Student',
-        authzData: dangerousFullAuthzForTesting(),
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
       assert.fail('Expected error to be thrown');
@@ -155,8 +155,8 @@ describe('ensureEnrollment', () => {
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'blocked');
@@ -174,24 +174,24 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNull(initialEnrollment);
 
     await ensureEnrollment({
       courseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
@@ -217,8 +217,8 @@ describe('ensureEnrollment', () => {
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'joined');
@@ -227,16 +227,16 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       courseInstance,
       userId: user.user_id,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');

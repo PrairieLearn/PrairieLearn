@@ -4,7 +4,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
@@ -98,8 +98,8 @@ describe('Homepage enrollment actions', () => {
       const enrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        authzData: dangerousFullAuthzForTesting(),
-        requestedRole: 'Student',
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(enrollment);
       assert.equal(enrollment.status, 'joined');
@@ -121,8 +121,8 @@ describe('Homepage enrollment actions', () => {
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        authzData: dangerousFullAuthzForTesting(),
-        requestedRole: 'Student',
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);
       assert.equal(finalEnrollment.status, 'joined');
@@ -171,8 +171,8 @@ describe('Homepage enrollment actions', () => {
       const enrollment = await selectOptionalEnrollmentByPendingUid({
         pendingUid: user.uid,
         courseInstance,
-        authzData: dangerousFullAuthzForTesting(),
-        requestedRole: 'Student',
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(enrollment);
       assert.equal(enrollment.status, 'rejected');
@@ -194,8 +194,8 @@ describe('Homepage enrollment actions', () => {
       const finalEnrollment = await selectOptionalEnrollmentByPendingUid({
         pendingUid: user.uid,
         courseInstance,
-        authzData: dangerousFullAuthzForTesting(),
-        requestedRole: 'Student',
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);
       assert.equal(finalEnrollment.status, 'rejected');
@@ -267,8 +267,8 @@ describe('Homepage enrollment actions', () => {
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        authzData: dangerousFullAuthzForTesting(),
-        requestedRole: 'Student',
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);
       assert.equal(finalEnrollment.status, 'joined');
@@ -317,8 +317,8 @@ describe('Homepage enrollment actions', () => {
       const rejectedEnrollment = await selectOptionalEnrollmentByPendingUid({
         pendingUid: user.uid,
         courseInstance,
-        authzData: dangerousFullAuthzForTesting(),
-        requestedRole: 'Student',
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(rejectedEnrollment);
       assert.equal(rejectedEnrollment.status, 'rejected');
@@ -340,8 +340,8 @@ describe('Homepage enrollment actions', () => {
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        authzData: dangerousFullAuthzForTesting(),
-        requestedRole: 'Student',
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);
       assert.equal(finalEnrollment.status, 'joined');
@@ -389,8 +389,8 @@ describe('Homepage enrollment actions', () => {
       const enrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        authzData: dangerousFullAuthzForTesting(),
-        requestedRole: 'Student',
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(enrollment);
       assert.equal(enrollment.status, 'removed');
@@ -412,8 +412,8 @@ describe('Homepage enrollment actions', () => {
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        authzData: dangerousFullAuthzForTesting(),
-        requestedRole: 'Student',
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);
       assert.equal(finalEnrollment.status, 'removed');

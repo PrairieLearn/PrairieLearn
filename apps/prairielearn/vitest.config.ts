@@ -1,6 +1,6 @@
 import { join } from 'path';
 
-import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
+import { defineConfig, mergeConfig } from 'vitest/config';
 
 import { sharedConfig } from '../../vitest.config';
 
@@ -22,19 +22,12 @@ const isRunningOnDist = process.argv
 const dockerSmokeTests = ['src/tests/exampleCourseQuestions.test.ts'];
 
 export default defineConfig(({ mode }) => {
-  let include: string[] = configDefaults.include;
-  let exclude: string[] = [...configDefaults.exclude, '**/e2e/**'];
-
   // For CI, we want to run a subset of tests natively, and a subset of tests only in Docker.
   // We control this via the `mode` argument passed to the Vitest CLI
   // We do this instead of defining separate projects as we want this toggle available in
   // the root project config and this config, and projects aren't inherited by the root config.
-  if (mode === 'docker-smoke-tests') {
-    if (isRunningOnDist) throw new Error('Cannot run docker-smoke-tests tests on dist files.');
-    include = dockerSmokeTests;
-  } else if (isRunningOnDist) {
-    include = [join(import.meta.dirname, 'dist/**/*.test.js')];
-    exclude = configDefaults.exclude.filter((e) => !e.includes('/dist/'));
+  if (mode === 'docker-smoke-tests' && isRunningOnDist) {
+    throw new Error('Cannot run docker-smoke-tests tests on dist files.');
   }
 
   return mergeConfig(
@@ -42,8 +35,9 @@ export default defineConfig(({ mode }) => {
     defineConfig({
       test: {
         name: '@prairielearn/prairielearn',
-        include,
-        exclude,
+        dir: isRunningOnDist ? `${import.meta.dirname}/dist` : `${import.meta.dirname}/src`,
+        include: mode === 'docker-smoke-tests' ? dockerSmokeTests : undefined,
+        exclude: ['**/e2e/**'],
         globalSetup: isRunningOnDist
           ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
           : join(import.meta.dirname, './src/tests/vitest.globalSetup.ts'),
@@ -55,8 +49,7 @@ export default defineConfig(({ mode }) => {
         testTimeout: 10_000,
 
         coverage: {
-          all: true,
-          include: ['src/**'],
+          include: ['src/**/*.{ts,tsx}'],
           reporter: ['html', 'text-summary', 'cobertura'],
         },
       },
