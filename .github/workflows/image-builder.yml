@@ -89,7 +89,7 @@ jobs:
 
       - name: Download metadata
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: image-metadata-${{ inputs.group }}-*-${{ env.COMMIT_SHA }}
           path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
