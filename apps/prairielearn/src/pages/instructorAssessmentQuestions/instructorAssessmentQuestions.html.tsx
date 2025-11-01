@@ -15,9 +15,13 @@ import { InstructorAssessmentQuestionsTable } from './components/InstructorAsses
 export function InstructorAssessmentQuestions({
   resLocals,
   questionRows,
+  origHash,
+  editorEnabled,
 }: {
   resLocals: Record<string, any>;
   questionRows: StaffAssessmentQuestionRow[];
+  origHash: string;
+  editorEnabled: boolean;
 }) {
   const { authz_data, urlPrefix } = getPageContext(resLocals);
   const { course_instance, course } = getCourseInstanceContext(resLocals, 'instructor');
@@ -49,6 +53,7 @@ export function InstructorAssessmentQuestions({
             course={course}
             questionRows={questionRows}
             urlPrefix={urlPrefix}
+            assessment={assessment}
             assessmentType={assessment.type}
             assessmentSetName={assessment_set.name}
             assessmentNumber={assessment.number}
@@ -57,6 +62,8 @@ export function InstructorAssessmentQuestions({
               resLocals.authz_data.has_course_instance_permission_edit
             }
             csrfToken={resLocals.__csrf_token}
+            origHash={origHash}
+            editorEnabled={editorEnabled}
           />
         </Hydrate>
       </>

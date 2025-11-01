@@ -4,6 +4,7 @@ import type {
   StaffAssessmentQuestion,
 } from '../lib/client/safe-db-types.js';
 import type { AlternativeGroup, AssessmentQuestion } from '../lib/db-types.js';
+import type { ZoneAssessmentJson, ZoneQuestionJson } from '../schemas/infoAssessment.js';
 
 export function AssessmentQuestionHeaders({
   question,
@@ -49,6 +50,54 @@ export function AssessmentQuestionHeaders({
         ''
       )}
     </>
+  );
+}
+
+export function ZoneHeader({
+  zone,
+  zoneNumber,
+  nTableCols,
+}: {
+  zone: ZoneAssessmentJson;
+  zoneNumber: number;
+  nTableCols: number;
+}) {
+  return (
+    <tr>
+      <th colspan={nTableCols + 1}>
+        Zone {zoneNumber}. {zone.title}{' '}
+        {zone.numberChoose == null
+          ? '(Choose all questions)'
+          : zone.numberChoose === 1
+            ? '(Choose 1 question)'
+            : `(Choose ${zone.numberChoose} questions)`}
+        {zone.maxPoints != null ? ` (maximum ${zone.maxPoints} points)` : ''}
+        {zone.bestQuestions != null ? ` (best ${zone.bestQuestions} questions)` : ''}
+      </th>
+    </tr>
+  );
+}
+
+export function AlternativeGroupHeader({
+  alternativeGroup,
+  alternativeGroupNumber,
+  nTableCols,
+}: {
+  alternativeGroup: ZoneQuestionJson;
+  alternativeGroupNumber: number;
+  nTableCols: number;
+}) {
+  return (
+    <tr>
+      <td colspan={nTableCols}>
+        {alternativeGroupNumber}.{' '}
+        {alternativeGroup.numberChoose == null
+          ? 'Choose all questions from:'
+          : alternativeGroup.numberChoose === 1
+            ? 'Choose 1 question from:'
+            : `Choose ${alternativeGroup.numberChoose} questions from:`}
+      </td>
+    </tr>
   );
 }
 
