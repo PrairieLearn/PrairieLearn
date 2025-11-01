@@ -1,4 +1,4 @@
-FROM node:24-bookworm
+FROM node:25-bookworm
 ARG CACHEBUST=2025-10-15-14-17-30
 
 RUN apt-get update \
