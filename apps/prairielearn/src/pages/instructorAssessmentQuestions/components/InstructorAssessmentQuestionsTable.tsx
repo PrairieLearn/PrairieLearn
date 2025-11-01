@@ -654,7 +654,7 @@ function Zone({
         <tr>
           <td colspan={nTableCols}>
             <button class="btn btn-sm" type="button" onClick={() => handleAddQuestion(zoneNumber)}>
-              <i class="fa fa-add" aria-hidden="true" /> Add Question to Zone
+              <i class="fa fa-add" aria-hidden="true" /> Add question to zone
             </button>
           </td>
         </tr>
@@ -754,7 +754,7 @@ export function InstructorAssessmentQuestionsTable({
   };
 
   const handleAddQuestion = (zoneNumber: number) => {
-    setSelectedQuestion({} as ZoneQuestionJson);
+    setSelectedQuestion({ id: '' } as ZoneQuestionJson);
     setSelectedQuestionDisplayName('');
     setSelectedQuestionPosition({
       zoneNumber,

@@ -28,7 +28,7 @@ export function EditQuestionModal({
 
   // Determine which property was originally set for points (points vs autoPoints)
   // Check own values first, then inherited values
-  const determineOriginalPointsProperty = (): 'points' | 'autoPoints' => {
+  const originalPointsProperty = useMemo<'points' | 'autoPoints'>(() => {
     // Check own question first
     if (question.points !== undefined) return 'points';
     if (question.autoPoints !== undefined) return 'autoPoints';
@@ -39,13 +39,11 @@ export function EditQuestionModal({
     }
     // Default to 'autoPoints' for homework, 'points' for exams
     return assessmentType === 'Exam' ? 'points' : 'autoPoints';
-  };
+  }, [question, alternativeGroup, isAlternative, assessmentType]);
 
   // Determine which max property was originally set for auto grading (maxPoints vs maxAutoPoints)
   // Prefer matching the points property (points → maxPoints, autoPoints → maxAutoPoints)
-  const determineOriginalMaxProperty = (): 'maxPoints' | 'maxAutoPoints' => {
-    const pointsProp = determineOriginalPointsProperty();
-
+  const originalMaxProperty = useMemo<'maxPoints' | 'maxAutoPoints'>(() => {
     // Check own question first
     if (question.maxAutoPoints !== undefined) return 'maxAutoPoints';
     if (question.maxPoints !== undefined) return 'maxPoints';
@@ -57,20 +55,8 @@ export function EditQuestionModal({
     }
 
     // Default: match the points property
-    return pointsProp === 'points' ? 'maxPoints' : 'maxAutoPoints';
-  };
-
-  const originalPointsProperty = useMemo<'points' | 'autoPoints'>(
-    () => determineOriginalPointsProperty(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  const originalMaxProperty = useMemo<'maxPoints' | 'maxAutoPoints'>(
-    () => determineOriginalMaxProperty(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+    return originalPointsProperty === 'points' ? 'maxPoints' : 'maxAutoPoints';
+  }, [question, alternativeGroup, isAlternative, originalPointsProperty]);
 
   const [localQuestion, setLocalQuestion] = useState<ZoneQuestionJson | QuestionAlternativeJson>(
     () => structuredClone(question),
