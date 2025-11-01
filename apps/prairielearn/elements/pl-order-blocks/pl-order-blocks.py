@@ -279,9 +279,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             option["indent"] = submission_indent
 
         help_text = (
-            "Drag answer tiles into the answer area to the "
-            + dropzone_layout.value
-            + ". "
+            f"Move answer blocks from the options area to the {dropzone_layout.value}."
         )
 
         if grading_method is GradingMethodType.UNORDERED:
@@ -291,11 +289,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             help_text += "<p>Your answer will be autograded; be sure to indent and order your answer properly.</p>"
 
+        help_text += "<p>Keyboard Controls: Arrows to navigate; Enter to select; Escape to deselect blocks. With a block selected, up/down arrows to reorder; left/right arrows to move between the options area and answer area.</p>"
         check_indentation = order_blocks_options.indentation
         if check_indentation:
-            help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area.</p>"
-
-        help_text += "<p>Keyboard Controls: Arrows to navigate; Enter to select; Escape to deselect blocks.</p>"
+            help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area, or by using left/right arrows with the block selected.</p>"
 
         uuid = pl.get_uuid()
         html_params = {
@@ -462,6 +459,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     answer_name = order_block_options.answers_name
     answer_raw_name = answer_name + "-input"
     student_answer = data["raw_submitted_answers"].get(answer_raw_name, "[]")
+
     student_answer = json.loads(student_answer)
 
     if (not order_block_options.allow_blank) and (
