@@ -42,11 +42,10 @@ export function MainRuleForm({ control, trigger, courseInstance, setValue }: Mai
   });
 
   // Check if date-based release is available
-  const hasDateRelease = releaseDate !== undefined && releaseDate !== null;
+  const hasDateRelease = releaseDate !== undefined;
 
   // Check if PrairieTest-based release is available
-  const hasPrairieTestRelease =
-    prairieTestExams !== undefined && (prairieTestExams?.length ?? 0) > 0;
+  const hasPrairieTestRelease = (prairieTestExams?.length ?? 0) > 0;
 
   return (
     <div>

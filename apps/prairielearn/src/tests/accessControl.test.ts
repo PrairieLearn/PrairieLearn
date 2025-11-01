@@ -67,39 +67,40 @@ describe('Valid configs', () => {
       },
     ],
 
-    // Example 4: PrairieTest exam with individual override
-    [
-      {
-        // Assignment-level (no targets)
-        dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
-          dueDate: '2024-03-21T23:59:00',
-        },
-      },
-      {
-        // Individual override
-        targets: ['student1'],
-        prairieTestControl: {},
-      },
-    ],
+    // TODO: remove because we aren't allowing PT overrides?
+    // // Example 4: PrairieTest exam with individual override
+    // [
+    //   {
+    //     // Assignment-level (no targets)
+    //     dateControl: {
+    //       releaseDate: '2024-03-14T00:01:00',
+    //       dueDate: '2024-03-21T23:59:00',
+    //     },
+    //   },
+    //   {
+    //     // Individual override
+    //     targets: ['student1'],
+    //     prairieTestControl: {},
+    //   },
+    // ],
 
-    // Example 5: In-class with PrairieTest override
-    [
-      {
-        // Assignment-level (no targets)
-        dateControl: {
-          releaseDate: '2024-03-14T00:01:00',
-          dueDate: '2024-03-21T23:59:00',
-        },
-      },
-      {
-        // Individual override
-        targets: ['student2'],
-        prairieTestControl: {
-          exams: [{ examUuid: '2' }],
-        },
-      },
-    ],
+    // // Example 5: In-class with PrairieTest override
+    // [
+    //   {
+    //     // Assignment-level (no targets)
+    //     dateControl: {
+    //       releaseDate: '2024-03-14T00:01:00',
+    //       dueDate: '2024-03-21T23:59:00',
+    //     },
+    //   },
+    //   {
+    //     // Individual override
+    //     targets: ['student2'],
+    //     prairieTestControl: {
+    //       exams: [{ examUuid: '2' }],
+    //     },
+    //   },
+    // ],
 
     // Example 6: PrairieTest review session
     [

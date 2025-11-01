@@ -85,17 +85,9 @@ export function PrairieTestControlForm({
                 onChange: (e) => {
                   e.stopPropagation();
                   const checked = (e.target as HTMLInputElement).checked;
-
-                  if (!checked) {
-                    // When disabling, clear all fields - only keep enabled: false
-                    setValue(`${namePrefix}.prairieTestControl` as any, { enabled: false });
-                  } else {
-                    // When enabling, restore with enabled: true and empty exams array
-                    setValue(`${namePrefix}.prairieTestControl` as any, {
-                      enabled: true,
-                      exams: [],
-                    });
-                  }
+                  // Just toggle enabled state, don't clear other fields
+                  // The data remains in the form state for when they re-enable
+                  setValue(`${namePrefix}.prairieTestControl.enabled` as any, checked);
                 },
               })}
               disabled={showOverrideButton}
@@ -126,8 +118,8 @@ export function PrairieTestControlForm({
       <Collapse in={!collapsible || isExpanded}>
         <Card.Body
           style={{
-            opacity: prairieTestEnabled !== false ? 1 : 0.5,
-            pointerEvents: prairieTestEnabled !== false ? 'auto' : 'none',
+            opacity: prairieTestEnabled ? 1 : 0.5,
+            pointerEvents: prairieTestEnabled ? 'auto' : 'none',
           }}
         >
           <div>
@@ -159,16 +151,14 @@ export function PrairieTestControlForm({
                               {...control.register(
                                 `${namePrefix}.prairieTestControl.exams.${index}.examUuid` as any,
                                 {
-                                  required:
-                                    prairieTestEnabled !== false ? 'Exam UUID is required' : false,
-                                  pattern:
-                                    prairieTestEnabled !== false
-                                      ? {
-                                          value:
-                                            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-                                          message: 'Invalid UUID format',
-                                        }
-                                      : undefined,
+                                  required: prairieTestEnabled ? 'Exam UUID is required' : false,
+                                  pattern: prairieTestEnabled
+                                    ? {
+                                        value:
+                                          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+                                        message: 'Invalid UUID format',
+                                      }
+                                    : undefined,
                                 },
                               )}
                             />

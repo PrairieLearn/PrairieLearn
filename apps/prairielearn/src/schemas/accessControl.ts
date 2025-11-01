@@ -108,20 +108,16 @@ export const AccessControlJsonSchema = z.object({
     .array(z.string())
     .optional()
     .describe('Array of (User, Access Control Group) ids this set targets'),
-  enabled: z
-    .boolean()
-    .optional()
-    .describe('Whether this set of permissions is enabled')
-    .default(true), // default true if not set
+  enabled: z.boolean().optional().describe('Whether this set of permissions is enabled'),
   blockAccess: z
     .boolean()
     .optional()
-    .describe('Short circuit for whether the targets should have access to the assessment')
-    .default(false), // default false if not set
-
+    .nullable()
+    .describe('Short circuit for whether the targets should have access to the assessment'),
   listBeforeRelease: z
     .boolean()
     .optional()
+    .nullable()
     .describe('Whether students can see the title and click into the assessment before release'),
 
   dateControl: DateControlJsonSchema,

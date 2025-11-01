@@ -84,20 +84,20 @@ export function OverrideRulesForm({
       )}
 
       {fields.map((field, index) => {
-        const override = watchedOverrides[index];
-        const isEnabled = override?.enabled;
-        const blockAccess = override?.blockAccess;
+        const override = watchedOverrides[index] || {};
+        const isEnabled = override.enabled;
+        const blockAccess = override.blockAccess;
 
         // Check if specific sections are overridden
         const hasDateControlOverride =
-          override?.dateControl?.releaseDate !== undefined ||
-          override?.dateControl?.dueDate !== undefined ||
-          override?.dateControl?.durationMinutes !== undefined ||
-          override?.dateControl?.password !== undefined;
+          override.dateControl?.releaseDate !== undefined ||
+          override.dateControl?.dueDate !== undefined ||
+          override.dateControl?.durationMinutes !== undefined ||
+          override.dateControl?.password !== undefined;
 
         const hasAfterCompleteOverride =
-          override?.afterComplete?.hideQuestions !== undefined ||
-          override?.afterComplete?.hideScore !== undefined;
+          override.afterComplete?.hideQuestions !== undefined ||
+          override.afterComplete?.hideScore !== undefined;
 
         return (
           <Card key={field.id} class="mb-4">

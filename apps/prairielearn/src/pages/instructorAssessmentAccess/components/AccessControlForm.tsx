@@ -7,7 +7,11 @@ import type { AccessControlJson } from '../../../schemas/accessControl.js';
 
 import { MainRuleForm } from './MainRuleForm.js';
 import { OverrideRulesForm } from './OverrideRulesForm.js';
-import type { AccessControlFormData } from './types.js';
+import {
+  type AccessControlFormData,
+  type AccessControlRuleFormData,
+  formDataToJson,
+} from './types.js';
 
 interface AccessControlFormProps {
   initialData?: AccessControlJson[];
@@ -18,6 +22,31 @@ interface AccessControlFormProps {
 
 const defaultInitialData: AccessControlJson[] = [];
 
+/** Helper function to convert JSON to form data structure */
+function jsonToFormData(json: AccessControlJson): AccessControlRuleFormData {
+  return {
+    enabled: json.enabled ?? true,
+    blockAccess: json.blockAccess ?? false,
+    listBeforeRelease: json.listBeforeRelease ?? true,
+    targets: json.targets,
+    dateControl: {
+      enabled: json.dateControl?.enabled ?? false,
+      releaseDate: json.dateControl?.releaseDate,
+      dueDate: json.dateControl?.dueDate,
+      earlyDeadlines: json.dateControl?.earlyDeadlines,
+      lateDeadlines: json.dateControl?.lateDeadlines,
+      afterLastDeadline: json.dateControl?.afterLastDeadline,
+      durationMinutes: json.dateControl?.durationMinutes,
+      password: json.dateControl?.password,
+    },
+    prairieTestControl: {
+      enabled: json.prairieTestControl?.enabled ?? false,
+      exams: json.prairieTestControl?.exams,
+    },
+    afterComplete: json.afterComplete,
+  };
+}
+
 export function AccessControlForm({
   initialData = defaultInitialData,
   onSubmit,
@@ -25,10 +54,11 @@ export function AccessControlForm({
 }: AccessControlFormProps) {
   const [activeKey, setActiveKey] = useState<string>('main-rule');
 
-  // Separate main rule from overrides
-  const mainRule = initialData[0];
-
-  const overrides = initialData.slice(1);
+  // Separate main rule from overrides and convert to form data structure
+  const mainRule = initialData[0]
+    ? jsonToFormData(initialData[0])
+    : jsonToFormData({ enabled: true, listBeforeRelease: true });
+  const overrides = initialData.slice(1).map(jsonToFormData);
 
   const {
     control,
@@ -57,18 +87,23 @@ export function AccessControlForm({
   const watchedData = watch();
 
   const handleFormSubmit = (data: AccessControlFormData) => {
-    // Combine main rule and overrides into a single array
-    const allRules = [data.mainRule, ...data.overrides];
-    onSubmit(allRules);
+    // Transform form data to JSON output
+    const jsonOutput = formDataToJson(data);
+    onSubmit(jsonOutput);
   };
 
   const addOverride = () => {
     appendOverride({
       enabled: true,
       blockAccess: false,
+      listBeforeRelease: true,
       targets: [],
-      dateControl: {},
-      prairieTestControl: {},
+      dateControl: {
+        enabled: false,
+      },
+      prairieTestControl: {
+        enabled: false,
+      },
       afterComplete: {},
     });
   };
@@ -130,15 +165,30 @@ export function AccessControlForm({
         </div>
       </Form>
 
-      {/* Debug Display */}
+      {/* Debug Display - Show both form state and JSON output */}
       <Card class="mt-4">
         <Card.Header>
           <strong>Form State (Debug)</strong>
         </Card.Header>
         <Card.Body>
-          <pre class="mb-0" style={{ fontSize: '0.8rem', maxHeight: '400px', overflow: 'auto' }}>
-            <code>{JSON.stringify(watchedData, null, 2)}</code>
-          </pre>
+          <div class="mb-3">
+            <strong>Internal Form Data:</strong>
+            <pre
+              class="mb-0 mt-2"
+              style={{ fontSize: '0.8rem', maxHeight: '400px', overflow: 'auto' }}
+            >
+              <code>{JSON.stringify(watchedData, null, 2)}</code>
+            </pre>
+          </div>
+          <div>
+            <strong>JSON Output (what will be saved):</strong>
+            <pre
+              class="mb-0 mt-2"
+              style={{ fontSize: '0.8rem', maxHeight: '400px', overflow: 'auto' }}
+            >
+              <code>{JSON.stringify(formDataToJson(watchedData), null, 2)}</code>
+            </pre>
+          </div>
         </Card.Body>
       </Card>
     </div>

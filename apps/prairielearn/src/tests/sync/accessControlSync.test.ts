@@ -30,6 +30,7 @@ function makeAccessControlRule(
       releaseDate: '2024-03-14T00:01:00Z',
       dueDate: '2024-03-21T23:59:00Z',
     },
+    blockAccess: false, // provide a default non-null value
     ...overrides,
   };
 }

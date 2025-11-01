@@ -69,6 +69,13 @@ const sampleAccessControl: AccessControlJson[] = [
     targets: ['sectionB'],
     enabled: true,
     blockAccess: false,
+    listBeforeRelease: true,
+    dateControl: {
+      enabled: false,
+    },
+    prairieTestControl: {
+      enabled: false,
+    },
   },
 ];
 

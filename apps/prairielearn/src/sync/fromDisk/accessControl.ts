@@ -177,9 +177,9 @@ export async function syncAccessControl(
         {
           course_instance_id: courseInstanceId,
           assessment_id: assessmentId,
-          enabled: enabled.value,
-          block_access: blockAccess.value,
-          list_before_release: listBeforeRelease.value,
+          enabled: enabled.value || true,
+          block_access: blockAccess.value || false,
+          list_before_release: listBeforeRelease.value || true,
           order,
 
           // Date control

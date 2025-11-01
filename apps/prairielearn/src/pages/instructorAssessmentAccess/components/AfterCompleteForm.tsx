@@ -21,7 +21,6 @@ interface AfterCompleteFormProps {
 export function AfterCompleteForm({
   control,
   namePrefix,
-  ruleEnabled = true,
   assessmentType,
   setValue,
   showOverrideButton = false,

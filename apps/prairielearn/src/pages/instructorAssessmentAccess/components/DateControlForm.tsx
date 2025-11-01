@@ -52,16 +52,15 @@ export function DateControlForm({
 }: DateControlFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  const [savedData, setSavedData] = useState<any>(null); // Store data when disabling
-
-  // Track whether early/late deadlines are active (separate from whether they have data)
-  const [earlyDeadlinesActive, setEarlyDeadlinesActive] = useState(true);
-  const [lateDeadlinesActive, setLateDeadlinesActive] = useState(true);
-
-  // const { errors: formErrors } = useFormState({ control });
 
   // Get the user's local browser timezone
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Watch the dateControl.enabled state
+  const dateControlEnabled = useWatch({
+    control,
+    name: `${namePrefix}.dateControl.enabled` as any,
+  });
 
   // Use useFormState to get reactive error states
   const { errors } = useFormState({ control });
@@ -127,15 +126,58 @@ export function DateControlForm({
     name: `${namePrefix}.dateControl.afterLastDeadline.allowSubmissions` as any,
   });
 
-  // Watch dateControl enabled state
-  const dateControlEnabled = useWatch({
-    control,
-    name: `${namePrefix}.dateControl.enabled` as any,
-  });
-
   // Derive "enabled" states from field presence (override pattern)
   const releaseDateEnabled = releaseDate !== undefined;
   const dueDateEnabled = dueDate !== undefined;
+
+  // Check if deadlines have data (for rendering purposes)
+  const hasEarlyDeadlinesData =
+    earlyDeadlines !== undefined && earlyDeadlines !== null && earlyDeadlines.length > 0;
+  const hasLateDeadlinesData =
+    lateDeadlines !== undefined && lateDeadlines !== null && lateDeadlines.length > 0;
+
+  // Track whether early/late deadlines are active (separate from whether they have data)
+  // Initialize based on whether data exists
+  const [earlyDeadlinesActive, setEarlyDeadlinesActive] = useState(hasEarlyDeadlinesData);
+  const [lateDeadlinesActive, setLateDeadlinesActive] = useState(hasLateDeadlinesData);
+
+  // Store deadline data when unchecked so we can restore it
+  const [storedEarlyDeadlines, setStoredEarlyDeadlines] = useState<any[]>([]);
+  const [storedLateDeadlines, setStoredLateDeadlines] = useState<any[]>([]);
+  const [storedDurationMinutes, setStoredDurationMinutes] = useState<number | null>(null);
+  const [storedPassword, setStoredPassword] = useState<string | null>(null);
+
+  // Sync active state with data presence on initial load
+  useEffect(() => {
+    // Only update if we haven't stored anything yet (meaning this is initial load, not a toggle)
+    if (storedEarlyDeadlines.length === 0 && hasEarlyDeadlinesData) {
+      setEarlyDeadlinesActive(true);
+    }
+  }, [hasEarlyDeadlinesData]); // Only depend on hasEarlyDeadlinesData
+
+  useEffect(() => {
+    // Only update if we haven't stored anything yet (meaning this is initial load, not a toggle)
+    if (storedLateDeadlines.length === 0 && hasLateDeadlinesData) {
+      setLateDeadlinesActive(true);
+    }
+  }, [hasLateDeadlinesData]); // Only depend on hasLateDeadlinesData
+
+  // Initialize stored values on mount if data exists
+  useEffect(() => {
+    if (
+      durationMinutes !== null &&
+      durationMinutes !== undefined &&
+      storedDurationMinutes === null
+    ) {
+      setStoredDurationMinutes(durationMinutes);
+    }
+  }, [durationMinutes, storedDurationMinutes]);
+
+  useEffect(() => {
+    if (password !== null && password !== undefined && storedPassword === null) {
+      setStoredPassword(password);
+    }
+  }, [password, storedPassword]);
 
   // For early/late deadlines, they're "enabled" if they have data AND are active
   const earlyDeadlinesEnabled =
@@ -149,24 +191,9 @@ export function DateControlForm({
     lateDeadlines.length > 0 &&
     lateDeadlinesActive;
 
-  // Check if deadlines have data (for rendering purposes)
-  const hasEarlyDeadlinesData =
-    earlyDeadlines !== undefined && earlyDeadlines !== null && earlyDeadlines.length > 0;
-  const hasLateDeadlinesData =
-    lateDeadlines !== undefined && lateDeadlines !== null && lateDeadlines.length > 0;
-
-  const durationMinutesEnabled = durationMinutes !== undefined;
-  const passwordEnabled = password !== undefined;
+  const durationMinutesEnabled = durationMinutes !== undefined && durationMinutes !== null;
+  const passwordEnabled = password !== undefined && password !== null;
   const afterLastDeadlineCreditEnabled = afterLastDeadlineCredit !== undefined;
-
-  // Initialize active states based on whether data exists
-  useEffect(() => {
-    setEarlyDeadlinesActive(hasEarlyDeadlinesData);
-  }, [hasEarlyDeadlinesData]);
-
-  useEffect(() => {
-    setLateDeadlinesActive(hasLateDeadlinesData);
-  }, [hasLateDeadlinesData]);
 
   // Re-validate all deadlines when due date changes
   useEffect(() => {
@@ -367,25 +394,9 @@ export function DateControlForm({
               {...control.register(`${namePrefix}.dateControl.enabled` as any, {
                 onChange: (e) => {
                   const checked = (e.target as HTMLInputElement).checked;
-
-                  if (!checked) {
-                    // When disabling, clear all other fields - only keep enabled: false
-                    setValue(`${namePrefix}.dateControl` as any, { enabled: false });
-                  } else {
-                    // When enabling, restore with enabled: true and empty/default values
-                    setValue(`${namePrefix}.dateControl` as any, {
-                      enabled: true,
-                      releaseDate: null,
-                      dueDate: null,
-                      earlyDeadlines: null,
-                      lateDeadlines: null,
-                      afterLastDeadline: {
-                        allowSubmissions: false,
-                      },
-                      durationMinutes: null,
-                      password: null,
-                    });
-                  }
+                  // Just toggle enabled state, don't clear other fields
+                  // The data remains in the form state for when they re-enable
+                  setValue(`${namePrefix}.dateControl.enabled` as any, checked);
                 },
               })}
               onClick={(e) => e.stopPropagation()}
@@ -413,7 +424,12 @@ export function DateControlForm({
         </div>
       </Card.Header>
       <Collapse in={!collapsible || isExpanded}>
-        <Card.Body>
+        <Card.Body
+          style={{
+            opacity: dateControlEnabled ? 1 : 0.5,
+            pointerEvents: dateControlEnabled ? 'auto' : 'none',
+          }}
+        >
           <div>
             {/* Release Date and Due Date */}
             <Row class="mb-3">
@@ -596,11 +612,39 @@ export function DateControlForm({
                           checked={earlyDeadlinesActive}
                           onChange={(e) => {
                             const checked = (e.target as HTMLInputElement).checked;
-                            setEarlyDeadlinesActive(checked);
 
-                            // If enabling and no data exists, create empty array
-                            if (checked && !hasEarlyDeadlinesData) {
+                            if (!checked) {
+                              // Store current data before clearing (if it exists and has content)
+                              if (
+                                earlyDeadlines &&
+                                Array.isArray(earlyDeadlines) &&
+                                earlyDeadlines.length > 0
+                              ) {
+                                setStoredEarlyDeadlines([...earlyDeadlines]);
+                              }
+                              // Clear the array to empty
                               setValue(`${namePrefix}.dateControl.earlyDeadlines` as any, []);
+                              setEarlyDeadlinesActive(false);
+                            } else {
+                              // When checking: first try to keep existing data, then restore stored data, then initialize empty
+                              if (
+                                earlyDeadlines &&
+                                Array.isArray(earlyDeadlines) &&
+                                earlyDeadlines.length > 0
+                              ) {
+                                // Data already exists in form, keep it
+                                // Don't need to do anything
+                              } else if (storedEarlyDeadlines.length > 0) {
+                                // Restore from stored data
+                                setValue(
+                                  `${namePrefix}.dateControl.earlyDeadlines` as any,
+                                  storedEarlyDeadlines,
+                                );
+                              } else {
+                                // Initialize empty
+                                setValue(`${namePrefix}.dateControl.earlyDeadlines` as any, []);
+                              }
+                              setEarlyDeadlinesActive(true);
                             }
                           }}
                         />
@@ -616,123 +660,185 @@ export function DateControlForm({
                       </Button>
                     </div>
 
-                    {hasEarlyDeadlinesData &&
-                      earlyDeadlineFields.map((field, index) => (
-                        <div
-                          key={field.id}
-                          class="mb-3"
-                          style={{
-                            opacity: earlyDeadlinesActive ? 1 : 0.5,
-                            pointerEvents: earlyDeadlinesActive ? 'auto' : 'none',
-                          }}
-                        >
-                          <Row class="mb-1">
-                            <Col md={6}>
-                              <Form.Control
-                                type="datetime-local"
-                                placeholder="Deadline Date"
-                                {...control.register(
-                                  `mainRule.dateControl.earlyDeadlines.${index}.date`,
-                                  {
-                                    deps: ['mainRule.dateControl.dueDate'],
-                                    validate: (value) => {
-                                      // Skip validation if deadlines are inactive
-                                      if (!earlyDeadlinesActive) {
-                                        return true;
-                                      }
+                    {/* Show deadlines if they exist in form OR in stored state */}
+                    {((hasEarlyDeadlinesData && earlyDeadlinesActive) ||
+                      (!earlyDeadlinesActive && storedEarlyDeadlines.length > 0)) &&
+                      (earlyDeadlinesActive ? earlyDeadlineFields : storedEarlyDeadlines).map(
+                        (field, index) => {
+                          // When inactive, we're rendering from storedEarlyDeadlines, so we need to get the data directly
+                          const deadlineData = earlyDeadlinesActive
+                            ? earlyDeadlines?.[index]
+                            : storedEarlyDeadlines[index];
 
-                                      if (!value) {
-                                        return 'Date is required';
-                                      }
-                                      const deadlineDate = new Date(value);
-                                      const currentDueDate = new Date(dueDate);
+                          return (
+                            <div
+                              key={earlyDeadlinesActive ? field.id : index}
+                              class="mb-3"
+                              style={{
+                                opacity: earlyDeadlinesActive ? 1 : 0.5,
+                                pointerEvents: earlyDeadlinesActive ? 'auto' : 'none',
+                              }}
+                            >
+                              <Row class="mb-1">
+                                <Col md={6}>
+                                  {earlyDeadlinesActive ? (
+                                    <Form.Control
+                                      type="datetime-local"
+                                      placeholder="Deadline Date"
+                                      {...control.register(
+                                        `mainRule.dateControl.earlyDeadlines.${index}.date`,
+                                        {
+                                          deps: ['mainRule.dateControl.dueDate'],
+                                          validate: (value) => {
+                                            // Skip validation if deadlines are inactive
+                                            if (!earlyDeadlinesActive) {
+                                              return true;
+                                            }
 
-                                      // Check if before due date
-                                      if (deadlineDate >= currentDueDate) {
-                                        return 'Early deadline must be before due date';
-                                      }
+                                            if (!value) {
+                                              return 'Date is required';
+                                            }
+                                            const deadlineDate = new Date(value);
+                                            const currentDueDate = new Date(dueDate);
 
-                                      // Check if after previous deadline (if not first)
-                                      if (index > 0) {
-                                        const previousDeadline = earlyDeadlines?.[index - 1];
-                                        if (previousDeadline?.date) {
-                                          const previousDate = new Date(previousDeadline.date);
-                                          if (deadlineDate <= previousDate) {
-                                            return 'Must be after previous early deadline';
-                                          }
-                                        }
-                                      }
+                                            // Check if before due date
+                                            if (deadlineDate >= currentDueDate) {
+                                              return 'Early deadline must be before due date';
+                                            }
 
-                                      // Check if after release date (if first deadline and release date exists)
-                                      if (index === 0 && releaseDateEnabled && releaseDate) {
-                                        const currentReleaseDate = new Date(releaseDate);
-                                        if (deadlineDate < currentReleaseDate) {
-                                          return 'Must be after release date';
-                                        }
-                                      }
+                                            // Check if after previous deadline (if not first)
+                                            if (index > 0) {
+                                              const previousDeadline = earlyDeadlines?.[index - 1];
+                                              if (previousDeadline?.date) {
+                                                const previousDate = new Date(
+                                                  previousDeadline.date,
+                                                );
+                                                if (deadlineDate <= previousDate) {
+                                                  return 'Must be after previous early deadline';
+                                                }
+                                              }
+                                            }
 
-                                      return true;
-                                    },
-                                  },
-                                )}
-                              />
-                              {getEarlyDeadlineError(index) && (
-                                <Form.Text class="text-danger">
-                                  {getEarlyDeadlineError(index)}
-                                </Form.Text>
-                              )}
-                            </Col>
-                            <Col md={4}>
-                              <InputGroup>
-                                <Form.Control
-                                  type="number"
-                                  placeholder="Credit"
-                                  min="101"
-                                  max="200"
-                                  {...control.register(
-                                    `mainRule.dateControl.earlyDeadlines.${index}.credit`,
-                                    {
-                                      valueAsNumber: true,
-                                      validate: (value) => {
-                                        // Skip validation if deadlines are inactive
-                                        if (!earlyDeadlinesActive) {
-                                          return true;
-                                        }
+                                            // Check if after release date (if first deadline and release date exists)
+                                            if (index === 0 && releaseDateEnabled && releaseDate) {
+                                              const currentReleaseDate = new Date(releaseDate);
+                                              if (deadlineDate < currentReleaseDate) {
+                                                return 'Must be after release date';
+                                              }
+                                            }
 
-                                        if (value === undefined || value === null) {
-                                          return 'Credit is required';
-                                        }
-                                        if (value < 101 || value > 200) {
-                                          return 'Must be 101-200%';
-                                        }
-                                        return true;
-                                      },
-                                    },
+                                            return true;
+                                          },
+                                        },
+                                      )}
+                                    />
+                                  ) : (
+                                    <div
+                                      class="form-control"
+                                      style={{
+                                        backgroundColor: '#f8f9fa',
+                                        border: '1px solid #dee2e6',
+                                      }}
+                                    >
+                                      {deadlineData?.date
+                                        ? (() => {
+                                            // Format to match datetime-local input: MM/DD/YYYY, HH:MM
+                                            const date = new Date(deadlineData.date);
+                                            const month = String(date.getMonth() + 1).padStart(
+                                              2,
+                                              '0',
+                                            );
+                                            const day = String(date.getDate()).padStart(2, '0');
+                                            const year = date.getFullYear();
+                                            const hours = String(date.getHours()).padStart(2, '0');
+                                            const minutes = String(date.getMinutes()).padStart(
+                                              2,
+                                              '0',
+                                            );
+                                            return `${month}/${day}/${year}, ${hours}:${minutes}`;
+                                          })()
+                                        : 'No date set'}
+                                    </div>
                                   )}
-                                />
-                                <InputGroup.Text>%</InputGroup.Text>
-                              </InputGroup>
-                              {getEarlyDeadlineCreditError(index) && (
-                                <Form.Text class="text-danger">
-                                  {getEarlyDeadlineCreditError(index)}
+                                  {earlyDeadlinesActive && getEarlyDeadlineError(index) && (
+                                    <Form.Text class="text-danger">
+                                      {getEarlyDeadlineError(index)}
+                                    </Form.Text>
+                                  )}
+                                </Col>
+                                <Col md={4}>
+                                  {earlyDeadlinesActive ? (
+                                    <>
+                                      <InputGroup>
+                                        <Form.Control
+                                          type="number"
+                                          placeholder="Credit"
+                                          min="101"
+                                          max="200"
+                                          {...control.register(
+                                            `mainRule.dateControl.earlyDeadlines.${index}.credit`,
+                                            {
+                                              valueAsNumber: true,
+                                              validate: (value) => {
+                                                // Skip validation if deadlines are inactive
+                                                if (!earlyDeadlinesActive) {
+                                                  return true;
+                                                }
+
+                                                if (value === undefined || value === null) {
+                                                  return 'Credit is required';
+                                                }
+                                                if (value < 101 || value > 200) {
+                                                  return 'Must be 101-200%';
+                                                }
+                                                return true;
+                                              },
+                                            },
+                                          )}
+                                        />
+                                        <InputGroup.Text>%</InputGroup.Text>
+                                      </InputGroup>
+                                      {getEarlyDeadlineCreditError(index) && (
+                                        <Form.Text class="text-danger">
+                                          {getEarlyDeadlineCreditError(index)}
+                                        </Form.Text>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <InputGroup>
+                                      <div
+                                        class="form-control"
+                                        style={{
+                                          backgroundColor: '#f8f9fa',
+                                          border: '1px solid #dee2e6',
+                                        }}
+                                      >
+                                        {deadlineData?.credit || 0}
+                                      </div>
+                                      <InputGroup.Text>%</InputGroup.Text>
+                                    </InputGroup>
+                                  )}
+                                </Col>
+                                <Col md={2} class="d-flex align-items-start">
+                                  <Button
+                                    size="sm"
+                                    variant="outline-danger"
+                                    disabled={!earlyDeadlinesActive}
+                                    onClick={() => removeEarlyDeadline(index)}
+                                  >
+                                    <i class="bi bi-trash" aria-hidden="true" />
+                                  </Button>
+                                </Col>
+                              </Row>
+                              {earlyDeadlinesActive && (
+                                <Form.Text class="text-muted">
+                                  {getEarlyDeadlineTimeRange(index)}
                                 </Form.Text>
                               )}
-                            </Col>
-                            <Col md={2} class="d-flex align-items-start">
-                              <Button
-                                size="sm"
-                                variant="outline-danger"
-                                onClick={() => removeEarlyDeadline(index)}
-                              >
-                                <i class="bi bi-trash" aria-hidden="true" />
-                              </Button>
-                            </Col>
-                          </Row>
-                          <Form.Text class="text-muted">
-                            {getEarlyDeadlineTimeRange(index)}
-                          </Form.Text>
-                        </div>
-                      ))}
+                            </div>
+                          );
+                        },
+                      )}
                   </div>
                 )}
               </Col>
@@ -749,11 +855,39 @@ export function DateControlForm({
                           checked={lateDeadlinesActive}
                           onChange={(e) => {
                             const checked = (e.target as HTMLInputElement).checked;
-                            setLateDeadlinesActive(checked);
 
-                            // If enabling and no data exists, create empty array
-                            if (checked && !hasLateDeadlinesData) {
+                            if (!checked) {
+                              // Store current data before clearing (if it exists and has content)
+                              if (
+                                lateDeadlines &&
+                                Array.isArray(lateDeadlines) &&
+                                lateDeadlines.length > 0
+                              ) {
+                                setStoredLateDeadlines([...lateDeadlines]);
+                              }
+                              // Clear the array to empty
                               setValue(`${namePrefix}.dateControl.lateDeadlines` as any, []);
+                              setLateDeadlinesActive(false);
+                            } else {
+                              // When checking: first try to keep existing data, then restore stored data, then initialize empty
+                              if (
+                                lateDeadlines &&
+                                Array.isArray(lateDeadlines) &&
+                                lateDeadlines.length > 0
+                              ) {
+                                // Data already exists in form, keep it
+                                // Don't need to do anything
+                              } else if (storedLateDeadlines.length > 0) {
+                                // Restore from stored data
+                                setValue(
+                                  `${namePrefix}.dateControl.lateDeadlines` as any,
+                                  storedLateDeadlines,
+                                );
+                              } else {
+                                // Initialize empty
+                                setValue(`${namePrefix}.dateControl.lateDeadlines` as any, []);
+                              }
+                              setLateDeadlinesActive(true);
                             }
                           }}
                         />
@@ -769,122 +903,186 @@ export function DateControlForm({
                       </Button>
                     </div>
 
-                    {hasLateDeadlinesData &&
-                      lateDeadlineFields.map((field, index) => (
-                        <div
-                          key={field.id}
-                          class="mb-3"
-                          style={{
-                            opacity: lateDeadlinesActive ? 1 : 0.5,
-                            pointerEvents: lateDeadlinesActive ? 'auto' : 'none',
-                          }}
-                        >
-                          <Row class="mb-1">
-                            <Col md={6}>
-                              <Form.Control
-                                type="datetime-local"
-                                placeholder="Deadline Date"
-                                {...control.register(
-                                  `mainRule.dateControl.lateDeadlines.${index}.date`,
-                                  {
-                                    deps: ['mainRule.dateControl.dueDate'],
-                                    validate: (value) => {
-                                      // Skip validation if deadlines are inactive
-                                      if (!lateDeadlinesActive) {
-                                        return true;
-                                      }
+                    {/* Show deadlines if they exist in form OR in stored state */}
+                    {((hasLateDeadlinesData && lateDeadlinesActive) ||
+                      (!lateDeadlinesActive && storedLateDeadlines.length > 0)) &&
+                      (lateDeadlinesActive ? lateDeadlineFields : storedLateDeadlines).map(
+                        (field, index) => {
+                          // When inactive, we're rendering from storedLateDeadlines, so we need to get the data directly
+                          const deadlineData = lateDeadlinesActive
+                            ? lateDeadlines?.[index]
+                            : storedLateDeadlines[index];
 
-                                      if (!value) {
-                                        return 'Date is required';
-                                      }
-                                      const deadlineDate = new Date(value);
-                                      const currentDueDate = new Date(dueDate);
+                          return (
+                            <div
+                              key={lateDeadlinesActive ? field.id : index}
+                              class="mb-3"
+                              style={{
+                                opacity: lateDeadlinesActive ? 1 : 0.5,
+                                pointerEvents: lateDeadlinesActive ? 'auto' : 'none',
+                              }}
+                            >
+                              <Row class="mb-1">
+                                <Col md={6}>
+                                  {lateDeadlinesActive ? (
+                                    <Form.Control
+                                      type="datetime-local"
+                                      placeholder="Deadline Date"
+                                      {...control.register(
+                                        `mainRule.dateControl.lateDeadlines.${index}.date`,
+                                        {
+                                          deps: ['mainRule.dateControl.dueDate'],
+                                          validate: (value) => {
+                                            // Skip validation if deadlines are inactive
+                                            if (!lateDeadlinesActive) {
+                                              return true;
+                                            }
 
-                                      // Check if after due date
-                                      if (deadlineDate <= currentDueDate) {
-                                        return 'Late deadline must be after due date';
-                                      }
+                                            if (!value) {
+                                              return 'Date is required';
+                                            }
+                                            const deadlineDate = new Date(value);
+                                            const currentDueDate = new Date(dueDate);
 
-                                      // Check if after previous deadline (if not first)
-                                      if (index > 0) {
-                                        const previousDeadline = lateDeadlines?.[index - 1];
-                                        if (previousDeadline?.date) {
-                                          const previousDate = new Date(previousDeadline.date);
-                                          if (deadlineDate <= previousDate) {
-                                            return 'Must be after previous late deadline';
-                                          }
-                                        }
-                                      }
+                                            // Check if after due date
+                                            if (deadlineDate <= currentDueDate) {
+                                              return 'Late deadline must be after due date';
+                                            }
 
-                                      return true;
-                                    },
-                                  },
-                                )}
-                              />
-                              {getLateDeadlineError(index) && (
-                                <Form.Text class="text-danger">
-                                  {getLateDeadlineError(index)}
-                                </Form.Text>
-                              )}
-                            </Col>
-                            <Col md={4}>
-                              <InputGroup>
-                                <Form.Control
-                                  type="number"
-                                  placeholder="Credit"
-                                  min="0"
-                                  max="99"
-                                  {...control.register(
-                                    `mainRule.dateControl.lateDeadlines.${index}.credit`,
-                                    {
-                                      valueAsNumber: true,
-                                      validate: (value) => {
-                                        // Skip validation if deadlines are inactive
-                                        if (!lateDeadlinesActive) {
-                                          return true;
-                                        }
+                                            // Check if after previous deadline (if not first)
+                                            if (index > 0) {
+                                              const previousDeadline = lateDeadlines?.[index - 1];
+                                              if (previousDeadline?.date) {
+                                                const previousDate = new Date(
+                                                  previousDeadline.date,
+                                                );
+                                                if (deadlineDate <= previousDate) {
+                                                  return 'Must be after previous late deadline';
+                                                }
+                                              }
+                                            }
 
-                                        if (value === undefined || value === null) {
-                                          return 'Credit is required';
-                                        }
-                                        if (value < 0 || value > 99) {
-                                          return 'Must be 0-99%';
-                                        }
-                                        return true;
-                                      },
-                                    },
+                                            return true;
+                                          },
+                                        },
+                                      )}
+                                    />
+                                  ) : (
+                                    <div
+                                      class="form-control"
+                                      style={{
+                                        backgroundColor: '#f8f9fa',
+                                        border: '1px solid #dee2e6',
+                                      }}
+                                    >
+                                      {deadlineData?.date
+                                        ? (() => {
+                                            // Format to match datetime-local input: MM/DD/YYYY, HH:MM
+                                            const date = new Date(deadlineData.date);
+                                            const month = String(date.getMonth() + 1).padStart(
+                                              2,
+                                              '0',
+                                            );
+                                            const day = String(date.getDate()).padStart(2, '0');
+                                            const year = date.getFullYear();
+                                            const hours = String(date.getHours()).padStart(2, '0');
+                                            const minutes = String(date.getMinutes()).padStart(
+                                              2,
+                                              '0',
+                                            );
+                                            return `${month}/${day}/${year}, ${hours}:${minutes}`;
+                                          })()
+                                        : 'No date set'}
+                                    </div>
                                   )}
-                                />
-                                <InputGroup.Text>%</InputGroup.Text>
-                              </InputGroup>
-                              {getLateDeadlineCreditError(index) && (
-                                <Form.Text class="text-danger">
-                                  {getLateDeadlineCreditError(index)}
+                                  {lateDeadlinesActive && getLateDeadlineError(index) && (
+                                    <Form.Text class="text-danger">
+                                      {getLateDeadlineError(index)}
+                                    </Form.Text>
+                                  )}
+                                </Col>
+                                <Col md={4}>
+                                  {lateDeadlinesActive ? (
+                                    <>
+                                      <InputGroup>
+                                        <Form.Control
+                                          type="number"
+                                          placeholder="Credit"
+                                          min="0"
+                                          max="99"
+                                          {...control.register(
+                                            `mainRule.dateControl.lateDeadlines.${index}.credit`,
+                                            {
+                                              valueAsNumber: true,
+                                              validate: (value) => {
+                                                // Skip validation if deadlines are inactive
+                                                if (!lateDeadlinesActive) {
+                                                  return true;
+                                                }
+
+                                                if (value === undefined || value === null) {
+                                                  return 'Credit is required';
+                                                }
+                                                if (value < 0 || value > 99) {
+                                                  return 'Must be 0-99%';
+                                                }
+                                                return true;
+                                              },
+                                            },
+                                          )}
+                                        />
+                                        <InputGroup.Text>%</InputGroup.Text>
+                                      </InputGroup>
+                                      {getLateDeadlineCreditError(index) && (
+                                        <Form.Text class="text-danger">
+                                          {getLateDeadlineCreditError(index)}
+                                        </Form.Text>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <InputGroup>
+                                      <div
+                                        class="form-control"
+                                        style={{
+                                          backgroundColor: '#f8f9fa',
+                                          border: '1px solid #dee2e6',
+                                        }}
+                                      >
+                                        {deadlineData?.credit || 0}
+                                      </div>
+                                      <InputGroup.Text>%</InputGroup.Text>
+                                    </InputGroup>
+                                  )}
+                                </Col>
+                                <Col md={2} class="d-flex align-items-start">
+                                  <Button
+                                    size="sm"
+                                    variant="outline-danger"
+                                    disabled={!lateDeadlinesActive}
+                                    onClick={() => removeLateDeadline(index)}
+                                  >
+                                    <i class="bi bi-trash" aria-hidden="true" />
+                                  </Button>
+                                </Col>
+                              </Row>
+                              {lateDeadlinesActive && (
+                                <Form.Text class="text-muted">
+                                  {getLateDeadlineTimeRange(index)}
                                 </Form.Text>
                               )}
-                            </Col>
-                            <Col md={2} class="d-flex align-items-start">
-                              <Button
-                                size="sm"
-                                variant="outline-danger"
-                                onClick={() => removeLateDeadline(index)}
-                              >
-                                <i class="bi bi-trash" aria-hidden="true" />
-                              </Button>
-                            </Col>
-                          </Row>
-                          <Form.Text class="text-muted">
-                            {getLateDeadlineTimeRange(index)}
-                          </Form.Text>
-                        </div>
-                      ))}
+                            </div>
+                          );
+                        },
+                      )}
                   </div>
                 )}
               </Col>
             </Row>
 
             {/* After Last Deadline */}
-            {((dueDateEnabled && dueDate && dueDate !== null) || lateDeadlinesEnabled) && (
+            {((dueDateEnabled && dueDate && dueDate !== null) ||
+              earlyDeadlinesEnabled ||
+              lateDeadlinesEnabled) && (
               <Card class="mb-3">
                 <Card.Header>
                   <div>
@@ -1006,9 +1204,20 @@ export function DateControlForm({
                         class="me-2"
                         checked={durationMinutesEnabled}
                         onChange={(e) => {
-                          if ((e.target as HTMLInputElement).checked) {
-                            setValue(`${namePrefix}.dateControl.durationMinutes` as any, 60);
+                          const checked = (e.target as HTMLInputElement).checked;
+                          if (checked) {
+                            // Restore stored value or use default
+                            const valueToRestore =
+                              storedDurationMinutes !== null ? storedDurationMinutes : 60;
+                            setValue(
+                              `${namePrefix}.dateControl.durationMinutes` as any,
+                              valueToRestore,
+                            );
                           } else {
+                            // Store current value before setting to null
+                            if (durationMinutes !== null && durationMinutes !== undefined) {
+                              setStoredDurationMinutes(durationMinutes);
+                            }
                             setValue(
                               `${namePrefix}.dateControl.durationMinutes` as any,
                               namePrefix.startsWith('overrides.') ? undefined : null,
@@ -1018,22 +1227,45 @@ export function DateControlForm({
                       />
                       <Form.Label class="mb-0">Time limit</Form.Label>
                     </div>
-                    {durationMinutesEnabled && durationMinutes !== null && (
-                      <InputGroup>
-                        <Form.Control
-                          type="number"
-                          placeholder="Duration in minutes"
-                          min="1"
-                          {...control.register(`${namePrefix}.dateControl.durationMinutes` as any, {
-                            valueAsNumber: true,
-                          })}
-                        />
-                        <InputGroup.Text>minutes</InputGroup.Text>
-                      </InputGroup>
-                    )}
+                    <div
+                      style={{
+                        opacity: durationMinutesEnabled ? 1 : 0.5,
+                        pointerEvents: durationMinutesEnabled ? 'auto' : 'none',
+                      }}
+                    >
+                      {durationMinutesEnabled ? (
+                        <InputGroup>
+                          <Form.Control
+                            type="number"
+                            placeholder="Duration in minutes"
+                            min="1"
+                            {...control.register(
+                              `${namePrefix}.dateControl.durationMinutes` as any,
+                              {
+                                valueAsNumber: true,
+                              },
+                            )}
+                          />
+                          <InputGroup.Text>minutes</InputGroup.Text>
+                        </InputGroup>
+                      ) : (
+                        <InputGroup>
+                          <div
+                            class="form-control"
+                            style={{
+                              backgroundColor: '#f8f9fa',
+                              border: '1px solid #dee2e6',
+                            }}
+                          >
+                            {storedDurationMinutes !== null ? `${storedDurationMinutes}` : '60'}
+                          </div>
+                          <InputGroup.Text>minutes</InputGroup.Text>
+                        </InputGroup>
+                      )}
+                    </div>
                     <Form.Text class="text-muted">
-                      {durationMinutesEnabled && durationMinutes !== null
-                        ? `Students will have ${durationMinutes} minutes to complete the assessment.`
+                      {durationMinutesEnabled
+                        ? `Students will have ${durationMinutes || storedDurationMinutes || 60} minutes to complete the assessment.`
                         : 'Add a time limit to the assessment.'}
                     </Form.Text>
                   </Form.Group>
@@ -1055,9 +1287,16 @@ export function DateControlForm({
                         class="me-2"
                         checked={passwordEnabled}
                         onChange={(e) => {
-                          if ((e.target as HTMLInputElement).checked) {
-                            setValue(`${namePrefix}.dateControl.password` as any, '');
+                          const checked = (e.target as HTMLInputElement).checked;
+                          if (checked) {
+                            // Restore stored value or use empty string
+                            const valueToRestore = storedPassword !== null ? storedPassword : '';
+                            setValue(`${namePrefix}.dateControl.password` as any, valueToRestore);
                           } else {
+                            // Store current value before setting to null
+                            if (password !== null && password !== undefined) {
+                              setStoredPassword(password);
+                            }
                             setValue(
                               `${namePrefix}.dateControl.password` as any,
                               namePrefix.startsWith('overrides.') ? undefined : null,
@@ -1067,26 +1306,48 @@ export function DateControlForm({
                       />
                       <Form.Label class="mb-0">Password</Form.Label>
                     </div>
-                    {passwordEnabled && password !== null && (
-                      <InputGroup>
-                        <Form.Control
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Password"
-                          {...control.register(`${namePrefix}.dateControl.password` as any)}
-                        />
-                        <Button
-                          variant="outline-secondary"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          <i
-                            class={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}
-                            aria-hidden="true"
+                    <div
+                      style={{
+                        opacity: passwordEnabled ? 1 : 0.5,
+                        pointerEvents: passwordEnabled ? 'auto' : 'none',
+                      }}
+                    >
+                      {passwordEnabled ? (
+                        <InputGroup>
+                          <Form.Control
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Password"
+                            {...control.register(`${namePrefix}.dateControl.password` as any)}
                           />
-                        </Button>
-                      </InputGroup>
-                    )}
+                          <Button
+                            variant="outline-secondary"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            <i
+                              class={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}
+                              aria-hidden="true"
+                            />
+                          </Button>
+                        </InputGroup>
+                      ) : (
+                        <InputGroup>
+                          <div
+                            class="form-control"
+                            style={{
+                              backgroundColor: '#f8f9fa',
+                              border: '1px solid #dee2e6',
+                            }}
+                          >
+                            {storedPassword ? '••••••••••' : 'No password set'}
+                          </div>
+                          <Button variant="outline-secondary" disabled>
+                            <i class="bi bi-eye" aria-hidden="true" />
+                          </Button>
+                        </InputGroup>
+                      )}
+                    </div>
                     <Form.Text class="text-muted">
-                      {passwordEnabled && password !== null
+                      {passwordEnabled
                         ? 'This password will be required to start the assessment.'
                         : 'Require a password in order to start the assessment.'}
                     </Form.Text>
