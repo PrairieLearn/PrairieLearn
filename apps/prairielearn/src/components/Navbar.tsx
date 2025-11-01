@@ -723,12 +723,7 @@ function NavbarButtons({
     `;
   }
 
-  const allNavbarButtons: {
-    text: string;
-    href: string;
-  }[] = [];
-
-  allNavbarButtons.push({ text: 'Home', href: '/' });
+  const allNavbarButtons = [{ text: 'Home', href: '/' }];
 
   if (resLocals.is_administrator) {
     allNavbarButtons.push({ text: 'Global Admin', href: '/pl/administrator/admins' });

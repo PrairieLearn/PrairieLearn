@@ -16,6 +16,7 @@ import {
 } from '../apps/prairielearn/src/lib/config.js';
 import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
 import { ConfigSchema as WorkspaceHostConfigSchema } from '../apps/workspace-host/src/lib/config.js';
+
 // determine if we are checking or writing
 const check = process.argv[2] === 'check';
 

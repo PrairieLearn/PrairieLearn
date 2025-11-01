@@ -124,6 +124,8 @@
     contents = rtePurify.sanitize(contents, rtePurifyConfig);
 
     quill.setContents(quill.clipboard.convert({ html: contents }));
+    // Ensure that the initial content is not part of the undo stack
+    quill.history.clear();
 
     const getText = () => quill.getText();
     const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getText);

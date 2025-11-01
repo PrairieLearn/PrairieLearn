@@ -78,14 +78,14 @@ export function trapFocus(element: Element): FocusTrap {
 
     if (e.shiftKey) {
       // Tabbing backwards
-      if (document.activeElement === firstFocusable) {
-        (focusable[focusable.length - 1] as HTMLElement).focus();
+      if (isSameFocusContext(document.activeElement, firstFocusable)) {
+        focusElementOrCheckedOption(focusable[focusable.length - 1]);
         e.preventDefault();
       }
     } else {
       // Tabbing forwards
-      if (document.activeElement === lastFocusable) {
-        (focusable[0] as HTMLElement).focus();
+      if (isSameFocusContext(document.activeElement, lastFocusable)) {
+        focusElementOrCheckedOption(focusable[0]);
         e.preventDefault();
       }
     }
@@ -99,7 +99,7 @@ export function trapFocus(element: Element): FocusTrap {
       // Restore focus to the previously active element, but only if focus is
       // currently inside the trap container.
       if (element.contains(document.activeElement)) {
-        (previousActiveElement as HTMLElement)?.focus({ preventScroll: true });
+        focusElementOrCheckedOption(previousActiveElement as HTMLElement, { preventScroll: true });
       }
     },
   };
@@ -121,10 +121,61 @@ export function focusFirstFocusableChild(el: HTMLElement) {
 
   const focusablePopoverChildren = focusableChildren(el);
   if (focusablePopoverChildren.length > 0) {
-    focusablePopoverChildren[0].focus();
+    focusElementOrCheckedOption(focusablePopoverChildren[0]);
     return;
   }
 
   // If we still couldn't find a child element, focus the container itself.
   el.focus();
+}
+
+/**
+ * Focus on the element, or if it's a radio button, focus on the checked radio button in the same group.
+ */
+function focusElementOrCheckedOption(element: HTMLElement, focusOptions?: FocusOptions) {
+  // If the element receiving focus is a radio button, and there is another
+  // radio button in the same group that is currently checked, focus on that one
+  // instead.
+  // https://www.w3.org/WAI/ARIA/apg/patterns/radio/
+  if (element.tagName === 'INPUT') {
+    const inputElement = element as HTMLInputElement;
+    if (inputElement.type === 'radio' && inputElement.name) {
+      const checkedRadio = (inputElement.form ?? document).querySelector<HTMLInputElement>(
+        `input[type="radio"][name="${CSS.escape(inputElement.name)}"]:checked`,
+      );
+      if (checkedRadio) {
+        checkedRadio.focus(focusOptions);
+        return;
+      }
+    }
+  }
+
+  // Otherwise, just focus on the element itself.
+  element.focus(focusOptions);
+}
+
+/**
+ * Check if two elements are in the same focus context. This is true if they are the
+ * same element, or if they are radio buttons in the same group.
+ */
+function isSameFocusContext(element1: Element | null, element2: Element | null) {
+  if (!element1 || !element2) return false;
+  if (element1 === element2) return true;
+  if (element1.tagName === 'INPUT' && element2.tagName === 'INPUT') {
+    const input1 = element1 as HTMLInputElement;
+    const input2 = element2 as HTMLInputElement;
+    // https://html.spec.whatwg.org/multipage/input.html#radio-button-state-(type=radio)
+    if (
+      input1.type === 'radio' &&
+      input2.type === 'radio' &&
+      // radios without a name are not in the same group, even if they share the same form
+      input1.name &&
+      input1.name === input2.name &&
+      // either both have no form, or both have the same form
+      input1.form === input2.form
+    ) {
+      return true;
+    }
+  }
+  return false;
 }

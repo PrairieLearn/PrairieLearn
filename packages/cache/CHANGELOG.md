@@ -1,5 +1,14 @@
 # @prairielearn/cache
 
+## 2.1.2
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/logger@2.0.22
+  - @prairielearn/sentry@4.0.6
+
 ## 2.1.1
 
 ### Patch Changes

@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { selectAssessmentQuestions } from '../../models/assessment-question.js';
+import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';

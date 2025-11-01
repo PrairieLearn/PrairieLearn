@@ -56,13 +56,13 @@ export async function loadAdminQueryModule(query: string): Promise<{
     module = await import(/* @vite-ignore */ modulePath);
   } catch (err) {
     logger.error(`Failed to load module for query ${query}:`, err);
-    throw new Error(`Query module ${query} could not be imported`);
+    throw new Error(`Query module ${query} could not be imported`, { cause: err });
   }
   try {
     AdministratorQuerySpecsSchema.parse(module.specs);
   } catch (err) {
     logger.error(`Failed to parse specs for query ${query}:`, err);
-    throw new Error(`Query module ${query} does not provide valid specs object`);
+    throw new Error(`Query module ${query} does not provide valid specs object`, { cause: err });
   }
   return module;
 }

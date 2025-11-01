@@ -1,5 +1,11 @@
 # @prairielearn/aws-imds
 
+## 2.0.21
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 2.0.20
 
 ### Patch Changes

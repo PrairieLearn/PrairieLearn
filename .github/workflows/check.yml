@@ -82,6 +82,7 @@ jobs:
         run: make typecheck-scripts
       - name: Start Postgres
         run: |
+          sudo apt-get update
           sudo apt-get install -y --no-install-recommends postgresql-16-pgvector
           sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
           sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
@@ -125,7 +126,9 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install OS packages
-        run: sudo apt-get install -y graphviz libgraphviz-dev
+        run: |-
+          sudo apt-get update
+          sudo apt-get install -y graphviz libgraphviz-dev
 
       - name: Install additional dependencies
         run: |-
@@ -183,11 +186,12 @@ jobs:
       - name: Install additional dependencies
         run: |-
           sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
-          sudo chmod +x /bin/hadolint && \
-          sudo apt-get install -y shellcheck
+          sudo chmod +x /bin/hadolint
 
       - name: Install OS packages
-        run: sudo apt-get install -y graphviz libgraphviz-dev
+        run: |-
+          sudo apt-get update
+          sudo apt-get install -y graphviz libgraphviz-dev shellcheck
 
       - name: Set up Python
         uses: actions/setup-python@v6

@@ -2,24 +2,26 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
+import { buildAuthzData } from '../../lib/authz-data.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { EnrollmentSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { assertNever } from '../../lib/types.js';
-import { insertAuditEvent } from '../../models/audit-event.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   ensureEnrollment,
-  selectAndLockEnrollmentById,
-  selectOptionalEnrollmentByPendingUid,
+  selectOptionalEnrollmentByUid,
+  setEnrollmentStatus,
 } from '../../models/enrollment.js';
-import { selectAndLockUserById } from '../../models/user.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -77,6 +79,10 @@ router.get(
       withAuthzData: false,
     });
 
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: res.locals.authn_institution.id,
+    });
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -97,6 +103,7 @@ router.get(
             adminInstitutions={adminInstitutions}
             urlPrefix={urlPrefix}
             isDevMode={config.devMode}
+            enrollmentManagementEnabled={enrollmentManagementEnabled}
           />
         ),
         postContent:
@@ -120,62 +127,101 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const BodySchema = z.object({
-      __action: z.enum(['accept_invitation', 'reject_invitation']),
+      __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
       course_instance_id: z.string().min(1),
     });
     const body = BodySchema.parse(req.body);
 
     const {
-      authn_user: { uid, user_id },
+      authn_user: { uid, user_id: userId },
     } = getPageContext(res.locals, { withAuthzData: false });
 
+    // TODO: Authenticate this access better (model functions for course instances)
+    const courseInstance = await selectCourseInstanceById(body.course_instance_id);
+
+    const { authzData } = await buildAuthzData({
+      authn_user: res.locals.authn_user,
+      course_id: courseInstance.course_id,
+      course_instance_id: courseInstance.id,
+      is_administrator: res.locals.is_administrator,
+      ip: req.ip ?? null,
+      req_date: res.locals.req_date,
+    });
+
+    if (authzData === null) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
+
     switch (body.__action) {
-      case 'accept_invitation':
+      case 'accept_invitation': {
+        const enrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requestedRole: 'Student',
+          authzData,
+        });
+        if (
+          !enrollment ||
+          !['removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
+        ) {
+          flash('error', 'Failed to accept invitation');
+          break;
+        }
+
         await ensureEnrollment({
-          course_instance_id: body.course_instance_id,
-          user_id,
-          agent_user_id: user_id,
-          agent_authn_user_id: user_id,
-          action_detail: 'invitation_accepted',
+          courseInstance,
+          userId,
+          authzData,
+          requestedRole: 'Student',
+          actionDetail: 'invitation_accepted',
         });
         break;
-      case 'reject_invitation':
-        await runInTransactionAsync(async () => {
-          const oldEnrollment = await selectOptionalEnrollmentByPendingUid({
-            course_instance_id: body.course_instance_id,
-            pending_uid: uid,
-          });
+      }
+      case 'reject_invitation': {
+        const enrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requestedRole: 'Student',
+          authzData,
+        });
 
-          if (!oldEnrollment) {
-            throw new Error('Could not find enrollment to reject');
-          }
-          await selectAndLockUserById(user_id);
-          await selectAndLockEnrollmentById(oldEnrollment.id);
+        if (!enrollment || !['invited', 'rejected'].includes(enrollment.status)) {
+          flash('error', 'Failed to reject invitation');
+          break;
+        }
 
-          const newEnrollment = await queryRow(
-            sql.reject_invitation,
-            {
-              enrollment_id: oldEnrollment.id,
-            },
-            EnrollmentSchema,
-          );
-
-          await insertAuditEvent({
-            table_name: 'enrollments',
-            action: 'update',
-            action_detail: 'invitation_rejected',
-            subject_user_id: null,
-            course_instance_id: body.course_instance_id,
-            row_id: newEnrollment.id,
-            old_row: oldEnrollment,
-            new_row: newEnrollment,
-            agent_user_id: user_id,
-            agent_authn_user_id: user_id,
-          });
+        await setEnrollmentStatus({
+          enrollment,
+          status: 'rejected',
+          authzData,
+          requestedRole: 'Student',
         });
         break;
-      default:
+      }
+      case 'unenroll': {
+        const enrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requestedRole: 'Student',
+          authzData,
+        });
+
+        if (!enrollment || !['joined', 'removed'].includes(enrollment.status)) {
+          flash('error', 'Failed to unenroll');
+          break;
+        }
+
+        await setEnrollmentStatus({
+          enrollment,
+          status: 'removed',
+          authzData,
+          requestedRole: 'Student',
+        });
+        break;
+      }
+      default: {
         assertNever(body.__action);
+      }
     }
 
     res.redirect(req.originalUrl);

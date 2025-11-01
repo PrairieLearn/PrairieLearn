@@ -1,5 +1,11 @@
 # @prairielearn/node-metrics
 
+## 2.0.10
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 2.0.9
 
 ### Patch Changes

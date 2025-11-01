@@ -1,5 +1,13 @@
 # @prairielearn/config
 
+## 3.1.10
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/aws-imds@2.0.21
+
 ## 3.1.9
 
 ### Patch Changes

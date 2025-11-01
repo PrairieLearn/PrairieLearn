@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '../../lib/db-types.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function sync(
@@ -37,7 +38,7 @@ export async function sync(
   const questionSharingSets: { question_id: string; sharing_set_id: string }[] = [];
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
-    const dedupedQuestionSharingSetNames = new Set(question.data?.sharingSets ?? []);
+    const dedupedQuestionSharingSetNames = new Set(question.data?.sharingSets);
     const questionSharingSetIds = [...dedupedQuestionSharingSetNames].map(
       (sharingSet) => sharingSetIdsByName[sharingSet],
     );

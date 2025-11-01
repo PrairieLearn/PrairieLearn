@@ -7,7 +7,7 @@ from faker import Faker
 def generate(data):
     fake = Faker()
 
-    # Once sorted, the first birthday belongs to the youngest employee
+    # Once sorted, the first birthday belongs to the oldest employee
     start = datetime.date(2000, 1, 1)
     end = datetime.date(2000, 12, 31)
     birthdays = sorted(fake.unique.date_between(start, end) for _ in range(4))
@@ -15,7 +15,7 @@ def generate(data):
     employees = []
 
     for alias, birthday in zip(
-        ["youngest", "employee1", "employee2", "employee3"], birthdays, strict=True
+        ["oldest", "employee1", "employee2", "employee3"], birthdays, strict=True
     ):
         name = fake.unique.name()
         data["params"][alias] = name

@@ -54,6 +54,7 @@ export async function createMarkedInstance({
 }
 
 const markedInstanceCache = new Map<string, Promise<Marked>>();
+
 /**
  * Returns a cached instance of Marked with the specified options. Does not
  * handle extensions, callers that rely on extensions should perform their own

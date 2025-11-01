@@ -6,7 +6,6 @@ import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 
 import { run } from '@prairielearn/run';
 import { withResolvers } from '@prairielearn/utils';
@@ -140,7 +139,7 @@ export class CodeCallerNative implements CodeCaller {
    */
   private constructor(options: CodeCallerNativeOptionsInternal) {
     this.state = CREATED;
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.debug('enter constructor()');
 

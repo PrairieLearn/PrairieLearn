@@ -33,7 +33,6 @@ import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
 import favicon from 'serve-favicon';
-import { v4 as uuidv4 } from 'uuid';
 
 import { cache } from '@prairielearn/cache';
 import { flashMiddleware } from '@prairielearn/flash';
@@ -385,7 +384,7 @@ export async function initExpress(): Promise<Express> {
   // Middleware for all requests
   // response_id is logged on request, response, and error to link them together
   app.use(function (req, res, next) {
-    res.locals.response_id = uuidv4();
+    res.locals.response_id = crypto.randomUUID();
     res.set('X-Response-ID', res.locals.response_id);
     next();
   });
@@ -584,6 +583,12 @@ export async function initExpress(): Promise<Express> {
     res.redirect(`${req.params[0]}/instance_admin/assessments`);
   });
 
+  // API route for looking up a course instance by enrollment code
+  app.use(
+    '/pl/course_instance/lookup',
+    (await import('./pages/course_instance/lookup/lookupByEnrollmentCode.js')).default,
+  );
+
   // is the course instance being accessed through the student or instructor page route
   app.use('/pl/course_instance/:course_instance_id(\\d+)', function (req, res, next) {
     res.locals.viewType = 'student';
@@ -598,6 +603,15 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)',
     (await import('./middlewares/authzCourseOrInstance.js')).default,
+  );
+
+  // This must come after `authzCourseOrInstance` but before the
+  // `studentCourseInstanceUpgrade` middleware and the `requireEnrollmentCode` middleware.
+  // so that it can render it even when the student hasn't upgraded yet.
+  // Otherwise, we might ask the student to upgrade before they know the enrollment code.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/join',
+    (await import('./pages/enrollmentCodeRequired/enrollmentCodeRequired.js')).default,
   );
 
   if (isEnterprise()) {
@@ -619,6 +633,7 @@ export async function initExpress(): Promise<Express> {
 
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
+    (await import('./middlewares/requireEnrollmentCode.js')).default,
     await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
     await enterpriseOnly(

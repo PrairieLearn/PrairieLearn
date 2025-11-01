@@ -41,14 +41,14 @@
           "type": "boolean",
           "default": true
         },
-        "beforeDate": {
-          "description": "Before this date, self-enrollment is enabled if beforeDateEnabled is true. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on enabled property.",
-          "type": "string"
-        },
-        "beforeDateEnabled": {
-          "description": "If true, self-enrollment is enabled before the beforeDate. If false, self-enrollment is controlled by the enabled property.",
+        "restrictToInstitution": {
+          "description": "If true, self-enrollment is restricted to users from the same institution as the course. If false, any user can self-enroll.",
           "type": "boolean",
-          "default": false
+          "default": true
+        },
+        "beforeDate": {
+          "description": "If specified, self-enrollment is allowed before this date and forbidden after this date. If not specified, self-enrollment depends on enabled property.",
+          "type": "string"
         },
         "useEnrollmentCode": {
           "description": "If true, self-enrollment requires an enrollment code to enroll. If false, any link to the course instance will allow self-enrollment.",

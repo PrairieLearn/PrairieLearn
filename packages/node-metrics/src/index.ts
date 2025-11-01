@@ -30,7 +30,7 @@ async function emit(options: NodeMetricsOptions) {
     const elapsedTime = process.hrtime.bigint() - time;
     // This conversion should be safe, as `Number.MAX_SAFE_INTEGER` microseconds
     // corresponds to about 258 years.
-    const elapsedMicroseconds = Number(elapsedTime / BigInt(1000));
+    const elapsedMicroseconds = Number(elapsedTime / 1000n);
 
     const userCpuPercent = (100 * elapsedCpuUsage.user) / elapsedMicroseconds;
     const systemCpuPercent = (100 * elapsedCpuUsage.system) / elapsedMicroseconds;

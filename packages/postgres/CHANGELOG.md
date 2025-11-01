@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 4.4.2
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 4.4.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 4.0.21
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 4.0.20
 
 ### Patch Changes

@@ -1,11 +1,13 @@
-import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { z } from 'zod';
+
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { TagBadge } from '../../components/TagBadge.js';
-import { TagDescription } from '../../components/TagDescription.js';
+import { StaffTagSchema } from '../../lib/client/safe-db-types.js';
 import { type Tag } from '../../lib/db-types.js';
+
+import { InstructorCourseAdminTagsTable } from './components/InstructorCourseAdminTagsTable.js';
 
 export function InstructorCourseAdminTags({
   resLocals,
@@ -25,43 +27,17 @@ export function InstructorCourseAdminTags({
     options: {
       fullWidth: true,
     },
-    content: html`
-      ${renderHtml(
+    content: (
+      <>
         <CourseSyncErrorsAndWarnings
           authzData={resLocals.authz_data}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <h1>Tags</h1>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover table-striped" aria-label="Tags">
-            <thead>
-              <tr>
-                <th>Number</th>
-                <th>Name</th>
-                <th>Color</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${tags.map(
-                (tag) => html`
-                  <tr>
-                    <td class="align-middle">${tag.number}</td>
-                    <td class="align-middle">${renderHtml(<TagBadge tag={tag} />)}</td>
-                    <td class="align-middle">${tag.color}</td>
-                    <td class="align-middle">${TagDescription(tag)}</td>
-                  </tr>
-                `,
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `,
+        />
+        <Hydrate>
+          <InstructorCourseAdminTagsTable tags={z.array(StaffTagSchema).parse(tags)} />
+        </Hydrate>
+      </>
+    ),
   });
 }

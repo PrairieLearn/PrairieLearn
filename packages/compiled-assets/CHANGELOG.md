@@ -1,5 +1,13 @@
 # @prairielearn/compiled-assets
 
+## 3.2.8
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/html@4.0.21
+
 ## 3.2.7
 
 ### Patch Changes

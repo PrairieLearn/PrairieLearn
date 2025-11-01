@@ -46,6 +46,7 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
     idleTimeoutMillis: 30000,
     errorOnUnusedParameters: true,
   };
+
   function idleErrorHandler(err) {
     throw err;
   }

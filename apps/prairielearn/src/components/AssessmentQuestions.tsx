@@ -1,9 +1,9 @@
+import type { StaffAssessmentQuestionRow } from '../lib/assessment-question.js';
 import type {
   StaffAlternativeGroup,
   StaffAssessmentQuestion,
 } from '../lib/client/safe-db-types.js';
 import type { AlternativeGroup, AssessmentQuestion } from '../lib/db-types.js';
-import type { StaffAssessmentQuestionRow } from '../models/assessment-question.js';
 
 export function AssessmentQuestionHeaders({
   question,

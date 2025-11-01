@@ -154,8 +154,8 @@ BEGIN
         json_comment = (src.data->>'comment')::jsonb,
         self_enrollment_enabled = (src.data->>'self_enrollment_enabled')::boolean,
         self_enrollment_enabled_before_date = input_date(src.data->>'self_enrollment_enabled_before_date', COALESCE(src.data->>'display_timezone', c.display_timezone)),
-        self_enrollment_enabled_before_date_enabled = (src.data->>'self_enrollment_enabled_before_date_enabled')::boolean,
         self_enrollment_use_enrollment_code = (src.data->>'self_enrollment_use_enrollment_code')::boolean,
+        self_enrollment_restrict_to_institution = (src.data->>'self_enrollment_restrict_to_institution')::boolean,
         share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings

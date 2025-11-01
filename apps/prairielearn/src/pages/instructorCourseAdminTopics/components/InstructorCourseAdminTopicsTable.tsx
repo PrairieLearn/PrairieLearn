@@ -1,10 +1,10 @@
 import { useState } from 'preact/compat';
-import { v4 as uuidv4 } from 'uuid';
 
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import { TopicDescription } from '../../../components/TopicDescription.js';
 import { type StaffTopic } from '../../../lib/client/safe-db-types.js';
 import { type Topic } from '../../../lib/db-types.js';
+import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
 
 import { EditTopicsModal } from './EditTopicsModal.js';
 
@@ -61,7 +61,12 @@ export function InstructorCourseAdminTopicsTable({
 
   const handleNewTopic = () => {
     setAddTopic(true);
-    setSelectedTopic({ ...emptyTopic, id: uuidv4() });
+    setSelectedTopic({
+      ...emptyTopic,
+      id: crypto.randomUUID(),
+      // Pick a random initial color.
+      color: ColorJsonSchema.options[Math.floor(Math.random() * ColorJsonSchema.options.length)],
+    });
     setShowModal(true);
   };
 
@@ -109,14 +114,10 @@ export function InstructorCourseAdminTopicsTable({
           <table class="table table-sm table-hover table-striped" aria-label="Topics">
             <thead>
               <tr>
-                {editMode && allowEdit ? (
-                  <>
-                    <th style="width: 1%">
-                      <span class="visually-hidden">Edit and Delete</span>
-                    </th>
-                  </>
-                ) : (
-                  ''
+                {editMode && allowEdit && (
+                  <th style="width: 1%">
+                    <span class="visually-hidden">Edit and Delete</span>
+                  </th>
                 )}
                 <th>Number</th>
                 <th>Name</th>

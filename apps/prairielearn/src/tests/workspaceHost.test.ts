@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
@@ -39,7 +38,7 @@ async function insertWorkspaceHost(id: string | number, state = 'launching') {
     'INSERT INTO workspace_hosts (id, instance_id, state) VALUES ($id, $instance_id, $state) RETURNING *;',
     {
       id,
-      instance_id: uuidv4(),
+      instance_id: crypto.randomUUID(),
       state,
     },
     WorkspaceHostSchema,

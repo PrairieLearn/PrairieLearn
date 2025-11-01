@@ -106,6 +106,29 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 
 - Buttons should use the `<button>` element when they take actions and the `<a>` element when they are simply links to other pages. We should not use `<a role="button">` to fake a button element. Buttons that do not submit a form should always start with `<button type="button" class="btn ...">`, where `type="button"` specifies that they don't submit.
 
+## HTML accessibility
+
+If you are adding anything more complex than a basic form page, the automated accessibility checks are likely not enough for checking accessibility. You should use [VoiceOver (macOS)](https://support.apple.com/guide/voiceover/welcome/mac) or [NVDA (Windows)](https://www.nvaccess.org/download/) to test the page. All our pages must conform to the [Web Content Accessibility Guidelines (WCAG) 2.1 AA standard](https://www.w3.org/TR/WCAG21/). Some common things to check for:
+
+- Are elements announced correctly?
+  - Do elements have appropriate `aria-label` / `alt` attributes?
+  - Are descriptions concise and accurate?
+  - Do menus, toolbars, and other UI elements have appropriate [ARIA roles](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles)?
+- Can a user navigate the page using only the keyboard?
+  - Tab should move between focusable elements.
+  - Space or Enter should activate buttons/links.
+  - Arrow keys should navigate within components like dropdowns and tables.
+  - Actions that require dragging with a mouse should have keyboard alternatives.
+- Is focus managed correctly?
+  - Is focus correctly trapped within modals and other dialogs?
+  - Is focus position retained during re-renders?
+- Are focus indicators visible?
+- Is the page layout logical and easy to understand?
+- Will users with visual impairments be able to use the page?
+  - Is there at least a 4.5:1 contrast ratio between text and background colors?
+  - Is there at least a 3:1 contrast ratio between UI elements and background colors?
+  - Is there appropriate spacing between elements?
+
 ## SQL usage
 
 - [PostgreSQL](https://www.postgresql.org) v16 is used as the database.
@@ -446,7 +469,100 @@ FOR NO KEY UPDATE;
 
 - All state-modifying requests must (normally) be POST and all associated data must be in the body. GET requests may use query parameters for viewing options only.
 
+## Safely interacting with the database
+
+!!! note
+
+    This pattern is currently being rolled out as a gradual refactor of existing code on a model-by-model basis.
+
+Almost every page is dealing with database data, so it is important to understand how to interact with the database securely.
+
+For most API/POST handlers, we want to lookup or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. To help with this, we are moving to a pattern where model functions should accept full, typed row objects as parameters. As an example, we want to make it hard to update an enrollment status using just an enrollment ID.
+
+```typescript
+// We want to prove that we are authorized to read the course instance.
+// Most pages don't need to do this, as `res.locals.course_instance` is already set.
+const courseInstance = await selectCourseInstance({
+  id: course_instance_id,
+  requestedRole: 'Student',
+  authzData: res.locals.authz_data,
+});
+
+const enrollment = await selectEnrollment({
+  id: enrollment_id,
+  // This serves to require the caller to be aware of the role they want to authorize as.
+  // For example, on a student page, you would set requestedRole is 'Student'. Instructors don't have the 'Student' role.
+  requestedRole: 'Student',
+  // Information to prove we are authorized to read the record.
+  // E.g. we need to prove that we have access to the course instance it's in,
+  // and that we have the correct permissions to read the enrollment record.
+  courseInstance,
+  authzData: res.locals.authz_data,
+});
+```
+
+!!! note "Sample model function"
+
+    This is a sample model function that demonstrates the pattern from `src/models/enrollment.ts`.
+
+    ```typescript
+    export async function selectEnrollmentById({
+      id,
+      courseInstance,
+      requestedRole,
+      authzData,
+    }) {
+      assertHasRole(authzData, requestedRole, [
+        // The allowable roles that can call this function
+        'Student',
+        'Student Data Viewer',
+        'Student Data Editor',
+      ]);
+      const enrollment = await queryRow(sql.select_enrollment_by_id, { id }, EnrollmentSchema);
+      assertEnrollmentInCourseInstance(enrollment, courseInstance);
+      if (requestedRole === 'Student') {
+        assertEnrollmentBelongsToUser(enrollment, authzData);
+      }
+      return enrollment;
+    }
+    ```
+
+This is good, because in order to perform an update, you need to pass in a full row object, and a request body won't have enough information for this. Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks. For example, in the above example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance. It will throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollment`). This also forced the caller to prove access to the course instance in order to read the enrollment record.
+
+Once you have a full row object, you have asserted that the caller is authorized to _read_ the record. You will also need to assert that the caller is authorized to _write_ the record.
+
+```typescript
+await updateEnrollmentStatus({
+  enrollment: myEnrollment,
+  status: 'joined',
+  // What role are we trying to authorize as?
+  requestedRole: 'Student',
+  // Information to prove we are authorized to write the record
+  authzData: res.locals.authz_data,
+});
+```
+
+In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `requestedRole` parameter is `'Student'`, but the current user is an instructor, so it would throw an error.
+
+In some cases, you may not have access to `authzData`, e.g. if you are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullSystemAuthz` function to build a dummy `authzData` object that allows you to perform the action as the system. NOTE: We need to revisit this concept as we build out this pattern.
+
+```typescript
+await updateEnrollmentStatus({
+  enrollment: myEnrollment,
+  status: 'joined',
+  requestedRole: 'System',
+  authzData: dangerousFullSystemAuthz(),
+});
+```
+
 ## State-modifying POST requests
+
+??? note
+
+    This section is outdated. It is now preferred to do the following things:
+
+    1. Use a Zod schema to validate the request body.
+    2. Call model functions instead of directly executing SQL (see above).
 
 - Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern for all state modification. This means that the initial GET should render the page with a `<form>` that has no `action` set, so it will submit back to the current page. This should be handled by a POST handler that performs the state modification and then issues a redirect back to the same page as a GET:
 

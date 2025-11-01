@@ -122,8 +122,8 @@ export function InstructorEffectiveUser({
                 <input
                   list="userList"
                   type="text"
-                  class="form-control me-2"
-                  style="width: 20em;"
+                  class="form-control me-2 w-100"
+                  style="max-width: 20em;"
                   name="pl_requested_uid"
                   id="changeEffectiveUid"
                   placeholder="username@example.com"
@@ -280,8 +280,8 @@ export function InstructorEffectiveUser({
                 <label class="form-label" for="changeDate">Change effective date to:</label>
                 <input
                   type="text"
-                  class="form-control me-2"
-                  style="width:30em;"
+                  class="form-control me-2 w-100"
+                  style="max-width: 30em;"
                   id="changeDate"
                   name="pl_requested_date"
                   value="${formattedReqDate}"

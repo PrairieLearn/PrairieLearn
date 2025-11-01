@@ -1,5 +1,13 @@
 <pl-question-panel>
   <p>This is a workspace question with an in-browser terminal (<a href="https://xtermjs.org/">xterm.js</a>) and dynamic files. These files are created using the <code>generate</code> function in <code>server.py</code>.</p>
+  <p>This question demonstrates:</p>
+  <ul>
+    <li>Creating dynamic files with various encodings (text, hex, base64)</li>
+    <li>Including files from the question or course directory</li>
+    <li>Creating executable scripts with the <code>mode</code> parameter (see <code>run_tests.sh</code>)</li>
+    <li>Template files with executable permissions preserved (see <code>template_script.sh</code>)</li>
+  </ul>
+  <p>Try running <code>./run_tests.sh</code> or <code>./template_script.sh</code> in the terminal to see the executable files in action.</p>
   <pl-workspace></pl-workspace>
 </pl-question-panel>
 

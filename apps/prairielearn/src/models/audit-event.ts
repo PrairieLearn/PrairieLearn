@@ -1,80 +1,25 @@
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { type StaffAuditEvent, StaffAuditEventSchema } from '../lib/client/safe-db-types.js';
-import { type EnumAuditEventAction, type TableName } from '../lib/db-types.js';
+import { type AuditEvent, AuditEventSchema, type EnumAuditEventAction } from '../lib/db-types.js';
+
+import { type SupportedTableActionCombination, requiredTableFields } from './audit-event.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-/**
- * These fields are required to insert an audit event for a given table. If a parameter is explicitly marked as NULL,
- * it will pass this check.
- *
- * The value will be taken from parameters, or inferred from the current row data or row ID if not provided.
- */
-const requiredTableFields = {
-  course_instances: ['course_instance_id'],
-  pl_courses: ['course_id'],
-  users: ['subject_user_id'],
-  groups: ['group_id'],
-  assessment_instances: ['assessment_instance_id'],
-  assessment_questions: ['assessment_question_id'],
-  assessments: ['assessment_id'],
-  institutions: ['institution_id'],
-  enrollments: ['course_instance_id', 'subject_user_id', 'action_detail'],
-} as const satisfies Partial<Record<TableName, readonly string[]>>;
+export async function selectAuditEventsByEnrollmentId({
+  enrollment_id,
+  table_names,
+}: {
+  enrollment_id: string;
+  table_names: (keyof typeof requiredTableFields)[];
+}): Promise<AuditEvent[]> {
+  return await queryRows(
+    sql.select_audit_events_by_enrollment_id_table_names,
+    { enrollment_id, table_names },
+    AuditEventSchema,
+  );
+}
 
-/**
- * This lists all the possible table+action_detail combinations that are supported.
- */
-type SupportedTableActionCombination =
-  | {
-      table_name: 'course_instances';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'pl_courses';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'users';
-      action_detail?: 'TEST_VALUE' | null;
-    }
-  | {
-      table_name: 'groups';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'assessment_instances';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'assessment_questions';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'assessments';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'institutions';
-      action_detail?: null;
-    }
-  | {
-      table_name: 'enrollments';
-      action_detail?:
-        | 'implicit_joined'
-        | 'explicit_joined'
-        | 'invited'
-        | 'invitation_accepted'
-        | 'invitation_rejected'
-        | 'blocked'
-        | 'unblocked'
-        | 'invitation_deleted'
-        | null;
-    };
-export type SupportedActionsForTable<T extends TableName> = NonNullable<
-  Exclude<Extract<SupportedTableActionCombination, { table_name: T }>['action_detail'], null>
->;
 /**
  * Selects audit events by subject user ID, table names, and course instance ID.
  * Exactly one of `subject_user_id` or `agent_authn_user_id` must be provided.
@@ -95,7 +40,7 @@ export async function selectAuditEvents({
   course_instance_id: string;
   subject_user_id?: string;
   table_names: (keyof typeof requiredTableFields)[];
-}): Promise<StaffAuditEvent[]> {
+}): Promise<AuditEvent[]> {
   if (!subject_user_id && !agent_authn_user_id) {
     throw new Error('subject_user_id or agent_authn_user_id must be provided');
   }
@@ -107,41 +52,42 @@ export async function selectAuditEvents({
     return await queryRows(
       sql.select_audit_events_by_subject_user_id_table_names_course_instance_id,
       { course_instance_id, subject_user_id, table_names },
-      StaffAuditEventSchema,
+      AuditEventSchema,
     );
   }
 
   return await queryRows(
     sql.select_audit_events_by_agent_authn_user_id_table_names_course_instance_id,
     { agent_authn_user_id, course_instance_id, table_names },
-    StaffAuditEventSchema,
+    AuditEventSchema,
   );
 }
 
 export type InsertAuditEventParams = SupportedTableActionCombination & {
   action: EnumAuditEventAction;
-  row_id: string;
+  rowId: string;
   /** Most events should have an associated authenticated user */
-  agent_authn_user_id: string | null;
+  agentAuthnUserId: string | null;
   /** Most events should have an associated authorized user */
-  agent_user_id: string | null;
+  agentUserId: string | null;
   /** Most events have no context */
   context?: Record<string, any> | null;
   /** Creation events have no old row */
-  old_row?: Record<string, any> | null;
+  oldRow?: Record<string, any> | null;
   /** Deletion events have no new row */
-  new_row?: Record<string, any> | null;
+  newRow?: Record<string, any> | null;
 
   // The remaining fields depend on the action and table
 
-  subject_user_id?: string | null;
-  assessment_id?: string | null;
-  assessment_instance_id?: string | null;
-  assessment_question_id?: string | null;
-  course_id?: string | null;
-  course_instance_id?: string | null;
-  group_id?: string | null;
-  institution_id?: string | null;
+  subjectUserId?: string | null;
+  assessmentId?: string | null;
+  assessmentInstanceId?: string | null;
+  assessmentQuestionId?: string | null;
+  courseId?: string | null;
+  courseInstanceId?: string | null;
+  enrollmentId?: string | null;
+  groupId?: string | null;
+  institutionId?: string | null;
 };
 
 /**
@@ -149,42 +95,44 @@ export type InsertAuditEventParams = SupportedTableActionCombination & {
  *
  * @param params Parameters for the audit event
  * @param params.action - The action that was performed
- * @param params.action_detail - e.g. the column name that was updated
- * @param params.agent_authn_user_id - ID of the authorized user performing the action
- * @param params.agent_user_id - ID of the authorized user performing the action
+ * @param params.actionDetail - e.g. the column name that was updated
+ * @param params.agentAuthnUserId - ID of the authenticated user performing the action
+ * @param params.agentUserId - ID of the authorized user performing the action
  * @param params.context - Additional context, typically empty
- * @param params.course_id - Inferred from `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
- * @param params.course_instance_id - Inferred from `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
- * @param params.group_id - ID of the affected group
- * @param params.institution_id - Inferred from `subject_user_id`, `course_id`, `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
- * @param params.new_row - The new row data
- * @param params.old_row - The old row data
- * @param params.row_id - primary key ID of the affected row
- * @param params.subject_user_id - ID of the affected user
- * @param params.table_name - The name of the table that was affected
+ * @param params.courseId - Inferred from `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
+ * @param params.courseInstanceId - Inferred from `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
+ * @param params.groupId - ID of the affected group
+ * @param params.enrollmentId - ID of the affected enrollment
+ * @param params.institutionId - Inferred from `subject_user_id`, `course_id`, `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
+ * @param params.newRow - The new row data
+ * @param params.oldRow - The old row data
+ * @param params.rowId - primary key ID of the affected row
+ * @param params.subjectUserId - ID of the affected user
+ * @param params.tableName - The name of the table that was affected
  * @param params.assessment_id - Inferred from `assessment_instance_id`, `assessment_question_id`
- * @param params.assessment_instance_id - ID of the affected assessment instance
- * @param params.assessment_question_id - ID of the affected assessment question
+ * @param params.assessmentInstanceId - ID of the affected assessment instance
+ * @param params.assessmentQuestionId - ID of the affected assessment question
  */
-export async function insertAuditEvent(params: InsertAuditEventParams): Promise<StaffAuditEvent> {
+export async function insertAuditEvent(params: InsertAuditEventParams): Promise<AuditEvent> {
   const {
     action,
-    action_detail,
-    agent_authn_user_id,
-    agent_user_id,
-    assessment_id,
-    assessment_instance_id,
-    assessment_question_id,
+    actionDetail: action_detail,
+    agentAuthnUserId: agent_authn_user_id,
+    agentUserId: agent_user_id,
+    assessmentId: assessment_id,
+    assessmentInstanceId: assessment_instance_id,
+    assessmentQuestionId: assessment_question_id,
     context = {},
-    course_id,
-    course_instance_id,
-    group_id,
-    institution_id,
-    new_row = null,
-    old_row = null,
-    row_id,
-    subject_user_id,
-    table_name,
+    courseId: course_id,
+    courseInstanceId: course_instance_id,
+    enrollmentId: enrollment_id,
+    groupId: group_id,
+    institutionId: institution_id,
+    newRow: new_row = null,
+    oldRow: old_row = null,
+    rowId: row_id,
+    subjectUserId: subject_user_id,
+    tableName: table_name,
   } = params;
 
   // Depending on the action, certain fields are required.
@@ -216,6 +164,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     assessment_question_id: inferred_assessment_question_id,
     course_id: inferred_course_id,
     course_instance_id: inferred_course_instance_id,
+    enrollment_id: inferred_enrollment_id,
     group_id: inferred_group_id,
     institution_id: inferred_institution_id,
     user_id: inferred_subject_user_id,
@@ -249,6 +198,10 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
       course_instance_id !== undefined
         ? course_instance_id
         : ((table_name === 'course_instances' ? row_id : null) ?? inferred_course_instance_id),
+    enrollment_id:
+      enrollment_id !== undefined
+        ? enrollment_id
+        : ((table_name === 'enrollments' ? row_id : null) ?? inferred_enrollment_id),
     group_id:
       group_id !== undefined
         ? group_id
@@ -276,5 +229,5 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     );
   }
 
-  return await queryRow(sql.insert_audit_event, resolvedParams, StaffAuditEventSchema);
+  return await queryRow(sql.insert_audit_event, resolvedParams, AuditEventSchema);
 }

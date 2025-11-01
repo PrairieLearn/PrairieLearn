@@ -26,6 +26,16 @@ export const EnumChunkTypeSchema = z.enum([
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
 
+export const EnumCourseRoleSchema = z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']);
+export type EnumCourseRole = z.infer<typeof EnumCourseRoleSchema>;
+
+export const EnumCourseInstanceRoleSchema = z.enum([
+  'None',
+  'Student Data Viewer',
+  'Student Data Editor',
+]);
+export type EnumCourseInstanceRole = z.infer<typeof EnumCourseInstanceRoleSchema>;
+
 export const EnumEnrollmentStatusSchema = z.enum([
   'invited',
   'joined',
@@ -148,7 +158,7 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
 
 // Result of authz_course sproc
 export const SprocAuthzCourseSchema = z.object({
-  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
+  course_role: EnumCourseRoleSchema,
   has_course_permission_edit: z.boolean(),
   has_course_permission_own: z.boolean(),
   has_course_permission_preview: z.boolean(),
@@ -196,7 +206,7 @@ export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullabl
 
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
-  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor', 'Student']),
+  course_instance_role: EnumCourseInstanceRoleSchema,
   has_course_instance_permission_edit: z.boolean(),
   has_course_instance_permission_view: z.boolean(),
   has_student_access: z.boolean(),
@@ -552,6 +562,7 @@ export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
 export const AuditEventSchema = z.object({
   action: EnumAuditEventActionSchema,
+  // See audit-event.types.ts for the list of supported action_detail values based on the table.
   action_detail: z.string().nullable(),
   agent_authn_user_id: IdSchema.nullable(),
   agent_user_id: IdSchema.nullable(),
@@ -562,6 +573,7 @@ export const AuditEventSchema = z.object({
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString,
+  enrollment_id: IdSchema.nullable(),
   group_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
@@ -598,6 +610,15 @@ export const AuthnProviderSchema = z.object({
   name: z.enum(['Shibboleth', 'Google', 'Azure', 'LTI', 'SAML', 'LTI 1.3']).nullable(),
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
+
+export const AuthorSchema = z.object({
+  author_name: z.string().nullable(),
+  email: z.string().nullable(),
+  id: IdSchema,
+  orcid: z.string().nullable(),
+  origin_course: IdSchema.nullable(),
+});
+export type Author = z.infer<typeof AuthorSchema>;
 
 export const BatchedMigrationJobSchema = null;
 export const BatchedMigrationSchema = null;
@@ -668,7 +689,7 @@ export const CourseInstanceSchema = z.object({
   long_name: z.string().nullable(),
   self_enrollment_enabled: z.boolean(),
   self_enrollment_enabled_before_date: DateFromISOString.nullable(),
-  self_enrollment_enabled_before_date_enabled: z.boolean(),
+  self_enrollment_restrict_to_institution: z.boolean(),
   self_enrollment_use_enrollment_code: z.boolean(),
   share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
@@ -693,7 +714,7 @@ export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSc
 
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
-  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor']).nullable(),
+  course_instance_role: EnumCourseInstanceRoleSchema.nullable(),
   course_permission_id: IdSchema,
   id: IdSchema,
 });
@@ -710,7 +731,7 @@ export const CourseInstanceUsageSchema = null;
 
 export const CoursePermissionSchema = z.object({
   course_id: IdSchema,
-  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']).nullable(),
+  course_role: EnumCourseRoleSchema.nullable(),
   id: IdSchema,
   user_id: IdSchema,
 });
@@ -1234,6 +1255,12 @@ export const QueryRunSchema = z.object({
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
+export const QuestionAuthorSchema = z.object({
+  author_id: IdSchema,
+  id: IdSchema,
+  question_id: IdSchema,
+});
+
 export const QuestionGenerationContextEmbeddingSchema = z.object({
   chunk_id: z.string(),
   doc_path: z.string(),
@@ -1618,6 +1645,7 @@ export const TableNames = [
   'audit_events',
   'audit_logs',
   'authn_providers',
+  'authors',
   'batched_migration_jobs',
   'batched_migrations',
   'chunks',
@@ -1672,6 +1700,7 @@ export const TableNames = [
   'pl_courses',
   'plan_grants',
   'query_runs',
+  'question_authors',
   'question_generation_context_embeddings',
   'question_score_logs',
   'question_tags',

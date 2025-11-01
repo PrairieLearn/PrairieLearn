@@ -1,18 +1,18 @@
 import { z } from 'zod';
 
-import { QuestionCalculationOptionsJsonSchema } from './questionOptionsCalculation.js';
-import { QuestionCheckboxOptionsJsonSchema } from './questionOptionsCheckbox.js';
-import { QuestionFileOptionsJsonSchema } from './questionOptionsFile.js';
-import { QuestionMultipleChoiceOptionsJsonSchema } from './questionOptionsMultipleChoice.js';
-import { QuestionMultipleTrueFalseOptionsJsonSchema } from './questionOptionsMultipleTrueFalse.js';
+import { QuestionOptionsCalculationJsonSchema } from './questionOptionsCalculation.js';
+import { QuestionOptionsCheckboxJsonSchema } from './questionOptionsCheckbox.js';
+import { QuestionOptionsFileJsonSchema } from './questionOptionsFile.js';
+import { QuestionOptionsMultipleChoiceJsonSchema } from './questionOptionsMultipleChoice.js';
+import { QuestionOptionsMultipleTrueFalseJsonSchema } from './questionOptionsMultipleTrueFalse.js';
 import { QuestionOptionsv3JsonSchema } from './questionOptionsv3.js';
 
 export const QuestionOptionsJsonSchema = z.union([
-  QuestionCalculationOptionsJsonSchema,
-  QuestionCheckboxOptionsJsonSchema,
-  QuestionFileOptionsJsonSchema,
-  QuestionMultipleChoiceOptionsJsonSchema,
-  QuestionMultipleTrueFalseOptionsJsonSchema,
+  QuestionOptionsCalculationJsonSchema,
+  QuestionOptionsCheckboxJsonSchema,
+  QuestionOptionsFileJsonSchema,
+  QuestionOptionsMultipleChoiceJsonSchema,
+  QuestionOptionsMultipleTrueFalseJsonSchema,
   QuestionOptionsv3JsonSchema,
 ]);
 

@@ -2,7 +2,6 @@
 import * as path from 'path';
 
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
@@ -46,7 +45,7 @@ function makeAssessment(
 ): AssessmentJsonInput {
   const assessmentSet = courseData.course.assessmentSets?.[0].name ?? '';
   return {
-    uuid: uuidv4(),
+    uuid: crypto.randomUUID(),
     type,
     title: 'Test assessment',
     set: assessmentSet,
@@ -2278,8 +2277,7 @@ describe('Assessment syncing', () => {
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the assessment, add an error and re-sync
-    const newAssessment = { ...originalAssessment };
-    newAssessment.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
+    const newAssessment = { ...originalAssessment, uuid: '49c8b795-dfde-4c13-a040-0fd1ba711dc5' };
     // @ts-expect-error -- Breaking assessment by removing title.
     delete newAssessment.title;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['repeatedAssessment'] =

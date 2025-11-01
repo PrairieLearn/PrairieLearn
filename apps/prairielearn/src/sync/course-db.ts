@@ -7,7 +7,7 @@ import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
-import { type ZodSchema, type z } from 'zod';
+import { type ZodSchema, z } from 'zod';
 
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
@@ -15,7 +15,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
-import { validateJSON } from '../lib/json-load.js';
+import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import type { AccessControlJson } from '../schemas/accessControl.js'; // TODO: I don't think this is the proper way to do this, but I'm not sure how to get the type her otherwise
 import {
@@ -759,12 +759,9 @@ async function loadAndValidateJson<T extends ZodSchema>({
   loadedJson.data = result.data;
 
   const validationResult = validate(loadedJson.data);
-  if (validationResult.errors.length > 0) {
-    infofile.addErrors(loadedJson, validationResult.errors);
-    return loadedJson;
-  }
-
+  infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
+
   return loadedJson;
 }
 
@@ -891,6 +888,44 @@ function checkDuplicateUUIDs<T>(
   });
 }
 
+async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<QuestionJson>>) {
+  // First, create a map from origin courses to questions that reference them
+  const originCourseIDs = Object.entries(questionInfos).reduce((map, [id, info]) => {
+    if (!info.data?.authors) {
+      // No authors -> skip
+      return map;
+    }
+    for (const author of info.data.authors) {
+      if (author.originCourse) {
+        let originCourseRefs = map.get(author.originCourse);
+        if (!originCourseRefs) {
+          originCourseRefs = [];
+          map.set(author.originCourse, originCourseRefs);
+        }
+        originCourseRefs.push(id);
+      }
+    }
+    return map;
+  }, new Map<string, string[]>());
+
+  // Avoid unneeded database queries if no origin courses are set
+  if (originCourseIDs.size === 0) return;
+
+  // Then, look up all the course IDs at once and find unresolvable ones
+  const originCourses = await findCoursesBySharingNames(Array.from(originCourseIDs.keys()));
+  for (const [sharingName, course] of originCourses) {
+    if (!course) {
+      const affectedQuestions = originCourseIDs.get(sharingName) ?? [];
+      affectedQuestions.forEach((question) => {
+        infofile.addError(
+          questionInfos[question],
+          `The author origin course with the sharing name "${sharingName}" does not exist`,
+        );
+      });
+    }
+  }
+}
+
 /**
  * Checks that roles are not present.
  * @returns A list of warnings, if any
@@ -992,6 +1027,29 @@ function checkAllowAccessUids(rule: { uids?: string[] | null }): string[] {
   return warnings;
 }
 
+function isValidORCID(orcid: string): boolean {
+  // Drop any dashes
+  const digits = orcid.replaceAll('-', '');
+
+  // Sanity check that should not fail since the ORCID identifier format is baked into the JSON schema
+  if (!/^\d{15}[\dX]$/.test(digits)) {
+    return false;
+  }
+
+  // Calculate and verify checksum
+  // (adapted from Java code provided here: https://support.orcid.org/hc/en-us/articles/360006897674-Structure-of-the-ORCID-Identifier)
+  let total = 0;
+  for (let i = 0; i < 15; i++) {
+    total = (total + Number.parseInt(digits[i])) * 2;
+  }
+
+  const remainder = total % 11;
+  const result = (12 - remainder) % 11;
+  const checkDigit = result === 10 ? 'X' : String(result);
+
+  return digits[15] === checkDigit;
+}
+
 function validateQuestion({
   question,
   sharingEnabled,
@@ -1020,11 +1078,10 @@ function validateQuestion({
 
   if (question.options) {
     try {
-      const schema = schemas[`questionOptions${question.type}`];
-      const options = question.options;
-      validateJSON(options, schema);
+      const schema = schemas[`QuestionOptions${question.type}JsonSchema`];
+      schema.parse(question.options);
     } catch (err) {
-      errors.push(err.message);
+      errors.push(`Error validating question options: ${err.message}`);
     }
   }
 
@@ -1034,6 +1091,33 @@ function validateQuestion({
         `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
       );
       question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
+    }
+  }
+
+  if (question.authors.length > 0) {
+    for (const author of question.authors) {
+      if (!author.email && !author.orcid && !author.originCourse) {
+        errors.push(
+          'At least one of "email", "orcid", or "originCourse" is required for each author',
+        );
+      }
+      if (author.orcid) {
+        if (!isValidORCID(author.orcid)) {
+          errors.push(
+            `The author ORCID identifier "${author.orcid}" has an invalid checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
+          );
+        }
+      }
+      if (author.email) {
+        // Manual check here since using email() directly in the schema validation doesn't work well with error logging yet
+        // See: https://github.com/PrairieLearn/PrairieLearn/issues/12846
+        const parsedEmail = z.string().email().safeParse(author.email);
+
+        if (!parsedEmail.success) {
+          errors.push(`The author email address "${author.email}" is invalid`);
+        }
+      }
+      // Origin courses are validated in bulk in loadQuestions(), and skipped here.
     }
   }
 
@@ -1407,34 +1491,11 @@ function validateCourseInstance({
     }
   }
 
-  // TODO: Remove these warnings once we've implemented support for the properties.
-  // These are warnings (and not errors) so that we can test syncing with the new schema.
-
-  if (courseInstance.selfEnrollment.enabled !== true) {
-    warnings.push('"selfEnrollment.enabled" is not configurable yet.');
-  }
-
   if (courseInstance.selfEnrollment.beforeDate != null) {
-    warnings.push('"selfEnrollment.beforeDate" is not configurable yet.');
-
     const date = parseJsonDate(courseInstance.selfEnrollment.beforeDate);
     if (date == null) {
       errors.push('"selfEnrollment.beforeDate" is not a valid date.');
     }
-  }
-
-  if (courseInstance.selfEnrollment.beforeDateEnabled !== false) {
-    warnings.push('"selfEnrollment.beforeDateEnabled" is not configurable yet.');
-
-    if (courseInstance.selfEnrollment.beforeDate == null) {
-      errors.push(
-        '"selfEnrollment.beforeDate" is required if "selfEnrollment.beforeDateEnabled" is true.',
-      );
-    }
-  }
-
-  if (courseInstance.selfEnrollment.useEnrollmentCode !== false) {
-    warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
   }
 
   let accessibleInFuture = false;
@@ -1689,10 +1750,12 @@ export async function loadQuestions({
       infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
     }
   }
+  await checkAuthorOriginCourses(questions);
   checkDuplicateUUIDs(
     questions,
     (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`,
   );
+
   return questions;
 }
 

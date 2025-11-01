@@ -4,7 +4,7 @@ import { cache } from '@prairielearn/cache';
 import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { selectAndLockUserById, selectUserById } from '../../../models/user.js';
+import { selectAndLockUser, selectUserById } from '../../../models/user.js';
 
 import { type PlanName } from './plans-types.js';
 
@@ -40,7 +40,7 @@ export async function getOrCreateStripeCustomerId(
   // multiple Stripe customers for the same user, but that's acceptable, as
   // the alternative would require locking during a network operation.
   await runInTransactionAsync(async () => {
-    await selectAndLockUserById(user_id);
+    await selectAndLockUser(user_id);
     await execute(sql.maybe_update_user_stripe_customer_id, {
       user_id,
       stripe_customer_id: customer.id,
