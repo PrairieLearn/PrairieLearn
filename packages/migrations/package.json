@@ -26,11 +26,11 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.18.13",
-    "@vitest/coverage-v8": "^4.0.5",
+    "@vitest/coverage-v8": "^4.0.6",
     "tmp-promise": "^3.0.3",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.0.5"
+    "vitest": "^4.0.6"
   }
 }
