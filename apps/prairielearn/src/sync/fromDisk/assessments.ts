@@ -471,11 +471,13 @@ export async function sync(
     ]);
   });
 
-  await sqldb.callRow(
+  const result = await sqldb.callRow(
     'sync_assessments',
     [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
     SprocSyncAssessmentsSchema,
   );
+
+  return result ?? {};
 }
 
 export async function validateAssessmentSharedQuestions(
