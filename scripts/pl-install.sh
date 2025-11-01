@@ -68,18 +68,45 @@ rm -rf /tmp/pgvector
 dnf -y remove postgresql16-server-devel
 dnf -y autoremove
 
-# TODO: use standard OS Python installation? The only reason we switched to Conda
-# was to support R and `rpy2`, but now that we've removed those, we might not
-# get any benefit from Conda.
-echo "setting up conda..."
+echo "setting up uv + venv..."
 cd /
-arch="$(uname -m)"
-# Pinning the Conda version so the default Python version is 3.10. Later conda versions use 3.12 as the default.
-curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Miniforge3-Linux-${arch}.sh
-bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
+curl -LO https://astral.sh/uv/install.sh
+env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
+
+# /.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.10
+export UV_PYTHON_INSTALL_DIR=/usr/share/uv/python
+export UV_PYTHON_BIN_DIR=/usr/local/bin
+export UV_PYTHON_DOWNLOADS=manual
+export UV_PYTHON_PREFERENCE=only-managed
+export UV_COMPILE_BYTECODE=1
+
+if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]]; then
+    # https://gregoryszorc.com/docs/python-build-standalone/main/running.html
+    # v3: 64-bit Intel/AMD CPUs approximately newer than Haswell (released in 2013) and Excavator (released in 2015)
+    UV_ARCH="linux-x86_64_v3-gnu"
+elif [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "aarch64" ]]; then
+    UV_ARCH="linux-aarch64-gnu"
+elif [[ "$(uname)" = "Darwin" ]] && [[ "$(uname -m)" = "arm64" ]]; then
+    UV_ARCH="macos-aarch64-none"
+else
+    echo "Unsupported architecture combination" >&2
+    exit 1
+fi
+
+# Installing to a different directory is a preview feature
+uv python install --default --preview "cpython-3.10-${UV_ARCH}"
+uv venv --seed
+# https://github.com/astral-sh/uv/issues/12901
+# `uv` has the incorrect path to the system's compilers in its generated data:
+# /root/.local/share/uv/python/cpython-3.10.17-linux-aarch64-gnu/lib/python3.10/_sysconfigdata__linux_aarch64-linux-gnu.py
+# These contain references to paths like `/usr/bin/aarch64-linux-gnu-gcc`, which
+# don't exist on Amazon Linux 2023. We need to override them with the correct paths.
+export CC=/usr/bin/gcc
+export CXX=/usr/bin/g++
+export LDSHARED="/usr/bin/gcc -shared"
+uv pip install --force-reinstall --no-cache-dir -r /PrairieLearn/pyproject.toml
 
 # Clear various caches to minimize the final image size.
+uv cache clean
 dnf clean all
-conda clean --all
 nvm cache clear
-rm Miniforge3-Linux-${arch}.sh
