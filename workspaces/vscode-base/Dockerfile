@@ -1,5 +1,5 @@
 # noble is the codename for Ubuntu 24.04 LTS
-FROM codercom/code-server:4.104.2-noble
+FROM codercom/code-server:4.105.1-noble
 ARG CACHEBUST=2025-10-15-14-17-30
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
