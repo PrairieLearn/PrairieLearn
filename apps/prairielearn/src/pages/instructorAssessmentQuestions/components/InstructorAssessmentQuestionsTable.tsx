@@ -772,7 +772,6 @@ export function InstructorAssessmentQuestionsTable({
 
   const handleUpdateQuestion = async (
     updatedQuestion: ZoneQuestionJson | QuestionAlternativeJson,
-    gradingMethod?: 'auto' | 'manual',
   ) => {
     if (!updatedQuestion.id) return;
     if (!selectedQuestionPosition) return;
@@ -821,18 +820,26 @@ export function InstructorAssessmentQuestionsTable({
     // Clear validation error if we got this far
     setQidValidationError('');
 
-    // For homework assessments, clean up conflicting point attributes based on grading method
-    // Set to undefined (not delete) so they override old values when spreading
-    if (assessmentType === 'Homework' && gradingMethod) {
-      if (gradingMethod === 'manual') {
-        // Manual grading: remove auto-related attributes
-        updatedQuestion.points = undefined;
-        updatedQuestion.autoPoints = undefined;
-        updatedQuestion.maxPoints = undefined;
-        updatedQuestion.maxAutoPoints = undefined;
-      } else {
-        // Auto grading: remove manual attributes
-        updatedQuestion.manualPoints = undefined;
+    if (updatedQuestion.manualPoints !== undefined) {
+      // If we have manualPoints, we must use autoPoints (not points)
+      if (updatedQuestion.points !== undefined) {
+        updatedQuestion.autoPoints = updatedQuestion.points;
+        delete updatedQuestion.points;
+      }
+      // Also convert maxPoints to maxAutoPoints
+      if (updatedQuestion.maxPoints !== undefined) {
+        updatedQuestion.maxAutoPoints = updatedQuestion.maxPoints;
+        delete updatedQuestion.maxPoints;
+      }
+    } else {
+      // No manual points - ensure we don't have both points and autoPoints
+      if (updatedQuestion.points !== undefined && updatedQuestion.autoPoints !== undefined) {
+        // If both exist, prefer autoPoints (since that's what we'd convert to if manualPoints were added)
+        delete updatedQuestion.points;
+        if (updatedQuestion.maxPoints !== undefined) {
+          updatedQuestion.maxAutoPoints = updatedQuestion.maxPoints;
+          delete updatedQuestion.maxPoints;
+        }
       }
     }
 
@@ -1018,7 +1025,6 @@ export function InstructorAssessmentQuestionsTable({
           alternativeGroup={selectedAlternativeGroup}
           showEditModal={showEditModal}
           assessmentType={assessmentType === 'Homework' ? 'Homework' : 'Exam'}
-          questionDisplayName={selectedQuestionDisplayName}
           addQuestion={addQuestion}
           handleUpdateQuestion={handleUpdateQuestion}
           qidValidationError={qidValidationError}
