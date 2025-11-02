@@ -64,8 +64,6 @@ export async function selectAuthzData({
  * Checks if the user has access to the course instance. If the user is a student,
  * the course instance must be published to them.
  *
- * This function is only used by authzData.ts
- *
  * @param courseInstance - The course instance to check access for.
  * @param authzData - The authorization data of the user.
  * @param reqDate - The date of the request.

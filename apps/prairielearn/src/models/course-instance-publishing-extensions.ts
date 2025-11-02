@@ -55,7 +55,7 @@ export async function selectPublishingExtensionById({
   return extension;
 }
 /**
- * Finds all publishing extensions that apply to a specific enrollment.
+ * Finds the latest publishing extension that applies to a specific enrollment.
  */
 export async function selectLatestPublishingExtensionByEnrollment({
   enrollment,
