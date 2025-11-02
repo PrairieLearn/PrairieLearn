@@ -10,6 +10,7 @@ indexes
     course_instance_publishing_extensions_course_instance_id_idx: USING btree (course_instance_id)
 
 check constraints
+    course_instance_publishing_extensions_name_length_check: CHECK (length(name) <= 1000)
     course_instance_publishing_extensions_name_not_empty: CHECK (name IS NULL OR name <> ''::text)
 
 foreign-key constraints
