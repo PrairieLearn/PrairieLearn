@@ -195,9 +195,9 @@ export function TanstackTable<RowDataModel>({
   useEffect(() => {
     const selector = `[data-grid-cell-row="${focusedCell.row}"][data-grid-cell-col="${focusedCell.col}"]`;
     const cell = tableRef.current?.querySelector(selector) as HTMLElement | null;
-    if (!cell) {
-      return;
-    }
+    if (!cell) return;
+
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-chain-state-updates
     cell.focus();
   }, [focusedCell]);
 

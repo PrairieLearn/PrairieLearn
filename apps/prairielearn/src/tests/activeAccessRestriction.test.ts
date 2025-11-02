@@ -4,9 +4,11 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 import { selectUserByUid } from '../models/user.js';
 
@@ -20,8 +22,7 @@ describe(
   { timeout: 60_000 },
   function () {
     const storedConfig: Record<string, any> = {};
-    const context: Record<string, any> = {};
-    context.siteUrl = `http://localhost:${config.serverPort}`;
+    const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
     context.baseUrl = `${context.siteUrl}/pl`;
 
     const headers: Record<string, string> = {};
@@ -73,12 +74,13 @@ describe(
 
     test.sequential('enroll the test student user in the course', async () => {
       const user = await selectUserByUid('student@example.com');
+      const courseInstance = await selectCourseInstanceById('1');
       await ensureEnrollment({
-        user_id: user.user_id,
-        course_instance_id: '1',
-        agent_user_id: null,
-        agent_authn_user_id: null,
-        action_detail: 'implicit_joined',
+        userId: user.user_id,
+        courseInstance,
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
+        actionDetail: 'implicit_joined',
       });
     });
 

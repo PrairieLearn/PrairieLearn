@@ -8,6 +8,7 @@ import { config } from '../../lib/config.js';
 import { type Assessment, type CourseInstance, UserSchema } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectCourseById } from '../../models/course.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 import * as helperServer from '../helperServer.js';
 import { withUser } from '../utils/auth.js';
@@ -75,7 +76,10 @@ describe('institution administrators', () => {
   beforeAll(async () => {
     await insertUser(ADMIN_USER);
     await insertUser(INSTITUTION_ADMIN_USER);
-    courseInstance = await selectCourseInstanceByShortName({ course_id: '1', short_name: 'Sp15' });
+    courseInstance = await selectCourseInstanceByShortName({
+      course: await selectCourseById('1'),
+      short_name: 'Sp15',
+    });
     assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
       tid: 'hw1-automaticTestSuite',

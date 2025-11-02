@@ -3,6 +3,64 @@
   max-width: 100%;
 }
 
+body {
+  --keyboard-background: #e8ebef;
+  --keyboard-toolbar-background-hover: #e8ebef;
+  --keyboard-toolbar-text-active: #0d6efd;
+  --keycap-secondary-background: #909aa1;
+  --keycap-secondary-background-hover: #909aa1;
+  --keyboard-accent-color: #0d6efd;
+  --variant-panel-background: #e8ebef;
+  --keycap-background: #ffffff;
+  --keycap-background-hover: #ffffff;
+  --keyboard-toolbar-text: #3d4144;
+  --keycap-text: #3d4144;
+}
+
+math-field.read-only {
+  background-color: #f0f0f0;
+  border-color: #cccccc;
+  padding: 0.05rem;
+  border-radius: 4px;
+}
+
 .pl-symbolic-input-input {
   height: auto;
+}
+
+math-field::part(menu-toggle) {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  math-field::part(virtual-keyboard-toggle) {
+    display: none;
+  }
+}
+
+/* Mirror the placeholder color to bootstrap's input color */
+math-field::part(placeholder) {
+  background: var(--bs-body-bg);
+  /* https://github.com/twbs/bootstrap/blob/8f3d0580a36d3eba2a9f90d90ceaf6e50f452365/scss/_variables.scss#L920 */
+  color: var(--bs-secondary-color);
+}
+
+math-field.form-control {
+  padding-right: 0.1rem;
+}
+
+math-field::part(content) {
+  min-width: 5ch;
+  /* Keep the content at a readable size, especially for exponents */
+  font-size: 1.2rem;
+}
+
+/* Ensure that the tooltips appear above any bootstrap elements */
+math-field::part(virtual-keyboard-toggle) {
+  z-index: 3;
+}
+
+.form-control.is-invalid.no-validation-icon {
+  background-image: none;
+  padding-right: 0.1rem;
 }

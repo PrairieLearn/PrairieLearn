@@ -2,20 +2,23 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
+import { buildAuthzData } from '../../lib/authz-data.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { assertNever } from '../../lib/types.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   ensureEnrollment,
-  selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUid,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
@@ -130,59 +133,89 @@ router.post(
     const body = BodySchema.parse(req.body);
 
     const {
-      authn_user: { uid, user_id },
+      authn_user: { uid, user_id: userId },
     } = getPageContext(res.locals, { withAuthzData: false });
+
+    // TODO: Authenticate this access better (model functions for course instances)
+    const courseInstance = await selectCourseInstanceById(body.course_instance_id);
+
+    const { authzData } = await buildAuthzData({
+      authn_user: res.locals.authn_user,
+      course_id: courseInstance.course_id,
+      course_instance_id: courseInstance.id,
+      is_administrator: res.locals.is_administrator,
+      ip: req.ip ?? null,
+      req_date: res.locals.req_date,
+    });
+
+    if (authzData === null) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
 
     switch (body.__action) {
       case 'accept_invitation': {
+        const enrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requestedRole: 'Student',
+          authzData,
+        });
+        if (
+          !enrollment ||
+          !['removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
+        ) {
+          flash('error', 'Failed to accept invitation');
+          break;
+        }
+
         await ensureEnrollment({
-          course_instance_id: body.course_instance_id,
-          user_id,
-          agent_user_id: user_id,
-          agent_authn_user_id: user_id,
-          action_detail: 'invitation_accepted',
+          courseInstance,
+          userId,
+          authzData,
+          requestedRole: 'Student',
+          actionDetail: 'invitation_accepted',
         });
         break;
       }
       case 'reject_invitation': {
-        const enrollment = await selectOptionalEnrollmentByPendingUid({
-          course_instance_id: body.course_instance_id,
-          pending_uid: uid,
+        const enrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requestedRole: 'Student',
+          authzData,
         });
 
-        if (!enrollment) {
-          throw new Error('Could not find enrollment to reject');
-        }
-
-        if (enrollment.status !== 'invited') {
-          throw new Error('User does not have access to the course instance');
+        if (!enrollment || !['invited', 'rejected'].includes(enrollment.status)) {
+          flash('error', 'Failed to reject invitation');
+          break;
         }
 
         await setEnrollmentStatus({
-          enrollment_id: enrollment.id,
+          enrollment,
           status: 'rejected',
-          agent_user_id: user_id,
-          agent_authn_user_id: user_id,
-          required_status: 'invited',
+          authzData,
+          requestedRole: 'Student',
         });
         break;
       }
       case 'unenroll': {
         const enrollment = await selectOptionalEnrollmentByUid({
-          course_instance_id: body.course_instance_id,
+          courseInstance,
           uid,
+          requestedRole: 'Student',
+          authzData,
         });
 
-        if (!enrollment) {
-          throw new Error('Could not find enrollment to unenroll');
+        if (!enrollment || !['joined', 'removed'].includes(enrollment.status)) {
+          flash('error', 'Failed to unenroll');
+          break;
         }
 
         await setEnrollmentStatus({
-          enrollment_id: enrollment.id,
+          enrollment,
           status: 'removed',
-          agent_user_id: user_id,
-          agent_authn_user_id: user_id,
-          required_status: 'joined',
+          authzData,
+          requestedRole: 'Student',
         });
         break;
       }

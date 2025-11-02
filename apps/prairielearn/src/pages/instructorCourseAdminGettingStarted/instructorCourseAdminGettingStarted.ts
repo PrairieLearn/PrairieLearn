@@ -17,7 +17,7 @@ router.get(
     res.send(
       InstructorCourseAdminGettingStarted({
         resLocals: res.locals,
-        tasks: await getGettingStartedTasks({ course_id: res.locals.course.id }),
+        tasks: await getGettingStartedTasks({ course: res.locals.course }),
       }),
     );
   }),
