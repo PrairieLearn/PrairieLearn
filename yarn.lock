@@ -4292,7 +4292,7 @@ __metadata:
     "@tiptap/y-tiptap": "npm:^3.0.0"
     "@trpc/client": "npm:^11.7.1"
     "@trpc/server": "npm:^11.7.1"
-    "@types/archiver": "npm:^6.0.4"
+    "@types/archiver": "npm:^7.0.0"
     "@types/async": "npm:^3.2.25"
     "@types/blocked": "npm:^1.3.4"
     "@types/blocked-at": "npm:^1.0.4"
@@ -6267,12 +6267,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/archiver@npm:^6.0.4":
-  version: 6.0.4
-  resolution: "@types/archiver@npm:6.0.4"
+"@types/archiver@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "@types/archiver@npm:7.0.0"
   dependencies:
     "@types/readdir-glob": "npm:*"
-  checksum: 10c0/ac971a5a72d55064b0a62ccebff643f220c957f109a68486c48b51c566df3a7fdbf5ddce8eb1bbd644c4c6486f882cf90044f5ebb08ce16dfe0b1cbb491f8c2c
+  checksum: 10c0/30fe68377e3fbdd9691235bca1c99e1d6ac9c850156a56abc09fa3ed7777c520a260cbee6a1c796994a5adee96dcdc6dd3742cc4444aca713e2611c6b6d1f73d
   languageName: node
   linkType: hard
 
