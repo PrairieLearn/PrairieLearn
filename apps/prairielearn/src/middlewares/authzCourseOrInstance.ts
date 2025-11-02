@@ -619,7 +619,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       const { has_student_access, has_student_access_with_enrollment } =
         await calculateModernCourseInstanceStudentAccess(
           res.locals.course_instance,
-          res.locals.authz_data,
+          res.locals.authz_data.user.user_id,
           req_date,
         );
       res.locals.authz_data.has_student_access = has_student_access;

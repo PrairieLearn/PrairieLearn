@@ -6,11 +6,7 @@ import { run } from '@prairielearn/run';
 import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
-import {
-  FullAuthzDataSchema,
-  type RawPageAuthzData,
-  dangerousFullSystemAuthz,
-} from './authz-data-lib.js';
+import { FullAuthzDataSchema, dangerousFullSystemAuthz } from './authz-data-lib.js';
 import { type CourseInstance, type User } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -65,22 +61,24 @@ export async function selectAuthzData({
  * the course instance must be published to them.
  *
  * @param courseInstance - The course instance to check access for.
- * @param authzData - The authorization data of the user.
+ * @param userId - The ID of the user to check access for.
  * @param reqDate - The date of the request.
  */
 export async function calculateModernCourseInstanceStudentAccess(
   courseInstance: CourseInstance,
-  authzData: RawPageAuthzData,
+  userId: string,
   reqDate: Date,
 ) {
   // This function should only be called for course instances that are using
   // modern publishing configs.
   assert(courseInstance.modern_publishing);
 
+  // We can't trust the authzData to have the correct permissioning,
+  // so we need to use system auth to get the enrollment.
   const enrollment = await selectOptionalEnrollmentByUserId({
-    userId: authzData.user.user_id,
-    requestedRole: 'Student',
-    authzData,
+    userId,
+    requestedRole: 'System',
+    authzData: dangerousFullSystemAuthz(),
     courseInstance,
   });
 
@@ -237,7 +235,7 @@ export async function buildAuthzData({
     const { has_student_access, has_student_access_with_enrollment } =
       await calculateModernCourseInstanceStudentAccess(
         rawAuthzData.course_instance,
-        authzData,
+        authzData.user.user_id,
         req_date,
       );
     authzData.has_student_access = has_student_access;
