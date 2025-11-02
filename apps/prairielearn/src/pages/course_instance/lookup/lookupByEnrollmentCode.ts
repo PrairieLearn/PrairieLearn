@@ -57,7 +57,7 @@ router.get(
 
     if (!hasRole(authzData, 'Student')) {
       res.status(404).json({
-        error: 'Only students can lookup course instances',
+        error: 'Only students can look up course instances',
       });
       return;
     }

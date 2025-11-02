@@ -58,18 +58,18 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   return {
     uuid: courseInstance.uuid,
     long_name: courseInstance.longName,
-    hide_in_enroll_page: courseInstance.hideInEnrollPage,
+    assessments_group_by: courseInstance.groupAssessmentsBy,
     display_timezone: courseInstance.timezone ?? null,
-    access_rules: accessRules ?? [],
+    hide_in_enroll_page: courseInstance.hideInEnrollPage,
+    comment: JSON.stringify(courseInstance.comment),
     modern_publishing: accessRules == null,
+    publishing_start_date: courseInstance.publishing?.startDate ?? null,
+    publishing_end_date: courseInstance.publishing?.endDate ?? null,
     self_enrollment_enabled: courseInstance.selfEnrollment.enabled,
     self_enrollment_enabled_before_date: courseInstance.selfEnrollment.beforeDate,
     self_enrollment_use_enrollment_code: courseInstance.selfEnrollment.useEnrollmentCode,
-    publishing_start_date: courseInstance.publishing?.startDate ?? null,
-    publishing_end_date: courseInstance.publishing?.endDate ?? null,
-    assessments_group_by: courseInstance.groupAssessmentsBy,
-    comment: JSON.stringify(courseInstance.comment),
     share_source_publicly: courseInstance.shareSourcePublicly,
+    access_rules: accessRules ?? [],
   };
 }
 

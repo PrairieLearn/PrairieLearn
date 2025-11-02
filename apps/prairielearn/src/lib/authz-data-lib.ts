@@ -14,7 +14,6 @@ import {
   SprocAuthzCourseInstanceSchema,
   SprocAuthzCourseSchema,
 } from './db-types.js';
-import type { Prettify } from './types.js';
 
 /**
  * This schema isn't used to directly validate the authz data that ends up in
@@ -92,42 +91,6 @@ export type CourseInstanceRole =
   | 'Student Data Editor'
   // The role 'Any' is equivalent to 'Student' OR 'Student Data Viewer' OR 'Student Data Editor'
   | 'Any';
-
-/**
- * The user facing type for a model function that is authenticated.
- *
- * Do not destructure the authentication parameters in the function signature.
- *
- * Instead, destructure them in the function body.
- *
- * ```typescript
- * function foo({ myParam1, myParam2, ...authParams }: AuthenticatedModel<...>) {
- *   const { requestedRole } = authParams;
- *   ...
- * }
- * ```
- *
- * @param Params - The parameters of the model function.
- * @param Roles - The roles that are allowed to call the model function.
- * @returns The type for the model function
- */
-// TODO: This type currently isn't used. The current type
-// doesn't cleanly support destructuring the authentication parameters in the function signature,
-// defeating the purpose of the type.
-// @nwalters512 want to iterate on this further if we end up using it.
-export type _AuthenticatedModel<
-  Params extends Record<string, any> & {
-    requestedRole: CourseInstanceRole;
-  },
-> = Prettify<
-  | (Params & {
-      authzData: RawPageAuthzData;
-    })
-  | (Omit<Params, 'requestedRole'> & {
-      requestedRole: undefined;
-      authzData: DangerousSystemAuthzData;
-    })
->;
 
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {

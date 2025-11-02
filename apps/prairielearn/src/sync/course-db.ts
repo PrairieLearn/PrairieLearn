@@ -240,8 +240,9 @@ export async function loadFullCourse(
     // expired if it either has zero `allowAccess` rules (in which case it is never
     // accessible), or if it has one or more `allowAccess` rules and they all have
     // an `endDate` that is in the past.
-
+    //
     // If the allowAccess section is not present, we instead consider publishing.endDate.
+
     const allowAccessRules = courseInstance.data?.allowAccess;
 
     const courseInstanceExpired = run(() => {
@@ -251,6 +252,7 @@ export async function loadFullCourse(
           return endDate && isPast(endDate);
         });
       }
+
       // We have no access rules, so we are in the modern publishing configuration.
 
       return (
@@ -1176,13 +1178,10 @@ function validateAssessment({
     errors.push(...dateErrors.errors);
   });
 
-  // When additional validation is added, we don't want to warn for past course
+  // We don't want to warn for past course
   // instances that instructors will never touch again, as they won't benefit
-  // from fixing things. So, we'll only show some warnings for course instances
+  // from fixing things. We'll only show some warnings for course instances
   // which are accessible either now or any time in the future.
-  //
-  // NOTE (@reteps): We are deprecating `allowAccess` in favor of `publishing`.
-  // So further validation will never be done here.
 
   if (!courseInstanceExpired) {
     assessment.allowAccess.forEach((rule) => {
@@ -1476,10 +1475,6 @@ function validateCourseInstance({
     if (date == null) {
       errors.push('"selfEnrollment.beforeDate" is not a valid date.');
     }
-  }
-
-  if (courseInstance.selfEnrollment.useEnrollmentCode !== false) {
-    warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
   }
 
   const usingLegacyAllowAccess = courseInstance.allowAccess != null;
