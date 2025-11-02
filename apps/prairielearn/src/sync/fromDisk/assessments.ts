@@ -403,8 +403,8 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   // not accessible.
   if (!courseInstance) return false;
 
-  // If there are no access rules, the course instance is not accessible.
-  if (courseInstance.allowAccess) {
+  if (courseInstance.allowAccess != null) {
+    // If there are no access rules, the course instance is not accessible.
     if (courseInstance.allowAccess.length === 0) return false;
     return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
   }
