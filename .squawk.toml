@@ -8,7 +8,7 @@ excluded_rules = [
   "adding-required-field",             # Adding a new column that is `NOT NULL` and has no default value to an existing table effectively makes it required
   "require-concurrent-index-deletion", # These happen in a transaction, so they can't be concurrent.
   "require-concurrent-index-creation", # These happen in a transaction, so they can't be concurrent.
-  "require-timeout-settings", # TODO: consider enabling this
+  "require-timeout-settings",          # TODO: consider enabling this
   # Backward compatibility rules
   "ban-drop-column",
   "ban-drop-not-null",
