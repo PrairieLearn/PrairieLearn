@@ -385,21 +385,26 @@ function buildRubricSettingsPayload({
   return {
     __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
     __action: form.find('input[name=__action]').attr('value') || '',
-    use_rubric: true,
     modified_at: form.find('input[name=modified_at]').attr('value') || '',
+    use_rubric: true,
     replace_auto_points,
     starting_points,
     min_points,
     max_extra_points,
-    rubric_items: rubric_items.map((it, idx) => ({
-      id: it.id,
-      order: idx,
-      points: it.points,
-      description: it.description,
-      explanation: it.explanation,
-      grader_note: it.grader_note,
-      always_show_to_students: it.always_show_to_students,
-    })),
+    rubric_items: rubric_items.map(
+      (
+        {
+          description_render: _description_render,
+          explanation_render: _explanation_render,
+          grader_note_render: _grader_note_render,
+          ...item
+        },
+        idx,
+      ) => ({
+        order: idx,
+        ...item,
+      }),
+    ),
   };
 }
 
