@@ -58,7 +58,7 @@ export default asyncHandler(async (req, res, next) => {
     // those with `institution: Any`. In that case, there would be effectively two ways to
     // control institution self-enrollment restrictions: via access rules, and via the
     // self-enrollment restriction flag. This could be confusing.
-    // !enrollmentManagementEnabled ||
+    !enrollmentManagementEnabled ||
     !courseInstance.self_enrollment_restrict_to_institution;
 
   // If we have self-enrollment enabled, and it is before the enabled before date,
