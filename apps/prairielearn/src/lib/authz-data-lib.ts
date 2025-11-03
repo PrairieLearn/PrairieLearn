@@ -79,8 +79,8 @@ export const FullAuthzDataSchema = z.object({
   permissions_course: SprocAuthzCourseSchema,
   permissions_course_instance: SprocAuthzCourseInstanceSchema,
 });
+export type FullAuthzData = z.infer<typeof FullAuthzDataSchema>;
 
-/** The user facing version that is obtained via the page context helpers. */
 export type AuthzData = RawPageAuthzData | DangerousSystemAuthzData;
 
 export type CourseInstanceRole =

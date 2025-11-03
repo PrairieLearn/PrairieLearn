@@ -1,6 +1,6 @@
 -- BLOCK select_authz_data
 SELECT
-  coalesce($req_mode, access_mode.mode) AS mode,
+  access_mode.mode,
   access_mode.mode_reason,
   to_jsonb(c.*) AS course,
   to_jsonb(i.*) AS institution,
@@ -17,17 +17,11 @@ FROM
   )
   JOIN LATERAL authz_course (
     $user_id,
-    c.id,
-    $is_administrator,
-    $allow_example_course_override,
-    $req_course_role
+    c.id
   ) AS permissions_course ON TRUE
   JOIN LATERAL authz_course_instance (
     $user_id,
-    ci.id,
-    $is_administrator,
-    $req_date,
-    $req_course_instance_role
+    ci.id
   ) AS permissions_course_instance ON TRUE
   JOIN ip_to_mode ($ip, $req_date, $user_id) AS access_mode ON TRUE
 WHERE
