@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 4.0.22
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
 ## 4.0.21
 
 ### Patch Changes
