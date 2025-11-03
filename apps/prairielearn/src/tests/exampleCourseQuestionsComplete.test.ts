@@ -180,8 +180,8 @@ const validateHtml = async (html: string) => {
 
   const filteredResults = results.map((result) => {
     result.messages = result.messages.filter((m) => {
+      // Workaround for https://gitlab.com/html-validate/html-validate/-/issues/334
       if (m.ruleId === 'aria-label-misuse' && m.selector && /^.*> option[^>]*$/.test(m.selector)) {
-        // Workaround for https://gitlab.com/html-validate/html-validate/-/issues/334
         return false;
       }
       return true;
@@ -195,7 +195,7 @@ const validateHtml = async (html: string) => {
     const validationMessages = filteredResults.flatMap((result) =>
       result.messages.map((m) => `L${m.line}:C${m.column} ${m.message} (${m.ruleId})`),
     );
-    assert.fail(`HTMLValidate failed:\n${validationMessages.join('\n')}`);
+    assert.fail(`HTMLValidate failed:\n${rewrittenHtml}\n${validationMessages.join('\n')}`);
   }
 };
 
