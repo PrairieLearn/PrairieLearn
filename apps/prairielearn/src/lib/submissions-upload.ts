@@ -211,6 +211,11 @@ export async function uploadSubmissions(
             RubricItemSchema,
           );
 
+          await sqldb.execute(sql.update_assessment_instance_max_points, {
+            assessment_instance_id,
+            max_points: rubric_items.reduce((sum, item) => sum + Math.max(item.points, 0), 0),
+          });
+
           // This is a best-effort process: we attempt to match uploaded rubric items to an
           // existing rubric item in the database. If no match is found, the uploaded item
           // is ignored and not applied.

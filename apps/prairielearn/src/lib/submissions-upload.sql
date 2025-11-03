@@ -102,3 +102,10 @@ FROM
 WHERE
   ri.rubric_id = $rubric_id
   AND ri.deleted_at IS NULL;
+
+-- BLOCK update_assessment_instance_max_points
+UPDATE assessment_instances
+SET
+  max_points = $max_points
+WHERE
+  id = $assessment_instance_id;
