@@ -1,12 +1,11 @@
 import { useState } from 'preact/compat';
 
+import { EditTagsTopicsModal } from '../../../components/EditTagsTopicsModal.js';
 import { TagBadge } from '../../../components/TagBadge.js';
 import { TagDescription } from '../../../components/TagDescription.js';
 import { type StaffTag } from '../../../lib/client/safe-db-types.js';
 import { type Tag } from '../../../lib/db-types.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
-
-import { EditTagsModal } from './EditTagsModal.js';
 
 const emptyTag: Tag = {
   color: '',
@@ -175,13 +174,14 @@ export function InstructorCourseAdminTagsTable({
           </table>
         </div>
       </div>
-      <EditTagsModal
+      <EditTagsTopicsModal
         show={showModal}
-        selectedTag={selectedTag}
-        setSelectedTag={setSelectedTag}
+        selectedData={selectedTag}
+        setSelectedData={setSelectedTag}
+        dataType="tag"
         setShowModal={setShowModal}
         handleModalUpdate={handleModalUpdate}
-        addTag={addTag}
+        add={addTag}
       />
     </>
   );
