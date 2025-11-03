@@ -121,7 +121,7 @@ export async function setupDatabases({ configurePool = true }: { configurePool?:
     await createTemplate();
   }
 
-  const createResults = await createFromTemplate({
+  const poolConfig = await createFromTemplate({
     dbName,
     dbTemplateName: POSTGRES_DATABASE_TEMPLATE,
     dropFirst: true,
@@ -131,12 +131,12 @@ export async function setupDatabases({ configurePool = true }: { configurePool?:
   if (configurePool) {
     // Ideally this would happen only over in `helperServer`, but we need to use
     // the same database details, so this is a convenient place to do it.
-    await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
+    await namedLocks.init(poolConfig, (err) => {
       throw err;
     });
   }
 
-  return createResults;
+  return poolConfig;
 }
 
 async function runMigrations(
@@ -234,7 +234,7 @@ export async function testMigration<T>({
 }): Promise<void> {
   const dbName = getDatabaseNameForCurrentWorker();
 
-  await postgresTestUtils.createDatabase({
+  const poolConfig = await postgresTestUtils.createDatabase({
     dropExistingDatabase: true,
     database: dbName,
     configurePool: true,
@@ -242,7 +242,7 @@ export async function testMigration<T>({
 
   // We have to do this here so that `migrations.init` can successfully
   // acquire a lock.
-  await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
+  await namedLocks.init(poolConfig, (err) => {
     throw err;
   });
 
