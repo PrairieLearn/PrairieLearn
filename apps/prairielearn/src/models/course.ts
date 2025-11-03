@@ -14,6 +14,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { calculateCourseRolePermissions } from '../lib/authz-data.js';
 import { type Course, CourseSchema } from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';
@@ -112,6 +113,15 @@ export async function selectCoursesWithStaffAccess({
     { user_id, is_administrator },
     CourseWithPermissionsSchema,
   );
+  if (is_administrator) {
+    return courses.map((c) => ({
+      ...c,
+      permissions_course: {
+        course_role: 'Owner',
+        ...calculateCourseRolePermissions('Owner'),
+      },
+    }));
+  }
   return courses;
 }
 

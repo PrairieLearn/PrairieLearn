@@ -213,13 +213,13 @@ export async function selectAndAuthzVariant(options: {
     ) {
       const authnUserPermissions = await callRow(
         'authz_course_instance',
-        [authn_user.user_id, variant.course_instance_id, is_administrator, new Date(), null],
+        [authn_user.user_id, variant.course_instance_id, new Date()],
         z.object({ has_course_instance_permission_view: z.boolean() }),
       );
 
       const userPermissions = await callRow(
         'authz_course_instance',
-        [user.user_id, variant.course_instance_id, is_administrator, new Date(), null],
+        [user.user_id, variant.course_instance_id, new Date()],
         z.object({ has_course_instance_permission_view: z.boolean() }),
       );
 
@@ -230,7 +230,10 @@ export async function selectAndAuthzVariant(options: {
 
     // We'll only permit access if both the authenticated user and the
     // effective user have student data viewer permissions in the course instance.
-    if (!authnHasCourseInstancePermissionView || !hasCourseInstancePermissionView) {
+    if (
+      !is_administrator &&
+      (!authnHasCourseInstancePermissionView || !hasCourseInstancePermissionView)
+    ) {
       denyAccess();
     }
   }
