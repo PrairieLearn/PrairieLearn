@@ -1,5 +1,9 @@
 import asyncHandler from 'express-async-handler';
 
+import { run } from '@prairielearn/run';
+
+import { EnrollmentPage } from '../components/EnrollmentPage.js';
+import { hasRole } from '../lib/authz-data-lib.js';
 import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
@@ -16,9 +20,17 @@ export default asyncHandler(async (req, res, next) => {
   const courseInstance: CourseInstance = res.locals.course_instance;
 
   // We select by user UID so that we can find invited/rejected enrollments as well
-  const existingEnrollment = await selectOptionalEnrollmentByUid({
-    uid: res.locals.authn_user.uid,
-    course_instance_id: courseInstance.id,
+  const existingEnrollment = await run(async () => {
+    // We only want to even try to lookup enrollment information if the user is a student.
+    if (!hasRole(res.locals.authz_data, 'Student')) {
+      return null;
+    }
+    return await selectOptionalEnrollmentByUid({
+      uid: res.locals.authn_user.uid,
+      courseInstance,
+      requestedRole: 'Student',
+      authzData: res.locals.authz_data,
+    });
   });
 
   // Check if the self-enrollment institution restriction is satisfied
@@ -28,38 +40,61 @@ export default asyncHandler(async (req, res, next) => {
 
   // If we have self-enrollment enabled, and it is before the enabled before date,
   // and the institution restriction is satisfied, then we can enroll the user.
+  const selfEnrollmentEnabled = courseInstance.self_enrollment_enabled;
+  const selfEnrollmentExpired =
+    courseInstance.self_enrollment_enabled_before_date != null &&
+    new Date() >= courseInstance.self_enrollment_enabled_before_date;
   const selfEnrollmentAllowed =
-    courseInstance.self_enrollment_enabled &&
-    (courseInstance.self_enrollment_enabled_before_date == null ||
-      new Date() < courseInstance.self_enrollment_enabled_before_date) &&
-    institutionRestrictionSatisfied;
+    selfEnrollmentEnabled && !selfEnrollmentExpired && institutionRestrictionSatisfied;
 
   // If the user is not enrolled, and self-enrollment is allowed, then they can enroll.
   // If the user is enrolled and is invited/rejected/joined/removed, then they can join.
-  const canEnroll =
-    (selfEnrollmentAllowed && existingEnrollment == null) ||
-    (existingEnrollment != null &&
-      ['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status));
+  const canSelfEnroll = selfEnrollmentAllowed && existingEnrollment == null;
+  const canJoin =
+    existingEnrollment != null &&
+    ['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status);
 
   if (
     idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&
     res.locals.authz_data.authn_course_role === 'None' &&
     res.locals.authz_data.authn_course_instance_role === 'None' &&
     res.locals.authz_data.authn_has_student_access &&
-    !res.locals.authz_data.authn_has_student_access_with_enrollment &&
-    canEnroll
+    !res.locals.authz_data.authn_has_student_access_with_enrollment
   ) {
-    await ensureCheckedEnrollment({
-      institution: res.locals.institution,
-      course: res.locals.course,
-      course_instance: res.locals.course_instance,
-      authz_data: res.locals.authz_data,
-      action_detail: 'implicit_joined',
-    });
+    if (canSelfEnroll || canJoin) {
+      await ensureCheckedEnrollment({
+        institution: res.locals.institution,
+        course: res.locals.course,
+        courseInstance,
+        authzData: res.locals.authz_data,
+        requestedRole: 'Student',
+        actionDetail: 'implicit_joined',
+      });
 
-    // This is the only part of the `authz_data` that would change as a
-    // result of this enrollment, so we can just update it directly.
-    res.locals.authz_data.has_student_access_with_enrollment = true;
+      // This is the only part of the `authz_data` that would change as a
+      // result of this enrollment, so we can just update it directly.
+      res.locals.authz_data.has_student_access_with_enrollment = true;
+    } else if (existingEnrollment) {
+      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
+      return;
+    } else if (selfEnrollmentExpired) {
+      res
+        .status(403)
+        .send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-expired' }));
+      return;
+    } else if (!selfEnrollmentEnabled) {
+      res
+        .status(403)
+        .send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-disabled' }));
+      return;
+    } else if (!institutionRestrictionSatisfied) {
+      res
+        .status(403)
+        .send(EnrollmentPage({ resLocals: res.locals, type: 'institution-restriction' }));
+      return;
+    } else {
+      // No fancy error page
+    }
   }
 
   next();

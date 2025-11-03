@@ -21,6 +21,7 @@ import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment
 import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
+  type CourseInstance,
   DateFromISOString,
   IdSchema,
   Lti13CourseInstanceSchema,
@@ -851,11 +852,17 @@ class Lti13ContextMembership {
   }
 }
 
-export async function updateLti13Scores(
-  unsafe_assessment_id: string | number,
-  instance: Lti13CombinedInstance,
-  job: ServerJob,
-) {
+export async function updateLti13Scores({
+  course_instance,
+  unsafe_assessment_id,
+  instance,
+  job,
+}: {
+  course_instance: CourseInstance;
+  unsafe_assessment_id: string | number;
+  instance: Lti13CombinedInstance;
+  job: ServerJob;
+}) {
   // Get the assessment metadata
   const assessment = await queryRow(
     sql.select_assessment_for_lti13_scores,
@@ -885,7 +892,7 @@ export async function updateLti13Scores(
   );
 
   const courseStaff = await selectUsersWithCourseInstanceAccess({
-    course_instance_id: assessment.course_instance_id,
+    course_instance,
     minimal_role: 'Student Data Viewer',
   });
   const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));

@@ -1,15 +1,25 @@
 /* global TomSelect, MathJax */
 
-/**
- * @param {string} uuid
- */
-function PLMultipleChoice(uuid) {
-  const selectElement = /** @type {HTMLSelectElement} */ (
-    document.getElementById('pl-multiple-choice-select-' + uuid)
-  );
+class PLMultipleChoiceTomSelect extends TomSelect {
+  // This class overrides the positionDropdown method to ensure that the dropdown moves up if the space below is too small.
+  positionDropdown() {
+    super.positionDropdown();
+
+    const controlRect = this.control.getBoundingClientRect();
+    const dropdownRect = this.dropdown.getBoundingClientRect();
+
+    if (dropdownRect.bottom > window.innerHeight) {
+      const newTop = Math.max(controlRect.top - this.dropdown.offsetHeight, 0) + window.scrollY;
+      this.dropdown.style.top = `${newTop}px`;
+    }
+  }
+}
+
+window.PLMultipleChoice = function (uuid) {
+  const selectElement = document.getElementById('pl-multiple-choice-select-' + uuid);
   const container = selectElement.closest('.pl-multiple-choice-dropdown');
 
-  const select = new TomSelect(selectElement, {
+  const select = new PLMultipleChoiceTomSelect(selectElement, {
     plugins: ['no_backspace_delete', 'dropdown_input'],
     allowEmptyOption: true,
 
@@ -40,21 +50,12 @@ function PLMultipleChoice(uuid) {
 
     /** @param {HTMLElement} dropdown */
     onDropdownOpen: (dropdown) => {
-      // Ensure the height of the dropdown is constrained to the viewport.
-      const content = /** @type {HTMLElement | null} */ (
-        dropdown.querySelector('.ts-dropdown-content')
-      );
-      if (content) {
-        content.style.maxHeight = `${window.innerHeight - content.getBoundingClientRect().top}px`;
-      }
-
       // The first time the dropdown is opened, this event is fired before the
       // options are actually present in the DOM. We'll wait for the next tick
       // to ensure that the options are present.
-      setTimeout(() => {
-        if ('typesetPromise' in MathJax) {
-          void MathJax.typesetPromise([dropdown]);
-        }
+      setTimeout(async () => {
+        await MathJax.typesetPromise([dropdown]);
+        select.positionDropdown();
       }, 0);
     },
 
@@ -67,12 +68,12 @@ function PLMultipleChoice(uuid) {
     },
   });
 
-  // Reposition the dropdown when the main container is scrolled. This doesn't exist
-  // on student pages, so we take care to handle that case.
-  const mainContainer = selectElement.closest('.app-main-container');
-  if (mainContainer) {
-    mainContainer.addEventListener('scroll', () => select.positionDropdown());
-  }
+  // Reposition the dropdown when the main container is scrolled. This is only
+  // needed in instructor pages, since student pages scroll on body, which is
+  // already handled by TomSelect itself.
+  selectElement
+    .closest('.app-main-container')
+    ?.addEventListener('scroll', () => select.positionDropdown());
 
   // By default, `tom-select` will set the placeholder as the "active" option,
   // but this means that the active option can't be changed with the up/down keys
@@ -101,6 +102,6 @@ function PLMultipleChoice(uuid) {
   // Because we set `openOnFocus: false`, we need to manually open the dropdown
   // when the control is clicked.
   select.control.addEventListener('click', () => select.open());
-}
+};
 
 window.PLMultipleChoice = PLMultipleChoice;
