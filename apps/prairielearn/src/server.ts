@@ -2225,6 +2225,13 @@ if (shouldStartServer) {
 
     // If `PL_CONFIG_PATH` is set, it takes precedence over all other config paths.
     if (process.env.PL_CONFIG_PATH) {
+      // If the path is specified, it must exist. We'll fail fast if it doesn't.
+      if (!fs.existsSync(process.env.PL_CONFIG_PATH)) {
+        throw new Error(
+          `Config file specified by PL_CONFIG_PATH does not exist: ${process.env.PL_CONFIG_PATH}`,
+        );
+      }
+
       configPaths = [process.env.PL_CONFIG_PATH];
     }
 
