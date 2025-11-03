@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/preact",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "type": "module",
   "repository": {
     "type": "git",
@@ -24,14 +24,14 @@
     "@prairielearn/preact-cjs": "workspace:^",
     "@prairielearn/utils": "workspace:^",
     "clsx": "^2.1.1",
-    "preact": "^10.27.0",
-    "preact-render-to-string": "^6.6.2",
+    "preact": "^10.27.2",
+    "preact-render-to-string": "^6.6.3",
     "selector-observer": "^2.1.6",
-    "superjson": "^2.2.2"
+    "superjson": "^2.2.5"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.18.8",
+    "@types/node": "^22.18.13",
     "typescript": "^5.9.3"
   }
 }

@@ -1,5 +1,17 @@
 # @prairielearn/postgres
 
+## 4.4.3
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 4.4.2
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 4.4.1
 
 ### Patch Changes

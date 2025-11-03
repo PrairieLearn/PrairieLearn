@@ -1,5 +1,17 @@
 # @prairielearn/node-metrics
 
+## 2.0.11
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 2.0.10
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 2.0.9
 
 ### Patch Changes
