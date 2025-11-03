@@ -40,10 +40,6 @@ updates:
       # https://github.com/faisalman/ua-parser-js/issues/680
       - dependency-name: 'ua-parser-js'
         versions: ['>=2']
-      # These upgrades are blocked on Sentry:
-      # https://github.com/getsentry/sentry-javascript/issues/15737
-      # https://github.com/getsentry/sentry-javascript/issues/15213
-      - dependency-name: '@opentelemetry/*'
       # We use Yarn `resolutions` to point these to our Preact compat packages.
       # We don't ever care about which version is actually listed in `package.json` files.
       - dependency-name: 'preact' # https://github.com/PrairieLearn/PrairieLearn/pull/12763
