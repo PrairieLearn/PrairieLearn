@@ -4401,7 +4401,7 @@ __metadata:
     he: "npm:^1.2.0"
     highlight.js: "npm:^11.11.1"
     html-rewriter-wasm: "npm:^0.4.1"
-    html-validate: "npm:^10.2.1"
+    html-validate: "npm:10.1.2"
     htmx-ext-loading-states: "npm:^2.0.2"
     htmx-ext-morphdom-swap: "npm:^2.0.2"
     htmx.org: "npm:^2.0.8"
@@ -11984,9 +11984,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html-validate@npm:^10.2.1":
-  version: 10.2.1
-  resolution: "html-validate@npm:10.2.1"
+"html-validate@npm:10.1.2":
+  version: 10.1.2
+  resolution: "html-validate@npm:10.1.2"
   dependencies:
     "@html-validate/stylish": "npm:^4.1.0"
     "@sidvind/better-ajv-errors": "npm:4.0.0"
@@ -12000,7 +12000,7 @@ __metadata:
     jest: ^28.1.3 || ^29.0.3 || ^30.0.0
     jest-diff: ^28.1.3 || ^29.0.3 || ^30.0.0
     jest-snapshot: ^28.1.3 || ^29.0.3 || ^30.0.0
-    vitest: ^1.0.0 || ^2.0.0 || ^3.0.0 || ^4.0.0
+    vitest: ^1.0.0 || ^2.0.0 || ^3.0.0
   peerDependenciesMeta:
     jest:
       optional: true
@@ -12012,7 +12012,7 @@ __metadata:
       optional: true
   bin:
     html-validate: bin/html-validate.mjs
-  checksum: 10c0/f2eb91d14fb3d6c34475d083762b73630bcb86f65e2ea027b7e2b7df35f23df8b3f4333a6a71405deb70fbfc08ff34ebdf429acc1642c5155838e139a6b9c639
+  checksum: 10c0/c4f4e7a61f688ec26a6c5589d4a1ce16b6d30245f00b9be14536a83efb4f940134c70cd834e8b795e1d2aff5f27d90960d86040b5e2ef34f573d554450ede30c
   languageName: node
   linkType: hard
 
