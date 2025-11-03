@@ -5,6 +5,7 @@ import * as prettier from 'prettier/standalone';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { renderHtml } from '@prairielearn/preact';
+import { run } from '@prairielearn/run';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../src/lib/base64-util.js';
 import { type FileMetadata, FileType } from '../../src/lib/editorUtil.types.js';
@@ -51,30 +52,30 @@ function UuidChangeModalContent({
   originalUuid?: string;
   newUuid?: string;
 }) {
-  const getMessage = () => {
-    if (errorCode === SaveErrorCode.UUID_CHANGED && originalUuid && newUuid) {
-      return (
-        <>
-          The UUID in this file was changed from <code>"{originalUuid}"</code> to{' '}
-          <code>"{newUuid}"</code>.
-        </>
-      );
-    } else if (errorCode === SaveErrorCode.UUID_REMOVED) {
-      return <>The UUID was removed from this file.</>;
-    }
-    return <>The UUID was modified.</>;
-  };
-
   return (
     <>
       <div class="alert alert-warning d-flex flex-column mb-3">
         <div class="d-flex flex-row align-items-start gap-2 mb-1">
           <i class="bi bi-exclamation-triangle-fill fs-6" />
-          <strong>UUID Change</strong>
+          <strong>UUID change</strong>
         </div>
-        <div>{getMessage()}</div>
+        <div>
+          {run(() => {
+            if (errorCode === SaveErrorCode.UUID_CHANGED && originalUuid && newUuid) {
+              return (
+                <>
+                  The UUID in this file was changed from <code>"{originalUuid}"</code> to{' '}
+                  <code>"{newUuid}"</code>.
+                </>
+              );
+            } else if (errorCode === SaveErrorCode.UUID_REMOVED) {
+              return <>The UUID was removed from this file.</>;
+            }
+            return <>The UUID was modified.</>;
+          })}
+        </div>
       </div>
-      <div class="ms-0">Hitting "Confirm Save" will save this file with its original UUID.</div>
+      <div class="ms-0">Clicking "Confirm save" will save this file with its original UUID.</div>
     </>
   );
 }
@@ -212,9 +213,14 @@ class InstructorFileEditor {
     const currentContents = this.editor.getValue();
     const parsedContent = JSON.parse(currentContents);
     if (typeof parsedContent === 'object' && parsedContent !== null) {
-      // Restore the original UUID
-      parsedContent.uuid = this.fileMetadata.uuid;
-      const restoredContents = JSON.stringify(parsedContent, null, 2);
+      // Restore the original UUID. We delete and then spread so that the original UUID
+      // appears at the top of the JSON object.
+      delete parsedContent.uuid;
+      const restoredContents = JSON.stringify(
+        { uuid: this.fileMetadata.uuid, ...parsedContent },
+        null,
+        2,
+      );
       this.editor.setValue(restoredContents);
     }
   }
