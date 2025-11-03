@@ -181,7 +181,7 @@ const validateHtml = async (html: string) => {
     const validationMessages = results.flatMap((result) =>
       result.messages.map((m) => `L${m.line}:C${m.column} ${m.message} (${m.ruleId})`),
     );
-    assert.fail(`HTMLValidate failed:\n${validationMessages.join('\n')}\n${rewrittenHtml}`);
+    assert.fail(`HTMLValidate failed:\n${rewrittenHtml}\n${validationMessages.join('\n')}`);
   }
 };
 

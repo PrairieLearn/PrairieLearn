@@ -11,6 +11,7 @@
                        value="{{index}}"
                        {{#blank}}aria-label="Blank"{{/blank}}
                        {{^no_counters}}{{^blank}}aria-labelledby="pl-matching-{{uuid}}-option-{{value}}-content"{{/blank}}{{/no_counters}}
+                       role="option" {{! Workaround https://gitlab.com/html-validate/html-validate/-/issues/334 }}
                     >
                       {{value}}
                     </option>
