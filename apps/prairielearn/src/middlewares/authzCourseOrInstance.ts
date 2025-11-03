@@ -12,7 +12,6 @@ import { run } from '@prairielearn/run';
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import type { FullAuthzData } from '../lib/authz-data-lib.js';
 import {
-  type CalculateAuthDataResult,
   type CalculateAuthDataSuccessResult,
   calculateAuthData,
   calculateFallbackAuthData,
@@ -44,14 +43,14 @@ function clearOverrideCookies(res: Response, overrides: Override[]) {
   });
 }
 
-async function verifyAuthnPermissions(
-  authnAuthzData: BuildAuthzDataResult['authzData'],
+function verifyAuthnAuthResult(
+  authnAuthResult: CalculateAuthDataSuccessResult['authResult'],
   viewType: 'student' | 'instructor' | 'none',
 ) {
   // Cannot request a user data override without instructor permissions
   if (
-    !authnAuthzData.has_course_permission_preview ||
-    !authnAuthzData.has_course_instance_permission_view
+    !authnAuthResult.has_course_permission_preview ||
+    !authnAuthResult.has_course_instance_permission_view
   ) {
     debug('requested overrides, but authn user does not have instructor permissions');
     if (viewType === 'student') {
@@ -490,10 +489,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  // Check if it is necessary to request a user data override - if not, return
+  // Check if it is necessary to request a user data override
   if (overrides.length === 0) {
     debug('no requested overrides');
-    return;
   }
 
   // If this is an example course, only allow overrides if the user is an administrator.
@@ -512,46 +510,37 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  const verifyAuthnPermissionsResult = await verifyAuthnPermissions(
-    authnAuthResult,
-    res.locals.view_type || 'none',
-  );
-
-  if (!verifyAuthnPermissionsResult.success) {
-    if (verifyAuthnPermissionsResult.error === null) {
-      return;
-    }
-    clearOverrideCookies(res, overrides);
-    throw verifyAuthnPermissionsResult.error;
-  }
-
   // We are trying to override the user data.
   debug('trying to override the user data');
   debug(req.cookies);
 
-  const user = res.locals.authz_data.user;
+  const req_date = run(() => {
+    if (req.cookies.pl2_requested_date) {
+      const req_date = parseISO(req.cookies.pl2_requested_date);
+      if (!isValid(req_date)) {
+        debug(
+          `requested date is invalid: ${req.cookies.pl2_requested_date}, ${req_date.toISOString()}`,
+        );
+        clearOverrideCookies(res, overrides);
 
-  let req_date = res.locals.req_date;
-  if (req.cookies.pl2_requested_date) {
-    req_date = parseISO(req.cookies.pl2_requested_date);
-    if (!isValid(req_date)) {
-      debug(`requested date is invalid: ${req.cookies.pl2_requested_date}, ${req_date}`);
-      clearOverrideCookies(res, overrides);
+        throw new AugmentedError('Access denied', {
+          status: 403,
+          info: html`
+            <p>
+              You have requested an invalid effective date:
+              <code>${req.cookies.pl2_requested_date}</code>. All requested changes to the effective
+              user have been removed.
+            </p>
+          `,
+        });
+      }
 
-      throw new AugmentedError('Access denied', {
-        status: 403,
-        info: html`
-          <p>
-            You have requested an invalid effective date:
-            <code>${req.cookies.pl2_requested_date}</code>. All requested changes to the effective
-            user have been removed.
-          </p>
-        `,
-      });
+      debug(`effective req_date = ${req_date.toISOString()}`);
+      return req_date;
     }
 
-    debug(`effective req_date = ${req_date}`);
-  }
+    return res.locals.req_date;
+  });
 
   const effectiveUserData = await getOverrideUserData(
     req.cookies.pl2_requested_uid,
@@ -563,12 +552,32 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     throw effectiveUserData.error;
   }
 
+  const verifyAuthnAuthResultResult = verifyAuthnAuthResult(
+    authnAuthResult,
+    res.locals.view_type || 'none',
+  );
+
+  if (!verifyAuthnAuthResultResult.success && verifyAuthnAuthResultResult.error !== null) {
+    clearOverrideCookies(res, overrides);
+    throw verifyAuthnAuthResultResult.error;
+  }
+
   const {
     authResult: effectiveAuthResult,
     course: effectiveCourse,
     institution: effectiveInstitution,
     courseInstance: effectiveCourseInstance,
   } = await run(async () => {
+    // If we didn't throw an error and we can't set the effective user, return all nulls.
+    if (!verifyAuthnAuthResultResult.success) {
+      return {
+        authResult: null,
+        course: null,
+        institution: null,
+        courseInstance: null,
+      };
+    }
+
     const {
       authResult: effectiveAuthResult,
       course: effectiveCourse,
