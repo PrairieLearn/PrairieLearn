@@ -5,6 +5,7 @@ import { run } from '@prairielearn/run';
 import { EnrollmentPage } from '../components/EnrollmentPage.js';
 import { hasRole } from '../lib/authz-data-lib.js';
 import type { CourseInstance } from '../lib/db-types.js';
+import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
 import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
 
@@ -18,6 +19,11 @@ export default asyncHandler(async (req, res, next) => {
   // TODO: check if self-enrollment requires a secret link.
 
   const courseInstance: CourseInstance = res.locals.course_instance;
+
+  const enrollmentManagementEnabled = await features.enabledFromLocals(
+    'enrollment-management',
+    res.locals,
+  );
 
   // We select by user UID so that we can find invited/rejected enrollments as well
   const existingEnrollment = await run(async () => {
@@ -35,8 +41,28 @@ export default asyncHandler(async (req, res, next) => {
 
   // Check if the self-enrollment institution restriction is satisfied
   const institutionRestrictionSatisfied =
-    !courseInstance.self_enrollment_restrict_to_institution ||
-    res.locals.authn_user.institution_id === res.locals.course.institution_id;
+    res.locals.authn_user.institution_id === res.locals.course.institution_id ||
+    // If enrollment management is not yet enabled, instructors have no way to
+    // configure this restriction, so we'll ignore it. This is critical for workflows
+    // where courses use `institution: Any` in course instance access rules to permit
+    // non-institution users to access course instances.
+    //
+    // Note that skipping this check won't arbitrarily allow non-institution users to
+    // access course instances. We still rely on course instance access rules to gate
+    // access to users outside of a specific institution.
+    //
+    // TODO: we need to reconsider this before enrollment management is enabled by default.
+    //
+    // TODO: We should also consider the interaction between this and modern course instance
+    // publishing config (a replacement for course instance access rules). The intent is
+    // that course instances that are no longer using access rules will rely on either a)
+    // allowing self-enrollment from outside users, or b) having course staff explicitly
+    // invite outside users. This use case is actually probably fine. The real concern is
+    // actually course instances that are still using access rules. Once we turn on enrollment
+    // management by default, there will be effectively two ways to control access to
+    // non-institution users: access rules, and the self-enrollment flag.
+    // !enrollmentManagementEnabled ||
+    !courseInstance.self_enrollment_restrict_to_institution;
 
   // If we have self-enrollment enabled, and it is before the enabled before date,
   // and the institution restriction is satisfied, then we can enroll the user.
