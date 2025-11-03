@@ -27,7 +27,6 @@ import {
 } from './utils/auth.js';
 import { enrollUser, unenrollUser } from './utils/enrollments.js';
 import { features } from '../lib/features/index.js';
-import { run } from '@prairielearn/run';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
