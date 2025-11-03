@@ -371,9 +371,9 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
     urlPrefix,
   } = resLocals;
 
-  // If we're working with an example course, only allow changing the effective
+  // If we're working with an example course and we are not in development mode, only allow changing the effective
   // user if the authenticated user is an administrator.
-  if (course?.example_course && !authz_data?.authn_is_administrator) {
+  if (course?.example_course && !config.devMode && !authz_data?.authn_is_administrator) {
     return '';
   }
 

@@ -189,8 +189,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     return;
   }
 
-  // If this is an example course, only allow overrides if the user is an administrator.
-  if (res.locals.course.example_course && !res.locals.is_administrator) {
+  // If this is an example course and we are not in development mode, only allow overrides if the user is an administrator.
+  if (res.locals.course.example_course && !config.devMode && !res.locals.is_administrator) {
     clearOverrideCookies(res, overrides);
 
     throw new AugmentedError('Access denied', {
