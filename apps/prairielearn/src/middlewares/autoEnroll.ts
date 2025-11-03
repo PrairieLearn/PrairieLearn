@@ -49,18 +49,15 @@ export default asyncHandler(async (req, res, next) => {
     //
     // Note that skipping this check won't arbitrarily allow non-institution users to
     // access course instances. We still rely on course instance access rules to gate
-    // access to users outside of a specific institution.
+    // access for users outside of a specific institution. If those access rules aren't
+    // satisfied, the user won't get as far as this middleware.
     //
     // TODO: we need to reconsider this before enrollment management is enabled by default.
-    //
-    // TODO: We should also consider the interaction between this and modern course instance
-    // publishing config (a replacement for course instance access rules). The intent is
-    // that course instances that are no longer using access rules will rely on either a)
-    // allowing self-enrollment from outside users, or b) having course staff explicitly
-    // invite outside users. This use case is actually probably fine. The real concern is
-    // actually course instances that are still using access rules. Once we turn on enrollment
-    // management by default, there will be effectively two ways to control access to
-    // non-institution users: access rules, and the self-enrollment flag.
+    // Specifically, we need to consider what'll happen when a course instance has
+    // enrollment management enabled and is still using legacy access rules, and specifically
+    // those with `institution: Any`. In that case, there would be effectively two ways to
+    // control institution self-enrollment restrictions: via access rules, and via the
+    // self-enrollment restriction flag. This could be confusing.
     // !enrollmentManagementEnabled ||
     !courseInstance.self_enrollment_restrict_to_institution;
 
