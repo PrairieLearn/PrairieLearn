@@ -26,7 +26,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/cookie": "^0.6.0",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^22.18.13",
+    "@types/node": "^22.19.0",
     "@types/node-fetch": "^2.6.13",
     "@types/on-headers": "^1.0.4",
     "@types/set-cookie-parser": "^2.4.10",
