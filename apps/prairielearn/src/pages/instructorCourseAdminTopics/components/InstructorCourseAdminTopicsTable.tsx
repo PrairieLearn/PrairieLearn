@@ -6,7 +6,7 @@ import { type StaffTopic } from '../../../lib/client/safe-db-types.js';
 import { type Topic } from '../../../lib/db-types.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
 
-import { type EditTopicModalState, EditTopicsModal } from './EditTopicsModal.js';
+import { type EditTopicModalState, EditTopicsModal } from './EditTopicModal.js';
 
 const emptyTopic: Topic = {
   color: '',
