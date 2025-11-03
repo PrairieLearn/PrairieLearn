@@ -241,8 +241,8 @@ function getFeedbackOrNull(record: Record<string, any>): Record<string, any> | n
     let feedback_obj: Record<string, any> | null = null;
     try {
       feedback_obj = JSON.parse(record.feedback_json);
-    } catch (e) {
-      throw new Error(`Unable to parse "feedback_json" field as JSON: ${e}`);
+    } catch (err) {
+      throw new Error('Unable to parse "feedback_json" field as JSON', { cause: err });
     }
     if (feedback_obj == null || !isPlainObject(feedback_obj)) {
       throw new Error(`Parsed "feedback_json" is not a JSON object: ${record.feedback_json}`);
@@ -260,8 +260,8 @@ function getPartialScoresOrNull(record: Record<string, any>): Record<string, any
   if (record.partial_scores != null) {
     try {
       partial_scores = JSON.parse(record.partial_scores);
-    } catch (e) {
-      throw new Error(`Unable to parse "partial_scores" field as JSON: ${e}`);
+    } catch (err) {
+      throw new Error('Unable to parse "partial_scores" field as JSON', { cause: err });
     }
     if (partial_scores != null && !isPlainObject(partial_scores)) {
       throw new Error(`Parsed "partial_scores" is not a JSON object: ${record.partial_scores}`);

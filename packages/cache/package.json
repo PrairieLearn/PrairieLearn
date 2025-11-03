@@ -10,7 +10,7 @@
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
-    "ioredis": "^5.8.0",
+    "ioredis": "^5.8.2",
     "lru-cache": "^11.2.2",
     "zod": "^3.25.76"
   },

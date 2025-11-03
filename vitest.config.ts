@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 
+import { slash } from '@vitest/utils/helpers';
 import { resolve } from 'pathe';
-import { slash } from 'vite-node/utils';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
 
@@ -9,7 +9,7 @@ import { BaseSequencer, type TestSpecification } from 'vitest/node';
 // are slowest. However, this depends on cached data from previous runs, which
 // isn't available in CI. So, we manually specify the slowest tests here and
 // use a custom sequencer to always run them first.
-const SLOW_TESTS_SHARDS = {
+const SLOW_TESTS_SHARDS: Record<number, string[]> = {
   1: ['src/tests/exampleCourseQuestionsComplete.test.ts'],
   2: ['src/tests/exampleCourseQuestions.test.ts'],
   3: ['src/tests/homework.test.ts', 'src/tests/fileEditor.test.ts'],
@@ -22,7 +22,7 @@ const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
 // This is a rough heuristic to try to balance the runtime of each shard.
 // For example, shard 3 will get 2/7 of these other tests.
 const NUM_SLICES = 7;
-const SHARD_SLICES = {
+const SHARD_SLICES: Record<number, { start: number; end: number }> = {
   1: { start: 0, end: 0 },
   2: { start: 0, end: 1 },
   3: { start: 1, end: 3 },
@@ -131,11 +131,10 @@ export default mergeConfig(
   sharedConfig,
   defineConfig({
     test: {
-      projects: ['apps/grader-host', 'apps/prairielearn', 'apps/workspace-host', 'packages/*'],
+      projects: ['{apps,packages}/*/vitest.config.ts'],
       coverage: {
-        all: true,
         reporter: ['html', 'text-summary', 'cobertura'],
-        include: ['{apps,packages}/*/src/**'],
+        include: ['{apps,packages}/*/src/**/*.{ts,tsx}'],
       },
     },
   }),
