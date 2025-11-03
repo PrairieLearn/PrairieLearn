@@ -134,6 +134,16 @@ async function checkPage(url: string) {
         return false;
       }
 
+      // We also want to ignore aria-labelledby attributes on dropdowns.
+      // These elements are interactive via bootstrap.
+      if (
+        m.ruleId === 'aria-label-misuse' &&
+        m.selector &&
+        ['#username-nav > li > div'].includes(m.selector) // aria-labelledby="navbarDropdown"
+      ) {
+        return false;
+      }
+
       return true;
     });
     result.errorCount = result.messages.length;
