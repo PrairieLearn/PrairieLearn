@@ -15,7 +15,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * If course_id is not provided, but course_instance_id is,
  * the function will use the course_id from the course instance.
  */
-export async function selectAuthzData({
+async function selectAuthzData({
   user_id,
   course_id,
   course_instance_id,
@@ -125,7 +125,8 @@ export async function calculateModernCourseInstanceStudentAccess(
 }
 
 /**
- * Builds the authorization data for a user on a page.
+ * Builds the authorization data for a user on a page. The optional parameters are used for effective user overrides,
+ * most scenarios should not need to change these parameters.
  *
  * @param params
  * @param params.authn_user - The authenticated user.
@@ -135,23 +136,33 @@ export async function calculateModernCourseInstanceStudentAccess(
  * @param params.ip - The IP address of the request.
  * @param params.req_date - The date of the request.
  * @param params.req_mode - The mode of the request.
+ * @param params.req_course_role - The course role of the request.
+ * @param params.req_course_instance_role - The course instance role of the request.
+ * @param params.allow_example_course_override - Whether to allow overriding the course role for example courses.
  */
 export async function buildAuthzData({
   authn_user,
+  user,
   course_id,
   course_instance_id,
   is_administrator,
+  allow_example_course_override = true,
   ip,
   req_date,
   req_mode = null,
+  req_course_role = null,
+  req_course_instance_role = null,
 }: {
   authn_user: User;
   course_id: string | null;
   course_instance_id: string | null;
   is_administrator: boolean;
+  allow_example_course_override?: boolean;
   ip: string | null;
   req_date: Date;
   req_mode?: string | null;
+  req_course_role?: string | null;
+  req_course_instance_role?: string | null;
 }) {
   assert(course_id !== null || course_instance_id !== null);
 
@@ -162,12 +173,12 @@ export async function buildAuthzData({
     course_id,
     course_instance_id,
     is_administrator,
-    allow_example_course_override: true,
+    allow_example_course_override,
     ip,
     req_date,
     req_mode,
-    req_course_role: null,
-    req_course_instance_role: null,
+    req_course_role,
+    req_course_instance_role,
   });
 
   if (rawAuthzData === null) {
