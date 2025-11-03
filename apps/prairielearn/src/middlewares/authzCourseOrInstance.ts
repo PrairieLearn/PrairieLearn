@@ -489,11 +489,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  // Check if it is necessary to request a user data override
-  if (overrides.length === 0) {
-    debug('no requested overrides');
-  }
-
   // If this is an example course, only allow overrides if the user is an administrator.
   if (authnCourse.example_course && !res.locals.is_administrator) {
     clearOverrideCookies(res, overrides);
@@ -509,10 +504,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       `,
     });
   }
-
-  // We are trying to override the user data.
-  debug('trying to override the user data');
-  debug(req.cookies);
 
   const req_date = run(() => {
     if (req.cookies.pl2_requested_date) {
@@ -568,6 +559,17 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     institution: effectiveInstitution,
     courseInstance: effectiveCourseInstance,
   } = await run(async () => {
+    // Check if it is necessary to request a user data override
+    if (overrides.length === 0) {
+      debug('no requested overrides');
+      return {
+        authResult: null,
+        course: null,
+        institution: null,
+        courseInstance: null,
+      };
+    }
+
     // If we didn't throw an error and we can't set the effective user, return all nulls.
     if (!verifyAuthnAuthResultResult.success) {
       return {
@@ -577,6 +579,10 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
         courseInstance: null,
       };
     }
+
+    // We are trying to override the user data.
+    debug('trying to override the user data');
+    debug(req.cookies);
 
     const {
       authResult: effectiveAuthResult,
@@ -605,7 +611,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     if (effectiveAuthResult === null) {
       return {
         authResult: {
-          ...(await calculateFallbackAuthData(user, req.params.course_instance_id !== null)),
+          ...(await calculateFallbackAuthData(
+            effectiveUserData.userData.user,
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            req.params.course_instance_id !== null,
+          )),
           user_with_requested_uid_has_instructor_access_to_course_instance:
             effectiveUserData.userData.is_instructor,
         },
@@ -622,7 +632,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       // important because we no longer automatically enroll instructors in their
       // own course instances when they view them.
       if (
-        idsEqual(user.user_id, authnAuthResult.user.user_id) &&
+        idsEqual(effectiveAuthResult.user.user_id, authnAuthResult.user.user_id) &&
         !effectiveAuthResult.has_course_instance_permission_view &&
         !effectiveAuthResult.has_course_permission_view
       ) {
@@ -641,7 +651,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     };
   });
 
-  // If this isn't set, this is the fallback set of permissions.
+  // If `effectiveCourse` is null, this is the fallback set of permissions.
   // We don't need to check the permissions if this is the fallback set of permissions.
   if (effectiveCourse) {
     const canBecomeEffectiveUserResult = canBecomeEffectiveUser(
@@ -695,7 +705,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   res.locals.course = effectiveCourse ?? authnCourse;
   res.locals.institution = effectiveInstitution ?? authnInstitution;
-  res.locals.user = effectiveAuthResult.user ?? authnAuthResult.user;
+  res.locals.user = effectiveAuthResult?.user ?? authnAuthResult.user;
   res.locals.course_instance = effectiveCourseInstance ?? authnCourseInstance;
 
   // The session middleware does not run for API requests.
