@@ -35,7 +35,7 @@ export default makeBatchedMigration({
         await syncCourse(course);
       } catch (err) {
         errors.push(
-          new Error(`Failed to sync course ${course.id} (${course.short_name}): ${err}`, {
+          new Error(`Failed to sync course ${course.id} (${course.short_name})`, {
             cause: err,
           }),
         );
