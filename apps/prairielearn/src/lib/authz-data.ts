@@ -8,6 +8,7 @@ import {
   type EnumCourseInstanceRole,
   type EnumCourseRole,
   type EnumMode,
+  type EnumModeReason,
   type User,
 } from './db-types.js';
 
@@ -184,13 +185,23 @@ export async function calculateAuthData({
 export type CalculateAuthDataResult = Awaited<ReturnType<typeof calculateAuthData>>;
 export type CalculateAuthDataSuccessResult = Exclude<CalculateAuthDataResult, { authResult: null }>;
 
-export async function calculateFallbackAuthData(user: User, includeCourseInstance: boolean) {
+export async function calculateFallbackAuthData({
+  user,
+  includeCourseInstance,
+  mode,
+  mode_reason,
+}: {
+  user: User;
+  includeCourseInstance: boolean;
+  mode: EnumMode;
+  mode_reason: EnumModeReason;
+}) {
   return {
     user,
     is_administrator: false,
     course_role: 'None',
-    req_mode: null,
-    req_mode_reason: null,
+    mode,
+    mode_reason,
     ...calculateCourseRolePermissions('None'),
     ...run(() => {
       if (includeCourseInstance) {
