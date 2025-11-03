@@ -9,7 +9,7 @@ import { selectCourseById } from '../models/course.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
-import type { AuthzData } from './authzData.types.js';
+import type { AuthzData } from './authz-data-lib.js';
 import {
   type Assessment,
   type CourseInstance,
@@ -343,7 +343,7 @@ export async function joinGroup({
         { group_name, assessment_id: assessment.id },
         GroupSchema,
       );
-      if (group == null || group.join_code !== join_code) {
+      if (group?.join_code !== join_code) {
         throw new GroupOperationError('Group does not exist.');
       }
       await addUserToGroup({

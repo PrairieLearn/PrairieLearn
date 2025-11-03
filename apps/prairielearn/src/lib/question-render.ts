@@ -363,7 +363,7 @@ function buildLocals({
     locals.showGradeButton = false;
     locals.showSaveButton = false;
     locals.allowAnswerEditing = false;
-    if (assessment && assessment.type === 'Homework') {
+    if (assessment?.type === 'Homework') {
       locals.showTryAgainButton = true;
       locals.showTrueAnswer = true;
     }
