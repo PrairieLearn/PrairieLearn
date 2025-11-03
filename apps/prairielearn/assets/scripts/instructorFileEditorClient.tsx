@@ -6,9 +6,8 @@ import * as prettier from 'prettier/standalone';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { renderHtml } from '@prairielearn/preact';
 
-import { type FileMetadata, FileType } from '../../src/lib/editorUtil.types.js';
-
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../src/lib/base64-util.js';
+import { type FileMetadata, FileType } from '../../src/lib/editorUtil.types.js';
 
 import { configureAceBasePaths } from './lib/ace.js';
 import './lib/verboseToggle.js';
