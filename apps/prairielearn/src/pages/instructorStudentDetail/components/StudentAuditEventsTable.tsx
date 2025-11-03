@@ -21,8 +21,9 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     invitation_rejected: 'Rejected invitation',
     blocked: 'Blocked from course',
     unblocked: 'Unblocked from course, now enrolled',
-    invitation_deleted: 'Invitation cancelled', // You can never actually see this state since canceling an invitation hard-deletes the enrollment.
-    removed: 'Removed self from course',
+    // You can never actually see this state since canceling an invitation hard-deletes the enrollment.
+    invitation_deleted: 'Invitation cancelled',
+    removed: 'Student left course',
   };
 
   const detail = detailMap[action_detail as SupportedActionsForTable<'enrollments'>];

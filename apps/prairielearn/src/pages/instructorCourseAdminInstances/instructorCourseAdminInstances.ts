@@ -33,12 +33,12 @@ router.get(
       if (err.code === 'ENOENT') {
         res.locals.needToSync = true;
       } else {
-        throw new Error('Invalid course path');
+        throw new Error('Invalid course path', { cause: err });
       }
     }
 
     const courseInstances: CourseInstanceAuthzRow[] = await selectCourseInstancesWithStaffAccess({
-      course_id: res.locals.course.id,
+      course: res.locals.course,
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.is_administrator,
@@ -114,7 +114,7 @@ router.post(
 
       const courseInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
-        course_id: res.locals.course.id,
+        course: res.locals.course,
       });
 
       flash('success', 'Course instance created successfully.');

@@ -406,7 +406,7 @@
           imaginaryUnit,
         ],
         [
-          { class: 'small', latex: '|#0|', insert: '\\abs({#0})' },
+          { class: 'small', latex: '|#0|', insert: '|{#0}|' },
           { class: 'small', latex: '\\min', insert: '\\min({#0})' },
           { class: 'small', latex: '\\max', insert: '\\max({#0})' },
           '[separator]',
@@ -520,11 +520,11 @@
         value: '\\cdot',
       },
       '|': {
-        value: '\\abs{#0}',
+        value: '|{#0}|',
       },
       // Prevent double | key presses being replaced by absabs
       '||': {
-        value: '\\abs{#0}',
+        value: '|{#0}|',
       },
       sqrt: {
         value: '\\sqrt{#0}',

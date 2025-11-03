@@ -1,10 +1,25 @@
 /* global TomSelect, MathJax */
 
+class PLMultipleChoiceTomSelect extends TomSelect {
+  // This class overrides the positionDropdown method to ensure that the dropdown moves up if the space below is too small.
+  positionDropdown() {
+    super.positionDropdown();
+
+    const controlRect = this.control.getBoundingClientRect();
+    const dropdownRect = this.dropdown.getBoundingClientRect();
+
+    if (dropdownRect.bottom > window.innerHeight) {
+      const newTop = Math.max(controlRect.top - this.dropdown.offsetHeight, 0) + window.scrollY;
+      this.dropdown.style.top = `${newTop}px`;
+    }
+  }
+}
+
 window.PLMultipleChoice = function (uuid) {
   const selectElement = document.getElementById('pl-multiple-choice-select-' + uuid);
   const container = selectElement.closest('.pl-multiple-choice-dropdown');
 
-  const select = new TomSelect(selectElement, {
+  const select = new PLMultipleChoiceTomSelect(selectElement, {
     plugins: ['no_backspace_delete', 'dropdown_input'],
     allowEmptyOption: true,
 
@@ -32,14 +47,13 @@ window.PLMultipleChoice = function (uuid) {
     },
 
     onDropdownOpen: (dropdown) => {
-      // Ensure the height of the dropdown is constrained to the viewport.
-      const content = dropdown.querySelector('.ts-dropdown-content');
-      content.style.maxHeight = `${window.innerHeight - content.getBoundingClientRect().top}px`;
-
       // The first time the dropdown is opened, this event is fired before the
       // options are actually present in the DOM. We'll wait for the next tick
       // to ensure that the options are present.
-      setTimeout(() => MathJax.typesetPromise([dropdown]), 0);
+      setTimeout(async () => {
+        await MathJax.typesetPromise([dropdown]);
+        select.positionDropdown();
+      }, 0);
     },
 
     onDropdownClose: () => {
@@ -49,8 +63,9 @@ window.PLMultipleChoice = function (uuid) {
     },
   });
 
-  // Reposition the dropdown when the main container is scrolled. This doesn't exist
-  // on student pages, so we take care to handle that case.
+  // Reposition the dropdown when the main container is scrolled. This is only
+  // needed in instructor pages, since student pages scroll on body, which is
+  // already handled by TomSelect itself.
   selectElement
     .closest('.app-main-container')
     ?.addEventListener('scroll', () => select.positionDropdown());

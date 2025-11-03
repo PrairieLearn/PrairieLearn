@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 3.0.4
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 3.0.3
 
 ### Patch Changes
