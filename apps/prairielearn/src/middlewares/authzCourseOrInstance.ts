@@ -533,15 +533,21 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     return res.locals.req_date;
   });
 
-  const effectiveUserData = await getOverrideUserData(
-    req.cookies.pl2_requested_uid,
-    res.locals.is_administrator,
-    req.params.course_instance_id || null,
-  );
-  if (!effectiveUserData.success) {
-    clearOverrideCookies(res, overrides);
-    throw effectiveUserData.error;
-  }
+  const effectiveUserData = await run(async () => {
+    if (!req.cookies.pl2_requested_uid) {
+      return null;
+    }
+    const result = await getOverrideUserData(
+      req.cookies.pl2_requested_uid,
+      res.locals.is_administrator,
+      req.params.course_instance_id || null,
+    );
+    if (!result.success) {
+      clearOverrideCookies(res, overrides);
+      throw result.error;
+    }
+    return result.userData;
+  });
 
   const verifyAuthnAuthResultResult = verifyAuthnAuthResult(
     authnAuthResult,
@@ -559,6 +565,16 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     institution: effectiveInstitution,
     courseInstance: effectiveCourseInstance,
   } = await run(async () => {
+    // Check if we even have an effective user to override.
+    if (effectiveUserData === null) {
+      return {
+        authResult: null,
+        course: null,
+        institution: null,
+        courseInstance: null,
+      };
+    }
+
     // Check if it is necessary to request a user data override
     if (overrides.length === 0) {
       debug('no requested overrides');
@@ -590,13 +606,13 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       institution: effectiveInstitution,
       courseInstance: effectiveCourseInstance,
     } = await calculateAuthData({
-      user: effectiveUserData.userData.user,
+      user: effectiveUserData.user,
       course_id: req.params.course_id || null,
       course_instance_id: req.params.course_instance_id || null,
       ip: req.ip || null,
       req_date,
       overrides: {
-        is_administrator: effectiveUserData.userData.is_administrator,
+        is_administrator: effectiveUserData.is_administrator,
         allow_example_course_override: false,
         req_mode: config.devMode ? req.cookies.pl_test_mode : null,
         req_course_role: req.cookies.pl2_requested_course_role || null,
@@ -612,12 +628,12 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       return {
         authResult: {
           ...(await calculateFallbackAuthData(
-            effectiveUserData.userData.user,
+            effectiveUserData.user,
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             req.params.course_instance_id !== null,
           )),
           user_with_requested_uid_has_instructor_access_to_course_instance:
-            effectiveUserData.userData.is_instructor,
+            effectiveUserData.is_instructor,
         },
         course: null,
         institution: null,
@@ -643,7 +659,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       authResult: {
         ...effectiveAuthResult,
         user_with_requested_uid_has_instructor_access_to_course_instance:
-          effectiveUserData.userData.is_instructor,
+          effectiveUserData.is_instructor,
       },
       course: effectiveCourse,
       institution: effectiveInstitution,
@@ -697,11 +713,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     authn_has_course_permission_own: authnAuthResult.has_course_permission_own,
     // Effective user data
     ...effectiveAuthResult,
-    is_administrator: effectiveUserData.userData.is_administrator,
+    is_administrator: effectiveUserData?.is_administrator ?? res.locals.is_administrator,
     // Other data
     overrides,
   };
-  res.locals.is_administrator = effectiveUserData.userData.is_administrator;
+  res.locals.is_administrator = effectiveUserData?.is_administrator ?? res.locals.is_administrator;
 
   res.locals.course = effectiveCourse ?? authnCourse;
   res.locals.institution = effectiveInstitution ?? authnInstitution;
