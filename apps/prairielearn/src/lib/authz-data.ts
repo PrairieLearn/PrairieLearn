@@ -62,6 +62,12 @@ async function selectAuthzData({
  * @param params.course_instance_id - The ID of the course instance.
  * @param params.ip - The IP address of the request.
  * @param params.req_date - The date of the request.
+ * @param params.overrides - The overrides to apply to the authorization data.
+ * @param params.overrides.is_administrator - Whether the user is an administrator.
+ * @param params.overrides.req_mode - The mode to request.
+ * @param params.overrides.req_course_role - The course role to request.
+ * @param params.overrides.req_course_instance_role - The course instance role to request.
+ * @param params.overrides.allow_example_course_override - Whether to allow overriding the course role for example courses.
  */
 export async function calculateAuthData({
   user,
@@ -84,6 +90,10 @@ export async function calculateAuthData({
     allow_example_course_override?: boolean;
   };
 }) {
+  const resolvedOverrides = {
+    allow_example_course_override: true,
+    ...overrides,
+  };
   assert(course_id !== null || course_instance_id !== null);
 
   const isCourseInstance = Boolean(course_instance_id);
@@ -106,28 +116,33 @@ export async function calculateAuthData({
   }
 
   const course_role = run(() => {
-    if (overrides.req_course_role != null) {
-      return overrides.req_course_role;
+    if (resolvedOverrides.req_course_role != null) {
+      return resolvedOverrides.req_course_role;
     }
-    if (overrides.is_administrator) {
+    if (resolvedOverrides.is_administrator) {
       return 'Owner';
+    }
+
+    // If the course is an example course and the override is not allowed, return None.
+    if (rawAuthzData.course.example_course && !resolvedOverrides.allow_example_course_override) {
+      return 'None';
     }
     return rawAuthzData.permissions_course.course_role;
   });
 
   const course_instance_role = run(() => {
-    if (overrides.req_course_instance_role != null) {
-      return overrides.req_course_instance_role;
+    if (resolvedOverrides.req_course_instance_role != null) {
+      return resolvedOverrides.req_course_instance_role;
     }
-    if (overrides.is_administrator) {
+    if (resolvedOverrides.is_administrator) {
       return 'Student Data Editor';
     }
     return rawAuthzData.permissions_course_instance.course_instance_role;
   });
 
   const mode = run(() => {
-    if (overrides.req_mode != null) {
-      return overrides.req_mode;
+    if (resolvedOverrides.req_mode != null) {
+      return resolvedOverrides.req_mode;
     }
     return rawAuthzData.mode;
   });
