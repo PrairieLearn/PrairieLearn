@@ -965,10 +965,13 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
 
       // Before we transition this workspace to running, check that the container
       // we just launched is the same one that this workspace is still assigned to.
-      // To be more precise, we'll check that the container's launch_uuid matches
-      // the current launch_uuid for this workspace. If they don't match, then
-      // the workspace was relaunched while we were initializing it, and we should
-      // abandon it.
+      // We check both the launch_uuid and the version to catch race conditions:
+      //
+      // - launch_uuid changes when a workspace is rebooted
+      // - version changes when a workspace is reset
+      //
+      // If either has changed, the workspace was relaunched/reset while we were
+      // initializing it, and we should abandon this container.
       //
       // We don't have to explicitly kill the container here - our usual
       // background maintenance processes will soon notice that this container
@@ -977,10 +980,21 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
         const currentWorkspace = await sqldb.queryOneRowAsync(sql.select_and_lock_workspace, {
           workspace_id: workspace.id,
         });
-        const launch_uuid = currentWorkspace.rows[0].launch_uuid;
-        if (launch_uuid !== workspace.launch_uuid) {
+        const current_launch_uuid = currentWorkspace.rows[0].launch_uuid;
+        const current_version = currentWorkspace.rows[0].version;
+
+        // Check if the launch_uuid has changed (workspace was rebooted)
+        if (current_launch_uuid !== workspace.launch_uuid) {
           logger.info(
-            `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${launch_uuid}`,
+            `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${current_launch_uuid}`,
+          );
+          return null;
+        }
+
+        // Check if the version has changed (workspace was reset)
+        if (current_version !== workspace.version) {
+          logger.info(
+            `Abandoning container for workspace ${workspace.id}: version changed from ${workspace.version} to ${current_version}`,
           );
           return null;
         }

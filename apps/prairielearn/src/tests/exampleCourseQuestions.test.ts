@@ -10,9 +10,8 @@ import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 
-const locals: Record<string, any> = {};
+const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
 
-locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
 locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
