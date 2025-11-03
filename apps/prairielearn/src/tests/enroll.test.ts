@@ -26,6 +26,8 @@ import {
   withUser,
 } from './utils/auth.js';
 import { enrollUser, unenrollUser } from './utils/enrollments.js';
+import { features } from '../lib/features/index.js';
+import { run } from '@prairielearn/run';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -623,18 +625,36 @@ describe('Self-enrollment institution restriction transitions', () => {
         );
         assert.isNull(initialEnrollment);
 
-        // Hit the assessments endpoint - this should NOT trigger auto-enrollment
-        const response = await fetch(assessmentsUrl);
+        await features.runWithGlobalOverrides({ 'enrollment-management': true }, async () => {
+          // Hit the assessments endpoint with the enrollment management feature enabled.
+          // This should NOT trigger auto-enrollment.
+          const response = await fetch(assessmentsUrl);
+          assert.equal(response.status, 403);
 
-        // Check that user is still not enrolled
-        const finalEnrollment = await queryOptionalRow(
-          'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-          { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
-          EnrollmentSchema,
-        );
-        assert.isNull(finalEnrollment);
+          // Check that user is still not enrolled.
+          const finalEnrollment = await queryOptionalRow(
+            'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
+            { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
+            EnrollmentSchema,
+          );
+          assert.isNull(finalEnrollment);
+        });
 
-        assert.equal(response.status, 403);
+        await features.runWithGlobalOverrides({ 'enrollment-management': false }, async () => {
+          // Hit the assessments endpoint with the enrollment management feature disabled.
+          // This SHOULD trigger auto-enrollment.
+          const response = await fetch(assessmentsUrl);
+          assert.equal(response.status, 200);
+
+          // Check that user is now enrolled.
+          const finalEnrollment = await queryOptionalRow(
+            'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
+            { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
+            EnrollmentSchema,
+          );
+          assert.isOk(finalEnrollment);
+          assert.equal(finalEnrollment.status, 'joined');
+        });
       },
     );
   });
