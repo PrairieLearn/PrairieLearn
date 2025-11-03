@@ -82,7 +82,7 @@ The <pl-multiple-choice display="dropdown" hide-letter-keys="true" answers-name=
 <p> For what values of time $t$ will $s'(t)$ be {{params.sign}}?</p>
 
 
-<pl-checkbox answers-name="ts" number-answers="7" fixed-order="true" partial-credit="true">
+<pl-checkbox answers-name="ts" number-answers="7" order="fixed" partial-credit="true">
     {{#params.t_options}}
         <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
     {{/params.t_options}}

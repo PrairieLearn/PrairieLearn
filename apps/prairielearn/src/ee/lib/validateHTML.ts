@@ -664,6 +664,7 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
   let usedAnswersName = false;
   let usedPartialCredit = false;
   let usedPartialCreditMethod = false;
+  let modernPartialCredit = false;
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
       const key = attr.name;
@@ -681,7 +682,7 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
           assertInt('pl-checkbox', key, val, errors);
           break;
         case 'inline':
-        case 'fixed-order':
+        case 'fixed-order': // deprecated
         case 'hide-help-text':
         case 'detailed-help-text':
         case 'hide-answer-panel':
@@ -690,10 +691,25 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
           break;
 
         case 'partial-credit':
-          assertBool('pl-checkbox', key, val, errors);
-          usedPartialCredit = isBooleanTrue(val);
+          if (BOOLEAN_VALUES.includes(val)) {
+            assertBool('pl-checkbox', key, val, errors);
+            usedPartialCredit = isBooleanTrue(val);
+          } else {
+            assertInChoices(
+              'pl-checkbox',
+              key,
+              val,
+              ['off', 'coverage', 'each-answer', 'net-correct'],
+              errors,
+            );
+            usedPartialCredit = val !== 'off';
+            modernPartialCredit = true;
+          }
           break;
-        case 'partial-credit-method':
+        case 'order':
+          assertInChoices('pl-checkbox', key, val, ['fixed', 'random'], errors);
+          break;
+        case 'partial-credit-method': // deprecated
           assertInChoices('pl-checkbox', key, val, ['COV', 'EDC', 'PC'], errors);
           usedPartialCreditMethod = true;
           break;
@@ -705,7 +721,10 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
   if (!usedAnswersName) {
     errors.push('pl-checkbox: answers-name is a required attribute.');
   }
-  if (usedPartialCreditMethod && !usedPartialCredit) {
+  if (usedPartialCreditMethod && modernPartialCredit) {
+    errors.push('pl-checkbox: cannot use both partial-credit-method and modern partial-credit.');
+  }
+  if (usedPartialCreditMethod && !usedPartialCredit && !modernPartialCredit) {
     errors.push(
       'pl-checkbox: if partial-credit-method is set, then partial-credit must be set to true.',
     );
