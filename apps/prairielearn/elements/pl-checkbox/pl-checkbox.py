@@ -1,4 +1,3 @@
-import pathlib
 import random
 from enum import Enum
 from itertools import count
@@ -46,9 +45,7 @@ MIN_CORRECT_DEFAULT = 1
 MIN_SELECT_DEFAULT = 1
 FEEDBACK_DEFAULT = None
 
-CHECKBOX_MUSTACHE_TEMPLATE_NAME = (
-    pathlib.Path(__file__).resolve().parent / "pl-checkbox.mustache"
-)
+CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
 
 
 def generate_number_correct_text(
