@@ -235,7 +235,7 @@ class InstructorFileEditor {
       try {
         const parsedContent = JSON.parse(currentContents);
 
-        if (typeof parsedContent !== 'object') {
+        if (typeof parsedContent !== 'object' || parsedContent == null) {
           return { errorCode: SaveErrorCode.INVALID_JSON };
         } else if (this.fileMetadata.uuid) {
           if ('uuid' in parsedContent) {
