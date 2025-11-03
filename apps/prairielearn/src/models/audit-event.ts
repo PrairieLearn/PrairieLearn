@@ -65,29 +65,29 @@ export async function selectAuditEvents({
 
 export type InsertAuditEventParams = SupportedTableActionCombination & {
   action: EnumAuditEventAction;
-  row_id: string;
+  rowId: string;
   /** Most events should have an associated authenticated user */
-  agent_authn_user_id: string | null;
+  agentAuthnUserId: string | null;
   /** Most events should have an associated authorized user */
-  agent_user_id: string | null;
+  agentUserId: string | null;
   /** Most events have no context */
   context?: Record<string, any> | null;
   /** Creation events have no old row */
-  old_row?: Record<string, any> | null;
+  oldRow?: Record<string, any> | null;
   /** Deletion events have no new row */
-  new_row?: Record<string, any> | null;
+  newRow?: Record<string, any> | null;
 
   // The remaining fields depend on the action and table
 
-  subject_user_id?: string | null;
-  assessment_id?: string | null;
-  assessment_instance_id?: string | null;
-  assessment_question_id?: string | null;
-  course_id?: string | null;
-  course_instance_id?: string | null;
-  enrollment_id?: string | null;
-  group_id?: string | null;
-  institution_id?: string | null;
+  subjectUserId?: string | null;
+  assessmentId?: string | null;
+  assessmentInstanceId?: string | null;
+  assessmentQuestionId?: string | null;
+  courseId?: string | null;
+  courseInstanceId?: string | null;
+  enrollmentId?: string | null;
+  groupId?: string | null;
+  institutionId?: string | null;
 };
 
 /**
@@ -95,44 +95,44 @@ export type InsertAuditEventParams = SupportedTableActionCombination & {
  *
  * @param params Parameters for the audit event
  * @param params.action - The action that was performed
- * @param params.action_detail - e.g. the column name that was updated
- * @param params.agent_authn_user_id - ID of the authorized user performing the action
- * @param params.agent_user_id - ID of the authorized user performing the action
+ * @param params.actionDetail - e.g. the column name that was updated
+ * @param params.agentAuthnUserId - ID of the authenticated user performing the action
+ * @param params.agentUserId - ID of the authorized user performing the action
  * @param params.context - Additional context, typically empty
- * @param params.course_id - Inferred from `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
- * @param params.course_instance_id - Inferred from `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
- * @param params.group_id - ID of the affected group
- * @param params.enrollment_id - ID of the affected enrollment
- * @param params.institution_id - Inferred from `subject_user_id`, `course_id`, `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
- * @param params.new_row - The new row data
- * @param params.old_row - The old row data
- * @param params.row_id - primary key ID of the affected row
- * @param params.subject_user_id - ID of the affected user
- * @param params.table_name - The name of the table that was affected
+ * @param params.courseId - Inferred from `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
+ * @param params.courseInstanceId - Inferred from `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
+ * @param params.groupId - ID of the affected group
+ * @param params.enrollmentId - ID of the affected enrollment
+ * @param params.institutionId - Inferred from `subject_user_id`, `course_id`, `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
+ * @param params.newRow - The new row data
+ * @param params.oldRow - The old row data
+ * @param params.rowId - primary key ID of the affected row
+ * @param params.subjectUserId - ID of the affected user
+ * @param params.tableName - The name of the table that was affected
  * @param params.assessment_id - Inferred from `assessment_instance_id`, `assessment_question_id`
- * @param params.assessment_instance_id - ID of the affected assessment instance
- * @param params.assessment_question_id - ID of the affected assessment question
+ * @param params.assessmentInstanceId - ID of the affected assessment instance
+ * @param params.assessmentQuestionId - ID of the affected assessment question
  */
 export async function insertAuditEvent(params: InsertAuditEventParams): Promise<AuditEvent> {
   const {
     action,
-    action_detail,
-    agent_authn_user_id,
-    agent_user_id,
-    assessment_id,
-    assessment_instance_id,
-    assessment_question_id,
+    actionDetail: action_detail,
+    agentAuthnUserId: agent_authn_user_id,
+    agentUserId: agent_user_id,
+    assessmentId: assessment_id,
+    assessmentInstanceId: assessment_instance_id,
+    assessmentQuestionId: assessment_question_id,
     context = {},
-    course_id,
-    course_instance_id,
-    enrollment_id,
-    group_id,
-    institution_id,
-    new_row = null,
-    old_row = null,
-    row_id,
-    subject_user_id,
-    table_name,
+    courseId: course_id,
+    courseInstanceId: course_instance_id,
+    enrollmentId: enrollment_id,
+    groupId: group_id,
+    institutionId: institution_id,
+    newRow: new_row = null,
+    oldRow: old_row = null,
+    rowId: row_id,
+    subjectUserId: subject_user_id,
+    tableName: table_name,
   } = params;
 
   // Depending on the action, certain fields are required.

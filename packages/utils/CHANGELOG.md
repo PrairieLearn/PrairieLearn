@@ -1,5 +1,11 @@
 # @prairielearn/utils
 
+## 2.0.2
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 2.0.1
 
 ### Patch Changes

@@ -583,7 +583,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
 
-        html_params = {
+        html_params: dict[str, Any] = {
             "question": True,
             "name": name,
             "editable": editable,
@@ -599,7 +599,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
-            html_params[score_type] = bool(score_value)
+            html_params[score_type] = score_value
 
         with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
@@ -608,9 +608,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         parse_error = data["format_errors"].get(name, None)
         if parse_error is None:
             partial_score = data["partial_scores"].get(name, {"score": None})
-            feedback = cast(
-                dict[str, Any] | None, partial_score.get("feedback", None)
-            )
+            feedback = cast(dict[str, Any] | None, partial_score.get("feedback", None))
             score = partial_score.get("score", None)
 
             answers = []
@@ -637,7 +635,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 )
                 answers.append(answer_item)
 
-            html_params = {
+            html_params: dict[str, Any] = {
                 "submission": True,
                 "display_score_badge": (score is not None),
                 "answers": answers,
@@ -650,7 +648,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # Add parameter for displaying overall score badge
             if score is not None:
                 score_type, score_value = pl.determine_score_params(score)
-                html_params[score_type] = bool(score_value)
+                html_params[score_type] = score_value
 
             with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
                 return chevron.render(f, html_params).strip()

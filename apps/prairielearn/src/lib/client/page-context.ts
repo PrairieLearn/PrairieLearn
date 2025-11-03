@@ -4,58 +4,18 @@ import { run } from '@prairielearn/run';
 
 import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 import { SelectUserSchema } from '../authn.types.js';
-import { EnumCourseInstanceRoleSchema, EnumCourseRoleSchema } from '../db-types.js';
+import { PageAuthzDataSchema } from '../authzData.types.js';
 
 import {
   RawStaffAssessmentSchema,
   RawStaffAssessmentSetSchema,
   RawStaffCourseInstanceSchema,
   RawStaffCourseSchema,
-  type RawStaffUser,
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   StaffInstitutionSchema,
   StaffUserSchema,
 } from './safe-db-types.js';
-
-const RawAuthzDataSchema = z.object({
-  // TODO: Type these more accurately into a course instance version.
-  authn_user: StaffUserSchema,
-  authn_is_administrator: z.boolean(),
-  authn_has_course_permission_preview: z.boolean().optional(),
-  authn_has_course_permission_view: z.boolean().optional(),
-  authn_has_course_permission_edit: z.boolean().optional(),
-  authn_has_course_permission_own: z.boolean().optional(),
-  authn_course_role: EnumCourseRoleSchema.optional(),
-  authn_course_instance_role: EnumCourseInstanceRoleSchema.optional(),
-  authn_mode: z.string().optional(),
-  authn_has_student_access: z.boolean().optional(),
-  authn_has_student_access_with_enrollment: z.boolean().optional(),
-  authn_has_course_instance_permission_view: z.boolean().optional(),
-  authn_has_course_instance_permission_edit: z.boolean().optional(),
-  // Authz data
-  is_administrator: z.boolean(),
-  has_course_permission_preview: z.boolean(),
-  has_course_permission_view: z.boolean(),
-  has_course_permission_edit: z.boolean(),
-  has_course_permission_own: z.boolean(),
-  course_role: EnumCourseRoleSchema.optional(),
-  course_instance_role: EnumCourseInstanceRoleSchema.optional(),
-  mode: z.string().optional(),
-  has_student_access: z.boolean().optional(),
-  has_student_access_with_enrollment: z.boolean().optional(),
-  has_course_instance_permission_view: z.boolean().optional(),
-  has_course_instance_permission_edit: z.boolean().optional(),
-
-  user: StaffUserSchema,
-});
-
-export type RawAuthzData = Omit<z.infer<typeof RawAuthzDataSchema>, 'user' | 'authn_user'> & {
-  user: RawStaffUser;
-  authn_user: RawStaffUser;
-};
-const AuthzDataSchema = RawAuthzDataSchema.brand<'AuthzData'>();
-export type AuthzData = z.infer<typeof AuthzDataSchema>;
 
 export const RawPageContextSchema = z.object({
   __csrf_token: z.string(),
@@ -80,7 +40,7 @@ export const PageContextSchema = RawPageContextSchema.brand<'PageContext'>();
 export type PageContext = z.infer<typeof PageContextSchema>;
 
 export const RawPageContextWithAuthzDataSchema = RawPageContextSchema.extend({
-  authz_data: AuthzDataSchema,
+  authz_data: PageAuthzDataSchema,
 });
 export const PageContextWithAuthzDataSchema =
   RawPageContextWithAuthzDataSchema.brand<'PageContextWithAuthzData'>();
@@ -197,26 +157,4 @@ export type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema
 export function getAssessmentContext(resLocals: Record<string, any>): StaffAssessmentContext {
   const schema = StaffAssessmentContextSchema;
   return schema.parse(resLocals);
-}
-
-export interface DangerousSystemAuthzData {
-  authn_user: {
-    user_id: null;
-  };
-  user: {
-    user_id: null;
-  };
-}
-
-export function dangerousFullAuthzForTesting(): DangerousSystemAuthzData {
-  return {
-    authn_user: {
-      // We use this structure with a user_id of null to indicate that the user is the system.
-      // Inserts into the audit_events table as a system user have a user_id of null.
-      user_id: null,
-    },
-    user: {
-      user_id: null,
-    },
-  };
 }

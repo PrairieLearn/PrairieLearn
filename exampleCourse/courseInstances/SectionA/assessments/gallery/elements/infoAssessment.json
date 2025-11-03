@@ -13,6 +13,7 @@
         { "id": "element/numberInput", "points": 2, "maxPoints": 10 },
         { "id": "element/dropdown", "points": 2, "maxPoints": 10 },
         { "id": "element/orderBlocks", "points": 2, "maxPoints": 10 },
+        { "id": "element/orderBlocksOptional", "points": 2, "maxPoints": 10 },
         { "id": "element/integerInput", "points": 2, "maxPoints": 10 },
         { "id": "element/symbolicInput", "points": 2, "maxPoints": 10 },
         { "id": "element/bigOInput", "points": 2, "maxPoints": 10 },
