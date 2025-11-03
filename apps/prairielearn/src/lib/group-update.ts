@@ -6,7 +6,7 @@ import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/po
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
-import type { AuthzData } from './authzData.types.js';
+import type { AuthzData } from './authz-data-lib.js';
 import { createCsvParser } from './csv.js';
 import { type Assessment, type CourseInstance, UserSchema } from './db-types.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';

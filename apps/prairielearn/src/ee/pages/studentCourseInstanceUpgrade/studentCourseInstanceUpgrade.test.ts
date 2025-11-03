@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
-import { dangerousFullAuthzForTesting } from '../../../lib/authzData.js';
+import { dangerousFullSystemAuthz } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';
 import { ensureEnrollment } from '../../../models/enrollment.js';
@@ -85,8 +85,8 @@ describe('studentCourseInstanceUpgrade', () => {
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -108,8 +108,8 @@ describe('studentCourseInstanceUpgrade', () => {
     await ensureEnrollment({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'Student',
-      authzData: dangerousFullAuthzForTesting(),
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
