@@ -557,16 +557,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     return result.userData;
   });
 
-  const verifyAuthnAuthResultResult = verifyAuthnAuthResult(
-    authnAuthResult,
-    res.locals.viewType || 'none',
-  );
-
-  if (verifyAuthnAuthResultResult.state === 'throw_error') {
-    clearOverrideCookies(res, overrides);
-    throw verifyAuthnAuthResultResult.error!;
-  }
-
   const {
     authResult: effectiveAuthResult,
     course: effectiveCourse,
@@ -586,6 +576,17 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
         institution: authnInstitution,
         courseInstance: authnCourseInstance,
       };
+    }
+
+    // You have an override, so check that you can override.
+    const verifyAuthnAuthResultResult = verifyAuthnAuthResult(
+      authnAuthResult,
+      res.locals.viewType || 'none',
+    );
+
+    if (verifyAuthnAuthResultResult.state === 'throw_error') {
+      clearOverrideCookies(res, overrides);
+      throw verifyAuthnAuthResultResult.error!;
     }
 
     // If we didn't throw an error and we can't set the effective user, return all nulls.
