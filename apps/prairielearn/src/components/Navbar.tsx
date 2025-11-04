@@ -272,7 +272,7 @@ function UserDropdownMenu({
               >`
             : ''}
         </a>
-        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+        <div class="dropdown-menu dropdown-menu-end">
           ${authn_is_administrator
             ? html`
                 <button type="button" class="dropdown-item" id="navbar-administrator-toggle">
@@ -723,12 +723,7 @@ function NavbarButtons({
     `;
   }
 
-  const allNavbarButtons: {
-    text: string;
-    href: string;
-  }[] = [];
-
-  allNavbarButtons.push({ text: 'Home', href: '/' });
+  const allNavbarButtons = [{ text: 'Home', href: '/' }];
 
   if (resLocals.is_administrator) {
     allNavbarButtons.push({ text: 'Global Admin', href: '/pl/administrator/admins' });
