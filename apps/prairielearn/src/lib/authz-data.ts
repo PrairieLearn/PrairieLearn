@@ -149,11 +149,14 @@ export async function calculateAuthData({
     return rawAuthzData.mode;
   });
 
-  // If you have no roles, you have no access. Return null.
   const hasCourseAccess = course_role !== 'None';
   const hasCourseInstanceAccess =
-    course_instance_role !== 'None' || rawAuthzData.permissions_course_instance.has_student_access;
-  if (!hasCourseAccess || (isCourseInstance && !hasCourseInstanceAccess)) {
+    isCourseInstance &&
+    (course_instance_role !== 'None' ||
+      rawAuthzData.permissions_course_instance.has_student_access);
+
+  // If you don't have course or course instance access, return null.
+  if (!hasCourseAccess && !hasCourseInstanceAccess) {
     return {
       authResult: null,
       course: null,
