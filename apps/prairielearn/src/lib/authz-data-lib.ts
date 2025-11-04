@@ -79,19 +79,22 @@ export interface DangerousSystemAuthzData {
 
 export interface CalculateAuthDataSuccessResult {
   authResult: {
-    course_instance_role?: EnumCourseInstanceRole;
-    has_student_access_with_enrollment?: boolean;
-    has_student_access?: boolean;
-    has_course_instance_permission_view?: boolean;
-    has_course_instance_permission_edit?: boolean;
+    user: User;
+
+    course_role: EnumCourseRole;
     has_course_permission_preview: boolean;
     has_course_permission_view: boolean;
     has_course_permission_edit: boolean;
     has_course_permission_own: boolean;
-    course_role: EnumCourseRole;
+
+    course_instance_role?: EnumCourseInstanceRole;
+    has_course_instance_permission_view?: boolean;
+    has_course_instance_permission_edit?: boolean;
+    has_student_access_with_enrollment?: boolean;
+    has_student_access?: boolean;
+
     mode: EnumMode;
     mode_reason: EnumModeReason;
-    user: User;
   };
   course: Course;
   institution: Institution;
