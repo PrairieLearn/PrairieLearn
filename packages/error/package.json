@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/error",
-  "version": "2.0.21",
+  "version": "2.0.22",
   "type": "module",
   "repository": {
     "type": "git",
@@ -20,9 +20,9 @@
     "@prairielearn/html": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^22.18.13",
-    "@vitest/coverage-v8": "^4.0.5",
+    "@vitest/coverage-v8": "^4.0.6",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.5"
+    "vitest": "^4.0.6"
   }
 }
