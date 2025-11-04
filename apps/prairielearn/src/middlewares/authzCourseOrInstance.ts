@@ -408,7 +408,7 @@ interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
   has_course_instance_permission_edit: boolean;
   has_student_access_with_enrollment: FullAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
   has_student_access: FullAuthzData['permissions_course_instance']['has_student_access'];
-  user_with_requested_uid_has_instructor_access_to_course_instance: boolean;
+  user_with_requested_uid_has_instructor_access_to_course_instance: boolean | null;
 }
 
 export interface ResLocalsCourse {
@@ -675,11 +675,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       }
     }
     return {
-      authResult: {
-        ...effectiveAuthResult,
-        user_with_requested_uid_has_instructor_access_to_course_instance:
-          effectiveUserData.is_instructor,
-      },
+      authResult: effectiveAuthResult,
       course: effectiveCourse,
       institution: effectiveInstitution,
       courseInstance: effectiveCourseInstance,
