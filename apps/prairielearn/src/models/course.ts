@@ -108,11 +108,25 @@ export async function selectCoursesWithStaffAccess({
   user_id: string;
   is_administrator: boolean;
 }) {
-  const courses = await queryRows(
+  const rawCourses = await queryRows(
     sql.select_courses_with_staff_access,
     { user_id, is_administrator },
     CourseWithPermissionsSchema,
   );
+
+  // Users always have access to the example course.
+  const courses = rawCourses.map((c) => {
+    if (c.example_course) {
+      return {
+        ...c,
+        permissions_course: {
+          course_role: 'Viewer',
+          ...calculateCourseRolePermissions('Viewer'),
+        },
+      };
+    }
+    return c;
+  });
   if (!is_administrator) return courses;
 
   // The above query isn't aware of administrator status. We need to update the

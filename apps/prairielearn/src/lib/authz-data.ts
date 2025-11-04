@@ -114,10 +114,14 @@ export async function calculateAuthData({
       return 'Owner';
     }
 
-    // If the course is an example course and the override is not allowed, return None.
-    if (rawAuthzData.course.example_course && !resolvedOverrides.allow_example_course_override) {
+    if (rawAuthzData.course.example_course) {
+      if (resolvedOverrides.allow_example_course_override) {
+        return 'Viewer';
+      }
+      // If the course is an example course and the override is not allowed, return None.
       return 'None';
     }
+
     return rawAuthzData.permissions_course.course_role;
   });
 
