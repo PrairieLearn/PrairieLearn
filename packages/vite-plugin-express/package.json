@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.18.13",
+    "@types/node": "^22.19.0",
     "@types/picomatch": "^4.0.2",
     "typescript": "^5.9.3"
   }

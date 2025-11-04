@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "@types/minimist": "^1.2.5",
-    "@types/node": "^22.18.13",
+    "@types/node": "^22.19.0",
     "@vitest/coverage-v8": "^4.0.6",
     "fast-glob": "^3.3.3",
     "nodemon": "^3.1.10",
