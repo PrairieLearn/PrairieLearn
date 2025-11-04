@@ -108,10 +108,8 @@ coverage.xml
 .vitest-reports
 
 ## Playwright
-test-results/
-playwright-report/
-blob-report/
-playwright/.cache/
+apps/prairielearn/test-results/
+apps/prairielearn/playwright/.cache/
 
 ## TypeScript cache
 *.tsbuildinfo

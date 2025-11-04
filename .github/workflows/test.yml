@@ -188,7 +188,7 @@ jobs:
         env:
           SHARDED_TESTS: true
 
-      - name: Upload vitest blob report to GitHub Actions Artifacts
+      - name: Upload Vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
@@ -196,7 +196,7 @@ jobs:
           path: .vitest-reports/*
           include-hidden-files: true
           retention-days: 1
-      - name: Upload playwright blob report to GitHub Actions Artifacts
+      - name: Upload Playwright blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
@@ -222,22 +222,22 @@ jobs:
         # installing dependencies that won't be used.
         # Note that this means playwright is installed in the root workspace, not the prairielearn workspace.
         run: yarn workspaces focus prairielearn
-      - name: Download vitest blob reports from GitHub Actions Artifacts
+      - name: Download Vitest blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v5
         with:
           path: .vitest-reports
           pattern: blob-report-*
           merge-multiple: true
 
-      - name: Merge vitest reports
+      - name: Merge Vitest reports
         run: yarn vitest --watch=false --merge-reports --coverage
-      - name: Download playwright blob reports from GitHub Actions Artifacts
+      - name: Download Playwright blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v5
         with:
           path: apps/prairielearn/test-results/blob-report
           pattern: playwright-blob-report-*
           merge-multiple: true
-      - name: Merge playwright reports
+      - name: Merge Playwright reports
         run: yarn playwright merge-reports --reporter html,github apps/prairielearn/test-results/blob-report
       - name: Upload JavaScript coverage report to Codecov
         uses: codecov/codecov-action@v5.5.1
