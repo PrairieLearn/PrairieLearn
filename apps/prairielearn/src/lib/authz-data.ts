@@ -153,7 +153,7 @@ export async function calculateAuthData({
   const hasCourseAccess = course_role !== 'None';
   const hasCourseInstanceAccess =
     course_instance_role !== 'None' || rawAuthzData.permissions_course_instance.has_student_access;
-  if (hasCourseAccess && (isCourseInstance ? hasCourseInstanceAccess : true)) {
+  if (!hasCourseAccess || (isCourseInstance && !hasCourseInstanceAccess)) {
     return {
       authResult: null,
       course: null,
