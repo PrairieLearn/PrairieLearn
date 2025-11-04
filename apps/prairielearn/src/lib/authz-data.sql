@@ -15,15 +15,8 @@ FROM
     AND (ci.id = $course_instance_id)
     AND (ci.deleted_at IS NULL)
   )
-  JOIN LATERAL authz_course (
-    $user_id,
-    c.id
-  ) AS permissions_course ON TRUE
-  JOIN LATERAL authz_course_instance (
-    $user_id,
-    ci.id,
-    $req_date
-  ) AS permissions_course_instance ON TRUE
+  JOIN LATERAL authz_course ($user_id, c.id) AS permissions_course ON TRUE
+  JOIN LATERAL authz_course_instance ($user_id, ci.id, $req_date) AS permissions_course_instance ON TRUE
   JOIN ip_to_mode ($ip, $req_date, $user_id) AS access_mode ON TRUE
 WHERE
   c.id = coalesce($course_id, ci.course_id)
