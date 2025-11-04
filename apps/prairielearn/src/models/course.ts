@@ -15,7 +15,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { calculateCourseRolePermissions } from '../lib/authz-data.js';
-import { type Course, CourseSchema, type EnumCourseRole } from '../lib/db-types.js';
+import { type Course, CourseSchema } from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';
 
@@ -113,16 +113,17 @@ export async function selectCoursesWithStaffAccess({
     { user_id, is_administrator },
     CourseWithPermissionsSchema,
   );
-  if (is_administrator) {
-    return courses.map((c) => ({
-      ...c,
-      permissions_course: {
-        course_role: 'Owner' as EnumCourseRole,
-        ...calculateCourseRolePermissions('Owner'),
-      },
-    }));
-  }
-  return courses;
+  if (!is_administrator) return courses;
+
+  // The above query isn't aware of administrator status. We need to update the
+  // permissions to reflect that the user is an administrator.
+  return courses.map((c) => ({
+    ...c,
+    permissions_course: {
+      course_role: 'Owner',
+      ...calculateCourseRolePermissions('Owner'),
+    },
+  })) satisfies CourseWithPermissions[];
 }
 
 /**
