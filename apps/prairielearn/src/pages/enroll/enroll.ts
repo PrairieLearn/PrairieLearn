@@ -8,8 +8,8 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
-import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
-import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
+import { buildAuthzData } from '../../lib/authz-data.js';
+import { features } from '../../lib/features/index.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
 import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
@@ -72,53 +72,70 @@ router.post('/', [
     if (res.locals.authn_provider_name === 'LTI') {
       throw new error.HttpStatusError(400, 'Enrollment unavailable, managed via LTI');
     }
-
-    const { institution, course, course_instance } = await queryRow(
-      sql.select_course_instance,
-      { course_instance_id: req.body.course_instance_id },
-      z.object({
-        institution: InstitutionSchema,
-        course: CourseSchema,
-        course_instance: CourseInstanceSchema,
-      }),
-    );
-
-    const courseDisplayName = `${course.short_name}: ${course.title}, ${course_instance.long_name}`;
-
     if (req.body.__action === 'enroll') {
-      // We don't have authzData yet
+      const { authzData, authzCourseInstance, authzInstitution, authzCourse } =
+        await buildAuthzData({
+          authn_user: res.locals.authn_user,
+          course_id: null,
+          course_instance_id: req.body.course_instance_id,
+          is_administrator: res.locals.is_administrator,
+          ip: req.ip ?? null,
+          req_date: res.locals.req_date,
+        });
+
+      if (authzCourseInstance == null) {
+        throw new error.HttpStatusError(403, 'Access denied');
+      }
 
       const existingEnrollment = await run(async () => {
         return await selectOptionalEnrollmentByUid({
           uid: res.locals.authn_user.uid,
-          courseInstance: course_instance,
+          courseInstance: authzCourseInstance,
           requestedRole: 'System',
           authzData: dangerousFullSystemAuthz(),
         });
       });
 
+      const enrollmentManagementEnabled = await features.enabledFromLocals(
+        'enrollment-management',
+        res.locals,
+      );
+      const selfEnrollmentEnabled = authzCourseInstance.self_enrollment_enabled;
+      const selfEnrollmentExpired =
+        authzCourseInstance.self_enrollment_enabled_before_date != null &&
+        new Date() >= authzCourseInstance.self_enrollment_enabled_before_date;
+
+      const institutionRestrictionSatisfied =
+        res.locals.authn_user.institution_id === authzInstitution.id ||
+        !enrollmentManagementEnabled ||
+        !authzCourseInstance.self_enrollment_restrict_to_institution;
+
+      const canJoin =
+        existingEnrollment != null &&
+        ['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status);
+
       if (
-        existingEnrollment &&
-        !['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status)
+        (existingEnrollment == null &&
+          (!selfEnrollmentEnabled || !selfEnrollmentExpired || !institutionRestrictionSatisfied)) ||
+        !canJoin
       ) {
+        // On the homepage, we show nice error pages. Here, we will just redirect them back to the homepage.
+        // This is because the enroll page is going away.
         flash('error', 'You cannot enroll in this course.');
         res.redirect(req.originalUrl);
         return;
       }
 
-      // Abuse the middleware to authorize the user for the course instance.
-      req.params.course_instance_id = course_instance.id;
-      await authzCourseOrInstance(req, res);
-
       await ensureCheckedEnrollment({
-        institution,
-        course,
-        courseInstance: course_instance,
+        institution: authzInstitution,
+        course: authzCourse,
+        courseInstance: authzCourseInstance,
         requestedRole: 'Student',
-        authzData: res.locals.authz_data,
+        authzData,
         actionDetail: 'explicit_joined',
       });
 
+      const courseDisplayName = `${authzCourse.short_name}: ${authzCourse.title}, ${authzCourseInstance.long_name}`;
       flash('success', `You have joined ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else {

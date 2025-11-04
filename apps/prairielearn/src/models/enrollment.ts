@@ -14,7 +14,7 @@ import {
 import {
   type AuthzData,
   type CourseInstanceRole,
-  type PageAuthzData,
+  type DangerousSystemAuthzData,
   assertHasRole,
   dangerousFullSystemAuthz,
   hasRole,
@@ -235,7 +235,7 @@ export async function ensureCheckedEnrollment({
   institution: Institution;
   course: Course;
   courseInstance: CourseInstance;
-  authzData: PageAuthzData;
+  authzData: Exclude<AuthzData, DangerousSystemAuthzData>;
   requestedRole: 'Student';
   actionDetail: SupportedActionsForTable<'enrollments'>;
 }) {
