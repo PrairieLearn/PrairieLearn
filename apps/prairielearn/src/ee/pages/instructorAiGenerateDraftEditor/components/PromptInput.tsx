@@ -3,9 +3,13 @@ import { useState } from 'preact/hooks';
 export function PromptInput({
   sendMessage,
   disabled,
+  loadNewVariantAfterChanges,
+  setLoadNewVariantAfterChanges,
 }: {
   sendMessage: (message: { text: string }) => void;
   disabled: boolean;
+  loadNewVariantAfterChanges?: boolean;
+  setLoadNewVariantAfterChanges?: (value: boolean) => void;
 }) {
   const [input, setInput] = useState('');
 
@@ -41,7 +45,8 @@ export function PromptInput({
             class="form-check-input"
             type="checkbox"
             id="new-variant-after-changes"
-            defaultChecked
+            checked={loadNewVariantAfterChanges}
+            onChange={(e) => setLoadNewVariantAfterChanges?.(e.currentTarget.checked)}
           />
           <label class="form-check-label small text-muted" for="new-variant-after-changes">
             Load new variant after changes

@@ -477,6 +477,7 @@ export function AiQuestionGenerationChat({
     },
   });
 
+  const [loadNewVariantAfterChanges, setLoadNewVariantAfterChanges] = useState(true);
   const showSpinner = useShowSpinner({ status, messages });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -583,6 +584,8 @@ export function AiQuestionGenerationChat({
               void stickToBottom.scrollToBottom();
             }}
             disabled={status !== 'ready' && status !== 'error'}
+            loadNewVariantAfterChanges={loadNewVariantAfterChanges}
+            setLoadNewVariantAfterChanges={setLoadNewVariantAfterChanges}
           />
         </div>
         <div ref={resizerRef} class="app-chat-resizer" aria-label="Resize chat" role="separator" />
