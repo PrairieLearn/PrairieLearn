@@ -518,7 +518,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       const req_date = parseISO(req.cookies.pl2_requested_date);
       if (!isValid(req_date)) {
         debug(
-          `requested date is invalid: ${req.cookies.pl2_requested_date}, ${req_date.toISOString()}`,
+          `requested date is invalid: ${req.cookies.pl2_requested_date}, ${req_date.toString()}`,
         );
         clearOverrideCookies(res, overrides);
 
