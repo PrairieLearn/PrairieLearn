@@ -36,11 +36,7 @@ BEGIN
     END IF;
 
     permissions_course := jsonb_build_object(
-        'course_role', course_role,
-        'has_course_permission_preview', course_role >= 'Previewer',
-        'has_course_permission_view', course_role >= 'Viewer',
-        'has_course_permission_edit', course_role >= 'Editor',
-        'has_course_permission_own', course_role >= 'Owner'
+        'course_role', course_role
     );
     RETURN permissions_course;
 END;

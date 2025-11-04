@@ -32,7 +32,8 @@ FROM
 WHERE
   c.deleted_at IS NULL
   -- returns a list of courses that are either example courses or are courses
-  -- in which the user has a non-None course role
+  -- in which the user has a non-None course role.
+  -- If the user is an administrator, return all courses.
   AND (
     (permissions_course ->> 'course_role')::enum_course_role > 'None'
     OR c.example_course IS TRUE

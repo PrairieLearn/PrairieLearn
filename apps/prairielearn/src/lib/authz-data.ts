@@ -14,8 +14,8 @@ import {
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
- * If course_id is not provided, but course_instance_id is,
- * the function will use the course_id from the course instance.
+ * If `course_id` is not provided, but `course_instance_id` is,
+ * the function will use the `course_id` from the course instance.
  */
 async function selectAuthzData({
   user_id,
@@ -55,9 +55,9 @@ async function selectAuthzData({
  * @param params.req_date - The date of the request.
  * @param params.overrides - The overrides to apply to the authorization data.
  * @param params.overrides.is_administrator - Whether the user is an administrator.
- * @param params.overrides.req_mode - The mode to request.
- * @param params.overrides.req_course_role - The course role to request.
- * @param params.overrides.req_course_instance_role - The course instance role to request.
+ * @param params.overrides.req_mode - The requested mode to use.
+ * @param params.overrides.req_course_role - The requested course role to use.
+ * @param params.overrides.req_course_instance_role - The requested course instance role to use.
  * @param params.overrides.allow_example_course_override - Whether to allow overriding the course role for example courses.
  */
 export async function calculateAuthData({
@@ -149,14 +149,11 @@ export async function calculateAuthData({
     return rawAuthzData.mode;
   });
 
-  // This block replicates the old behavior of selectAuthzData.
-  if (
-    course_role === 'None' &&
-    (isCourseInstance
-      ? course_instance_role === 'None' &&
-        !rawAuthzData.permissions_course_instance.has_student_access
-      : true)
-  ) {
+  // If you have no roles, you have no access. Return null.
+  const hasCourseAccess = course_role !== 'None';
+  const hasCourseInstanceAccess =
+    course_instance_role !== 'None' || rawAuthzData.permissions_course_instance.has_student_access;
+  if (hasCourseAccess && (isCourseInstance ? hasCourseInstanceAccess : true)) {
     return {
       authResult: null,
       course: null,
@@ -171,13 +168,7 @@ export async function calculateAuthData({
     mode_reason: rawAuthzData.mode_reason,
     course_role,
     ...calculateCourseRolePermissions(course_role),
-    ...run<{
-      course_instance_role?: EnumCourseInstanceRole;
-      has_student_access_with_enrollment?: boolean;
-      has_student_access?: boolean;
-      has_course_instance_permission_view?: boolean;
-      has_course_instance_permission_edit?: boolean;
-    }>(() => {
+    ...run(() => {
       if (!isCourseInstance) return {};
 
       const { has_student_access, has_student_access_with_enrollment } =

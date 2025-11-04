@@ -1,5 +1,3 @@
-import assert from 'assert';
-
 import { isValid, parseISO } from 'date-fns';
 import debugfn from 'debug';
 import { type Request, type Response } from 'express';
@@ -51,44 +49,6 @@ function clearOverrideCookies(res: Response, overrides: Override[]) {
   });
 }
 
-function verifyAuthnAuthResult(
-  authnAuthResult: CalculateAuthDataSuccessResult['authResult'],
-  viewType: 'student' | 'instructor' | 'none',
-) {
-  // Cannot request a user data override without instructor permissions
-  if (
-    !authnAuthResult.has_course_permission_preview &&
-    !authnAuthResult.has_course_instance_permission_view
-  ) {
-    debug('requested overrides, but authn user does not have instructor permissions');
-    if (viewType === 'student') {
-      debug('on student page, so silently exit and ignore requested overrides');
-      return {
-        state: 'ignore_override',
-        error: null,
-      };
-    }
-    debug('not on student page, so clear all requested overrides and throw an error');
-    return {
-      state: 'throw_error',
-      error: new AugmentedError('Access denied', {
-        status: 403,
-        info: html`
-          <p>
-            You must be a member of the course staff in order to change the effective user. All
-            requested changes to the effective user have been removed.
-          </p>
-        `,
-      }),
-    };
-  }
-
-  return {
-    state: 'allow_override',
-    error: null,
-  };
-}
-
 /**
  * Verifies that the authenticated user has sufficient permissions to become the effective user.
  *
@@ -97,17 +57,21 @@ function verifyAuthnAuthResult(
  * - Student Data Editors can emulate students, but lower roles cannot
  * - Administrators can emulate other administrators
  * - Effective users must be enrolled or have instructor access to the course instance
- *
- * @param authnAuthzData - Authorization data for the authenticated (real) user
- * @param effectiveAuthzData - Authorization data for the requested effective user
- * @param effectiveUserHasInstructorAccessToCourseInstance - Whether the effective user has instructor-level access
+ * @param params
+ * @param params.authnAuthzData - Authorization data for the authenticated (real) user
+ * @param params.effectiveAuthzData - Authorization data for the requested effective user
+ * @param params.effectiveUserHasInstructorAccessToCourseInstance - Whether the effective user has instructor-level access
  * @returns Success status with error if validation fails
  */
-function canBecomeEffectiveUser(
-  authnAuthzData: CalculateAuthDataSuccessResult,
-  effectiveAuthzData: CalculateAuthDataSuccessResult,
-  effectiveUserHasInstructorAccessToCourseInstance: boolean | null,
-): Result<void> {
+function canBecomeEffectiveUser({
+  authnAuthzData,
+  effectiveAuthzData,
+  effectiveUserHasInstructorAccessToCourseInstance,
+}: {
+  authnAuthzData: CalculateAuthDataSuccessResult;
+  effectiveAuthzData: CalculateAuthDataSuccessResult;
+  effectiveUserHasInstructorAccessToCourseInstance: boolean | null;
+}): Result<void> {
   const failedPermissionCheck = [
     {
       hasFailedCheck:
@@ -242,11 +206,15 @@ function canBecomeEffectiveUser(
   };
 }
 
-async function getOverrideUserData(
-  requestedUid: string,
-  is_administrator: boolean,
-  courseInstanceId: string | null,
-): Promise<Result<SelectUser>> {
+async function getOverrideUserData({
+  requestedUid,
+  isAdministrator,
+  courseInstanceId,
+}: {
+  requestedUid: string;
+  isAdministrator: boolean;
+  courseInstanceId: string | null;
+}): Promise<Result<SelectUser>> {
   // Verify requested UID
   const userData = await sqldb.queryOptionalRow(
     sql.select_user,
@@ -269,7 +237,7 @@ async function getOverrideUserData(
             <code>${requestedUid}</code>, when no such user exists. All requested changes to the
             effective user have been removed.
           </p>
-          ${config.devMode && is_administrator
+          ${config.devMode && isAdministrator
             ? html`
                 <div class="alert alert-warning" role="alert">
                   In Development Mode,
@@ -299,7 +267,7 @@ async function getOverrideUserData(
   }
 
   // The effective user is an administrator and the authn user is not
-  if (userData.is_administrator && !is_administrator) {
+  if (userData.is_administrator && !isAdministrator) {
     return {
       success: false,
       error: new AugmentedError('Access denied', {
@@ -320,8 +288,6 @@ async function getOverrideUserData(
     success: true,
     value: userData,
   };
-
-  // FIXME: also override institution?
 }
 
 const SelectUserSchema = z.object({
@@ -503,11 +469,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     if (!req.cookies.pl2_requested_uid) {
       return null;
     }
-    const result = await getOverrideUserData(
-      req.cookies.pl2_requested_uid,
-      res.locals.is_administrator,
-      req.params.course_instance_id || null,
-    );
+    const result = await getOverrideUserData({
+      requestedUid: req.cookies.pl2_requested_uid,
+      isAdministrator: res.locals.is_administrator,
+      courseInstanceId: req.params.course_instance_id || null,
+    });
     if (!result.success) {
       clearOverrideCookies(res, overrides);
       throw result.error;
@@ -524,7 +490,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // We still run this code even if we don't have an effective user to override.
     // This is because you can overrides roles without specifying a user.
 
-    // Check if it is necessary to request a user data override
+    // Check if there were any requested overrides
     if (overrides.length === 0) {
       // If we don't have any overrides, the effective user is the same as the authn user.
       debug('no requested overrides');
@@ -536,28 +502,34 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       };
     }
 
-    // You have an override, so check that you can override.
-    const verifyAuthnAuthResultResult = verifyAuthnAuthResult(
-      authnAuthResult,
-      res.locals.viewType || 'none',
-    );
-
-    if (verifyAuthnAuthResultResult.state === 'throw_error') {
+    // Cannot request a user data override without instructor permissions
+    if (
+      !authnAuthResult.has_course_permission_preview &&
+      !authnAuthResult.has_course_instance_permission_view
+    ) {
+      debug('requested overrides, but authn user does not have instructor permissions');
+      if ((res.locals.viewType || 'none') === 'student') {
+        debug('on student page, so silently exit and ignore requested overrides');
+        // If we can't set the effective user, the effective user is the same as the authn user.
+        return {
+          authResult: authnAuthResult,
+          course: authnCourse,
+          institution: authnInstitution,
+          courseInstance: authnCourseInstance,
+        };
+      }
+      debug('not on student page, so clear all requested overrides and throw an error');
       clearOverrideCookies(res, overrides);
-      throw verifyAuthnAuthResultResult.error!;
+      throw new AugmentedError('Access denied', {
+        status: 403,
+        info: html`
+          <p>
+            You must be a member of the course staff in order to change the effective user. All
+            requested changes to the effective user have been removed.
+          </p>
+        `,
+      });
     }
-
-    // If we didn't throw an error and we can't set the effective user, return all nulls.
-    if (verifyAuthnAuthResultResult.state === 'ignore_override') {
-      // If we can't set the effective user, the effective user is the same as the authn user.
-      return {
-        authResult: authnAuthResult,
-        course: authnCourse,
-        institution: authnInstitution,
-        courseInstance: authnCourseInstance,
-      };
-    }
-    assert(verifyAuthnAuthResultResult.state === 'allow_override');
 
     // We are trying to override the user data.
     debug('trying to override the user data');
@@ -585,7 +557,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       },
     });
 
-    // This allows the authn user to keep access
+    // If the authn user was denied access, we would have thrown an error already since
+    // authnAuthResult would be null. This allows the authn user to keep access
     // to pages (e.g., the effective user page) for which only authn permissions
     // are required.
     if (effectiveAuthResult === null) {
@@ -594,8 +567,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
           user: effectiveUserData ? effectiveUserData.user : authnAuthResult.user,
           is_administrator: false,
           course_role: 'None' as EnumCourseRole,
-          mode: authnAuthResult.mode,
-          mode_reason: authnAuthResult.mode_reason,
           ...calculateCourseRolePermissions('None'),
           ...(req.params.course_instance_id
             ? {
@@ -605,6 +576,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
                 ...calculateCourseInstanceRolePermissions('None'),
               }
             : {}),
+          mode: authnAuthResult.mode,
+          mode_reason: authnAuthResult.mode_reason,
         },
         course: authnCourse,
         institution: authnInstitution,
@@ -634,21 +607,21 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     };
   });
 
-  const canBecomeEffectiveUserResult = canBecomeEffectiveUser(
-    {
+  const canBecomeEffectiveUserResult = canBecomeEffectiveUser({
+    authnAuthzData: {
       authResult: authnAuthResult,
       course: authnCourse,
       institution: authnInstitution,
       courseInstance: authnCourseInstance,
     },
-    {
+    effectiveAuthzData: {
       authResult: effectiveAuthResult,
       course: effectiveCourse,
       institution: effectiveInstitution,
       courseInstance: effectiveCourseInstance,
     },
-    effectiveUserData?.is_instructor ?? null,
-  );
+    effectiveUserHasInstructorAccessToCourseInstance: effectiveUserData?.is_instructor ?? null,
+  });
   if (!canBecomeEffectiveUserResult.success) {
     clearOverrideCookies(res, overrides);
     throw canBecomeEffectiveUserResult.error;

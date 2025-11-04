@@ -117,11 +117,14 @@ export async function selectCoursesWithStaffAccess({
   // Users always have access to the example course.
   const courses = rawCourses.map((c) => {
     if (c.example_course) {
+      const course_role = ['None', 'Previewer'].includes(c.permissions_course.course_role)
+        ? 'Viewer'
+        : c.permissions_course.course_role;
       return {
         ...c,
         permissions_course: {
-          course_role: 'Viewer',
-          ...calculateCourseRolePermissions('Viewer'),
+          course_role,
+          ...calculateCourseRolePermissions(course_role),
         },
       };
     }
