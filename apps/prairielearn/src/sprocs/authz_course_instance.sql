@@ -9,7 +9,7 @@ DECLARE
     course_instance_role enum_course_instance_role;
     permissions_course_instance jsonb;
     -- These fields only consider the legacy access system.
-    -- Student access with the modern publishing system is handled separately in `buildAuthzData`.
+    -- Student access with the modern publishing system is handled separately with `calculateModernCourseInstanceStudentAccess`.
     has_student_access boolean;
     has_student_access_with_enrollment boolean;
 BEGIN
