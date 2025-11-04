@@ -28,15 +28,6 @@ VALUES
     NULL
   );
 
--- BLOCK select_ai_question_generation_prompt_by_id_and_question
-SELECT
-  *
-FROM
-  ai_question_generation_prompts
-WHERE
-  id = $prompt_id
-  AND question_id = $question_id;
-
 -- BLOCK select_ai_question_generation_messages
 SELECT
   *

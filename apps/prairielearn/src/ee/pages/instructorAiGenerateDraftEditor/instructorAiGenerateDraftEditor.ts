@@ -6,13 +6,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
@@ -20,7 +14,6 @@ import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationMessageSchema,
-  AiQuestionGenerationPromptSchema,
   type Course,
   type EnumAiQuestionGenerationMessageStatus,
   IdSchema,
@@ -329,27 +322,6 @@ router.post(
         python: b64DecodeUnicode(req.body.python),
         prompt: 'Manually update question.',
         promptType: 'manual_change',
-      });
-
-      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
-    } else if (req.body.__action === 'revert_edit_version') {
-      const prompt = await queryRow(
-        sql.select_ai_question_generation_prompt_by_id_and_question,
-        { prompt_id: req.body.unsafe_prompt_id, question_id: req.params.question_id },
-        AiQuestionGenerationPromptSchema,
-      );
-
-      await saveRevisedQuestion({
-        course: res.locals.course,
-        question: res.locals.question,
-        user: res.locals.user,
-        authn_user: res.locals.authn_user,
-        authz_data: res.locals.authz_data,
-        urlPrefix: res.locals.urlPrefix,
-        html: prompt.html ?? '',
-        python: prompt.python ?? undefined,
-        prompt: 'Manually revert question to earlier revision.',
-        promptType: 'manual_revert',
       });
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
