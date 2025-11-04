@@ -285,7 +285,7 @@ def test_grading_with_old_api(case: GradingTestCase) -> None:
 
     actual_score = data["partial_scores"]["test"]["score"]
     if isinstance(case.expected_score, float) and case.expected_score not in [0.0, 1.0]:
-        assert abs(actual_score - case.expected_score) < 0.0001
+        assert math.isclose(actual_score, case.expected_score)
     else:
         assert actual_score == case.expected_score
 
