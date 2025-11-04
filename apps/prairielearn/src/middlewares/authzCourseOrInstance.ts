@@ -12,9 +12,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
-import type { FullAuthzData } from '../lib/authz-data-lib.js';
+import type { CalculateAuthDataSuccessResult, FullAuthzData } from '../lib/authz-data-lib.js';
 import {
-  type CalculateAuthDataSuccessResult,
   calculateAuthData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,

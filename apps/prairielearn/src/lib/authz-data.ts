@@ -3,7 +3,7 @@ import assert from 'assert';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { FullAuthzDataSchema } from './authz-data-lib.js';
+import { type CalculateAuthDataResult, FullAuthzDataSchema } from './authz-data-lib.js';
 import {
   type EnumCourseInstanceRole,
   type EnumCourseRole,
@@ -89,7 +89,7 @@ export async function calculateAuthData({
     req_course_instance_role?: EnumCourseInstanceRole;
     allow_example_course_override?: boolean;
   };
-}) {
+}): Promise<CalculateAuthDataResult> {
   const resolvedOverrides = {
     allow_example_course_override: true,
     ...overrides,
@@ -194,9 +194,6 @@ export async function calculateAuthData({
     courseInstance: rawAuthzData.course_instance,
   };
 }
-
-export type CalculateAuthDataResult = Awaited<ReturnType<typeof calculateAuthData>>;
-export type CalculateAuthDataSuccessResult = Exclude<CalculateAuthDataResult, { authResult: null }>;
 
 export function calculateCourseRolePermissions(role: EnumCourseRole) {
   return {
