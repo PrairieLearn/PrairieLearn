@@ -1,5 +1,4 @@
 import { isValid, parseISO } from 'date-fns';
-import debugfn from 'debug';
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
@@ -30,7 +29,6 @@ import type { Result } from '../lib/types.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const debug = debugfn('prairielearn:authzCourseOrInstance');
 
 interface Override {
   name: string;
@@ -43,7 +41,6 @@ interface Override {
  */
 function clearOverrideCookies(res: Response, overrides: Override[]) {
   overrides.forEach((override) => {
-    debug(`clearing cookie: ${override.cookie}`);
     const newName = override.cookie.replace(/^pl2_/, 'pl_');
     clearCookie(res, [override.cookie, newName]);
   });
@@ -282,8 +279,6 @@ async function getOverrideUserData({
     };
   }
 
-  debug(`requested uid has instructor access: ${userData.is_instructor}`);
-
   return {
     success: true,
     value: userData,
@@ -384,8 +379,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     throw new HttpStatusError(403, 'Access denied');
   }
 
-  debug('authn user is authorized');
-
   const overrides: Override[] = [];
   if (req.cookies.pl2_requested_uid) {
     // If the requested uid is the same as the authn user uid, then silently clear the cookie and continue
@@ -441,9 +434,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     if (req.cookies.pl2_requested_date) {
       const req_date = parseISO(req.cookies.pl2_requested_date);
       if (!isValid(req_date)) {
-        debug(
-          `requested date is invalid: ${req.cookies.pl2_requested_date}, ${req_date.toString()}`,
-        );
         clearOverrideCookies(res, overrides);
 
         throw new AugmentedError('Access denied', {
@@ -457,8 +447,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
           `,
         });
       }
-
-      debug(`effective req_date = ${req_date.toISOString()}`);
       return req_date;
     }
 
@@ -493,7 +481,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // Check if there were any requested overrides
     if (overrides.length === 0) {
       // If we don't have any overrides, the effective user is the same as the authn user.
-      debug('no requested overrides');
       return {
         authResult: authnAuthResult,
         course: authnCourse,
@@ -507,9 +494,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       !authnAuthResult.has_course_permission_preview &&
       !authnAuthResult.has_course_instance_permission_view
     ) {
-      debug('requested overrides, but authn user does not have instructor permissions');
       if ((res.locals.viewType || 'none') === 'student') {
-        debug('on student page, so silently exit and ignore requested overrides');
         // If we can't set the effective user, the effective user is the same as the authn user.
         return {
           authResult: authnAuthResult,
@@ -518,7 +503,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
           courseInstance: authnCourseInstance,
         };
       }
-      debug('not on student page, so clear all requested overrides and throw an error');
       clearOverrideCookies(res, overrides);
       throw new AugmentedError('Access denied', {
         status: 403,
@@ -532,8 +516,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     }
 
     // We are trying to override the user data.
-    debug('trying to override the user data');
-    debug(req.cookies);
 
     const {
       authResult: effectiveAuthResult,
