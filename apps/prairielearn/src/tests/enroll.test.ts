@@ -6,6 +6,7 @@ import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
+import { features } from '../lib/features/index.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import {
   selectCourseInstanceById,
@@ -26,7 +27,6 @@ import {
   withUser,
 } from './utils/auth.js';
 import { enrollUser, unenrollUser } from './utils/enrollments.js';
-import { features } from '../lib/features/index.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
