@@ -154,7 +154,7 @@
     "he": "^1.2.0",
     "highlight.js": "^11.11.1",
     "html-rewriter-wasm": "^0.4.1",
-    "html-validate": "10.3.0",
+    "html-validate": "^10.3.0",
     "htmx-ext-loading-states": "^2.0.2",
     "htmx-ext-morphdom-swap": "^2.0.2",
     "htmx.org": "^2.0.8",
