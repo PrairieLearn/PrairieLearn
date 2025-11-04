@@ -23,7 +23,7 @@ export function PromptInput({
       <textarea
         id="user-prompt-llm"
         class="form-control mb-2"
-        placeholder="What would you like to revise?"
+        placeholder="Ask anything..."
         aria-label="Modification instructions"
         value={input}
         required
@@ -35,13 +35,28 @@ export function PromptInput({
           }
         }}
       />
-      <button
-        type="submit"
-        class="btn btn-dark w-100"
-        disabled={disabled || input.trim().length === 0}
-      >
-        Revise question
-      </button>
+      <div class="d-flex flex-row gap-2 justify-content-between align-items-center">
+        <div class="form-check form-switch form-check-inline">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            id="new-variant-after-changes"
+            defaultChecked
+          />
+          <label class="form-check-label small text-muted" for="new-variant-after-changes">
+            Load new variant after changes
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-primary btn-sm"
+          disabled={disabled || input.trim().length === 0}
+          aria-label="Send prompt"
+        >
+          <i class="bi bi-send-fill" />
+        </button>
+      </div>
       <div class="text-muted small text-center mt-1">
         AI can make mistakes. Review the generated question.
       </div>
