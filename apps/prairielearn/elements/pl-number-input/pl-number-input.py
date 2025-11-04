@@ -378,7 +378,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_answer = data["submitted_answers"].get(name, None)
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
         submitted_answer = blank_value
-    if submitted_answer == "":
+    if submitted_answer == "" and allow_blank:
         data["submitted_answers"][name] = ""
     else:
         res = pl.string_fraction_to_number(
@@ -520,6 +520,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
@@ -636,9 +637,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         data["raw_submitted_answers"][name] = str(answer)
     elif result == "invalid":
-        # FIXME: add more invalid expressions, make text of format_errors
-        # correct, and randomize
-        data["raw_submitted_answers"][name] = "1 + 2"
+        invalid_answers = ["1 + 2", "test", "pi", "None"]
+        if not allow_blank:
+            invalid_answers.append("")
+        data["raw_submitted_answers"][name] = random.choice(invalid_answers)
         data["format_errors"][name] = "invalid"
     else:
         assert_never(result)

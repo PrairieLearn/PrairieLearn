@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
-import { HtmlSafeString, html } from '@prairielearn/html';
+import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
 
@@ -50,6 +50,12 @@ export function PageLayout({
     hxExt?: string;
     /** Sets the html and body tag heights to 100% */
     fullHeight?: boolean;
+    /** Dataset attributes to add to the body tag. The "data-" prefix will be added, so do not include it. */
+    dataAttributes?: Record<string, string>;
+    /** Controls if the page should use enhanced navigation. */
+    enableEnhancedNav?: boolean;
+    /** Whether or not the navbar should be shown. */
+    enableNavbar?: boolean;
     /** Whether or not to include padding around the content. */
     contentPadding?: boolean;
     /** The default state of the side navigation toggle. */
@@ -69,6 +75,9 @@ export function PageLayout({
   const resolvedOptions = {
     hxExt: '',
     paddingBottom: true,
+    enableEnhancedNav: true,
+    dataAttributes: {},
+    enableNavbar: true,
     fullHeight: false,
     fullWidth: false,
     contentPadding: true,
@@ -81,7 +90,7 @@ export function PageLayout({
   const contentString = asHtmlSafe(content);
   const postContentString = asHtmlSafe(postContent);
 
-  if (resLocals.has_enhanced_navigation) {
+  if (resLocals.has_enhanced_navigation && resolvedOptions.enableEnhancedNav) {
     // The side navbar is only available if the user is in a page within a course or course instance.
     const sideNavEnabled =
       resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
@@ -137,6 +146,11 @@ export function PageLayout({
         <body
           class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
           hx-ext="${resolvedOptions.hxExt}"
+          ${unsafeHtml(
+            Object.entries(resolvedOptions.dataAttributes)
+              .map(([key, value]) => `data-${key}="${value}"`)
+              .join(' '),
+          )}
         >
           <div
             id="app-container"
@@ -151,16 +165,18 @@ export function PageLayout({
               'mobile-collapsed',
             )}"
           >
-            <div class="app-top-nav">
-              ${Navbar({
-                resLocals,
-                navPage: navContext.page,
-                navSubPage: navContext.subPage,
-                navbarType: navContext.type,
-                isInPageLayout: true,
-                sideNavEnabled,
-              })}
-            </div>
+            ${resolvedOptions.enableNavbar
+              ? html`<div class="app-top-nav">
+                  ${Navbar({
+                    resLocals,
+                    navPage: navContext.page,
+                    navSubPage: navContext.subPage,
+                    navbarType: navContext.type,
+                    isInPageLayout: true,
+                    sideNavEnabled,
+                  })}
+                </div>`
+              : ''}
             ${sideNavEnabled
               ? html`
                   <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
@@ -234,13 +250,20 @@ export function PageLayout({
         <body
           class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
           hx-ext="${resolvedOptions.hxExt}"
+          ${unsafeHtml(
+            Object.entries(resolvedOptions.dataAttributes)
+              .map(([key, value]) => `data-${key}="${value}"`)
+              .join(' '),
+          )}
         >
-          ${Navbar({
-            resLocals,
-            navPage: navContext.page,
-            navSubPage: navContext.subPage,
-            navbarType: navContext.type,
-          })}
+          ${resolvedOptions.enableNavbar
+            ? Navbar({
+                resLocals,
+                navPage: navContext.page,
+                navSubPage: navContext.subPage,
+                navbarType: navContext.type,
+              })
+            : ''}
           ${preContentString}
           <main
             id="content"

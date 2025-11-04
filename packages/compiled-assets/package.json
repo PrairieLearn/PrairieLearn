@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "3.2.8",
+  "version": "3.2.9",
   "type": "module",
   "repository": {
     "type": "git",
@@ -26,13 +26,13 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.18.13",
-    "@vitest/coverage-v8": "^4.0.5",
+    "@types/node": "^22.19.0",
+    "@vitest/coverage-v8": "^4.0.6",
     "express": "^4.21.2",
     "get-port": "^7.1.0",
     "node-fetch": "^3.3.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.5"
+    "vitest": "^4.0.6"
   }
 }
