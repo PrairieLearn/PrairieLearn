@@ -15,7 +15,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { calculateCourseRolePermissions } from '../lib/authz-data.js';
-import { type Course, CourseSchema } from '../lib/db-types.js';
+import { type Course, CourseSchema, type EnumCourseRole } from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';
 
@@ -117,7 +117,7 @@ export async function selectCoursesWithStaffAccess({
     return courses.map((c) => ({
       ...c,
       permissions_course: {
-        course_role: 'Owner',
+        course_role: 'Owner' as EnumCourseRole,
         ...calculateCourseRolePermissions('Owner'),
       },
     }));

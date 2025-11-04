@@ -82,7 +82,13 @@ export const FullAuthzDataSchema = z.object({
 });
 export type FullAuthzData = z.infer<typeof FullAuthzDataSchema>;
 
-export type AuthzData = CalculateAuthDataSuccessResult['authResult'] | DangerousSystemAuthzData;
+export type AuthzDataWithoutEffectiveUser =
+  | CalculateAuthDataSuccessResult['authResult']
+  | DangerousSystemAuthzData;
+
+export type AuthzDataWithEffectiveUser = PageAuthzData | DangerousSystemAuthzData;
+
+export type AuthzData = AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser;
 
 export type CourseInstanceRole =
   | 'System'
@@ -107,7 +113,7 @@ export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
 }
 
 export function isDangerousFullSystemAuthz(
-  authzData: AuthzData,
+  authzData: AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser,
 ): authzData is DangerousSystemAuthzData {
   return authzData.user.user_id === null;
 }
