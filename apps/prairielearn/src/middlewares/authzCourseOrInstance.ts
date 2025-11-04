@@ -113,7 +113,7 @@ function canBecomeEffectiveUser(
       hasFailedCheck:
         !authnAuthzData.authResult.has_course_permission_preview &&
         effectiveAuthzData.authResult.has_course_permission_preview,
-      errorMessage: html`
+      errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course previewer, when you are
           not a course previewer. All requested changes to the effective user have been removed.
@@ -124,7 +124,7 @@ function canBecomeEffectiveUser(
       hasFailedCheck:
         !authnAuthzData.authResult.has_course_permission_view &&
         effectiveAuthzData.authResult.has_course_permission_view,
-      errorMessage: html`
+      errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course viewer, when you are
           not a course viewer. All requested changes to the effective user have been removed.
@@ -135,7 +135,7 @@ function canBecomeEffectiveUser(
       hasFailedCheck:
         !authnAuthzData.authResult.has_course_permission_edit &&
         effectiveAuthzData.authResult.has_course_permission_edit,
-      errorMessage: html`
+      errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course editor, when you are
           not a course editor. All requested changes to the effective user have been removed.
@@ -146,7 +146,7 @@ function canBecomeEffectiveUser(
       hasFailedCheck:
         !authnAuthzData.authResult.has_course_permission_own &&
         effectiveAuthzData.authResult.has_course_permission_own,
-      errorMessage: html`
+      errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course owner, when you are not
           a course owner. All requested changes to the effective user have been removed.
@@ -158,7 +158,7 @@ function canBecomeEffectiveUser(
         !authnAuthzData.authResult.has_course_instance_permission_view &&
         effectiveAuthzData.authResult.has_course_instance_permission_view &&
         effectiveAuthzData.courseInstance !== null,
-      errorMessage: html`
+      errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a student data viewer in the
           course instance <code>${effectiveAuthzData.courseInstance!.short_name}</code>, when you
@@ -172,7 +172,7 @@ function canBecomeEffectiveUser(
         !authnAuthzData.authResult.has_course_instance_permission_edit &&
         effectiveAuthzData.authResult.has_course_instance_permission_edit &&
         effectiveAuthzData.courseInstance !== null,
-      errorMessage: html`
+      errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a student data editor in the
           course instance <code>${effectiveAuthzData.courseInstance!.short_name}</code>, when you
@@ -192,7 +192,7 @@ function canBecomeEffectiveUser(
         !effectiveUserHasInstructorAccessToCourseInstance && // effective user is not an instructor (i.e., is a student)
         !authnAuthzData.authResult.has_course_instance_permission_edit &&
         effectiveAuthzData.courseInstance !== null,
-      errorMessage: html`
+      errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a student in the course instance
           <code>${effectiveAuthzData.courseInstance!.short_name}</code>, when you do not have
@@ -217,7 +217,7 @@ function canBecomeEffectiveUser(
         !effectiveAuthzData.authResult.has_course_instance_permission_view &&
         !effectiveAuthzData.authResult.has_student_access_with_enrollment &&
         effectiveAuthzData.courseInstance !== null,
-      errorMessage: html`
+      errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is not enrolled in this course
           instance. All required changes to the effective user have been removed.
@@ -231,7 +231,7 @@ function canBecomeEffectiveUser(
       success: false,
       error: new AugmentedError('Access denied', {
         status: 403,
-        info: failedPermissionCheck.errorMessage,
+        info: failedPermissionCheck.errorMessage(),
       }),
     };
   }
