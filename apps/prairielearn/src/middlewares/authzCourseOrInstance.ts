@@ -289,7 +289,7 @@ const SelectUserSchema = z.object({
   user: UserSchema,
   institution: InstitutionSchema,
   is_administrator: z.boolean(),
-  is_instructor: z.boolean(),
+  is_instructor_in_course_instance: z.boolean(),
 });
 type SelectUser = z.infer<typeof SelectUserSchema>;
 
@@ -602,7 +602,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       institution: effectiveInstitution,
       courseInstance: effectiveCourseInstance,
     },
-    effectiveUserHasInstructorAccessToCourseInstance: effectiveUserData?.is_instructor ?? null,
+    effectiveUserHasInstructorAccessToCourseInstance:
+      effectiveUserData?.is_instructor_in_course_instance ?? null,
   });
   if (!canBecomeEffectiveUserResult.success) {
     clearOverrideCookies(res, overrides);
@@ -664,7 +665,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
         has_course_instance_permission_edit:
           effectiveAuthResult.has_course_instance_permission_edit,
         user_with_requested_uid_has_instructor_access_to_course_instance:
-          effectiveUserData?.is_instructor ?? null,
+          effectiveUserData?.is_instructor_in_course_instance ?? null,
       };
     }),
     // Other data
