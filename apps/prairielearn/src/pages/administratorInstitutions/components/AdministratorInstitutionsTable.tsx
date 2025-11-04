@@ -66,7 +66,11 @@ export function AdministratorInstitutionsTable({
                   <td>{institution.long_name}</td>
                   <td>{institution.display_timezone}</td>
                   <td>
-                    <code>{institution.uid_regexp}</code>
+                    {institution.uid_regexp ? (
+                      <span class="font-monospace">{institution.uid_regexp}</span>
+                    ) : (
+                      '—'
+                    )}
                   </td>
                   <td>{authn_providers.join(', ')}</td>
                 </tr>

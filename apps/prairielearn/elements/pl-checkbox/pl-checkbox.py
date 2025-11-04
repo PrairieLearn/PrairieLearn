@@ -576,7 +576,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             info_params["gradingtext"] = generate_grading_text(
                 insert_text=insert_text,
                 num_display_answers=num_display_answers,
-                partial_credit=partial_credit_mode is not PartialCreditType.ALL_OR_NOTHING,
+                partial_credit=partial_credit_mode
+                is not PartialCreditType.ALL_OR_NOTHING,
                 partial_credit_method=partial_credit_mode.value,
             )
 
