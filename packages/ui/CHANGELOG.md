@@ -1,5 +1,13 @@
 # @prairielearn/ui
 
+## 1.1.2
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+- Updated dependencies [0425922]
+  - @prairielearn/preact-cjs@1.1.6
+
 ## 1.1.1
 
 ### Patch Changes

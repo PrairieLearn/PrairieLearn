@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 4.4.3
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
 ## 4.4.2
 
 ### Patch Changes
