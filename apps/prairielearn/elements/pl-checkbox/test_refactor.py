@@ -6,6 +6,7 @@ maintains the exact same behavior as the original code.
 """
 
 import importlib
+import math
 from typing import Any, NamedTuple
 
 import lxml.html
