@@ -4401,7 +4401,7 @@ __metadata:
     he: "npm:^1.2.0"
     highlight.js: "npm:^11.11.1"
     html-rewriter-wasm: "npm:^0.4.1"
-    html-validate: "npm:10.1.2"
+    html-validate: "npm:^10.3.0"
     htmx-ext-loading-states: "npm:^2.0.2"
     htmx-ext-morphdom-swap: "npm:^2.0.2"
     htmx.org: "npm:^2.0.8"
@@ -4673,7 +4673,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.18.13"
     "@types/picomatch": "npm:^4.0.2"
-    debounce: "npm:^2.2.0"
+    debounce: "npm:^3.0.0"
     picomatch: "npm:^4.0.3"
     strip-ansi: "npm:^7.1.2"
     typescript: "npm:^5.9.3"
@@ -9779,10 +9779,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debounce@npm:^2.2.0":
-  version: 2.2.0
-  resolution: "debounce@npm:2.2.0"
-  checksum: 10c0/684536fe9a04c9eea46cf02f119f69aa4071813ba25b9b43370e1503ea60b34fd38d694c7145fa2be504f9d40e7e39354cb9ed155c70954a0eefa391aefe271c
+"debounce@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "debounce@npm:3.0.0"
+  checksum: 10c0/bfae14dbdd98c57f2ed6e3f91f8086fe5a64624ddf54d0a55e038069ae47aa90ba305be98c29199b611955bbf9c3309bf07caf7f1ab55fe90928396fb9318c5a
   languageName: node
   linkType: hard
 
@@ -11994,9 +11994,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html-validate@npm:10.1.2":
-  version: 10.1.2
-  resolution: "html-validate@npm:10.1.2"
+"html-validate@npm:^10.3.0":
+  version: 10.3.0
+  resolution: "html-validate@npm:10.3.0"
   dependencies:
     "@html-validate/stylish": "npm:^4.1.0"
     "@sidvind/better-ajv-errors": "npm:4.0.0"
@@ -12010,7 +12010,7 @@ __metadata:
     jest: ^28.1.3 || ^29.0.3 || ^30.0.0
     jest-diff: ^28.1.3 || ^29.0.3 || ^30.0.0
     jest-snapshot: ^28.1.3 || ^29.0.3 || ^30.0.0
-    vitest: ^1.0.0 || ^2.0.0 || ^3.0.0
+    vitest: ^1.0.0 || ^2.0.0 || ^3.0.0 || ^4.0.0
   peerDependenciesMeta:
     jest:
       optional: true
@@ -12022,7 +12022,7 @@ __metadata:
       optional: true
   bin:
     html-validate: bin/html-validate.mjs
-  checksum: 10c0/c4f4e7a61f688ec26a6c5589d4a1ce16b6d30245f00b9be14536a83efb4f940134c70cd834e8b795e1d2aff5f27d90960d86040b5e2ef34f573d554450ede30c
+  checksum: 10c0/f20273566d8ba52fe4c027793f237eb0d9b1c6a89246d2636c44f1d6d40974486b88d8898f8ef67d8e38c150a9543736dadd10370f53667b6b483bd3b1927932
   languageName: node
   linkType: hard
 
