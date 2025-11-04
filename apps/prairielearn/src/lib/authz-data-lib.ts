@@ -109,6 +109,7 @@ export type CalculateAuthDataResult =
       courseInstance: null;
     }
   | CalculateAuthDataSuccessResult;
+
 /** The full authz data from a database query. This is NOT what is on res.locals. */
 export const FullAuthzDataSchema = z.object({
   mode: EnumModeSchema,
