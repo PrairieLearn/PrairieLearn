@@ -34,7 +34,7 @@ python-deps: venv-setup
 
 deps:
 	@yarn
-	@yarn playwright install --with-deps
+	@yarn playwright install chromium --with-deps
 	@$(MAKE) python-deps build
 
 migrate:
