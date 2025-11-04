@@ -1,3 +1,5 @@
+import assert from 'assert';
+
 import { isValid, parseISO } from 'date-fns';
 import debugfn from 'debug';
 import { type Request, type Response } from 'express';
@@ -62,13 +64,13 @@ function verifyAuthnAuthResult(
     if (viewType === 'student') {
       debug('on student page, so silently exit and ignore requested overrides');
       return {
-        success: false,
+        state: 'ignore_override',
         error: null,
       };
     }
     debug('not on student page, so clear all requested overrides and throw an error');
     return {
-      success: false,
+      state: 'throw_error',
       error: new AugmentedError('Access denied', {
         status: 403,
         info: html`
@@ -82,7 +84,7 @@ function verifyAuthnAuthResult(
   }
 
   return {
-    success: true,
+    state: 'allow_override',
     error: null,
   };
 }
@@ -561,9 +563,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     res.locals.viewType || 'none',
   );
 
-  if (!verifyAuthnAuthResultResult.success && verifyAuthnAuthResultResult.error !== null) {
+  if (verifyAuthnAuthResultResult.state === 'throw_error') {
     clearOverrideCookies(res, overrides);
-    throw verifyAuthnAuthResultResult.error;
+    throw verifyAuthnAuthResultResult.error!;
   }
 
   const {
@@ -596,7 +598,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     }
 
     // If we didn't throw an error and we can't set the effective user, return all nulls.
-    if (!verifyAuthnAuthResultResult.success) {
+    if (verifyAuthnAuthResultResult.state === 'ignore_override') {
       return {
         authResult: authnAuthResult,
         course: authnCourse,
@@ -604,6 +606,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
         courseInstance: authnCourseInstance,
       };
     }
+    assert(verifyAuthnAuthResultResult.state === 'allow_override');
 
     // We are trying to override the user data.
     debug('trying to override the user data');

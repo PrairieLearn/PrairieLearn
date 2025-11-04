@@ -147,6 +147,20 @@ export async function calculateAuthData({
     return rawAuthzData.mode;
   });
 
+  // This block replicates the old behavior of selectAuthzData.
+  if (
+    course_role === 'None' &&
+    course_instance_role === 'None' &&
+    !rawAuthzData.permissions_course_instance.has_student_access
+  ) {
+    return {
+      authResult: null,
+      course: null,
+      institution: null,
+      courseInstance: null,
+    };
+  }
+
   const authResult = {
     user,
     mode,

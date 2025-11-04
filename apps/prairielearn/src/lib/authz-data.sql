@@ -20,13 +20,4 @@ FROM
   JOIN ip_to_mode ($ip, $req_date, $user_id) AS access_mode ON TRUE
 WHERE
   c.id = coalesce($course_id, ci.course_id)
-  AND c.deleted_at IS NULL
-  AND (
-    (permissions_course ->> 'course_role')::enum_course_role > 'None'
-    OR (
-      permissions_course_instance ->> 'course_instance_role'
-    )::enum_course_instance_role > 'None'
-    OR (
-      permissions_course_instance ->> 'has_student_access'
-    )::boolean IS TRUE
-  );
+  AND c.deleted_at IS NULL;
