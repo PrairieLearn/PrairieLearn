@@ -86,7 +86,7 @@ export const CourseInstanceJsonSchema = z
       .optional()
       .default(false),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
-    allowAccess: AccessControlJsonSchema.optional().default([]),
+    allowAccess: AccessControlJsonSchema.optional(),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(

@@ -1450,15 +1450,44 @@ function validateCourseInstance({
     }
   }
 
+  if (courseInstance.selfEnrollment.enabled !== true && courseInstance.allowAccess != null) {
+    errors.push(
+      '"selfEnrollment.enabled" is not configurable when you have access control rules ("allowAccess" is set).',
+    );
+  }
+
   if (courseInstance.selfEnrollment.beforeDate != null) {
+    if (courseInstance.allowAccess != null) {
+      errors.push(
+        '"selfEnrollment.beforeDate" is not configurable when you have access control rules ("allowAccess" is set).',
+      );
+    }
     const date = parseJsonDate(courseInstance.selfEnrollment.beforeDate);
     if (date == null) {
       errors.push('"selfEnrollment.beforeDate" is not a valid date.');
     }
   }
 
+  if (
+    courseInstance.selfEnrollment.useEnrollmentCode !== false &&
+    courseInstance.allowAccess != null
+  ) {
+    errors.push(
+      '"selfEnrollment.useEnrollmentCode" is not configurable when you have access control rules ("allowAccess" is set).',
+    );
+  }
+
+  if (
+    courseInstance.selfEnrollment.restrictToInstitution !== true &&
+    courseInstance.allowAccess != null
+  ) {
+    errors.push(
+      '"selfEnrollment.restrictToInstitution" is not configurable when you have access control rules ("allowAccess" is set).',
+    );
+  }
+
   let accessibleInFuture = false;
-  for (const rule of courseInstance.allowAccess) {
+  for (const rule of courseInstance.allowAccess ?? []) {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {
       accessibleInFuture = true;
@@ -1469,7 +1498,7 @@ function validateCourseInstance({
 
   if (accessibleInFuture) {
     // Only warn about new roles and invalid UIDs for current or future course instances.
-    courseInstance.allowAccess.forEach((rule) => {
+    courseInstance.allowAccess?.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
     });
 
