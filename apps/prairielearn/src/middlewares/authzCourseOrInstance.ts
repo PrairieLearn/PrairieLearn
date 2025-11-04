@@ -574,20 +574,12 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     institution: effectiveInstitution,
     courseInstance: effectiveCourseInstance,
   } = await run(async () => {
-    // For all of these cases, the effective user information falls back to the authn user information.
-
-    // Check if we even have an effective user to override.
-    if (effectiveUserData === null) {
-      return {
-        authResult: authnAuthResult,
-        course: authnCourse,
-        institution: authnInstitution,
-        courseInstance: authnCourseInstance,
-      };
-    }
+    // We still run this code even if we don't have an effective user to override.
+    // This is because you can overrides roles without specifying a user.
 
     // Check if it is necessary to request a user data override
     if (overrides.length === 0) {
+      // If we don't have any overrides, the effective user is the same as the authn user.
       debug('no requested overrides');
       return {
         authResult: authnAuthResult,
@@ -599,6 +591,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
     // If we didn't throw an error and we can't set the effective user, return all nulls.
     if (verifyAuthnAuthResultResult.state === 'ignore_override') {
+      // If we can't set the effective user, the effective user is the same as the authn user.
       return {
         authResult: authnAuthResult,
         course: authnCourse,
@@ -618,13 +611,15 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       institution: effectiveInstitution,
       courseInstance: effectiveCourseInstance,
     } = await calculateAuthData({
-      user: effectiveUserData.user,
+      user: effectiveUserData ? effectiveUserData.user : authnAuthResult.user,
       course_id: req.params.course_id || null,
       course_instance_id: req.params.course_instance_id || null,
       ip: req.ip || null,
       req_date,
       overrides: {
-        is_administrator: effectiveUserData.is_administrator,
+        is_administrator: effectiveUserData
+          ? effectiveUserData.is_administrator
+          : res.locals.is_administrator,
         allow_example_course_override: false,
         req_mode: config.devMode ? req.cookies.pl_test_mode : null,
         req_course_role: req.cookies.pl2_requested_course_role || null,
@@ -639,7 +634,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     if (effectiveAuthResult === null) {
       return {
         authResult: {
-          user: effectiveUserData.user,
+          user: effectiveUserData ? effectiveUserData.user : authnAuthResult.user,
           is_administrator: false,
           course_role: 'None' as EnumCourseRole,
           mode: authnAuthResult.mode,
