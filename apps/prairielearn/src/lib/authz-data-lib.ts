@@ -2,6 +2,7 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
+import type { CalculateAuthDataSuccessResult } from './authz-data.js';
 import { RawStaffUserSchema, StaffUserSchema } from './client/safe-db-types.js';
 import {
   CourseInstanceSchema,
@@ -81,7 +82,7 @@ export const FullAuthzDataSchema = z.object({
 });
 export type FullAuthzData = z.infer<typeof FullAuthzDataSchema>;
 
-export type AuthzData = RawPageAuthzData | DangerousSystemAuthzData;
+export type AuthzData = CalculateAuthDataSuccessResult['authResult'] | DangerousSystemAuthzData;
 
 export type CourseInstanceRole =
   | 'System'
@@ -108,7 +109,7 @@ export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
 export function isDangerousFullSystemAuthz(
   authzData: AuthzData,
 ): authzData is DangerousSystemAuthzData {
-  return authzData.authn_user.user_id === null && authzData.user.user_id === null;
+  return authzData.user.user_id === null;
 }
 
 export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
