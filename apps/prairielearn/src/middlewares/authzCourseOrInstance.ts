@@ -706,8 +706,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   //   Assign all information to res.locals
   /*********************************************/
 
-  // After this middleware runs, `is_administrator` is set to the effective user's
-  // administrator status, and not the authn user's administrator status.
   res.locals.req_date = req_date;
 
   res.locals.authz_data = {
@@ -765,6 +763,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // Other data
     overrides,
   };
+  // After this middleware runs, `is_administrator` is set to the effective user's
+  // administrator status, and not the authn user's administrator status.
   res.locals.is_administrator = effectiveUserData?.is_administrator ?? res.locals.is_administrator;
 
   res.locals.course = effectiveCourse;
