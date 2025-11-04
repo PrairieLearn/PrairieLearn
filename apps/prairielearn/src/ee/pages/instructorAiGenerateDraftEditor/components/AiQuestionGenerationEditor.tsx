@@ -1,11 +1,11 @@
-import { useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 
 import { type Question } from '../../../../lib/db-types.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.types.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
 import { FinalizeModal } from './FinalizeModal.js';
-import { QuestionAndFilePreview } from './QuestionAndFilePreview.js';
+import { type NewVariantHandle, QuestionAndFilePreview } from './QuestionAndFilePreview.js';
 
 export function AiQuestionGenerationEditor({
   question,
@@ -29,6 +29,7 @@ export function AiQuestionGenerationEditor({
   showJobLogsLink: boolean;
 }) {
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const newVariantRef = useRef<NewVariantHandle>(null);
 
   return (
     <div class="app-content">
@@ -44,6 +45,7 @@ export function AiQuestionGenerationEditor({
         showJobLogsLink={showJobLogsLink}
         urlPrefix={urlPrefix}
         csrfToken={chatCsrfToken}
+        loadNewVariant={() => newVariantRef.current?.newVariant()}
       />
 
       <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs z-1">
@@ -90,6 +92,7 @@ export function AiQuestionGenerationEditor({
           richTextEditorEnabled={richTextEditorEnabled}
           questionContainerHtml={questionContainerHtml}
           csrfToken={csrfToken}
+          newVariantRef={newVariantRef}
         />
       </div>
       <FinalizeModal

@@ -428,6 +428,15 @@ function useShowSpinner({
       signal.value = false;
     }
 
+    // If we're in a tool part that's not yet ready, we don't want to show the spinner.
+    if (
+      lastPart &&
+      isToolPart(lastPart) &&
+      ['input-streaming', 'input-available'].includes(lastPart.state)
+    ) {
+      signal.value = false;
+    }
+
     const id = setTimeout(() => {
       signal.value = true;
     }, 800);
@@ -444,13 +453,16 @@ export function AiQuestionGenerationChat({
   showJobLogsLink,
   urlPrefix,
   csrfToken,
+  loadNewVariant,
 }: {
   initialMessages: QuestionGenerationUIMessage[];
   questionId: string;
   showJobLogsLink: boolean;
   urlPrefix: string;
   csrfToken: string;
+  loadNewVariant: () => void;
 }) {
+  const [loadNewVariantAfterChanges, setLoadNewVariantAfterChanges] = useState(true);
   const { messages, sendMessage, status, error } = useChat<QuestionGenerationUIMessage>({
     // Currently, we assume one chat per question. This should change in the future.
     id: questionId,
@@ -472,12 +484,32 @@ export function AiQuestionGenerationChat({
         return res;
       },
     }),
+    onFinish({ messages, message }) {
+      // We receive this event on page load, even when there's no active streaming in progress.
+      // In that case, we want to avoid immediately loading a new variant.
+      //
+      // TODO: is there a better way to detect this case? We could watch for changes to
+      // the `status` signal.
+      const isExistingMessage =
+        messages.length === initialMessages.length &&
+        message.parts.length === initialMessages.at(-1)?.parts.length;
+      if (isExistingMessage) return;
+
+      const didWriteFile = message.parts.some((part) => {
+        return (
+          isToolPart(part) && part.type === 'tool-writeFile' && part.state === 'output-available'
+        );
+      });
+
+      if (didWriteFile && loadNewVariantAfterChanges) {
+        loadNewVariant();
+      }
+    },
     onError(error) {
       console.error('Chat error:', error);
     },
   });
 
-  const [loadNewVariantAfterChanges, setLoadNewVariantAfterChanges] = useState(true);
   const showSpinner = useShowSpinner({ status, messages });
 
   const containerRef = useRef<HTMLDivElement>(null);
