@@ -12,8 +12,10 @@ import {
   queryRows,
 } from '@prairielearn/postgres';
 
+import { calculateCourseInstanceRolePermissions } from '../lib/authz-data.js';
 import {
   type Course,
+  EnumCourseInstanceRoleSchema,
   IdSchema,
   SubmissionSchema,
   type User,
@@ -213,24 +215,30 @@ export async function selectAndAuthzVariant(options: {
     ) {
       const authnUserPermissions = await callRow(
         'authz_course_instance',
-        [authn_user.user_id, variant.course_instance_id, is_administrator, new Date(), null],
-        z.object({ has_course_instance_permission_view: z.boolean() }),
+        [authn_user.user_id, variant.course_instance_id, new Date()],
+        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 
       const userPermissions = await callRow(
         'authz_course_instance',
-        [user.user_id, variant.course_instance_id, is_administrator, new Date(), null],
-        z.object({ has_course_instance_permission_view: z.boolean() }),
+        [user.user_id, variant.course_instance_id, new Date()],
+        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 
-      authnHasCourseInstancePermissionView =
-        authnUserPermissions.has_course_instance_permission_view;
-      hasCourseInstancePermissionView = userPermissions.has_course_instance_permission_view;
+      authnHasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
+        authnUserPermissions.course_instance_role,
+      ).has_course_instance_permission_view;
+      hasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
+        userPermissions.course_instance_role,
+      ).has_course_instance_permission_view;
     }
 
     // We'll only permit access if both the authenticated user and the
     // effective user have student data viewer permissions in the course instance.
-    if (!authnHasCourseInstancePermissionView || !hasCourseInstancePermissionView) {
+    if (
+      !is_administrator &&
+      (!authnHasCourseInstancePermissionView || !hasCourseInstancePermissionView)
+    ) {
       denyAccess();
     }
   }
