@@ -42,7 +42,7 @@
     "@types/async": "^3.2.25",
     "@types/dockerode": "^3.3.45",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^22.18.13",
+    "@types/node": "^22.19.0",
     "@types/tmp": "^0.2.6",
     "@vitest/coverage-v8": "^4.0.6",
     "nodemon": "^3.1.10",
