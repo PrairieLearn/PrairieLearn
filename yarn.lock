@@ -70,20 +70,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:2.0.5":
-  version: 2.0.5
-  resolution: "@ai-sdk/gateway@npm:2.0.5"
+"@ai-sdk/gateway@npm:2.0.6":
+  version: 2.0.6
+  resolution: "@ai-sdk/gateway@npm:2.0.6"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.15"
+    "@ai-sdk/provider-utils": "npm:3.0.16"
     "@vercel/oidc": "npm:3.0.3"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/95f2cf912a2a379dcee5a9ba96345e32a211a05f82eb36855d6ef8aeaa6054dc18f87166b11a3e908a028d394c6cd94684d8e0a6e1b95960cad6d77c18bb6395
+  checksum: 10c0/c9ab093dd8037281eb12d26498c20437d9252b0d6dd52ecbd1133557ddcd14a4690ff52746f9776e22252351bddc1c6d0ab84727fd11f21974f6f902d9e5ec90
   languageName: node
   linkType: hard
 
-"@ai-sdk/openai@npm:^2.0.60":
+"@ai-sdk/openai@npm:^2.0.62":
   version: 2.0.62
   resolution: "@ai-sdk/openai@npm:2.0.62"
   dependencies:
@@ -92,19 +92,6 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10c0/6f974fd8cedd29127d71d86bd882d589a7e08ba4529cf840d7e7b5570816726755ee748deba539ab326577107a275a2c3fca9d39d85c6dfcd8e98b7fdd7bdb95
-  languageName: node
-  linkType: hard
-
-"@ai-sdk/provider-utils@npm:3.0.15":
-  version: 3.0.15
-  resolution: "@ai-sdk/provider-utils@npm:3.0.15"
-  dependencies:
-    "@ai-sdk/provider": "npm:2.0.0"
-    "@standard-schema/spec": "npm:^1.0.0"
-    eventsource-parser: "npm:^3.0.6"
-  peerDependencies:
-    zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/0cb233c5b61f51961d745445b0d275de3eec3c0061b82ace90af22d0fe84d986da62d18b608c3ca2e0bb2badaeb1f81d24a225f99792af84b36f954031c3a791
   languageName: node
   linkType: hard
 
@@ -130,12 +117,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/react@npm:^2.0.86":
-  version: 2.0.86
-  resolution: "@ai-sdk/react@npm:2.0.86"
+"@ai-sdk/react@npm:^2.0.87":
+  version: 2.0.87
+  resolution: "@ai-sdk/react@npm:2.0.87"
   dependencies:
-    "@ai-sdk/provider-utils": "npm:3.0.15"
-    ai: "npm:5.0.86"
+    "@ai-sdk/provider-utils": "npm:3.0.16"
+    ai: "npm:5.0.87"
     swr: "npm:^2.2.5"
     throttleit: "npm:2.1.0"
   peerDependencies:
@@ -144,7 +131,7 @@ __metadata:
   peerDependenciesMeta:
     zod:
       optional: true
-  checksum: 10c0/11a22e581de1f408103896eac1ce7192694416bd33972714d6faec05a3319265367fbf445a4b0d9c6058d40e948529abd7bc770cb132babba8d55ebf487fe938
+  checksum: 10c0/ff39570b88b4fa13f41034af182131ce10078ee2d7a758f3b0d965a7cfbccfec25928deba5dff4a09374b43af83f5b5404d633e10c3df13e97ab40e1ee64da22
   languageName: node
   linkType: hard
 
@@ -4243,8 +4230,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
   dependencies:
-    "@ai-sdk/openai": "npm:^2.0.60"
-    "@ai-sdk/react": "npm:^2.0.86"
+    "@ai-sdk/openai": "npm:^2.0.62"
+    "@ai-sdk/react": "npm:^2.0.87"
     "@aws-sdk/client-auto-scaling": "npm:^3.922.0"
     "@aws-sdk/client-cloudwatch": "npm:^3.922.0"
     "@aws-sdk/client-ec2": "npm:^3.922.0"
@@ -4384,7 +4371,7 @@ __metadata:
     "@web3-storage/parse-link-header": "npm:^3.1.0"
     ace-builds: "npm:^1.43.4"
     ace-code: "npm:^1.43.4"
-    ai: "npm:^5.0.86"
+    ai: "npm:^5.0.87"
     ajv: "npm:^8.17.1"
     ansi_up: "npm:^6.0.6"
     archiver: "npm:^7.0.1"
@@ -8024,17 +8011,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.86, ai@npm:^5.0.86":
-  version: 5.0.86
-  resolution: "ai@npm:5.0.86"
+"ai@npm:5.0.87, ai@npm:^5.0.87":
+  version: 5.0.87
+  resolution: "ai@npm:5.0.87"
   dependencies:
-    "@ai-sdk/gateway": "npm:2.0.5"
+    "@ai-sdk/gateway": "npm:2.0.6"
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.15"
+    "@ai-sdk/provider-utils": "npm:3.0.16"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/f57f9c79df28acd3b2d4565048caa79945a53ee4f3060865ec3692623cae0e94ef66c0d8b137a290f447ee4d6c62aae1b800ce57434b91d1781bf1cdb09ffa1f
+  checksum: 10c0/feaa65f07bb96ac9ae7fa46d4758294f4d4af8af61cc6ab57687df9f8fbc2114a0cbcc3fcee08183af30baa44a7eb39cfbc2698733332c9b7d7b24f004053a29
   languageName: node
   linkType: hard
 
