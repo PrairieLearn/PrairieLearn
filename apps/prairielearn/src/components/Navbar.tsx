@@ -234,11 +234,11 @@ function UserDropdownMenu({
   if (
     navbarType === 'student' &&
     course_instance &&
-    (authz_data.authn_has_course_permission_preview ||
-      authz_data.authn_has_course_instance_permission_view)
+    (authz_data?.authn_has_course_permission_preview ||
+      authz_data?.authn_has_course_instance_permission_view)
   ) {
     displayedName = html`${displayedName} <span class="badge text-bg-warning">student</span>`;
-  } else if (authz_data.overrides?.length > 0) {
+  } else if (authz_data?.overrides?.length > 0) {
     displayedName = html`${displayedName} <span class="badge text-bg-warning">modified</span>`;
   } else if (navbarType === 'instructor') {
     displayedName = html`${displayedName} <span class="badge text-bg-success">staff</span>`;
