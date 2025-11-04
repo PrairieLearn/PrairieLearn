@@ -14,11 +14,17 @@ import type { FullAuthzData } from '../lib/authz-data-lib.js';
 import {
   type CalculateAuthDataSuccessResult,
   calculateAuthData,
-  calculateFallbackAuthData,
+  calculateCourseInstanceRolePermissions,
+  calculateCourseRolePermissions,
 } from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
-import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
+import {
+  type EnumCourseInstanceRole,
+  type EnumCourseRole,
+  InstitutionSchema,
+  UserSchema,
+} from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
@@ -49,7 +55,7 @@ function verifyAuthnAuthResult(
 ) {
   // Cannot request a user data override without instructor permissions
   if (
-    !authnAuthResult.has_course_permission_preview ||
+    !authnAuthResult.has_course_permission_preview &&
     !authnAuthResult.has_course_instance_permission_view
   ) {
     debug('requested overrides, but authn user does not have instructor permissions');
@@ -552,7 +558,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   const verifyAuthnAuthResultResult = verifyAuthnAuthResult(
     authnAuthResult,
-    res.locals.view_type || 'none',
+    res.locals.viewType || 'none',
   );
 
   if (!verifyAuthnAuthResultResult.success && verifyAuthnAuthResultResult.error !== null) {
@@ -630,17 +636,20 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     if (effectiveAuthResult === null) {
       return {
         authResult: {
-          ...(await calculateFallbackAuthData({
-            user: effectiveUserData.user,
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-            includeCourseInstance: req.params.course_instance_id !== null,
-            mode: authnAuthResult.mode,
-            mode_reason: authnAuthResult.mode_reason,
-          })),
-          user_with_requested_uid_has_instructor_access_to_course_instance:
-            effectiveUserData.is_instructor,
+          user: effectiveUserData.user,
+          is_administrator: false,
+          course_role: 'None' as EnumCourseRole,
           mode: authnAuthResult.mode,
           mode_reason: authnAuthResult.mode_reason,
+          ...calculateCourseRolePermissions('None'),
+          ...(req.params.course_instance_id
+            ? {
+                course_instance_role: 'None' as EnumCourseInstanceRole,
+                has_student_access: false,
+                has_student_access_with_enrollment: false,
+                ...calculateCourseInstanceRolePermissions('None'),
+              }
+            : {}),
         },
         course: authnCourse,
         institution: authnInstitution,
@@ -674,8 +683,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     };
   });
 
-  // If `effectiveCourse` is null, this is the fallback set of permissions.
-  // We don't need to check the permissions if this is the fallback set of permissions.
   const canBecomeEffectiveUserResult = canBecomeEffectiveUser(
     {
       authResult: authnAuthResult,
@@ -684,15 +691,12 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       courseInstance: authnCourseInstance,
     },
     {
-      // @ts-expect-error TODO fix the type error here
       authResult: effectiveAuthResult,
       course: effectiveCourse,
       institution: effectiveInstitution,
       courseInstance: effectiveCourseInstance,
     },
-    'user_with_requested_uid_has_instructor_access_to_course_instance' in effectiveAuthResult
-      ? effectiveAuthResult.user_with_requested_uid_has_instructor_access_to_course_instance
-      : null,
+    effectiveUserData?.is_instructor ?? null,
   );
   if (!canBecomeEffectiveUserResult.success) {
     clearOverrideCookies(res, overrides);
@@ -718,9 +722,47 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     authn_has_course_permission_view: authnAuthResult.has_course_permission_view,
     authn_has_course_permission_edit: authnAuthResult.has_course_permission_edit,
     authn_has_course_permission_own: authnAuthResult.has_course_permission_own,
+    ...run(() => {
+      if (!req.params.course_instance_id) {
+        return {};
+      }
+      return {
+        authn_course_instance_role: authnAuthResult.course_instance_role,
+        authn_has_student_access: authnAuthResult.has_student_access,
+        authn_has_student_access_with_enrollment:
+          authnAuthResult.has_student_access_with_enrollment,
+        authn_has_course_instance_permission_view:
+          authnAuthResult.has_course_instance_permission_view,
+        authn_has_course_instance_permission_edit:
+          authnAuthResult.has_course_instance_permission_edit,
+      };
+    }),
     // Effective user data
-    ...effectiveAuthResult,
+    user: effectiveAuthResult.user,
+    mode: effectiveAuthResult.mode,
+    mode_reason: effectiveAuthResult.mode_reason,
     is_administrator: effectiveUserData?.is_administrator ?? res.locals.is_administrator,
+    course_role: effectiveAuthResult.course_role,
+    has_course_permission_preview: effectiveAuthResult.has_course_permission_preview,
+    has_course_permission_view: effectiveAuthResult.has_course_permission_view,
+    has_course_permission_edit: effectiveAuthResult.has_course_permission_edit,
+    has_course_permission_own: effectiveAuthResult.has_course_permission_own,
+    ...run(() => {
+      if (!req.params.course_instance_id) {
+        return {};
+      }
+      return {
+        course_instance_role: effectiveAuthResult.course_instance_role,
+        has_student_access: effectiveAuthResult.has_student_access,
+        has_student_access_with_enrollment: effectiveAuthResult.has_student_access_with_enrollment,
+        has_course_instance_permission_view:
+          effectiveAuthResult.has_course_instance_permission_view,
+        has_course_instance_permission_edit:
+          effectiveAuthResult.has_course_instance_permission_edit,
+        user_with_requested_uid_has_instructor_access_to_course_instance:
+          effectiveUserData?.is_instructor ?? null,
+      };
+    }),
     // Other data
     overrides,
   };
