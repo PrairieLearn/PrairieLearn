@@ -585,8 +585,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       },
     });
 
-    // If the authn user were denied access, then we would return an error. Here,
-    // we simply return (without error). This allows the authn user to keep access
+    // This allows the authn user to keep access
     // to pages (e.g., the effective user page) for which only authn permissions
     // are required.
     if (effectiveAuthResult === null) {

@@ -115,11 +115,18 @@ export async function calculateAuthData({
     }
 
     if (rawAuthzData.course.example_course) {
-      if (resolvedOverrides.allow_example_course_override) {
+      // If the course is an example course and the override is allowed, return Viewer.
+      if (
+        resolvedOverrides.allow_example_course_override &&
+        // If we can step _up_ to Viewer, do so.
+        // We don't want to accidentally decrease the role of an existing user.
+        ['None', 'Previewer'].includes(rawAuthzData.permissions_course.course_role)
+      ) {
         return 'Viewer';
       }
-      // If the course is an example course and the override is not allowed, return None.
-      return 'None';
+
+      // Otherwise, return the actual role.
+      return rawAuthzData.permissions_course.course_role;
     }
 
     return rawAuthzData.permissions_course.course_role;
