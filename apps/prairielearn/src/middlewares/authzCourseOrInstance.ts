@@ -28,6 +28,7 @@ import {
 } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
+import type { Result } from '../lib/types.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -89,198 +90,155 @@ function verifyAuthnAuthResult(
 }
 
 /**
- * Verifies that the effective user has the permissions to override the authenticated user.
+ * Verifies that the authenticated user has sufficient permissions to become the effective user.
  *
- * @param authnAuthzData - The authorization data for the authenticated user.
- * @param effectiveAuthzData - The authorization data for the effective user.
- * @returns An error if the permissions are not valid, or null if the override is allowed.
+ * Security model:
+ * - Users cannot escalate to a higher permission level than they have
+ * - Student Data Editors can emulate students, but lower roles cannot
+ * - Administrators can emulate other administrators
+ * - Effective users must be enrolled or have instructor access to the course instance
+ *
+ * @param authnAuthzData - Authorization data for the authenticated (real) user
+ * @param effectiveAuthzData - Authorization data for the requested effective user
+ * @param effectiveUserHasInstructorAccessToCourseInstance - Whether the effective user has instructor-level access
+ * @returns Success status with error if validation fails
  */
 function canBecomeEffectiveUser(
   authnAuthzData: CalculateAuthDataSuccessResult,
   effectiveAuthzData: CalculateAuthDataSuccessResult,
   effectiveUserHasInstructorAccessToCourseInstance: boolean | null,
-): { success: false; error: AugmentedError } | { success: true; error: null } {
-  // The effective user is a Previewer and the authn_user is not
-  if (
-    !authnAuthzData.authResult.has_course_permission_preview &&
-    effectiveAuthzData.authResult.has_course_permission_preview
-  ) {
+): Result<void> {
+  const failedPermissionCheck = [
+    {
+      hasFailedCheck:
+        !authnAuthzData.authResult.has_course_permission_preview &&
+        effectiveAuthzData.authResult.has_course_permission_preview,
+      errorMessage: html`
+        <p>
+          You have tried to change the effective user to one who is a course previewer, when you are
+          not a course previewer. All requested changes to the effective user have been removed.
+        </p>
+      `,
+    },
+    {
+      hasFailedCheck:
+        !authnAuthzData.authResult.has_course_permission_view &&
+        effectiveAuthzData.authResult.has_course_permission_view,
+      errorMessage: html`
+        <p>
+          You have tried to change the effective user to one who is a course viewer, when you are
+          not a course viewer. All requested changes to the effective user have been removed.
+        </p>
+      `,
+    },
+    {
+      hasFailedCheck:
+        !authnAuthzData.authResult.has_course_permission_edit &&
+        effectiveAuthzData.authResult.has_course_permission_edit,
+      errorMessage: html`
+        <p>
+          You have tried to change the effective user to one who is a course editor, when you are
+          not a course editor. All requested changes to the effective user have been removed.
+        </p>
+      `,
+    },
+    {
+      hasFailedCheck:
+        !authnAuthzData.authResult.has_course_permission_own &&
+        effectiveAuthzData.authResult.has_course_permission_own,
+      errorMessage: html`
+        <p>
+          You have tried to change the effective user to one who is a course owner, when you are not
+          a course owner. All requested changes to the effective user have been removed.
+        </p>
+      `,
+    },
+    {
+      hasFailedCheck:
+        !authnAuthzData.authResult.has_course_instance_permission_view &&
+        effectiveAuthzData.authResult.has_course_instance_permission_view &&
+        effectiveAuthzData.courseInstance !== null,
+      errorMessage: html`
+        <p>
+          You have tried to change the effective user to one who is a student data viewer in the
+          course instance <code>${effectiveAuthzData.courseInstance!.short_name}</code>, when you
+          are not a student data viewer. All requested changes to the effective user have been
+          removed.
+        </p>
+      `,
+    },
+    {
+      hasFailedCheck:
+        !authnAuthzData.authResult.has_course_instance_permission_edit &&
+        effectiveAuthzData.authResult.has_course_instance_permission_edit &&
+        effectiveAuthzData.courseInstance !== null,
+      errorMessage: html`
+        <p>
+          You have tried to change the effective user to one who is a student data editor in the
+          course instance <code>${effectiveAuthzData.courseInstance!.short_name}</code>, when you
+          are not a student data editor. All requested changes to the effective user have been
+          removed.
+        </p>
+      `,
+    },
+    {
+      // The effective user is a student (with no course or course instance role prior to
+      // other overrides) with a different UID than the authn user (note UID is unique), and
+      // the authn user is not a Student Data Editor
+      hasFailedCheck:
+        effectiveAuthzData.authResult.user.uid !== authnAuthzData.authResult.user.uid && // effective uid is not the same as authn uid
+        effectiveAuthzData.authResult.has_student_access_with_enrollment && // effective user is enrolled with access
+        effectiveUserHasInstructorAccessToCourseInstance != null &&
+        !effectiveUserHasInstructorAccessToCourseInstance && // effective user is not an instructor (i.e., is a student)
+        !authnAuthzData.authResult.has_course_instance_permission_edit &&
+        effectiveAuthzData.courseInstance !== null,
+      errorMessage: html`
+        <p>
+          You have tried to change the effective user to one who is a student in the course instance
+          <code>${effectiveAuthzData.courseInstance!.short_name}</code>, when you do not have
+          permission to edit student data in this course instance. All requested changes to the
+          effective user have been removed.
+        </p>
+      `,
+    },
+    {
+      // The effective user is not enrolled in the course instance and is also not
+      // either a course instructor or a course instance instructor
+      //
+      // Note that we skip this check if the effective user is the same as the
+      // authenticated user, since an instructor may want to view their course
+      // as a student without enrolling in their own course.
+      hasFailedCheck:
+        !idsEqual(
+          effectiveAuthzData.authResult.user.user_id,
+          authnAuthzData.authResult.user.user_id,
+        ) &&
+        !effectiveAuthzData.authResult.has_course_permission_preview &&
+        !effectiveAuthzData.authResult.has_course_instance_permission_view &&
+        !effectiveAuthzData.authResult.has_student_access_with_enrollment &&
+        effectiveAuthzData.courseInstance !== null,
+      errorMessage: html`
+        <p>
+          You have tried to change the effective user to one who is not enrolled in this course
+          instance. All required changes to the effective user have been removed.
+        </p>
+      `,
+    },
+  ].find((check) => check.hasFailedCheck);
+
+  if (failedPermissionCheck) {
     return {
       success: false,
       error: new AugmentedError('Access denied', {
         status: 403,
-        info: html`
-          <p>
-            You have tried to change the effective user to one who is a course previewer, when you
-            are not a course previewer. All requested changes to the effective user have been
-            removed.
-          </p>
-        `,
+        info: failedPermissionCheck.errorMessage,
       }),
     };
   }
 
-  // The effective user is a Viewer and the authn_user is not
-  if (
-    !authnAuthzData.authResult.has_course_permission_view &&
-    effectiveAuthzData.authResult.has_course_permission_view
-  ) {
-    return {
-      success: false,
-      error: new AugmentedError('Access denied', {
-        status: 403,
-        info: html`
-          <p>
-            You have tried to change the effective user to one who is a course viewer, when you are
-            not a course viewer. All requested changes to the effective user have been removed.
-          </p>
-        `,
-      }),
-    };
-  }
-
-  // The effective user is an Editor and the authn_user is not
-  if (
-    !authnAuthzData.authResult.has_course_permission_edit &&
-    effectiveAuthzData.authResult.has_course_permission_edit
-  ) {
-    return {
-      success: false,
-      error: new AugmentedError('Access denied', {
-        status: 403,
-        info: html`
-          <p>
-            You have tried to change the effective user to one who is a course editor, when you are
-            not a course editor. All requested changes to the effective user have been removed.
-          </p>
-        `,
-      }),
-    };
-  }
-
-  // The effective user is an Owner and the authn_user is not
-  if (
-    !authnAuthzData.authResult.has_course_permission_own &&
-    effectiveAuthzData.authResult.has_course_permission_own
-  ) {
-    return {
-      success: false,
-      error: new AugmentedError('Access denied', {
-        status: 403,
-        info: html`
-          <p>
-            You have tried to change the effective user to one who is a course owner, when you are
-            not a course owner. All requested changes to the effective user have been removed.
-          </p>
-        `,
-      }),
-    };
-  }
-
-  if (effectiveAuthzData.courseInstance) {
-    // The effective user is a Student Data Viewer and the authn_user is not
-    if (
-      !authnAuthzData.authResult.has_course_instance_permission_view &&
-      effectiveAuthzData.authResult.has_course_instance_permission_view
-    ) {
-      return {
-        success: false,
-        error: new AugmentedError('Access denied', {
-          status: 403,
-          info: html`
-            <p>
-              You have tried to change the effective user to one who is a student data viewer in the
-              course instance <code>${effectiveAuthzData.courseInstance.short_name}</code>, when you
-              are not a student data viewer. All requested changes to the effective user have been
-              removed.
-            </p>
-          `,
-        }),
-      };
-    }
-
-    // The effective user is a Student Data Editor and the authn_user is not
-    if (
-      !authnAuthzData.authResult.has_course_instance_permission_edit &&
-      effectiveAuthzData.authResult.has_course_instance_permission_edit
-    ) {
-      return {
-        success: false,
-        error: new AugmentedError('Access denied', {
-          status: 403,
-          info: html`
-            <p>
-              You have tried to change the effective user to one who is a student data editor in the
-              course instance <code>${effectiveAuthzData.courseInstance.short_name}</code>, when you
-              are not a student data editor. All requested changes to the effective user have been
-              removed.
-            </p>
-          `,
-        }),
-      };
-    }
-
-    // The effective user is a student (with no course or course instance role prior to
-    // other overrides) with a different UID than the authn user (note UID is unique), and
-    // the authn user is not a Student Data Editor
-    if (
-      effectiveAuthzData.authResult.user.uid !== authnAuthzData.authResult.user.uid && // effective uid is not the same as authn uid
-      effectiveAuthzData.authResult.has_student_access_with_enrollment && // effective user is enrolled with access
-      effectiveUserHasInstructorAccessToCourseInstance != null &&
-      !effectiveUserHasInstructorAccessToCourseInstance && // effective user is not an instructor (i.e., is a student)
-      !authnAuthzData.authResult.has_course_instance_permission_edit
-    ) {
-      // authn user is not a Student Data Editor
-      debug('cannot emulate student if not student data editor');
-      return {
-        success: false,
-        error: new AugmentedError('Access denied', {
-          status: 403,
-          info: html`
-            <p>
-              You have tried to change the effective user to one who is a student in the course
-              instance
-              <code>${effectiveAuthzData.courseInstance.short_name}</code>, when you do not have
-              permission to edit student data in this course instance. All requested changes to the
-              effective user have been removed.
-            </p>
-          `,
-        }),
-      };
-    }
-
-    // The effective user is not enrolled in the course instance and is also not
-    // either a course instructor or a course instance instructor
-    //
-    // Note that we skip this check if the effective user is the same as the
-    // authenticated user, since an instructor may want to view their course
-    // as a student without enrolling in their own course.
-    if (
-      !idsEqual(
-        effectiveAuthzData.authResult.user.user_id,
-        authnAuthzData.authResult.user.user_id,
-      ) &&
-      !effectiveAuthzData.authResult.has_course_permission_preview &&
-      !effectiveAuthzData.authResult.has_course_instance_permission_view &&
-      !effectiveAuthzData.authResult.has_student_access_with_enrollment
-    ) {
-      return {
-        success: false,
-        error: new AugmentedError('Access denied', {
-          status: 403,
-          info: html`
-            <p>
-              You have tried to change the effective user to one who is not enrolled in this course
-              instance. All required changes to the effective user have been removed.
-            </p>
-          `,
-        }),
-      };
-    }
-  }
   return {
     success: true,
-    error: null,
+    value: undefined,
   };
 }
 
@@ -288,7 +246,7 @@ async function getOverrideUserData(
   requestedUid: string,
   is_administrator: boolean,
   courseInstanceId: string | null,
-): Promise<{ success: false; error: AugmentedError } | { success: true; userData: SelectUser }> {
+): Promise<Result<SelectUser>> {
   // Verify requested UID
   const userData = await sqldb.queryOptionalRow(
     sql.select_user,
@@ -360,7 +318,7 @@ async function getOverrideUserData(
 
   return {
     success: true,
-    userData,
+    value: userData,
   };
 
   // FIXME: also override institution?
@@ -554,7 +512,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       clearOverrideCookies(res, overrides);
       throw result.error;
     }
-    return result.userData;
+    return result.value;
   });
 
   const {

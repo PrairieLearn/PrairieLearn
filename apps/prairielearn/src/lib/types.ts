@@ -52,3 +52,5 @@ export function assertNever(value: never): never {
   // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   throw new Error(`Unexpected value: ${value}`);
 }
+
+export type Result<T, E = Error> = { success: true; value: T } | { success: false; error: E };

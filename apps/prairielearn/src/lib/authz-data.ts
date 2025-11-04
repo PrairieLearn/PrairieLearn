@@ -30,15 +30,6 @@ async function selectAuthzData({
   ip: string | null;
   req_date: Date;
 }) {
-  /**
-   * IF is_administrator THEN
-   * course_instance_role := 'Student Data Editor';
-   * END IF;
-   *
-   * IF req_course_instance_role IS NOT NULL THEN
-   * course_instance_role := req_course_instance_role;
-   * END IF;
-   */
   return sqldb.queryOptionalRow(
     sql.select_authz_data,
     {
@@ -150,8 +141,10 @@ export async function calculateAuthData({
   // This block replicates the old behavior of selectAuthzData.
   if (
     course_role === 'None' &&
-    course_instance_role === 'None' &&
-    !rawAuthzData.permissions_course_instance.has_student_access
+    (isCourseInstance
+      ? course_instance_role === 'None' &&
+        !rawAuthzData.permissions_course_instance.has_student_access
+      : true)
   ) {
     return {
       authResult: null,
