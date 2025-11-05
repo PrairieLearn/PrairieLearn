@@ -28,6 +28,8 @@ const ZodStringToJson = z.preprocess((val) => {
 const ZodStringToArray = z.preprocess((val) => {
   if (val === '' || val == null) return [];
   // Parse PostgreSQL array format: {uid1,uid2,uid3}
+  // Note: This parser assumes UIDs don't contain special characters like commas or braces.
+  // This is safe for PrairieLearn UIDs but may not work for arbitrary PostgreSQL arrays.
   const str = String(val).trim();
   if (str.startsWith('{') && str.endsWith('}')) {
     const inner = str.slice(1, -1);
@@ -242,16 +244,22 @@ export async function uploadSubmissions(
 }
 
 interface ProcessingContext {
-  job: any;
+  job: {
+    info: (msg: string) => void;
+    error: (msg: string) => void;
+    verbose: (msg: string) => void;
+  };
   assessment_id: string;
   course_id: string;
   course_instance_id: string;
   authn_user_id: string;
   maxPoints: number;
-  assessmentQuestions: any[];
-  selectUser: (uid: string) => Promise<any>;
-  selectQuestion: (qid: string) => Promise<any>;
-  selectAssessmentQuestion: (question_id: string) => Promise<any>;
+  assessmentQuestions: Awaited<ReturnType<typeof selectAssessmentQuestions>>;
+  selectUser: typeof selectOrInsertUserByUid;
+  selectQuestion: (qid: string) => ReturnType<typeof selectQuestionByQid>;
+  selectAssessmentQuestion: (
+    question_id: string,
+  ) => Promise<z.infer<typeof AssessmentQuestionSchema>>;
   getOrInsertAssessmentInstance: ReturnType<typeof makeDedupedInserter<string>>;
   getOrInsertInstanceQuestion: ReturnType<typeof makeDedupedInserter<string>>;
   getOrInsertVariant: ReturnType<typeof makeDedupedInserter<string>>;
@@ -433,11 +441,8 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
     throw new Error(`Group "${groupName}" has no usernames`);
   }
 
-  // Create users for all group members
-  const users: Awaited<ReturnType<typeof selectUser>>[] = [];
-  for (const uid of usernames) {
-    users.push(await selectUser(uid));
-  }
+  // Create users for all group members concurrently
+  const users = await Promise.all(usernames.map((uid) => selectUser(uid)));
 
   // Get the group ID - either existing or newly created
   // First, try to find existing group
