@@ -409,6 +409,10 @@ export function RubricSettings({
         window.resetInstructorGradingPanel();
         await window.mathjaxTypeset();
       }
+
+      // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed
+      // after saving. Suppose we start with setting A, and update it to B and save it. Ideally we would expect a "Discard changes"
+      // to reset to B instead of A. We are updating the default values with B so "Discard changes" would reset correctly.
       const rubricData = data.rubric_data as RubricData | null;
       const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
       const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
@@ -419,7 +423,7 @@ export function RubricSettings({
             ? rubricItemsWithDisagreementCount[itemA.id]
             : null,
       }));
-      // Need to set the default values so a "Discard changes" would not reset to the state before the save
+
       defaultRubricItems.current = rubricItemDataMerged;
       defaultReplaceAutoPoints.current =
         rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
