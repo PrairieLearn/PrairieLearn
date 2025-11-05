@@ -148,12 +148,7 @@ export async function constructCourseOrInstanceContext({
     return rawAuthzData.permissions_course_instance.course_instance_role;
   });
 
-  const mode = run(() => {
-    if (resolvedOverrides.req_mode != null) {
-      return resolvedOverrides.req_mode;
-    }
-    return rawAuthzData.mode;
-  });
+  const mode = resolvedOverrides.req_mode ?? rawAuthzData.mode
 
   const hasCourseAccess = course_role !== 'None';
   const hasCourseInstanceAccess =
