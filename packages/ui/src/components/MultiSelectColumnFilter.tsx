@@ -33,10 +33,7 @@ export function MultiSelectColumnFilter<T extends readonly any[]>({
   columnValuesFilter: T[number][];
   setColumnValuesFilter: (value: T[number][]) => void;
 }) {
-  const selected = useMemo(
-    () => new Set(columnValuesFilter),
-    [columnValuesFilter],
-  );
+  const selected = useMemo(() => new Set(columnValuesFilter), [columnValuesFilter]);
 
   const toggleSelected = (value: T[number]) => {
     const set = new Set(selected);

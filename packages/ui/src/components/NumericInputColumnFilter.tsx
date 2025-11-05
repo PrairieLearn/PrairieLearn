@@ -31,7 +31,10 @@ export function NumericInputColumnFilter({
     <Dropdown align="end">
       <Dropdown.Toggle
         variant="link"
-        class={clsx('text-muted p-0 ms-2', hasActiveFilter && (isInvalid ? 'text-warning' : 'text-primary'))}
+        class={clsx(
+          'text-muted p-0 ms-2',
+          hasActiveFilter && (isInvalid ? 'text-warning' : 'text-primary'),
+        )}
         id={`filter-${columnId}`}
         aria-label={`Filter ${columnLabel.toLowerCase()}`}
         title={`Filter ${columnLabel.toLowerCase()}`}
@@ -39,7 +42,11 @@ export function NumericInputColumnFilter({
         <i
           class={clsx(
             'bi',
-            isInvalid ? 'bi-exclamation-triangle' : hasActiveFilter ? 'bi-funnel-fill' : 'bi-funnel',
+            isInvalid
+              ? 'bi-exclamation-triangle'
+              : hasActiveFilter
+                ? 'bi-funnel-fill'
+                : 'bi-funnel',
           )}
           aria-hidden="true"
         />
