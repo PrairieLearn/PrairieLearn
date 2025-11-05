@@ -1,4 +1,4 @@
--- BLOCK select_authz_data
+-- BLOCK select_course_or_instance_context_data
 SELECT
   access_mode.mode,
   access_mode.mode_reason,
