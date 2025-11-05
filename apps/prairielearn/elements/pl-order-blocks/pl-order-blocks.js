@@ -14,6 +14,7 @@ window.PLOrderBlocks = function (uuid, options) {
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
+    if (blocks.length === 0) return;
 
     blocks.forEach((block) => block.setAttribute('tabindex', '-1'));
     blocks[0].setAttribute('tabindex', '0'); // only the first block in the pl-order-blocks element can be focused by tabbing through
@@ -324,7 +325,9 @@ window.PLOrderBlocks = function (uuid, options) {
     items: '.pl-order-block:not(.nodrag)',
     // We add `a` to the default list of tags to account for help
     // popover triggers.
-    cancel: 'input,textarea,button,select,option,a',
+    cancel:
+      baseCancel +
+      ', .pl-order-block-content.is-scrollable, .pl-order-block-content.is-scrollable *',
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
     create() {
@@ -357,12 +360,6 @@ window.PLOrderBlocks = function (uuid, options) {
     },
   };
 
-  // Touch-specific adjustments to sortable options
-  if (isTouchDevice) {
-    sortableOpts.cancel = baseCancel + ', .pl-order-block-content.is-scrollable';
-    sortableOpts.handle = '.pl-order-block-handle';
-  }
-
   $(sortables).sortable(sortableOpts);
 
   // If a user is on a touch device, we need to distinguish between
@@ -377,11 +374,9 @@ window.PLOrderBlocks = function (uuid, options) {
         content.scrollWidth > content.clientWidth || content.scrollHeight > content.clientHeight;
 
       if (canScroll) {
-        // Let native scrolling happen; block Sortable/touch-punch from starting a drag
+        // Block drag-and-drop when the user is trying to scroll
+        e.stopPropagation();
         e.stopImmediatePropagation();
-      } else {
-         // No scrollbar so allow drag from anywhere
-        $(sortables).sortable('option', 'handle', false);
       }
     };
 
@@ -391,10 +386,11 @@ window.PLOrderBlocks = function (uuid, options) {
       capture: true,
       passive: true,
     });
+
     // Touch devices
     // Prevent drag-and-drop from interfering with scrolling
     fullContainer.addEventListener('touchstart', gateDragVsScroll, {
-      capture: true, 
+      capture: true,
       passive: true,
     });
 
@@ -404,9 +400,11 @@ window.PLOrderBlocks = function (uuid, options) {
       capture: true,
     });
   }
-  
-  // Update scrollable content markings on resize
-  window.addEventListener('resize', () => markScrollableContent(fullContainer));
+
+  const resizeHandler = () => markScrollableContent(fullContainer);
+  window.addEventListener('resize', resizeHandler);
+  // after addEventListener
+  this.destroy = () => window.removeEventListener('resize', resizeHandler);
   initializeKeyboardHandling();
 
   if (enableIndentation) {
