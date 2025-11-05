@@ -8,24 +8,22 @@ import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { type NewsItem } from '../lib/db-types.js';
-import * as jsonLoad from '../lib/json-load.js';
-import * as schemas from '../schemas/index.js';
+import { NewsItemJsonSchema, type NewsItemJson } from '../schemas/index.js';
 
 const DIRECTORY_REGEX = /^([0-9]+)_.+$/;
 
 async function loadNewsItems() {
-  const news_items: NewsItem[] = [];
+  const news_items: (NewsItemJson & { directory: string; index: string })[] = [];
   const dirs = await fs.readdir(import.meta.dirname);
   for (const dir of dirs) {
     // Skip anything that doesn't match the expected directory name format.
     const match = DIRECTORY_REGEX.exec(dir);
     if (!match) continue;
 
-    const info = await jsonLoad.readInfoJSON(
-      path.join(import.meta.dirname, dir, 'info.json'),
-      schemas.infoNewsItem,
-    );
+    const rawInfo = await fs.readFile(path.join(import.meta.dirname, dir, 'info.json'), {
+      encoding: 'utf8',
+    });
+    const info = NewsItemJsonSchema.parse(JSON.parse(rawInfo));
 
     news_items.push({
       ...info,

@@ -7,8 +7,7 @@ import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 describe('Exam assessment with grade rate set', { timeout: 60_000 }, function () {
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 

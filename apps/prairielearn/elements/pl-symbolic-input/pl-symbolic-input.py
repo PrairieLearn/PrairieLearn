@@ -1,6 +1,7 @@
 import random
 import re
 from enum import Enum
+from sys import get_int_max_str_digits
 
 import chevron
 import lxml.html
@@ -352,15 +353,21 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Get submitted answer or return parse_error if it does not exist
     submitted_answer = data["submitted_answers"].get(name, None)
+
     if formula_editor:
-        a_sub = format_formula_editor_submission_for_sympy(
+        submitted_answer = format_formula_editor_submission_for_sympy(
             submitted_answer,
             allow_trig,
             variables,
             custom_functions,
         )
-    else:
-        a_sub = submitted_answer
+
+    # Pre-processing to make submission parseable by SymPy
+    a_sub, error_msg = format_submission_for_sympy(submitted_answer)
+    if error_msg is not None:
+        data["format_errors"][name] = error_msg
+        data["submitted_answers"][name] = None
+        return
 
     if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
@@ -427,6 +434,50 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed)}$$"
         )
         data["submitted_answers"][name] = None
+
+
+def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None]:
+    """
+    Format submission to be compatible with SymPy.
+
+    Converts absolute value bars to abs() function calls, handling nested cases.
+
+    Examples:
+        "|x|" becomes "abs(x)"
+        "||x|+y|" becomes "abs(abs(x)+y)"
+
+    Args:
+        sub: The text submission to format
+
+    Returns:
+        A tuple of (Formatted text with absolute value bars replaced by abs() calls, or None if input is None, and an error message if there is an error)
+    """
+    original_sub = sub
+    if sub is None:
+        return None, None
+
+    while True:
+        # Find matches of |...| where:
+        # when ignoring spaces, it either:
+        # - starts with letter/number/opening paren/plus/minus and ends with letter/number/closing/exclamation mark paren
+        # - is a single leter/number
+        match = re.search(
+            r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)",
+            sub,
+        )
+        if not match:
+            break
+
+        content = match.group(0)[1:-1]  # Strip the bars
+        sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
+
+    if "|" in sub:
+        return (
+            None,
+            f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_sub}</code>.",
+        )
+
+    return sub, None
 
 
 def format_formula_editor_submission_for_sympy(
@@ -653,7 +704,23 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         return a_tru_sympy.equals(a_sub_sympy) is True, None
 
-    pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
+    try:
+        pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
+    except ValueError as e:
+        # We only want to catch the integer string conversion limit ValueError.
+        # Others might be outside of the student's control and should error like normal.
+        #
+        # Entering an expression like 2^(20000*x) will cause this error, despite the fact
+        # an expression like 2^(14000x) will render the exponent as expected. Sympy
+        # expands constants internally, so these expressions evaluate to ((2^c)^x),
+        # then 2^c is evaluated and converted to a string.
+        if "integer string conversion" in str(e):
+            data["format_errors"][name] = (
+                f"Your expression expands integers longer than {get_int_max_str_digits()} digits, "
+                "try a simpler expression."
+            )
+        else:
+            raise
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:

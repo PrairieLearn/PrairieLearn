@@ -42,7 +42,7 @@ router.get(
   }),
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     const courseStaff = await selectCourseInstanceGraderStaff({
-      course_instance_id: res.locals.course_instance.id,
+      course_instance: res.locals.course_instance,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const rubric_data = await manualGrading.selectRubricData({
@@ -215,7 +215,7 @@ router.post(
           : [req.body.instance_question_id];
         if (action_data?.assigned_grader != null) {
           const courseStaff = await selectCourseInstanceGraderStaff({
-            course_instance_id: res.locals.course_instance.id,
+            course_instance: res.locals.course_instance,
           });
           if (!courseStaff.some((staff) => idsEqual(staff.user_id, action_data.assigned_grader))) {
             throw new error.HttpStatusError(

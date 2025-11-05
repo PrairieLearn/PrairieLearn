@@ -172,7 +172,7 @@ router.post(
       if (assessmentInfo.module != null || req.body.module !== 'Default') {
         assessmentInfo.module = req.body.module;
       }
-      const normalizedText = req.body.text?.replace(/\r\n/g, '\n');
+      const normalizedText = req.body.text?.replaceAll('\r\n', '\n');
       assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, normalizedText, '');
       assessmentInfo.allowIssueReporting = propertyValueWithDefault(
         assessmentInfo.allowIssueReporting,
@@ -202,7 +202,7 @@ router.post(
         );
         assessmentInfo.honorCode = propertyValueWithDefault(
           assessmentInfo.honorCode,
-          req.body.honor_code?.replace(/\r\n/g, '\n').trim(),
+          req.body.honor_code?.replaceAll('\r\n', '\n').trim(),
           '',
         );
       }

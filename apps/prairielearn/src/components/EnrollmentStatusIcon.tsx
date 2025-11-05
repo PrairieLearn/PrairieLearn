@@ -33,7 +33,8 @@ function getFriendlyStatus(status: EnumEnrollmentStatus): string {
     case 'joined':
       return 'Joined';
     case 'removed':
-      return 'Removed';
+      // TODO: See https://github.com/PrairieLearn/PrairieLearn/issues/13205 for a DB-level fix.
+      return 'Left';
     case 'rejected':
       return 'Rejected';
     case 'blocked':
