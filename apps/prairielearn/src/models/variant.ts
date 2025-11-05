@@ -12,7 +12,7 @@ import {
   queryRows,
 } from '@prairielearn/postgres';
 
-import { calculateCourseInstanceRolePermissions } from '../lib/authz-data.js';
+import { calculateCourseInstanceRolePermissions } from '../lib/authz-data-lib.js';
 import {
   type Course,
   EnumCourseInstanceRoleSchema,
