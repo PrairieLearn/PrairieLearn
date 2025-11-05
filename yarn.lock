@@ -4382,6 +4382,7 @@ __metadata:
     cheerio: "npm:^1.1.2"
     clipboard: "npm:^2.0.11"
     clsx: "npm:^2.1.1"
+    cookie: "npm:^0.7.2"
     cookie-parser: "npm:^1.4.7"
     cropperjs: "npm:^2.1.0"
     crypto-js: "npm:^4.2.0"
