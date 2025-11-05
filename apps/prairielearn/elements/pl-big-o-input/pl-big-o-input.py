@@ -293,7 +293,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             weight=weight,
         )
     except ValueError as e:
-        # See pl-symbolic-input.py for why we catch this error in this way.
+        # See https://github.com/PrairieLearn/PrairieLearn/pull/13178 for more context as to why we catch this error.
         if "integer string conversion" in str(e):
             data["format_errors"][name] = (
                 f"Your expression expands integers longer than {get_int_max_str_digits()} digits, "
