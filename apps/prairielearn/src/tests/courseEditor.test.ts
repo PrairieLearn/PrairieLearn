@@ -440,7 +440,7 @@ describe('test course editor', { timeout: 20_000 }, function () {
     beforeAll(createSharedCourse);
 
     beforeAll(async () => {
-      await updateCourseSharingName({ course_id: 2, sharing_name: 'test-course' });
+      await updateCourseSharingName({ course_id: '2', sharing_name: 'test-course' });
     });
 
     describe('verify edits', function () {

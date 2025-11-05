@@ -23,6 +23,7 @@ export const NavPageSchema = z
     'assessments',
     'gradebook',
     'assessment_instance',
+    'workspace',
     'effective',
     'lti13_course_navigation',
     'error',

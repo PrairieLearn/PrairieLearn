@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/config",
-  "version": "3.1.10",
+  "version": "3.1.11",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -20,7 +20,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
     "@types/lodash": "^4.17.20",
-    "@types/node": "^22.18.13",
+    "@types/node": "^22.19.0",
     "@vitest/coverage-v8": "^4.0.6",
     "tmp-promise": "^3.0.3",
     "tsx": "^4.20.6",
