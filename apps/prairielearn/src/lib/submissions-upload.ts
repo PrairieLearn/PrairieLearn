@@ -10,6 +10,7 @@ import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
+import { selectAssessmentQuestions } from './assessment-question.js';
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
 import { createCsvParser } from './csv.js';
 import { AssessmentQuestionSchema, IdSchema, RubricItemSchema } from './db-types.js';
@@ -116,6 +117,16 @@ export async function uploadSubmissions(
     const getOrInsertVariant = makeDedupedInserter<string>();
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
+
+    // Calculate the maximum number of points attainable for the assessment.
+    const assessmentQuestions = await selectAssessmentQuestions({
+      assessment_id,
+    });
+
+    const maxPoints = assessmentQuestions.reduce(
+      (sum, assessmentQuestion) => sum + (assessmentQuestion.assessment_question.max_points ?? 0),
+      0,
+    );
     const csvStream = streamifier.createReadStream(csvFile.buffer, {
       encoding: 'utf8',
     });
@@ -213,7 +224,7 @@ export async function uploadSubmissions(
 
           await sqldb.execute(sql.update_assessment_instance_max_points, {
             assessment_instance_id,
-            max_points: assessmentQuestion.max_points,
+            max_points: maxPoints,
           });
 
           // This is a best-effort process: we attempt to match uploaded rubric items to an
