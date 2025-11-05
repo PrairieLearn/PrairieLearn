@@ -415,7 +415,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  // If this is an example course and we are not in development mode, only allow overrides if the user is an administrator.
+  // If this is an example course, only allow overrides if the user is an administrator or we are in development mode.
   if (
     res.locals.course.example_course &&
     !config.devMode &&
