@@ -48,6 +48,7 @@ import {
 import * as namedLocks from '@prairielearn/named-locks';
 import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
@@ -2211,7 +2212,16 @@ if (isHMR && isServerPending()) {
   throw new Error('The server was restarted, but it was not fully initialized.');
 }
 
-if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
+const shouldStartServer = run(() => {
+  if (process.env.PL_START_SERVER === 'true') return true;
+  if (process.env.PL_START_SERVER === 'false') return false;
+  if (!config.startServer) return false;
+  if (esMain(import.meta)) return true;
+  if (isHMR && !isServerInitialized()) return true;
+  return false;
+});
+
+if (shouldStartServer) {
   try {
     setServerState('pending');
     logger.verbose('PrairieLearn server start');
@@ -2230,6 +2240,18 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // instead of the default locations.
     if ('config' in argv) {
       configPaths = [argv.config];
+    }
+
+    // If `PL_CONFIG_PATH` is set, it takes precedence over all other config paths.
+    if (process.env.PL_CONFIG_PATH) {
+      // If the path is specified, it must exist. We'll fail fast if it doesn't.
+      if (!fs.existsSync(process.env.PL_CONFIG_PATH)) {
+        throw new Error(
+          `Config file specified by PL_CONFIG_PATH does not exist: ${process.env.PL_CONFIG_PATH}`,
+        );
+      }
+
+      configPaths = [process.env.PL_CONFIG_PATH];
     }
 
     // Load config immediately so we can use it configure everything else.
@@ -2668,9 +2690,11 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
   });
 
   setServerState('initialized');
-  logger.info('PrairieLearn server ready, press Control-C to quit');
-  if (config.devMode) {
-    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+  if (process.env.NODE_ENV !== 'test') {
+    logger.info('PrairieLearn server ready, press Control-C to quit');
+    if (config.devMode) {
+      logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+    }
   }
 } else if (isHMR && isServerInitialized()) {
   // We need to re-initialize the server when we are running in HMR mode.
