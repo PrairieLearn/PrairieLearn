@@ -44,6 +44,8 @@ export function PageLayout({
     fullWidth?: boolean;
     /** Whether the main container should have a bottom padding of pb-4 in Bootstrap. */
     paddingBottom?: boolean;
+    /** Whether the main container should have no left and right padding in Bootstrap. */
+    paddingSides?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
     /** Enables an htmx extension for an element and all its children */
@@ -75,6 +77,7 @@ export function PageLayout({
   const resolvedOptions = {
     hxExt: '',
     paddingBottom: true,
+    paddingSides: true,
     enableEnhancedNav: true,
     dataAttributes: {},
     enableNavbar: true,
@@ -220,6 +223,9 @@ export function PageLayout({
                         ? 'container-fluid'
                         : 'container'
                       : null,
+                    resolvedOptions.paddingBottom && 'pb-4',
+                    !resolvedOptions.paddingSides && 'px-0',
+                    // TODO: replace `paddingSides` with `contentPadding`?
                     resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
                     resolvedOptions.fullHeight && 'h-100',
                     resolvedOptions.contentPadding && 'pt-3',
@@ -269,12 +275,18 @@ export function PageLayout({
             id="content"
             class="
             ${clsx(
+<<<<<<< HEAD
               resolvedOptions.contentPadding
                 ? resolvedOptions.fullWidth
                   ? 'container-fluid'
                   : 'container'
                 : null,
               resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
+=======
+              resolvedOptions.fullWidth ? 'container-fluid' : 'container',
+              resolvedOptions.paddingBottom && 'pb-4',
+              !resolvedOptions.paddingSides && 'px-0',
+>>>>>>> master
               resolvedOptions.fullHeight && 'flex-grow-1',
             )}
           "
