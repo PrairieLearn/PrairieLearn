@@ -82,8 +82,6 @@ jobs:
           --env HOST_JOBS_DIR=/tmp/prairielearn \
           --name=test_container \
           prairielearn/prairielearn:${{ env.COMMIT_SHA }} /bin/bash
-        # We don't install playwright into the Docker image since it's a large
-        # dependency and we don't need it for the smoke tests.
       - name: Run the JavaScript tests
         run: docker exec --env GITHUB_ACTIONS=true test_container sh -c "make -s -C /PrairieLearn test-prairielearn-docker-smoke-tests"
         # The JS tests hang relatively often when someone makes a mistake in a PR,
