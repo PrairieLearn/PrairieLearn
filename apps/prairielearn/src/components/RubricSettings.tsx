@@ -294,11 +294,7 @@ export function RubricSettings({
 
   const copyMustachePattern = async (e: Event, param: string) => {
     const button = e.currentTarget as HTMLElement;
-    try {
-      await navigator.clipboard.writeText(param);
-    } catch {
-      return;
-    }
+    await navigator.clipboard.writeText(param);
     button.animate(
       [
         { backgroundColor: '', color: '', offset: 0 },
