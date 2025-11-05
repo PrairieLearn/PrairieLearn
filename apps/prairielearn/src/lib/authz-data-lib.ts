@@ -77,8 +77,8 @@ export interface DangerousSystemAuthzData {
   };
 }
 
-export interface CalculateAuthDataSuccessResult {
-  authResult: {
+export interface ConstructedCourseOrInstanceSuccessContext {
+  authzData: {
     user: User;
 
     course_role: EnumCourseRole;
@@ -101,17 +101,17 @@ export interface CalculateAuthDataSuccessResult {
   courseInstance: CourseInstance | null;
 }
 
-export type CalculateAuthDataResult =
+export type ConstructedCourseOrInstanceContext =
   | {
-      authResult: null;
+      authzData: null;
       course: null;
       institution: null;
       courseInstance: null;
     }
-  | CalculateAuthDataSuccessResult;
+  | ConstructedCourseOrInstanceSuccessContext;
 
 /** The full authz data from a database query. This is NOT what is on res.locals. */
-export const FullAuthzDataSchema = z.object({
+export const CourseOrInstanceContextDataSchema = z.object({
   mode: EnumModeSchema,
   mode_reason: EnumModeReasonSchema,
   course: CourseSchema,
@@ -120,10 +120,10 @@ export const FullAuthzDataSchema = z.object({
   permissions_course: SprocAuthzCourseSchema,
   permissions_course_instance: SprocAuthzCourseInstanceSchema,
 });
-export type FullAuthzData = z.infer<typeof FullAuthzDataSchema>;
+export type CourseOrInstanceContextData = z.infer<typeof CourseOrInstanceContextDataSchema>;
 
 export type AuthzDataWithoutEffectiveUser =
-  | CalculateAuthDataSuccessResult['authResult']
+  | ConstructedCourseOrInstanceSuccessContext['authzData']
   | DangerousSystemAuthzData;
 
 export type AuthzDataWithEffectiveUser = PageAuthzData | DangerousSystemAuthzData;
