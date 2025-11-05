@@ -45,7 +45,7 @@ router.post(
 
     if (req.body.__action === 'upload_instance_question_scores') {
       const jobSequenceId = await uploadInstanceQuestionScores(
-        res.locals.assessment.id,
+        res.locals.assessment,
         req.file,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
