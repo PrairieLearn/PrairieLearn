@@ -1,5 +1,12 @@
 import { Metadata, credentials } from '@grpc/grpc-js';
-import { type ContextManager, metrics } from '@opentelemetry/api';
+import {
+  type Attributes,
+  type Context,
+  type ContextManager,
+  type Link,
+  type SpanKind,
+  metrics,
+} from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
@@ -8,7 +15,10 @@ import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
 import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
 import { ExpressInstrumentation, ExpressLayerType } from '@opentelemetry/instrumentation-express';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import {
+  HttpInstrumentation,
+  type StartIncomingSpanCustomAttributeFunction,
+} from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
@@ -35,6 +45,7 @@ import {
   ParentBasedSampler,
   type ReadableSpan,
   type Sampler,
+  SamplingDecision,
   SimpleSpanProcessor,
   type SpanExporter,
   type SpanProcessor,
@@ -42,6 +53,42 @@ import {
 } from '@opentelemetry/sdk-trace-base';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+
+/**
+ * Allows applications to force sampling of specific spans/traces by setting
+ * a `force_sample` attribute to `true`. When that attribute is set, the span
+ * will be sampled regardless of the underlying sampler's decision.
+ *
+ * This is most useful when that attribute is added to the root span of a trace,
+ * and when using a `ParentBasedSampler`, as that will cause all spans in the trace
+ * to be sampled.
+ */
+class ForceSampleSampler implements Sampler {
+  private sampler: Sampler;
+  constructor(sampler: Sampler) {
+    this.sampler = sampler;
+  }
+
+  shouldSample(
+    context: Context,
+    traceId: string,
+    spanName: string,
+    spanKind: SpanKind,
+    attributes: Attributes,
+    links: Link[],
+  ) {
+    if (attributes['force_sample'] === true) {
+      console.log('force sampling!');
+      return { decision: SamplingDecision.RECORD_AND_SAMPLED };
+    }
+
+    return this.sampler.shouldSample(context, traceId, spanName, spanKind, attributes, links);
+  }
+
+  toString() {
+    return `ForceSampleSampler{${this.sampler.toString()}}`;
+  }
+}
 
 /**
  * Extends `BatchSpanProcessor` to give it the ability to filter out spans
@@ -88,6 +135,8 @@ function filter(span: ReadableSpan) {
   return true;
 }
 
+let incomingHttpRequestHook: StartIncomingSpanCustomAttributeFunction | undefined = undefined;
+
 // When adding new instrumentation here, add the corresponding packages to
 // `commonjs-preloads.ts` so that we can ensure that they're loaded via CJS
 // before anything tries to load them via CJS. This is necessary because the
@@ -118,6 +167,9 @@ const instrumentations = [
         /\/pl\/webhooks\/ping/,
       ].some((re) => re.test(req.url ?? '/'));
     },
+    startIncomingSpanHook(req) {
+      return incomingHttpRequestHook?.(req) ?? {};
+    },
   }),
   new IORedisInstrumentation(),
   new PgInstrumentation(),
@@ -144,6 +196,7 @@ interface OpenTelemetryConfigEnabled {
   honeycombApiKey?: string | null;
   honeycombDataset?: string | null;
   serviceName?: string;
+  incomingHttpRequestHook?: StartIncomingSpanCustomAttributeFunction;
 }
 
 // When we know for sure that OpenTelemetry is disabled, we won't require
@@ -252,9 +305,11 @@ function getSampler(config: OpenTelemetryConfig): Sampler {
       return new AlwaysOffSampler();
     }
     case 'trace-id-ratio': {
-      return new ParentBasedSampler({
-        root: new TraceIdRatioBasedSampler(config.openTelemetrySampleRate),
-      });
+      return new ForceSampleSampler(
+        new ParentBasedSampler({
+          root: new TraceIdRatioBasedSampler(config.openTelemetrySampleRate),
+        }),
+      );
     }
     default:
       throw new Error(`Unknown OpenTelemetry sampler type: ${config.openTelemetrySamplerType}`);
@@ -271,6 +326,8 @@ function getSampler(config: OpenTelemetryConfig): Sampler {
  * scope isolation. However, we won't actually set up any exporters.
  */
 export async function init(config: OpenTelemetryConfig) {
+  incomingHttpRequestHook = config.incomingHttpRequestHook;
+
   const metricExporter = getMetricExporter(config);
   const spanProcessor = getSpanProcessor(config);
   const sampler = getSampler(config);
