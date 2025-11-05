@@ -370,13 +370,10 @@ window.PLOrderBlocks = function (uuid, options) {
       const content = e.target.closest('.pl-order-block-content');
       if (!content) return;
 
-      const canScroll =
-        content.scrollWidth > content.clientWidth || content.scrollHeight > content.clientHeight;
-
-      if (canScroll) {
-        // Block drag-and-drop when the user is trying to scroll
-        e.stopPropagation();
-        e.stopImmediatePropagation();
+      if (content.classList.contains('is-scrollable')) {
+      // Block drag-and-drop when the user is trying to scroll
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       }
     };
 
@@ -394,7 +391,7 @@ window.PLOrderBlocks = function (uuid, options) {
       passive: true,
     });
 
-    // Mouse devices (some devices support both touch and mouse)
+    // Mouse devices (for devices that support both touch and mouse)
     // Re-enable drag-and-drop when using mouse
     fullContainer.addEventListener('mousedown', gateDragVsScroll, {
       capture: true,
