@@ -1,5 +1,6 @@
 import random
 from enum import Enum
+from sys import get_int_max_str_digits
 
 import big_o_utils as bou
 import chevron
@@ -284,12 +285,22 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     big_o_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
 
-    pl.grade_answer_parameterized(
-        data,
-        name,
-        lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
-        weight=weight,
-    )
+    try:
+        pl.grade_answer_parameterized(
+            data,
+            name,
+            lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
+            weight=weight,
+        )
+    except ValueError as e:
+        # See pl-symbolic-input.py for why we catch this error in this way.
+        if "integer string conversion" in str(e):
+            data["format_errors"][name] = (
+                f"Your expression expands integers longer than {get_int_max_str_digits()} digits, "
+                "try a simpler expression."
+            )
+        else:
+            raise
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
