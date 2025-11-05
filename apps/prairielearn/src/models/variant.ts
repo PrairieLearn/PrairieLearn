@@ -12,7 +12,7 @@ import {
   queryRows,
 } from '@prairielearn/postgres';
 
-import { calculateCourseInstanceRolePermissions, hasInstanceRole } from '../lib/authz-data-lib.js';
+import { calculateCourseInstanceRolePermissions } from '../lib/authz-data-lib.js';
 import {
   type Course,
   EnumCourseInstanceRoleSchema,
@@ -225,14 +225,12 @@ export async function selectAndAuthzVariant(options: {
         z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 
-      authnHasCourseInstancePermissionView = hasInstanceRole(
-        calculateCourseInstanceRolePermissions(authnUserPermissions.course_instance_role),
-        'Student Data Viewer',
-      );
-      hasCourseInstancePermissionView = hasInstanceRole(
-        calculateCourseInstanceRolePermissions(userPermissions.course_instance_role),
-        'Student Data Viewer',
-      );
+      authnHasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
+        authnUserPermissions.course_instance_role,
+      ).has_course_instance_permission_view;
+      hasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
+        userPermissions.course_instance_role,
+      ).has_course_instance_permission_view;
     }
 
     // We'll only permit access if both the authenticated user and the

@@ -368,8 +368,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     course_instance_id: req.params.course_instance_id || null,
     ip: req.ip || null,
     req_date: res.locals.req_date,
-    is_administrator: res.locals.is_administrator,
     overrides: {
+      is_administrator: res.locals.is_administrator,
       // We allow unit tests to override the req_mode. Unit tests may also override
       // the user (middlewares/authn.ts) and the req_date (middlewares/date.ts).
       req_mode: config.devMode ? req.cookies.pl_test_mode : null,
@@ -529,10 +529,10 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       course_instance_id: req.params.course_instance_id || null,
       ip: req.ip || null,
       req_date,
-      is_administrator: effectiveUserData
-        ? effectiveUserData.is_administrator
-        : res.locals.is_administrator,
       overrides: {
+        is_administrator: effectiveUserData
+          ? effectiveUserData.is_administrator
+          : res.locals.is_administrator,
         allow_example_course_override: false,
         req_mode: config.devMode ? req.cookies.pl_test_mode : null,
         req_course_role: req.cookies.pl2_requested_course_role || null,

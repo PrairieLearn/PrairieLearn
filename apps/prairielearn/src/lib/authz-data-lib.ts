@@ -2,7 +2,7 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { type RawStaffUser, RawStaffUserSchema, StaffUserSchema } from './client/safe-db-types.js';
+import { RawStaffUserSchema, StaffUserSchema } from './client/safe-db-types.js';
 import {
   type Course,
   type CourseInstance,
@@ -130,9 +130,14 @@ export type AuthzDataWithEffectiveUser = PageAuthzData | DangerousSystemAuthzDat
 
 export type AuthzData = AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser;
 
-export type CourseInstanceRole = 'Student' | 'System' | 'Any' | EnumCourseInstanceRole;
-
-export type CourseRole = 'System' | 'Any' | EnumCourseRole;
+export type CourseInstanceRole =
+  | 'System'
+  | 'None'
+  | 'Student'
+  | 'Student Data Viewer'
+  | 'Student Data Editor'
+  // The role 'Any' is equivalent to 'Student' OR 'Student Data Viewer' OR 'Student Data Editor'
+  | 'Any';
 
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {
@@ -148,83 +153,12 @@ export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
 }
 
 export function isDangerousFullSystemAuthz(
-  authzData:
-    | DangerousSystemAuthzData
-    | {
-        user?: RawStaffUser;
-        has_student_access?: boolean;
-        course_instance_role?: EnumCourseInstanceRole;
-        has_course_instance_permission_view?: boolean;
-        has_course_instance_permission_edit?: boolean;
-      },
+  authzData: AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser,
 ): authzData is DangerousSystemAuthzData {
-  return authzData.user?.user_id === null;
+  return authzData.user.user_id === null;
 }
 
-export function hasCourseRole(
-  authzData:
-    | DangerousSystemAuthzData
-    | {
-        user?: RawStaffUser;
-        has_course_permission_preview: boolean;
-        has_course_permission_view: boolean;
-        has_course_permission_edit: boolean;
-        has_course_permission_own: boolean;
-      },
-  requestedRole: CourseRole,
-): boolean {
-  // You must set the requestedRole to 'System' when you use dangerousFullSystemAuthz.
-  if (isDangerousFullSystemAuthz(authzData)) {
-    return ['System', 'Any'].includes(requestedRole);
-  }
-
-  if (
-    (requestedRole === 'Owner' || requestedRole === 'Any') &&
-    authzData.has_course_permission_own
-  ) {
-    return true;
-  }
-
-  if (
-    (requestedRole === 'Editor' || requestedRole === 'Any') &&
-    authzData.has_course_permission_edit
-  ) {
-    return true;
-  }
-
-  if (
-    (requestedRole === 'Viewer' || requestedRole === 'Any') &&
-    authzData.has_course_permission_view
-  ) {
-    return true;
-  }
-
-  if (
-    (requestedRole === 'Previewer' || requestedRole === 'Any') &&
-    authzData.has_course_permission_preview
-  ) {
-    return true;
-  }
-
-  if (requestedRole === 'None') {
-    return true;
-  }
-
-  return false;
-}
-
-export function hasInstanceRole(
-  authzData:
-    | DangerousSystemAuthzData
-    | {
-        user?: RawStaffUser;
-        has_student_access?: boolean;
-        course_instance_role?: EnumCourseInstanceRole;
-        has_course_instance_permission_view?: boolean;
-        has_course_instance_permission_edit?: boolean;
-      },
-  requestedRole: CourseInstanceRole,
-): boolean {
+export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
   // You must set the requestedRole to 'System' when you use dangerousFullSystemAuthz.
   if (isDangerousFullSystemAuthz(authzData)) {
     return ['System', 'Any'].includes(requestedRole);
@@ -275,7 +209,7 @@ export function hasInstanceRole(
  * @param requestedRole - The requested role from the caller of the model function.
  * @param allowedRoles - The allowed roles for the model function.
  */
-export function assertHasInstanceRole(
+export function assertHasRole(
   authzData: AuthzData,
   requestedRole: CourseInstanceRole,
   allowedRoles?: CourseInstanceRole[],
@@ -287,7 +221,7 @@ export function assertHasInstanceRole(
     );
   }
 
-  if (!hasInstanceRole(authzData, requestedRole)) {
+  if (!hasRole(authzData, requestedRole)) {
     throw new HttpStatusError(403, 'Access denied');
   }
 }

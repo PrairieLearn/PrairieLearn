@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { run } from '@prairielearn/run';
 
 import { EnrollmentPage } from '../components/EnrollmentPage.js';
-import { hasInstanceRole } from '../lib/authz-data-lib.js';
+import { hasRole } from '../lib/authz-data-lib.js';
 import type { CourseInstance } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
@@ -28,7 +28,7 @@ export default asyncHandler(async (req, res, next) => {
   // We select by user UID so that we can find invited/rejected enrollments as well
   const existingEnrollment = await run(async () => {
     // We only want to even try to lookup enrollment information if the user is a student.
-    if (!hasInstanceRole(res.locals.authz_data, 'Student')) {
+    if (!hasRole(res.locals.authz_data, 'Student')) {
       return null;
     }
     return await selectOptionalEnrollmentByUid({

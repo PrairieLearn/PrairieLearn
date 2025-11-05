@@ -145,7 +145,9 @@ router.post(
       course_instance_id: courseInstance.id,
       ip: req.ip ?? null,
       req_date: res.locals.req_date,
-      is_administrator: res.locals.is_administrator,
+      overrides: {
+        is_administrator: res.locals.is_administrator,
+      },
     });
 
     if (authzData === null) {
