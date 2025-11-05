@@ -47,6 +47,8 @@ export function Workspace({
       },
       enableEnhancedNav: false,
       enableNavbar: false,
+      paddingBottom: false,
+      paddingSides: false,
     },
     headContent: html`
       <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
@@ -183,7 +185,11 @@ export function Workspace({
         <h2>Workspace failed to load</h2>
         <p id="failed-message"></p>
       </div>
-      <iframe id="workspace" class="d-none flex-grow h-100 border-0" title="Workspace"></iframe>
+      <iframe
+        id="workspace"
+        class="d-none flex-grow h-100 w-100 border-0"
+        title="Workspace"
+      ></iframe>
     `,
   });
 }
