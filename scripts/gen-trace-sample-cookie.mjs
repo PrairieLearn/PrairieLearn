@@ -5,6 +5,20 @@ import { parseArgs } from 'node:util';
 
 import { generateSignedToken } from '@prairielearn/signed-token';
 
+// This is used with the part of `apps/prairielearn/src/server.ts` that
+// reads the `prairielearn_trace_sample` cookie to force sampling of
+// OpenTelemetry traces for specific clients.
+//
+// In dev, it uses the default secret key. For production usage, you should
+// specific the path to a config file with a `secretKey` property via the
+// `--config` argument.
+//
+// It's recommended to pick a relatively short expiration time, e.g. an hour
+// or so in the future.
+//
+// See the following PR for historical context:
+// https://github.com/PrairieLearn/PrairieLearn/pull/13280
+
 const DEFAULT_SECRET_KEY = 'THIS_IS_THE_SECRET_KEY';
 
 // Parse command-line arguments
