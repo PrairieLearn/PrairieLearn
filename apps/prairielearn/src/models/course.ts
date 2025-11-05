@@ -15,7 +15,7 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { calculateCourseRolePermissions } from '../lib/authz-data.js';
+import { calculateCourseRolePermissions } from '../lib/authz-data-lib.js';
 import { type Course, CourseSchema, type EnumCourseRole } from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';

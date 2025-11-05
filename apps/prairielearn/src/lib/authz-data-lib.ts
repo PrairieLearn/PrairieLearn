@@ -225,3 +225,21 @@ export function assertHasRole(
     throw new HttpStatusError(403, 'Access denied');
   }
 }
+
+export function calculateCourseRolePermissions(role: EnumCourseRole) {
+  return {
+    has_course_permission_preview: ['Previewer', 'Viewer', 'Editor', 'Owner'].includes(role),
+    has_course_permission_view: ['Viewer', 'Editor', 'Owner'].includes(role),
+    has_course_permission_edit: ['Editor', 'Owner'].includes(role),
+    has_course_permission_own: ['Owner'].includes(role),
+  };
+}
+
+export function calculateCourseInstanceRolePermissions(role: EnumCourseInstanceRole) {
+  return {
+    has_course_instance_permission_view: ['Student Data Viewer', 'Student Data Editor'].includes(
+      role,
+    ),
+    has_course_instance_permission_edit: ['Student Data Editor'].includes(role),
+  };
+}

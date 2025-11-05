@@ -9,12 +9,13 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
-import type { CalculateAuthDataSuccessResult, FullAuthzData } from '../lib/authz-data-lib.js';
 import {
-  calculateAuthData,
+  type CalculateAuthDataSuccessResult,
+  type FullAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
-} from '../lib/authz-data.js';
+} from '../lib/authz-data-lib.js';
+import { calculateAuthData } from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import {
