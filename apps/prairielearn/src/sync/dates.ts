@@ -1,6 +1,9 @@
 import { isFuture, isValid, parseISO } from 'date-fns';
 
-export function isAccessRuleAccessibleInFuture({ endDate }: { endDate?: string | null }) {
+/**
+ * Checks if a date is in the future. Uses the machine's local timezone.
+ */
+export function isAccessibleInFuture({ endDate }: { endDate?: string | null }) {
   if (!endDate) return true;
 
   // We don't have easy access to the course instance's timezone, so we'll

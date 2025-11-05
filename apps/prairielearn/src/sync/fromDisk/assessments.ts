@@ -1,4 +1,3 @@
-import { isFuture, parseISO } from 'date-fns';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -15,7 +14,7 @@ import {
   type ZoneQuestionJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
-import { isAccessRuleAccessibleInFuture } from '../dates.js';
+import { isAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -406,14 +405,14 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   if (courseInstance.allowAccess != null) {
     // If there are no access rules, the course instance is not accessible.
     if (courseInstance.allowAccess.length === 0) return false;
-    return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
+    return courseInstance.allowAccess.some(isAccessibleInFuture);
   }
 
-  if (courseInstance.publishing?.endDate == null || courseInstance.publishing.startDate == null) {
+  if (courseInstance.publishing?.endDate == null) {
     return false;
   }
 
-  return isFuture(parseISO(courseInstance.publishing.endDate));
+  return isAccessibleInFuture({ endDate: courseInstance.publishing.endDate });
 }
 
 export async function sync(

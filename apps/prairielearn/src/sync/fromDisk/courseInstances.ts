@@ -8,7 +8,7 @@ import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { type CourseInstanceJson } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
-import { isAccessRuleAccessibleInFuture } from '../dates.js';
+import { isAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
@@ -103,7 +103,7 @@ export async function sync(
       // us avoid emitting errors for very old, unused course instances.
       const instanceInstitutions = new Set(
         courseInstance.data?.allowAccess
-          ?.filter(isAccessRuleAccessibleInFuture)
+          ?.filter(isAccessibleInFuture)
           .map((accessRule) => accessRule.institution)
           .filter((institution) => institution != null),
       );
