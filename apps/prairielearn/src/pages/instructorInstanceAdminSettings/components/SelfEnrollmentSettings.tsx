@@ -154,6 +154,7 @@ export function SelfEnrollmentSettings({
   control,
   trigger,
   canEdit,
+  hasModernPublishing,
   enrollmentManagementEnabled,
   studentLink,
   selfEnrollLink,
@@ -164,6 +165,7 @@ export function SelfEnrollmentSettings({
   control: Control<SettingsFormValues>;
   trigger: UseFormTrigger<SettingsFormValues>;
   canEdit: boolean;
+  hasModernPublishing: boolean;
   enrollmentManagementEnabled: boolean;
   studentLink: string;
   selfEnrollLink: string;
@@ -194,11 +196,21 @@ export function SelfEnrollmentSettings({
     <>
       <h2 class="h4">Self-enrollment</h2>
 
+      {!hasModernPublishing ? (
+        <div class="alert alert-warning">
+          <p>
+            You are using access rules to control who can access the course instance. To change the
+            self-enrollment settings, you must first switch to using publishing to control access.
+          </p>
+        </div>
+      ) : null}
+
       <div class={clsx('mb-3 form-check', !enrollmentManagementEnabled && 'd-none')}>
         <input
           class="form-check-input"
           type="checkbox"
           id="self_enrollment_enabled"
+          disabled={!canEdit || !hasModernPublishing}
           {...control.register('self_enrollment_enabled', {
             // Re-run validation on show_in_enroll_page when self-enrollment changes
             deps: ['show_in_enroll_page'],
@@ -250,7 +262,7 @@ export function SelfEnrollmentSettings({
           class={clsx('form-check-input')}
           type="checkbox"
           id="self_enrollment_use_enrollment_code"
-          disabled={!canEdit || !selfEnrollmentEnabled}
+          disabled={!canEdit || !selfEnrollmentEnabled || !hasModernPublishing}
           {...control.register('self_enrollment_use_enrollment_code')}
           name="self_enrollment_use_enrollment_code"
         />
@@ -272,7 +284,7 @@ export function SelfEnrollmentSettings({
           class={clsx('form-check-input')}
           type="checkbox"
           id="self_enrollment_restrict_to_institution"
-          disabled={!canEdit || !selfEnrollmentEnabled}
+          disabled={!canEdit || !selfEnrollmentEnabled || !hasModernPublishing}
           {...control.register('self_enrollment_restrict_to_institution')}
           name="self_enrollment_restrict_to_institution"
         />
@@ -294,7 +306,7 @@ export function SelfEnrollmentSettings({
           class={clsx('form-check-input')}
           type="checkbox"
           id="disable_self_enrollment_after_date"
-          disabled={!canEdit}
+          disabled={!canEdit || !hasModernPublishing}
           {...control.register('self_enrollment_enabled_before_date_enabled', {
             onChange: async (event) => {
               if (!event.target.checked) {
@@ -312,7 +324,7 @@ export function SelfEnrollmentSettings({
           type="datetime-local"
           aria-label="Self-enrollment enabled before date"
           class={clsx('form-control mt-2', selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid')}
-          disabled={!canEdit || !selfEnrollmentEnabledBeforeDateEnabled}
+          disabled={!canEdit || !selfEnrollmentEnabledBeforeDateEnabled || !hasModernPublishing}
           step="1"
           {...control.register('self_enrollment_enabled_before_date', {
             validate: (value, { self_enrollment_enabled_before_date_enabled }) => {

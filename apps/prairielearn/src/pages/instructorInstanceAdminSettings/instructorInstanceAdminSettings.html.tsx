@@ -214,6 +214,7 @@ export function InstructorInstanceAdminSettings({
 
           <SelfEnrollmentSettings
             canEdit={canEdit}
+            hasModernPublishing={courseInstance.modern_publishing}
             control={control}
             trigger={trigger}
             enrollmentManagementEnabled={enrollmentManagementEnabled}
