@@ -33,6 +33,7 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectQuestionById } from '../../../models/question.js';
 import { addCompletionCostToIntervalUsage, checkRender } from '../aiQuestionGeneration.js';
 import { ALLOWED_ELEMENTS, buildContextForElementDocs } from '../context-parsers/documentation.js';
+import { getPythonLibraries } from '../context-parsers/pyproject.js';
 import {
   type QuestionContext,
   buildContextForQuestion,
@@ -277,6 +278,11 @@ export async function createQuestionGenerationAgent({
             })
             .filter((example) => example != null);
         },
+      }),
+      getPythonLibraries: tool({
+        description: 'Get the Python libraries that can be used in server.py.',
+        ...QUESTION_GENERATION_TOOLS.getPythonLibraries,
+        execute: async () => await getPythonLibraries(),
       }),
       saveAndValidateQuestion: tool({
         description: 'Save and validate the generated question.',

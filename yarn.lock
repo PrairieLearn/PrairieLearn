@@ -4495,6 +4495,7 @@ __metadata:
     set-cookie-parser: "npm:^2.7.2"
     shlex: "npm:^3.0.0"
     showdown: "npm:^2.1.0"
+    smol-toml: "npm:^1.4.2"
     socket.io: "npm:^4.8.1"
     socket.io-adapter: "npm:^2.5.5"
     socket.io-client: "npm:^4.8.1"
@@ -17354,6 +17355,13 @@ __metadata:
   version: 4.2.0
   resolution: "smart-buffer@npm:4.2.0"
   checksum: 10c0/a16775323e1404dd43fabafe7460be13a471e021637bc7889468eb45ce6a6b207261f454e4e530a19500cc962c4cc5348583520843b363f4193cee5c00e1e539
+  languageName: node
+  linkType: hard
+
+"smol-toml@npm:^1.4.2":
+  version: 1.4.2
+  resolution: "smol-toml@npm:1.4.2"
+  checksum: 10c0/e01e5f249b1ad852d09aa22f338a6cb3896ac35c92bf0d35744ce1b1e2f4b67901d4a0e886027617a2a8aa9f1a6c67c919c41b544c4aec137b6ebe042ca10d36
   languageName: node
   linkType: hard
 

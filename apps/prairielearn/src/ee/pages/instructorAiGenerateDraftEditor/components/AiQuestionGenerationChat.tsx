@@ -205,7 +205,6 @@ function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (part.type === 'tool-saveAndValidateQuestion') {
       if (part.state === 'input-streaming') {
         return <span>Saving and validating question...</span>;
@@ -216,6 +215,19 @@ function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
         return <span>Saved and validated question</span>;
       } else {
         return <span>Error saving and validating question</span>;
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (part.type === 'tool-getPythonLibraries') {
+      if (part.state === 'input-streaming') {
+        return <span>Reading available Python libraries...</span>;
+      } else if (part.state === 'input-available') {
+        return <span>Reading available Python libraries...</span>;
+      } else if (part.state === 'output-available') {
+        return <span>Read available Python libraries</span>;
+      } else {
+        return <span>Error reading available Python libraries</span>;
       }
     }
 

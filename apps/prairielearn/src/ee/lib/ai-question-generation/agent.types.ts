@@ -72,6 +72,10 @@ export const QUESTION_GENERATION_TOOLS = {
       }),
     ),
   }),
+  getPythonLibraries: tool({
+    inputSchema: z.object({}),
+    outputSchema: z.array(z.string()),
+  }),
   saveAndValidateQuestion: tool({
     inputSchema: z.object({}),
     outputSchema: z.object({

@@ -227,6 +227,7 @@
     "serve-favicon": "^2.5.1",
     "shlex": "^3.0.0",
     "showdown": "^2.1.0",
+    "smol-toml": "^1.4.2",
     "socket.io": "^4.8.1",
     "socket.io-adapter": "^2.5.5",
     "socket.io-client": "^4.8.1",
