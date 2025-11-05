@@ -57,24 +57,27 @@ function clearOverrideCookies(res: Response, overrides: Override[]) {
  * - Effective users must be enrolled or have instructor access to the course instance
  * @param params
  * @param params.authnAuthzData - Authorization data for the authenticated (real) user
+ * @param params.authnCourseInstance - Course instance for the authenticated (real) user
  * @param params.effectiveAuthzData - Authorization data for the requested effective user
  * @param params.effectiveUserHasInstructorAccessToCourseInstance - Whether the effective user has instructor-level access
  * @returns Success status with error if validation fails
  */
 function canBecomeEffectiveUser({
   authnAuthzData,
+  authnCourseInstance,
   effectiveAuthzData,
   effectiveUserHasInstructorAccessToCourseInstance,
 }: {
-  authnAuthzData: ConstructedCourseOrInstanceSuccessContext;
-  effectiveAuthzData: ConstructedCourseOrInstanceSuccessContext;
+  authnAuthzData: ConstructedCourseOrInstanceSuccessContext['authzData'];
+  authnCourseInstance: ConstructedCourseOrInstanceSuccessContext['courseInstance'];
+  effectiveAuthzData: ConstructedCourseOrInstanceSuccessContext['authzData'];
   effectiveUserHasInstructorAccessToCourseInstance: boolean | null;
 }): Result<void> {
   const failedPermissionCheck = [
     {
       hasFailedCheck:
-        !authnAuthzData.authzData.has_course_permission_preview &&
-        effectiveAuthzData.authzData.has_course_permission_preview,
+        !authnAuthzData.has_course_permission_preview &&
+        effectiveAuthzData.has_course_permission_preview,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course previewer, when you are
@@ -84,8 +87,7 @@ function canBecomeEffectiveUser({
     },
     {
       hasFailedCheck:
-        !authnAuthzData.authzData.has_course_permission_view &&
-        effectiveAuthzData.authzData.has_course_permission_view,
+        !authnAuthzData.has_course_permission_view && effectiveAuthzData.has_course_permission_view,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course viewer, when you are
@@ -95,8 +97,7 @@ function canBecomeEffectiveUser({
     },
     {
       hasFailedCheck:
-        !authnAuthzData.authzData.has_course_permission_edit &&
-        effectiveAuthzData.authzData.has_course_permission_edit,
+        !authnAuthzData.has_course_permission_edit && effectiveAuthzData.has_course_permission_edit,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course editor, when you are
@@ -106,8 +107,7 @@ function canBecomeEffectiveUser({
     },
     {
       hasFailedCheck:
-        !authnAuthzData.authzData.has_course_permission_own &&
-        effectiveAuthzData.authzData.has_course_permission_own,
+        !authnAuthzData.has_course_permission_own && effectiveAuthzData.has_course_permission_own,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course owner, when you are not
@@ -117,29 +117,27 @@ function canBecomeEffectiveUser({
     },
     {
       hasFailedCheck:
-        !authnAuthzData.authzData.has_course_instance_permission_view &&
-        effectiveAuthzData.authzData.has_course_instance_permission_view &&
-        effectiveAuthzData.courseInstance !== null,
+        !authnAuthzData.has_course_instance_permission_view &&
+        effectiveAuthzData.has_course_instance_permission_view &&
+        authnCourseInstance !== null,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a student data viewer in the
-          course instance <code>${effectiveAuthzData.courseInstance!.short_name}</code>, when you
-          are not a student data viewer. All requested changes to the effective user have been
-          removed.
+          course instance <code>${authnCourseInstance!.short_name}</code>, when you are not a
+          student data viewer. All requested changes to the effective user have been removed.
         </p>
       `,
     },
     {
       hasFailedCheck:
-        !authnAuthzData.authzData.has_course_instance_permission_edit &&
-        effectiveAuthzData.authzData.has_course_instance_permission_edit &&
-        effectiveAuthzData.courseInstance !== null,
+        !authnAuthzData.has_course_instance_permission_edit &&
+        effectiveAuthzData.has_course_instance_permission_edit &&
+        authnCourseInstance !== null,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a student data editor in the
-          course instance <code>${effectiveAuthzData.courseInstance!.short_name}</code>, when you
-          are not a student data editor. All requested changes to the effective user have been
-          removed.
+          course instance <code>${authnCourseInstance!.short_name}</code>, when you are not a
+          student data editor. All requested changes to the effective user have been removed.
         </p>
       `,
     },
@@ -148,18 +146,18 @@ function canBecomeEffectiveUser({
       // other overrides) with a different UID than the authn user (note UID is unique), and
       // the authn user is not a Student Data Editor
       hasFailedCheck:
-        effectiveAuthzData.authzData.user.uid !== authnAuthzData.authzData.user.uid && // effective uid is not the same as authn uid
-        effectiveAuthzData.authzData.has_student_access_with_enrollment && // effective user is enrolled with access
+        effectiveAuthzData.user.uid !== authnAuthzData.user.uid && // effective uid is not the same as authn uid
+        effectiveAuthzData.has_student_access_with_enrollment && // effective user is enrolled with access
         effectiveUserHasInstructorAccessToCourseInstance != null &&
         !effectiveUserHasInstructorAccessToCourseInstance && // effective user is not an instructor (i.e., is a student)
-        !authnAuthzData.authzData.has_course_instance_permission_edit &&
-        effectiveAuthzData.courseInstance !== null,
+        !authnAuthzData.has_course_instance_permission_edit &&
+        authnCourseInstance !== null,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a student in the course instance
-          <code>${effectiveAuthzData.courseInstance!.short_name}</code>, when you do not have
-          permission to edit student data in this course instance. All requested changes to the
-          effective user have been removed.
+          <code>${authnCourseInstance!.short_name}</code>, when you do not have permission to edit
+          student data in this course instance. All requested changes to the effective user have
+          been removed.
         </p>
       `,
     },
@@ -171,14 +169,11 @@ function canBecomeEffectiveUser({
       // authenticated user, since an instructor may want to view their course
       // as a student without enrolling in their own course.
       hasFailedCheck:
-        !idsEqual(
-          effectiveAuthzData.authzData.user.user_id,
-          authnAuthzData.authzData.user.user_id,
-        ) &&
-        !effectiveAuthzData.authzData.has_course_permission_preview &&
-        !effectiveAuthzData.authzData.has_course_instance_permission_view &&
-        !effectiveAuthzData.authzData.has_student_access_with_enrollment &&
-        effectiveAuthzData.courseInstance !== null,
+        !idsEqual(effectiveAuthzData.user.user_id, authnAuthzData.user.user_id) &&
+        !effectiveAuthzData.has_course_permission_preview &&
+        !effectiveAuthzData.has_course_instance_permission_view &&
+        !effectiveAuthzData.has_student_access_with_enrollment &&
+        authnCourseInstance !== null,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is not enrolled in this course
@@ -356,7 +351,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   }
 
   const {
-    authzData: authnAuthResult,
+    authzData: authnAuthzData,
     course: authnCourse,
     institution: authnInstitution,
     courseInstance: authnCourseInstance,
@@ -372,11 +367,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     overrides: {
       // We allow unit tests to override the req_mode. Unit tests may also override
       // the user (middlewares/authn.ts) and the req_date (middlewares/date.ts).
-      req_mode: config.devMode ? req.cookies.pl_test_mode : null,
+      mode: config.devMode ? req.cookies.pl_test_mode : null,
     },
   });
 
-  if (authnAuthResult === null) {
+  if (authnAuthzData === null) {
     throw new HttpStatusError(403, 'Access denied');
   }
 
@@ -470,12 +465,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     return result.value;
   });
 
-  const {
-    authzData: effectiveAuthResult,
-    course: effectiveCourse,
-    institution: effectiveInstitution,
-    courseInstance: effectiveCourseInstance,
-  } = await run(async () => {
+  const { authzData: effectiveAuthzData } = await run(async () => {
     // We still run this code even if we don't have an effective user to override.
     // This is because you can overrides roles without specifying a user.
 
@@ -483,7 +473,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     if (overrides.length === 0) {
       // If we don't have any overrides, the effective user is the same as the authn user.
       return {
-        authzData: authnAuthResult,
+        authzData: authnAuthzData,
         course: authnCourse,
         institution: authnInstitution,
         courseInstance: authnCourseInstance,
@@ -492,13 +482,13 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
     // Cannot request a user data override without instructor permissions
     if (
-      !authnAuthResult.has_course_permission_preview &&
-      !authnAuthResult.has_course_instance_permission_view
+      !authnAuthzData.has_course_permission_preview &&
+      !authnAuthzData.has_course_instance_permission_view
     ) {
       if ((res.locals.viewType || 'none') === 'student') {
         // If we can't set the effective user, the effective user is the same as the authn user.
         return {
-          authzData: authnAuthResult,
+          authzData: authnAuthzData,
           course: authnCourse,
           institution: authnInstitution,
           courseInstance: authnCourseInstance,
@@ -524,7 +514,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       institution: effectiveInstitution,
       courseInstance: effectiveCourseInstance,
     } = await constructCourseOrInstanceContext({
-      user: effectiveUserData ? effectiveUserData.user : authnAuthResult.user,
+      user: effectiveUserData ? effectiveUserData.user : authnAuthzData.user,
       course_id: req.params.course_id || null,
       course_instance_id: req.params.course_instance_id || null,
       ip: req.ip || null,
@@ -534,9 +524,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
         : res.locals.is_administrator,
       overrides: {
         allow_example_course_override: false,
-        req_mode: config.devMode ? req.cookies.pl_test_mode : null,
-        req_course_role: req.cookies.pl2_requested_course_role || null,
-        req_course_instance_role: req.cookies.pl2_requested_course_instance_role || null,
+        mode: config.devMode ? req.cookies.pl_test_mode : null,
+        course_role: req.cookies.pl2_requested_course_role || null,
+        course_instance_role: req.cookies.pl2_requested_course_instance_role || null,
       },
     });
 
@@ -547,7 +537,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     if (effectiveAuthResult === null) {
       return {
         authzData: {
-          user: effectiveUserData ? effectiveUserData.user : authnAuthResult.user,
+          user: effectiveUserData ? effectiveUserData.user : authnAuthzData.user,
           is_administrator: false,
           course_role: 'None' as EnumCourseRole,
           ...calculateCourseRolePermissions('None'),
@@ -559,8 +549,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
                 ...calculateCourseInstanceRolePermissions('None'),
               }
             : {}),
-          mode: authnAuthResult.mode,
-          mode_reason: authnAuthResult.mode_reason,
+          mode: authnAuthzData.mode,
+          mode_reason: authnAuthzData.mode_reason,
         },
         course: authnCourse,
         institution: authnInstitution,
@@ -575,7 +565,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       // important because we no longer automatically enroll instructors in their
       // own course instances when they view them.
       if (
-        idsEqual(effectiveAuthResult.user.user_id, authnAuthResult.user.user_id) &&
+        idsEqual(effectiveAuthResult.user.user_id, authnAuthzData.user.user_id) &&
         !effectiveAuthResult.has_course_instance_permission_view &&
         !effectiveAuthResult.has_course_permission_view
       ) {
@@ -591,18 +581,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   });
 
   const canBecomeEffectiveUserResult = canBecomeEffectiveUser({
-    authnAuthzData: {
-      authzData: authnAuthResult,
-      course: authnCourse,
-      institution: authnInstitution,
-      courseInstance: authnCourseInstance,
-    },
-    effectiveAuthzData: {
-      authzData: effectiveAuthResult,
-      course: effectiveCourse,
-      institution: effectiveInstitution,
-      courseInstance: effectiveCourseInstance,
-    },
+    authnAuthzData,
+    authnCourseInstance,
+    effectiveAuthzData,
+    // If the effective user, without any overrides,
+    // has instructor access to the course instance, then we set this flag.
     effectiveUserHasInstructorAccessToCourseInstance:
       effectiveUserData?.is_instructor_in_course_instance ?? null,
   });
@@ -619,52 +602,51 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   res.locals.authz_data = {
     // Authn user data
-    authn_user: authnAuthResult.user,
-    authn_mode: authnAuthResult.mode,
-    authn_mode_reason: authnAuthResult.mode_reason,
+    authn_user: authnAuthzData.user,
+    authn_mode: authnAuthzData.mode,
+    authn_mode_reason: authnAuthzData.mode_reason,
     authn_is_administrator: res.locals.is_administrator,
-    authn_course_role: authnAuthResult.course_role,
-    authn_has_course_permission_preview: authnAuthResult.has_course_permission_preview,
-    authn_has_course_permission_view: authnAuthResult.has_course_permission_view,
-    authn_has_course_permission_edit: authnAuthResult.has_course_permission_edit,
-    authn_has_course_permission_own: authnAuthResult.has_course_permission_own,
+    authn_course_role: authnAuthzData.course_role,
+    authn_has_course_permission_preview: authnAuthzData.has_course_permission_preview,
+    authn_has_course_permission_view: authnAuthzData.has_course_permission_view,
+    authn_has_course_permission_edit: authnAuthzData.has_course_permission_edit,
+    authn_has_course_permission_own: authnAuthzData.has_course_permission_own,
     ...run(() => {
       if (!req.params.course_instance_id) {
         return {};
       }
       return {
-        authn_course_instance_role: authnAuthResult.course_instance_role,
-        authn_has_student_access: authnAuthResult.has_student_access,
-        authn_has_student_access_with_enrollment:
-          authnAuthResult.has_student_access_with_enrollment,
+        authn_course_instance_role: authnAuthzData.course_instance_role,
+        authn_has_student_access: authnAuthzData.has_student_access,
+        authn_has_student_access_with_enrollment: authnAuthzData.has_student_access_with_enrollment,
         authn_has_course_instance_permission_view:
-          authnAuthResult.has_course_instance_permission_view,
+          authnAuthzData.has_course_instance_permission_view,
         authn_has_course_instance_permission_edit:
-          authnAuthResult.has_course_instance_permission_edit,
+          authnAuthzData.has_course_instance_permission_edit,
       };
     }),
     // Effective user data
-    user: effectiveAuthResult.user,
-    mode: effectiveAuthResult.mode,
-    mode_reason: effectiveAuthResult.mode_reason,
+    user: effectiveAuthzData.user,
+    mode: effectiveAuthzData.mode,
+    mode_reason: effectiveAuthzData.mode_reason,
     is_administrator: effectiveUserData?.is_administrator ?? res.locals.is_administrator,
-    course_role: effectiveAuthResult.course_role,
-    has_course_permission_preview: effectiveAuthResult.has_course_permission_preview,
-    has_course_permission_view: effectiveAuthResult.has_course_permission_view,
-    has_course_permission_edit: effectiveAuthResult.has_course_permission_edit,
-    has_course_permission_own: effectiveAuthResult.has_course_permission_own,
+    course_role: effectiveAuthzData.course_role,
+    has_course_permission_preview: effectiveAuthzData.has_course_permission_preview,
+    has_course_permission_view: effectiveAuthzData.has_course_permission_view,
+    has_course_permission_edit: effectiveAuthzData.has_course_permission_edit,
+    has_course_permission_own: effectiveAuthzData.has_course_permission_own,
     ...run(() => {
       if (!req.params.course_instance_id) {
         return {};
       }
       return {
-        course_instance_role: effectiveAuthResult.course_instance_role,
-        has_student_access: effectiveAuthResult.has_student_access,
-        has_student_access_with_enrollment: effectiveAuthResult.has_student_access_with_enrollment,
-        has_course_instance_permission_view:
-          effectiveAuthResult.has_course_instance_permission_view,
-        has_course_instance_permission_edit:
-          effectiveAuthResult.has_course_instance_permission_edit,
+        course_instance_role: effectiveAuthzData.course_instance_role,
+        has_student_access: effectiveAuthzData.has_student_access,
+        has_student_access_with_enrollment: effectiveAuthzData.has_student_access_with_enrollment,
+        has_course_instance_permission_view: effectiveAuthzData.has_course_instance_permission_view,
+        has_course_instance_permission_edit: effectiveAuthzData.has_course_instance_permission_edit,
+        // If the effective user, without any overrides,
+        // has instructor access to the course instance, then we set this flag.
         user_with_requested_uid_has_instructor_access_to_course_instance:
           effectiveUserData?.is_instructor_in_course_instance ?? null,
       };
@@ -676,10 +658,10 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   // administrator status, and not the authn user's administrator status.
   res.locals.is_administrator = effectiveUserData?.is_administrator ?? res.locals.is_administrator;
 
-  res.locals.course = effectiveCourse;
-  res.locals.institution = effectiveInstitution;
-  res.locals.user = effectiveAuthResult.user;
-  res.locals.course_instance = effectiveCourseInstance;
+  res.locals.course = authnCourse;
+  res.locals.institution = authnInstitution;
+  res.locals.user = effectiveAuthzData.user;
+  res.locals.course_instance = authnCourseInstance;
 
   // The session middleware does not run for API requests.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

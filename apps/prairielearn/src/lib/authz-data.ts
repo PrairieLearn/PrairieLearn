@@ -60,9 +60,9 @@ async function selectCourseOrInstanceContextData({
  * @param params.req_date - The date of the request.
  * @param params.is_administrator - Whether the user is an administrator.
  * @param params.overrides - The overrides to apply to the authorization data.
- * @param params.overrides.req_mode - The requested mode to use.
- * @param params.overrides.req_course_role - The requested course role to use.
- * @param params.overrides.req_course_instance_role - The requested course instance role to use.
+ * @param params.overrides.mode - The requested mode to use.
+ * @param params.overrides.course_role - The requested course role to use.
+ * @param params.overrides.course_instance_role - The requested course instance role to use.
  * @param params.overrides.allow_example_course_override - Whether to allow overriding the course role for example courses.
  */
 export async function constructCourseOrInstanceContext({
@@ -81,9 +81,9 @@ export async function constructCourseOrInstanceContext({
   req_date: Date;
   is_administrator: boolean;
   overrides?: {
-    req_mode?: EnumMode;
-    req_course_role?: EnumCourseRole;
-    req_course_instance_role?: EnumCourseInstanceRole;
+    mode?: EnumMode;
+    course_role?: EnumCourseRole;
+    course_instance_role?: EnumCourseInstanceRole;
     allow_example_course_override?: boolean;
   };
 }): Promise<ConstructedCourseOrInstanceContext> {
@@ -113,8 +113,8 @@ export async function constructCourseOrInstanceContext({
   }
 
   const course_role = run(() => {
-    if (resolvedOverrides.req_course_role != null) {
-      return resolvedOverrides.req_course_role;
+    if (resolvedOverrides.course_role != null) {
+      return resolvedOverrides.course_role;
     }
     if (is_administrator) {
       return 'Owner';
@@ -139,8 +139,8 @@ export async function constructCourseOrInstanceContext({
   });
 
   const course_instance_role = run(() => {
-    if (resolvedOverrides.req_course_instance_role != null) {
-      return resolvedOverrides.req_course_instance_role;
+    if (resolvedOverrides.course_instance_role != null) {
+      return resolvedOverrides.course_instance_role;
     }
     if (is_administrator) {
       return 'Student Data Editor';
@@ -148,7 +148,7 @@ export async function constructCourseOrInstanceContext({
     return rawAuthzData.permissions_course_instance.course_instance_role;
   });
 
-  const mode = resolvedOverrides.req_mode ?? rawAuthzData.mode
+  const mode = resolvedOverrides.mode ?? rawAuthzData.mode;
 
   const hasCourseAccess = course_role !== 'None';
   const hasCourseInstanceAccess =
