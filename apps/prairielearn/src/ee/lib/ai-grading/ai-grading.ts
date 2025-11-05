@@ -12,8 +12,10 @@ import { run } from '@prairielearn/run';
 import { logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import {
+  type Assessment,
   type AssessmentQuestion,
   type Course,
+  type CourseInstance,
   IdSchema,
   type InstanceQuestion,
   type Question,
@@ -54,8 +56,9 @@ const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
  */
 export async function aiGrade({
   course,
-  course_instance_id,
+  course_instance,
   question,
+  assessment,
   assessment_question,
   urlPrefix,
   authn_user_id,
@@ -65,7 +68,8 @@ export async function aiGrade({
 }: {
   question: Question;
   course: Course;
-  course_instance_id: string;
+  course_instance: CourseInstance;
+  assessment: Assessment;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   authn_user_id: string;
@@ -93,8 +97,8 @@ export async function aiGrade({
 
   const serverJob = await createServerJob({
     courseId: course.id,
-    courseInstanceId: course_instance_id,
-    assessmentId: assessment_question.assessment_id,
+    courseInstanceId: course_instance.id,
+    assessmentId: assessment.id,
     authnUserId: authn_user_id,
     userId: user_id,
     type: 'ai_grading',
@@ -268,7 +272,7 @@ export async function aiGrade({
         strictJsonSchema: true,
         metadata: {
           course_id: course.id,
-          course_instance_id,
+          course_instance_id: course_instance.id,
           assessment_id: assessment_question.assessment_id,
           assessment_question_id: assessment_question.id,
           instance_question_id: instance_question.id,
@@ -319,7 +323,7 @@ export async function aiGrade({
           };
           await runInTransactionAsync(async () => {
             const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
-              assessment_question.assessment_id,
+              assessment,
               instance_question.id,
               submission.id,
               null, // check_modified_at
@@ -339,7 +343,7 @@ export async function aiGrade({
               prompt: input,
               response,
               course_id: course.id,
-              course_instance_id,
+              course_instance_id: course_instance.id,
             });
           });
         } else {
@@ -376,7 +380,7 @@ export async function aiGrade({
               prompt: input,
               response,
               course_id: course.id,
-              course_instance_id,
+              course_instance_id: course_instance.id,
             });
           });
         }
@@ -425,7 +429,7 @@ export async function aiGrade({
           const feedback = response.object.feedback;
           await runInTransactionAsync(async () => {
             const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
-              assessment_question.assessment_id,
+              assessment,
               instance_question.id,
               submission.id,
               null, // check_modified_at
@@ -444,7 +448,7 @@ export async function aiGrade({
               prompt: input,
               response,
               course_id: course.id,
-              course_instance_id,
+              course_instance_id: course_instance.id,
             });
           });
         } else {
@@ -472,7 +476,7 @@ export async function aiGrade({
               prompt: input,
               response,
               course_id: course.id,
-              course_instance_id,
+              course_instance_id: course_instance.id,
             });
           });
         }

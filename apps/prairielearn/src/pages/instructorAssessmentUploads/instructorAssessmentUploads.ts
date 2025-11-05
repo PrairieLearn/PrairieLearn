@@ -65,7 +65,7 @@ router.post(
       }
 
       const jobSequenceId = await uploadSubmissions(
-        res.locals.assessment.id,
+        res.locals.assessment,
         req.file,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
