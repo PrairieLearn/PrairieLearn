@@ -4,7 +4,7 @@
   transition: transform 0.2s ease-in-out;
 }
 
-.pl-image-capture-qr-code-box {
+.pl-image-capture-qr-code-box svg {
   width: 200px;
   height: 200px;
 }
