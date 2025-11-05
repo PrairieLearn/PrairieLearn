@@ -43,7 +43,7 @@ router.get('/', [
     }
 
     const courseInstances = await queryRows(
-      sql.select_course_instances,
+      sql.select_course_instances_legacy_access,
       {
         user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,
@@ -87,7 +87,7 @@ router.post('/', [
 
     if (req.body.__action === 'enroll') {
       // We don't have authzData yet
-
+      // TODO: see #13275
       const existingEnrollment = await run(async () => {
         return await selectOptionalEnrollmentByUid({
           uid: res.locals.authn_user.uid,
@@ -109,6 +109,7 @@ router.post('/', [
       // Abuse the middleware to authorize the user for the course instance.
       req.params.course_instance_id = course_instance.id;
       await authzCourseOrInstance(req, res);
+      // Now we have authzData
 
       await ensureCheckedEnrollment({
         institution,

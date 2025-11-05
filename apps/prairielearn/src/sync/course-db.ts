@@ -1,3 +1,4 @@
+import assert from 'assert';
 import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
@@ -238,10 +239,26 @@ export async function loadFullCourse(
     // expired if it either has zero `allowAccess` rules (in which case it is never
     // accessible), or if it has one or more `allowAccess` rules and they all have
     // an `endDate` that is in the past.
-    const allowAccessRules = courseInstance.data?.allowAccess ?? [];
-    const courseInstanceExpired = allowAccessRules.every((rule) => {
-      const endDate = rule.endDate ? parseJsonDate(rule.endDate) : null;
-      return endDate && isPast(endDate);
+    //
+    // If the allowAccess section is not present, we instead consider publishing.endDate.
+
+    const allowAccessRules = courseInstance.data?.allowAccess;
+
+    const courseInstanceExpired = run(() => {
+      if (allowAccessRules !== undefined) {
+        return allowAccessRules.every((rule) => {
+          const endDate = rule.endDate ? parseJsonDate(rule.endDate) : null;
+          return endDate && isPast(endDate);
+        });
+      }
+
+      // We have no access rules, so we are in the modern publishing configuration.
+
+      return (
+        courseInstance.data?.publishing?.endDate == null ||
+        courseInstance.data.publishing.startDate == null ||
+        isPast(courseInstance.data.publishing.endDate)
+      );
     });
 
     const assessments = await loadAssessments({
@@ -1159,10 +1176,11 @@ function validateAssessment({
     errors.push(...dateErrors.errors);
   });
 
-  // When additional validation is added, we don't want to warn for past course
+  // We don't want to warn for past course
   // instances that instructors will never touch again, as they won't benefit
-  // from fixing things. So, we'll only show some warnings for course instances
+  // from fixing things. We'll only show some warnings for course instances
   // which are accessible either now or any time in the future.
+
   if (!courseInstanceExpired) {
     assessment.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
@@ -1468,22 +1486,66 @@ function validateCourseInstance({
     }
   }
 
-  if (
-    courseInstance.selfEnrollment.useEnrollmentCode !== false &&
-    courseInstance.allowAccess != null
-  ) {
+  const usingLegacyAllowAccess = courseInstance.allowAccess != null;
+  const usingModernPublishing = courseInstance.publishing != null;
+
+  if (courseInstance.selfEnrollment.useEnrollmentCode !== false && usingLegacyAllowAccess) {
     errors.push(
       '"selfEnrollment.useEnrollmentCode" is not configurable when you have access control rules ("allowAccess" is set).',
     );
   }
 
-  if (
-    courseInstance.selfEnrollment.restrictToInstitution !== true &&
-    courseInstance.allowAccess != null
-  ) {
+  if (courseInstance.selfEnrollment.restrictToInstitution !== true && usingLegacyAllowAccess) {
     errors.push(
       '"selfEnrollment.restrictToInstitution" is not configurable when you have access control rules ("allowAccess" is set).',
     );
+  }
+
+  // TODO: Remove this once the UI is merged
+  if (usingModernPublishing) {
+    warnings.push('"publishing" is not configurable yet.');
+  }
+
+  if (usingLegacyAllowAccess && usingModernPublishing) {
+    errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
+  } else if (usingModernPublishing) {
+    assert(courseInstance.publishing != null);
+    const hasEndDate = courseInstance.publishing.endDate != null;
+    const hasStartDate = courseInstance.publishing.startDate != null;
+    if (hasStartDate && !hasEndDate) {
+      errors.push('"publishing.endDate" is required if "publishing.startDate" is specified.');
+    }
+    if (!hasStartDate && hasEndDate) {
+      errors.push('"publishing.startDate" is required if "publishing.endDate" is specified.');
+    }
+
+    const parsedStartDate =
+      courseInstance.publishing.startDate == null
+        ? null
+        : parseJsonDate(courseInstance.publishing.startDate);
+
+    if (hasStartDate && parsedStartDate == null) {
+      errors.push('"publishing.startDate" is not a valid date.');
+    }
+
+    const parsedEndDate =
+      courseInstance.publishing.endDate == null
+        ? null
+        : parseJsonDate(courseInstance.publishing.endDate);
+
+    if (hasEndDate && parsedEndDate == null) {
+      errors.push('"publishing.endDate" is not a valid date.');
+    }
+
+    if (
+      hasStartDate &&
+      hasEndDate &&
+      parsedStartDate != null &&
+      parsedEndDate != null &&
+      isAfter(parsedStartDate, parsedEndDate)
+    ) {
+      errors.push('"publishing.startDate" must be before "publishing.endDate".');
+    }
   }
 
   let accessibleInFuture = false;

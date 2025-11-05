@@ -159,10 +159,6 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
 // Result of authz_course sproc
 export const SprocAuthzCourseSchema = z.object({
   course_role: EnumCourseRoleSchema,
-  has_course_permission_edit: z.boolean(),
-  has_course_permission_own: z.boolean(),
-  has_course_permission_preview: z.boolean(),
-  has_course_permission_view: z.boolean(),
 });
 export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
 
@@ -207,9 +203,9 @@ export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullabl
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
   course_instance_role: EnumCourseInstanceRoleSchema,
-  has_course_instance_permission_edit: z.boolean(),
-  has_course_instance_permission_view: z.boolean(),
+  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
   has_student_access: z.boolean(),
+  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
   has_student_access_with_enrollment: z.boolean(),
 });
 export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
@@ -479,7 +475,6 @@ export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
 export const AuditEventSchema = z.object({
   action: EnumAuditEventActionSchema,
-  // See audit-event.types.ts for the list of supported action_detail values based on the table.
   action_detail: z.string().nullable(),
   agent_authn_user_id: IdSchema.nullable(),
   agent_user_id: IdSchema.nullable(),
@@ -604,6 +599,9 @@ export const CourseInstanceSchema = z.object({
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
+  modern_publishing: z.boolean(),
+  publishing_end_date: DateFromISOString.nullable(),
+  publishing_start_date: DateFromISOString.nullable(),
   self_enrollment_enabled: z.boolean(),
   self_enrollment_enabled_before_date: DateFromISOString.nullable(),
   self_enrollment_restrict_to_institution: z.boolean(),
@@ -628,6 +626,25 @@ export const CourseInstanceAccessRuleSchema = z.object({
   uids: z.string().array().nullable(),
 });
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
+
+export const CourseInstancePublishingExtensionSchema = z.object({
+  course_instance_id: IdSchema,
+  end_date: DateFromISOString,
+  id: IdSchema,
+  name: z.string().nullable(),
+});
+export type CourseInstancePublishingExtension = z.infer<
+  typeof CourseInstancePublishingExtensionSchema
+>;
+
+export const CourseInstancePublishingExtensionEnrollmentSchema = z.object({
+  course_instance_publishing_extension_id: IdSchema,
+  enrollment_id: IdSchema,
+  id: IdSchema,
+});
+export type CourseInstancePublishingExtensionEnrollment = z.infer<
+  typeof CourseInstancePublishingExtensionEnrollmentSchema
+>;
 
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
@@ -1562,6 +1579,8 @@ export const TableNames = [
   'client_fingerprints',
   'course_instance_access_rules',
   'course_instance_permissions',
+  'course_instance_publishing_extension_enrollments',
+  'course_instance_publishing_extensions',
   'course_instance_required_plans',
   'course_instance_usages',
   'course_instances',
