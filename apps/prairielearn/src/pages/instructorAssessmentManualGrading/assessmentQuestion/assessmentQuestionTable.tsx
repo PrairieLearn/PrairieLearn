@@ -811,7 +811,8 @@ function AssessmentQuestionTable({
     async function handlePointsFormSubmit(this: HTMLFormElement, event: Event) {
       event.preventDefault();
       const formData = new FormData(this);
-      const postBody = new URLSearchParams(formData as any);
+      // @ts-expect-error - It doesn't like converting FormData to an object
+      const postBody = new URLSearchParams(Object.fromEntries(formData.entries()));
 
       try {
         const response = await fetch(this.action || '', { method: 'POST', body: postBody });
@@ -831,7 +832,7 @@ function AssessmentQuestionTable({
               link.href = data.conflict_details_url;
             }
             // Show the modal using Bootstrap's Modal API
-            const bsModal = new (window as any).bootstrap.Modal(modal);
+            const bsModal = new window.bootstrap.Modal(modal);
             bsModal.show();
           }
         }
@@ -840,7 +841,7 @@ function AssessmentQuestionTable({
         // Find the button that triggered this form's popover
         const popoverTriggers = document.querySelectorAll('[data-bs-toggle="popover"]');
         popoverTriggers.forEach((trigger) => {
-          const popoverInstance = (window as any).bootstrap.Popover.getInstance(trigger);
+          const popoverInstance = window.bootstrap.Popover.getInstance(trigger);
           if (popoverInstance) {
             popoverInstance.hide();
           }
@@ -861,16 +862,17 @@ function AssessmentQuestionTable({
     function handlePopoverShown(this: Element) {
       // Focus the first non-hidden input
       const form = document.querySelector<HTMLFormElement>('form[name=edit-points-form]');
-      if (form) {
-        const input = form.querySelector<HTMLInputElement>('input:not([type="hidden"])');
-        if (input) {
-          input.focus();
-        }
-
-        // Remove any existing event listeners to prevent duplicates
-        form.removeEventListener('submit', handlePointsFormSubmit as any);
-        form.addEventListener('submit', handlePointsFormSubmit as any);
+      if (!form) {
+        return;
       }
+      const input = form.querySelector<HTMLInputElement>('input:not([type="hidden"])');
+      if (input) {
+        input.focus();
+      }
+
+      // Remove any existing event listeners to prevent duplicates
+      form.removeEventListener('submit', handlePointsFormSubmit);
+      form.addEventListener('submit', handlePointsFormSubmit);
     }
 
     // Attach event listeners to all popover trigger buttons
@@ -881,6 +883,9 @@ function AssessmentQuestionTable({
 
     // Cleanup function
     return () => {
+      const form = document.querySelector<HTMLFormElement>('form[name=edit-points-form]');
+      form?.removeEventListener('submit', handlePointsFormSubmit);
+
       popoverButtons.forEach((button) => {
         button.removeEventListener('shown.bs.popover', handlePopoverShown);
       });
