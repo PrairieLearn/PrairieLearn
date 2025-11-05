@@ -18,6 +18,12 @@ li.pl-order-blocks-code {
   padding: 0px !important;
 }
 
+li.pl-order-blocks-code .pl-order-block-handle {
+  flex: 0 0 16px;
+  width: 16px;
+  margin-left: 2px;
+}
+
 .pl-order-blocks-code > .pl-code,
 .pl-order-blocks-code > .pl-code div {
   /* override margins on code block to ensure code is centered properly */
@@ -177,3 +183,5 @@ div.pl-order-blocks-header {
   width: 100%;
   padding: 0.25em 0 0.25em 0;
 }
+
+
