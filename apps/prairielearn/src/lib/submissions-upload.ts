@@ -118,11 +118,13 @@ export async function uploadSubmissions(
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
 
-    // Calculate the maximum number of points attainable for the assessment.
     const assessmentQuestions = await selectAssessmentQuestions({
       assessment_id,
     });
 
+    // The maximum points of the assessment instance are not available
+    // in the CSV export, so we compute the it using the maximum points of
+    // the assessment questions of the assessment.
     const maxPoints = assessmentQuestions.reduce(
       (sum, assessmentQuestion) => sum + (assessmentQuestion.assessment_question.max_points ?? 0),
       0,
