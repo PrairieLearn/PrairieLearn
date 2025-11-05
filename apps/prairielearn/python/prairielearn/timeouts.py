@@ -112,7 +112,7 @@ def async_raise(target_tid: int, exception: type[Exception]) -> None:
         ValueError: If the thread ID is invalid.
         SystemError: If the process fails to set AsyncExec
     """
-    # TODO: Review this when PL eventually updates to a post no-GIL Python version.
+    # TODO: Update this code when we are running no-GIL Python version 3.14+.
 
     # Ensuring and releasing GIL are useless since we're not in C
     # gil_state = ctypes.pythonapi.PyGILState_Ensure()
