@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
-import { buildAuthzData } from '../../lib/authz-data.js';
+import { calculateAuthData } from '../../lib/authz-data.js';
 import { features } from '../../lib/features/index.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
 import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
@@ -73,24 +73,25 @@ router.post('/', [
       throw new error.HttpStatusError(400, 'Enrollment unavailable, managed via LTI');
     }
     if (req.body.__action === 'enroll') {
-      const { authzData, authzCourseInstance, authzInstitution, authzCourse } =
-        await buildAuthzData({
-          authn_user: res.locals.authn_user,
-          course_id: null,
-          course_instance_id: req.body.course_instance_id,
+      const { authResult, courseInstance, institution, course } = await calculateAuthData({
+        user: res.locals.authn_user,
+        course_id: null,
+        course_instance_id: req.body.course_instance_id,
+        ip: req.ip ?? null,
+        req_date: res.locals.req_date,
+        overrides: {
           is_administrator: res.locals.is_administrator,
-          ip: req.ip ?? null,
-          req_date: res.locals.req_date,
-        });
+        },
+      });
 
-      if (authzCourseInstance == null) {
+      if (courseInstance == null) {
         throw new error.HttpStatusError(403, 'Access denied');
       }
 
       const existingEnrollment = await run(async () => {
         return await selectOptionalEnrollmentByUid({
           uid: res.locals.authn_user.uid,
-          courseInstance: authzCourseInstance,
+          courseInstance,
           requestedRole: 'System',
           authzData: dangerousFullSystemAuthz(),
         });
@@ -100,15 +101,15 @@ router.post('/', [
         'enrollment-management',
         res.locals,
       );
-      const selfEnrollmentEnabled = authzCourseInstance.self_enrollment_enabled;
+      const selfEnrollmentEnabled = courseInstance.self_enrollment_enabled;
       const selfEnrollmentExpired =
-        authzCourseInstance.self_enrollment_enabled_before_date != null &&
-        new Date() >= authzCourseInstance.self_enrollment_enabled_before_date;
+        courseInstance.self_enrollment_enabled_before_date != null &&
+        new Date() >= courseInstance.self_enrollment_enabled_before_date;
 
       const institutionRestrictionSatisfied =
-        res.locals.authn_user.institution_id === authzInstitution.id ||
+        res.locals.authn_user.institution_id === institution.id ||
         !enrollmentManagementEnabled ||
-        !authzCourseInstance.self_enrollment_restrict_to_institution;
+        !courseInstance.self_enrollment_restrict_to_institution;
 
       const canJoin =
         existingEnrollment != null &&
@@ -127,15 +128,15 @@ router.post('/', [
       }
 
       await ensureCheckedEnrollment({
-        institution: authzInstitution,
-        course: authzCourse,
-        courseInstance: authzCourseInstance,
+        institution,
+        course,
+        courseInstance,
         requestedRole: 'Student',
-        authzData,
+        authzData: authResult,
         actionDetail: 'explicit_joined',
       });
 
-      const courseDisplayName = `${authzCourse.short_name}: ${authzCourse.title}, ${authzCourseInstance.long_name}`;
+      const courseDisplayName = `${course.short_name}: ${course.title}, ${courseInstance.long_name}`;
       flash('success', `You have joined ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else {
