@@ -31,7 +31,7 @@ export function StudentAssessmentAccess({
     resLocals,
     pageTitle: `${assessment_set.abbreviation}${assessment.number}: ${assessment.title}`,
     navContext: {
-      type: 'plain',
+      type: 'student',
       page: 'assessment_instance',
     },
     preContent: html`

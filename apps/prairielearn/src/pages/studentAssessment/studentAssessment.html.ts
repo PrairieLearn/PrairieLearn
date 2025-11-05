@@ -25,8 +25,8 @@ export function StudentAssessment({
     resLocals,
     pageTitle: `${assessment_set.abbreviation}${assessment.number}: ${assessment.title}`,
     navContext: {
-      type: 'plain',
-      page: undefined,
+      type: 'student',
+      page: 'assessment',
     },
     headContent: html`
       ${compiledScriptTag('studentAssessmentClient.ts')}

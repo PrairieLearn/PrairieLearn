@@ -27,8 +27,8 @@ export function StudentCourseInstanceUpgrade({
     resLocals,
     pageTitle: 'Upgrade required',
     navContext: {
-      type: 'plain',
-      page: undefined,
+      type: 'student',
+      page: 'upgrade',
     },
     headContent: compiledScriptTag('studentCourseInstanceUpgradeClient.ts'),
     content: html`
@@ -97,8 +97,8 @@ export function CourseInstanceStudentUpdateSuccess({
     resLocals,
     pageTitle: 'Upgrade successful',
     navContext: {
-      type: 'plain',
-      page: undefined,
+      type: 'student',
+      page: 'upgrade',
     },
     content: html`
       <h1>Thanks!</h1>
