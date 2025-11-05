@@ -3,7 +3,12 @@ import assert from 'assert';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { type CalculateAuthDataResult, FullAuthzDataSchema } from './authz-data-lib.js';
+import {
+  type CalculateAuthDataResult,
+  FullAuthzDataSchema,
+  calculateCourseInstanceRolePermissions,
+  calculateCourseRolePermissions,
+} from './authz-data-lib.js';
 import {
   type EnumCourseInstanceRole,
   type EnumCourseRole,
@@ -190,23 +195,5 @@ export async function calculateAuthData({
     course: rawAuthzData.course,
     institution: rawAuthzData.institution,
     courseInstance: rawAuthzData.course_instance,
-  };
-}
-
-export function calculateCourseRolePermissions(role: EnumCourseRole) {
-  return {
-    has_course_permission_preview: ['Previewer', 'Viewer', 'Editor', 'Owner'].includes(role),
-    has_course_permission_view: ['Viewer', 'Editor', 'Owner'].includes(role),
-    has_course_permission_edit: ['Editor', 'Owner'].includes(role),
-    has_course_permission_own: ['Owner'].includes(role),
-  };
-}
-
-export function calculateCourseInstanceRolePermissions(role: EnumCourseInstanceRole) {
-  return {
-    has_course_instance_permission_view: ['Student Data Viewer', 'Student Data Editor'].includes(
-      role,
-    ),
-    has_course_instance_permission_edit: ['Student Data Editor'].includes(role),
   };
 }
