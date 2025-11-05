@@ -169,7 +169,6 @@ router.get(
       return;
     }
 
-    // For now, this is a development-only feature, so that can can get PRs merged without affecting users.
     const enrollmentManagementEnabled =
       (await features.enabled('enrollment-management', {
         institution_id: institution.id,
@@ -211,6 +210,7 @@ router.get(
             <Hydrate fullHeight>
               <InstructorStudents
                 enrollmentManagementEnabled={enrollmentManagementEnabled}
+                hasModernPublishing={courseInstance.modern_publishing}
                 isDevMode={process.env.NODE_ENV === 'development'}
                 authzData={authz_data}
                 students={students}

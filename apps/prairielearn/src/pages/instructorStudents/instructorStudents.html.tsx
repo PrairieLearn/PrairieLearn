@@ -151,6 +151,7 @@ interface StudentsCardProps {
   courseInstance: StaffCourseInstanceContext['course_instance'];
   csrfToken: string;
   enrollmentManagementEnabled: boolean;
+  hasModernPublishing: boolean;
   students: StudentRow[];
   timezone: string;
   urlPrefix: string;
@@ -161,6 +162,7 @@ function StudentsCard({
   course,
   courseInstance,
   enrollmentManagementEnabled,
+  hasModernPublishing,
   students: initialStudents,
   timezone,
   csrfToken,
@@ -382,7 +384,7 @@ function StudentsCard({
         }}
         headerButtons={
           <>
-            {enrollmentManagementEnabled && (
+            {enrollmentManagementEnabled && hasModernPublishing && (
               <>
                 <Button
                   variant="light"
@@ -464,6 +466,7 @@ export const InstructorStudents = ({
   courseInstance,
   course,
   enrollmentManagementEnabled,
+  hasModernPublishing,
   csrfToken,
   isDevMode,
   urlPrefix,
@@ -482,6 +485,7 @@ export const InstructorStudents = ({
           course={course}
           courseInstance={courseInstance}
           enrollmentManagementEnabled={enrollmentManagementEnabled}
+          hasModernPublishing={hasModernPublishing}
           students={students}
           timezone={timezone}
           csrfToken={csrfToken}
