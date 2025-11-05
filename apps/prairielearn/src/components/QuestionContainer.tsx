@@ -581,7 +581,10 @@ export function QuestionFooterContent({
                 `}
             ${showNewVariantButton
               ? html`
-                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ms-1">
+                  <a
+                    href="${newVariantUrl}"
+                    class="btn btn-primary disable-on-click ms-1 js-new-variant-button"
+                  >
                     New variant
                   </a>
                 `

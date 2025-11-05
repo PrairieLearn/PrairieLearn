@@ -336,4 +336,42 @@ router.post(
   }),
 );
 
+router.get(
+  '/variant',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
+
+    // Render the preview.
+    await getAndRenderVariant(variant_id, null, res.locals, {
+      urlOverrides: {
+        // By default, this would be the URL to the instructor question preview page.
+        // We need to redirect to this same page instead.
+        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`,
+      },
+    });
+    await logPageView('instructorQuestionPreview', req, res);
+
+    const questionContainerHtml = QuestionContainer({
+      resLocals: res.locals,
+      questionContext: 'instructor',
+    });
+
+    res.send(questionContainerHtml.toString());
+  }),
+);
+
+router.post(
+  '/variant',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    if (req.body.__action === 'grade' || req.body.__action === 'save') {
+      const variantId = await processSubmission(req, res);
+      res.redirect(
+        `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}/variant?variant_id=${variantId}`,
+      );
+    } else {
+      throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
+    }
+  }),
+);
+
 export default router;

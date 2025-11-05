@@ -17,6 +17,8 @@ export function AiQuestionGenerationEditor({
   chatCsrfToken,
   questionContainerHtml,
   showJobLogsLink,
+  variantUrl,
+  variantCsrfToken,
 }: {
   question: Question;
   initialMessages: QuestionGenerationUIMessage[];
@@ -27,6 +29,8 @@ export function AiQuestionGenerationEditor({
   chatCsrfToken: string;
   questionContainerHtml: string;
   showJobLogsLink: boolean;
+  variantUrl: string;
+  variantCsrfToken: string;
 }) {
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const newVariantRef = useRef<NewVariantHandle>(null);
@@ -91,7 +95,9 @@ export function AiQuestionGenerationEditor({
           questionFiles={questionFiles}
           richTextEditorEnabled={richTextEditorEnabled}
           questionContainerHtml={questionContainerHtml}
-          csrfToken={csrfToken}
+          csrfToken={variantCsrfToken}
+          variantUrl={variantUrl}
+          variantCsrfToken={variantCsrfToken}
           newVariantRef={newVariantRef}
         />
       </div>

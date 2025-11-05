@@ -33,6 +33,12 @@ export function InstructorAiGenerateDraftEditor({
     authn_user_id: resLocals.authn_user?.user_id ?? '',
   });
 
+  const variantUrl = `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/variant`;
+  const variantCsrfToken = generateCsrfToken({
+    url: variantUrl,
+    authn_user_id: resLocals.authn_user?.user_id ?? '',
+  });
+
   return PageLayout({
     resLocals,
     pageTitle: 'AI Question Editor',
@@ -73,6 +79,8 @@ export function InstructorAiGenerateDraftEditor({
           chatCsrfToken={chatCsrfToken}
           questionContainerHtml={questionContainerHtml}
           showJobLogsLink={resLocals.is_administrator}
+          variantUrl={variantUrl}
+          variantCsrfToken={variantCsrfToken}
         />
       </Hydrate>
     ),
