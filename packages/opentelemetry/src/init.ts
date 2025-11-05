@@ -78,7 +78,6 @@ class ForceSampleSampler implements Sampler {
     links: Link[],
   ) {
     if (attributes['force_sample'] === true) {
-      console.log('force sampling!');
       return { decision: SamplingDecision.RECORD_AND_SAMPLED };
     }
 
