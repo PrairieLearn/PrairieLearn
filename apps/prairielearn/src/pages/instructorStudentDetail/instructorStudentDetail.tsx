@@ -110,6 +110,7 @@ router.get(
               hasCourseInstancePermissionEdit={
                 pageContext.authz_data.has_course_instance_permission_edit
               }
+              hasModernPublishing={courseInstance.modern_publishing}
               enrollmentManagementEnabled={enrollmentManagementEnabled}
             />
           </Hydrate>
