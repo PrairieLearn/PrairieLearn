@@ -10,12 +10,12 @@ import { run } from '@prairielearn/run';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import {
-  type CalculateAuthDataSuccessResult,
-  type FullAuthzData,
+  type ConstructedCourseOrInstanceSuccessContext,
+  type CourseOrInstanceContextData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
 } from '../lib/authz-data-lib.js';
-import { calculateAuthData } from '../lib/authz-data.js';
+import { constructCourseOrInstanceContext } from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import {
@@ -66,15 +66,15 @@ function canBecomeEffectiveUser({
   effectiveAuthzData,
   effectiveUserHasInstructorAccessToCourseInstance,
 }: {
-  authnAuthzData: CalculateAuthDataSuccessResult;
-  effectiveAuthzData: CalculateAuthDataSuccessResult;
+  authnAuthzData: ConstructedCourseOrInstanceSuccessContext;
+  effectiveAuthzData: ConstructedCourseOrInstanceSuccessContext;
   effectiveUserHasInstructorAccessToCourseInstance: boolean | null;
 }): Result<void> {
   const failedPermissionCheck = [
     {
       hasFailedCheck:
-        !authnAuthzData.authResult.has_course_permission_preview &&
-        effectiveAuthzData.authResult.has_course_permission_preview,
+        !authnAuthzData.authzData.has_course_permission_preview &&
+        effectiveAuthzData.authzData.has_course_permission_preview,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course previewer, when you are
@@ -84,8 +84,8 @@ function canBecomeEffectiveUser({
     },
     {
       hasFailedCheck:
-        !authnAuthzData.authResult.has_course_permission_view &&
-        effectiveAuthzData.authResult.has_course_permission_view,
+        !authnAuthzData.authzData.has_course_permission_view &&
+        effectiveAuthzData.authzData.has_course_permission_view,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course viewer, when you are
@@ -95,8 +95,8 @@ function canBecomeEffectiveUser({
     },
     {
       hasFailedCheck:
-        !authnAuthzData.authResult.has_course_permission_edit &&
-        effectiveAuthzData.authResult.has_course_permission_edit,
+        !authnAuthzData.authzData.has_course_permission_edit &&
+        effectiveAuthzData.authzData.has_course_permission_edit,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course editor, when you are
@@ -106,8 +106,8 @@ function canBecomeEffectiveUser({
     },
     {
       hasFailedCheck:
-        !authnAuthzData.authResult.has_course_permission_own &&
-        effectiveAuthzData.authResult.has_course_permission_own,
+        !authnAuthzData.authzData.has_course_permission_own &&
+        effectiveAuthzData.authzData.has_course_permission_own,
       errorMessage: () => html`
         <p>
           You have tried to change the effective user to one who is a course owner, when you are not
@@ -117,8 +117,8 @@ function canBecomeEffectiveUser({
     },
     {
       hasFailedCheck:
-        !authnAuthzData.authResult.has_course_instance_permission_view &&
-        effectiveAuthzData.authResult.has_course_instance_permission_view &&
+        !authnAuthzData.authzData.has_course_instance_permission_view &&
+        effectiveAuthzData.authzData.has_course_instance_permission_view &&
         effectiveAuthzData.courseInstance !== null,
       errorMessage: () => html`
         <p>
@@ -131,8 +131,8 @@ function canBecomeEffectiveUser({
     },
     {
       hasFailedCheck:
-        !authnAuthzData.authResult.has_course_instance_permission_edit &&
-        effectiveAuthzData.authResult.has_course_instance_permission_edit &&
+        !authnAuthzData.authzData.has_course_instance_permission_edit &&
+        effectiveAuthzData.authzData.has_course_instance_permission_edit &&
         effectiveAuthzData.courseInstance !== null,
       errorMessage: () => html`
         <p>
@@ -148,11 +148,11 @@ function canBecomeEffectiveUser({
       // other overrides) with a different UID than the authn user (note UID is unique), and
       // the authn user is not a Student Data Editor
       hasFailedCheck:
-        effectiveAuthzData.authResult.user.uid !== authnAuthzData.authResult.user.uid && // effective uid is not the same as authn uid
-        effectiveAuthzData.authResult.has_student_access_with_enrollment && // effective user is enrolled with access
+        effectiveAuthzData.authzData.user.uid !== authnAuthzData.authzData.user.uid && // effective uid is not the same as authn uid
+        effectiveAuthzData.authzData.has_student_access_with_enrollment && // effective user is enrolled with access
         effectiveUserHasInstructorAccessToCourseInstance != null &&
         !effectiveUserHasInstructorAccessToCourseInstance && // effective user is not an instructor (i.e., is a student)
-        !authnAuthzData.authResult.has_course_instance_permission_edit &&
+        !authnAuthzData.authzData.has_course_instance_permission_edit &&
         effectiveAuthzData.courseInstance !== null,
       errorMessage: () => html`
         <p>
@@ -172,12 +172,12 @@ function canBecomeEffectiveUser({
       // as a student without enrolling in their own course.
       hasFailedCheck:
         !idsEqual(
-          effectiveAuthzData.authResult.user.user_id,
-          authnAuthzData.authResult.user.user_id,
+          effectiveAuthzData.authzData.user.user_id,
+          authnAuthzData.authzData.user.user_id,
         ) &&
-        !effectiveAuthzData.authResult.has_course_permission_preview &&
-        !effectiveAuthzData.authResult.has_course_instance_permission_view &&
-        !effectiveAuthzData.authResult.has_student_access_with_enrollment &&
+        !effectiveAuthzData.authzData.has_course_permission_preview &&
+        !effectiveAuthzData.authzData.has_course_instance_permission_view &&
+        !effectiveAuthzData.authzData.has_student_access_with_enrollment &&
         effectiveAuthzData.courseInstance !== null,
       errorMessage: () => html`
         <p>
@@ -296,19 +296,19 @@ type SelectUser = z.infer<typeof SelectUserSchema>;
 
 interface ResLocalsCourseAuthz {
   authn_user: ResLocalsAuthnUser['authn_user'];
-  authn_mode: FullAuthzData['mode'];
-  authn_mode_reason: FullAuthzData['mode_reason'];
+  authn_mode: CourseOrInstanceContextData['mode'];
+  authn_mode_reason: CourseOrInstanceContextData['mode_reason'];
   authn_is_administrator: ResLocalsAuthnUser['is_administrator'];
-  authn_course_role: FullAuthzData['permissions_course']['course_role'];
+  authn_course_role: CourseOrInstanceContextData['permissions_course']['course_role'];
   authn_has_course_permission_preview: boolean;
   authn_has_course_permission_view: boolean;
   authn_has_course_permission_edit: boolean;
   authn_has_course_permission_own: boolean;
   user: ResLocalsAuthnUser['authn_user'];
-  mode: FullAuthzData['mode'];
-  mode_reason: FullAuthzData['mode_reason'];
+  mode: CourseOrInstanceContextData['mode'];
+  mode_reason: CourseOrInstanceContextData['mode_reason'];
   is_administrator: ResLocalsAuthnUser['is_administrator'];
-  course_role: FullAuthzData['permissions_course']['course_role'];
+  course_role: CourseOrInstanceContextData['permissions_course']['course_role'];
   has_course_permission_preview: boolean;
   has_course_permission_view: boolean;
   has_course_permission_edit: boolean;
@@ -317,22 +317,22 @@ interface ResLocalsCourseAuthz {
 }
 
 interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
-  authn_course_instance_role: FullAuthzData['permissions_course_instance']['course_instance_role'];
+  authn_course_instance_role: CourseOrInstanceContextData['permissions_course_instance']['course_instance_role'];
   authn_has_course_instance_permission_view: boolean;
   authn_has_course_instance_permission_edit: boolean;
-  authn_has_student_access: FullAuthzData['permissions_course_instance']['has_student_access'];
-  authn_has_student_access_with_enrollment: FullAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
-  course_instance_role: FullAuthzData['permissions_course_instance']['course_instance_role'];
+  authn_has_student_access: CourseOrInstanceContextData['permissions_course_instance']['has_student_access'];
+  authn_has_student_access_with_enrollment: CourseOrInstanceContextData['permissions_course_instance']['has_student_access_with_enrollment'];
+  course_instance_role: CourseOrInstanceContextData['permissions_course_instance']['course_instance_role'];
   has_course_instance_permission_view: boolean;
   has_course_instance_permission_edit: boolean;
-  has_student_access_with_enrollment: FullAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
-  has_student_access: FullAuthzData['permissions_course_instance']['has_student_access'];
+  has_student_access_with_enrollment: CourseOrInstanceContextData['permissions_course_instance']['has_student_access_with_enrollment'];
+  has_student_access: CourseOrInstanceContextData['permissions_course_instance']['has_student_access'];
   user_with_requested_uid_has_instructor_access_to_course_instance: boolean | null;
 }
 
 export interface ResLocalsCourse {
-  course: FullAuthzData['course'];
-  institution: FullAuthzData['institution'];
+  course: CourseOrInstanceContextData['course'];
+  institution: CourseOrInstanceContextData['institution'];
   side_nav_expanded: boolean;
   authz_data: ResLocalsCourseAuthz;
   user: ResLocalsCourseAuthz['user'];
@@ -342,7 +342,7 @@ export interface ResLocalsCourse {
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {
-  course_instance: NonNullable<FullAuthzData['course_instance']>;
+  course_instance: NonNullable<CourseOrInstanceContextData['course_instance']>;
   authz_data: ResLocalsCourseInstanceAuthz;
   user: ResLocalsCourseInstanceAuthz['user'];
 }
@@ -356,11 +356,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   }
 
   const {
-    authResult: authnAuthResult,
+    authzData: authnAuthResult,
     course: authnCourse,
     institution: authnInstitution,
     courseInstance: authnCourseInstance,
-  } = await calculateAuthData({
+  } = await constructCourseOrInstanceContext({
     user: res.locals.authn_user,
     // Note that req.params.course_id and req.params.course_instance_id are strings and not
     // numbers - this is why we can use the pattern "id || null" to check if they exist.
@@ -476,7 +476,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   });
 
   const {
-    authResult: effectiveAuthResult,
+    authzData: effectiveAuthResult,
     course: effectiveCourse,
     institution: effectiveInstitution,
     courseInstance: effectiveCourseInstance,
@@ -488,7 +488,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     if (overrides.length === 0) {
       // If we don't have any overrides, the effective user is the same as the authn user.
       return {
-        authResult: authnAuthResult,
+        authzData: authnAuthResult,
         course: authnCourse,
         institution: authnInstitution,
         courseInstance: authnCourseInstance,
@@ -503,7 +503,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       if ((res.locals.viewType || 'none') === 'student') {
         // If we can't set the effective user, the effective user is the same as the authn user.
         return {
-          authResult: authnAuthResult,
+          authzData: authnAuthResult,
           course: authnCourse,
           institution: authnInstitution,
           courseInstance: authnCourseInstance,
@@ -524,11 +524,11 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // We are trying to override the user data.
 
     const {
-      authResult: effectiveAuthResult,
+      authzData: effectiveAuthResult,
       course: effectiveCourse,
       institution: effectiveInstitution,
       courseInstance: effectiveCourseInstance,
-    } = await calculateAuthData({
+    } = await constructCourseOrInstanceContext({
       user: effectiveUserData ? effectiveUserData.user : authnAuthResult.user,
       course_id: req.params.course_id || null,
       course_instance_id: req.params.course_instance_id || null,
@@ -551,7 +551,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // are required.
     if (effectiveAuthResult === null) {
       return {
-        authResult: {
+        authzData: {
           user: effectiveUserData ? effectiveUserData.user : authnAuthResult.user,
           is_administrator: false,
           course_role: 'None' as EnumCourseRole,
@@ -588,7 +588,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       }
     }
     return {
-      authResult: effectiveAuthResult,
+      authzData: effectiveAuthResult,
       course: effectiveCourse,
       institution: effectiveInstitution,
       courseInstance: effectiveCourseInstance,
@@ -597,13 +597,13 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   const canBecomeEffectiveUserResult = canBecomeEffectiveUser({
     authnAuthzData: {
-      authResult: authnAuthResult,
+      authzData: authnAuthResult,
       course: authnCourse,
       institution: authnInstitution,
       courseInstance: authnCourseInstance,
     },
     effectiveAuthzData: {
-      authResult: effectiveAuthResult,
+      authzData: effectiveAuthResult,
       course: effectiveCourse,
       institution: effectiveInstitution,
       courseInstance: effectiveCourseInstance,
