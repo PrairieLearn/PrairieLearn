@@ -7,6 +7,10 @@ window.PLOrderBlocks = function (uuid, options) {
   const optionsElementId = '#order-blocks-options-' + uuid;
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
+  const isTouchDevice =
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0 ||
+    (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -304,8 +308,19 @@ window.PLOrderBlocks = function (uuid, options) {
     ).join(', ');
   }
 
+  // Marks content areas that can scroll with 'is-scrollable' class
+  // We want the user to be able to scroll these areas without triggering drag-and-drop.
+  function markScrollableContent(container) {
+    container.querySelectorAll('.pl-order-block-content').forEach((el) => {
+      const canScrollX = el.scrollWidth > el.clientWidth;
+      const canScrollY = el.scrollHeight > el.clientHeight;
+      el.classList.toggle('is-scrollable', canScrollX || canScrollY);
+    });
+  }
+
   const sortables = optionsElementId + ', ' + dropzoneElementId;
-  $(sortables).sortable({
+  const baseCancel = 'input,textarea,button,select,option,a';
+  const sortableOpts = {
     items: '.pl-order-block:not(.nodrag)',
     // We add `a` to the default list of tags to account for help
     // popover triggers.
@@ -318,6 +333,7 @@ window.PLOrderBlocks = function (uuid, options) {
       if (enableIndentation) {
         drawIndentLocationLines(dropzoneElementId);
       }
+      markScrollableContent(fullContainer);
     },
     sort(event, ui) {
       // update the location of the placeholder as the item is dragged
@@ -336,11 +352,62 @@ window.PLOrderBlocks = function (uuid, options) {
       const leftDiff = calculateIndent(ui, ui.item.parent());
       ui.item[0].style.marginLeft = leftDiff + 'px';
       setAnswer();
-
       correctPairing(ui.item[0]);
+      markScrollableContent(fullContainer);
     },
-  });
-  initializeKeyboardHandling(optionsElementId, dropzoneElementId);
+  };
+
+  // Touch-specific adjustments to sortable options
+  if (isTouchDevice) {
+    sortableOpts.cancel = baseCancel + ', .pl-order-block-content.is-scrollable';
+    sortableOpts.handle = '.pl-order-block-handle';
+  }
+
+  $(sortables).sortable(sortableOpts);
+
+  // If a user is on a touch device, we need to distinguish between
+  // touch events that should trigger scrolling vs dragging.
+  if (isTouchDevice) {
+    const gateDragVsScroll = (e) => {
+      // Only care about touches inside a block's content area
+      const content = e.target.closest('.pl-order-block-content');
+      if (!content) return;
+
+      const canScroll =
+        content.scrollWidth > content.clientWidth || content.scrollHeight > content.clientHeight;
+
+      if (canScroll) {
+        // Let native scrolling happen; block Sortable/touch-punch from starting a drag
+        e.stopImmediatePropagation();
+      } else {
+         // No scrollbar so allow drag from anywhere
+        $(sortables).sortable('option', 'handle', false);
+      }
+    };
+
+    // Pointer events for hybrid devices
+    // Prevent drag-and-drop from interfering with scrolling
+    fullContainer.addEventListener('pointerdown', gateDragVsScroll, {
+      capture: true,
+      passive: true,
+    });
+    // Touch devices
+    // Prevent drag-and-drop from interfering with scrolling
+    fullContainer.addEventListener('touchstart', gateDragVsScroll, {
+      capture: true, 
+      passive: true,
+    });
+
+    // Mouse devices (some devices support both touch and mouse)
+    // Re-enable drag-and-drop when using mouse
+    fullContainer.addEventListener('mousedown', gateDragVsScroll, {
+      capture: true,
+    });
+  }
+  
+  // Update scrollable content markings on resize
+  window.addEventListener('resize', () => markScrollableContent(fullContainer));
+  initializeKeyboardHandling();
 
   if (enableIndentation) {
     $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);

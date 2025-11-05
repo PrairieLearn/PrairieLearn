@@ -173,6 +173,7 @@ div.pl-order-blocks-header {
   justify-content: center;
   margin-left: -10px;
   color: var(--bs-secondary);
+  touch-action: none;
 }
 
 .pl-order-block-content {
@@ -182,4 +183,5 @@ div.pl-order-blocks-header {
   min-width: 0;
   width: 100%;
   padding: 0.25em 0 0.25em 0;
+  touch-action: pan-x pan-y;
 }
