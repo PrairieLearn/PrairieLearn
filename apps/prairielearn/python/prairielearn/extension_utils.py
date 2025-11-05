@@ -6,7 +6,6 @@ from prairielearn import ...
 """
 
 import collections
-import importlib
 import importlib.util
 import os
 import re

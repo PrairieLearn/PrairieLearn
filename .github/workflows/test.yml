@@ -5,7 +5,7 @@ on:
     branches:
       - master
       # Build on all code freeze branches since we will deploy from them.
-      - '**-code-freeze'
+      - "**-code-freeze"
   pull_request:
   merge_group:
 
@@ -135,10 +135,10 @@ jobs:
           sudo systemctl restart postgresql.service
 
       - name: Set up Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
-          node-version: '22'
-          cache: 'yarn'
+          node-version: "22"
+          cache: "yarn"
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
@@ -152,12 +152,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: "3.10"
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-dependency-glob: 'pyproject.toml'
+          cache-dependency-glob: "pyproject.toml"
           cache-suffix: core
       - name: Install core Python dependencies
         run: make python-deps-core
@@ -188,7 +188,7 @@ jobs:
 
       - name: Upload Vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: blob-report-${{ matrix.shardIndex }}
           path: .vitest-reports/*
@@ -211,17 +211,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
-          node-version: '22'
-          cache: 'yarn'
+          node-version: "22"
+          cache: "yarn"
       - name: Set up Yarn
         # We only install the dependencies in the root workspace to avoid
         # installing dependencies that won't be used.
         # Note that this means playwright is installed in the root workspace, not the prairielearn workspace.
         run: yarn workspaces focus prairielearn
       - name: Download Vitest blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           path: .vitest-reports
           pattern: blob-report-*
@@ -230,7 +230,7 @@ jobs:
       - name: Merge Vitest reports
         run: yarn vitest --watch=false --merge-reports --coverage
       - name: Download Playwright blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           path: apps/prairielearn/test-results/blob-report
           pattern: playwright-blob-report-*
