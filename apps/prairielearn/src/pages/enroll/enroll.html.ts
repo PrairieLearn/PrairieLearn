@@ -13,7 +13,7 @@ export const CourseInstanceRowSchema = z.object({
   label: z.string(),
   short_label: z.string(),
   course_instance_id: z.string(),
-  enrollment: EnrollmentSchema,
+  enrollment: EnrollmentSchema.nullable(),
   instructor_access: z.boolean(),
 });
 type CourseInstance = z.infer<typeof CourseInstanceRowSchema>;
@@ -54,7 +54,8 @@ export function Enroll({
                         `
                       : html`
                           <td class="align-middle text-center">
-                            ${!['joined'].includes(course_instance.enrollment.status)
+                            ${!course_instance.enrollment ||
+                            !['joined'].includes(course_instance.enrollment.status)
                               ? html`
                                   <button
                                     type="button"
