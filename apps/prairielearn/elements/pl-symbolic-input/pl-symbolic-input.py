@@ -8,7 +8,7 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
-from prairielearn.timeouts import ThreadingTimeout, TimeoutState
+from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
 from typing_extensions import assert_never
 
 
@@ -710,7 +710,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         with ThreadingTimeout(SYMPY_TIMEOUT) as ctx:
             pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
         if ctx.state == TimeoutState.TIMED_OUT:
-            # If sympy times out, it's because the comparison couldn't converge, so the answer must be wrong.
+            # If sympy times out, it's because the comparison couldn't converge, so the answer was likely wrong.
             data["partial_scores"][name]["score"] = 0.0
     except ValueError as e:
         # We only want to catch the integer string conversion limit ValueError.

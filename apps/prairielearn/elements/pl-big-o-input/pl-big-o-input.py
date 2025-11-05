@@ -8,7 +8,7 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
-from prairielearn.timeouts import ThreadingTimeout, TimeoutState
+from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
 from typing_extensions import assert_never
 
 
@@ -296,7 +296,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 weight=weight,
             )
         if ctx.state == TimeoutState.TIMED_OUT:
-            # If sympy times out, it's because the comparison couldn't converge, so the answer must be wrong.
+            # If sympy times out, it's because the comparison couldn't converge, so the answer was likely wrong.
             data["partial_scores"][name]["score"] = 0.0
             data["partial_scores"][name]["feedback"] = (
                 "Your answer did not converge, so your expression may be too loose or tight."

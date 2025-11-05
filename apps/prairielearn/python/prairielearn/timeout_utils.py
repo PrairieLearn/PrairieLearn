@@ -1,5 +1,5 @@
 """Utilities for performing local, threaded timeouts.
-Implemenation from https://github.com/glenfant/stopit under the MIT license.
+Implementation from https://github.com/glenfant/stopit under the MIT license.
 
 ```python
 from prairielearn.timeouts import ...
@@ -31,21 +31,28 @@ class TimeoutExceptionError(Exception):
     """
 
 
-class BaseTimeout:
+class ThreadingTimeout:
     """Context manager for limiting in the time the execution of a block
 
-    :param seconds: ``float`` or ``int`` duration enabled to run the context
-      manager block
-    :param swallow_exc: ``False`` if you want to manage the
-      ``TimeoutException`` (or any other) in an outer ``try ... except``
-      structure. ``True`` (default) if you just want to check the execution of
-      the block with the ``state`` attribute of the context manager.
+    Parameters:
+        seconds (float | int): duration to run the context manager block
+        swallow_exec (bool): ``False`` if you want to manage ``TimeoutException``
+        (or any other) in an outer ``try ... except`` structure. ``True`` (default)
+        if you just want to check the execution of the block with the
+        ``state`` attribute of the context manager.
     """
 
     def __init__(self, seconds: float, *, swallow_exc: bool = True) -> None:
         self.seconds = seconds
         self.swallow_exc = swallow_exc
         self.state = TimeoutState.EXECUTED
+        tid = threading.current_thread().ident
+        if tid is None:
+            raise RuntimeError(
+                "Cannot create timeout context: thread ID is unavailable."
+            )
+        self.target_tid = tid
+        self.timer = None
 
     def __bool__(self) -> bool:
         """Return whether the context is not TIMED_OUT or INTERRUPTED"""
@@ -83,6 +90,13 @@ class BaseTimeout:
             self.suppress_interrupt()
         return False
 
+    def stop(self) -> None:
+        """Called by timer thread at timeout. Raises a Timeout exception in the
+        caller thread
+        """
+        self.state = TimeoutState.TIMED_OUT
+        async_raise(self.target_tid, TimeoutExceptionError)
+
     def cancel(self) -> None:
         """In case in the block you realize you don't need anymore
         limitation
@@ -90,14 +104,17 @@ class BaseTimeout:
         self.state = TimeoutState.CANCELED
         self.suppress_interrupt()
 
-    # Methods must be provided by subclasses
-    def suppress_interrupt(self) -> None:
-        """Removes/neutralizes the feature that interrupts the executed block"""
-        raise NotImplementedError
-
     def setup_interrupt(self) -> None:
-        """Installs/initializes the feature that interrupts the executed block"""
-        raise NotImplementedError
+        """Setting up the resource that interrupts the block"""
+        self.timer = threading.Timer(self.seconds, self.stop)
+        self.timer.start()
+
+    def suppress_interrupt(self) -> None:
+        """Removing the resource that interrupts the block"""
+        if self.timer is not None:
+            self.timer.cancel()
+        else:
+            raise ValueError("No timer has been initialized")
 
 
 def async_raise(target_tid: int, exception: type[Exception]) -> None:
@@ -105,8 +122,9 @@ def async_raise(target_tid: int, exception: type[Exception]) -> None:
     Read http://docs.python.org/c-api/init.html#PyThreadState_SetAsyncExc
     for further enlightenments.
 
-    :param target_tid: target thread identifier
-    :param exception: Exception class to be raised in that thread
+    Parameters:
+        target_id: target thread identifier
+        exception: Exception class to be raised in that thread
 
     Raises:
         ValueError: If the thread ID is invalid.
@@ -125,37 +143,3 @@ def async_raise(target_tid: int, exception: type[Exception]) -> None:
     if ret > 1:
         ctypes.pythonapi.PyThreadState_SetAsyncExc(tid_ctype(target_tid), None)
         raise SystemError("PyThreadState_SetAsyncExc failed")
-
-
-class ThreadingTimeout(BaseTimeout):
-    """Context manager for limiting in the time the execution of a block
-    using asynchronous threads launching exception.
-
-    See :class:`stopit.utils.BaseTimeout` for more information
-    """
-
-    def __init__(self, seconds: float, *, swallow_exc: bool = True) -> None:
-        super().__init__(seconds, swallow_exc=swallow_exc)
-        tid = threading.current_thread().ident
-        self.target_tid = tid if tid is not None else -1
-        self.timer = None
-
-    def stop(self) -> None:
-        """Called by timer thread at timeout. Raises a Timeout exception in the
-        caller thread
-        """
-        self.state = TimeoutState.TIMED_OUT
-        async_raise(self.target_tid, TimeoutExceptionError)
-
-    # Required overrides
-    def setup_interrupt(self) -> None:
-        """Setting up the resource that interrupts the block"""
-        self.timer = threading.Timer(self.seconds, self.stop)
-        self.timer.start()
-
-    def suppress_interrupt(self) -> None:
-        """Removing the resource that interrupts the block"""
-        if self.timer is not None:
-            self.timer.cancel()
-        else:
-            raise ValueError("No timer has been initialized")
