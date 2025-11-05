@@ -38,7 +38,7 @@ sudo make dev
 
 !!! note "Debugging workspaces"
 
-    If your workspaces won't start, check that you have set `"workspaceHostHomeDirRoot"` and `"workspaceHomeDirRoot"` in your `config.json`. If you are running natively, you need to change `"workspaceDevContainerHostname"` to "localhost".
+    If your workspaces won't start, check that you have set `"workspaceHostHomeDirRoot"` and `"workspaceHomeDirRoot"` in your `config.json`. If you are running natively on Mac OS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
 
     ```json file="config.json"
     {
