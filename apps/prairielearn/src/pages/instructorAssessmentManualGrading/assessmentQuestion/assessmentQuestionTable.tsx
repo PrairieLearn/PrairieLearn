@@ -325,7 +325,7 @@ function AssessmentQuestionTable({
         graders.add(generateAiGraderName(row.ai_grading_status));
       }
     });
-    return Array.from(graders).sort();
+    return Array.from(graders).toSorted();
   }, [instanceQuestions]);
 
   // Get all unique submission groups
@@ -334,7 +334,7 @@ function AssessmentQuestionTable({
     instanceQuestions.forEach((row) => {
       if (row.instance_question_group_name) groups.add(row.instance_question_group_name);
     });
-    return Array.from(groups).sort();
+    return Array.from(groups).toSorted();
   }, [instanceQuestions]);
 
   // Get all rubric items
@@ -793,10 +793,12 @@ function AssessmentQuestionTable({
 
   // Handle show/hide student info toggle
   const toggleStudentInfo = () => {
-    const newVisibility = { ...table.getState().columnVisibility };
-    newVisibility.user_or_group_name = !showStudentInfo;
-    newVisibility.uid = !showStudentInfo;
-    void setColumnVisibility(newVisibility as any);
+    const newVisibility = {
+      ...table.getState().columnVisibility,
+      user_or_group_name: !showStudentInfo,
+      uid: !showStudentInfo,
+    };
+    void setColumnVisibility(newVisibility);
     setShowStudentInfo(!showStudentInfo);
   };
 
