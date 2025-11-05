@@ -134,7 +134,7 @@ export async function uploadSubmissions(
     });
     const csvParser = createCsvParser(csvStream, {
       lowercaseHeader: false,
-      maxRecordSize: 1 << 20, // 1MB (should be plenty for a single line)
+      maxRecordSize: 1 << 24, // 16MB (should be plenty for a single line)
     });
     for await (const { info, record } of csvParser) {
       job.verbose(`Processing CSV line ${info.lines}: ${JSON.stringify(record)}`);

@@ -957,13 +957,15 @@ function AssessmentQuestionTable({
           <>
             <Button variant="light" size="sm" onClick={toggleStudentInfo}>
               <i class={showStudentInfo ? 'bi bi-eye-slash' : 'bi bi-eye'} aria-hidden="true" />{' '}
-              {showStudentInfo ? 'Hide student info' : 'Show student info'}
+              <span class="d-inline">
+                {showStudentInfo ? 'Hide student info' : 'Show student info'}
+              </span>
             </Button>
             {authzData.has_course_instance_permission_edit && (
               <Dropdown>
                 <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
                   <i class="fas fa-tags" aria-hidden="true" />{' '}
-                  <span class="d-none d-md-block">Tag for grading</span>
+                  <span class="d-none d-sm-inline">Tag for grading</span>
                 </Dropdown.Toggle>
                 <Dropdown.Menu align="end">
                   <Dropdown.Header>Assign for grading</Dropdown.Header>
