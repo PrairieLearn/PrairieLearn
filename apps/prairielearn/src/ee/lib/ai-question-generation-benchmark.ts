@@ -2,7 +2,7 @@ import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
-import { type EmbeddingModel, type LanguageModel, generateObject } from 'ai';
+import { type LanguageModel, generateObject } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';

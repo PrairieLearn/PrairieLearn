@@ -275,18 +275,15 @@ export function PageLayout({
             id="content"
             class="
             ${clsx(
-<<<<<<< HEAD
               resolvedOptions.contentPadding
                 ? resolvedOptions.fullWidth
                   ? 'container-fluid'
                   : 'container'
                 : null,
-              resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
-=======
-              resolvedOptions.fullWidth ? 'container-fluid' : 'container',
               resolvedOptions.paddingBottom && 'pb-4',
               !resolvedOptions.paddingSides && 'px-0',
->>>>>>> master
+              // TODO: replace `paddingSides` with `contentPadding`?
+              resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
               resolvedOptions.fullHeight && 'flex-grow-1',
             )}
           "
