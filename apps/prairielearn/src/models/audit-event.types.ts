@@ -23,40 +23,40 @@ export const requiredTableFields = {
  */
 export type SupportedTableActionCombination =
   | {
-      table_name: 'course_instances';
-      action_detail?: null;
+      tableName: 'course_instances';
+      actionDetail?: null;
     }
   | {
-      table_name: 'pl_courses';
-      action_detail?: null;
+      tableName: 'pl_courses';
+      actionDetail?: null;
     }
   | {
-      table_name: 'users';
-      action_detail?: null;
+      tableName: 'users';
+      actionDetail?: null;
     }
   | {
-      table_name: 'groups';
-      action_detail?: null;
+      tableName: 'groups';
+      actionDetail?: null;
     }
   | {
-      table_name: 'assessment_instances';
-      action_detail?: null;
+      tableName: 'assessment_instances';
+      actionDetail?: null;
     }
   | {
-      table_name: 'assessment_questions';
-      action_detail?: null;
+      tableName: 'assessment_questions';
+      actionDetail?: null;
     }
   | {
-      table_name: 'assessments';
-      action_detail?: null;
+      tableName: 'assessments';
+      actionDetail?: null;
     }
   | {
-      table_name: 'institutions';
-      action_detail?: null;
+      tableName: 'institutions';
+      actionDetail?: null;
     }
   | {
-      table_name: 'enrollments';
-      action_detail?:
+      tableName: 'enrollments';
+      actionDetail?:
         | 'implicit_joined'
         | 'explicit_joined'
         | 'invited'
@@ -69,5 +69,5 @@ export type SupportedTableActionCombination =
         | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<
-  Exclude<Extract<SupportedTableActionCombination, { table_name: T }>['action_detail'], null>
+  Exclude<Extract<SupportedTableActionCombination, { tableName: T }>['actionDetail'], null>
 >;

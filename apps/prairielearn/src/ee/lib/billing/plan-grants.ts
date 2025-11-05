@@ -41,29 +41,29 @@ function userHasRole(authz_data: any) {
 
 export async function checkPlanGrantsForLocals(locals: ResLocals) {
   const institution = InstitutionSchema.parse(locals.institution);
-  const course_instance = CourseInstanceSchema.parse(locals.course_instance);
+  const courseInstance = CourseInstanceSchema.parse(locals.course_instance);
 
   return await checkPlanGrants({
     institution,
-    course_instance,
-    authz_data: locals.authz_data,
+    courseInstance,
+    authzData: locals.authz_data,
   });
 }
 
 export async function checkPlanGrants({
   institution,
-  course_instance,
-  authz_data,
+  courseInstance,
+  authzData,
 }: {
   institution: Institution;
-  course_instance: CourseInstance;
-  authz_data: any;
+  courseInstance: CourseInstance;
+  authzData: any;
 }): Promise<boolean> {
-  if (userHasRole(authz_data)) {
+  if (userHasRole(authzData)) {
     return true;
   }
 
-  const requiredPlans = await getRequiredPlansForCourseInstance(course_instance.id);
+  const requiredPlans = await getRequiredPlansForCourseInstance(courseInstance.id);
 
   if (requiredPlans.length === 0) {
     // If there aren't any required plans, no need to check plan grants!
@@ -75,8 +75,8 @@ export async function checkPlanGrants({
   // *or* the user directly.
   const planGrants = await getPlanGrantsForPartialContexts({
     institution_id: institution.id,
-    course_instance_id: course_instance.id,
-    user_id: authz_data.user.user_id,
+    course_instance_id: courseInstance.id,
+    user_id: authzData.user.user_id,
   });
   const planGrantNames = getPlanNamesFromPlanGrants(planGrants);
 
