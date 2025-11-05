@@ -16,13 +16,13 @@
   },
   "dependencies": {
     "@prairielearn/marked-mathjax": "workspace:^",
-    "isomorphic-dompurify": "^2.30.1",
+    "isomorphic-dompurify": "^2.31.0",
     "marked": "^16.4.1",
     "mathjax": "^3.2.2"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.18.13",
+    "@types/node": "^22.19.0",
     "@vitest/coverage-v8": "^4.0.6",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
