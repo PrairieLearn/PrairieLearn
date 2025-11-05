@@ -87,6 +87,7 @@ router.post('/', [
 
     if (req.body.__action === 'enroll') {
       // We don't have authzData yet
+      // TODO: see #13275
       const existingEnrollment = await run(async () => {
         return await selectOptionalEnrollmentByUid({
           uid: res.locals.authn_user.uid,
