@@ -38,7 +38,7 @@ import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
-import { selectQuestionById, selectQuestionByQid } from '../../models/question.js';
+import { selectQuestionById } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';

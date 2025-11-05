@@ -6,7 +6,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
@@ -32,6 +32,7 @@ import { editQuestionWithAgent, getAgenticModel } from '../../lib/ai-question-ge
 import { type QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.types.js';
 import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-generation/redis.js';
 import { getIntervalUsage } from '../../lib/aiQuestionGeneration.js';
+import { selectAiQuestionGenerationMessages } from '../../models/ai-question-generation-message.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
@@ -142,11 +143,7 @@ router.use(
 router.get(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
-    const messages = await queryRows(
-      sql.select_ai_question_generation_messages,
-      { question_id: req.params.question_id },
-      AiQuestionGenerationMessageSchema,
-    );
+    const messages = await selectAiQuestionGenerationMessages(res.locals.question.id);
 
     const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
       return {
@@ -169,7 +166,7 @@ router.get(
     const courseFilesClient = getCourseFilesClient();
     const { files: questionFiles } = await courseFilesClient.getQuestionFiles.query({
       course_id: res.locals.course.id,
-      question_id: req.params.question_id,
+      question_id: res.locals.question.id,
     });
 
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
@@ -181,7 +178,7 @@ router.get(
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.
-        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`,
+        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
       },
     });
     await logPageView('instructorQuestionPreview', req, res);
@@ -209,7 +206,7 @@ router.get(
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const latestMessage = await queryOptionalRow(
       sql.select_latest_ai_question_generation_message,
-      { question_id: req.params.question_id },
+      { question_id: res.locals.question.id },
       AiQuestionGenerationMessageSchema,
     );
 
@@ -324,11 +321,11 @@ router.post(
         promptType: 'manual_change',
       });
 
-      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
+      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`);
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variantId = await processSubmission(req, res);
       res.redirect(
-        `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}?variant_id=${variantId}`,
+        `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}?variant_id=${variantId}`,
       );
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
@@ -346,7 +343,7 @@ router.get(
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.
-        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`,
+        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
       },
     });
     await logPageView('instructorQuestionPreview', req, res);
@@ -366,7 +363,7 @@ router.post(
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variantId = await processSubmission(req, res);
       res.redirect(
-        `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}/variant?variant_id=${variantId}`,
+        `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/variant?variant_id=${variantId}`,
       );
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
