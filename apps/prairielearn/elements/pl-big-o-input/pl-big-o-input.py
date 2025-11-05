@@ -8,6 +8,7 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
+from prairielearn.timeouts import ThreadingTimeout, TimeoutState
 from typing_extensions import assert_never
 
 
@@ -44,6 +45,7 @@ SHOW_SCORE_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "1"
 BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-big-o-input.mustache"
+SYMPY_TIMEOUT = 8
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -286,12 +288,19 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     big_o_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
 
     try:
-        pl.grade_answer_parameterized(
-            data,
-            name,
-            lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
-            weight=weight,
-        )
+        with ThreadingTimeout(SYMPY_TIMEOUT) as ctx:
+            pl.grade_answer_parameterized(
+                data,
+                name,
+                lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
+                weight=weight,
+            )
+        if ctx.state == TimeoutState.TIMED_OUT:
+            # If sympy times out, it's because the comparison couldn't converge, so the answer must be wrong.
+            data["partial_scores"][name]["score"] = 0.0
+            data["partial_scores"][name]["feedback"] = (
+                "Your answer did not converge, so your expression may be too loose or tight."
+            )
     except ValueError as e:
         # See https://github.com/PrairieLearn/PrairieLearn/pull/13178 for more context as to why we catch this error.
         if "integer string conversion" in str(e):
