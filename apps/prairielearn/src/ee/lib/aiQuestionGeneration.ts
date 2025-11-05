@@ -49,7 +49,7 @@ const sql = loadSqlEquiv(import.meta.url);
 // We're still using `4o` for question generation as it seems to have better
 // cost/performance characteristics. We'll revisit moving to a newer model in
 // the future.
-export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-4o-2024-11-20' satisfies OpenAIModelId;
+export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-5-2025-08-07' satisfies OpenAIModelId;
 
 const NUM_TOTAL_ATTEMPTS = 2;
 
@@ -262,30 +262,6 @@ export async function getAiQuestionGenerationCache() {
     redisUrl: config.nonVolatileRedisUrl,
   });
   return aiQuestionGenerationCache;
-}
-
-/**
- * Approximate the cost of the prompt, in US dollars.
- * Accounts for the cost of prompt, system, and completion tokens.
- */
-export function approximatePromptCost({
-  model,
-  prompt,
-}: {
-  model: keyof (typeof config)['costPerMillionTokens'];
-  prompt: string;
-}) {
-  const modelPricing = config.costPerMillionTokens[model];
-
-  // There are approximately 4 characters per token (source: https://platform.openai.com/tokenizer),
-  // so we divide the length of the prompt by 4 to approximate the number of prompt tokens.
-  // Also, on average, we generate 3750 system tokens per prompt.
-  const approxInputTokenCost = ((prompt.length / 4 + 3750) * modelPricing.input) / 1e6;
-
-  // On average, we generate 1000 completion tokens per prompt. This includes reasoning tokens.
-  const approxOutputTokenCost = (1000 * modelPricing.output) / 1e6;
-
-  return approxInputTokenCost + approxOutputTokenCost;
 }
 
 /**

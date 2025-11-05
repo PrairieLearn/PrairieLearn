@@ -31,7 +31,11 @@ import { DefaultMap } from '../../../lib/default-map.js';
 import { REPOSITORY_ROOT_PATH } from '../../../lib/paths.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectQuestionById } from '../../../models/question.js';
-import { addCompletionCostToIntervalUsage, checkRender } from '../aiQuestionGeneration.js';
+import {
+  QUESTION_GENERATION_OPENAI_MODEL,
+  addCompletionCostToIntervalUsage,
+  checkRender,
+} from '../aiQuestionGeneration.js';
 import { ALLOWED_ELEMENTS, buildContextForElementDocs } from '../context-parsers/documentation.js';
 import { getPythonLibraries } from '../context-parsers/pyproject.js';
 import {
@@ -126,12 +130,7 @@ export function getAgenticModel(): LanguageModel {
     apiKey: config.aiQuestionGenerationOpenAiApiKey,
     organization: config.aiQuestionGenerationOpenAiOrganization,
   });
-  return openai('gpt-5');
-  // const openai = createOpenAI({
-  //   baseURL: 'http://127.0.0.1:1234/v1',
-  //   apiKey: 'testing',
-  // });
-  // return openai('qwen/qwen3-30b-a3b-2507');
+  return openai(QUESTION_GENERATION_OPENAI_MODEL);
 }
 
 export async function createQuestionGenerationAgent({

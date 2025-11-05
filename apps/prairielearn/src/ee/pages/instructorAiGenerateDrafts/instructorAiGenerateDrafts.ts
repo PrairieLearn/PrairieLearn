@@ -9,11 +9,7 @@ import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { editQuestionWithAgent, getAgenticModel } from '../../lib/ai-question-generation/agent.js';
-import {
-  QUESTION_GENERATION_OPENAI_MODEL,
-  approximatePromptCost,
-  getIntervalUsage,
-} from '../../lib/aiQuestionGeneration.js';
+import { getIntervalUsage } from '../../lib/aiQuestionGeneration.js';
 
 import {
   DraftMetadataWithQidSchema,
@@ -98,22 +94,8 @@ router.post(
         userId: res.locals.authn_user.user_id,
       });
 
-      const approxPromptCost = approximatePromptCost({
-        model: QUESTION_GENERATION_OPENAI_MODEL,
-        prompt: req.body.prompt,
-      });
-
-      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
-        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
-
-        res.send(
-          RateLimitExceeded({
-            // If the user has more tokens than the threshold of 100 tokens,
-            // they can shorten their message to avoid exceeding the rate limit.
-            canShortenMessage:
-              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
-          }),
-        );
+      if (intervalCost > config.aiQuestionGenerationRateLimitDollars) {
+        res.send(RateLimitExceeded());
         return;
       }
 
