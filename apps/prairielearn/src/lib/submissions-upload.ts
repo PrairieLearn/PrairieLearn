@@ -14,7 +14,7 @@ import { selectAssessmentQuestions } from './assessment-question.js';
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
 import { createCsvParser } from './csv.js';
 import { AssessmentQuestionSchema, IdSchema, RubricItemSchema } from './db-types.js';
-import { getGroupConfig } from './groups.js';
+import { createOrAddToGroup, getGroupConfig } from './groups.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -27,16 +27,8 @@ const ZodStringToJson = z.preprocess((val) => {
 
 const ZodStringToArray = z.preprocess((val) => {
   if (val === '' || val == null) return [];
-  // Parse PostgreSQL array format: {uid1,uid2,uid3}
-  // Note: This parser assumes UIDs don't contain special characters like commas or braces.
-  // This is safe for PrairieLearn UIDs but may not work for arbitrary PostgreSQL arrays.
-  const str = String(val).trim();
-  if (str.startsWith('{') && str.endsWith('}')) {
-    const inner = str.slice(1, -1);
-    if (inner === '') return [];
-    return inner.split(',').map((s) => s.trim());
-  }
-  return [];
+  // CSV exports serialize arrays as JSON
+  return JSON.parse(String(val));
 }, z.array(z.string()));
 
 const BaseSubmissionCsvRowSchema = z.object({
@@ -270,170 +262,22 @@ async function processIndividualSubmissionRow(
   context: ProcessingContext,
 ): Promise<void> {
   const row = IndividualSubmissionCsvRowSchema.parse(record);
-  const {
-    assessment_id,
-    course_id,
-    course_instance_id,
-    authn_user_id,
-    maxPoints,
-    selectUser,
-    selectQuestion,
-    selectAssessmentQuestion,
-    getOrInsertAssessmentInstance,
-    getOrInsertInstanceQuestion,
-    getOrInsertVariant,
-  } = context;
+  const { selectUser } = context;
 
   const user = await selectUser(row.UID);
-  const question = await selectQuestion(row.Question);
-  const assessmentQuestion = await selectAssessmentQuestion(question.id);
 
-  const assessment_instance_id = await getOrInsertAssessmentInstance(
-    [user.user_id, row['Assessment instance'].toString()],
-    async () =>
-      await sqldb.queryRow(
-        sql.insert_assessment_instance,
-        {
-          assessment_id,
-          user_id: user.user_id,
-          instance_number: row['Assessment instance'],
-        },
-        IdSchema,
-      ),
-  );
-
-  const instance_question_id = await getOrInsertInstanceQuestion(
-    [assessment_instance_id, question.id],
-    async () =>
-      await sqldb.queryRow(
-        sql.insert_instance_question,
-        {
-          assessment_instance_id,
-          assessment_question_id: assessmentQuestion.id,
-          requires_manual_grading: (assessmentQuestion.max_manual_points ?? 0) > 0,
-        },
-        IdSchema,
-      ),
-  );
-
-  const variant_id = await getOrInsertVariant(
-    [assessment_instance_id, question.id, row.Variant.toString()],
-    async () =>
-      await sqldb.queryRow(
-        sql.insert_variant,
-        {
-          course_id,
-          course_instance_id,
-          instance_question_id,
-          question_id: question.id,
-          authn_user_id: user.user_id,
-          user_id: user.user_id,
-          seed: row.Seed,
-          // Despite the fact that these values could change over the course of multiple
-          // submissions, we'll just use the first set of values we encounter. This
-          // is good enough for our purposes.
-          params: row.Params,
-          true_answer: row['True answer'],
-          options: row.Options,
-          number: row.Variant,
-        },
-        IdSchema,
-      ),
-  );
-
-  const submission_id = await sqldb.queryRow(
-    sql.insert_submission,
-    {
-      variant_id,
-      authn_user_id,
-      submitted_answer: row['Submitted answer'],
-      params: row.Params,
-      true_answer: row['True answer'],
-      submission_date: row['Submission date'],
-    },
-    IdSchema,
-  );
-
-  let manual_rubric_data: InstanceQuestionScoreInput['manual_rubric_data'] | null = null;
-
-  if (assessmentQuestion.manual_rubric_id) {
-    const rubric_items = await sqldb.queryRows(
-      sql.select_rubric_items,
-      { rubric_id: assessmentQuestion.manual_rubric_id },
-      RubricItemSchema,
-    );
-
-    await sqldb.execute(sql.update_assessment_instance_max_points, {
-      assessment_instance_id,
-      max_points: maxPoints,
-    });
-
-    // This is a best-effort process: we attempt to match uploaded rubric items to an
-    // existing rubric item in the database. If no match is found, the uploaded item
-    // is ignored and not applied.
-    const applied_rubric_item_ids: string[] = [];
-
-    if (row['Rubric Grading']?.items) {
-      for (const { description } of row['Rubric Grading'].items) {
-        const rubric_item = rubric_items.find((ri) => ri.description === description);
-        if (!rubric_item) {
-          continue;
-        }
-        applied_rubric_item_ids.push(rubric_item.id);
-      }
-    }
-    manual_rubric_data = {
-      rubric_id: assessmentQuestion.manual_rubric_id,
-      applied_rubric_items: applied_rubric_item_ids.map((id) => ({
-        rubric_item_id: id,
-      })),
-      adjust_points: row['Rubric Grading']?.adjust_points ?? null,
-    };
-  }
-
-  await updateInstanceQuestionScore(
-    assessment_id,
-    instance_question_id,
-    submission_id,
-    null,
-    {
-      manual_score_perc: null,
-      manual_points: run(() => {
-        if (assessmentQuestion.manual_rubric_id) {
-          return row['Rubric Grading']?.computed_points ?? null;
-        } else {
-          return row['Manual points'];
-        }
-      }),
-      auto_score_perc: null,
-      auto_points: row['Auto points'] ?? null,
-      feedback: row.Feedback,
-      manual_rubric_data,
-    },
-    authn_user_id,
+  await processSubmissionForEntity(
+    row,
+    context,
+    { type: 'user', user_id: user.user_id },
+    user.user_id,
   );
 }
 
 async function processGroupSubmissionRow(record: any, context: ProcessingContext): Promise<void> {
   const row = GroupSubmissionCsvRowSchema.parse(record);
-  const {
-    assessment_id,
-    course_id,
-    course_instance_id,
-    authn_user_id,
-    maxPoints,
-    selectUser,
-    selectQuestion,
-    selectAssessmentQuestion,
-    getOrInsertAssessmentInstance,
-    getOrInsertInstanceQuestion,
-    getOrInsertVariant,
-  } = context;
+  const { assessment_id, course_instance_id, authn_user_id, selectUser } = context;
 
-  const question = await selectQuestion(row.Question);
-  const assessmentQuestion = await selectAssessmentQuestion(question.id);
-
-  // Create or get group and add all users to it
   const groupName = row['Group name'];
   const usernames = row.Usernames;
 
@@ -442,21 +286,19 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
   }
 
   // Create users for all group members concurrently
-  const users = await Promise.all(usernames.map((uid) => selectUser(uid)));
+  await Promise.all(usernames.map((uid) => selectUser(uid)));
 
   // Get the group ID - either existing or newly created
-  // First, try to find existing group
   let group_id = await sqldb.queryOptionalRow(
     sql.select_group_by_name,
     { group_name: groupName, assessment_id },
     IdSchema,
   );
 
-  // If group doesn't exist, create it and add all members
+  // If group doesn't exist, use createOrAddToGroup from groups.ts
   if (!group_id) {
-    // Get the group config for this assessment
-    const groupConfig = await sqldb.queryRow(
-      sql.select_group_config,
+    const assessment = await sqldb.queryRow(
+      sql.select_assessment_for_group,
       { assessment_id },
       z.object({
         id: z.string(),
@@ -464,36 +306,88 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
       }),
     );
 
-    // Create the group
-    group_id = await sqldb.queryRow(
-      sql.create_group,
-      { assessment_id, authn_user_id, group_name: groupName },
-      IdSchema,
+    const course_instance = await sqldb.queryRow(
+      sql.select_course_instance,
+      { course_instance_id },
+      z.object({
+        id: z.string(),
+        course_id: z.string(),
+      }),
     );
 
-    // Add all users to the group
-    for (const user of users) {
-      await sqldb.execute(sql.insert_group_user, {
-        group_id,
-        user_id: user.user_id,
-        group_config_id: groupConfig.id,
-        authn_user_id,
-      });
-    }
+    // Use the existing groups.ts function to create group and add users
+    await createOrAddToGroup({
+      course_instance: course_instance as any,
+      assessment: assessment as any,
+      group_name: groupName,
+      uids: usernames,
+      authn_user_id,
+      // In dev mode, we bypass normal authz checks - the function will handle user enrollment checks
+      authzData: null as any,
+    });
+
+    group_id = await sqldb.queryRow(
+      sql.select_group_by_name,
+      { group_name: groupName, assessment_id },
+      IdSchema,
+    );
   }
 
+  await processSubmissionForEntity(row, context, { type: 'group', group_id }, authn_user_id);
+}
+
+/**
+ * Common submission processing logic for both individual and group submissions
+ */
+async function processSubmissionForEntity(
+  row: z.infer<typeof BaseSubmissionCsvRowSchema>,
+  context: ProcessingContext,
+  entity: { type: 'user'; user_id: string } | { type: 'group'; group_id: string },
+  variant_authn_user_id: string,
+): Promise<void> {
+  const {
+    assessment_id,
+    course_id,
+    course_instance_id,
+    authn_user_id,
+    maxPoints,
+    selectQuestion,
+    selectAssessmentQuestion,
+    getOrInsertAssessmentInstance,
+    getOrInsertInstanceQuestion,
+    getOrInsertVariant,
+  } = context;
+
+  const question = await selectQuestion(row.Question);
+  const assessmentQuestion = await selectAssessmentQuestion(question.id);
+
+  // Insert assessment instance (for user or group)
+  const entityKey = entity.type === 'user' ? entity.user_id : entity.group_id;
   const assessment_instance_id = await getOrInsertAssessmentInstance(
-    [group_id, row['Assessment instance'].toString()],
-    async () =>
-      await sqldb.queryRow(
-        sql.insert_group_assessment_instance,
-        {
-          assessment_id,
-          group_id,
-          instance_number: row['Assessment instance'],
-        },
-        IdSchema,
-      ),
+    [entityKey, row['Assessment instance'].toString()],
+    async () => {
+      if (entity.type === 'user') {
+        return await sqldb.queryRow(
+          sql.insert_assessment_instance,
+          {
+            assessment_id,
+            user_id: entity.user_id,
+            instance_number: row['Assessment instance'],
+          },
+          IdSchema,
+        );
+      } else {
+        return await sqldb.queryRow(
+          sql.insert_group_assessment_instance,
+          {
+            assessment_id,
+            group_id: entity.group_id,
+            instance_number: row['Assessment instance'],
+          },
+          IdSchema,
+        );
+      }
+    },
   );
 
   const instance_question_id = await getOrInsertInstanceQuestion(
@@ -510,29 +404,37 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
       ),
   );
 
+  // Insert variant (for user or group)
   const variant_id = await getOrInsertVariant(
     [assessment_instance_id, question.id, row.Variant.toString()],
-    async () =>
-      await sqldb.queryRow(
-        sql.insert_group_variant,
-        {
-          course_id,
-          course_instance_id,
-          instance_question_id,
-          question_id: question.id,
-          authn_user_id,
-          group_id,
-          seed: row.Seed,
-          // Despite the fact that these values could change over the course of multiple
-          // submissions, we'll just use the first set of values we encounter. This
-          // is good enough for our purposes.
-          params: row.Params,
-          true_answer: row['True answer'],
-          options: row.Options,
-          number: row.Variant,
-        },
-        IdSchema,
-      ),
+    async () => {
+      const commonVariantParams = {
+        course_id,
+        course_instance_id,
+        instance_question_id,
+        question_id: question.id,
+        authn_user_id: variant_authn_user_id,
+        seed: row.Seed,
+        params: row.Params,
+        true_answer: row['True answer'],
+        options: row.Options,
+        number: row.Variant,
+      };
+
+      if (entity.type === 'user') {
+        return await sqldb.queryRow(
+          sql.insert_variant,
+          { ...commonVariantParams, user_id: entity.user_id },
+          IdSchema,
+        );
+      } else {
+        return await sqldb.queryRow(
+          sql.insert_group_variant,
+          { ...commonVariantParams, group_id: entity.group_id },
+          IdSchema,
+        );
+      }
+    },
   );
 
   const submission_id = await sqldb.queryRow(
