@@ -4,8 +4,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import {
-  type CalculateAuthDataResult,
-  FullAuthzDataSchema,
+  type ConstructedCourseOrInstanceContext,
+  CourseOrInstanceContextDataSchema,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
 } from './authz-data-lib.js';
@@ -22,7 +22,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * If `course_id` is not provided, but `course_instance_id` is,
  * the function will use the `course_id` from the course instance.
  */
-async function selectAuthzData({
+async function selectCourseOrInstanceContextData({
   user_id,
   course_id,
   course_instance_id,
@@ -36,7 +36,7 @@ async function selectAuthzData({
   req_date: Date;
 }) {
   return sqldb.queryOptionalRow(
-    sql.select_authz_data,
+    sql.select_course_or_instance_context_data,
     {
       user_id,
       course_id,
@@ -44,7 +44,7 @@ async function selectAuthzData({
       ip,
       req_date,
     },
-    FullAuthzDataSchema,
+    CourseOrInstanceContextDataSchema,
   );
 }
 
@@ -65,7 +65,7 @@ async function selectAuthzData({
  * @param params.overrides.req_course_instance_role - The requested course instance role to use.
  * @param params.overrides.allow_example_course_override - Whether to allow overriding the course role for example courses.
  */
-export async function calculateAuthData({
+export async function constructCourseOrInstanceContext({
   user,
   course_id,
   course_instance_id,
@@ -85,7 +85,7 @@ export async function calculateAuthData({
     req_course_instance_role?: EnumCourseInstanceRole;
     allow_example_course_override?: boolean;
   };
-}): Promise<CalculateAuthDataResult> {
+}): Promise<ConstructedCourseOrInstanceContext> {
   const resolvedOverrides = {
     allow_example_course_override: true,
     ...overrides,
@@ -94,7 +94,7 @@ export async function calculateAuthData({
 
   const isCourseInstance = Boolean(course_instance_id);
 
-  const rawAuthzData = await selectAuthzData({
+  const rawAuthzData = await selectCourseOrInstanceContextData({
     user_id: user.user_id,
     course_id,
     course_instance_id,
@@ -104,7 +104,7 @@ export async function calculateAuthData({
 
   if (rawAuthzData === null) {
     return {
-      authResult: null,
+      authzData: null,
       course: null,
       institution: null,
       courseInstance: null,
@@ -163,14 +163,14 @@ export async function calculateAuthData({
   // If you don't have course or course instance access, return null.
   if (!hasCourseAccess && !hasCourseInstanceAccess) {
     return {
-      authResult: null,
+      authzData: null,
       course: null,
       institution: null,
       courseInstance: null,
     };
   }
 
-  const authResult = {
+  const authzData = {
     user,
     mode,
     mode_reason: rawAuthzData.mode_reason,
@@ -191,7 +191,7 @@ export async function calculateAuthData({
   };
 
   return {
-    authResult,
+    authzData,
     course: rawAuthzData.course,
     institution: rawAuthzData.institution,
     courseInstance: rawAuthzData.course_instance,
