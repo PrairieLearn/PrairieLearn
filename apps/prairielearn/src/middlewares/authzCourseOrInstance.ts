@@ -417,7 +417,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   // If this is an example course, only allow overrides if the user is an administrator or we are in development mode.
   if (
-    res.locals.course.example_course &&
+    authnCourse.example_course &&
     !config.devMode &&
     !res.locals.is_administrator &&
     overrides.length > 0
