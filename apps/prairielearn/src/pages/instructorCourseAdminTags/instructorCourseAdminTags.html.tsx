@@ -12,10 +12,15 @@ import { InstructorCourseAdminTagsTable } from './components/InstructorCourseAdm
 export function InstructorCourseAdminTags({
   resLocals,
   tags,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   tags: Tag[];
+  origHash: string | null;
 }) {
+  const allowEdit =
+    resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course;
+  const StaffTags = z.array(StaffTagSchema).parse(tags);
   return PageLayout({
     resLocals,
     pageTitle: 'Tags',
@@ -35,7 +40,12 @@ export function InstructorCourseAdminTags({
           urlPrefix={resLocals.urlPrefix}
         />
         <Hydrate>
-          <InstructorCourseAdminTagsTable tags={z.array(StaffTagSchema).parse(tags)} />
+          <InstructorCourseAdminTagsTable
+            tags={StaffTags}
+            allowEdit={allowEdit}
+            csrfToken={resLocals.__csrf_token}
+            origHash={origHash}
+          />
         </Hydrate>
       </>
     ),

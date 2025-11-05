@@ -2,83 +2,99 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
-import { TopicBadge } from '../../../components/TopicBadge.js';
-import { type Topic } from '../../../lib/db-types.js';
-import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
+import { type Tag, type Topic } from '../lib/db-types.js';
+import { ColorJsonSchema } from '../schemas/infoCourse.js';
 
-export function EditTopicsModal({
+import { TagBadge } from './TagBadge.js';
+import { TopicBadge } from './TopicBadge.js';
+
+export function EditTagsTopicsModal({
   show,
-  selectedTopic,
-  setSelectedTopic,
+  selectedData,
+  setSelectedData,
+  dataType,
   setShowModal,
   handleModalUpdate,
-  addTopic,
+  add,
 }: {
   show: boolean;
-  selectedTopic: Topic | null;
-  setSelectedTopic: (topic: Topic | null) => void;
+  selectedData: Tag | Topic | null;
+  setSelectedData: (data: Tag | Topic | null) => void;
+  dataType: 'tag' | 'topic';
   setShowModal: (show: boolean) => void;
   handleModalUpdate: () => void;
-  addTopic: boolean;
+  add: boolean;
 }) {
   const [invalidName, setInvalidName] = useState(false);
   const [invalidColor, setInvalidColor] = useState(false);
 
   function handleSubmit() {
-    setInvalidName(!selectedTopic?.name);
-    setInvalidColor(!selectedTopic?.color);
-    if (!selectedTopic?.name || !selectedTopic.color) {
+    setInvalidName(!selectedData?.name);
+    setInvalidColor(!selectedData?.color);
+    if (!selectedData?.name || !selectedData.color) {
       return;
     } else {
       handleModalUpdate();
     }
   }
+
+  const dataTypeLabel = dataType === 'tag' ? 'Tag' : 'Topic';
+
   return (
     <Modal show={show} onHide={() => setShowModal(false)}>
       <Modal.Header closeButton>
-        <Modal.Title>{addTopic ? 'Add topic' : 'Edit topic'}</Modal.Title>
+        <Modal.Title>{add ? `Add ${dataType}` : `Edit ${dataType}`}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {selectedTopic ? (
+        {selectedData ? (
           <>
             <div class="d-flex flex-column align-items-center mb-4">
-              <TopicBadge
-                topic={{
-                  name: selectedTopic.name || 'Topic preview',
-                  color: selectedTopic.color,
-                }}
-              />
+              {dataType === 'tag' ? (
+                <TagBadge
+                  tag={{
+                    name: selectedData.name || 'Tag preview',
+                    color: selectedData.color,
+                  }}
+                />
+              ) : (
+                <TopicBadge
+                  topic={{
+                    name: selectedData.name || 'Topic preview',
+                    color: selectedData.color,
+                  }}
+                />
+              )}
             </div>
             <div class="mb-3">
-              <label class="form-label" for="topicName">
+              <label class="form-label" for="name">
                 Name
               </label>
               <input
                 type="text"
                 class={clsx('form-control', invalidName && 'is-invalid')}
-                id="topicName"
-                value={selectedTopic.name}
+                id="name"
+                value={selectedData.name}
                 onChange={(e) =>
-                  setSelectedTopic({
-                    ...selectedTopic,
+                  setSelectedData({
+                    ...selectedData,
                     name: (e.target as HTMLInputElement).value,
                   })
                 }
               />
-              {invalidName && <div class="invalid-feedback">Topic name is required</div>}
+              {invalidName && <div class="invalid-feedback">{dataTypeLabel} name is required</div>}
             </div>
             <div class="mb-3">
-              <label class="form-label" for="topicColor">
+              <label class="form-label" for="color">
                 Color
               </label>
               <div class="d-flex gap-2 align-items-center">
                 <select
                   class={clsx('form-select', invalidColor && 'is-invalid')}
-                  id="topicColor"
-                  value={selectedTopic.color}
+                  id="color"
+                  value={selectedData.color}
                   onChange={(e) =>
-                    setSelectedTopic({
-                      ...selectedTopic,
+                    setSelectedData({
+                      ...selectedData,
                       color: (e.target as HTMLSelectElement).value,
                     })
                   }
@@ -102,27 +118,29 @@ export function EditTopicsModal({
                     width="32"
                     height="32"
                     style={{
-                      fill: `var(--color-${selectedTopic.color})`,
+                      fill: `var(--color-${selectedData.color})`,
                       rx: 'var(--bs-border-radius)',
                       ry: 'var(--bs-border-radius)',
                     }}
                   />
                 </svg>
               </div>
-              {invalidColor && <div class="invalid-feedback">Topic color is required</div>}
+              {invalidColor && (
+                <div class="invalid-feedback">{dataTypeLabel} color is required</div>
+              )}
             </div>
             <div class="mb-3">
-              <label class="form-label" for="topicDescription">
+              <label class="form-label" for="description">
                 Description
               </label>
               <input
                 type="text"
                 class="form-control"
-                id="topicDescription"
-                value={selectedTopic.description}
+                id="description"
+                value={selectedData.description}
                 onChange={(e) =>
-                  setSelectedTopic({
-                    ...selectedTopic,
+                  setSelectedData({
+                    ...selectedData,
                     description: (e.target as HTMLTextAreaElement).value,
                   })
                 }
@@ -133,7 +151,7 @@ export function EditTopicsModal({
       </Modal.Body>
       <Modal.Footer>
         <button type="button" class="btn btn-primary me-2" onClick={handleSubmit}>
-          {addTopic ? 'Add topic' : 'Update topic'}
+          {add ? `Add ${dataType}` : `Update ${dataType}`}
         </button>
         <button type="button" class="btn btn-secondary" onClick={() => setShowModal(false)}>
           Close

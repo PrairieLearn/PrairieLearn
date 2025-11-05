@@ -7,7 +7,7 @@ export function TagDescription({ tag }: { tag: Tag }) {
 
   return (
     <span class="text-muted">
-      Auto-generated from use in a question; add this tag to your infoCourse.json file to customize
+      Auto-generated from use in a question; edit this tag to customize
     </span>
   );
 }
