@@ -131,6 +131,12 @@ export function AssessmentQuestion({
           </>
         )}
 
+        {/* Hidden form for test compatibility - allows tests to extract CSRF token.
+        This form is now in the header of a client-rendered table. */}
+        <form name="grading-form" class="d-none">
+          <input type="hidden" name="__csrf_token" value={__csrf_token} />
+        </form>
+
         <Hydrate fullHeight>
           <AssessmentQuestionManualGrading
             authzData={authz_data}

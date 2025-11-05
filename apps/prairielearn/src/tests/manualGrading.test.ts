@@ -468,17 +468,26 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         assertAlert($manualGradingPage, 'has one open instance');
       });
 
-      test.sequential('manual grading page should list one question requiring grading', () => {
-        const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
-        assert.equal(row.length, 1);
-        const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
-        assert.equal(count, '1/1');
-        const nextButton = row.find('.btn:contains("next submission")');
-        assert.equal(nextButton.length, 1);
-        manualGradingAssessmentQuestionUrl =
-          siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
-        manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
-      });
+      test.sequential(
+        'manual grading page should list one question requiring grading',
+        async () => {
+          const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
+          assert.equal(row.length, 1);
+          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
+          assert.equal(count, '1/1');
+          const nextButton = row.find('.btn:contains("next submission")');
+          assert.equal(nextButton.length, 1);
+
+          // Get assessment_question_id from the database
+          const instanceQuestion = await sqldb.queryRow(
+            sql.get_instance_question,
+            { iqId },
+            InstanceQuestionSchema,
+          );
+          manualGradingAssessmentQuestionUrl = `${manualGradingAssessmentUrl}/assessment_question/${instanceQuestion.assessment_question_id}`;
+          manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
+        },
+      );
 
       test.sequential(
         'manual grading page for assessment question should warn about an open instance',
@@ -1125,15 +1134,24 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         assertAlert($manualGradingPage, 'has one open instance');
       });
 
-      test.sequential('manual grading page should list one question requiring grading', () => {
-        const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
-        assert.equal(row.length, 1);
-        const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
-        assert.equal(count, '1/1');
-        manualGradingAssessmentQuestionUrl =
-          siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
-        manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
-      });
+      test.sequential(
+        'manual grading page should list one question requiring grading',
+        async () => {
+          const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
+          assert.equal(row.length, 1);
+          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
+          assert.equal(count, '1/1');
+
+          // Get assessment_question_id from the database
+          const instanceQuestion = await sqldb.queryRow(
+            sql.get_instance_question,
+            { iqId },
+            InstanceQuestionSchema,
+          );
+          manualGradingAssessmentQuestionUrl = `${manualGradingAssessmentUrl}/assessment_question/${instanceQuestion.assessment_question_id}`;
+          manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
+        },
+      );
 
       test.sequential(
         'manual grading page for assessment question should warn about an open instance',

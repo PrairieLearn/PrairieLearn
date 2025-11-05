@@ -1,4 +1,4 @@
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
@@ -27,7 +27,7 @@ import {
 
 import { EditQuestionPointsScoreButton } from '../../../components/EditQuestionPointsScore.js';
 import { RubricSettings } from '../../../components/RubricSettings.js';
-import { ScorebarHtml } from '../../../components/Scorebar.js';
+import { Scorebar } from '../../../components/Scorebar.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import {
   NuqsAdapter,
@@ -136,13 +136,9 @@ function formatScoreWithEdit({
   return (
     <div class="d-flex align-items-center justify-content-center gap-1">
       {score != null && (
-        <div
-          class="d-inline-block align-middle"
-          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-          dangerouslySetInnerHTML={{
-            __html: ScorebarHtml(score, { minWidth: '10em' }).toString(),
-          }}
-        />
+        <div class="d-inline-block align-middle">
+          <Scorebar score={score} minWidth="10em" />
+        </div>
       )}
       {hasCourseInstancePermissionEdit && (
         <div
@@ -296,6 +292,8 @@ function AssessmentQuestionTable({
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowSelection, setRowSelection] = useState({});
+
+  const queryClient = useQueryClient();
 
   const { data: instanceQuestions = initialInstanceQuestions } = useQuery<InstanceQuestionRow[]>({
     queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
@@ -803,6 +801,91 @@ function AssessmentQuestionTable({
 
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = selectedRows.map((row) => row.original.id);
+
+  // Set up handlers for edit points popovers
+  // Once
+  useEffect(() => {
+    /**
+     * Handle AJAX form submission for editing points
+     */
+    async function handlePointsFormSubmit(this: HTMLFormElement, event: Event) {
+      event.preventDefault();
+      const formData = new FormData(this);
+      const postBody = new URLSearchParams(formData as any);
+
+      try {
+        const response = await fetch(this.action || '', { method: 'POST', body: postBody });
+        if (response.status !== 200) {
+          console.error(response.status, response.statusText);
+          return;
+        }
+
+        const data = await response.json();
+
+        // Check for grading conflict
+        if (data?.conflict_grading_job_id) {
+          const modal = document.getElementById('grading-conflict-modal');
+          if (modal) {
+            const link = modal.querySelector<HTMLAnchorElement>('.conflict-details-link');
+            if (link && data.conflict_details_url) {
+              link.href = data.conflict_details_url;
+            }
+            // Show the modal using Bootstrap's Modal API
+            const bsModal = new (window as any).bootstrap.Modal(modal);
+            bsModal.show();
+          }
+        }
+
+        // Dismiss the popover before refetching data
+        // Find the button that triggered this form's popover
+        const popoverTriggers = document.querySelectorAll('[data-bs-toggle="popover"]');
+        popoverTriggers.forEach((trigger) => {
+          const popoverInstance = (window as any).bootstrap.Popover.getInstance(trigger);
+          if (popoverInstance) {
+            popoverInstance.hide();
+          }
+        });
+
+        // Invalidate and refetch the query to update the table
+        await queryClient.invalidateQueries({
+          queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
+        });
+      } catch (err) {
+        console.error('Error submitting form:', err);
+      }
+    }
+
+    /**
+     * Set up event listeners when popover is shown
+     */
+    function handlePopoverShown(this: Element) {
+      // Focus the first non-hidden input
+      const form = document.querySelector<HTMLFormElement>('form[name=edit-points-form]');
+      if (form) {
+        const input = form.querySelector<HTMLInputElement>('input:not([type="hidden"])');
+        if (input) {
+          input.focus();
+        }
+
+        // Remove any existing event listeners to prevent duplicates
+        form.removeEventListener('submit', handlePointsFormSubmit as any);
+        form.addEventListener('submit', handlePointsFormSubmit as any);
+      }
+    }
+
+    // Attach event listeners to all popover trigger buttons
+    const popoverButtons = document.querySelectorAll('[data-bs-toggle="popover"]');
+    popoverButtons.forEach((button) => {
+      button.addEventListener('shown.bs.popover', handlePopoverShown);
+    });
+
+    // Cleanup function
+    return () => {
+      popoverButtons.forEach((button) => {
+        button.removeEventListener('shown.bs.popover', handlePopoverShown);
+      });
+    };
+  }, [queryClient, urlPrefix, assessmentId, assessmentQuestionId, instanceQuestions]);
 
   // Handler for batch actions
   const handleBatchAction = (actionData: Record<string, any>) => {
