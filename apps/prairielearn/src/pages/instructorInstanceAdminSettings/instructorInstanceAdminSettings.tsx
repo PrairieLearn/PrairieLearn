@@ -306,7 +306,19 @@ router.post(
       });
       // Only write self enrollment settings if they are not the default values.
       // When JSON.stringify is used, undefined values are not included in the JSON object.
-      if (hasSelfEnrollmentSettings && enrollmentManagementEnabled) {
+      if (hasSelfEnrollmentSettings) {
+        if (!enrollmentManagementEnabled) {
+          throw new error.HttpStatusError(
+            400,
+            'Self enrollment settings cannot be changed when enrollment management is not enabled.',
+          );
+        }
+        if (!courseInstance.modern_publishing) {
+          throw new error.HttpStatusError(
+            400,
+            'Self enrollment settings cannot be changed when modern publishing is not enabled.',
+          );
+        }
         courseInstanceInfo.selfEnrollment = {
           enabled: selfEnrollmentEnabled,
           useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
