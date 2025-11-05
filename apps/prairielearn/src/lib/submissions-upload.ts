@@ -4,14 +4,17 @@ import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
+import { selectAssessmentQuestions } from './assessment-question.js';
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
 import { createCsvParser } from './csv.js';
-import { AssessmentQuestionSchema, IdSchema } from './db-types.js';
+import { AssessmentQuestionSchema, IdSchema, RubricItemSchema } from './db-types.js';
+import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -42,6 +45,9 @@ const SubmissionCsvRowSchema = z.object({
     .transform((val) => parseISO(val))
     .pipe(z.date()),
   'Submitted answer': ZodStringToJson,
+  Feedback: ZodStringToJson,
+  'Rubric Grading': ZodStringToJson,
+  'Auto points': z.coerce.number().optional(),
 });
 
 /**
@@ -111,6 +117,18 @@ export async function uploadSubmissions(
     const getOrInsertVariant = makeDedupedInserter<string>();
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
+
+    const assessmentQuestions = await selectAssessmentQuestions({
+      assessment_id,
+    });
+
+    // The maximum points of the assessment instance are not available
+    // in the CSV export, so we compute the it using the maximum points of
+    // the assessment questions of the assessment.
+    const maxPoints = assessmentQuestions.reduce(
+      (sum, assessmentQuestion) => sum + (assessmentQuestion.assessment_question.max_points ?? 0),
+      0,
+    );
     const csvStream = streamifier.createReadStream(csvFile.buffer, {
       encoding: 'utf8',
     });
@@ -184,7 +202,7 @@ export async function uploadSubmissions(
             ),
         );
 
-        await sqldb.queryRow(
+        const submission_id = await sqldb.queryRow(
           sql.insert_submission,
           {
             variant_id,
@@ -195,6 +213,65 @@ export async function uploadSubmissions(
             submission_date: row['Submission date'],
           },
           IdSchema,
+        );
+
+        let manual_rubric_data: InstanceQuestionScoreInput['manual_rubric_data'] | null = null;
+
+        if (assessmentQuestion.manual_rubric_id) {
+          const rubric_items = await sqldb.queryRows(
+            sql.select_rubric_items,
+            { rubric_id: assessmentQuestion.manual_rubric_id },
+            RubricItemSchema,
+          );
+
+          await sqldb.execute(sql.update_assessment_instance_max_points, {
+            assessment_instance_id,
+            max_points: maxPoints,
+          });
+
+          // This is a best-effort process: we attempt to match uploaded rubric items to an
+          // existing rubric item in the database. If no match is found, the uploaded item
+          // is ignored and not applied.
+          const applied_rubric_item_ids: string[] = [];
+
+          if (row['Rubric Grading']?.items) {
+            for (const { description } of row['Rubric Grading'].items) {
+              const rubric_item = rubric_items.find((ri) => ri.description === description);
+              if (!rubric_item) {
+                continue;
+              }
+              applied_rubric_item_ids.push(rubric_item.id);
+            }
+          }
+          manual_rubric_data = {
+            rubric_id: assessmentQuestion.manual_rubric_id,
+            applied_rubric_items: applied_rubric_item_ids.map((id) => ({
+              rubric_item_id: id,
+            })),
+            adjust_points: row['Rubric Grading']?.adjust_points ?? null,
+          };
+        }
+
+        await updateInstanceQuestionScore(
+          assessment_id,
+          instance_question_id,
+          submission_id,
+          null,
+          {
+            manual_score_perc: null,
+            manual_points: run(() => {
+              if (assessmentQuestion.manual_rubric_id) {
+                return row['Rubric Grading']?.computed_points ?? null;
+              } else {
+                return row['Manual points'];
+              }
+            }),
+            auto_score_perc: null,
+            auto_points: row['Auto points'] ?? null,
+            feedback: row.Feedback,
+            manual_rubric_data,
+          },
+          authn_user_id,
         );
 
         successCount++;
