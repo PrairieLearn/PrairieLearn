@@ -123,6 +123,7 @@
     "cheerio": "^1.1.2",
     "clipboard": "^2.0.11",
     "clsx": "^2.1.1",
+    "cookie": "^0.7.2",
     "cookie-parser": "^1.4.7",
     "cropperjs": "^2.1.0",
     "crypto-js": "^4.2.0",
