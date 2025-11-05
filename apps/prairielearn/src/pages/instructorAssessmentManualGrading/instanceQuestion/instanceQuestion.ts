@@ -347,6 +347,28 @@ const PostBodySchema = z.union([
     skip_graded_submissions: z.preprocess((val) => val === 'true', z.boolean()),
   }),
   z.object({
+    __action: z.literal('modify_rubric_settings'),
+    use_rubric: z.boolean(),
+    replace_auto_points: z.boolean(),
+    starting_points: z.coerce.number(),
+    min_points: z.coerce.number(),
+    max_extra_points: z.coerce.number(),
+    tag_for_manual_grading: z.boolean(),
+    rubric_items: z
+      .array(
+        z.object({
+          id: z.string().optional(),
+          order: z.coerce.number(),
+          points: z.coerce.number(),
+          description: z.string(),
+          explanation: z.string().optional(),
+          grader_note: z.string().optional(),
+          always_show_to_students: z.boolean(),
+        }),
+      )
+      .default([]),
+  }),
+  z.object({
     __action: z.custom<`reassign_${string}`>(
       (val) => typeof val === 'string' && val.startsWith('reassign_'),
     ),
@@ -368,8 +390,7 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
-    const body =
-      req.body.__action === 'modify_rubric_settings' ? req.body : PostBodySchema.parse(req.body);
+    const body = PostBodySchema.parse(req.body);
     if (body.__action === 'add_manual_grade') {
       req.session.skip_graded_submissions = body.skip_graded_submissions;
 
