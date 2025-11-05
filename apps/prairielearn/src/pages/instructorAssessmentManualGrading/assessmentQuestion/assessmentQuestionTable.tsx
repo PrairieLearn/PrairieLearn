@@ -356,8 +356,7 @@ function AssessmentQuestionTable({
           />
         ),
         cell: ({ row, table }) => {
-          const checkboxProps = createCheckboxProps(row, table);
-          return <input type="checkbox" {...checkboxProps} />;
+          return <input type="checkbox" {...createCheckboxProps(row, table)} />;
         },
         size: 40,
         minSize: 40,
@@ -875,7 +874,8 @@ function AssessmentQuestionTable({
             {authzData.has_course_instance_permission_edit && (
               <Dropdown>
                 <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
-                  <i class="fas fa-tags" aria-hidden="true" /> Tag for grading
+                  <i class="fas fa-tags" aria-hidden="true" />{' '}
+                  <span class="d-none d-md-block">Tag for grading</span>
                 </Dropdown.Toggle>
                 <Dropdown.Menu align="end">
                   <Dropdown.Header>Assign for grading</Dropdown.Header>

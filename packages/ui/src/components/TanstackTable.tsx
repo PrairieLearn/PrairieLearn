@@ -394,7 +394,7 @@ export function TanstackTable<RowDataModel>({
                               {canSort && (
                                 <button
                                   type="button"
-                                  class="btn btn-link text-muted p-0 ms-2"
+                                  class="btn btn-link text-muted p-0"
                                   aria-label={`Sort ${columnName.toLowerCase()}`}
                                   title={`Sort ${columnName.toLowerCase()}`}
                                   onClick={header.column.getToggleSortingHandler()}

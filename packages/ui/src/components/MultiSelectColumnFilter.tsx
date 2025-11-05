@@ -51,7 +51,7 @@ export function MultiSelectColumnFilter<T extends readonly any[]>({
     <Dropdown align="end">
       <Dropdown.Toggle
         variant="link"
-        class="text-muted p-0 ms-2"
+        class="text-muted p-0"
         id={`filter-${columnId}`}
         aria-label={`Filter ${columnLabel.toLowerCase()}`}
         title={`Filter ${columnLabel.toLowerCase()}`}

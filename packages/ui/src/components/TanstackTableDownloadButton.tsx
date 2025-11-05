@@ -55,7 +55,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
         class="btn btn-light btn-sm dropdown-toggle"
       >
         <i aria-hidden="true" class="pe-2 bi bi-download" />
-        Download
+        <span class="d-none d-md-block">Download</span>
       </button>
       <ul class="dropdown-menu" role="menu" aria-label="Download options">
         <li role="presentation">

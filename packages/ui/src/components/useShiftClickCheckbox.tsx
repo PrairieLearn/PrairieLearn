@@ -1,6 +1,5 @@
 import type { Row, Table } from '@tanstack/react-table';
-import type * as React from 'preact/compat';
-import { useCallback, useState } from 'preact/compat';
+import { useCallback, useState, type MouseEvent } from 'preact/compat';
 
 /**
  * A hook that provides shift-click range selection functionality for table checkboxes.
@@ -12,8 +11,7 @@ import { useCallback, useState } from 'preact/compat';
  *
  * // In your column definition:
  * cell: ({ row, table }) => {
- *   const checkboxProps = createCheckboxProps(row, table);
- *   return <input type="checkbox" {...checkboxProps} />;
+ *   return <input type="checkbox" {...createCheckboxProps(row, table)} />;
  * }
  * ```
  */
@@ -28,7 +26,7 @@ export function useShiftClickCheckbox<TData>() {
    */
   const createCheckboxProps = useCallback(
     (row: Row<TData>, table: Table<TData>) => {
-      const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+      const handleClick = (e: MouseEvent<HTMLInputElement>) => {
         if (e.shiftKey && lastClickedRowIndex !== null) {
           // Shift-click: select range
           const currentIndex = row.index;

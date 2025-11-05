@@ -32,7 +32,7 @@ export function NumericInputColumnFilter({
       <Dropdown.Toggle
         variant="link"
         class={clsx(
-          'text-muted p-0 ms-2',
+          'text-muted p-0',
           hasActiveFilter && (isInvalid ? 'text-warning' : 'text-primary'),
         )}
         id={`filter-${columnId}`}
