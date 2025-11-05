@@ -196,12 +196,10 @@ export function SelfEnrollmentSettings({
     <>
       <h2 class="h4">Self-enrollment</h2>
 
-      {!hasModernPublishing ? (
+      {!hasModernPublishing && enrollmentManagementEnabled ? (
         <div class="alert alert-warning">
-          <p>
-            You are using access rules to control who can access the course instance. To change the
-            self-enrollment settings, you must first switch to using publishing to control access.
-          </p>
+          You are using access rules to control who can access the course instance. To change the
+          self-enrollment settings, you must first switch to using publishing to control access.
         </div>
       ) : null}
 
