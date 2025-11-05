@@ -2268,7 +2268,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
         // Ensure that the validity hasn't expired. We use the `exp` field
         // for this purpose.
         const now = Math.floor(Date.now() / 1000);
-        if (data.exp < now) return {};
+        if (!Number.isFinite(data.exp) || data.exp < now) return {};
 
         // Sample this trace! This attribute will be picked up by a custom sampler
         // in `@prairielearn/opentelemetry`.

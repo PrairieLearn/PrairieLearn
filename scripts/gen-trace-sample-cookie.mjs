@@ -41,7 +41,6 @@ Usage: gen-trace-sample-cookie.mjs <expiration> [--config <path>]
 
 Arguments:
   <expiration>      Expiration date/time in ISO format (e.g., 2025-12-31T23:59:59Z)
-                    or a relative time string (e.g., "7 days", "1 hour")
 
 Options:
   --config <path>   Path to JSON config file with a 'secretKey' property
