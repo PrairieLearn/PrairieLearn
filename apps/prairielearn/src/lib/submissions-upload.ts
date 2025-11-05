@@ -14,7 +14,7 @@ import { selectAssessmentQuestions } from './assessment-question.js';
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
 import { createCsvParser } from './csv.js';
 import { AssessmentQuestionSchema, IdSchema, RubricItemSchema } from './db-types.js';
-import { createOrAddToGroup, getGroupConfig } from './groups.js';
+import { getGroupConfig } from './groups.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -434,8 +434,9 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
   }
 
   // Create users for all group members
+  const users: Awaited<ReturnType<typeof selectUser>>[] = [];
   for (const uid of usernames) {
-    await selectUser(uid);
+    users.push(await selectUser(uid));
   }
 
   // Get the group ID - either existing or newly created
@@ -448,9 +449,9 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
 
   // If group doesn't exist, create it and add all members
   if (!group_id) {
-    // We need to get the assessment and course_instance info for createOrAddToGroup
-    const assessment = await sqldb.queryRow(
-      sql.select_assessment_for_group,
+    // Get the group config for this assessment
+    const groupConfig = await sqldb.queryRow(
+      sql.select_group_config,
       { assessment_id },
       z.object({
         id: z.string(),
@@ -458,31 +459,22 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
       }),
     );
 
-    const course_instance = await sqldb.queryRow(
-      sql.select_course_instance,
-      { course_instance_id },
-      z.object({
-        id: z.string(),
-        course_id: z.string(),
-      }),
-    );
-
-    // Use createOrAddToGroup to handle group creation and user association
-    await createOrAddToGroup({
-      course_instance: course_instance as any,
-      assessment: assessment as any,
-      group_name: groupName,
-      uids: usernames,
-      authn_user_id,
-      authzData: null as any, // In dev mode, we skip authz checks
-    });
-
-    // Get the group ID after creation
+    // Create the group
     group_id = await sqldb.queryRow(
-      sql.select_group_by_name,
-      { group_name: groupName, assessment_id },
+      sql.create_group,
+      { assessment_id, authn_user_id, group_name: groupName },
       IdSchema,
     );
+
+    // Add all users to the group
+    for (const user of users) {
+      await sqldb.execute(sql.insert_group_user, {
+        group_id,
+        user_id: user.user_id,
+        group_config_id: groupConfig.id,
+        authn_user_id,
+      });
+    }
   }
 
   const assessment_instance_id = await getOrInsertAssessmentInstance(

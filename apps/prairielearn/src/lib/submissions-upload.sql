@@ -7,23 +7,95 @@ WHERE
   assessment_id = $assessment_id
   AND question_id = $question_id;
 
--- BLOCK select_assessment_for_group
+-- BLOCK select_group_config
 SELECT
-  id,
-  course_instance_id
+  *
 FROM
-  assessments
+  group_configs
 WHERE
-  id = $assessment_id;
+  assessment_id = $assessment_id
+  AND deleted_at IS NULL;
 
--- BLOCK select_course_instance
+-- BLOCK create_group
+WITH
+  next_group_number AS (
+    SELECT
+      SUBSTRING(
+        g.name
+        FROM
+          6
+      )::integer + 1 AS group_number
+    FROM
+      groups AS g
+      JOIN group_configs AS gc ON (gc.id = g.group_config_id)
+    WHERE
+      gc.assessment_id = $assessment_id
+      AND g.name ~ '^group[0-9]+$'
+      AND g.deleted_at IS NULL
+    ORDER BY
+      group_number DESC
+    LIMIT
+      1
+  ),
+  create_group AS (
+    INSERT INTO
+      groups (name, group_config_id, course_instance_id) (
+        SELECT
+          COALESCE(
+            NULLIF($group_name::text, ''),
+            -- If no name is provided, use the next group number.
+            (
+              SELECT
+                'group' || group_number
+              FROM
+                next_group_number
+            ),
+            -- If no name is provided and no groups exist, use 'group1'.
+            'group1'
+          ),
+          gc.id,
+          gc.course_instance_id
+        FROM
+          group_configs AS gc
+        WHERE
+          gc.assessment_id = $assessment_id
+          AND gc.deleted_at IS NULL
+      )
+    RETURNING
+      id,
+      group_config_id
+  )
+INSERT INTO
+  group_logs (authn_user_id, group_id, action)
 SELECT
-  id,
-  course_id
+  $authn_user_id,
+  cg.id,
+  'create'
 FROM
-  course_instances
-WHERE
-  id = $course_instance_id;
+  create_group AS cg
+RETURNING
+  group_id;
+
+-- BLOCK insert_group_user
+WITH
+  inserted_user AS (
+    INSERT INTO
+      group_users (group_id, user_id, group_config_id)
+    VALUES
+      ($group_id, $user_id, $group_config_id)
+    ON CONFLICT DO NOTHING
+    RETURNING
+      *
+  )
+INSERT INTO
+  group_logs (authn_user_id, user_id, group_id, action)
+SELECT
+  $authn_user_id,
+  iu.user_id,
+  iu.group_id,
+  'join'
+FROM
+  inserted_user AS iu;
 
 -- BLOCK insert_assessment_instance
 INSERT INTO
