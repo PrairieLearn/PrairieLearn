@@ -13,6 +13,7 @@
   "telemetry.telemetryLevel": "off",
   "window.menuBarVisibility": "visible",
   "workbench.secondarySideBar.defaultVisibility": "hidden",
+  "chat.disableAIFeatures": true,
   "chat.agent.enabled": false,
   "workbench.colorTheme": "Default Dark Modern"
 }
