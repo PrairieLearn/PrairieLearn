@@ -5,7 +5,7 @@ import z from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 
 import { hasRole } from '../../../lib/authz-data-lib.js';
-import { buildAuthzData } from '../../../lib/authz-data.js';
+import { calculateAuthData } from '../../../lib/authz-data.js';
 import type { User } from '../../../lib/db-types.js';
 import { selectOptionalCourseInstanceIdByEnrollmentCode } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
@@ -43,19 +43,21 @@ router.get(
       return;
     }
 
-    const { authzData, authzCourseInstance: courseInstance } = await buildAuthzData({
-      authn_user: res.locals.authn_user,
+    const { authResult, courseInstance } = await calculateAuthData({
+      user: res.locals.authn_user,
       course_id: null, // Inferred via course_instance_id
       course_instance_id: courseInstanceId,
-      is_administrator: res.locals.is_administrator,
       ip: req.ip ?? null,
       req_date: res.locals.req_date,
+      overrides: {
+        is_administrator: res.locals.is_administrator,
+      },
     });
-    if (authzData === null || courseInstance === null) {
+    if (authResult === null || courseInstance === null) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    if (!hasRole(authzData, 'Student')) {
+    if (!hasRole(authResult, 'Student')) {
       res.status(404).json({
         error: 'Only students can look up course instances',
       });
@@ -68,7 +70,7 @@ router.get(
       uid: res.locals.authn_user.uid,
       courseInstance,
       requestedRole: 'Student',
-      authzData,
+      authzData: authResult,
     });
 
     if (existingEnrollment) {

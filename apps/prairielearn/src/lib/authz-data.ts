@@ -59,7 +59,7 @@ async function selectAuthzData({
  * @param userId - The ID of the user to check access for.
  * @param reqDate - The date of the request.
  */
-async function calculateModernCourseInstanceStudentAccess(
+export async function calculateModernCourseInstanceStudentAccess(
   courseInstance: CourseInstance,
   userId: string,
   reqDate: Date,
