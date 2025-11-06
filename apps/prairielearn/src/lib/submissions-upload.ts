@@ -296,7 +296,7 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
   await Promise.all(usernames.map((uid) => selectOrInsertUser(uid)));
 
   // Use createOrAddToGroup which handles both creating new groups and adding to existing ones
-  await createOrAddToGroup({
+  const group = await createOrAddToGroup({
     course_instance,
     assessment,
     group_name: groupName,
@@ -306,14 +306,12 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
     authzData: null as any,
   });
 
-  // Get the group_id for processing submissions
-  const group_id = await sqldb.queryRow(
-    sql.select_group_by_name,
-    { group_name: groupName, assessment_id: assessment.id },
-    IdSchema,
+  await processSubmissionForEntity(
+    row,
+    context,
+    { type: 'group', group_id: group.id },
+    authn_user_id,
   );
-
-  await processSubmissionForEntity(row, context, { type: 'group', group_id }, authn_user_id);
 }
 
 /**

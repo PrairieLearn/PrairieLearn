@@ -378,7 +378,7 @@ export async function createGroup({
   uids: string[];
   authn_user_id: string;
   authzData: AuthzData;
-}): Promise<void> {
+}): Promise<z.infer<typeof GroupSchema>> {
   if (group_name) {
     if (group_name.length > 30) {
       throw new GroupOperationError(
@@ -409,13 +409,13 @@ export async function createGroup({
   }
 
   try {
+    let group: z.infer<typeof GroupSchema>;
     await sqldb.runInTransactionAsync(async () => {
-      let group_id;
       try {
-        group_id = await sqldb.queryRow(
+        group = await sqldb.queryRow(
           sql.create_group,
           { assessment_id: assessment.id, authn_user_id, group_name },
-          IdSchema,
+          GroupSchema,
         );
       } catch (err) {
         // 23505 is the Postgres error code for unique constraint violation
@@ -430,7 +430,7 @@ export async function createGroup({
         await addUserToGroup({
           course_instance,
           assessment,
-          group_id,
+          group_id: group.id,
           uid,
           authn_user_id,
           enforceGroupSize: false,
@@ -438,6 +438,7 @@ export async function createGroup({
         });
       }
     });
+    return group!;
   } catch (err) {
     if (err instanceof GroupOperationError) {
       if (group_name) {
@@ -466,15 +467,17 @@ export async function createOrAddToGroup({
   uids: string[];
   authn_user_id: string;
   authzData: AuthzData;
-}): Promise<void> {
+}): Promise<z.infer<typeof GroupSchema>> {
+  let group: z.infer<typeof GroupSchema>;
+
   await sqldb.runInTransactionAsync(async () => {
-    const group = await sqldb.queryOptionalRow(
+    const existingGroup = await sqldb.queryOptionalRow(
       sql.select_and_lock_group_by_name,
       { group_name, assessment_id: assessment.id },
       GroupSchema,
     );
-    if (group == null) {
-      await createGroup({
+    if (existingGroup == null) {
+      group = await createGroup({
         course_instance,
         assessment,
         group_name,
@@ -483,6 +486,7 @@ export async function createOrAddToGroup({
         authzData,
       });
     } else {
+      group = existingGroup;
       for (const uid of uids) {
         await addUserToGroup({
           course_instance,
@@ -496,6 +500,8 @@ export async function createOrAddToGroup({
       }
     }
   });
+
+  return group!;
 }
 
 export function getGroupRoleReassignmentsAfterLeave(

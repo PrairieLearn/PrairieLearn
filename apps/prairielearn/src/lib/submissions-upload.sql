@@ -21,18 +21,6 @@ VALUES
 RETURNING
   id AS assessment_instance_id;
 
--- BLOCK select_group_by_name
-SELECT
-  g.id
-FROM
-  groups AS g
-  JOIN group_configs AS gc ON g.group_config_id = gc.id
-WHERE
-  g.name = $group_name
-  AND gc.assessment_id = $assessment_id
-  AND g.deleted_at IS NULL
-  AND gc.deleted_at IS NULL;
-
 -- BLOCK insert_instance_question
 INSERT INTO
   instance_questions (
