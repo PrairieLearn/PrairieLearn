@@ -229,7 +229,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_date=1850-01-19T00:00:01; pl2_requested_uid=student@example.com',
+          'pl_test_user=test_instructor; pl2_requested_date=1890-01-19T00:00:01; pl2_requested_uid=student@example.com',
       };
       const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
       assert.equal(res.status, 403);

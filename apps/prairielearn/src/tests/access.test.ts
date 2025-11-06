@@ -33,8 +33,8 @@ describe('Access control', { timeout: 20000 }, function () {
 
       Times are:
 
-      1750 before course instance
-      1800 start course instance
+      1890 before course instance
+      1900 start course instance
       1910 before assessment
       1920 start assessment
       1930 before reservation
