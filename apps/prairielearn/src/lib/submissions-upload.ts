@@ -169,7 +169,7 @@ export async function uploadSubmissions(
     });
     const csvParser = createCsvParser(csvStream, {
       lowercaseHeader: false,
-      maxRecordSize: 1 << 24, // 16MB (should be plenty for a single line)
+      maxRecordSize: 1 << 21, // 2MB (should be plenty for a single line)
     });
 
     // Detect if this is a group work CSV by checking the first row
