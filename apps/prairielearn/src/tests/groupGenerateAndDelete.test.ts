@@ -3,7 +3,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { dangerousFullAuthzForTesting } from '../lib/authz-data-lib.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import * as groupUpdate from '../lib/group-update.js';
 import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -42,7 +42,7 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
       authn_user_id: '1',
       max_group_size: 10,
       min_group_size: 10,
-      authzData: dangerousFullAuthzForTesting(),
+      authzData: dangerousFullSystemAuthz(),
     });
     await helperServer.waitForJobSequenceSuccess(job_sequence_id);
   });

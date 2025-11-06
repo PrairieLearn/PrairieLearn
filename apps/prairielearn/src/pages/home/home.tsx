@@ -9,7 +9,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
-import { buildAuthzData } from '../../lib/authz-data.js';
+import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
@@ -139,13 +139,13 @@ router.post(
     // TODO: Authenticate this access better (model functions for course instances)
     const courseInstance = await selectCourseInstanceById(body.course_instance_id);
 
-    const { authzData } = await buildAuthzData({
-      authn_user: res.locals.authn_user,
+    const { authzData } = await constructCourseOrInstanceContext({
+      user: res.locals.authn_user,
       course_id: courseInstance.course_id,
       course_instance_id: courseInstance.id,
-      is_administrator: res.locals.is_administrator,
       ip: req.ip ?? null,
       req_date: res.locals.req_date,
+      is_administrator: res.locals.is_administrator,
     });
 
     if (authzData === null) {

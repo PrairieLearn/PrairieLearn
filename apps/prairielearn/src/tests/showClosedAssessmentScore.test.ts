@@ -2,7 +2,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { dangerousFullAuthzForTesting } from '../lib/authz-data-lib.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -19,8 +19,7 @@ describe(
   'Exam assessment with showClosedAssessment AND showClosedAssessmentScore access rules',
   { timeout: 60_000 },
   function () {
-    const context: Record<string, any> = {};
-    context.siteUrl = `http://localhost:${config.serverPort}`;
+    const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
     context.baseUrl = `${context.siteUrl}/pl`;
     context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
     context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
@@ -60,9 +59,9 @@ describe(
       await ensureEnrollment({
         userId: user.user_id,
         courseInstance,
-        authzData: dangerousFullAuthzForTesting(),
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
-        requestedRole: 'Student',
       });
     });
 

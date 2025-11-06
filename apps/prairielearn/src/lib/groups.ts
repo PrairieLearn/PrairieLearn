@@ -343,7 +343,7 @@ export async function joinGroup({
         { group_name, assessment_id: assessment.id },
         GroupSchema,
       );
-      if (group == null || group.join_code !== join_code) {
+      if (group?.join_code !== join_code) {
         throw new GroupOperationError('Group does not exist.');
       }
       await addUserToGroup({
