@@ -1472,6 +1472,8 @@ function validateCourseInstance({
     }
   }
 
+  let parsedEndDate: Date | null = null;
+
   if (courseInstance.allowAccess && courseInstance.publishing) {
     errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
   } else if (courseInstance.publishing) {
@@ -1496,7 +1498,7 @@ function validateCourseInstance({
       errors.push('"publishing.startDate" is not a valid date.');
     }
 
-    const parsedEndDate =
+    parsedEndDate =
       courseInstance.publishing.endDate == null
         ? null
         : parseJsonDate(courseInstance.publishing.endDate);
@@ -1516,7 +1518,8 @@ function validateCourseInstance({
     }
   }
 
-  let accessibleInFuture = false;
+  // Default to the publishing end date being in the future.
+  let accessibleInFuture = parsedEndDate != null && isFuture(parsedEndDate);
   for (const rule of courseInstance.allowAccess ?? []) {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {
