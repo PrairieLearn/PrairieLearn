@@ -52,3 +52,18 @@ ON CONFLICT (user_id, assessment_id) DO UPDATE
 SET
   lis_result_sourcedid = $lis_result_sourcedid,
   lis_outcome_service_url = $lis_outcome_service_url;
+
+
+-- BLOCK enroll_user_in_course_instance
+INSERT INTO
+  enrollments (
+    user_id,
+    course_instance_id,
+    status,
+    first_joined_at
+  )
+VALUES
+  ($user_id, $course_instance_id, 'joined', now())
+ON CONFLICT DO NOTHING
+RETURNING
+  *;

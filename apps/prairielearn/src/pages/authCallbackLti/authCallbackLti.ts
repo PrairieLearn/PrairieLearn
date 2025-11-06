@@ -8,9 +8,11 @@ import { z } from 'zod';
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
 import {
+  DateFromISOString,
   IdSchema,
   LtiCredentialSchema,
   LtiLinkSchema,
@@ -126,11 +128,47 @@ router.post(
       ],
       z.object({
         user_id: IdSchema,
-        has_access: z.boolean(),
+        has_legacy_access: z.boolean(),
+        is_modern_publishing: z.boolean(),
+        publishing_start_date: DateFromISOString.nullable(),
+        publishing_end_date: DateFromISOString.nullable(),
+        latest_publishing_extension_date: DateFromISOString.nullable(),
       }),
     );
-    if (!userResult?.has_access) {
+
+    if (!userResult) {
       throw new HttpStatusError(403, 'Access denied');
+    }
+
+    const hasAccess = run(() => {
+      if (!userResult.is_modern_publishing) {
+        return userResult.has_legacy_access;
+      }
+
+      const startDate = userResult.publishing_start_date;
+      let endDate = userResult.publishing_end_date;
+      if (
+        userResult.latest_publishing_extension_date !== null &&
+        (endDate == null || userResult.latest_publishing_extension_date > endDate)
+      ) {
+        endDate = userResult.latest_publishing_extension_date;
+      }
+
+      return (
+        startDate != null &&
+        endDate != null &&
+        res.locals.req_date >= startDate &&
+        res.locals.req_date < endDate
+      );
+    });
+    if (!hasAccess) {
+      throw new HttpStatusError(403, 'Access denied');
+    } else {
+      // enroll the user in the course instance
+      await sqldb.execute(sql.enroll_user_in_course_instance, {
+        user_id: userResult.user_id,
+        course_instance_id: ltiResult.course_instance_id,
+      });
     }
 
     // Persist the user's authentication data in the session.
