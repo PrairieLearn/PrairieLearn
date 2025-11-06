@@ -273,7 +273,7 @@ export async function aiGrade({
         metadata: {
           course_id: course.id,
           course_instance_id: course_instance.id,
-          assessment_id: assessment_question.assessment_id,
+          assessment_id: assessment.id,
           assessment_question_id: assessment_question.id,
           instance_question_id: instance_question.id,
         },
