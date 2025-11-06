@@ -966,6 +966,28 @@ This feature allows users to write `pl-order-blocks` questions using the `dag` g
     When using optional blocks, the question must contain one block that serves as the final block in every ordering. The `pl-answer` tag that declares this block must have the attribute `final` set to `true`.
     A question cannot include block groups with optional blocks.
 
+#### Optional Blocks Example
+
+![Screenshot of the pl-order-blocks element with optional lines](elements/pl-order-blocks-optional.png)
+
+```html title="question.html"
+<p>Construct a python function that computes the sum of two numbers.</p>
+<pl-order-blocks
+  answers-name="python-plus-equals"
+  grading-method="dag"
+  indentation="true"
+  format="code"
+  code-language="python"
+>
+  <pl-answer correct="true" tag="1" depends="" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" indent="1">sum = 0</pl-answer>
+  <pl-answer correct="true" tag="3" depends="2" indent="1">sum += first</pl-answer>
+  <pl-answer correct="true" tag="4" depends="2" indent="1">sum += second</pl-answer>
+  <pl-answer correct="true" tag="5" depends="2" indent="1">sum += first + second</pl-answer>
+  <pl-answer correct="true" tag="6" depends="3,4 | 5" indent="1" final="true">return sum</pl-answer>
+</pl-order-blocks>
+```
+
 #### Example implementations
 
 - [element/orderBlocks]
