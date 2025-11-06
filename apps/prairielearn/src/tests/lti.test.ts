@@ -58,10 +58,8 @@ describe('LTI', { timeout: 20_000 }, function () {
       const res = await fetch(locals.ltiUrl, {
         method: 'POST',
         body: new URLSearchParams(body),
-        // redirect: 'manual',
+        redirect: 'manual',
       });
-      const stuff = await res.text();
-      console.log(stuff);
       assert.equal(res.status, 302);
     });
   });

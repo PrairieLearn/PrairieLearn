@@ -127,15 +127,6 @@ describe('Access control', { timeout: 20000 }, function () {
     });
   });
 
-  describe('3.5. Update course instance access rules', function () {
-    it('should set the correct access rule dates', async () => {
-      await sqldb.execute(
-        'UPDATE course_instance_access_rules SET start_date = $1::timestamptz, end_date = $2::timestamptz WHERE course_instance_id = $3',
-        ['1800-06-13T13:12:00Z', '2400-06-13T13:12:00Z', '1'],
-      );
-    });
-  });
-
   describe('4. GET /pl', function () {
     it('as student should contain QA 101', async () => {
       await getPl(cookiesStudent(), true);
