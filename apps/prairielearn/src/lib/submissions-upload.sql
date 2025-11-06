@@ -9,23 +9,11 @@ WHERE
 
 -- BLOCK insert_assessment_instance
 INSERT INTO
-  assessment_instances (assessment_id, user_id, number, open)
+  assessment_instances (assessment_id, user_id, group_id, number, open)
 VALUES
   (
     $assessment_id,
     $user_id,
-    $instance_number,
-    FALSE -- Assume closed by default when recreating
-  )
-RETURNING
-  id AS assessment_instance_id;
-
--- BLOCK insert_group_assessment_instance
-INSERT INTO
-  assessment_instances (assessment_id, group_id, number, open)
-VALUES
-  (
-    $assessment_id,
     $group_id,
     $instance_number,
     FALSE -- Assume closed by default when recreating
@@ -90,37 +78,6 @@ INSERT INTO
     question_id,
     authn_user_id,
     user_id,
-    variant_seed,
-    params,
-    true_answer,
-    options,
-    number
-  )
-VALUES
-  (
-    $course_id,
-    $course_instance_id,
-    $instance_question_id,
-    $question_id,
-    $authn_user_id,
-    $user_id,
-    $seed,
-    $params,
-    $true_answer,
-    $options,
-    $number
-  )
-RETURNING
-  id AS variant_id;
-
--- BLOCK insert_group_variant
-INSERT INTO
-  variants (
-    course_id,
-    course_instance_id,
-    instance_question_id,
-    question_id,
-    authn_user_id,
     group_id,
     variant_seed,
     params,
@@ -135,6 +92,7 @@ VALUES
     $instance_question_id,
     $question_id,
     $authn_user_id,
+    $user_id,
     $group_id,
     $seed,
     $params,

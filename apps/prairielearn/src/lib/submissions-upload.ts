@@ -365,29 +365,17 @@ async function processSubmissionForEntity(
   const entityKey = entity.type === 'user' ? entity.user_id : entity.group_id;
   const assessment_instance_id = await getOrInsertAssessmentInstance(
     [entityKey, row['Assessment instance'].toString()],
-    async () => {
-      if (entity.type === 'user') {
-        return await sqldb.queryRow(
-          sql.insert_assessment_instance,
-          {
-            assessment_id,
-            user_id: entity.user_id,
-            instance_number: row['Assessment instance'],
-          },
-          IdSchema,
-        );
-      } else {
-        return await sqldb.queryRow(
-          sql.insert_group_assessment_instance,
-          {
-            assessment_id,
-            group_id: entity.group_id,
-            instance_number: row['Assessment instance'],
-          },
-          IdSchema,
-        );
-      }
-    },
+    async () =>
+      await sqldb.queryRow(
+        sql.insert_assessment_instance,
+        {
+          assessment_id,
+          user_id: entity.type === 'user' ? entity.user_id : null,
+          group_id: entity.type === 'group' ? entity.group_id : null,
+          instance_number: row['Assessment instance'],
+        },
+        IdSchema,
+      ),
   );
 
   const instance_question_id = await getOrInsertInstanceQuestion(
@@ -407,34 +395,25 @@ async function processSubmissionForEntity(
   // Insert variant (for user or group)
   const variant_id = await getOrInsertVariant(
     [assessment_instance_id, question.id, row.Variant.toString()],
-    async () => {
-      const commonVariantParams = {
-        course_id,
-        course_instance_id,
-        instance_question_id,
-        question_id: question.id,
-        authn_user_id: variant_authn_user_id,
-        seed: row.Seed,
-        params: row.Params,
-        true_answer: row['True answer'],
-        options: row.Options,
-        number: row.Variant,
-      };
-
-      if (entity.type === 'user') {
-        return await sqldb.queryRow(
-          sql.insert_variant,
-          { ...commonVariantParams, user_id: entity.user_id },
-          IdSchema,
-        );
-      } else {
-        return await sqldb.queryRow(
-          sql.insert_group_variant,
-          { ...commonVariantParams, group_id: entity.group_id },
-          IdSchema,
-        );
-      }
-    },
+    async () =>
+      await sqldb.queryRow(
+        sql.insert_variant,
+        {
+          course_id,
+          course_instance_id,
+          instance_question_id,
+          question_id: question.id,
+          authn_user_id: variant_authn_user_id,
+          user_id: entity.type === 'user' ? entity.user_id : null,
+          group_id: entity.type === 'group' ? entity.group_id : null,
+          seed: row.Seed,
+          params: row.Params,
+          true_answer: row['True answer'],
+          options: row.Options,
+          number: row.Variant,
+        },
+        IdSchema,
+      ),
   );
 
   const submission_id = await sqldb.queryRow(
