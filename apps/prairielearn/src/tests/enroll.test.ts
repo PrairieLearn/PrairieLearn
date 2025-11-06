@@ -385,6 +385,7 @@ describe('Self-enrollment settings transitions', () => {
       },
       async () => {
         // Check that user got a 403 for blocked users
+        console.log({ assessmentsUrl });
         const response = await fetch(assessmentsUrl);
         assert.equal(response.status, 403);
 

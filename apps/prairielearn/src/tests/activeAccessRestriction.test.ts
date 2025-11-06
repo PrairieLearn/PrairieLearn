@@ -87,7 +87,7 @@ describe(
     test.sequential(
       'ensure that the exam is not visible on the assessments page when no access rule applies',
       async () => {
-        headers.cookie = 'pl_test_date=1850-06-01T00:00:01Z';
+        headers.cookie = 'pl_test_date=1910-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
@@ -97,7 +97,7 @@ describe(
     );
 
     test.sequential('try to access the exam when no access rule applies', async () => {
-      headers.cookie = 'pl_test_date=1850-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=1910-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.examUrl, {
         headers,
@@ -108,7 +108,7 @@ describe(
     test.sequential(
       'ensure that the exam is visible without a link on the assessments page if student has not started the exam and active is false',
       async () => {
-        headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
+        headers.cookie = 'pl_test_date=1940-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
@@ -119,7 +119,7 @@ describe(
     );
 
     test.sequential('try to access the exam when it is not active', async () => {
-      headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=1940-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.examUrl, {
         headers,

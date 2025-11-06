@@ -35,10 +35,10 @@ describe('Access control', { timeout: 20000 }, function () {
 
       1750 before course instance
       1800 start course instance
-      1850 before assessment
-      1900 start assessment
-      1950 before reservation
-      2000 start reservation
+      1910 before assessment
+      1920 start assessment
+      1930 before reservation
+      1940 start reservation
 
       2200 end reservation
       2250 after reservation
@@ -70,7 +70,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   function cookiesStudentExamBeforeAssessment() {
     const cookies = cookiesStudentExam();
-    cookies.setCookieSync('pl_test_date=1850-06-13T13:12:00Z', siteUrl);
+    cookies.setCookieSync('pl_test_date=1910-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
