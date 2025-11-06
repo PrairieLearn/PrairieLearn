@@ -168,8 +168,7 @@ ORDER BY
 SELECT
   c.short_name AS course_short_name,
   c.title AS course_title,
-  ci.long_name,
-  ci.id,
+  to_jsonb(ci) AS course_instance,
   to_jsonb(e) AS enrollment
 FROM
   enrollments AS e
@@ -211,24 +210,15 @@ ORDER BY
 SELECT
   c.short_name AS course_short_name,
   c.title AS course_title,
-  ci.long_name,
-  ci.id,
+  to_jsonb(ci) AS course_instance,
   to_jsonb(e) AS enrollment,
-  COALESCE(
-    jsonb_agg(to_jsonb(cie)) FILTER (
-      -- Is this filtering necessary?
-      WHERE
-        cie.id IS NOT NULL
-    ),
-    '[]'::jsonb
-  ) AS publishing_extensions
+  to_jsonb(cie) AS latest_publishing_extension
 FROM
   enrollments AS e
   LEFT JOIN users AS u ON (u.user_id = e.user_id)
   JOIN course_instances AS ci ON (
     ci.id = e.course_instance_id
     AND ci.deleted_at IS NULL
-    AND check_course_instance_access (ci.id, u.uid, u.institution_id, $req_date)
     -- We only consider courses using the modern publishing system in this query.
     AND ci.modern_publishing IS TRUE
   )
@@ -241,24 +231,25 @@ FROM
     )
     AND users_is_instructor_in_course (u.user_id, c.id) IS FALSE
   )
-  LEFT JOIN course_instance_publishing_extension_enrollments AS ciee ON (
-    -- Only consider extensions that affect the current enrollment.
-    ciee.enrollment_id = e.id
-  )
-  LEFT JOIN course_instance_publishing_extensions AS cie ON (
-    cie.id = ciee.course_instance_publishing_extension_id
-  )
+  LEFT JOIN LATERAL (
+    SELECT
+      cie.*
+    FROM
+      course_instance_publishing_extension_enrollments AS ciee
+      JOIN course_instance_publishing_extensions AS cie ON (
+        cie.id = ciee.course_instance_publishing_extension_id
+      )
+    WHERE
+      ciee.enrollment_id = e.id
+    ORDER BY
+      cie.end_date DESC NULLS LAST,
+      cie.id DESC
+    LIMIT
+      1
+  ) AS cie ON TRUE
 WHERE
   e.user_id = $user_id
   OR e.pending_uid = $pending_uid
-GROUP BY
-  c.short_name,
-  c.title,
-  ci.long_name,
-  ci.id,
-  e.id,
-  ci.publishing_start_date,
-  ci.publishing_end_date
 ORDER BY
   ci.publishing_start_date DESC NULLS LAST,
   ci.publishing_end_date DESC NULLS LAST,
