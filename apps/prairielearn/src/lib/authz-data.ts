@@ -61,8 +61,8 @@ export const CourseOrInstanceOverridesSchema = z.object({
   course_instance_role: EnumCourseInstanceRoleSchema.nullable().optional(),
   allow_example_course_override: z.boolean().optional(),
 });
-
 type CourseOrInstanceOverrides = z.infer<typeof CourseOrInstanceOverridesSchema>;
+
 /**
  * Checks if the user has access to the course instance. If the user is a student,
  * the course instance must be published to them.
