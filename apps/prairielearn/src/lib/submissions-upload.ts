@@ -8,6 +8,7 @@ import { run } from '@prairielearn/run';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
+import { ensureEnrollment } from '../models/enrollment.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
@@ -107,7 +108,17 @@ export async function uploadSubmissions(
     description: 'Upload submissions CSV for ' + assessment_label,
   });
 
-  const selectOrInsertUser = memoize(async (uid: string) => await selectOrInsertUserByUid(uid));
+  const ensureAndEnrollUser = memoize(async (uid: string) => {
+    const user = await selectOrInsertUserByUid(uid);
+    await ensureEnrollment({
+      userId: user.user_id,
+      courseInstance: course_instance,
+      actionDetail: 'implicit_joined',
+      authzData: dangerousFullSystemAuthz(),
+      requestedRole: 'System',
+    });
+    return user;
+  });
   const selectQuestion = memoize(
     async (qid: string) => await selectQuestionByQid({ course_id, qid }),
   );
@@ -194,7 +205,7 @@ export async function uploadSubmissions(
 
         const entity = await run(async () => {
           if ('UID' in row) {
-            const user = await selectOrInsertUser(row.UID);
+            const user = await ensureAndEnrollUser(row.UID);
             return { type: 'user' as const, user_id: user.user_id };
           } else {
             const groupName = row['Group name'];
@@ -205,7 +216,7 @@ export async function uploadSubmissions(
             }
 
             // Create users for all group members concurrently
-            await Promise.all(usernames.map((uid) => selectOrInsertUser(uid)));
+            const users = await Promise.all(usernames.map((uid) => ensureAndEnrollUser(uid)));
 
             // Use createOrAddToGroup which handles both creating new groups and adding to existing ones
             const group = await createOrAddToGroup({
@@ -214,11 +225,11 @@ export async function uploadSubmissions(
               group_name: groupName,
               uids: usernames,
               authn_user_id,
-              // In dev mode, we bypass normal authz checks - the function will handle user enrollment checks
+              // This function only runs in dev mode, so we can safely ignore permission checks.
               authzData: dangerousFullSystemAuthz(),
             });
 
-            return { type: 'group' as const, group_id: group.id };
+            return { type: 'group' as const, group_id: group.id, users };
           }
         });
 
@@ -264,7 +275,9 @@ export async function uploadSubmissions(
                 course_instance_id: course_instance.id,
                 instance_question_id,
                 question_id: question.id,
-                authn_user_id,
+                // For group work, arbitrarily use the first user's ID as the authn_user_id.
+                // This value doesn't really matter, especially in dev mode.
+                authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].user_id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
                 group_id: entity.type === 'group' ? entity.group_id : null,
                 seed: row.Seed,
