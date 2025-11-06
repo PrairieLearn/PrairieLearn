@@ -35,10 +35,10 @@ describe('Access control', { timeout: 20000 }, function () {
 
       1750 before course instance
       1800 start course instance
-      1850 before assessment
-      1900 start assessment
-      1950 before reservation
-      2000 start reservation
+      1910 before assessment
+      1920 start assessment
+      1930 before reservation
+      1940 start reservation
 
       2200 end reservation
       2250 after reservation
@@ -51,12 +51,14 @@ describe('Access control', { timeout: 20000 }, function () {
   function cookiesStudent() {
     const cookies = new fetchCookie.toughCookie.CookieJar();
     cookies.setCookieSync('pl_test_user=test_student', siteUrl);
+    cookies.setCookieSync('pl_test_date=2100-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExam() {
     const cookies = cookiesStudent();
     cookies.setCookieSync('pl_test_mode=Exam', siteUrl);
+    cookies.setCookieSync('pl_test_date=2100-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
@@ -68,7 +70,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   function cookiesStudentExamBeforeAssessment() {
     const cookies = cookiesStudentExam();
-    cookies.setCookieSync('pl_test_date=1850-06-13T13:12:00Z', siteUrl);
+    cookies.setCookieSync('pl_test_date=1910-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
@@ -122,6 +124,15 @@ describe('Access control', { timeout: 20000 }, function () {
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
+    });
+  });
+
+  describe('3.5. Update course instance access rules', function () {
+    it('should set the correct access rule dates', async () => {
+      await sqldb.execute(
+        'UPDATE course_instance_access_rules SET start_date = $1::timestamptz, end_date = $2::timestamptz WHERE course_instance_id = $3',
+        ['1800-06-13T13:12:00Z', '2400-06-13T13:12:00Z', '1'],
+      );
     });
   });
 

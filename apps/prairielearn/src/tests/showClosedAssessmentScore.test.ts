@@ -26,11 +26,11 @@ describe(
     context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
 
     const headers = {
-      cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T00:00:01',
+      cookie: 'pl_test_user=test_student; pl_test_date=1940-01-19T00:00:01',
       // need student mode to get a timed exam (instructor override bypasses this)
     };
     const headersTimeLimit = {
-      cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T12:00:01',
+      cookie: 'pl_test_user=test_student; pl_test_date=1940-01-19T12:00:01',
     };
 
     beforeAll(async function () {
