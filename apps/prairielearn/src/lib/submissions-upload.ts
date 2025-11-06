@@ -7,13 +7,19 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
 import { selectAssessmentQuestions } from './assessment-question.js';
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
 import { createCsvParser } from './csv.js';
-import { AssessmentQuestionSchema, IdSchema, RubricItemSchema } from './db-types.js';
+import {
+  type Assessment,
+  AssessmentQuestionSchema,
+  IdSchema,
+  RubricItemSchema,
+} from './db-types.js';
 import { createOrAddToGroup, getGroupConfig } from './groups.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
@@ -80,7 +86,7 @@ function makeDedupedInserter<T>() {
  * in dev mode.
  */
 export async function uploadSubmissions(
-  assessment_id: string,
+  assessment: Assessment,
   csvFile: Express.Multer.File | null | undefined,
   user_id: string,
   authn_user_id: string,
@@ -89,13 +95,14 @@ export async function uploadSubmissions(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_instance_id, course_id } =
-    await selectAssessmentInfoForJob(assessment_id);
+  const { assessment_label, course_instance_id, course_id } = await selectAssessmentInfoForJob(
+    assessment.id,
+  );
 
   const serverJob = await createServerJob({
     courseId: course_id,
     courseInstanceId: course_instance_id,
-    assessmentId: assessment_id,
+    assessmentId: assessment.id,
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'upload_submissions',
@@ -110,14 +117,14 @@ export async function uploadSubmissions(
     async (question_id: string) =>
       await sqldb.queryRow(
         sql.select_assessment_question,
-        { assessment_id, question_id },
+        { assessment_id: assessment.id, question_id },
         AssessmentQuestionSchema,
       ),
   );
 
   serverJob.executeInBackground(async (job) => {
     job.info('Deleting all existing assessment instances');
-    await deleteAllAssessmentInstancesForAssessment(assessment_id, authn_user_id);
+    await deleteAllAssessmentInstancesForAssessment(assessment.id, authn_user_id);
 
     job.info('Uploading submissions CSV for ' + assessment_label);
 
@@ -131,7 +138,7 @@ export async function uploadSubmissions(
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
 
     const assessmentQuestions = await selectAssessmentQuestions({
-      assessment_id,
+      assessment_id: assessment.id,
     });
 
     // The maximum points of the assessment instance are not available
@@ -163,7 +170,7 @@ export async function uploadSubmissions(
             job.info('Detected group work submissions CSV');
             // Verify that the assessment has a group config
             try {
-              await getGroupConfig(assessment_id);
+              await getGroupConfig(assessment.id);
             } catch {
               throw new Error(
                 'Group work CSV detected, but assessment does not have group work enabled',
@@ -177,7 +184,7 @@ export async function uploadSubmissions(
         if (isGroupWork) {
           await processGroupSubmissionRow(record, {
             job,
-            assessment_id,
+            assessment,
             course_id,
             course_instance_id,
             authn_user_id,
@@ -193,7 +200,7 @@ export async function uploadSubmissions(
         } else {
           await processIndividualSubmissionRow(record, {
             job,
-            assessment_id,
+            assessment,
             course_id,
             course_instance_id,
             authn_user_id,
@@ -241,7 +248,7 @@ interface ProcessingContext {
     error: (msg: string) => void;
     verbose: (msg: string) => void;
   };
-  assessment_id: string;
+  assessment: Assessment;
   course_id: string;
   course_instance_id: string;
   authn_user_id: string;
@@ -276,7 +283,7 @@ async function processIndividualSubmissionRow(
 
 async function processGroupSubmissionRow(record: any, context: ProcessingContext): Promise<void> {
   const row = GroupSubmissionCsvRowSchema.parse(record);
-  const { assessment_id, course_instance_id, authn_user_id, selectUser } = context;
+  const { assessment, course_instance_id, authn_user_id, selectUser } = context;
 
   const groupName = row['Group name'];
   const usernames = row.Usernames;
@@ -291,34 +298,18 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
   // Get the group ID - either existing or newly created
   let group_id = await sqldb.queryOptionalRow(
     sql.select_group_by_name,
-    { group_name: groupName, assessment_id },
+    { group_name: groupName, assessment_id: assessment.id },
     IdSchema,
   );
 
   // If group doesn't exist, use createOrAddToGroup from groups.ts
   if (!group_id) {
-    const assessment = await sqldb.queryRow(
-      sql.select_assessment_for_group,
-      { assessment_id },
-      z.object({
-        id: z.string(),
-        course_instance_id: z.string(),
-      }),
-    );
-
-    const course_instance = await sqldb.queryRow(
-      sql.select_course_instance,
-      { course_instance_id },
-      z.object({
-        id: z.string(),
-        course_id: z.string(),
-      }),
-    );
+    const course_instance = await selectCourseInstanceById(course_instance_id);
 
     // Use the existing groups.ts function to create group and add users
     await createOrAddToGroup({
-      course_instance: course_instance as any,
-      assessment: assessment as any,
+      course_instance,
+      assessment,
       group_name: groupName,
       uids: usernames,
       authn_user_id,
@@ -328,7 +319,7 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
 
     group_id = await sqldb.queryRow(
       sql.select_group_by_name,
-      { group_name: groupName, assessment_id },
+      { group_name: groupName, assessment_id: assessment.id },
       IdSchema,
     );
   }
@@ -346,7 +337,7 @@ async function processSubmissionForEntity(
   variant_authn_user_id: string,
 ): Promise<void> {
   const {
-    assessment_id,
+    assessment,
     course_id,
     course_instance_id,
     authn_user_id,
@@ -369,7 +360,7 @@ async function processSubmissionForEntity(
       await sqldb.queryRow(
         sql.insert_assessment_instance,
         {
-          assessment_id,
+          assessment_id: assessment.id,
           user_id: entity.type === 'user' ? entity.user_id : null,
           group_id: entity.type === 'group' ? entity.group_id : null,
           instance_number: row['Assessment instance'],
@@ -467,7 +458,7 @@ async function processSubmissionForEntity(
   }
 
   await updateInstanceQuestionScore(
-    assessment_id,
+    assessment,
     instance_question_id,
     submission_id,
     null,

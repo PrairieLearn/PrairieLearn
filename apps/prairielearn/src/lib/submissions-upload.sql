@@ -33,24 +33,6 @@ WHERE
   AND g.deleted_at IS NULL
   AND gc.deleted_at IS NULL;
 
--- BLOCK select_assessment_for_group
-SELECT
-  id,
-  course_instance_id
-FROM
-  assessments
-WHERE
-  id = $assessment_id;
-
--- BLOCK select_course_instance
-SELECT
-  id,
-  course_id
-FROM
-  course_instances
-WHERE
-  id = $course_instance_id;
-
 -- BLOCK insert_instance_question
 INSERT INTO
   instance_questions (
