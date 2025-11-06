@@ -1,4 +1,3 @@
-import assert from 'assert';
 import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
@@ -1473,18 +1472,12 @@ function validateCourseInstance({
     }
   }
 
-  const usingLegacyAllowAccess = courseInstance.allowAccess != null;
-  const usingModernPublishing = courseInstance.publishing != null;
-
-  // TODO: Remove this once the UI is merged
-  if (usingModernPublishing) {
-    warnings.push('"publishing" is not configurable yet.');
-  }
-
-  if (usingLegacyAllowAccess && usingModernPublishing) {
+  if (courseInstance.allowAccess && courseInstance.publishing) {
     errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
-  } else if (usingModernPublishing) {
-    assert(courseInstance.publishing != null);
+  } else if (courseInstance.publishing) {
+    // TODO: Remove this once the UI is merged
+    warnings.push('"publishing" is not configurable yet.');
+
     const hasEndDate = courseInstance.publishing.endDate != null;
     const hasStartDate = courseInstance.publishing.startDate != null;
     if (hasStartDate && !hasEndDate) {
