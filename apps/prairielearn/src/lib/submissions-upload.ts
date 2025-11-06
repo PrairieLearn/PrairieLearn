@@ -17,6 +17,7 @@ import { createCsvParser } from './csv.js';
 import {
   type Assessment,
   AssessmentQuestionSchema,
+  type CourseInstance,
   IdSchema,
   RubricItemSchema,
 } from './db-types.js';
@@ -95,13 +96,12 @@ export async function uploadSubmissions(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_instance_id, course_id } = await selectAssessmentInfoForJob(
-    assessment.id,
-  );
+  const course_instance = await selectCourseInstanceById(assessment.course_instance_id);
+  const { assessment_label, course_id } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
-    courseInstanceId: course_instance_id,
+    courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
     userId: user_id,
     authnUserId: authn_user_id,
@@ -186,7 +186,7 @@ export async function uploadSubmissions(
             job,
             assessment,
             course_id,
-            course_instance_id,
+            course_instance,
             authn_user_id,
             maxPoints,
             assessmentQuestions,
@@ -202,7 +202,7 @@ export async function uploadSubmissions(
             job,
             assessment,
             course_id,
-            course_instance_id,
+            course_instance,
             authn_user_id,
             maxPoints,
             assessmentQuestions,
@@ -250,7 +250,7 @@ interface ProcessingContext {
   };
   assessment: Assessment;
   course_id: string;
-  course_instance_id: string;
+  course_instance: CourseInstance;
   authn_user_id: string;
   maxPoints: number;
   assessmentQuestions: Awaited<ReturnType<typeof selectAssessmentQuestions>>;
@@ -283,7 +283,7 @@ async function processIndividualSubmissionRow(
 
 async function processGroupSubmissionRow(record: any, context: ProcessingContext): Promise<void> {
   const row = GroupSubmissionCsvRowSchema.parse(record);
-  const { assessment, course_instance_id, authn_user_id, selectOrInsertUser } = context;
+  const { assessment, course_instance, authn_user_id, selectOrInsertUser } = context;
 
   const groupName = row['Group name'];
   const usernames = row.Usernames;
@@ -296,7 +296,6 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
   await Promise.all(usernames.map((uid) => selectOrInsertUser(uid)));
 
   // Use createOrAddToGroup which handles both creating new groups and adding to existing ones
-  const course_instance = await selectCourseInstanceById(course_instance_id);
   await createOrAddToGroup({
     course_instance,
     assessment,
@@ -329,7 +328,7 @@ async function processSubmissionForEntity(
   const {
     assessment,
     course_id,
-    course_instance_id,
+    course_instance,
     authn_user_id,
     maxPoints,
     selectQuestion,
@@ -381,7 +380,7 @@ async function processSubmissionForEntity(
         sql.insert_variant,
         {
           course_id,
-          course_instance_id,
+          course_instance_id: course_instance.id,
           instance_question_id,
           question_id: question.id,
           authn_user_id: variant_authn_user_id,
