@@ -35,6 +35,5 @@ def test_sympy_timeout():
 
     with ThreadingTimeout(0.5) as ctx:
         eq = Eq(expr1, expr2)
-        result = simplify(eq.lhs - eq.rhs)  # type: ignore
-        assert result is not None
+        simplify(eq.lhs - eq.rhs)  # type: ignore
     assert ctx.state == TimeoutState.TIMED_OUT
