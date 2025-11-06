@@ -264,7 +264,6 @@ export async function uploadSubmissions(
             ),
         );
 
-        // Insert variant (for user or group)
         const variant_id = await getOrInsertVariant(
           [assessment_instance_id, question.id, row.Variant.toString()],
           async () =>
@@ -281,6 +280,9 @@ export async function uploadSubmissions(
                 user_id: entity.type === 'user' ? entity.user_id : null,
                 group_id: entity.type === 'group' ? entity.group_id : null,
                 seed: row.Seed,
+                // Despite the fact that these values could change over the course of multiple
+                // submissions, we'll just use the first set of values we encounter. This
+                // is good enough for our purposes.
                 params: row.Params,
                 true_answer: row['True answer'],
                 options: row.Options,
