@@ -45,6 +45,8 @@ SHOW_SCORE_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "1"
 BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-big-o-input.mustache"
+# This timeout is chosen to allow multiple sympy-based elements to grade on one page,
+# while not exceeding the global timeout permitted to the grader host.
 SYMPY_TIMEOUT = 3
 
 

@@ -37,6 +37,8 @@ BLANK_VALUE_DEFAULT = "0"
 PLACEHOLDER_DEFAULT = "symbolic expression"
 SHOW_SCORE_DEFAULT = True
 SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
+# This timeout is chosen to allow multiple symbolic elements to grade on one page,
+# while not exceeding the global timeout permitted to the grader host.
 SYMPY_TIMEOUT = 3
 
 
