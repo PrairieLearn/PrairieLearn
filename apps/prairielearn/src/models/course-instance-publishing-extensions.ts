@@ -153,7 +153,7 @@ export async function insertPublishingExtension({
 /**
  * Links a publishing extension to a specific enrollment.
  */
-export async function insertPublishingEnrollmentExtension({
+export async function addEnrollmentToPublishingExtension({
   courseInstancePublishingExtension,
   enrollment,
   authzData,
@@ -204,7 +204,7 @@ export async function createPublishingExtensionWithEnrollments({
     });
 
     for (const enrollment of enrollments) {
-      await insertPublishingEnrollmentExtension({
+      await addEnrollmentToPublishingExtension({
         courseInstancePublishingExtension: extension,
         enrollment,
         authzData,
