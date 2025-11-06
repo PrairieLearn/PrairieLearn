@@ -3,8 +3,8 @@ import { isFuture, isValid, parseISO } from 'date-fns';
 /**
  * Checks if a date is in the future. Uses the machine's local timezone.
  */
-export function isDateInFuture({ endDate }: { endDate?: string | null }) {
-  if (!endDate) return true;
+export function isDateInFuture(date: string | undefined) {
+  if (!date) return true;
 
   // We don't have easy access to the course instance's timezone, so we'll
   // just parse it in the machine's local timezone. This is fine, as we're
@@ -15,7 +15,7 @@ export function isDateInFuture({ endDate }: { endDate?: string | null }) {
   // thus that it does not make the course instance accessible.
   //
   // `parseISO` is used instead of `new Date` for consistency with `course-db.ts`.
-  const parsedDate = parseISO(endDate);
+  const parsedDate = parseISO(date);
   if (!isValid(parsedDate)) return false;
   return isFuture(parsedDate);
 }

@@ -103,7 +103,7 @@ export async function sync(
       // us avoid emitting errors for very old, unused course instances.
       const instanceInstitutions = new Set(
         courseInstance.data?.allowAccess
-          ?.filter(isDateInFuture)
+          ?.filter((accessRule) => isDateInFuture(accessRule.endDate))
           .map((accessRule) => accessRule.institution)
           .filter((institution) => institution != null),
       );

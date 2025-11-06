@@ -166,7 +166,7 @@ export async function addEnrollmentToPublishingExtension({
 }): Promise<CourseInstancePublishingExtensionEnrollment> {
   assertHasRole(authzData, requestedRole);
   return await queryRow(
-    sql.insert_publishing_enrollment_extension,
+    sql.add_enrollment_to_publishing_extension,
     {
       course_instance_publishing_extension_id: courseInstancePublishingExtension.id,
       enrollment_id: enrollment.id,
@@ -221,6 +221,7 @@ export async function createPublishingExtensionWithEnrollments({
  */
 export async function deletePublishingExtension({
   extension,
+  courseInstance,
   authzData,
   requestedRole,
 }: {
@@ -230,6 +231,7 @@ export async function deletePublishingExtension({
   requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
 }): Promise<void> {
   assertHasRole(authzData, requestedRole);
+  assertPublishingExtensionBelongsToCourseInstance(extension, courseInstance);
   await execute(sql.delete_publishing_extension, {
     extension_id: extension.id,
   });

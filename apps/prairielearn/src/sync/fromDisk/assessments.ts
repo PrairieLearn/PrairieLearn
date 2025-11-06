@@ -405,14 +405,14 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   if (courseInstance.allowAccess != null) {
     // If there are no access rules, the course instance is not accessible.
     if (courseInstance.allowAccess.length === 0) return false;
-    return courseInstance.allowAccess.some(isDateInFuture);
+    return courseInstance.allowAccess.some((rule) => isDateInFuture(rule.endDate));
   }
 
   if (courseInstance.publishing?.endDate == null) {
     return false;
   }
 
-  return isDateInFuture({ endDate: courseInstance.publishing.endDate });
+  return isDateInFuture(courseInstance.publishing.endDate);
 }
 
 export async function sync(
