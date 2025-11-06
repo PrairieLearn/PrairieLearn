@@ -241,13 +241,12 @@ FROM
     )
     AND users_is_instructor_in_course (u.user_id, c.id) IS FALSE
   )
-  LEFT JOIN course_instance_publishing_enrollment_extensions AS ciee ON (
+  LEFT JOIN course_instance_publishing_extension_enrollments AS ciee ON (
     -- Only consider extensions that affect the current enrollment.
     ciee.enrollment_id = e.id
   )
   LEFT JOIN course_instance_publishing_extensions AS cie ON (
     cie.id = ciee.course_instance_publishing_extension_id
-    AND cie.enabled = TRUE
   )
 WHERE
   e.user_id = $user_id
