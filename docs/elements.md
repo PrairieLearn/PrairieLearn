@@ -936,7 +936,9 @@ Within the `pl-order-blocks` element, each element must either be a `pl-answer` 
 | `ordering-feedback`   | string             | —       | Optional attribute used when `grading-method="dag"` or `grading-method="ranking"` and `correct=true`. Used to provide specific feedback when the block is placed in the wrong position relative to other blocks. This feedback is shown to the student after submission to help clarify ordering errors.                                                                                                                                                                             |
 | `final`               | boolean            | —       | Required on exactly one `pl-answer` tag when `grading-method="dag"` and a <code>&vert;</code> is used to denote optional blocks.                                                                                                                                                                                                                                                                                                                                                     |
 
-> **_NOTE_:** Above attributes indicated with a \* can be applied to `pl-block-group` as well.
+!!! note
+
+    Above attributes indicated with a \* can be applied to `pl-block-group` as well.
 
 #### Details
 
@@ -959,10 +961,10 @@ Different ordering of the blocks in the source area defined via the attribute `s
 
 This feature allows users to write `pl-order-blocks` questions using the `dag` grading method to have multiple correct orderings that must include the same final block. This can extend existing questions utilizing the `dag` grading method to include blocks that can be either included or excluded in the final solution while still being correct. You can denote an "or" relationship between dependencies in the `depends` attribute by using the `|` operator, e.g., `depends="A|B"`.
 
-> **_NOTE:_**
->
-> - When using optional blocks, the question must contain one block that serves as the final block in every ordering. The `pl-answer` tag that declares this block must have the attribute `final` set to `true`.
-> - A question cannot include block groups with optional blocks.
+!!! note
+
+    When using optional blocks, the question must contain one block that serves as the final block in every ordering. The `pl-answer` tag that declares this block must have the attribute `final` set to `true`.
+    A question cannot include block groups with optional blocks.
 
 #### Example implementations
 
