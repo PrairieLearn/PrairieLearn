@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
@@ -13,6 +14,7 @@ import type { AuthzData } from './authz-data-lib.js';
 import {
   type Assessment,
   type CourseInstance,
+  type Group,
   type GroupConfig,
   GroupConfigSchema,
   GroupRoleSchema,
@@ -378,7 +380,7 @@ export async function createGroup({
   uids: string[];
   authn_user_id: string;
   authzData: AuthzData;
-}): Promise<z.infer<typeof GroupSchema>> {
+}): Promise<Group> {
   if (group_name) {
     if (group_name.length > 30) {
       throw new GroupOperationError(
@@ -409,36 +411,39 @@ export async function createGroup({
   }
 
   try {
-    let group: z.infer<typeof GroupSchema>;
-    await sqldb.runInTransactionAsync(async () => {
-      try {
-        group = await sqldb.queryRow(
-          sql.create_group,
-          { assessment_id: assessment.id, authn_user_id, group_name },
-          GroupSchema,
-        );
-      } catch (err) {
-        // 23505 is the Postgres error code for unique constraint violation
-        // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
-        if (err.code === '23505' && err.constraint === 'unique_group_name') {
-          throw new GroupOperationError('Group name is already taken.');
+    return await run(async () => {
+      const group = await sqldb.runInTransactionAsync(async () => {
+        let createdGroup: Group;
+        try {
+          createdGroup = await sqldb.queryRow(
+            sql.create_group,
+            { assessment_id: assessment.id, authn_user_id, group_name },
+            GroupSchema,
+          );
+        } catch (err) {
+          // 23505 is the Postgres error code for unique constraint violation
+          // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
+          if (err.code === '23505' && err.constraint === 'unique_group_name') {
+            throw new GroupOperationError('Group name is already taken.');
+          }
+          // Any other error is unexpected and should be handled by the main processes
+          throw err;
         }
-        // Any other error is unexpected and should be handled by the main processes
-        throw err;
-      }
-      for (const uid of uids) {
-        await addUserToGroup({
-          course_instance,
-          assessment,
-          group_id: group.id,
-          uid,
-          authn_user_id,
-          enforceGroupSize: false,
-          authzData,
-        });
-      }
+        for (const uid of uids) {
+          await addUserToGroup({
+            course_instance,
+            assessment,
+            group_id: createdGroup.id,
+            uid,
+            authn_user_id,
+            enforceGroupSize: false,
+            authzData,
+          });
+        }
+        return createdGroup;
+      });
+      return group;
     });
-    return group!;
   } catch (err) {
     if (err instanceof GroupOperationError) {
       if (group_name) {
@@ -467,17 +472,15 @@ export async function createOrAddToGroup({
   uids: string[];
   authn_user_id: string;
   authzData: AuthzData;
-}): Promise<z.infer<typeof GroupSchema>> {
-  let group: z.infer<typeof GroupSchema>;
-
-  await sqldb.runInTransactionAsync(async () => {
+}): Promise<Group> {
+  return await sqldb.runInTransactionAsync(async () => {
     const existingGroup = await sqldb.queryOptionalRow(
       sql.select_and_lock_group_by_name,
       { group_name, assessment_id: assessment.id },
       GroupSchema,
     );
     if (existingGroup == null) {
-      group = await createGroup({
+      return await createGroup({
         course_instance,
         assessment,
         group_name,
@@ -486,22 +489,20 @@ export async function createOrAddToGroup({
         authzData,
       });
     } else {
-      group = existingGroup;
       for (const uid of uids) {
         await addUserToGroup({
           course_instance,
           assessment,
-          group_id: group.id,
+          group_id: existingGroup.id,
           uid,
           authn_user_id,
           enforceGroupSize: false,
           authzData,
         });
       }
+      return existingGroup;
     }
   });
-
-  return group!;
 }
 
 export function getGroupRoleReassignmentsAfterLeave(
