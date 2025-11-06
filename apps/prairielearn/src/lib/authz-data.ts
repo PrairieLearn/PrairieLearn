@@ -104,12 +104,15 @@ export async function calculateModernCourseInstanceStudentAccess(
 
   // If we are before the end date and after the start date, we definitely have access.
   if (reqDate < courseInstance.publishing_end_date) {
-    return { has_student_access: true, has_student_access_with_enrollment: enrollment != null };
+    return {
+      has_student_access: true,
+      has_student_access_with_enrollment: enrollment?.status === 'joined',
+    };
   }
 
   // We are after the end date. We might have access if we have an extension.
   // Only enrolled students can have extensions.
-  if (!enrollment) {
+  if (enrollment?.status !== 'joined') {
     return { has_student_access: false, has_student_access_with_enrollment: false };
   }
 
