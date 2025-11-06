@@ -2,7 +2,7 @@
 Implementation from https://github.com/glenfant/stopit under the MIT license.
 
 ```python
-from prairielearn.timeouts import ...
+from prairielearn.timeout_utils import ...
 ```
 """
 
@@ -36,10 +36,10 @@ class ThreadingTimeout:
 
     Parameters:
         seconds (float | int): duration to run the context manager block
-        swallow_exec (bool): ``False`` if you want to manage ``TimeoutException``
-        (or any other) in an outer ``try ... except`` structure. ``True`` (default)
-        if you just want to check the execution of the block with the
-        ``state`` attribute of the context manager.
+        swallow_exc (bool): ``False`` if you want to manage ``TimeoutException``
+            (or any other) in an outer ``try ... except`` structure. ``True`` (default)
+            if you just want to check the execution of the block with the
+            ``state`` attribute of the context manager.
     """
 
     def __init__(self, seconds: float, *, swallow_exc: bool = True) -> None:
@@ -123,7 +123,7 @@ def async_raise(target_tid: int, exception: type[Exception]) -> None:
     for further enlightenments.
 
     Parameters:
-        target_id: target thread identifier
+        target_tid: target thread identifier
         exception: Exception class to be raised in that thread
 
     Raises:
