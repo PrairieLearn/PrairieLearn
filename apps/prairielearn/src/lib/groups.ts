@@ -283,6 +283,12 @@ export async function addUserToGroup({
     // issue once we have a unique constraint for group membership.
     const existingGroupId = await getGroupId(assessment.id, user.user_id);
     if (existingGroupId != null) {
+      // If the user is already in the group we're trying to add them to,
+      // this is an idempotent operation - just return successfully
+      if (idsEqual(existingGroupId, group_id)) {
+        return;
+      }
+      // Otherwise, the user is in a different group, which is an error
       if (idsEqual(user.user_id, authn_user_id)) {
         throw new GroupOperationError('You are already in another group.');
       } else {

@@ -8,11 +8,13 @@ import { run } from '@prairielearn/run';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
+import { ensureEnrollment } from '../models/enrollment.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
 import { selectAssessmentQuestions } from './assessment-question.js';
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
+import { dangerousFullSystemAuthz } from './authz-data-lib.js';
 import { createCsvParser } from './csv.js';
 import {
   type Assessment,
@@ -21,7 +23,7 @@ import {
   IdSchema,
   RubricItemSchema,
 } from './db-types.js';
-import { createOrAddToGroup, getGroupConfig } from './groups.js';
+import { createOrAddToGroup, deleteAllGroups, getGroupConfig } from './groups.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -126,6 +128,9 @@ export async function uploadSubmissions(
     job.info('Deleting all existing assessment instances');
     await deleteAllAssessmentInstancesForAssessment(assessment.id, authn_user_id);
 
+    job.info('Deleting all existing groups');
+    await deleteAllGroups(assessment.id, authn_user_id);
+
     job.info('Uploading submissions CSV for ' + assessment_label);
 
     let successCount = 0;
@@ -153,7 +158,7 @@ export async function uploadSubmissions(
     });
     const csvParser = createCsvParser(csvStream, {
       lowercaseHeader: false,
-      maxRecordSize: 1 << 20, // 1MB (should be plenty for a single line)
+      maxRecordSize: 1 << 24, // 16MB (should be plenty for a single line)
     });
 
     // Detect if this is a group work CSV by checking the first row
@@ -269,9 +274,18 @@ async function processIndividualSubmissionRow(
   context: ProcessingContext,
 ): Promise<void> {
   const row = IndividualSubmissionCsvRowSchema.parse(record);
-  const { selectOrInsertUser } = context;
+  const { selectOrInsertUser, course_instance } = context;
 
   const user = await selectOrInsertUser(row.UID);
+
+  // Ensure the user is enrolled in the course instance
+  await ensureEnrollment({
+    courseInstance: course_instance,
+    userId: user.user_id,
+    requestedRole: 'System',
+    authzData: dangerousFullSystemAuthz(),
+    actionDetail: 'implicit_joined',
+  });
 
   await processSubmissionForEntity(
     row,
@@ -293,7 +307,20 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
   }
 
   // Create users for all group members concurrently
-  await Promise.all(usernames.map((uid) => selectOrInsertUser(uid)));
+  const users = await Promise.all(usernames.map((uid) => selectOrInsertUser(uid)));
+
+  // Ensure all users are enrolled in the course instance
+  await Promise.all(
+    users.map((user) =>
+      ensureEnrollment({
+        courseInstance: course_instance,
+        userId: user.user_id,
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
+        actionDetail: 'implicit_joined',
+      }),
+    ),
+  );
 
   // Use createOrAddToGroup which handles both creating new groups and adding to existing ones
   const group = await createOrAddToGroup({
@@ -303,7 +330,7 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
     uids: usernames,
     authn_user_id,
     // In dev mode, we bypass normal authz checks - the function will handle user enrollment checks
-    authzData: null as any,
+    authzData: dangerousFullSystemAuthz(),
   });
 
   await processSubmissionForEntity(
