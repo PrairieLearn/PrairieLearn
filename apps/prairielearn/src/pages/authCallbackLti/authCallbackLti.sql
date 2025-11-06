@@ -53,7 +53,6 @@ SET
   lis_result_sourcedid = $lis_result_sourcedid,
   lis_outcome_service_url = $lis_outcome_service_url;
 
-
 -- BLOCK enroll_user_in_course_instance
 INSERT INTO
   enrollments (
