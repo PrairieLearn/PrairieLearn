@@ -3,8 +3,10 @@ import memoize from 'p-memoize';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
+import { formatErrorStack } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { truncate } from '@prairielearn/sanitize';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectQuestionByQid } from '../models/question.js';
@@ -13,7 +15,12 @@ import { selectOrInsertUserByUid } from '../models/user.js';
 import { selectAssessmentQuestions } from './assessment-question.js';
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
 import { createCsvParser } from './csv.js';
-import { AssessmentQuestionSchema, IdSchema, RubricItemSchema } from './db-types.js';
+import {
+  type Assessment,
+  AssessmentQuestionSchema,
+  IdSchema,
+  RubricItemSchema,
+} from './db-types.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -68,7 +75,7 @@ function makeDedupedInserter<T>() {
  * in dev mode.
  */
 export async function uploadSubmissions(
-  assessment_id: string,
+  assessment: Assessment,
   csvFile: Express.Multer.File | null | undefined,
   user_id: string,
   authn_user_id: string,
@@ -77,13 +84,14 @@ export async function uploadSubmissions(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_instance_id, course_id } =
-    await selectAssessmentInfoForJob(assessment_id);
+  const { assessment_label, course_instance_id, course_id } = await selectAssessmentInfoForJob(
+    assessment.id,
+  );
 
   const serverJob = await createServerJob({
     courseId: course_id,
     courseInstanceId: course_instance_id,
-    assessmentId: assessment_id,
+    assessmentId: assessment.id,
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'upload_submissions',
@@ -98,14 +106,14 @@ export async function uploadSubmissions(
     async (question_id: string) =>
       await sqldb.queryRow(
         sql.select_assessment_question,
-        { assessment_id, question_id },
+        { assessment_id: assessment.id, question_id },
         AssessmentQuestionSchema,
       ),
   );
 
   serverJob.executeInBackground(async (job) => {
     job.info('Deleting all existing assessment instances');
-    await deleteAllAssessmentInstancesForAssessment(assessment_id, authn_user_id);
+    await deleteAllAssessmentInstancesForAssessment(assessment.id, authn_user_id);
 
     job.info('Uploading submissions CSV for ' + assessment_label);
 
@@ -119,7 +127,7 @@ export async function uploadSubmissions(
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
 
     const assessmentQuestions = await selectAssessmentQuestions({
-      assessment_id,
+      assessment_id: assessment.id,
     });
 
     // The maximum points of the assessment instance are not available
@@ -137,7 +145,7 @@ export async function uploadSubmissions(
       maxRecordSize: 1 << 20, // 1MB (should be plenty for a single line)
     });
     for await (const { info, record } of csvParser) {
-      job.verbose(`Processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
+      job.verbose(`Processing CSV line ${info.lines}`);
 
       try {
         const row = SubmissionCsvRowSchema.parse(record);
@@ -155,7 +163,7 @@ export async function uploadSubmissions(
             await sqldb.queryRow(
               sql.insert_assessment_instance,
               {
-                assessment_id,
+                assessment_id: assessment.id,
                 user_id: user.user_id,
                 instance_number: row['Assessment instance'],
               },
@@ -253,7 +261,7 @@ export async function uploadSubmissions(
         }
 
         await updateInstanceQuestionScore(
-          assessment_id,
+          assessment,
           instance_question_id,
           submission_id,
           null,
@@ -277,7 +285,9 @@ export async function uploadSubmissions(
         successCount++;
       } catch (err) {
         errorCount++;
-        job.error(`Error processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
+        job.error(
+          `Error processing CSV line ${info.lines}: ${truncate(JSON.stringify(record), 100)}`,
+        );
         if (err instanceof z.ZodError) {
           job.error(
             `Validation Error: ${err.errors
@@ -285,7 +295,7 @@ export async function uploadSubmissions(
               .join(', ')}`,
           );
         } else {
-          job.error(String(err));
+          job.error(formatErrorStack(err));
         }
       }
     }
@@ -294,7 +304,7 @@ export async function uploadSubmissions(
       job.info(`Successfully processed ${successCount} submissions, with no errors`);
     } else {
       job.info(`Successfully processed ${successCount} submissions`);
-      job.error(`Error processing ${errorCount} submissions`);
+      job.fail(`Error processing ${errorCount} submissions`);
     }
   });
 
