@@ -234,11 +234,11 @@ function UserDropdownMenu({
   if (
     navbarType === 'student' &&
     course_instance &&
-    (authz_data.authn_has_course_permission_preview ||
-      authz_data.authn_has_course_instance_permission_view)
+    (authz_data?.authn_has_course_permission_preview ||
+      authz_data?.authn_has_course_instance_permission_view)
   ) {
     displayedName = html`${displayedName} <span class="badge text-bg-warning">student</span>`;
-  } else if (authz_data?.overrides) {
+  } else if (authz_data?.overrides?.length > 0) {
     displayedName = html`${displayedName} <span class="badge text-bg-warning">modified</span>`;
   } else if (navbarType === 'instructor') {
     displayedName = html`${displayedName} <span class="badge text-bg-success">staff</span>`;
@@ -272,7 +272,7 @@ function UserDropdownMenu({
               >`
             : ''}
         </a>
-        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+        <div class="dropdown-menu dropdown-menu-end">
           ${authn_is_administrator
             ? html`
                 <button type="button" class="dropdown-item" id="navbar-administrator-toggle">
@@ -472,7 +472,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   }
 
   return html`
-    ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
+    ${authz_data?.overrides?.length > 0 && authnViewTypeMenuChecked === 'instructor'
       ? html`
           <a class="dropdown-item" href="${instructorLink}" id="navbar-reset-view">
             Reset to default staff view
@@ -492,7 +492,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
     >
       <span class="${authnViewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">&check;</span>
       <span class="ps-3">
-        ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
+        ${authz_data?.overrides?.length > 0 && authnViewTypeMenuChecked === 'instructor'
           ? 'Modified staff'
           : 'Staff'}
         view <span class="badge text-bg-success">staff</span>
@@ -617,7 +617,7 @@ function AuthnOverrides({
       </button>
     </form>
 
-    ${authz_data.overrides
+    ${authz_data?.overrides?.length > 0
       ? html`
           <div class="dropdown-item-text">
             <div class="list-group small text-nowrap">
@@ -723,12 +723,7 @@ function NavbarButtons({
     `;
   }
 
-  const allNavbarButtons: {
-    text: string;
-    href: string;
-  }[] = [];
-
-  allNavbarButtons.push({ text: 'Home', href: '/' });
+  const allNavbarButtons = [{ text: 'Home', href: '/' }];
 
   if (resLocals.is_administrator) {
     allNavbarButtons.push({ text: 'Global Admin', href: '/pl/administrator/admins' });

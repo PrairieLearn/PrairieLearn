@@ -5,7 +5,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { dangerousFullAuthzForTesting } from '../lib/authz-data-lib.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';
@@ -52,8 +52,8 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
     await ensureEnrollment({
       userId: studentOneUser.user_id,
       courseInstance,
-      authzData: dangerousFullAuthzForTesting(),
-      requestedRole: 'Student',
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
@@ -61,8 +61,8 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
     await ensureEnrollment({
       userId: studentTwoUser.user_id,
       courseInstance,
-      authzData: dangerousFullAuthzForTesting(),
-      requestedRole: 'Student',
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 

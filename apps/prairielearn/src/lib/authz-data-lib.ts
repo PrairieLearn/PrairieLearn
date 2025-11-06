@@ -4,15 +4,23 @@ import { HttpStatusError } from '@prairielearn/error';
 
 import { RawStaffUserSchema, StaffUserSchema } from './client/safe-db-types.js';
 import {
+  type Course,
+  type CourseInstance,
   CourseInstanceSchema,
   CourseSchema,
+  type EnumCourseInstanceRole,
   EnumCourseInstanceRoleSchema,
+  type EnumCourseRole,
   EnumCourseRoleSchema,
+  type EnumMode,
+  type EnumModeReason,
   EnumModeReasonSchema,
   EnumModeSchema,
+  type Institution,
   InstitutionSchema,
   SprocAuthzCourseInstanceSchema,
   SprocAuthzCourseSchema,
+  type User,
 } from './db-types.js';
 
 /**
@@ -69,8 +77,41 @@ export interface DangerousSystemAuthzData {
   };
 }
 
+export interface ConstructedCourseOrInstanceSuccessContext {
+  authzData: {
+    user: User;
+
+    course_role: EnumCourseRole;
+    has_course_permission_preview: boolean;
+    has_course_permission_view: boolean;
+    has_course_permission_edit: boolean;
+    has_course_permission_own: boolean;
+
+    course_instance_role?: EnumCourseInstanceRole;
+    has_course_instance_permission_view?: boolean;
+    has_course_instance_permission_edit?: boolean;
+    has_student_access_with_enrollment?: boolean;
+    has_student_access?: boolean;
+
+    mode: EnumMode;
+    mode_reason: EnumModeReason;
+  };
+  course: Course;
+  institution: Institution;
+  courseInstance: CourseInstance | null;
+}
+
+export type ConstructedCourseOrInstanceContext =
+  | {
+      authzData: null;
+      course: null;
+      institution: null;
+      courseInstance: null;
+    }
+  | ConstructedCourseOrInstanceSuccessContext;
+
 /** The full authz data from a database query. This is NOT what is on res.locals. */
-export const FullAuthzDataSchema = z.object({
+export const CourseOrInstanceContextDataSchema = z.object({
   mode: EnumModeSchema,
   mode_reason: EnumModeReasonSchema,
   course: CourseSchema,
@@ -79,11 +120,18 @@ export const FullAuthzDataSchema = z.object({
   permissions_course: SprocAuthzCourseSchema,
   permissions_course_instance: SprocAuthzCourseInstanceSchema,
 });
+export type CourseOrInstanceContextData = z.infer<typeof CourseOrInstanceContextDataSchema>;
 
-/** The user facing version that is obtained via the page context helpers. */
-export type AuthzData = RawPageAuthzData | DangerousSystemAuthzData;
+export type AuthzDataWithoutEffectiveUser =
+  | ConstructedCourseOrInstanceSuccessContext['authzData']
+  | DangerousSystemAuthzData;
+
+export type AuthzDataWithEffectiveUser = PageAuthzData | DangerousSystemAuthzData;
+
+export type AuthzData = AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser;
 
 export type CourseInstanceRole =
+  | 'System'
   | 'None'
   | 'Student'
   | 'Student Data Viewer'
@@ -91,7 +139,7 @@ export type CourseInstanceRole =
   // The role 'Any' is equivalent to 'Student' OR 'Student Data Viewer' OR 'Student Data Editor'
   | 'Any';
 
-export function dangerousFullAuthzForTesting(): DangerousSystemAuthzData {
+export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {
     authn_user: {
       // We use this structure with a user_id of null to indicate that the user is the system.
@@ -104,20 +152,16 @@ export function dangerousFullAuthzForTesting(): DangerousSystemAuthzData {
   };
 }
 
-export function isDangerousFullAuthzForTesting(
-  authzData: AuthzData,
+export function isDangerousFullSystemAuthz(
+  authzData: AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser,
 ): authzData is DangerousSystemAuthzData {
-  return authzData.authn_user.user_id === null && authzData.user.user_id === null;
+  return authzData.user.user_id === null;
 }
 
 export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!authzData) {
-    throw new Error('authzData is not defined');
-  }
-
-  if (isDangerousFullAuthzForTesting(authzData)) {
-    return true;
+  // You must set the requestedRole to 'System' when you use dangerousFullSystemAuthz.
+  if (isDangerousFullSystemAuthz(authzData)) {
+    return ['System', 'Any'].includes(requestedRole);
   }
 
   if (
@@ -180,4 +224,22 @@ export function assertHasRole(
   if (!hasRole(authzData, requestedRole)) {
     throw new HttpStatusError(403, 'Access denied');
   }
+}
+
+export function calculateCourseRolePermissions(role: EnumCourseRole) {
+  return {
+    has_course_permission_preview: ['Previewer', 'Viewer', 'Editor', 'Owner'].includes(role),
+    has_course_permission_view: ['Viewer', 'Editor', 'Owner'].includes(role),
+    has_course_permission_edit: ['Editor', 'Owner'].includes(role),
+    has_course_permission_own: ['Owner'].includes(role),
+  };
+}
+
+export function calculateCourseInstanceRolePermissions(role: EnumCourseInstanceRole) {
+  return {
+    has_course_instance_permission_view: ['Student Data Viewer', 'Student Data Editor'].includes(
+      role,
+    ),
+    has_course_instance_permission_edit: ['Student Data Editor'].includes(role),
+  };
 }
