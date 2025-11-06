@@ -3,15 +3,25 @@ import memoize from 'p-memoize';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
+import { formatErrorStack } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
+import { truncate } from '@prairielearn/sanitize';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
+import { selectAssessmentQuestions } from './assessment-question.js';
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
 import { createCsvParser } from './csv.js';
-import { AssessmentQuestionSchema, IdSchema } from './db-types.js';
+import {
+  type Assessment,
+  AssessmentQuestionSchema,
+  IdSchema,
+  RubricItemSchema,
+} from './db-types.js';
+import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -42,6 +52,9 @@ const SubmissionCsvRowSchema = z.object({
     .transform((val) => parseISO(val))
     .pipe(z.date()),
   'Submitted answer': ZodStringToJson,
+  Feedback: ZodStringToJson,
+  'Rubric Grading': ZodStringToJson,
+  'Auto points': z.coerce.number().optional(),
 });
 
 /**
@@ -62,7 +75,7 @@ function makeDedupedInserter<T>() {
  * in dev mode.
  */
 export async function uploadSubmissions(
-  assessment_id: string,
+  assessment: Assessment,
   csvFile: Express.Multer.File | null | undefined,
   user_id: string,
   authn_user_id: string,
@@ -71,13 +84,14 @@ export async function uploadSubmissions(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_instance_id, course_id } =
-    await selectAssessmentInfoForJob(assessment_id);
+  const { assessment_label, course_instance_id, course_id } = await selectAssessmentInfoForJob(
+    assessment.id,
+  );
 
   const serverJob = await createServerJob({
     courseId: course_id,
     courseInstanceId: course_instance_id,
-    assessmentId: assessment_id,
+    assessmentId: assessment.id,
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'upload_submissions',
@@ -92,14 +106,14 @@ export async function uploadSubmissions(
     async (question_id: string) =>
       await sqldb.queryRow(
         sql.select_assessment_question,
-        { assessment_id, question_id },
+        { assessment_id: assessment.id, question_id },
         AssessmentQuestionSchema,
       ),
   );
 
   serverJob.executeInBackground(async (job) => {
     job.info('Deleting all existing assessment instances');
-    await deleteAllAssessmentInstancesForAssessment(assessment_id, authn_user_id);
+    await deleteAllAssessmentInstancesForAssessment(assessment.id, authn_user_id);
 
     job.info('Uploading submissions CSV for ' + assessment_label);
 
@@ -111,6 +125,18 @@ export async function uploadSubmissions(
     const getOrInsertVariant = makeDedupedInserter<string>();
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
+
+    const assessmentQuestions = await selectAssessmentQuestions({
+      assessment_id: assessment.id,
+    });
+
+    // The maximum points of the assessment instance are not available
+    // in the CSV export, so we compute the it using the maximum points of
+    // the assessment questions of the assessment.
+    const maxPoints = assessmentQuestions.reduce(
+      (sum, assessmentQuestion) => sum + (assessmentQuestion.assessment_question.max_points ?? 0),
+      0,
+    );
     const csvStream = streamifier.createReadStream(csvFile.buffer, {
       encoding: 'utf8',
     });
@@ -119,7 +145,7 @@ export async function uploadSubmissions(
       maxRecordSize: 1 << 20, // 1MB (should be plenty for a single line)
     });
     for await (const { info, record } of csvParser) {
-      job.verbose(`Processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
+      job.verbose(`Processing CSV line ${info.lines}`);
 
       try {
         const row = SubmissionCsvRowSchema.parse(record);
@@ -137,7 +163,7 @@ export async function uploadSubmissions(
             await sqldb.queryRow(
               sql.insert_assessment_instance,
               {
-                assessment_id,
+                assessment_id: assessment.id,
                 user_id: user.user_id,
                 instance_number: row['Assessment instance'],
               },
@@ -184,7 +210,7 @@ export async function uploadSubmissions(
             ),
         );
 
-        await sqldb.queryRow(
+        const submission_id = await sqldb.queryRow(
           sql.insert_submission,
           {
             variant_id,
@@ -197,10 +223,71 @@ export async function uploadSubmissions(
           IdSchema,
         );
 
+        let manual_rubric_data: InstanceQuestionScoreInput['manual_rubric_data'] | null = null;
+
+        if (assessmentQuestion.manual_rubric_id) {
+          const rubric_items = await sqldb.queryRows(
+            sql.select_rubric_items,
+            { rubric_id: assessmentQuestion.manual_rubric_id },
+            RubricItemSchema,
+          );
+
+          await sqldb.execute(sql.update_assessment_instance_max_points, {
+            assessment_instance_id,
+            max_points: maxPoints,
+          });
+
+          // This is a best-effort process: we attempt to match uploaded rubric items to an
+          // existing rubric item in the database. If no match is found, the uploaded item
+          // is ignored and not applied.
+          const applied_rubric_item_ids: string[] = [];
+
+          if (row['Rubric Grading']?.items) {
+            for (const { description } of row['Rubric Grading'].items) {
+              const rubric_item = rubric_items.find((ri) => ri.description === description);
+              if (!rubric_item) {
+                continue;
+              }
+              applied_rubric_item_ids.push(rubric_item.id);
+            }
+          }
+          manual_rubric_data = {
+            rubric_id: assessmentQuestion.manual_rubric_id,
+            applied_rubric_items: applied_rubric_item_ids.map((id) => ({
+              rubric_item_id: id,
+            })),
+            adjust_points: row['Rubric Grading']?.adjust_points ?? null,
+          };
+        }
+
+        await updateInstanceQuestionScore(
+          assessment,
+          instance_question_id,
+          submission_id,
+          null,
+          {
+            manual_score_perc: null,
+            manual_points: run(() => {
+              if (assessmentQuestion.manual_rubric_id) {
+                return row['Rubric Grading']?.computed_points ?? null;
+              } else {
+                return row['Manual points'];
+              }
+            }),
+            auto_score_perc: null,
+            auto_points: row['Auto points'] ?? null,
+            feedback: row.Feedback,
+            manual_rubric_data,
+          },
+          authn_user_id,
+        );
+
         successCount++;
       } catch (err) {
         errorCount++;
-        job.error(`Error processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
+        job.error(
+          `Error processing CSV line ${info.lines}: ${truncate(JSON.stringify(record), 100)}`,
+        );
         if (err instanceof z.ZodError) {
           job.error(
             `Validation Error: ${err.errors
@@ -208,7 +295,7 @@ export async function uploadSubmissions(
               .join(', ')}`,
           );
         } else {
-          job.error(String(err));
+          job.error(formatErrorStack(err));
         }
       }
     }
@@ -217,7 +304,7 @@ export async function uploadSubmissions(
       job.info(`Successfully processed ${successCount} submissions, with no errors`);
     } else {
       job.info(`Successfully processed ${successCount} submissions`);
-      job.error(`Error processing ${errorCount} submissions`);
+      job.fail(`Error processing ${errorCount} submissions`);
     }
   });
 
