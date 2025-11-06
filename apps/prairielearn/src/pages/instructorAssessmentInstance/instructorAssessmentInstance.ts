@@ -185,7 +185,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_question_points') {
       const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore(
-        res.locals.assessment.id,
+        res.locals.assessment,
         req.body.instance_question_id,
         null, // submission_id
         req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at

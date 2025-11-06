@@ -26,6 +26,16 @@ export const EnumChunkTypeSchema = z.enum([
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
 
+export const EnumCourseRoleSchema = z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']);
+export type EnumCourseRole = z.infer<typeof EnumCourseRoleSchema>;
+
+export const EnumCourseInstanceRoleSchema = z.enum([
+  'None',
+  'Student Data Viewer',
+  'Student Data Editor',
+]);
+export type EnumCourseInstanceRole = z.infer<typeof EnumCourseInstanceRoleSchema>;
+
 export const EnumEnrollmentStatusSchema = z.enum([
   'invited',
   'joined',
@@ -141,11 +151,7 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
 
 // Result of authz_course sproc
 export const SprocAuthzCourseSchema = z.object({
-  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
-  has_course_permission_edit: z.boolean(),
-  has_course_permission_own: z.boolean(),
-  has_course_permission_preview: z.boolean(),
-  has_course_permission_view: z.boolean(),
+  course_role: EnumCourseRoleSchema,
 });
 export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
 
@@ -189,9 +195,7 @@ export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullabl
 
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
-  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor', 'Student']),
-  has_course_instance_permission_edit: z.boolean(),
-  has_course_instance_permission_view: z.boolean(),
+  course_instance_role: EnumCourseInstanceRoleSchema,
   has_student_access: z.boolean(),
   has_student_access_with_enrollment: z.boolean(),
 });
@@ -462,6 +466,7 @@ export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
 export const AuditEventSchema = z.object({
   action: EnumAuditEventActionSchema,
+  // See audit-event.types.ts for the list of supported action_detail values based on the table.
   action_detail: z.string().nullable(),
   agent_authn_user_id: IdSchema.nullable(),
   agent_user_id: IdSchema.nullable(),
@@ -613,7 +618,7 @@ export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSc
 
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
-  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor']).nullable(),
+  course_instance_role: EnumCourseInstanceRoleSchema.nullable(),
   course_permission_id: IdSchema,
   id: IdSchema,
 });
@@ -630,7 +635,7 @@ export const CourseInstanceUsageSchema = null;
 
 export const CoursePermissionSchema = z.object({
   course_id: IdSchema,
-  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']).nullable(),
+  course_role: EnumCourseRoleSchema.nullable(),
   id: IdSchema,
   user_id: IdSchema,
 });

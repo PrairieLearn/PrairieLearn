@@ -12,6 +12,7 @@ import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-gro
 
 import { updateAssessmentInstanceGrade } from './assessment-grading.js';
 import {
+  type Assessment,
   type AssessmentQuestion,
   AssessmentQuestionSchema,
   IdSchema,
@@ -212,6 +213,7 @@ export async function populateManualGradingData(submission: Record<string, any>)
 /**
  * Updates the rubric settings for an assessment question.
  *
+ * @param assessment - The assessment associated with the assessment question. Assumed to be safe.
  * @param assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
  * @param use_rubric - Indicates if a rubric should be used for manual grading.
  * @param replace_auto_points - If true, the rubric is used to compute the total points. If false, the rubric is used to compute the manual points.
@@ -223,6 +225,7 @@ export async function populateManualGradingData(submission: Record<string, any>)
  * @param authn_user_id - The user_id of the logged in user.
  */
 export async function updateAssessmentQuestionRubric(
+  assessment: Assessment,
   assessment_question_id: string,
   use_rubric: boolean,
   replace_auto_points: boolean,
@@ -337,7 +340,7 @@ export async function updateAssessmentQuestionRubric(
         },
       );
 
-      await recomputeInstanceQuestions(assessment_question_id, authn_user_id);
+      await recomputeInstanceQuestions(assessment, assessment_question_id, authn_user_id);
     }
 
     if (tag_for_manual_grading) {
@@ -349,10 +352,12 @@ export async function updateAssessmentQuestionRubric(
 /**
  * Recomputes all graded instance questions based on changes in the rubric settings and items. A new grading job is created, but only if settings or item points are changed.
  *
+ * @param assessment - The assessment associated with the instance question. Assumed to be safe.
  * @param assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
  * @param authn_user_id - The user_id of the logged in user.
  */
 async function recomputeInstanceQuestions(
+  assessment: Assessment,
   assessment_question_id: string,
   authn_user_id: string,
 ): Promise<void> {
@@ -366,7 +371,7 @@ async function recomputeInstanceQuestions(
 
     await async.eachSeries(instance_questions, async (instance_question) => {
       await updateInstanceQuestionScore(
-        instance_question.assessment_id,
+        assessment,
         instance_question.instance_question_id,
         instance_question.submission_id,
         null, // check_modified_at,
@@ -462,11 +467,11 @@ const InstanceQuestionScoreInputSchema = z.object({
     })
     .nullish(),
 });
-type InstanceQuestionScoreInput = z.infer<typeof InstanceQuestionScoreInputSchema>;
+export type InstanceQuestionScoreInput = z.infer<typeof InstanceQuestionScoreInputSchema>;
 
 /**
  * Manually updates the score of an instance question.
- * @param assessment_id - The ID of the assessment associated to the instance question. Assumed to be safe.
+ * @param assessment - The assessment associated with the instance question. Assumed to be safe.
  * @param instance_question_id - The ID of the instance question to be updated. May or may not be safe.
  * @param submission_id - The ID of the submission. Optional, if not provided the last submission if the instance question is used.
  * @param check_modified_at - The value of modified_at when the question was retrieved, optional. If provided, and the modified_at value does not match this value, a grading job is created but the score is not updated.
@@ -476,7 +481,7 @@ type InstanceQuestionScoreInput = z.infer<typeof InstanceQuestionScoreInputSchem
  * @returns The ID of the grading job created, if any, and a flag indicating if the score was not updated due to a modified_at conflict.
  */
 export async function updateInstanceQuestionScore(
-  assessment_id: string,
+  assessment: Assessment,
   instance_question_id: string,
   submission_id: string | null,
   check_modified_at: Date | null,
@@ -488,7 +493,7 @@ export async function updateInstanceQuestionScore(
     const current_submission = await sqldb.queryRow(
       sql.select_submission_for_score_update,
       {
-        assessment_id,
+        assessment_id: assessment.id,
         instance_question_id,
         submission_id,
         check_modified_at: check_modified_at?.toISOString(),

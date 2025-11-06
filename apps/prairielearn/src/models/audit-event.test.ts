@@ -30,14 +30,14 @@ describe('audit-event', () => {
 
       const { date: _date, ...auditEvent } = await insertAuditEvent({
         action: 'insert',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '1',
-        action_detail: null,
-        new_row: await selectUserById('1'),
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '1',
+        actionDetail: null,
+        newRow: await selectUserById('1'),
         context: { test: 'basic' },
       });
       expect(auditEvent).toMatchInlineSnapshot(`
@@ -90,12 +90,12 @@ describe('audit-event', () => {
 
       const { date: _date, ...auditEvent } = await insertAuditEvent({
         action: 'insert',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: null,
-        agent_user_id: null,
-        subject_user_id: user.user_id,
-        new_row: { test: 'default user data' },
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: null,
+        agentUserId: null,
+        subjectUserId: user.user_id,
+        newRow: { test: 'default user data' },
       });
       expect(auditEvent).toMatchInlineSnapshot(`
         {
@@ -136,13 +136,13 @@ describe('audit-event', () => {
 
       const auditEvent = await insertAuditEvent({
         action: 'insert',
-        table_name: 'assessments',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        assessment_id: assessment.id,
-        new_row: { title: 'Midterm 1' },
+        tableName: 'assessments',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        assessmentId: assessment.id,
+        newRow: { title: 'Midterm 1' },
       });
       assert.equal(auditEvent.course_id, '1');
       assert.equal(auditEvent.course_instance_id, assessment.course_instance_id);
@@ -163,13 +163,13 @@ describe('audit-event', () => {
 
       const auditEvent = await insertAuditEvent({
         action: 'insert',
-        table_name: 'assessment_questions',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        assessment_question_id: assessmentQuestion.id,
-        new_row: { status: 'active' },
+        tableName: 'assessment_questions',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        assessmentQuestionId: assessmentQuestion.id,
+        newRow: { status: 'active' },
       });
       assert.equal(auditEvent.course_id, '1');
       assert.equal(auditEvent.course_instance_id, assessment.course_instance_id);
@@ -237,26 +237,26 @@ describe('audit-event', () => {
       // Insert test audit events
       const auditEvent1 = await insertAuditEvent({
         action: 'insert',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '1',
-        new_row: await selectUserById('1'),
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '1',
+        newRow: await selectUserById('1'),
         context: { test: 'data1' },
       });
 
       const auditEvent2 = await insertAuditEvent({
         action: 'update',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '1',
-        action_detail: 'TEST_VALUE',
-        old_row: { test: 'old data' },
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '1',
+        actionDetail: 'TEST_VALUE' as any,
+        oldRow: { test: 'old data' },
         context: { test: 'data2' },
       });
 
@@ -283,40 +283,40 @@ describe('audit-event', () => {
       // Insert test audit events for different tables
       const usersAuditEvent = await insertAuditEvent({
         action: 'insert',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '1',
-        new_row: { test: 'new user data' },
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '1',
+        newRow: { test: 'new user data' },
         context: { test: 'users' },
       });
 
       const enrollmentsAuditEvent = await insertAuditEvent({
         action: 'insert',
-        action_detail: 'implicit_joined',
-        table_name: 'enrollments',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '1',
-        new_row: { test: 'new enrollment data' },
+        actionDetail: 'implicit_joined',
+        tableName: 'enrollments',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '1',
+        newRow: { test: 'new enrollment data' },
         context: { test: 'enrollments' },
       });
 
       // Insert an audit event for a table not in the list
       await insertAuditEvent({
         action: 'insert',
-        table_name: 'assessments',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '1',
-        assessment_id: '1',
-        new_row: { test: 'new assessment data' },
+        tableName: 'assessments',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '1',
+        assessmentId: '1',
+        newRow: { test: 'new assessment data' },
         context: { test: 'assessments' },
       });
 
@@ -343,25 +343,25 @@ describe('audit-event', () => {
       // Insert audit events for different course instances
       await insertAuditEvent({
         action: 'insert',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '1',
-        new_row: { test: 'course1 user data' },
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '1',
+        newRow: { test: 'course1 user data' },
         context: { test: 'course1' },
       });
 
       await insertAuditEvent({
         action: 'insert',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '2',
-        new_row: { test: 'course2 user data' },
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '2',
+        newRow: { test: 'course2 user data' },
         context: { test: 'course2' },
       });
 
@@ -393,26 +393,26 @@ describe('audit-event', () => {
       // Insert audit events for different users
       await insertAuditEvent({
         action: 'insert',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user1.user_id,
-        course_instance_id: '1',
-        new_row: user1,
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user1.user_id,
+        courseInstanceId: '1',
+        newRow: user1,
         context: { test: 'user1' },
       });
 
       await insertAuditEvent({
         action: 'insert',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user2.user_id,
-        course_instance_id: '1',
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user2.user_id,
+        courseInstanceId: '1',
         context: user2,
-        new_row: await selectUserById('1'),
+        newRow: await selectUserById('1'),
       });
 
       const result = await selectAuditEvents({
@@ -435,26 +435,26 @@ describe('audit-event', () => {
 
       const olderEvent = await insertAuditEvent({
         action: 'insert',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '1',
-        new_row: { test: 'older user data' },
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '1',
+        newRow: { test: 'older user data' },
         context: { test: 'older' },
       });
 
       const newerEvent = await insertAuditEvent({
         action: 'update',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '1',
-        action_detail: 'TEST_VALUE',
-        old_row: { test: 'old data' },
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '1',
+        actionDetail: 'TEST_VALUE' as any,
+        oldRow: { test: 'old data' },
         context: { test: 'newer' },
       });
 
@@ -481,13 +481,13 @@ describe('audit-event', () => {
 
       await insertAuditEvent({
         action: 'insert',
-        table_name: 'users',
-        row_id: '1',
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '1',
-        new_row: { test: 'new user data' },
+        tableName: 'users',
+        rowId: '1',
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '1',
+        newRow: { test: 'new user data' },
         context: { test: 'null_user' },
       });
 
@@ -510,22 +510,22 @@ describe('audit-event', () => {
 
       const { date: _date, ...auditEvent } = await insertAuditEvent({
         action: 'update',
-        table_name: 'users',
-        row_id: '1',
-        subject_user_id: user.user_id,
-        course_instance_id: '1',
-        action_detail: 'TEST_VALUE',
+        tableName: 'users',
+        rowId: '1',
+        subjectUserId: user.user_id,
+        courseInstanceId: '1',
+        actionDetail: 'TEST_VALUE' as any,
         context: { test: 'full_fields' },
-        old_row: { name: 'Old Name' },
-        new_row: { name: 'New Name' },
-        agent_authn_user_id: '1',
-        agent_user_id: '1',
-        institution_id: '1',
-        course_id: '1',
-        assessment_id: '1',
-        assessment_instance_id: '1',
-        assessment_question_id: '1',
-        group_id: '1',
+        oldRow: { name: 'Old Name' },
+        newRow: { name: 'New Name' },
+        agentAuthnUserId: '1',
+        agentUserId: '1',
+        institutionId: '1',
+        courseId: '1',
+        assessmentId: '1',
+        assessmentInstanceId: '1',
+        assessmentQuestionId: '1',
+        groupId: '1',
       });
       const result = await selectAuditEvents({
         subject_user_id: user.user_id,

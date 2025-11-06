@@ -4,6 +4,7 @@ import { run } from '@prairielearn/run';
 
 import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 import { SelectUserSchema } from '../authn.types.js';
+import { PageAuthzDataSchema } from '../authz-data-lib.js';
 
 import {
   RawStaffAssessmentSchema,
@@ -15,39 +16,6 @@ import {
   StaffInstitutionSchema,
   StaffUserSchema,
 } from './safe-db-types.js';
-
-const RawAuthzDataSchema = z.object({
-  // TODO: Type these more accurately into a course instance version.
-  authn_is_administrator: z.boolean(),
-  authn_has_course_permission_preview: z.boolean().optional(),
-  authn_has_course_permission_view: z.boolean().optional(),
-  authn_has_course_permission_edit: z.boolean().optional(),
-  authn_has_course_permission_own: z.boolean().optional(),
-  authn_course_role: z.string().optional(),
-  authn_course_instance_role: z.string().optional(),
-  authn_mode: z.string().optional(),
-  authn_has_student_access: z.boolean().optional(),
-  authn_has_student_access_with_enrollment: z.boolean().optional(),
-  authn_has_course_instance_permission_view: z.boolean().optional(),
-  authn_has_course_instance_permission_edit: z.boolean().optional(),
-  // Authz data
-  is_administrator: z.boolean(),
-  has_course_permission_preview: z.boolean(),
-  has_course_permission_view: z.boolean(),
-  has_course_permission_edit: z.boolean(),
-  has_course_permission_own: z.boolean(),
-  course_role: z.string().optional(),
-  course_instance_role: z.string().optional(),
-  mode: z.string().optional(),
-  has_student_access: z.boolean().optional(),
-  has_student_access_with_enrollment: z.boolean().optional(),
-  has_course_instance_permission_view: z.boolean().optional(),
-  has_course_instance_permission_edit: z.boolean().optional(),
-
-  user: StaffUserSchema,
-});
-const AuthzDataSchema = RawAuthzDataSchema.brand<'AuthzData'>();
-export type AuthzData = z.infer<typeof AuthzDataSchema>;
 
 export const RawPageContextSchema = z.object({
   __csrf_token: z.string(),
@@ -72,12 +40,18 @@ export const PageContextSchema = RawPageContextSchema.brand<'PageContext'>();
 export type PageContext = z.infer<typeof PageContextSchema>;
 
 export const RawPageContextWithAuthzDataSchema = RawPageContextSchema.extend({
-  authz_data: AuthzDataSchema,
+  authz_data: PageAuthzDataSchema,
 });
 export const PageContextWithAuthzDataSchema =
   RawPageContextWithAuthzDataSchema.brand<'PageContextWithAuthzData'>();
 export type PageContextWithAuthzData = z.infer<typeof PageContextWithAuthzDataSchema>;
 
+/**
+ * TODO: We want to merge
+ * getPageContext, getCourseInstanceContext, and getAssessmentContext into a single function.
+ *
+ * New options will be withAuthzData, pageType, and requestedRole.
+ */
 export function getPageContext(
   resLocals: Record<string, any>,
   options?: {
@@ -154,20 +128,20 @@ export type StaffCourseInstanceContext = z.infer<typeof StaffCourseInstanceConte
 
 export function getCourseInstanceContext(
   resLocals: Record<string, any>,
-  authLevel: 'student',
+  pageType: 'student',
 ): StudentCourseInstanceContext;
 
 export function getCourseInstanceContext(
   resLocals: Record<string, any>,
-  authLevel: 'instructor',
+  pageType: 'instructor',
 ): StaffCourseInstanceContext;
 
 export function getCourseInstanceContext(
   resLocals: Record<string, any>,
-  authLevel: 'student' | 'instructor',
+  pageType: 'student' | 'instructor',
 ): StudentCourseInstanceContext | StaffCourseInstanceContext {
   const schema = run(() => {
-    if (authLevel === 'student') {
+    if (pageType === 'student') {
       return StudentCourseInstanceContextSchema;
     }
     return StaffCourseInstanceContextSchema;

@@ -1,8 +1,7 @@
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../../components/HeadContents.js';
-import { Navbar } from '../../../components/Navbar.js';
-import { compiledScriptTag } from '../../../lib/assets.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course, type CourseInstance } from '../../../lib/db-types.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 import { formatStripePrice } from '../../lib/billing/stripe.js';
@@ -24,67 +23,63 @@ export function StudentCourseInstanceUpgrade({
   planPrices: Record<string, number> | null;
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })} ${compiledScriptTag('studentCourseInstanceUpgradeClient.ts')}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container mb-4">
-          <h1>
-            <i class="fa-solid fa-lock"></i>
-            Upgrade required
-          </h1>
-          <p>
-            <strong>${course.short_name}: ${course.title}, ${course_instance.long_name}</strong>
-            requires an upgrade to support certain features selected by your instructor.
-          </p>
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Upgrade required',
+    navContext: {
+      type: 'student',
+      page: 'upgrade',
+    },
+    headContent: compiledScriptTag('studentCourseInstanceUpgradeClient.ts'),
+    content: html`
+      <h1>
+        <i class="fa-solid fa-lock"></i>
+        Upgrade required
+      </h1>
+      <p>
+        <strong>${course.short_name}: ${course.title}, ${course_instance.long_name}</strong>
+        requires an upgrade to support certain features selected by your instructor.
+      </p>
 
-          ${planPrices == null
-            ? html`<p>Please contact your instructor for more information.</p>`
-            : html`
-                ${PriceTable({ planNames: missingPlans, planPrices })}
+      ${planPrices == null
+        ? html`<p>Please contact your instructor for more information.</p>`
+        : html`
+            ${PriceTable({ planNames: missingPlans, planPrices })}
 
-                <form method="POST">
-                  <div class="form-check mb-3">
-                    <input
-                      type="checkbox"
-                      class="form-check-input"
-                      id="js-terms-agreement"
-                      name="terms_agreement"
-                      value="1"
-                    />
-                    <label class="form-check-label" for="js-terms-agreement">
-                      I agree to the PrairieLearn
-                      <a href="https://www.prairielearn.com/legal/terms">Terms of Service</a> and
-                      <a href="https://www.prairielearn.com/legal/privacy">Privacy Policy</a>.
-                    </label>
-                  </div>
+            <form method="POST">
+              <div class="form-check mb-3">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="js-terms-agreement"
+                  name="terms_agreement"
+                  value="1"
+                />
+                <label class="form-check-label" for="js-terms-agreement">
+                  I agree to the PrairieLearn
+                  <a href="https://www.prairielearn.com/legal/terms">Terms of Service</a> and
+                  <a href="https://www.prairielearn.com/legal/privacy">Privacy Policy</a>.
+                </label>
+              </div>
 
-                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  ${missingPlans.map(
-                    (plan) => html`
-                      <input type="hidden" name="unsafe_plan_names" value="${plan}" />
-                    `,
-                  )}
-                  <button
-                    id="js-upgrade"
-                    type="submit"
-                    name="__action"
-                    value="upgrade"
-                    class="btn btn-primary d-block w-100"
-                    disabled
-                  >
-                    Upgrade
-                  </button>
-                </form>
-              `}
-        </main>
-      </body>
-    </html>
-  `.toString();
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              ${missingPlans.map(
+                (plan) => html` <input type="hidden" name="unsafe_plan_names" value="${plan}" /> `,
+              )}
+              <button
+                id="js-upgrade"
+                type="submit"
+                name="__action"
+                value="upgrade"
+                class="btn btn-primary d-block w-100"
+                disabled
+              >
+                Upgrade
+              </button>
+            </form>
+          `}
+    `,
+  });
 }
 
 export function CourseInstanceStudentUpdateSuccess({
@@ -98,34 +93,29 @@ export function CourseInstanceStudentUpdateSuccess({
   paid: boolean;
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container mb-4">
-          <h1>Thanks!</h1>
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Upgrade successful',
+    navContext: {
+      type: 'student',
+      page: 'upgrade',
+    },
+    content: html`
+      <h1>Thanks!</h1>
 
-          ${paid
-            ? html`
-                <p>Your payment was successfully processed. You may now access the course.</p>
+      ${paid
+        ? html`
+            <p>Your payment was successfully processed. You may now access the course.</p>
 
-                <a href="/pl/course_instance/${course_instance.id}" class="btn btn-primary">
-                  Continue to ${course.short_name}
-                </a>
-              `
-            : html`
-                <p>
-                  Once your payment has been fully processed, check back for access to the course.
-                </p>
-              `}
-        </main>
-      </body>
-    </html>
-  `.toString();
+            <a href="/pl/course_instance/${course_instance.id}" class="btn btn-primary">
+              Continue to ${course.short_name}
+            </a>
+          `
+        : html`
+            <p>Once your payment has been fully processed, check back for access to the course.</p>
+          `}
+    `,
+  });
 }
 
 function getPlanDetails(planName: PlanName) {
