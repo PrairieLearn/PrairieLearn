@@ -3,7 +3,7 @@ SELECT
   c.short_name || ': ' || c.title || ', ' || ci.long_name AS label,
   c.short_name || ', ' || ci.long_name AS short_label,
   ci.id AS course_instance_id,
-  (e.id IS NOT NULL) AS enrolled,
+  to_jsonb(e) AS enrollment,
   users_is_instructor_in_course (u.user_id, c.id) AS instructor_access
 FROM
   users AS u
