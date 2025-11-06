@@ -61,8 +61,76 @@ export const CourseOrInstanceOverridesSchema = z.object({
   course_instance_role: EnumCourseInstanceRoleSchema.nullable().optional(),
   allow_example_course_override: z.boolean().optional(),
 });
-
 type CourseOrInstanceOverrides = z.infer<typeof CourseOrInstanceOverridesSchema>;
+
+/**
+ * Checks if the user has access to the course instance. If the user is a student,
+ * the course instance must be published to them.
+ *
+ * @param courseInstance - The course instance to check access for.
+ * @param userId - The ID of the user to check access for.
+ * @param reqDate - The date of the request.
+ */
+export async function calculateModernCourseInstanceStudentAccess(
+  courseInstance: CourseInstance,
+  userId: string,
+  reqDate: Date,
+) {
+  // This function should only be called for course instances that are using
+  // modern publishing configs.
+  assert(courseInstance.modern_publishing);
+
+  // We can't trust the authzData to have the correct permissioning,
+  // so we need to use system auth to get the enrollment.
+  const enrollment = await selectOptionalEnrollmentByUserId({
+    userId,
+    requestedRole: 'System',
+    authzData: dangerousFullSystemAuthz(),
+    courseInstance,
+  });
+
+  // Not published at all.
+  if (courseInstance.publishing_start_date == null) {
+    return { has_student_access: false, has_student_access_with_enrollment: false };
+  }
+
+  // End date is always set alongside start date
+  assert(courseInstance.publishing_end_date != null);
+
+  // Before the start date, we definitely don't have access.
+  if (reqDate < courseInstance.publishing_start_date) {
+    return { has_student_access: false, has_student_access_with_enrollment: false };
+  }
+
+  // If we are before the end date and after the start date, we definitely have access.
+  if (reqDate < courseInstance.publishing_end_date) {
+    return { has_student_access: true, has_student_access_with_enrollment: enrollment != null };
+  }
+
+  // We are after the end date. We might have access if we have an extension.
+  // Only enrolled students can have extensions.
+  if (!enrollment) {
+    return { has_student_access: false, has_student_access_with_enrollment: false };
+  }
+
+  const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollment({
+    enrollment,
+    // Our current authzData would say we can't access this, but we are actually building up
+    // authzData with this function, so we use system auth to get the latest extension.
+    authzData: dangerousFullSystemAuthz(),
+    requestedRole: 'System',
+  });
+
+  // Check if we have access via extension.
+  const hasAccessViaExtension =
+    latestPublishingExtension !== null && reqDate < latestPublishingExtension.end_date;
+
+  return {
+    has_student_access: hasAccessViaExtension,
+    has_student_access_with_enrollment: hasAccessViaExtension,
+  };
+}
+
 /**
  * Checks if the user has access to the course instance. If the user is a student,
  * the course instance must be published to them.

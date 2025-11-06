@@ -45,7 +45,7 @@ router.get(
 
     const { authzData, courseInstance } = await constructCourseOrInstanceContext({
       user: res.locals.authn_user,
-      course_id: null, // Inferred via course_instance_id
+      course_id: null, // Inferred from course_instance_id
       course_instance_id: courseInstanceId,
       ip: req.ip ?? null,
       req_date: res.locals.req_date,

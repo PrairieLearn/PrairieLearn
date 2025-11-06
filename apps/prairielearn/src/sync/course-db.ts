@@ -240,7 +240,7 @@ export async function loadFullCourse(
     // accessible), or if it has one or more `allowAccess` rules and they all have
     // an `endDate` that is in the past.
     //
-    // If the allowAccess section is not present, we instead consider publishing.endDate.
+    // If the `allowAccess` section is not present, we instead consider publishing.endDate.
 
     const allowAccessRules = courseInstance.data?.allowAccess;
 
@@ -252,8 +252,7 @@ export async function loadFullCourse(
         });
       }
 
-      // We have no access rules, so we are in the modern publishing configuration.
-
+      // We have no access rules, so we are using a modern publishing configuration.
       return (
         courseInstance.data?.publishing?.endDate == null ||
         courseInstance.data.publishing.startDate == null ||
@@ -1176,11 +1175,10 @@ function validateAssessment({
     errors.push(...dateErrors.errors);
   });
 
-  // We don't want to warn for past course
-  // instances that instructors will never touch again, as they won't benefit
-  // from fixing things. We'll only show some warnings for course instances
-  // which are accessible either now or any time in the future.
-
+  // We don't want to warn for past course instances that instructors will
+  // never touch again, as they won't benefit from fixing things. We'll
+  // only show certain warnings for course instances which are accessible
+  // either now or any time in the future.
   if (!courseInstanceExpired) {
     assessment.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
@@ -1486,30 +1484,14 @@ function validateCourseInstance({
     }
   }
 
-  const usingLegacyAllowAccess = courseInstance.allowAccess != null;
-  const usingModernPublishing = courseInstance.publishing != null;
+  let parsedEndDate: Date | null = null;
 
-  if (courseInstance.selfEnrollment.useEnrollmentCode !== false && usingLegacyAllowAccess) {
-    errors.push(
-      '"selfEnrollment.useEnrollmentCode" is not configurable when you have access control rules ("allowAccess" is set).',
-    );
-  }
-
-  if (courseInstance.selfEnrollment.restrictToInstitution !== true && usingLegacyAllowAccess) {
-    errors.push(
-      '"selfEnrollment.restrictToInstitution" is not configurable when you have access control rules ("allowAccess" is set).',
-    );
-  }
-
-  // TODO: Remove this once the UI is merged
-  if (usingModernPublishing) {
-    warnings.push('"publishing" is not configurable yet.');
-  }
-
-  if (usingLegacyAllowAccess && usingModernPublishing) {
+  if (courseInstance.allowAccess && courseInstance.publishing) {
     errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
-  } else if (usingModernPublishing) {
-    assert(courseInstance.publishing != null);
+  } else if (courseInstance.publishing) {
+    // TODO: Remove this once the UI is merged
+    warnings.push('"publishing" is not configurable yet.');
+
     const hasEndDate = courseInstance.publishing.endDate != null;
     const hasStartDate = courseInstance.publishing.startDate != null;
     if (hasStartDate && !hasEndDate) {
@@ -1528,7 +1510,7 @@ function validateCourseInstance({
       errors.push('"publishing.startDate" is not a valid date.');
     }
 
-    const parsedEndDate =
+    parsedEndDate =
       courseInstance.publishing.endDate == null
         ? null
         : parseJsonDate(courseInstance.publishing.endDate);
@@ -1548,7 +1530,8 @@ function validateCourseInstance({
     }
   }
 
-  let accessibleInFuture = false;
+  // Default to the publishing end date being in the future.
+  let accessibleInFuture = parsedEndDate != null && isFuture(parsedEndDate);
   for (const rule of courseInstance.allowAccess ?? []) {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {
