@@ -3,8 +3,10 @@ import memoize from 'p-memoize';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
+import { formatErrorStack } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { truncate } from '@prairielearn/sanitize';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
@@ -172,7 +174,7 @@ export async function uploadSubmissions(
     let isGroupWork: boolean | null = null;
 
     for await (const { info, record } of csvParser) {
-      job.verbose(`Processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
+      job.verbose(`Processing CSV line ${info.lines}`);
 
       try {
         // Auto-detect CSV type on first data row
@@ -367,7 +369,9 @@ export async function uploadSubmissions(
         successCount++;
       } catch (err) {
         errorCount++;
-        job.error(`Error processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
+        job.error(
+          `Error processing CSV line ${info.lines}: ${truncate(JSON.stringify(record), 100)}`,
+        );
         if (err instanceof z.ZodError) {
           job.error(
             `Validation Error: ${err.errors
@@ -375,7 +379,7 @@ export async function uploadSubmissions(
               .join(', ')}`,
           );
         } else {
-          job.error(String(err));
+          job.error(formatErrorStack(err));
         }
       }
     }
@@ -384,7 +388,7 @@ export async function uploadSubmissions(
       job.info(`Successfully processed ${successCount} submissions, with no errors`);
     } else {
       job.info(`Successfully processed ${successCount} submissions`);
-      job.error(`Error processing ${errorCount} submissions`);
+      job.fail(`Error processing ${errorCount} submissions`);
     }
   });
 
