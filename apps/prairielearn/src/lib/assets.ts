@@ -240,6 +240,7 @@ export function applyMiddleware(app: express.Application) {
   router.use('/', (err, req, res, next) => {
     if (err?.code === 'ENOENT') {
       next(new HttpStatusError(404, 'Not Found'));
+      return;
     }
 
     next(err);
