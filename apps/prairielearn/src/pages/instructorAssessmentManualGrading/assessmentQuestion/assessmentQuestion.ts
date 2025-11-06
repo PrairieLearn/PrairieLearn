@@ -173,7 +173,8 @@ router.post(
         const jobSequenceId = await aiGrade({
           question: res.locals.question,
           course: res.locals.course,
-          course_instance_id: res.locals.course_instance.id,
+          course_instance: res.locals.course_instance,
+          assessment: res.locals.assessment,
           assessment_question: res.locals.assessment_question,
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
@@ -236,7 +237,7 @@ router.post(
       }
     } else if (req.body.__action === 'edit_question_points') {
       const result = await manualGrading.updateInstanceQuestionScore(
-        res.locals.assessment.id,
+        res.locals.assessment,
         req.body.instance_question_id,
         null, // submission_id
         req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at
@@ -271,7 +272,8 @@ router.post(
       const jobSequenceId = await aiGrade({
         question: res.locals.question,
         course: res.locals.course,
-        course_instance_id: res.locals.course_instance.id,
+        course_instance: res.locals.course_instance,
+        assessment: res.locals.assessment,
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
@@ -351,6 +353,7 @@ router.post(
     } else if (req.body.__action === 'modify_rubric_settings') {
       try {
         await manualGrading.updateAssessmentQuestionRubric(
+          res.locals.assessment,
           res.locals.assessment_question.id,
           req.body.use_rubric,
           req.body.replace_auto_points,

@@ -4,10 +4,11 @@ import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
-import express, { Router } from 'express';
+import express, { type ErrorRequestHandler, Router } from 'express';
 import { type HashElementNode, hashElement } from 'folder-hash';
 
 import * as compiledAssets from '@prairielearn/compiled-assets';
+import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -228,6 +229,22 @@ export function applyMiddleware(app: express.Application) {
       coreElements: true,
     }),
   );
+
+  // If the request reaches this point, it means that the requested asset does
+  // not exist. Return a 404 error.
+  router.use('/', (req, res, next) => {
+    next(new HttpStatusError(404, 'Not Found'));
+  });
+
+  // Transform ENOENT errors from static file serving into 404 errors.
+  router.use('/', ((err, req, res, next) => {
+    if (err?.code === 'ENOENT') {
+      next(new HttpStatusError(404, 'Not Found'));
+      return;
+    }
+
+    next(err);
+  }) satisfies ErrorRequestHandler);
 
   app.use(assetsPrefix, router);
 }
