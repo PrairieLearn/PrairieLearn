@@ -7,3 +7,4 @@ MD026:
 MD033: # No inline HTML
   allowed_elements:
     - div
+    - code
