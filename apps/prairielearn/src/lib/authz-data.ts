@@ -5,6 +5,7 @@ import z from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
+import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 import {
@@ -106,7 +107,28 @@ export async function calculateModernCourseInstanceStudentAccess(
     return { has_student_access: true, has_student_access_with_enrollment: enrollment != null };
   }
 
-  return { has_student_access: false, has_student_access_with_enrollment: false };
+  // We are after the end date. We might have access if we have an extension.
+  // Only enrolled students can have extensions.
+  if (!enrollment) {
+    return { has_student_access: false, has_student_access_with_enrollment: false };
+  }
+
+  const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollment({
+    enrollment,
+    // Our current authzData would say we can't access this, but we are actually building up
+    // authzData with this function, so we use system auth to get the latest extension.
+    authzData: dangerousFullSystemAuthz(),
+    requestedRole: 'System',
+  });
+
+  // Check if we have access via extension.
+  const hasAccessViaExtension =
+    latestPublishingExtension !== null && reqDate < latestPublishingExtension.end_date;
+
+  return {
+    has_student_access: hasAccessViaExtension,
+    has_student_access_with_enrollment: hasAccessViaExtension,
+  };
 }
 
 /**
