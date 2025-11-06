@@ -33,8 +33,8 @@ describe('Access control', { timeout: 20000 }, function () {
 
       Times are:
 
-      1750 before course instance
-      1800 start course instance
+      1890 before course instance
+      1900 start course instance
       1910 before assessment
       1920 start assessment
       1930 before reservation
@@ -124,15 +124,6 @@ describe('Access control', { timeout: 20000 }, function () {
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
-    });
-  });
-
-  describe('3.5. Update course instance access rules', function () {
-    it('should set the correct access rule dates', async () => {
-      await sqldb.execute(
-        'UPDATE course_instance_access_rules SET start_date = $1::timestamptz, end_date = $2::timestamptz WHERE course_instance_id = $3',
-        ['1800-06-13T13:12:00Z', '2400-06-13T13:12:00Z', '1'],
-      );
     });
   });
 
