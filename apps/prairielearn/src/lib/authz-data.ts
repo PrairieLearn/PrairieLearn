@@ -1,5 +1,7 @@
 import assert from 'assert';
 
+import z from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
@@ -10,9 +12,9 @@ import {
   calculateCourseRolePermissions,
 } from './authz-data-lib.js';
 import {
-  type EnumCourseInstanceRole,
-  type EnumCourseRole,
-  type EnumMode,
+  EnumCourseInstanceRoleSchema,
+  EnumCourseRoleSchema,
+  EnumModeSchema,
   type User,
 } from './db-types.js';
 
@@ -48,6 +50,14 @@ async function selectCourseOrInstanceContextData({
   );
 }
 
+export const CourseOrInstanceOverridesSchema = z.object({
+  mode: EnumModeSchema.nullable().optional(),
+  course_role: EnumCourseRoleSchema.nullable().optional(),
+  course_instance_role: EnumCourseInstanceRoleSchema.nullable().optional(),
+  allow_example_course_override: z.boolean().optional(),
+});
+
+type CourseOrInstanceOverrides = z.infer<typeof CourseOrInstanceOverridesSchema>;
 /**
  * Builds the authorization data for a user on a page. The optional parameters are used for effective user overrides,
  * most scenarios should not need to change these parameters.
@@ -60,10 +70,6 @@ async function selectCourseOrInstanceContextData({
  * @param params.req_date - The date of the request.
  * @param params.is_administrator - Whether the user is an administrator.
  * @param params.overrides - The overrides to apply to the authorization data.
- * @param params.overrides.mode - The requested mode to use.
- * @param params.overrides.course_role - The requested course role to use.
- * @param params.overrides.course_instance_role - The requested course instance role to use.
- * @param params.overrides.allow_example_course_override - Whether to allow overriding the course role for example courses.
  */
 export async function constructCourseOrInstanceContext({
   user,
@@ -80,14 +86,12 @@ export async function constructCourseOrInstanceContext({
   ip: string | null;
   req_date: Date;
   is_administrator: boolean;
-  overrides?: {
-    mode?: EnumMode;
-    course_role?: EnumCourseRole;
-    course_instance_role?: EnumCourseInstanceRole;
-    allow_example_course_override?: boolean;
-  };
+  overrides?: CourseOrInstanceOverrides;
 }): Promise<ConstructedCourseOrInstanceContext> {
   const resolvedOverrides = {
+    mode: null,
+    course_role: null,
+    course_instance_role: null,
     allow_example_course_override: true,
     ...overrides,
   };

@@ -15,7 +15,10 @@ import {
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
 } from '../lib/authz-data-lib.js';
-import { constructCourseOrInstanceContext } from '../lib/authz-data.js';
+import {
+  CourseOrInstanceOverridesSchema,
+  constructCourseOrInstanceContext,
+} from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import {
@@ -507,6 +510,24 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     }
 
     // We are trying to override the user data.
+    const overrideResult = CourseOrInstanceOverridesSchema.safeParse({
+      allow_example_course_override: false,
+      mode: config.devMode ? req.cookies.pl_test_mode : null,
+      course_role: req.cookies.pl2_requested_course_role || null,
+      course_instance_role: req.cookies.pl2_requested_course_instance_role || null,
+    });
+    if (!overrideResult.success) {
+      clearOverrideCookies(res, overrides);
+      throw new AugmentedError('Access denied', {
+        status: 403,
+        info: html`
+          <p>
+            You have requested an invalid effective user: ${overrideResult.error.message}. All
+            requested changes to the effective user have been removed.
+          </p>
+        `,
+      });
+    }
 
     const {
       authzData: effectiveAuthResult,
@@ -522,12 +543,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       is_administrator: effectiveUserData
         ? effectiveUserData.is_administrator
         : res.locals.is_administrator,
-      overrides: {
-        allow_example_course_override: false,
-        mode: config.devMode ? req.cookies.pl_test_mode : null,
-        course_role: req.cookies.pl2_requested_course_role || null,
-        course_instance_role: req.cookies.pl2_requested_course_instance_role || null,
-      },
+      overrides: overrideResult.data,
     });
 
     // If the authn user was denied access, we would have thrown an error already since
