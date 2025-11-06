@@ -58,7 +58,7 @@ const DEFAULT_GRADING_STATUS_FILTER: GradingStatusValue[] = [];
 const DEFAULT_ASSIGNED_GRADER_FILTER: string[] = [];
 const DEFAULT_GRADED_BY_FILTER: string[] = [];
 const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
-const DEFAULT_RUBRIC_ITEMS_FILTER: string[] = [];
+const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 
 const columnHelper = createColumnHelper<InstanceQuestionRow>();
 
@@ -225,9 +225,9 @@ function AssessmentQuestionTable({
     'submission_group',
     parseAsArrayOf(parseAsString).withDefault(DEFAULT_SUBMISSION_GROUP_FILTER),
   );
-  const [rubricItemsFilter, setRubricItemsFilter] = useQueryState(
-    'rubric_items',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_RUBRIC_ITEMS_FILTER),
+  const [aiAgreementFilter, setAiAgreementFilter] = useQueryState(
+    'ai_agreement',
+    parseAsArrayOf(parseAsString).withDefault(DEFAULT_AI_AGREEMENT_FILTER),
   );
 
   const [manualPointsFilter, setManualPointsFilter] = useQueryState(
@@ -248,6 +248,7 @@ function AssessmentQuestionTable({
   );
 
   const [showStudentInfo, setShowStudentInfo] = useState(false);
+  const [showOnlyRubricDisagreements, setShowOnlyRubricDisagreements] = useState(false);
   const { createCheckboxProps } = useShiftClickCheckbox<InstanceQuestionRow>();
 
   const columnFilters = useMemo(() => {
@@ -263,8 +264,15 @@ function AssessmentQuestionTable({
     if (aiGradingMode && instanceQuestionGroups.length > 0) {
       filters.push({ id: 'instance_question_group_name', value: submissionGroupFilter });
     }
-    if (rubricData) {
-      filters.push({ id: 'rubric_grading_item_ids', value: rubricItemsFilter });
+    if (aiGradingMode) {
+      // Apply rubric disagreements filter if enabled
+      const rubricFilter = showOnlyRubricDisagreements
+        ? [
+            ...aiAgreementFilter,
+            ...(aiAgreementFilter.length === 0 ? ['__HAS_DISAGREEMENT__'] : []),
+          ]
+        : aiAgreementFilter;
+      filters.push({ id: 'rubric_difference', value: rubricFilter });
     }
     if (assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0) {
       filters.push({ id: 'auto_points', value: autoPointsFilter });
@@ -279,14 +287,14 @@ function AssessmentQuestionTable({
     assignedGraderFilter,
     gradedByFilter,
     submissionGroupFilter,
-    rubricItemsFilter,
+    aiAgreementFilter,
+    showOnlyRubricDisagreements,
     manualPointsFilter,
     autoPointsFilter,
     totalPointsFilter,
     scoreFilter,
     aiGradingMode,
     instanceQuestionGroups.length,
-    rubricData,
     assessmentQuestion.max_auto_points,
   ]);
 
@@ -335,10 +343,21 @@ function AssessmentQuestionTable({
     return Array.from(groups).toSorted();
   }, [instanceQuestions]);
 
-  // Get all rubric items
-  const allRubricItems = useMemo(() => {
-    return (rubricData?.rubric_items ?? []).map((item) => item.id);
-  }, [rubricData]);
+  // Get all unique AI agreement items (rubric differences)
+  const allAiAgreementItems = useMemo(() => {
+    const itemsMap = new Map<string, { number: number; description: string }>();
+    instanceQuestions.forEach((row) => {
+      if (row.rubric_difference && Array.isArray(row.rubric_difference)) {
+        row.rubric_difference.forEach((item) => {
+          if (!itemsMap.has(item.description)) {
+            itemsMap.set(item.description, { number: item.number, description: item.description });
+          }
+        });
+      }
+    });
+    // Sort by number
+    return Array.from(itemsMap.values()).sort((a, b) => a.number - b.number);
+  }, [instanceQuestions]);
 
   const columns = useMemo(
     () => [
@@ -667,7 +686,30 @@ function AssessmentQuestionTable({
                   </div>
                 );
               },
-              enableColumnFilter: false,
+              filterFn: (row, columnId, filterValues: string[]) => {
+                if (filterValues.length === 0) return true;
+                const rubricDiff = row.original.rubric_difference;
+
+                // Special filter value to show any disagreements
+                if (filterValues.includes('__HAS_DISAGREEMENT__')) {
+                  if (rubricDiff && Array.isArray(rubricDiff) && rubricDiff.length > 0) {
+                    return true;
+                  }
+                  // Also check for point differences without rubric data
+                  if (
+                    row.original.point_difference !== null &&
+                    row.original.point_difference !== 0
+                  ) {
+                    return true;
+                  }
+                }
+
+                if (!rubricDiff || !Array.isArray(rubricDiff)) return false;
+                // Check if ANY of the selected items are in the disagreement
+                return filterValues.some((description) =>
+                  rubricDiff.some((item) => item.description === description),
+                );
+              },
               sortingFn: (rowA, rowB) => {
                 const aDiff = rowA.original.point_difference;
                 const bDiff = rowB.original.point_difference;
@@ -688,25 +730,6 @@ function AssessmentQuestionTable({
             }),
           ]
         : []),
-
-      // Rubric items column (for filtering, not displayed)
-      ...(rubricData
-        ? [
-            columnHelper.accessor('rubric_grading_item_ids', {
-              id: 'rubric_grading_item_ids',
-              header: 'Rubric Items',
-              cell: () => null,
-              enableHiding: true,
-              filterFn: (row, columnId, filterValues: string[]) => {
-                if (filterValues.length === 0) return true;
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-                const rowItemIds = row.getValue(columnId) as string[];
-                // ALL selected items must be present (AND logic)
-                return filterValues.every((itemId) => rowItemIds.includes(itemId));
-              },
-            }),
-          ]
-        : []),
     ],
     [
       aiGradingMode,
@@ -717,7 +740,6 @@ function AssessmentQuestionTable({
       urlPrefix,
       csrfToken,
       assessmentId,
-      rubricData,
       createCheckboxProps,
     ],
   );
@@ -726,8 +748,8 @@ function AssessmentQuestionTable({
   const defaultColumnVisibility = Object.fromEntries(
     allColumnIds.map((id) => [
       id,
-      // Hide by default: user_or_group_name, uid, points, rubric_grading_item_ids
-      !['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(id),
+      // Hide by default: user_or_group_name, uid, points
+      !['user_or_group_name', 'uid', 'points'].includes(id),
     ]),
   );
 
@@ -914,12 +936,31 @@ function AssessmentQuestionTable({
     actionInput.value = 'batch_action';
     form.append(actionInput);
 
-    // Add action data
-    const dataInput = document.createElement('input');
-    dataInput.type = 'hidden';
-    dataInput.name = 'batch_action_data';
-    dataInput.value = JSON.stringify(actionData);
-    form.append(dataInput);
+    // Check if this is an AI grading or AI grouping action
+    if (actionData.batch_action) {
+      // For AI grading actions, add batch_action directly
+      const batchActionInput = document.createElement('input');
+      batchActionInput.type = 'hidden';
+      batchActionInput.name = 'batch_action';
+      batchActionInput.value = actionData.batch_action;
+      form.append(batchActionInput);
+
+      // Add closed_instance_questions_only if specified
+      if (actionData.closed_instance_questions_only !== undefined) {
+        const closedInput = document.createElement('input');
+        closedInput.type = 'hidden';
+        closedInput.name = 'closed_instance_questions_only';
+        closedInput.value = String(actionData.closed_instance_questions_only);
+        form.append(closedInput);
+      }
+    } else {
+      // For regular batch actions, add action data as JSON
+      const dataInput = document.createElement('input');
+      dataInput.type = 'hidden';
+      dataInput.name = 'batch_action_data';
+      dataInput.value = JSON.stringify(actionData);
+      form.append(dataInput);
+    }
 
     // Add selected instance question IDs
     selectedIds.forEach((id) => {
@@ -953,46 +994,180 @@ function AssessmentQuestionTable({
       <TanstackTableCard
         table={table}
         title="Student instance questions"
-        headerButtons={
+        columnManagerButtons={
           <>
+            {aiGradingMode && (
+              <Button
+                variant="light"
+                size="sm"
+                onClick={() => {
+                  setShowOnlyRubricDisagreements(!showOnlyRubricDisagreements);
+                  if (!showOnlyRubricDisagreements) {
+                    // When enabling, clear any existing ai agreement filters
+                    void setAiAgreementFilter([]);
+                  }
+                }}
+              >
+                <i
+                  class={showOnlyRubricDisagreements ? 'bi bi-funnel-fill' : 'bi bi-funnel'}
+                  aria-hidden="true"
+                />{' '}
+                <span class="d-none d-md-inline">
+                  {showOnlyRubricDisagreements ? 'Show all' : 'Rubric disagreements'}
+                </span>
+              </Button>
+            )}
             <Button variant="light" size="sm" onClick={toggleStudentInfo}>
               <i class={showStudentInfo ? 'bi bi-eye-slash' : 'bi bi-eye'} aria-hidden="true" />{' '}
-              <span class="d-inline">
-                {showStudentInfo ? 'Hide student info' : 'Show student info'}
+              <span class="d-none d-md-inline">
+                {showStudentInfo ? 'Hide' : 'Show'} student info
               </span>
             </Button>
-            {authzData.has_course_instance_permission_edit && (
-              <Dropdown>
-                <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
-                  <i class="fas fa-tags" aria-hidden="true" />{' '}
-                  <span class="d-none d-sm-inline">Tag for grading</span>
-                </Dropdown.Toggle>
-                <Dropdown.Menu align="end">
-                  <Dropdown.Header>Assign for grading</Dropdown.Header>
-                  {courseStaff.map((grader) => (
+          </>
+        }
+        headerButtons={
+          <>
+            {aiGradingMode ? (
+              <>
+                <Dropdown>
+                  <Dropdown.Toggle variant="light" size="sm">
+                    <i class="bi bi-stars" aria-hidden="true" /> AI grading
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu align="end">
                     <Dropdown.Item
-                      key={grader.user_id}
-                      onClick={() => handleBatchAction({ assigned_grader: grader.user_id })}
+                      onClick={() => {
+                        const form = document.getElementById(
+                          'ai-grading-graded',
+                        ) as HTMLFormElement | null;
+                        form?.submit();
+                      }}
                     >
-                      <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
+                      Grade all human-graded
                     </Dropdown.Item>
-                  ))}
-                  <Dropdown.Item onClick={() => handleBatchAction({ assigned_grader: null })}>
-                    <i class="fas fa-user-slash" /> Remove grader assignment
-                  </Dropdown.Item>
-                  <Dropdown.Divider />
-                  <Dropdown.Item
-                    onClick={() => handleBatchAction({ requires_manual_grading: true })}
-                  >
-                    <i class="fas fa-tag" /> Tag as required grading
-                  </Dropdown.Item>
-                  <Dropdown.Item
-                    onClick={() => handleBatchAction({ requires_manual_grading: false })}
-                  >
-                    <i class="fas fa-check-square" /> Tag as graded
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
+                    <Dropdown.Item
+                      disabled={selectedIds.length === 0}
+                      onClick={() =>
+                        handleBatchAction({ batch_action: 'ai_grade_assessment_selected' })
+                      }
+                    >
+                      Grade selected
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      onClick={() => {
+                        const form = document.getElementById(
+                          'ai-grading-all',
+                        ) as HTMLFormElement | null;
+                        form?.submit();
+                      }}
+                    >
+                      Grade all
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      onClick={() => {
+                        const modal = document.getElementById('delete-all-ai-grading-jobs-modal');
+                        if (modal) {
+                          const bsModal = new window.bootstrap.Modal(modal);
+                          bsModal.show();
+                        }
+                      }}
+                    >
+                      Delete all AI grading results
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
+                <Dropdown>
+                  <Dropdown.Toggle variant="light" size="sm">
+                    <i class="bi bi-stars" aria-hidden="true" /> AI submission grouping
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu align="end">
+                    <Dropdown.Item
+                      disabled={selectedIds.length === 0}
+                      onClick={() => {
+                        const modal = document.getElementById('group-confirmation-modal-selected');
+                        if (modal) {
+                          // Store selected IDs in the modal for later submission
+                          modal.setAttribute('data-selected-ids', selectedIds.join(','));
+                          const bsModal = new window.bootstrap.Modal(modal);
+                          bsModal.show();
+                        }
+                      }}
+                    >
+                      Group selected submissions
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      onClick={() => {
+                        const modal = document.getElementById('group-confirmation-modal-all');
+                        if (modal) {
+                          const bsModal = new window.bootstrap.Modal(modal);
+                          bsModal.show();
+                        }
+                      }}
+                    >
+                      Group all submissions
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      onClick={() => {
+                        const modal = document.getElementById('group-confirmation-modal-ungrouped');
+                        if (modal) {
+                          const bsModal = new window.bootstrap.Modal(modal);
+                          bsModal.show();
+                        }
+                      }}
+                    >
+                      Group ungrouped submissions
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      onClick={() => {
+                        const modal = document.getElementById(
+                          'delete-all-ai-instance-question-grouping-results-modal',
+                        );
+                        if (modal) {
+                          const bsModal = new window.bootstrap.Modal(modal);
+                          bsModal.show();
+                        }
+                      }}
+                    >
+                      Delete all AI groupings
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
+              </>
+            ) : (
+              authzData.has_course_instance_permission_edit && (
+                <Dropdown>
+                  <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
+                    <i class="fas fa-tags" aria-hidden="true" />{' '}
+                    <span class="d-none d-sm-inline">Tag for grading</span>
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu align="end">
+                    <Dropdown.Header>Assign for grading</Dropdown.Header>
+                    {courseStaff.map((grader) => (
+                      <Dropdown.Item
+                        key={grader.user_id}
+                        onClick={() => handleBatchAction({ assigned_grader: grader.user_id })}
+                      >
+                        <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
+                      </Dropdown.Item>
+                    ))}
+                    <Dropdown.Item onClick={() => handleBatchAction({ assigned_grader: null })}>
+                      <i class="fas fa-user-slash" /> Remove grader assignment
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      onClick={() => handleBatchAction({ requires_manual_grading: true })}
+                    >
+                      <i class="fas fa-tag" /> Tag as required grading
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      onClick={() => handleBatchAction({ requires_manual_grading: false })}
+                    >
+                      <i class="fas fa-check-square" /> Tag as graded
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
+              )
             )}
           </>
         }
@@ -1092,23 +1267,23 @@ function AssessmentQuestionTable({
                   ),
                 }
               : {}),
-            ...(rubricData
+            ...(aiGradingMode
               ? {
-                  rubric_grading_item_ids: ({
+                  rubric_difference: ({
                     header,
                   }: {
                     header: Header<InstanceQuestionRow, unknown>;
                   }) => (
                     <MultiSelectColumnFilter
                       columnId={header.column.id}
-                      columnLabel="Rubric Items"
-                      allColumnValues={allRubricItems}
+                      columnLabel="AI Agreement"
+                      allColumnValues={allAiAgreementItems.map((item) => item.description)}
                       renderValueLabel={({ value }) => {
-                        const item = rubricData.rubric_items.find((i) => i.id === value);
-                        return <span>{item?.description || value}</span>;
+                        const item = allAiAgreementItems.find((i) => i.description === value);
+                        return <span>{item ? `${item.number}. ${item.description}` : value}</span>;
                       }}
-                      columnValuesFilter={rubricItemsFilter}
-                      setColumnValuesFilter={setRubricItemsFilter}
+                      columnValuesFilter={aiAgreementFilter}
+                      setColumnValuesFilter={setAiAgreementFilter}
                     />
                   ),
                 }
@@ -1156,12 +1331,14 @@ function AssessmentQuestionManualGrading({
   instanceQuestionGroups,
   courseStaff,
   aiGradingStats,
+  numOpenInstances: _numOpenInstances,
   isDevMode,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
   search: string;
   isDevMode: boolean;
-} & AssessmentQuestionTableProps) {
+  numOpenInstances: number;
+} & Omit<AssessmentQuestionTableProps, 'numOpenInstances'>) {
   // eslint-disable-next-line @eslint-react/naming-convention/use-state
   const [queryClient, _setQueryClient] = React.useState(() => new QueryClient());
 

@@ -36,7 +36,8 @@ export function EditQuestionPointsScoreButton({
 
   return html`<button
     type="button"
-    class="btn btn-link p-0 text-body"
+    class="btn btn-link p-0 text-muted"
+    style="font-size: 0.75rem;"
     data-bs-toggle="popover"
     data-bs-container="body"
     data-bs-html="true"

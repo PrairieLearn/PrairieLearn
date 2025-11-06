@@ -526,6 +526,7 @@ export function TanstackTable<RowDataModel>({
  * @param params.table - The table model
  * @param params.title - The title of the card
  * @param params.headerButtons - The buttons to display in the header
+ * @param params.columnManagerButtons - The buttons to display next to the column manager (View button)
  * @param params.globalFilter - State management for the global filter
  * @param params.globalFilter.value
  * @param params.globalFilter.setValue
@@ -537,6 +538,7 @@ export function TanstackTableCard<RowDataModel>({
   table,
   title,
   headerButtons,
+  columnManagerButtons,
   globalFilter,
   tableOptions,
   downloadButtonOptions = null,
@@ -544,6 +546,7 @@ export function TanstackTableCard<RowDataModel>({
   table: Table<RowDataModel>;
   title: string;
   headerButtons: JSX.Element;
+  columnManagerButtons?: JSX.Element;
   globalFilter: {
     value: string;
     setValue: (value: string) => void;
@@ -630,11 +633,21 @@ export function TanstackTableCard<RowDataModel>({
             </div>
             {/* We do this instead of CSS properties for the accessibility checker.
               We can't have two elements with the same id of 'column-manager-button'. */}
-            {isMediumOrLarger && <ColumnManager table={table} />}
+            {isMediumOrLarger && (
+              <>
+                <ColumnManager table={table} />
+                {columnManagerButtons}
+              </>
+            )}
           </div>
           {/* We do this instead of CSS properties for the accessibility checker.
             We can't have two elements with the same id of 'column-manager-button'. */}
-          {!isMediumOrLarger && <ColumnManager table={table} />}
+          {!isMediumOrLarger && (
+            <>
+              <ColumnManager table={table} />
+              {columnManagerButtons}
+            </>
+          )}
           <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
             <div class="text-muted text-nowrap">
               Showing {displayedCount} of {totalCount} {title.toLowerCase()}
