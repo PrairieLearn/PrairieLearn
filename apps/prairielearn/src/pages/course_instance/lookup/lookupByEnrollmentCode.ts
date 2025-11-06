@@ -49,9 +49,7 @@ router.get(
       course_instance_id: courseInstanceId,
       ip: req.ip ?? null,
       req_date: res.locals.req_date,
-      overrides: {
-        is_administrator: res.locals.is_administrator,
-      },
+      is_administrator: res.locals.is_administrator,
     });
     if (authzData === null || courseInstance === null) {
       throw new HttpStatusError(403, 'Access denied');
