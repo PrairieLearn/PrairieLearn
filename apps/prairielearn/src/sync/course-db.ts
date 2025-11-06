@@ -240,7 +240,7 @@ export async function loadFullCourse(
     // accessible), or if it has one or more `allowAccess` rules and they all have
     // an `endDate` that is in the past.
     //
-    // If the allowAccess section is not present, we instead consider publishing.endDate.
+    // If the `allowAccess` section is not present, we instead consider publishing.endDate.
 
     const allowAccessRules = courseInstance.data?.allowAccess;
 
@@ -252,8 +252,7 @@ export async function loadFullCourse(
         });
       }
 
-      // We have no access rules, so we are in the modern publishing configuration.
-
+      // We have no access rules, so we are using a modern publishing configuration.
       return (
         courseInstance.data?.publishing?.endDate == null ||
         courseInstance.data.publishing.startDate == null ||
