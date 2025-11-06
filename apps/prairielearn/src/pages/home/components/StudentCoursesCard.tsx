@@ -8,13 +8,14 @@ import {
   RawStudentCourseSchema,
   StudentEnrollmentSchema,
 } from '../../../lib/client/safe-db-types.js';
+import { CourseInstancePublishingExtensionSchema } from '../../../lib/db-types.js';
 
 export const StudentHomePageCourseSchema = z.object({
-  id: RawStudentCourseInstanceSchema.shape.id,
+  course_instance: RawStudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
-  long_name: RawStudentCourseInstanceSchema.shape.long_name,
   enrollment: StudentEnrollmentSchema,
+  publishing_extensions: z.array(CourseInstancePublishingExtensionSchema).optional(), // Optional for legacy courses
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 
@@ -94,14 +95,14 @@ export function StudentCoursesCard({
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped" aria-label={heading}>
             <tbody>
-              {invited.map((courseInstance: StudentHomePageCourse) => (
-                <tr key={`invite-${courseInstance.id}`} class="table-warning">
+              {invited.map((entry: StudentHomePageCourse) => (
+                <tr key={`invite-${entry.course_instance.id}`} class="table-warning">
                   <td class="align-middle">
                     <div class="d-flex align-items-center justify-content-between gap-2">
                       <div>
                         <span class="fw-semibold">
-                          {courseInstance.course_short_name}: {courseInstance.course_title},
-                          {courseInstance.long_name}
+                          {entry.course_short_name}: {entry.course_title},
+                          {entry.course_instance.long_name}
                         </span>
                         <span class="ms-2 badge bg-warning text-dark">Invitation</span>
                       </div>
@@ -112,7 +113,7 @@ export function StudentCoursesCard({
                           <input
                             type="hidden"
                             name="course_instance_id"
-                            value={courseInstance.id}
+                            value={entry.course_instance.id}
                           />
                           <button type="submit" class="btn btn-primary btn-sm">
                             Accept
@@ -121,7 +122,7 @@ export function StudentCoursesCard({
                         <button
                           type="button"
                           class="btn btn-danger btn-sm"
-                          onClick={() => setRejectingCourseId(courseInstance.id)}
+                          onClick={() => setRejectingCourseId(entry.course_instance.id)}
                         >
                           Reject
                         </button>
@@ -130,18 +131,28 @@ export function StudentCoursesCard({
                   </td>
                 </tr>
               ))}
-              {joined.map((courseInstance) => (
-                <tr key={courseInstance.id}>
+              {joined.map((entry) => (
+                <tr key={entry.course_instance.id}>
                   <td class="align-middle">
                     <div class="d-flex align-items-center justify-content-between gap-2">
-                      <a href={`${urlPrefix}/course_instance/${courseInstance.id}`}>
-                        {courseInstance.course_short_name}: {courseInstance.course_title},
-                        {courseInstance.long_name}
+                      <a href={`${urlPrefix}/course_instance/${entry.course_instance.id}`}>
+                        {entry.course_short_name}: {entry.course_title},
+                        {entry.course_instance.long_name}
                       </a>
+                      {entry.publishing_extensions && entry.publishing_extensions.length > 0 && (
+                        <span
+                          class="badge bg-info text-dark ms-2"
+                          title="Has publishing extensions"
+                        >
+                          <i class="fa fa-clock" aria-hidden="true" />
+                          {entry.publishing_extensions.length} extension
+                          {entry.publishing_extensions.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
                       <button
                         type="button"
                         class="btn btn-danger btn-sm"
-                        onClick={() => setRemovingCourseId(courseInstance.id)}
+                        onClick={() => setRemovingCourseId(entry.course_instance.id)}
                       >
                         Remove
                       </button>

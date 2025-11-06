@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -22,7 +23,12 @@ import {
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
 
-import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
+import {
+  Home,
+  InstructorHomePageCourseSchema,
+  StudentHomePageCourseSchema,
+  StudentHomePageCourseWithExtensionSchema,
+} from './home.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -50,23 +56,64 @@ router.get(
       InstructorHomePageCourseSchema,
     );
 
-    const studentCourses = await queryRows(
-      sql.select_student_courses,
-      {
-        // Use the authenticated user, not the authorized user.
-        user_id: res.locals.authn_user.user_id,
-        pending_uid: res.locals.authn_user.uid,
-        req_date: res.locals.req_date,
-        // This is a somewhat ugly escape hatch specifically for load testing. In
-        // general, we don't want to clutter the home page with example course
-        // enrollments, but for load testing we want to enroll a large number of
-        // users in the example course and then have them find the example course
-        // on the home page. So, you'd make a request like this:
-        // `/pl?include_example_course_enrollments=true`
-        include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
-      },
-      StudentHomePageCourseSchema,
-    );
+    // Query parameters for student courses
+    const studentCourseParams = {
+      // Use the authenticated user, not the authorized user.
+      user_id: res.locals.authn_user.user_id,
+      pending_uid: res.locals.authn_user.uid,
+      // This is a somewhat ugly escape hatch specifically for load testing. In
+      // general, we don't want to clutter the home page with example course
+      // enrollments, but for load testing we want to enroll a large number of
+      // users in the example course and then have them find the example course
+      // on the home page. So, you'd make a request like this:
+      // `/pl?include_example_course_enrollments=true`
+      include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
+    };
+
+    // Run both legacy and modern publishing queries
+    const [legacyStudentCourses, allModernStudentCourses] = await Promise.all([
+      queryRows(
+        sql.select_student_courses_legacy_access,
+        { ...studentCourseParams, req_date: res.locals.req_date },
+        StudentHomePageCourseSchema,
+      ),
+      queryRows(
+        sql.select_student_courses_modern_publishing,
+        studentCourseParams,
+        StudentHomePageCourseWithExtensionSchema,
+      ),
+    ]);
+
+    const modernStudentCourses = allModernStudentCourses.filter((entry) => {
+      const startDate = entry.course_instance.publishing_start_date;
+      const endDate = run(() => {
+        if (entry.course_instance.publishing_end_date == null) {
+          return null;
+        }
+
+        if (entry.latest_publishing_extension == null) {
+          return entry.course_instance.publishing_end_date;
+        }
+
+        if (
+          entry.course_instance.publishing_end_date > entry.latest_publishing_extension.end_date
+        ) {
+          return entry.latest_publishing_extension.end_date;
+        }
+
+        return entry.course_instance.publishing_end_date;
+      });
+
+      return (
+        startDate !== null &&
+        endDate !== null &&
+        startDate < res.locals.req_date &&
+        res.locals.req_date < endDate
+      );
+    });
+
+    // Merge the results, with modern publishing courses taking precedence
+    const studentCourses = [...legacyStudentCourses, ...modernStudentCourses];
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,

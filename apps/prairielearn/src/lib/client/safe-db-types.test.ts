@@ -104,6 +104,8 @@ const minimalStudentCourseInstance: z.input<typeof StudentCourseInstanceSchema> 
   hide_in_enroll_page: null,
   id: '3',
   long_name: null,
+  publishing_end_date: null,
+  publishing_start_date: null,
   short_name: null,
 };
 
