@@ -32,12 +32,6 @@ const ZodStringToJson = z.preprocess((val) => {
   return JSON.parse(String(val));
 }, z.record(z.any()).nullable());
 
-const ZodStringToArray = z.preprocess((val) => {
-  if (val === '' || val == null) return [];
-  // CSV exports serialize arrays as JSON
-  return JSON.parse(String(val));
-}, z.array(z.string()));
-
 const BaseSubmissionCsvRowSchema = z.object({
   'Assessment instance': z.coerce.number().int(),
   Question: z.string(),
@@ -66,7 +60,11 @@ const IndividualSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
 
 const GroupSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
   'Group name': z.string(),
-  Usernames: ZodStringToArray,
+  Usernames: z.preprocess((val) => {
+    if (val === '' || val == null) return [];
+    // CSV exports serialize arrays as JSON
+    return JSON.parse(String(val));
+  }, z.array(z.string())),
 });
 
 /**
