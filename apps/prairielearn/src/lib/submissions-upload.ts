@@ -21,6 +21,7 @@ import { createCsvParser } from './csv.js';
 import {
   type Assessment,
   AssessmentQuestionSchema,
+  type Group,
   IdSchema,
   RubricItemSchema,
 } from './db-types.js';
@@ -145,6 +146,7 @@ export async function uploadSubmissions(
     let successCount = 0;
     let errorCount = 0;
 
+    const getOrInsertGroup = makeDedupedInserter<Group>();
     const getOrInsertAssessmentInstance = makeDedupedInserter<string>();
     const getOrInsertInstanceQuestion = makeDedupedInserter<string>();
     const getOrInsertVariant = makeDedupedInserter<string>();
@@ -181,26 +183,23 @@ export async function uploadSubmissions(
         if (isGroupWork === null) {
           isGroupWork = 'Group name' in record && !('UID' in record);
 
-          if (isGroupWork) {
-            job.info('Detected group work submissions CSV');
-            if (!assessment.group_work) {
-              throw new Error(
-                'Group work CSV detected, but assessment does not have group work enabled',
-              );
-            }
-          } else {
-            job.info('Detected individual work submissions CSV');
-            if (assessment.group_work) {
-              throw new Error(
-                'Individual work CSV detected, but assessment has group work enabled',
-              );
-            }
+          if (isGroupWork && !assessment.group_work) {
+            throw new Error(
+              'Group work CSV detected, but assessment does not have group work enabled',
+            );
+          } else if (!isGroupWork && assessment.group_work) {
+            throw new Error('Individual work CSV detected, but assessment has group work enabled');
           }
         }
 
         const row = isGroupWork
           ? GroupSubmissionCsvRowSchema.parse(record)
           : IndividualSubmissionCsvRowSchema.parse(record);
+
+        if ('Usernames' in row && row.Usernames.length === 0) {
+          job.warn(`Skipping group "${row['Group name']}" with no usernames`);
+          continue;
+        }
 
         const question = await selectQuestion(row.Question);
         const assessmentQuestion = await selectAssessmentQuestion(question.id);
@@ -210,25 +209,20 @@ export async function uploadSubmissions(
             const user = await ensureAndEnrollUser(row.UID);
             return { type: 'user' as const, user_id: user.user_id };
           } else {
-            const groupName = row['Group name'];
-            const usernames = row.Usernames;
-
-            if (usernames.length === 0) {
-              throw new Error(`Group "${groupName}" has no usernames`);
-            }
-
             // Create users for all group members concurrently
-            const users = await Promise.all(usernames.map((uid) => ensureAndEnrollUser(uid)));
+            const users = await Promise.all(row.Usernames.map((uid) => ensureAndEnrollUser(uid)));
 
-            // Use createOrAddToGroup which handles both creating new groups and adding to existing ones
-            const group = await createOrAddToGroup({
-              course_instance,
-              assessment,
-              group_name: groupName,
-              uids: usernames,
-              authn_user_id,
-              // This function only runs in dev mode, so we can safely ignore permission checks.
-              authzData: dangerousFullSystemAuthz(),
+            const group = await getOrInsertGroup([row['Group name']], async () => {
+              // Use createOrAddToGroup which handles both creating new groups and adding to existing ones
+              return await createOrAddToGroup({
+                course_instance,
+                assessment,
+                group_name: row['Group name'],
+                uids: row.Usernames,
+                authn_user_id,
+                // This function only runs in dev mode, so we can safely ignore permission checks.
+                authzData: dangerousFullSystemAuthz(),
+              });
             });
 
             return { type: 'group' as const, group_id: group.id, users };
