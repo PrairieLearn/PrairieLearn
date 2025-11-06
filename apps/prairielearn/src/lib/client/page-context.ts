@@ -46,6 +46,12 @@ export const PageContextWithAuthzDataSchema =
   RawPageContextWithAuthzDataSchema.brand<'PageContextWithAuthzData'>();
 export type PageContextWithAuthzData = z.infer<typeof PageContextWithAuthzDataSchema>;
 
+/**
+ * TODO: We want to merge
+ * getPageContext, getCourseInstanceContext, and getAssessmentContext into a single function.
+ *
+ * New options will be withAuthzData, pageType, and requestedRole.
+ */
 export function getPageContext(
   resLocals: Record<string, any>,
   options?: {
