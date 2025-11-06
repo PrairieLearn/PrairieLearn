@@ -1,11 +1,3 @@
--- BLOCK select_publishing_extension_by_id
-SELECT
-  *
-FROM
-  course_instance_publishing_extensions
-WHERE
-  id = $id;
-
 -- BLOCK select_latest_publishing_extension_by_enrollment_id
 SELECT
   ci_extensions.*

@@ -1,4 +1,3 @@
-import assert from 'assert';
 import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
@@ -16,7 +15,6 @@ import * as Sentry from '@prairielearn/sentry';
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
-import { validateJSON } from '../lib/json-load.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
@@ -240,8 +238,9 @@ export async function loadFullCourse(
     // expired if it either has zero `allowAccess` rules (in which case it is never
     // accessible), or if it has one or more `allowAccess` rules and they all have
     // an `endDate` that is in the past.
+    //
+    // If the `allowAccess` section is not present, we instead consider publishing.endDate.
 
-    // If the allowAccess section is not present, we instead consider publishing.endDate.
     const allowAccessRules = courseInstance.data?.allowAccess;
 
     const courseInstanceExpired = run(() => {
@@ -251,8 +250,8 @@ export async function loadFullCourse(
           return endDate && isPast(endDate);
         });
       }
-      // We have no access rules, so we are in the modern publishing configuration.
 
+      // We have no access rules, so we are using a modern publishing configuration.
       return (
         courseInstance.data?.publishing?.endDate == null ||
         courseInstance.data.publishing.startDate == null ||
@@ -1053,11 +1052,10 @@ function validateQuestion({
 
   if (question.options) {
     try {
-      const schema = schemas[`questionOptions${question.type}`];
-      const options = question.options;
-      validateJSON(options, schema);
+      const schema = schemas[`QuestionOptions${question.type}JsonSchema`];
+      schema.parse(question.options);
     } catch (err) {
-      errors.push(err.message);
+      errors.push(`Error validating question options: ${err.message}`);
     }
   }
 
@@ -1176,14 +1174,10 @@ function validateAssessment({
     errors.push(...dateErrors.errors);
   });
 
-  // When additional validation is added, we don't want to warn for past course
-  // instances that instructors will never touch again, as they won't benefit
-  // from fixing things. So, we'll only show some warnings for course instances
-  // which are accessible either now or any time in the future.
-  //
-  // NOTE (@reteps): We are deprecating `allowAccess` in favor of `publishing`.
-  // So further validation will never be done here.
-
+  // We don't want to warn for past course instances that instructors will
+  // never touch again, as they won't benefit from fixing things. We'll
+  // only show certain warnings for course instances which are accessible
+  // either now or any time in the future.
   if (!courseInstanceExpired) {
     assessment.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
@@ -1478,16 +1472,11 @@ function validateCourseInstance({
     }
   }
 
-  if (courseInstance.selfEnrollment.useEnrollmentCode !== false) {
-    warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
-  }
+  let parsedEndDate: Date | null = null;
 
-  const usingLegacyAllowAccess = courseInstance.allowAccess != null;
-  const usingModernPublishing = courseInstance.publishing != null;
-  if (usingLegacyAllowAccess && usingModernPublishing) {
+  if (courseInstance.allowAccess && courseInstance.publishing) {
     errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
-  } else if (usingModernPublishing) {
-    assert(courseInstance.publishing != null);
+  } else if (courseInstance.publishing) {
     const hasEndDate = courseInstance.publishing.endDate != null;
     const hasStartDate = courseInstance.publishing.startDate != null;
     if (hasStartDate && !hasEndDate) {
@@ -1506,7 +1495,7 @@ function validateCourseInstance({
       errors.push('"publishing.startDate" is not a valid date.');
     }
 
-    const parsedEndDate =
+    parsedEndDate =
       courseInstance.publishing.endDate == null
         ? null
         : parseJsonDate(courseInstance.publishing.endDate);
@@ -1526,7 +1515,8 @@ function validateCourseInstance({
     }
   }
 
-  let accessibleInFuture = false;
+  // Default to the publishing end date being in the future.
+  let accessibleInFuture = parsedEndDate != null && isFuture(parsedEndDate);
   for (const rule of courseInstance.allowAccess ?? []) {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {

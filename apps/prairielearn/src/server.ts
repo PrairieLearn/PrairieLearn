@@ -17,6 +17,7 @@ import * as util from 'node:util';
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
 import bodyParser from 'body-parser';
+import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
 import express, {
@@ -47,7 +48,9 @@ import {
 import * as namedLocks from '@prairielearn/named-locks';
 import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
+import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
 import * as cron from './cron/index.js';
 import * as assets from './lib/assets.js';
@@ -178,8 +181,25 @@ export async function initExpress(): Promise<Express> {
     next();
   });
 
-  // API routes don't utilize sessions; don't run the session/flash middleware for them.
-  app.use(excludeRoutes(['/pl/api/'], sessionRouter));
+  app.use(
+    excludeRoutes(
+      [
+        // API routes don't utilize sessions; don't run the session/flash middleware for them.
+        '/pl/api/',
+        // Static assets don't need to read from or write to sessions.
+        '/assets',
+        // These are legacy routes served out of the `public/` directory.
+        '/build',
+        '/images',
+        '/javascripts',
+        '/localscripts',
+        '/stylesheets',
+        '/favicon-dev.ico',
+        '/favicon.ico',
+      ],
+      sessionRouter,
+    ),
+  );
 
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
@@ -2192,7 +2212,16 @@ if (isHMR && isServerPending()) {
   throw new Error('The server was restarted, but it was not fully initialized.');
 }
 
-if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
+const shouldStartServer = run(() => {
+  if (process.env.PL_START_SERVER === 'true') return true;
+  if (process.env.PL_START_SERVER === 'false') return false;
+  if (!config.startServer) return false;
+  if (esMain(import.meta)) return true;
+  if (isHMR && !isServerInitialized()) return true;
+  return false;
+});
+
+if (shouldStartServer) {
   try {
     setServerState('pending');
     logger.verbose('PrairieLearn server start');
@@ -2213,6 +2242,18 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       configPaths = [argv.config];
     }
 
+    // If `PL_CONFIG_PATH` is set, it takes precedence over all other config paths.
+    if (process.env.PL_CONFIG_PATH) {
+      // If the path is specified, it must exist. We'll fail fast if it doesn't.
+      if (!fs.existsSync(process.env.PL_CONFIG_PATH)) {
+        throw new Error(
+          `Config file specified by PL_CONFIG_PATH does not exist: ${process.env.PL_CONFIG_PATH}`,
+        );
+      }
+
+      configPaths = [process.env.PL_CONFIG_PATH];
+    }
+
     // Load config immediately so we can use it configure everything else.
     await loadConfig(configPaths);
 
@@ -2229,6 +2270,32 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       // is used, 100% of traces will be sent to Sentry, despite us never having set
       // `tracesSampleRate` in the Sentry configuration.
       contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
+      // This is a convoluted way to allow us to force sampling of 100% of traces
+      // for specific users. We'll provide the user with a little bit of JS to set
+      // a cookie in their browser. If that cookie is present, and passes a signature
+      // check, we'll sample the trace.
+      //
+      // See `scripts/gen-trace-sample-cookie.mjs` for a script that generates the cookie-setting script.
+      incomingHttpRequestHook: (request) => {
+        const cookies = cookie.parse(request.headers.cookie ?? '');
+        const samplingCookie = cookies.prairielearn_trace_sample;
+
+        // If the cookie isn't present, do nothing.
+        if (!samplingCookie) return {};
+
+        // Ensure that the signature is valid.
+        const data = getCheckedSignedTokenData(samplingCookie, config.secretKey);
+        if (!data) return {};
+
+        // Ensure that the validity hasn't expired. We use the `exp` field
+        // for this purpose.
+        const now = Math.floor(Date.now() / 1000);
+        if (!Number.isFinite(data.exp) || data.exp < now) return {};
+
+        // Sample this trace! This attribute will be picked up by a custom sampler
+        // in `@prairielearn/opentelemetry`.
+        return { force_sample: true };
+      },
     });
 
     // Same with Sentry configuration.
@@ -2623,9 +2690,11 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
   });
 
   setServerState('initialized');
-  logger.info('PrairieLearn server ready, press Control-C to quit');
-  if (config.devMode) {
-    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+  if (process.env.NODE_ENV !== 'test') {
+    logger.info('PrairieLearn server ready, press Control-C to quit');
+    if (config.devMode) {
+      logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+    }
   }
 } else if (isHMR && isServerInitialized()) {
   // We need to re-initialize the server when we are running in HMR mode.

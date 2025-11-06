@@ -605,7 +605,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         try {
           await image.decode();
         } catch (error) {
-          throw new Error(`Failed to decode image: ${error.message}`);
+          throw new Error('Failed to decode image', { cause: error });
         }
 
         const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
