@@ -6,46 +6,74 @@ import { TopicBadge } from '../../../components/TopicBadge.js';
 import { type Topic } from '../../../lib/db-types.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
 
-export function EditTopicsModal({
-  show,
-  selectedTopic,
-  setSelectedTopic,
-  setShowModal,
-  handleModalUpdate,
-  addTopic,
-}: {
-  show: boolean;
-  selectedTopic: Topic | null;
-  setSelectedTopic: (topic: Topic | null) => void;
-  setShowModal: (show: boolean) => void;
-  handleModalUpdate: () => void;
-  addTopic: boolean;
-}) {
+export type EditTopicModalState =
+  | { type: 'closed' }
+  | { type: 'create'; topic: Topic }
+  | { type: 'edit'; topic: Topic };
+
+interface EditTopicModalProps {
+  state: EditTopicModalState;
+  onClose: () => void;
+  onSave: (topic: Topic) => void;
+}
+
+export function EditTopicsModal({ state, onClose, onSave }: EditTopicModalProps) {
+  // Extract the topic to edit/create, or null if closed
+  const topicToEdit =
+    state.type === 'create' ? state.topic : state.type === 'edit' ? state.topic : null;
+
+  const [formData, setFormData] = useState<Topic | null>(topicToEdit);
   const [invalidName, setInvalidName] = useState(false);
   const [invalidColor, setInvalidColor] = useState(false);
 
+  function handleModalEntering() {
+    if (!topicToEdit) return;
+    setFormData(topicToEdit);
+    setInvalidName(false);
+    setInvalidColor(false);
+  }
+
+  function handleModalExited() {
+    setFormData(null);
+    setInvalidName(false);
+    setInvalidColor(false);
+  }
+
   function handleSubmit() {
-    setInvalidName(!selectedTopic?.name);
-    setInvalidColor(!selectedTopic?.color);
-    if (!selectedTopic?.name || !selectedTopic.color) {
-      return;
-    } else {
-      handleModalUpdate();
+    if (!formData) return;
+
+    const isNameValid = !!formData.name;
+    const isColorValid = !!formData.color;
+
+    setInvalidName(!isNameValid);
+    setInvalidColor(!isColorValid);
+
+    if (isNameValid && isColorValid) {
+      onSave(formData);
     }
   }
+
+  const isOpen = state.type !== 'closed';
+  const isCreateMode = state.type === 'create';
+
   return (
-    <Modal show={show} onHide={() => setShowModal(false)}>
+    <Modal
+      show={isOpen}
+      onHide={onClose}
+      onEntering={handleModalEntering}
+      onExited={handleModalExited}
+    >
       <Modal.Header closeButton>
-        <Modal.Title>{addTopic ? 'Add topic' : 'Edit topic'}</Modal.Title>
+        <Modal.Title>{isCreateMode ? 'Add topic' : 'Edit topic'}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {selectedTopic ? (
+        {formData ? (
           <>
             <div class="d-flex flex-column align-items-center mb-4">
               <TopicBadge
                 topic={{
-                  name: selectedTopic.name || 'Topic preview',
-                  color: selectedTopic.color,
+                  name: formData.name || 'Topic preview',
+                  color: formData.color,
                 }}
               />
             </div>
@@ -57,10 +85,10 @@ export function EditTopicsModal({
                 type="text"
                 class={clsx('form-control', invalidName && 'is-invalid')}
                 id="topicName"
-                value={selectedTopic.name}
+                value={formData.name}
                 onChange={(e) =>
-                  setSelectedTopic({
-                    ...selectedTopic,
+                  setFormData({
+                    ...formData,
                     name: (e.target as HTMLInputElement).value,
                   })
                 }
@@ -75,10 +103,10 @@ export function EditTopicsModal({
                 <select
                   class={clsx('form-select', invalidColor && 'is-invalid')}
                   id="topicColor"
-                  value={selectedTopic.color}
+                  value={formData.color}
                   onChange={(e) =>
-                    setSelectedTopic({
-                      ...selectedTopic,
+                    setFormData({
+                      ...formData,
                       color: (e.target as HTMLSelectElement).value,
                     })
                   }
@@ -102,7 +130,7 @@ export function EditTopicsModal({
                     width="32"
                     height="32"
                     style={{
-                      fill: `var(--color-${selectedTopic.color})`,
+                      fill: `var(--color-${formData.color})`,
                       rx: 'var(--bs-border-radius)',
                       ry: 'var(--bs-border-radius)',
                     }}
@@ -119,11 +147,11 @@ export function EditTopicsModal({
                 type="text"
                 class="form-control"
                 id="topicDescription"
-                value={selectedTopic.description}
+                value={formData.description}
                 onChange={(e) =>
-                  setSelectedTopic({
-                    ...selectedTopic,
-                    description: (e.target as HTMLTextAreaElement).value,
+                  setFormData({
+                    ...formData,
+                    description: (e.target as HTMLInputElement).value,
                   })
                 }
               />
@@ -133,9 +161,9 @@ export function EditTopicsModal({
       </Modal.Body>
       <Modal.Footer>
         <button type="button" class="btn btn-primary me-2" onClick={handleSubmit}>
-          {addTopic ? 'Add topic' : 'Update topic'}
+          {isCreateMode ? 'Add topic' : 'Update topic'}
         </button>
-        <button type="button" class="btn btn-secondary" onClick={() => setShowModal(false)}>
+        <button type="button" class="btn btn-secondary" onClick={onClose}>
           Close
         </button>
       </Modal.Footer>

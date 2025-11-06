@@ -38,7 +38,14 @@ sudo make dev
 
 !!! note "Debugging workspaces"
 
-    If your workspaces won't start, check that you have set `"workspaceHostHomeDirRoot"` and `"workspaceHomeDirRoot"` in your `config.json`.
+    If your workspaces won't start, check that you have set `"workspaceHostHomeDirRoot"` and `"workspaceHomeDirRoot"` in your `config.json`. If you are running natively on Mac OS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
+
+    ```json file="config.json"
+    {
+        ...
+        "workspaceDevContainerHostname": "localhost"
+    }
+    ```
 
     Also check that `"workspaceJobsDirectoryOwnerUid"` and `"workspaceJobsDirectoryOwnerGid"` are set to the correct values in your `config.json`. Many containers can only run as UID 1001 or 0 (see `pl-gosu-helper.sh`). Make sure you run as root locally!
 
