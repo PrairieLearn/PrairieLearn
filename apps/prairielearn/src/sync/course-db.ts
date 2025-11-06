@@ -1176,11 +1176,10 @@ function validateAssessment({
     errors.push(...dateErrors.errors);
   });
 
-  // We don't want to warn for past course
-  // instances that instructors will never touch again, as they won't benefit
-  // from fixing things. We'll only show some warnings for course instances
-  // which are accessible either now or any time in the future.
-
+  // We don't want to warn for past course instances that instructors will
+  // never touch again, as they won't benefit from fixing things. We'll
+  // only show certain warnings for course instances which are accessible
+  // either now or any time in the future.
   if (!courseInstanceExpired) {
     assessment.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
