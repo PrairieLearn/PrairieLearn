@@ -40,8 +40,7 @@ def test_sympy_timeout():
     x = symbols("x")
     expr1 = exp(sin(x)) * (1 + sin(x) ** 10) ** 5
     expr2 = exp(sin(x)) * (1 + sin(x) ** 2) ** 125
-
     with ThreadingTimeout(0.5) as ctx:
         eq = Eq(expr1, expr2)
-        simplify(eq.lhs - eq.rhs)
+        simplify(eq.lhs - eq.rhs)  # type: ignore
     assert ctx.state == TimeoutState.TIMED_OUT
