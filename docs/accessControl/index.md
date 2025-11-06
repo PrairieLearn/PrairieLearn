@@ -25,7 +25,7 @@ For course instances, you can control access using the `publishing` configuratio
 
 This can be edited on the **Publishing** page (Course Instance → Settings → Publishing).
 
-Both `startDate` and `endDate` must be specified together. If you only want to set one date, you can set the other to `null` or omit the `publishing` configuration entirely.
+Both `startDate` and `endDate` must be specified together.
 
 ## `allowAccess` format
 
