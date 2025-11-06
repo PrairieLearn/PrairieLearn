@@ -130,6 +130,7 @@ registerHydratedComponent(${componentName});</code></pre>
         dangerouslySetInnerHTML={{
           __html: escapeJsonForHtml(props),
         }}
+        data-component={componentName}
         data-component-props
       />
       <div
