@@ -165,6 +165,7 @@ router.post(
       throw new HttpStatusError(403, 'Access denied');
     } else {
       // enroll the user in the course instance
+      // this doesn't log an audit event for enrollments if a student was enrolled this way.
       await sqldb.execute(sql.enroll_user_in_course_instance, {
         user_id: userResult.user_id,
         course_instance_id: ltiResult.course_instance_id,
