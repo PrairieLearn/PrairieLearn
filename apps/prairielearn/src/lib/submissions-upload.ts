@@ -109,7 +109,7 @@ export async function uploadSubmissions(
     description: 'Upload submissions CSV for ' + assessment_label,
   });
 
-  const selectUser = memoize(async (uid: string) => await selectOrInsertUserByUid(uid));
+  const selectOrInsertUser = memoize(async (uid: string) => await selectOrInsertUserByUid(uid));
   const selectQuestion = memoize(
     async (qid: string) => await selectQuestionByQid({ course_id, qid }),
   );
@@ -190,7 +190,7 @@ export async function uploadSubmissions(
             authn_user_id,
             maxPoints,
             assessmentQuestions,
-            selectUser,
+            selectOrInsertUser,
             selectQuestion,
             selectAssessmentQuestion,
             getOrInsertAssessmentInstance,
@@ -206,7 +206,7 @@ export async function uploadSubmissions(
             authn_user_id,
             maxPoints,
             assessmentQuestions,
-            selectUser,
+            selectOrInsertUser,
             selectQuestion,
             selectAssessmentQuestion,
             getOrInsertAssessmentInstance,
@@ -254,7 +254,7 @@ interface ProcessingContext {
   authn_user_id: string;
   maxPoints: number;
   assessmentQuestions: Awaited<ReturnType<typeof selectAssessmentQuestions>>;
-  selectUser: typeof selectOrInsertUserByUid;
+  selectOrInsertUser: typeof selectOrInsertUserByUid;
   selectQuestion: (qid: string) => ReturnType<typeof selectQuestionByQid>;
   selectAssessmentQuestion: (
     question_id: string,
@@ -269,9 +269,9 @@ async function processIndividualSubmissionRow(
   context: ProcessingContext,
 ): Promise<void> {
   const row = IndividualSubmissionCsvRowSchema.parse(record);
-  const { selectUser } = context;
+  const { selectOrInsertUser } = context;
 
-  const user = await selectUser(row.UID);
+  const user = await selectOrInsertUser(row.UID);
 
   await processSubmissionForEntity(
     row,
@@ -283,7 +283,7 @@ async function processIndividualSubmissionRow(
 
 async function processGroupSubmissionRow(record: any, context: ProcessingContext): Promise<void> {
   const row = GroupSubmissionCsvRowSchema.parse(record);
-  const { assessment, course_instance_id, authn_user_id, selectUser } = context;
+  const { assessment, course_instance_id, authn_user_id, selectOrInsertUser } = context;
 
   const groupName = row['Group name'];
   const usernames = row.Usernames;
@@ -293,7 +293,7 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
   }
 
   // Create users for all group members concurrently
-  await Promise.all(usernames.map((uid) => selectUser(uid)));
+  await Promise.all(usernames.map((uid) => selectOrInsertUser(uid)));
 
   // Get the group ID - either existing or newly created
   let group_id = await sqldb.queryOptionalRow(
