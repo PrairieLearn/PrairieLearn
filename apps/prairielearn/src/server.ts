@@ -186,17 +186,13 @@ export async function initExpress(): Promise<Express> {
       [
         // API routes don't utilize sessions; don't run the session/flash middleware for them.
         '/pl/api/',
-        // TODO: add back when safe
         // Static assets don't need to read from or write to sessions.
-        // '/assets',
-        // // These are legacy routes served out of the `public/` directory.
-        // '/build',
-        // '/images',
-        // '/javascripts',
-        // '/localscripts',
-        // '/stylesheets',
-        // '/favicon-dev.ico',
-        // '/favicon.ico',
+        //
+        // Note that the `/assets` route is configured to turn any missing files into 404
+        // errors, not to fall through and allow other routes to try to serve them. If they
+        // did fall through, we'd likely end up running code that does expect sessions to
+        // be present, e.g. `middlewares/authn`.
+        '/assets',
       ],
       sessionRouter,
     ),
