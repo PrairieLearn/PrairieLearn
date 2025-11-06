@@ -1,5 +1,17 @@
 # @prairielearn/sentry
 
+## 4.0.7
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 4.0.6
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 4.0.5
 
 ### Patch Changes

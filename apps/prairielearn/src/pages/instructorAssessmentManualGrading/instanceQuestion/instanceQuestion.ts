@@ -87,7 +87,7 @@ async function prepareLocalsForRender(
   }
 
   const graders = await selectCourseInstanceGraderStaff({
-    course_instance_id: resLocals.course_instance.id,
+    course_instance: resLocals.course_instance,
   });
   return { resLocals, conflict_grading_job, graders };
 }
@@ -411,7 +411,7 @@ router.post(
         : undefined;
       const { modified_at_conflict, grading_job_id } =
         await manualGrading.updateInstanceQuestionScore(
-          res.locals.assessment.id,
+          res.locals.assessment,
           res.locals.instance_question.id,
           body.submission_id,
           body.modified_at, // check_modified_at
@@ -557,7 +557,7 @@ router.post(
 
       for (const instanceQuestion of instanceQuestionsInGroup) {
         const { modified_at_conflict } = await manualGrading.updateInstanceQuestionScore(
-          res.locals.assessment.id,
+          res.locals.assessment,
           instanceQuestion.instance_question_id,
           instanceQuestion.submission_id,
           null,
@@ -597,6 +597,7 @@ router.post(
     } else if (body.__action === 'modify_rubric_settings') {
       try {
         await manualGrading.updateAssessmentQuestionRubric(
+          res.locals.assessment,
           res.locals.instance_question.assessment_question_id,
           body.use_rubric,
           body.replace_auto_points,
@@ -616,7 +617,7 @@ router.post(
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
-          course_instance_id: res.locals.course_instance.id,
+          course_instance: res.locals.course_instance,
         });
         if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
           throw new error.HttpStatusError(
