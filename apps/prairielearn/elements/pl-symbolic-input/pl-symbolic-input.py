@@ -37,7 +37,7 @@ BLANK_VALUE_DEFAULT = "0"
 PLACEHOLDER_DEFAULT = "symbolic expression"
 SHOW_SCORE_DEFAULT = True
 SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
-SYMPY_TIMEOUT = 8
+SYMPY_TIMEOUT = 3
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
