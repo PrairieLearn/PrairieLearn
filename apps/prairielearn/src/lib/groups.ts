@@ -3,7 +3,6 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
@@ -417,16 +416,14 @@ export async function createGroup({
   }
 
   try {
-    return await run(async () => {
-      const group = await sqldb.runInTransactionAsync(async () => {
-        let createdGroup: Group;
-        try {
-          createdGroup = await sqldb.queryRow(
-            sql.create_group,
-            { assessment_id: assessment.id, authn_user_id, group_name },
-            GroupSchema,
-          );
-        } catch (err) {
+    return await sqldb.runInTransactionAsync(async () => {
+      const group = await sqldb
+        .queryRow(
+          sql.create_group,
+          { assessment_id: assessment.id, authn_user_id, group_name },
+          GroupSchema,
+        )
+        .catch((err) => {
           // 23505 is the Postgres error code for unique constraint violation
           // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
           if (err.code === '23505' && err.constraint === 'unique_group_name') {
@@ -434,20 +431,19 @@ export async function createGroup({
           }
           // Any other error is unexpected and should be handled by the main processes
           throw err;
-        }
-        for (const uid of uids) {
-          await addUserToGroup({
-            course_instance,
-            assessment,
-            group_id: createdGroup.id,
-            uid,
-            authn_user_id,
-            enforceGroupSize: false,
-            authzData,
-          });
-        }
-        return createdGroup;
-      });
+        });
+
+      for (const uid of uids) {
+        await addUserToGroup({
+          course_instance,
+          assessment,
+          group_id: group.id,
+          uid,
+          authn_user_id,
+          enforceGroupSize: false,
+          authzData,
+        });
+      }
       return group;
     });
   } catch (err) {
