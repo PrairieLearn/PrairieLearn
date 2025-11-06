@@ -44,7 +44,7 @@ export async function selectPublishingExtensionById({
   courseInstance: CourseInstance;
   authzData: AuthzData;
   requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
-}) {
+}): Promise<CourseInstancePublishingExtension | null> {
   assertHasRole(authzData, requestedRole);
   const extension = await queryRow(
     sql.select_publishing_extension_by_id,
@@ -55,7 +55,7 @@ export async function selectPublishingExtensionById({
   return extension;
 }
 /**
- * Finds all publishing extensions that apply to a specific enrollment.
+ * Finds the latest publishing extension that applies to a specific enrollment.
  */
 export async function selectLatestPublishingExtensionByEnrollment({
   enrollment,
@@ -153,7 +153,7 @@ export async function insertPublishingExtension({
 /**
  * Links a publishing extension to a specific enrollment.
  */
-export async function insertPublishingEnrollmentExtension({
+export async function addEnrollmentToPublishingExtension({
   courseInstancePublishingExtension,
   enrollment,
   authzData,
@@ -166,7 +166,7 @@ export async function insertPublishingEnrollmentExtension({
 }): Promise<CourseInstancePublishingExtensionEnrollment> {
   assertHasRole(authzData, requestedRole);
   return await queryRow(
-    sql.insert_publishing_enrollment_extension,
+    sql.add_enrollment_to_publishing_extension,
     {
       course_instance_publishing_extension_id: courseInstancePublishingExtension.id,
       enrollment_id: enrollment.id,
@@ -204,7 +204,7 @@ export async function createPublishingExtensionWithEnrollments({
     });
 
     for (const enrollment of enrollments) {
-      await insertPublishingEnrollmentExtension({
+      await addEnrollmentToPublishingExtension({
         courseInstancePublishingExtension: extension,
         enrollment,
         authzData,
@@ -221,6 +221,7 @@ export async function createPublishingExtensionWithEnrollments({
  */
 export async function deletePublishingExtension({
   extension,
+  courseInstance,
   authzData,
   requestedRole,
 }: {
@@ -230,6 +231,7 @@ export async function deletePublishingExtension({
   requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
 }): Promise<void> {
   assertHasRole(authzData, requestedRole);
+  assertPublishingExtensionBelongsToCourseInstance(extension, courseInstance);
   await execute(sql.delete_publishing_extension, {
     extension_id: extension.id,
   });

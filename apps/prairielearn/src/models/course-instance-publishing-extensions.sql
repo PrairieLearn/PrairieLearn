@@ -38,7 +38,7 @@ VALUES
 RETURNING
   *;
 
--- BLOCK insert_publishing_enrollment_extension
+-- BLOCK add_enrollment_to_publishing_extension
 INSERT INTO
   course_instance_publishing_enrollment_extensions (
     course_instance_publishing_extension_id,
@@ -49,10 +49,6 @@ VALUES
     $course_instance_publishing_extension_id,
     $enrollment_id
   )
-ON CONFLICT (
-  course_instance_publishing_extension_id,
-  enrollment_id
-) DO NOTHING
 RETURNING
   *;
 
