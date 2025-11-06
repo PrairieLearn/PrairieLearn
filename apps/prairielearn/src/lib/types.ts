@@ -53,7 +53,4 @@ export function assertNever(value: never): never {
   throw new Error(`Unexpected value: ${value}`);
 }
 
-/** Force typescript to resolve the type immediately */
-export type Prettify<T> = {
-  [K in keyof T]: T[K];
-} & {};
+export type Result<T, E = Error> = { success: true; value: T } | { success: false; error: E };

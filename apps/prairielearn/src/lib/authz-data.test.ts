@@ -3,7 +3,6 @@ import { assert, beforeEach, describe, it, vi } from 'vitest';
 import * as publishingExtensionsModel from '../models/course-instance-publishing-extensions.js';
 import * as enrollmentModel from '../models/enrollment.js';
 
-import type { RawPageAuthzData } from './authz-data-lib.js';
 import { calculateModernCourseInstanceStudentAccess } from './authz-data.js';
 import type { CourseInstance, CourseInstancePublishingExtension, Enrollment } from './db-types.js';
 
@@ -41,52 +40,6 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
     };
   }
 
-  function createMockAuthzData(overrides: Partial<RawPageAuthzData> = {}): RawPageAuthzData {
-    return {
-      authn_user: {
-        email: 'test@example.com',
-        institution_id: '1',
-        name: 'Test User',
-        uid: 'test@example.com',
-        uin: '123456789',
-        user_id: 'test-user-id',
-      },
-      user: {
-        email: 'test@example.com',
-        institution_id: '1',
-        name: 'Test User',
-        uid: 'test@example.com',
-        uin: '123456789',
-        user_id: 'test-user-id',
-      },
-      authn_is_administrator: false,
-      authn_has_course_permission_preview: false,
-      authn_has_course_permission_view: false,
-      authn_has_course_permission_edit: false,
-      authn_has_course_permission_own: false,
-      authn_course_role: undefined,
-      authn_course_instance_role: 'None',
-      authn_mode: undefined,
-      authn_has_student_access: false,
-      authn_has_student_access_with_enrollment: false,
-      authn_has_course_instance_permission_view: false,
-      authn_has_course_instance_permission_edit: false,
-      is_administrator: false,
-      has_course_permission_preview: false,
-      has_course_permission_view: false,
-      has_course_permission_edit: false,
-      has_course_permission_own: false,
-      course_role: undefined,
-      course_instance_role: 'None',
-      mode: undefined,
-      has_student_access: false,
-      has_student_access_with_enrollment: false,
-      has_course_instance_permission_view: false,
-      has_course_instance_permission_edit: false,
-      ...overrides,
-    };
-  }
-
   function createMockEnrollment(overrides: Partial<Enrollment> = {}): Enrollment {
     return {
       id: 'test-enrollment-id',
@@ -118,19 +71,18 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   }
 
   describe('no publishing dates', () => {
-    it('allows no access when publishing_start_date is null', async () => {
+    it('forbids access when publishing_start_date is null', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: null,
         publishing_end_date: null,
       });
-      const authzData = createMockAuthzData();
       const reqDate = new Date('2025-06-01T12:00:00Z');
 
       vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(null);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
-        authzData,
+        'test-user-id',
         reqDate,
       );
 
@@ -140,19 +92,18 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('before publishing start date', () => {
-    it('allows no access when request date is before publishing_start_date', async () => {
+    it('forbids access when request date is before publishing_start_date', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
       });
-      const authzData = createMockAuthzData();
       const reqDate = new Date('2024-12-31T23:59:59Z');
 
       vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(null);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
-        authzData,
+        'test-user-id',
         reqDate,
       );
 
@@ -160,12 +111,11 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       assert.isFalse(result.has_student_access_with_enrollment);
     });
 
-    it('allows no access even with enrollment when before start date', async () => {
+    it('forbids access even with enrollment when before start date', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
       });
-      const authzData = createMockAuthzData();
       const reqDate = new Date('2024-12-31T23:59:59Z');
       const enrollment = createMockEnrollment();
 
@@ -173,7 +123,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
-        authzData,
+        'test-user-id',
         reqDate,
       );
 
@@ -188,14 +138,13 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
       });
-      const authzData = createMockAuthzData();
       const reqDate = new Date('2025-06-01T12:00:00Z');
 
       vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(null);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
-        authzData,
+        'test-user-id',
         reqDate,
       );
 
@@ -208,7 +157,6 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
       });
-      const authzData = createMockAuthzData();
       const reqDate = new Date('2025-06-01T12:00:00Z');
       const enrollment = createMockEnrollment();
 
@@ -216,7 +164,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
-        authzData,
+        'test-user-id',
         reqDate,
       );
 
@@ -226,19 +174,18 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   });
 
   describe('after publishing end date', () => {
-    it('allows no access when request date is after end date without enrollment', async () => {
+    it('forbids access when request date is after end date without enrollment', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
       });
-      const authzData = createMockAuthzData();
       const reqDate = new Date('2026-01-01T00:00:00Z');
 
       vi.spyOn(enrollmentModel, 'selectOptionalEnrollmentByUserId').mockResolvedValue(null);
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
-        authzData,
+        'test-user-id',
         reqDate,
       );
 
@@ -246,12 +193,11 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       assert.isFalse(result.has_student_access_with_enrollment);
     });
 
-    it('allows no access when request date is after end date with enrollment but no extensions', async () => {
+    it('forbids access when request date is after end date with enrollment but no extensions', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
       });
-      const authzData = createMockAuthzData();
       const reqDate = new Date('2026-01-01T00:00:00Z');
       const enrollment = createMockEnrollment();
 
@@ -263,7 +209,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
-        authzData,
+        'test-user-id',
         reqDate,
       );
 
@@ -278,7 +224,6 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
       });
-      const authzData = createMockAuthzData();
       const reqDate = new Date('2026-02-15T12:00:00Z');
       const enrollment = createMockEnrollment();
       const extension = createMockPublishingExtension({
@@ -294,7 +239,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
-        authzData,
+        'test-user-id',
         reqDate,
       );
 
@@ -303,12 +248,11 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       assert.isTrue(result.has_student_access_with_enrollment);
     });
 
-    it('allows no access when request date is after all extensions', async () => {
+    it('forbids access when request date is after all extensions', async () => {
       const courseInstance = createMockCourseInstance({
         publishing_start_date: new Date('2025-01-01T00:00:00Z'),
         publishing_end_date: new Date('2025-12-31T23:59:59Z'),
       });
-      const authzData = createMockAuthzData();
       const reqDate = new Date('2026-03-01T00:00:00Z');
       const enrollment = createMockEnrollment();
       const extension = createMockPublishingExtension({
@@ -324,7 +268,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
 
       const result = await calculateModernCourseInstanceStudentAccess(
         courseInstance,
-        authzData,
+        'test-user-id',
         reqDate,
       );
 

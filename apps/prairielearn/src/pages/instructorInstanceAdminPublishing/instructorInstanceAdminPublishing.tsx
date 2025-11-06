@@ -23,7 +23,6 @@ import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { selectPublishingExtensionsWithUsersByCourseInstance } from '../../models/course-instance-publishing-extensions.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
@@ -31,25 +30,6 @@ import { InstructorInstanceAdminPublishing } from './instructorInstanceAdminPubl
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
-
-// Supports a client-side table refresh.
-router.get(
-  '/extension/data.json',
-  asyncHandler(async (req, res) => {
-    const {
-      authz_data: { has_course_instance_permission_view: hasCourseInstancePermissionView },
-    } = getPageContext(res.locals);
-
-    if (!hasCourseInstancePermissionView) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a course instance viewer)');
-    }
-
-    const accessControlExtensions = await selectPublishingExtensionsWithUsersByCourseInstance(
-      res.locals.course_instance.id,
-    );
-    res.json(accessControlExtensions);
-  }),
-);
 
 // Validate a list of UIDs against enrollments in this course instance.
 // Returns the list of UIDs that are NOT enrolled (invalidUids).

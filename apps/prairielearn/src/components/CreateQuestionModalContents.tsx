@@ -163,13 +163,13 @@ export function CreateQuestionModalContents({
   const isTemplateSelected = ['example', 'course'].includes(startFrom);
 
   // Build start from options based on available templates
-  const startFromOptions: { id: string; title: string; description: string }[] = [];
-
-  startFromOptions.push({
-    id: 'example',
-    title: 'PrairieLearn template',
-    description: 'Start with a pre-built question template',
-  });
+  const startFromOptions = [
+    {
+      id: 'example',
+      title: 'PrairieLearn template',
+      description: 'Start with a pre-built question template',
+    },
+  ];
 
   if (hasCourseTemplates) {
     startFromOptions.push({

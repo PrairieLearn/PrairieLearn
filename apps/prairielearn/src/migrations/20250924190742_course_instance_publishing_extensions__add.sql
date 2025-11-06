@@ -19,3 +19,7 @@ ADD CONSTRAINT course_instance_publishing_extensions_name_not_empty CHECK (
   -- Whitespace is trimmed from names in the UI.
   OR name != ''
 ) NOT VALID;
+
+-- Ensure names are not too long.
+ALTER TABLE course_instance_publishing_extensions
+ADD CONSTRAINT course_instance_publishing_extensions_name_length_check CHECK (LENGTH(name) <= 1000) NOT VALID;

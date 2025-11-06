@@ -62,11 +62,7 @@ export async function selectOptionalCourseInstanceIdByEnrollmentCode({
     CourseInstanceSchema,
   );
 
-  if (courseInstance == null) {
-    return null;
-  }
-
-  return courseInstance.id;
+  return courseInstance?.id ?? null;
 }
 
 /**
