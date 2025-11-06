@@ -295,34 +295,24 @@ async function processGroupSubmissionRow(record: any, context: ProcessingContext
   // Create users for all group members concurrently
   await Promise.all(usernames.map((uid) => selectOrInsertUser(uid)));
 
-  // Get the group ID - either existing or newly created
-  let group_id = await sqldb.queryOptionalRow(
+  // Use createOrAddToGroup which handles both creating new groups and adding to existing ones
+  const course_instance = await selectCourseInstanceById(course_instance_id);
+  await createOrAddToGroup({
+    course_instance,
+    assessment,
+    group_name: groupName,
+    uids: usernames,
+    authn_user_id,
+    // In dev mode, we bypass normal authz checks - the function will handle user enrollment checks
+    authzData: null as any,
+  });
+
+  // Get the group_id for processing submissions
+  const group_id = await sqldb.queryRow(
     sql.select_group_by_name,
     { group_name: groupName, assessment_id: assessment.id },
     IdSchema,
   );
-
-  // If group doesn't exist, use createOrAddToGroup from groups.ts
-  if (!group_id) {
-    const course_instance = await selectCourseInstanceById(course_instance_id);
-
-    // Use the existing groups.ts function to create group and add users
-    await createOrAddToGroup({
-      course_instance,
-      assessment,
-      group_name: groupName,
-      uids: usernames,
-      authn_user_id,
-      // In dev mode, we bypass normal authz checks - the function will handle user enrollment checks
-      authzData: null as any,
-    });
-
-    group_id = await sqldb.queryRow(
-      sql.select_group_by_name,
-      { group_name: groupName, assessment_id: assessment.id },
-      IdSchema,
-    );
-  }
 
   await processSubmissionForEntity(row, context, { type: 'group', group_id }, authn_user_id);
 }
