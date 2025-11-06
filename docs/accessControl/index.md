@@ -8,10 +8,6 @@ In PrairieLearn there are two levels of access control for students to gain acce
 
 1. First, a student must have access to the **course instance**. This access is controlled by the `publishing` configuration in [infoCourseInstance.json](../courseInstance.md) for basic date-based access, and with [publishing extensions](../courseInstance.md#controlling-access-by-uid). Giving a student access to a course instance allows the student to enroll in the course instance, but does not by itself grant them access to any assessments in the course instance.
 
-??? note "`allowAccess` rules for course instances"
-
-    `allowAccess` rules for course instances are deprecated. Instead, use [publishing extensions](../courseInstance.md#publishing-extensions).
-
 2. Second, a student must also have access to the specific **assessment**. This access is granted with the `allowAccess` rules in [infoAssessment.json](../assessment/index.md). Even if a student has been granted access to an assessment, however, they will only be able to actually access it if they also have access to the course instance (see previous item).
 
 ## Publishing configuration for course instances
