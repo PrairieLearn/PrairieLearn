@@ -8,7 +8,6 @@ import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
 import { PublishingForm } from './components/PublishingForm.js';
 
 export function InstructorInstanceAdminPublishing({
-  isExampleCourse,
   courseInstance,
   hasCourseInstancePermissionEdit,
   hasCourseInstancePermissionView,
@@ -16,7 +15,6 @@ export function InstructorInstanceAdminPublishing({
   csrfToken,
   origHash,
 }: {
-  isExampleCourse: boolean;
   courseInstance: StaffCourseInstance;
   hasCourseInstancePermissionEdit: boolean;
   hasCourseInstancePermissionView: boolean;
@@ -41,14 +39,10 @@ export function InstructorInstanceAdminPublishing({
       </Hydrate>
       {accessRules.length > 0 && (
         <LegacyAccessRuleCard
-          isExampleCourse={isExampleCourse}
           accessRules={accessRules}
           showComments={showComments}
           courseInstance={courseInstance}
           hasCourseInstancePermissionView={hasCourseInstancePermissionView}
-          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-          csrfToken={csrfToken}
-          origHash={origHash}
         />
       )}
     </>
