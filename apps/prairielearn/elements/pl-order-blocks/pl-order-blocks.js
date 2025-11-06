@@ -371,9 +371,9 @@ window.PLOrderBlocks = function (uuid, options) {
       if (!content) return;
 
       if (content.classList.contains('is-scrollable')) {
-      // Block drag-and-drop when the user is trying to scroll
-      e.stopPropagation();
-      e.stopImmediatePropagation();
+        // Block drag-and-drop when the user is trying to scroll
+        e.stopPropagation();
+        e.stopImmediatePropagation();
       }
     };
 
