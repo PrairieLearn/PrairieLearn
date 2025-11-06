@@ -16,8 +16,8 @@ const postgresTestUtils = makePostgresTestUtils({
 
 describe('BatchedMigrationsRunner', () => {
   beforeAll(async () => {
-    await postgresTestUtils.createDatabase();
-    await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
+    const poolConfig = await postgresTestUtils.createDatabase();
+    await namedLocks.init(poolConfig, (err) => {
       throw err;
     });
     await init({ directories: [SCHEMA_MIGRATIONS_PATH], project: 'prairielearn_migrations' });

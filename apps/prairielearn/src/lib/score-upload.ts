@@ -8,7 +8,7 @@ import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
 import { createCsvParser } from './csv.js';
-import { IdSchema } from './db-types.js';
+import { type Assessment, IdSchema } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -17,7 +17,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 /**
  * Update question instance scores from a CSV file.
  *
- * @param assessment_id - The assessment to update.
+ * @param assessment - The assessment to update.
  * @param csvFile - An object with keys {originalname, size, buffer}.
  * @param user_id - The current user performing the update.
  * @param authn_user_id - The current authenticated user.
@@ -25,7 +25,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @returns The ID of the job sequence
  */
 export async function uploadInstanceQuestionScores(
-  assessment_id: string,
+  assessment: Assessment,
   csvFile: Express.Multer.File | null | undefined,
   user_id: string,
   authn_user_id: string,
@@ -34,13 +34,14 @@ export async function uploadInstanceQuestionScores(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_instance_id, course_id } =
-    await selectAssessmentInfoForJob(assessment_id);
+  const { assessment_label, course_instance_id, course_id } = await selectAssessmentInfoForJob(
+    assessment.id,
+  );
 
   const serverJob = await createServerJob({
     courseId: course_id,
     courseInstanceId: course_instance_id,
-    assessmentId: assessment_id,
+    assessmentId: assessment.id,
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'upload_instance_question_scores',
@@ -79,7 +80,7 @@ export async function uploadInstanceQuestionScores(
     try {
       for await (const { info, record } of csvParser) {
         try {
-          if (await updateInstanceQuestionFromCsvRow(record, assessment_id, authn_user_id)) {
+          if (await updateInstanceQuestionFromCsvRow(record, assessment, authn_user_id)) {
             successCount++;
             const msg = `Processed CSV line ${info.lines}: ${JSON.stringify(record)}`;
             if (output == null) {
@@ -274,13 +275,13 @@ function getPartialScoresOrNull(record: Record<string, any>): Record<string, any
  * Update the score of an instance question based on a single row from the CSV file.
  *
  * @param record Data from the CSV row.
- * @param assessment_id ID of the assessment being updated.
+ * @param assessment The assessment being updated.
  * @param authn_user_id User ID currently authenticated.
  * @returns True if the record included an update, or false if the record included no scores or feedback to be changed.
  */
 async function updateInstanceQuestionFromCsvRow(
   record: Record<string, any>,
-  assessment_id: string,
+  assessment: Assessment,
   authn_user_id: string,
 ): Promise<boolean> {
   const uid_or_group = record.group_name ?? record.uid;
@@ -289,7 +290,7 @@ async function updateInstanceQuestionFromCsvRow(
     const submission_data = await sqldb.queryOptionalRow(
       sql.select_submission_to_update,
       {
-        assessment_id,
+        assessment_id: assessment.id,
         submission_id: record.submission_id,
         uid_or_group,
         ai_number: record.instance,
@@ -331,7 +332,7 @@ async function updateInstanceQuestionFromCsvRow(
     };
     if (Object.values(new_score).some((value) => value != null)) {
       await manualGrading.updateInstanceQuestionScore(
-        assessment_id,
+        assessment,
         submission_data.instance_question_id,
         submission_data.submission_id,
         null, // check_modified_at
