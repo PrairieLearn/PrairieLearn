@@ -223,7 +223,6 @@ export function PageLayout({
                         ? 'container-fluid'
                         : 'container'
                       : null,
-                    resolvedOptions.paddingBottom && 'pb-4',
                     !resolvedOptions.paddingSides && 'px-0',
                     // TODO: replace `paddingSides` with `contentPadding`?
                     resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
@@ -280,7 +279,6 @@ export function PageLayout({
                   ? 'container-fluid'
                   : 'container'
                 : null,
-              resolvedOptions.paddingBottom && 'pb-4',
               !resolvedOptions.paddingSides && 'px-0',
               // TODO: replace `paddingSides` with `contentPadding`?
               resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
