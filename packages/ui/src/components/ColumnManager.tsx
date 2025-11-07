@@ -2,21 +2,19 @@ import { type Column, type Table } from '@tanstack/react-table';
 import { useEffect, useRef, useState } from 'preact/compat';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
+// import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+// import Tooltip from 'react-bootstrap/Tooltip';
 
 interface ColumnMenuItemProps<RowDataModel> {
   column: Column<RowDataModel>;
   hidePinButton: boolean;
   onTogglePin: (columnId: string) => void;
-  onClearElementFocus: () => void;
 }
 
 function ColumnMenuItem<RowDataModel>({
   column,
   hidePinButton = false,
   onTogglePin,
-  onClearElementFocus,
 }: ColumnMenuItemProps<RowDataModel>) {
   const pinButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -28,29 +26,17 @@ function ColumnMenuItem<RowDataModel>({
     (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
 
   return (
-    <Dropdown.Item
-      key={column.id}
-      as="div"
-      class="px-2 py-1 d-flex align-items-center justify-content-between"
-      onKeyDown={onClearElementFocus}
-    >
+    <div key={column.id} class="px-2 py-1 d-flex align-items-center justify-content-between">
       <label class="form-check me-auto text-nowrap d-flex align-items-stretch">
-        <OverlayTrigger
-          placement="top"
-          overlay={<Tooltip>{column.getIsVisible() ? 'Hide column' : 'Show column'}</Tooltip>}
-        >
-          <input
-            type="checkbox"
-            class="form-check-input"
-            checked={column.getIsVisible()}
-            disabled={!column.getCanHide()}
-            aria-label={
-              column.getIsVisible() ? `Hide '${header}' column` : `Show '${header}' column`
-            }
-            aria-describedby={`${column.id}-label`}
-            onChange={column.getToggleVisibilityHandler()}
-          />
-        </OverlayTrigger>
+        <input
+          type="checkbox"
+          class="form-check-input"
+          checked={column.getIsVisible()}
+          disabled={!column.getCanHide()}
+          aria-label={column.getIsVisible() ? `Hide '${header}' column` : `Show '${header}' column`}
+          aria-describedby={`${column.id}-label`}
+          onChange={column.getToggleVisibilityHandler()}
+        />
         <span class="form-check-label ms-2" id={`${column.id}-label`}>
           {header}
         </span>
@@ -68,29 +54,15 @@ function ColumnMenuItem<RowDataModel>({
           }
           title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           data-bs-toggle="tooltip"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (!pinButtonRef.current) {
-              throw new Error('pinButtonRef.current is null');
-            }
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onTogglePin(column.id);
-              return;
-            }
-          }}
-          // Instead, use the arrow keys to move between interactive elements in each menu item.
-          onClick={() => {
-            if (!pinButtonRef.current) {
-              throw new Error('pinButtonRef.current is null');
-            }
+          onClick={(e) => {
+            e.stopPropagation();
             onTogglePin(column.id);
           }}
         >
           <i class={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} aria-hidden="true" />
         </button>
       )}
-    </Dropdown.Item>
+    </div>
   );
 }
 
@@ -180,7 +152,6 @@ export function ColumnManager<RowDataModel>({
                     column={column}
                     hidePinButton={index !== pinnedColumns.length - 1}
                     onTogglePin={handleTogglePin}
-                    onClearElementFocus={() => setActiveElementId(null)}
                   />
                 );
               })}
@@ -198,7 +169,6 @@ export function ColumnManager<RowDataModel>({
                     column={column}
                     hidePinButton={index !== 0}
                     onTogglePin={handleTogglePin}
-                    onClearElementFocus={() => setActiveElementId(null)}
                   />
                 );
               })}

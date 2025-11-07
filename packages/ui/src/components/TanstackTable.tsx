@@ -4,6 +4,8 @@ import type { Header, Row, SortDirection, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import { ColumnManager } from './ColumnManager.js';
 import {
@@ -281,6 +283,40 @@ export function TanstackTable<RowDataModel>({
 
   return (
     <div style={{ position: 'relative' }} class="d-flex flex-column h-100">
+      {table.getVisibleLeafColumns().length === 0 ? (
+        <div>
+          <div
+            class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+            role="status"
+            aria-live="polite"
+          >
+            <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true" />
+            <p class="mb-0">No columns selected. Use the View menu to show columns.</p>
+          </div>
+        </div>
+      ) : displayedCount === 0 ? (
+        <div
+          class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+          role="status"
+          aria-live="polite"
+        >
+          {totalCount > 0 ? noResultsState : emptyState}
+        </div>
+      ) : null}
       <div
         ref={parentRef}
         style={{
@@ -478,44 +514,6 @@ export function TanstackTable<RowDataModel>({
           </table>
         </div>
       </div>
-
-      {table.getVisibleLeafColumns().length === 0 && (
-        <div>
-          <div
-            class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'var(--bs-body-bg)',
-            }}
-            role="status"
-            aria-live="polite"
-          >
-            <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true" />
-            <p class="mb-0">No columns selected. Use the View menu to show columns.</p>
-          </div>
-        </div>
-      )}
-      {displayedCount === 0 && (
-        <div
-          class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'var(--bs-body-bg)',
-          }}
-          role="status"
-          aria-live="polite"
-        >
-          {totalCount > 0 ? noResultsState : emptyState}
-        </div>
-      )}
     </div>
   );
 }
@@ -588,54 +586,52 @@ export function TanstackTableCard<RowDataModel>({
           </div>
         </div>
       </div>
-      <div class="card-body d-flex flex-column">
-        <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
-          <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
-            <div class="position-relative flex-grow-1">
-              <input
-                ref={searchInputRef}
-                type="text"
-                class="form-control tanstack-table-search-input tanstack-table-focusable-shadow"
-                aria-label={globalFilter.placeholder}
-                placeholder={globalFilter.placeholder}
-                value={globalFilter.value}
-                autoComplete="off"
-                onInput={(e) => {
-                  if (!(e.target instanceof HTMLInputElement)) return;
-                  globalFilter.setValue(e.target.value);
-                }}
-              />
-              {globalFilter.value && (
+      <div class="card-body d-flex flex-row flex-wrap flex-grow-0 align-items-center gap-2">
+        <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
+          <div class="position-relative flex-grow-1">
+            <input
+              ref={searchInputRef}
+              type="text"
+              class="form-control tanstack-table-search-input tanstack-table-focusable-shadow"
+              aria-label={globalFilter.placeholder}
+              placeholder={globalFilter.placeholder}
+              value={globalFilter.value}
+              autoComplete="off"
+              onInput={(e) => {
+                if (!(e.target instanceof HTMLInputElement)) return;
+                globalFilter.setValue(e.target.value);
+              }}
+            />
+            {globalFilter.value && (
+              <OverlayTrigger overlay={<Tooltip>Clear search</Tooltip>}>
                 <button
                   type="button"
                   class="btn btn-link tanstack-table-clear-search"
                   aria-label="Clear search"
-                  title="Clear search"
-                  data-bs-toggle="tooltip"
                   onClick={() => globalFilter.setValue('')}
                 >
                   <i class="bi bi-x-circle-fill" aria-hidden="true" />
                 </button>
-              )}
-            </div>
-            <div class="d-none d-md-block">
-              <ColumnManager table={table} id="column-manager-button-wide" />
-              {columnManagerButtons}
-            </div>
+              </OverlayTrigger>
+            )}
           </div>
-          <div class="d-block d-md-none">
-            <ColumnManager table={table} id="column-manager-button-narrow" />
+          <div class="d-none d-md-block">
+            <ColumnManager table={table} id="column-manager-button-wide" />
             {columnManagerButtons}
           </div>
-          <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
-            <div class="text-muted text-nowrap">
-              Showing {displayedCount} of {totalCount} {title.toLowerCase()}
-            </div>
+        </div>
+        <div class="d-block d-md-none">
+          <ColumnManager table={table} id="column-manager-button-narrow" />
+          {columnManagerButtons}
+        </div>
+        <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
+          <div class="text-muted text-nowrap">
+            Showing {displayedCount} of {totalCount} {title.toLowerCase()}
           </div>
         </div>
-        <div class="flex-grow-1">
-          <TanstackTable table={table} title={title} {...tableOptions} />
-        </div>
+      </div>
+      <div class="flex-grow-1">
+        <TanstackTable table={table} title={title} {...tableOptions} />
       </div>
     </div>
   );
