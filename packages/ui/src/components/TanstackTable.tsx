@@ -337,7 +337,7 @@ export function TanstackTable<RowDataModel>({
           }}
         >
           <table
-            class="table table-hover mb-0 border border-top-0"
+            class="table table-hover mb-0"
             style={{ tableLayout: 'fixed' }}
             aria-label={title}
             role="grid"
