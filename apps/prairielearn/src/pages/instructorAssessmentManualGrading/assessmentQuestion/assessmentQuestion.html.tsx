@@ -1,7 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
-import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';
@@ -13,8 +12,8 @@ import type { AssessmentQuestion, InstanceQuestionGroup, User } from '../../../l
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { getUrl } from '../../../lib/url.js';
 
+import { AssessmentQuestionManualGradingWithModals } from './AssessmentQuestionManualGradingWithModals.js';
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
-import AssessmentQuestionManualGrading from './assessmentQuestionTable.js';
 
 export function AssessmentQuestion({
   resLocals,
@@ -138,7 +137,7 @@ export function AssessmentQuestion({
         </form>
 
         <Hydrate fullHeight>
-          <AssessmentQuestionManualGrading
+          <AssessmentQuestionManualGradingWithModals
             authzData={authz_data}
             search={search}
             instanceQuestions={instanceQuestions}
@@ -167,21 +166,6 @@ export function AssessmentQuestion({
       GradingConflictModal(),
       DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }),
       DeleteAllInstanceQuestionGroupResultsModal({ csrfToken: __csrf_token }),
-      GroupInfoModal({
-        modalFor: 'selected',
-        numOpenInstances: num_open_instances,
-        csrfToken: __csrf_token,
-      }),
-      GroupInfoModal({
-        modalFor: 'all',
-        numOpenInstances: num_open_instances,
-        csrfToken: __csrf_token,
-      }),
-      GroupInfoModal({
-        modalFor: 'ungrouped',
-        numOpenInstances: num_open_instances,
-        csrfToken: __csrf_token,
-      }),
     ],
   });
 }
@@ -254,188 +238,3 @@ function DeleteAllInstanceQuestionGroupResultsModal({ csrfToken }: { csrfToken: 
   });
 }
 
-function GroupInfoModal({
-  modalFor,
-  numOpenInstances,
-  csrfToken,
-}: {
-  modalFor: 'all' | 'selected' | 'ungrouped';
-  numOpenInstances: number;
-  csrfToken: string;
-}) {
-  return Modal({
-    id: `group-confirmation-modal-${modalFor}`,
-    title: run(() => {
-      if (modalFor === 'all') {
-        return 'Group all submissions';
-      } else if (modalFor === 'ungrouped') {
-        return 'Group ungrouped submissions';
-      } else {
-        return 'Group selected submissions';
-      }
-    }),
-    form: modalFor === 'all' || modalFor === 'ungrouped',
-    body: renderHtml(
-      <>
-        {(modalFor === 'all' || modalFor === 'ungrouped') && (
-          <>
-            <input
-              type="hidden"
-              name="__action"
-              value={
-                modalFor === 'all'
-                  ? 'ai_instance_question_group_assessment_all'
-                  : 'ai_instance_question_group_assessment_ungrouped'
-              }
-            />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-          </>
-        )}
-        <p>
-          Groups student submission answers based on whether they
-          <b>match the correct answer exactly.</b>
-        </p>
-
-        <p>Answers that match go into one group, and those that don't are grouped separately.</p>
-
-        <p>
-          To enable grouping, the correct answer must be provided in <code>pl-answer-panel</code>.
-        </p>
-
-        <p>
-          Grouping checks for exact equivalence to the final answer, considering only the boxed or
-          final answer to form groups.
-        </p>
-
-        <p>Examples of what can and can't be grouped:</p>
-
-        <div
-          class="d-grid border rounded overflow-hidden"
-          style={{ gridTemplateColumns: '1fr 1fr' }}
-        >
-          <div class="px-2 py-1 bg-light fw-bold border-end">Can group</div>
-          <div class="px-2 py-1 bg-light fw-bold">Can't group</div>
-
-          <div class="px-2 py-1 border-top border-end">Mathematical Equations</div>
-          <div class="px-2 py-1 border-top">Essays</div>
-
-          <div class="px-2 py-1 border-top border-end">Mechanical Formulas</div>
-          <div class="px-2 py-1 border-top">Free Response Questions</div>
-
-          <div class="px-2 py-1 border-top border-end">Exact String Inputs</div>
-          <div class="px-2 py-1 border-top">Freeform Code</div>
-
-          <div class="px-2 py-1 border-top border-end">
-            Handwritten submissions with 1 correct answer
-          </div>
-          <div class="px-2 py-1 border-top">Handwritten submissions with 2+ correct answers</div>
-        </div>
-
-        {numOpenInstances > 0 && (
-          <div class="alert alert-warning mt-3" role="alert">
-            <div class="row g-2">
-              <div class="col-12 col-md-6">
-                <p class="my-0">
-                  This assessment has
-                  {numOpenInstances === 1
-                    ? '1 open instance that '
-                    : `${numOpenInstances} open instances, which `}
-                  may contain submissions selected for grouping.
-                </p>
-              </div>
-              <div class="col-12 col-md-6 d-flex flex-column gap-2">
-                <p class="my-0">Choose how to apply grouping:</p>
-                <select
-                  class="form-select w-auto flex-shrink-0"
-                  name="closed_instance_questions_only"
-                >
-                  <option value="true" selected>
-                    Only group closed submissions
-                  </option>
-                  <option value="false">Group open & closed submissions</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-      </>,
-    ),
-    footer: renderHtml(
-      <div class="m-0">
-        <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
-          {modalFor === 'all' ? (
-            <button class="btn btn-primary" type="submit">
-              Group submissions
-            </button>
-          ) : modalFor === 'selected' ? (
-            <button
-              class="btn btn-primary"
-              type="button"
-              // @ts-expect-error -- We don't want to hydrate this part of the DOM
-              onclick={`
-                const modal = document.getElementById('group-confirmation-modal-selected');
-                const selectedIds = modal?.getAttribute('data-selected-ids')?.split(',') || [];
-                const closedOnly = document.querySelector('#group-confirmation-modal-selected select[name="closed_instance_questions_only"]')?.value || 'true';
-                
-                if (selectedIds.length === 0) return;
-                
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '';
-                
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '__csrf_token';
-                csrfInput.value = '${csrfToken}';
-                form.appendChild(csrfInput);
-                
-                const actionInput = document.createElement('input');
-                actionInput.type = 'hidden';
-                actionInput.name = '__action';
-                actionInput.value = 'batch_action';
-                form.appendChild(actionInput);
-                
-                const batchActionInput = document.createElement('input');
-                batchActionInput.type = 'hidden';
-                batchActionInput.name = 'batch_action';
-                batchActionInput.value = 'ai_instance_question_group_selected';
-                form.appendChild(batchActionInput);
-                
-                const closedInput = document.createElement('input');
-                closedInput.type = 'hidden';
-                closedInput.name = 'closed_instance_questions_only';
-                closedInput.value = closedOnly;
-                form.appendChild(closedInput);
-                
-                selectedIds.forEach(id => {
-                  const idInput = document.createElement('input');
-                  idInput.type = 'hidden';
-                  idInput.name = 'instance_question_id';
-                  idInput.value = id;
-                  form.appendChild(idInput);
-                });
-                
-                document.body.appendChild(form);
-                form.submit();
-              `}
-            >
-              Group submissions
-            </button>
-          ) : (
-            <button
-              class="btn btn-primary"
-              type="submit"
-              name="batch_action"
-              value="ai_instance_question_group_selected"
-            >
-              Group submissions
-            </button>
-          )}
-        </div>
-        <small class="text-muted my-0 text-end">
-          AI can make mistakes. Review groups before grading.
-        </small>
-      </div>,
-    ),
-  });
-}

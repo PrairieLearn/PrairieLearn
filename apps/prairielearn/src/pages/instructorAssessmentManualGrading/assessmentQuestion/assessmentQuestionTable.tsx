@@ -159,7 +159,7 @@ function formatScoreWithEdit({
   );
 }
 
-interface AssessmentQuestionTableProps {
+export interface AssessmentQuestionManualGradingProps {
   authzData: PageContextWithAuthzData['authz_data'];
   course: StaffCourseInstanceContext['course'];
   courseInstance: StaffCourseInstanceContext['course_instance'];
@@ -177,6 +177,9 @@ interface AssessmentQuestionTableProps {
   instanceQuestionGroups: InstanceQuestionGroup[];
   courseStaff: { user_id: string; name: string | null; uid: string }[];
   aiGradingStats: AiGradingGeneralStats | null;
+  onShowGroupSelectedModal?: (ids: string[]) => void;
+  onShowGroupAllModal?: () => void;
+  onShowGroupUngroupedModal?: () => void;
 }
 
 function AssessmentQuestionTable({
@@ -197,7 +200,10 @@ function AssessmentQuestionTable({
   course,
   courseInstance,
   aiGradingStats,
-}: AssessmentQuestionTableProps) {
+  onShowGroupSelectedModal,
+  onShowGroupAllModal,
+  onShowGroupUngroupedModal,
+}: AssessmentQuestionManualGradingProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -1080,38 +1086,14 @@ function AssessmentQuestionTable({
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
                       disabled={selectedIds.length === 0}
-                      onClick={() => {
-                        const modal = document.getElementById('group-confirmation-modal-selected');
-                        if (modal) {
-                          // Store selected IDs in the modal for later submission
-                          modal.setAttribute('data-selected-ids', selectedIds.join(','));
-                          const bsModal = new window.bootstrap.Modal(modal);
-                          bsModal.show();
-                        }
-                      }}
+                      onClick={() => onShowGroupSelectedModal?.(selectedIds)}
                     >
                       Group selected submissions
                     </Dropdown.Item>
-                    <Dropdown.Item
-                      onClick={() => {
-                        const modal = document.getElementById('group-confirmation-modal-all');
-                        if (modal) {
-                          const bsModal = new window.bootstrap.Modal(modal);
-                          bsModal.show();
-                        }
-                      }}
-                    >
+                    <Dropdown.Item onClick={() => onShowGroupAllModal?.()}>
                       Group all submissions
                     </Dropdown.Item>
-                    <Dropdown.Item
-                      onClick={() => {
-                        const modal = document.getElementById('group-confirmation-modal-ungrouped');
-                        if (modal) {
-                          const bsModal = new window.bootstrap.Modal(modal);
-                          bsModal.show();
-                        }
-                      }}
-                    >
+                    <Dropdown.Item onClick={() => onShowGroupUngroupedModal?.()}>
                       Group ungrouped submissions
                     </Dropdown.Item>
                     <Dropdown.Divider />
@@ -1322,6 +1304,13 @@ function AssessmentQuestionTable({
   );
 }
 
+export type AssessmentQuestionManualGradingWrapperProps = {
+  authzData: PageContextWithAuthzData['authz_data'];
+  search: string;
+  isDevMode: boolean;
+  numOpenInstances: number;
+} & Omit<AssessmentQuestionManualGradingProps, 'numOpenInstances'>;
+
 function AssessmentQuestionManualGrading({
   authzData,
   search,
@@ -1343,12 +1332,7 @@ function AssessmentQuestionManualGrading({
   aiGradingStats,
   numOpenInstances: _numOpenInstances,
   isDevMode,
-}: {
-  authzData: PageContextWithAuthzData['authz_data'];
-  search: string;
-  isDevMode: boolean;
-  numOpenInstances: number;
-} & Omit<AssessmentQuestionTableProps, 'numOpenInstances'>) {
+}: AssessmentQuestionManualGradingWrapperProps) {
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
