@@ -1267,7 +1267,7 @@ function AssessmentQuestionTable({
                   }) => (
                     <MultiSelectColumnFilter
                       columnId={header.column.id}
-                      columnLabel="AI Agreement"
+                      columnLabel="AI Disagreements"
                       allColumnValues={allAiAgreementItems.map((item) => item.description)}
                       renderValueLabel={({ value }) => {
                         return <span>{value}</span>;
