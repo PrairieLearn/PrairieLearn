@@ -112,8 +112,8 @@ router.get(
       );
     });
 
-    // Merge the results, with modern publishing courses taking precedence
-    const studentCourses = [...legacyStudentCourses, ...modernStudentCourses];
+    // Modern publishing courses show above legacy courses in the list
+    const studentCourses = [...modernStudentCourses, ...legacyStudentCourses];
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
