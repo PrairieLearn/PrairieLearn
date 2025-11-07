@@ -28,6 +28,8 @@ export function TanstackTableDownloadButton<RowDataModel>({
   const allRowsJSON = allRows.map(mapRowToData).filter((row) => row !== null);
   const filteredRows = table.getRowModel().rows.map((row) => row.original);
   const filteredRowsJSON = filteredRows.map(mapRowToData).filter((row) => row !== null);
+  const selectedRows = table.getSelectedRowModel().rows.map((row) => row.original);
+  const selectedRowsJSON = selectedRows.map(mapRowToData).filter((row) => row !== null);
 
   function downloadJSONAsCSV(
     jsonRows: Record<string, string | number | null>[],
@@ -53,7 +55,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
         class="btn btn-light btn-sm dropdown-toggle"
       >
         <i aria-hidden="true" class="pe-2 bi bi-download" />
-        Download
+        <span class="d-none d-sm-inline">Download</span>
       </button>
       <ul class="dropdown-menu" role="menu" aria-label="Download options">
         <li role="presentation">
@@ -78,6 +80,30 @@ export function TanstackTableDownloadButton<RowDataModel>({
             onClick={() => downloadAsJSON(allRowsJSON, `${filenameBase}.json`)}
           >
             All {pluralLabel} as JSON
+          </button>
+        </li>
+        <li role="presentation">
+          <button
+            class="dropdown-item"
+            type="button"
+            role="menuitem"
+            aria-label={`Download selected ${pluralLabel} as CSV file`}
+            disabled={selectedRowsJSON.length === 0}
+            onClick={() => downloadJSONAsCSV(selectedRowsJSON, `${filenameBase}_selected.csv`)}
+          >
+            Selected {pluralLabel} as CSV
+          </button>
+        </li>
+        <li role="presentation">
+          <button
+            class="dropdown-item"
+            type="button"
+            role="menuitem"
+            aria-label={`Download selected ${pluralLabel} as JSON file`}
+            disabled={selectedRowsJSON.length === 0}
+            onClick={() => downloadAsJSON(selectedRowsJSON, `${filenameBase}_selected.json`)}
+          >
+            Selected {pluralLabel} as JSON
           </button>
         </li>
         <li role="presentation">
