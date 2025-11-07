@@ -691,24 +691,9 @@ function AssessmentQuestionTable({
               filterFn: (row, columnId, filterValues: string[]) => {
                 if (filterValues.length === 0) return true;
                 const rubricDiff = row.original.rubric_difference;
-
-                // Special filter value to show any disagreements
-                if (filterValues.includes('__HAS_DISAGREEMENT__')) {
-                  if (rubricDiff && Array.isArray(rubricDiff) && rubricDiff.length > 0) {
-                    return true;
-                  }
-                  // Also check for point differences without rubric data
-                  if (
-                    row.original.point_difference !== null &&
-                    row.original.point_difference !== 0
-                  ) {
-                    return true;
-                  }
-                }
-
                 if (!rubricDiff || !Array.isArray(rubricDiff)) return false;
-                // Check if ANY of the selected items are in the disagreement
-                return filterValues.some((description) =>
+                // Check if ALL of the selected items are in the disagreement
+                return filterValues.every((description) =>
                   rubricDiff.some((item) => item.description === description),
                 );
               },
@@ -743,8 +728,8 @@ function AssessmentQuestionTable({
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
           const rubricItemIds = row.original.rubric_grading_item_ids;
-          // Check if ANY of the selected rubric item IDs are in the row's rubric_grading_item_ids
-          return filterValues.some((itemId) => rubricItemIds.includes(itemId));
+          // Check if ALL of the selected rubric item IDs are in the row's rubric_grading_item_ids
+          return filterValues.every((itemId) => rubricItemIds.includes(itemId));
         },
       }),
     ],
@@ -1285,8 +1270,7 @@ function AssessmentQuestionTable({
                       columnLabel="AI Agreement"
                       allColumnValues={allAiAgreementItems.map((item) => item.description)}
                       renderValueLabel={({ value }) => {
-                        const item = allAiAgreementItems.find((i) => i.description === value);
-                        return <span>{item ? `${item.number}. ${item.description}` : value}</span>;
+                        return <span>{value}</span>;
                       }}
                       columnValuesFilter={aiAgreementFilter}
                       setColumnValuesFilter={setAiAgreementFilter}
