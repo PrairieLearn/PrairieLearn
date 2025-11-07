@@ -13,7 +13,7 @@ for (let i = 1; ; i += 1) {
     // eslint-disable-next-line no-console
     console.log(`${i} calls | Heap: ${heapUsedMB}/${heapTotalMB} MB`);
 
-    // Yield to the event loop to allow `happy-dom` to clean up its resources.
+    // Yield to the event loop to allow `jsdom` to clean up its resources.
     await sleep(0);
   }
 }
