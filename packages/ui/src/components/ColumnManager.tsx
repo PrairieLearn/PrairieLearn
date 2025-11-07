@@ -149,7 +149,7 @@ export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataMod
         }
       }}
     >
-      <Dropdown.Toggle variant="outline-secondary" id="column-manager-button">
+      <Dropdown.Toggle variant="input" id="column-manager-button">
         <i class="bi bi-view-list me-2" aria-hidden="true" />
         View
       </Dropdown.Toggle>

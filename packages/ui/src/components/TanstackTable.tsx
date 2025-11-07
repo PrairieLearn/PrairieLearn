@@ -535,11 +535,11 @@ export function TanstackTableCard<RowDataModel>({
       <div class="card-body d-flex flex-column">
         <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
           <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
-            <div class="input-group">
+            <div class="position-relative flex-grow-1">
               <input
                 ref={searchInputRef}
                 type="text"
-                class="form-control"
+                class="form-control tanstack-table-search-input"
                 aria-label={globalFilter.placeholder}
                 placeholder={globalFilter.placeholder}
                 value={globalFilter.value}
@@ -548,16 +548,18 @@ export function TanstackTableCard<RowDataModel>({
                   globalFilter.setValue(e.target.value);
                 }}
               />
-              <button
-                type="button"
-                class="btn btn-outline-secondary"
-                aria-label="Clear search"
-                title="Clear search"
-                data-bs-toggle="tooltip"
-                onClick={() => globalFilter.setValue('')}
-              >
-                <i class="bi bi-x-circle" aria-hidden="true" />
-              </button>
+              {globalFilter.value && (
+                <button
+                  type="button"
+                  class="btn btn-link tanstack-table-clear-search"
+                  aria-label="Clear search"
+                  title="Clear search"
+                  data-bs-toggle="tooltip"
+                  onClick={() => globalFilter.setValue('')}
+                >
+                  <i class="bi bi-x-circle-fill" aria-hidden="true" />
+                </button>
+              )}
             </div>
             {/* We do this instead of CSS properties for the accessibility checker.
               We can't have two elements with the same id of 'column-manager-button'. */}

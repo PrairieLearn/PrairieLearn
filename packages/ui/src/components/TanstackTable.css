@@ -2,3 +2,31 @@ body.no-user-select {
   user-select: none;
   -webkit-user-select: none;
 }
+
+.tanstack-table-search-input {
+  padding-right: 2.5rem;
+}
+
+.tanstack-table-clear-search {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.25rem 0.5rem;
+  color: var(--bs-secondary);
+  opacity: 0.6;
+  transition: opacity 0.15s ease-in-out;
+  text-decoration: none;
+}
+
+.tanstack-table-clear-search:hover {
+  opacity: 1;
+  color: var(--bs-secondary);
+  text-decoration: none;
+}
+
+.tanstack-table-clear-search:focus {
+  opacity: 1;
+  color: var(--bs-secondary);
+  text-decoration: none;
+}
