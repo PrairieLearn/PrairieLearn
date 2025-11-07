@@ -1,3 +1,5 @@
+import assert from 'assert';
+
 import { Temporal } from '@js-temporal/polyfill';
 import { QueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
@@ -21,30 +23,24 @@ const queryClient = new QueryClient();
 
 type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
 
-/** Helper to compute status from dates and current time. */
-function computeStatus(
-  startDate: Date | null,
-  endDate: Date | null,
-  courseInstance: StaffCourseInstance,
-): PublishingStatus {
-  if (!startDate && !endDate) {
+/** Helper to compute the current status of a course instance. */
+function computeCourseInstanceStatus(courseInstance: StaffCourseInstance): PublishingStatus {
+  if (!courseInstance.publishing_start_date && !courseInstance.publishing_end_date) {
     return 'unpublished';
   }
+  assert(
+    courseInstance.publishing_start_date !== null && courseInstance.publishing_end_date !== null,
+  );
 
   const now = nowDateInTimezone(courseInstance.display_timezone);
 
-  if (startDate && endDate) {
-    if (endDate <= now) {
-      return 'unpublished';
-    }
-    if (startDate > now) {
-      return 'publish_scheduled';
-    }
-    return 'published';
+  if (courseInstance.publishing_end_date <= now) {
+    return 'unpublished';
   }
-
-  // Should not happen in valid states, but default to unpublished
-  return 'unpublished';
+  if (courseInstance.publishing_start_date > now) {
+    return 'publish_scheduled';
+  }
+  return 'published';
 }
 
 interface PublishingFormValues {
@@ -75,11 +71,7 @@ export function PublishingForm({
   const originalStartDate = courseInstance.publishing_start_date;
   const originalEndDate = courseInstance.publishing_end_date;
 
-  const originalStatus = computeStatus(
-    courseInstance.publishing_start_date,
-    courseInstance.publishing_end_date,
-    courseInstance,
-  );
+  const originalStatus = computeCourseInstanceStatus(courseInstance);
 
   const [selectedStatus, setSelectedStatus] = useState<PublishingStatus>(originalStatus);
 
@@ -619,7 +611,6 @@ export function PublishingForm({
           )}
         </form>
 
-        {/* Access Control Extensions Section */}
         {startDate && (
           <>
             <hr class="my-4" />
