@@ -5,13 +5,18 @@ import z from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
+import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
+import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
+
 import {
   type ConstructedCourseOrInstanceContext,
   CourseOrInstanceContextDataSchema,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
+  dangerousFullSystemAuthz,
 } from './authz-data-lib.js';
 import {
+  type CourseInstance,
   EnumCourseInstanceRoleSchema,
   EnumCourseRoleSchema,
   EnumModeSchema,
@@ -56,8 +61,76 @@ export const CourseOrInstanceOverridesSchema = z.object({
   course_instance_role: EnumCourseInstanceRoleSchema.nullable().optional(),
   allow_example_course_override: z.boolean().optional(),
 });
-
 type CourseOrInstanceOverrides = z.infer<typeof CourseOrInstanceOverridesSchema>;
+
+/**
+ * Checks if the user has access to the course instance. If the user is a student,
+ * the course instance must be published to them.
+ *
+ * @param courseInstance - The course instance to check access for.
+ * @param userId - The ID of the user to check access for.
+ * @param reqDate - The date of the request.
+ */
+export async function calculateModernCourseInstanceStudentAccess(
+  courseInstance: CourseInstance,
+  userId: string,
+  reqDate: Date,
+) {
+  // This function should only be called for course instances that are using
+  // modern publishing configs.
+  assert(courseInstance.modern_publishing);
+
+  // We can't trust the authzData to have the correct permissioning,
+  // so we need to use system auth to get the enrollment.
+  const enrollment = await selectOptionalEnrollmentByUserId({
+    userId,
+    requestedRole: 'System',
+    authzData: dangerousFullSystemAuthz(),
+    courseInstance,
+  });
+
+  // Not published at all.
+  if (courseInstance.publishing_start_date == null) {
+    return { has_student_access: false, has_student_access_with_enrollment: false };
+  }
+
+  // End date is always set alongside start date
+  assert(courseInstance.publishing_end_date != null);
+
+  // Before the start date, we definitely don't have access.
+  if (reqDate < courseInstance.publishing_start_date) {
+    return { has_student_access: false, has_student_access_with_enrollment: false };
+  }
+
+  // If we are before the end date and after the start date, we definitely have access.
+  if (reqDate < courseInstance.publishing_end_date) {
+    return { has_student_access: true, has_student_access_with_enrollment: enrollment != null };
+  }
+
+  // We are after the end date. We might have access if we have an extension.
+  // Only enrolled students can have extensions.
+  if (!enrollment) {
+    return { has_student_access: false, has_student_access_with_enrollment: false };
+  }
+
+  const latestPublishingExtension = await selectLatestPublishingExtensionByEnrollment({
+    enrollment,
+    // Our current authzData would say we can't access this, but we are actually building up
+    // authzData with this function, so we use system auth to get the latest extension.
+    authzData: dangerousFullSystemAuthz(),
+    requestedRole: 'System',
+  });
+
+  // Check if we have access via extension.
+  const hasAccessViaExtension =
+    latestPublishingExtension !== null && reqDate < latestPublishingExtension.end_date;
+
+  return {
+    has_student_access: hasAccessViaExtension,
+    has_student_access_with_enrollment: hasAccessViaExtension,
+  };
+}
+
 /**
  * Builds the authorization data for a user on a page. The optional parameters are used for effective user overrides,
  * most scenarios should not need to change these parameters.
@@ -154,11 +227,41 @@ export async function constructCourseOrInstanceContext({
 
   const mode = resolvedOverrides.mode ?? rawAuthzData.mode;
 
+  const authzData = {
+    user,
+    mode,
+    mode_reason: rawAuthzData.mode_reason,
+    course_role,
+    ...calculateCourseRolePermissions(course_role),
+    ...(await run(async () => {
+      if (isCourseInstance) {
+        return {
+          course_instance_role,
+          ...calculateCourseInstanceRolePermissions(course_instance_role),
+
+          ...(await run(async () => {
+            assert(rawAuthzData.course_instance != null);
+            if (rawAuthzData.course_instance.modern_publishing) {
+              return await calculateModernCourseInstanceStudentAccess(
+                rawAuthzData.course_instance,
+                user.user_id,
+                req_date,
+              );
+            }
+            return {
+              has_student_access: rawAuthzData.permissions_course_instance.has_student_access,
+              has_student_access_with_enrollment:
+                rawAuthzData.permissions_course_instance.has_student_access_with_enrollment,
+            };
+          })),
+        };
+      }
+    })),
+  };
+
   const hasCourseAccess = course_role !== 'None';
   const hasCourseInstanceAccess =
-    isCourseInstance &&
-    (course_instance_role !== 'None' ||
-      rawAuthzData.permissions_course_instance.has_student_access);
+    isCourseInstance && (course_instance_role !== 'None' || authzData.has_student_access);
 
   // If you don't have course or course instance access, return null.
   if (!hasCourseAccess && !hasCourseInstanceAccess) {
@@ -169,26 +272,6 @@ export async function constructCourseOrInstanceContext({
       courseInstance: null,
     };
   }
-
-  const authzData = {
-    user,
-    mode,
-    mode_reason: rawAuthzData.mode_reason,
-    course_role,
-    ...calculateCourseRolePermissions(course_role),
-    ...run(() => {
-      if (!isCourseInstance) return {};
-
-      const { has_student_access, has_student_access_with_enrollment } =
-        rawAuthzData.permissions_course_instance;
-      return {
-        course_instance_role,
-        has_student_access_with_enrollment,
-        has_student_access,
-        ...calculateCourseInstanceRolePermissions(course_instance_role),
-      };
-    }),
-  };
 
   return {
     authzData,
