@@ -1,4 +1,4 @@
-import assert from 'assert';
+import assert from 'node:assert';
 
 import createDOMPurify from 'dompurify';
 import { Window } from 'happy-dom';
