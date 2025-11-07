@@ -213,7 +213,11 @@ class InstructorFileEditor {
 
     const currentContents = this.editor.getValue();
     const parsedContent = JSON.parse(currentContents);
-    if (typeof parsedContent === 'object' && parsedContent !== null) {
+    if (
+      typeof parsedContent === 'object' &&
+      parsedContent !== null &&
+      !Array.isArray(parsedContent)
+    ) {
       // Restore the original UUID. We delete and then spread so that the original UUID
       // appears at the top of the JSON object.
       delete parsedContent.uuid;
@@ -239,7 +243,11 @@ class InstructorFileEditor {
       try {
         const parsedContent = JSON.parse(currentContents);
 
-        if (typeof parsedContent !== 'object' || parsedContent == null) {
+        if (
+          typeof parsedContent !== 'object' ||
+          parsedContent == null ||
+          Array.isArray(parsedContent)
+        ) {
           return { errorCode: SaveErrorCode.INVALID_JSON };
         } else if (this.fileMetadata.uuid) {
           if ('uuid' in parsedContent) {
