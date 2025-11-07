@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 3.3.0
+
+### Minor Changes
+
+- d087e37: Immediately 404 if a built asset isn't found
+
 ## 3.2.9
 
 ### Patch Changes
