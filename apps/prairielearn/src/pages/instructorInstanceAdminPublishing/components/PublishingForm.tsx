@@ -1,5 +1,3 @@
-import assert from 'assert';
-
 import { Temporal } from '@js-temporal/polyfill';
 import { QueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
@@ -28,9 +26,11 @@ function computeCourseInstanceStatus(courseInstance: StaffCourseInstance): Publi
   if (!courseInstance.publishing_start_date && !courseInstance.publishing_end_date) {
     return 'unpublished';
   }
-  assert(
-    courseInstance.publishing_start_date !== null && courseInstance.publishing_end_date !== null,
-  );
+
+  if (courseInstance.publishing_start_date == null || courseInstance.publishing_end_date == null) {
+    // Course instance is in an invalid state
+    return 'unpublished';
+  }
 
   const now = nowDateInTimezone(courseInstance.display_timezone);
 
