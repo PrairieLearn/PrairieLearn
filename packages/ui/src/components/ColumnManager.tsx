@@ -2,8 +2,6 @@ import { type Column, type Table } from '@tanstack/react-table';
 import { useEffect, useRef, useState } from 'preact/compat';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
-// import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-// import Tooltip from 'react-bootstrap/Tooltip';
 
 interface ColumnMenuItemProps<RowDataModel> {
   column: Column<RowDataModel>;
