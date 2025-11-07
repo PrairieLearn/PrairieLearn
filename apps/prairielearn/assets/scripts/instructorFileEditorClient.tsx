@@ -75,7 +75,7 @@ function UuidChangeModalContent({
           })}
         </div>
       </div>
-      <div class="ms-0">Clicking "Confirm save" will save this file with its original UUID.</div>
+      <div>Clicking "Confirm save" will save this file with its original UUID.</div>
     </>
   );
 }
@@ -117,6 +117,7 @@ class InstructorFileEditor {
   fileMetadata?: FileMetadata;
   aceMode?: string;
   private confirmedSave = false;
+  private abortController?: AbortController;
 
   constructor({
     element,
@@ -175,21 +176,21 @@ class InstructorFileEditor {
       window.bootstrap.Toast.getOrCreateInstance('#js-json-reformat-error', { delay: 5000 });
       document
         .querySelector<HTMLButtonElement>('.js-reformat-file')
-        ?.addEventListener('click', () => this.reformatJSONFile());
+        ?.addEventListener('click', async () => await this.reformatJSONFile());
     }
 
     // Override the save button click to show confirmation modal if needed
-    this.saveElement?.addEventListener('click', (e) => this.handleSaveClick(e));
+    this.saveElement?.addEventListener('click', async (e) => await this.handleSaveClick(e));
   }
 
   /**
    * Handles the save button click, showing a confirmation modal if there are issues,
    * or proceeding with the save if the user has already confirmed.
    */
-  handleSaveClick(event: MouseEvent) {
+  async handleSaveClick(event: MouseEvent) {
     if (this.confirmedSave) {
       // User has confirmed the save, so we need to restore the original UUID
-      this.restoreOriginalUuid();
+      await this.restoreOriginalUuid();
       this.confirmedSave = false;
       return;
     }
@@ -207,7 +208,7 @@ class InstructorFileEditor {
   /**
    * Restores the original UUID in the editor contents when the user confirms save.
    */
-  restoreOriginalUuid() {
+  async restoreOriginalUuid() {
     if (!this.fileMetadata?.uuid) return;
 
     const currentContents = this.editor.getValue();
@@ -216,12 +217,9 @@ class InstructorFileEditor {
       // Restore the original UUID. We delete and then spread so that the original UUID
       // appears at the top of the JSON object.
       delete parsedContent.uuid;
-      const restoredContents = JSON.stringify(
-        { uuid: this.fileMetadata.uuid, ...parsedContent },
-        null,
-        2,
-      );
+      const restoredContents = JSON.stringify({ uuid: this.fileMetadata.uuid, ...parsedContent });
       this.editor.setValue(restoredContents);
+      await this.reformatJSONFile();
     }
   }
 
@@ -323,6 +321,11 @@ class InstructorFileEditor {
     const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement);
     modal.show();
 
+    // Abort any previous listener
+    this.abortController?.abort();
+    // Set up a new abort controller
+    this.abortController = new AbortController();
+
     confirmButton.addEventListener(
       'click',
       () => {
@@ -330,7 +333,7 @@ class InstructorFileEditor {
         this.confirmedSave = true;
         this.saveElement?.click();
       },
-      { once: true },
+      { signal: this.abortController.signal },
     );
   }
 
