@@ -1133,7 +1133,21 @@ function AssessmentQuestionTable({
                     <span class="d-none d-sm-inline">Tag for grading</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
-                    <Dropdown.Header>Assign for grading</Dropdown.Header>
+                    <Dropdown.Header class="d-flex align-items-center gap-1">
+                      Assign for grading
+                      <OverlayTrigger
+                        overlay={
+                          <Tooltip>
+                            Only staff with <strong>Student Data Editor</strong> permissions or
+                            higher can be assigned as graders
+                          </Tooltip>
+                        }
+                      >
+                        <span>
+                          <i class="fas fa-question-circle text-secondary" />
+                        </span>
+                      </OverlayTrigger>
+                    </Dropdown.Header>
                     {courseStaff.map((grader) => (
                       <Dropdown.Item
                         key={grader.user_id}
