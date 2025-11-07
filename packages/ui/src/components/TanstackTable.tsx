@@ -557,22 +557,6 @@ export function TanstackTableCard<RowDataModel>({
 }) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Track screen size for aria-hidden
-  const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)') : null;
-  const [isMediumOrLarger, setIsMediumOrLarger] = useState(false);
-
-  useEffect(() => {
-    // TODO: This is a workaround to avoid a hydration mismatch.
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-    setIsMediumOrLarger(mediaQuery?.matches ?? true);
-  }, [mediaQuery]);
-
-  useEffect(() => {
-    const handler = (e: MediaQueryListEvent) => setIsMediumOrLarger(e.matches);
-    mediaQuery?.addEventListener('change', handler);
-    return () => mediaQuery?.removeEventListener('change', handler);
-  }, [mediaQuery]);
-
   // Focus the search input when Ctrl+F is pressed
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -611,10 +595,11 @@ export function TanstackTableCard<RowDataModel>({
               <input
                 ref={searchInputRef}
                 type="text"
-                class="form-control tanstack-table-search-input"
+                class="form-control tanstack-table-search-input tanstack-table-focusable-shadow"
                 aria-label={globalFilter.placeholder}
                 placeholder={globalFilter.placeholder}
                 value={globalFilter.value}
+                autoComplete="off"
                 onInput={(e) => {
                   if (!(e.target instanceof HTMLInputElement)) return;
                   globalFilter.setValue(e.target.value);
@@ -633,23 +618,15 @@ export function TanstackTableCard<RowDataModel>({
                 </button>
               )}
             </div>
-            {/* We do this instead of CSS properties for the accessibility checker.
-              We can't have two elements with the same id of 'column-manager-button'. */}
-            {isMediumOrLarger && (
-              <>
-                <ColumnManager table={table} />
-                {columnManagerButtons}
-              </>
-            )}
-          </div>
-          {/* We do this instead of CSS properties for the accessibility checker.
-            We can't have two elements with the same id of 'column-manager-button'. */}
-          {!isMediumOrLarger && (
-            <>
-              <ColumnManager table={table} />
+            <div class="d-none d-md-block">
+              <ColumnManager table={table} id="column-manager-button-wide" />
               {columnManagerButtons}
-            </>
-          )}
+            </div>
+          </div>
+          <div class="d-block d-md-none">
+            <ColumnManager table={table} id="column-manager-button-narrow" />
+            {columnManagerButtons}
+          </div>
           <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
             <div class="text-muted text-nowrap">
               Showing {displayedCount} of {totalCount} {title.toLowerCase()}

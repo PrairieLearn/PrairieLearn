@@ -94,7 +94,13 @@ function ColumnMenuItem<RowDataModel>({
   );
 }
 
-export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataModel> }) {
+export function ColumnManager<RowDataModel>({
+  table,
+  id,
+}: {
+  table: Table<RowDataModel>;
+  id: string;
+}) {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -152,9 +158,13 @@ export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataMod
         }
       }}
     >
-      <Dropdown.Toggle variant="input" id="column-manager-button">
-        <i class="bi bi-view-list me-2" aria-hidden="true" />
-        View
+      <Dropdown.Toggle
+        variant="tanstack-table"
+        id={id}
+        // eslint-disable-next-line @eslint-react/no-forbidden-props
+        className="tanstack-table-focusable-shadow"
+      >
+        <i class="bi bi-view-list me-2" aria-hidden="true" /> View{' '}
       </Dropdown.Toggle>
       <Dropdown.Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>
         {pinnedColumns.length > 0 && (
@@ -206,7 +216,7 @@ export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataMod
               onClick={() => {
                 table.resetColumnVisibility();
                 table.resetColumnPinning();
-                setActiveElementId('column-manager-button');
+                setActiveElementId(id);
               }}
             >
               <i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />

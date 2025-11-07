@@ -184,23 +184,6 @@ mjx-container {
   --bs-btn-disabled-border-color: #dee2e6;
 }
 
-.btn.btn-input {
-  --bs-btn-color: var(--bs-body-color);
-  --bs-btn-bg: var(--bs-input-bg);
-  --bs-btn-border-color: var(--bs-border-color);
-  --bs-btn-hover-color: var(--bs-body-color);
-  --bs-btn-hover-bg: var(--bs-input-hover-bg);
-  --bs-btn-hover-border-color: var(--bs-input-border-border-color);
-  --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
-  --bs-btn-active-color: var(--bs-body-color);
-  --bs-btn-active-bg: var(--bs-input-active-bg);
-  --bs-btn-active-border-color: var(--bs-input-active-border-color);
-  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
-  --bs-btn-disabled-color: var(--bs-body-color);
-  --bs-btn-disabled-bg: var(--bs-input-disabled-bg);
-  --bs-btn-disabled-border-color: var(--bs-input-disabled-border-color);
-}
-
 /**
  * Remove the bottom border from the final row of the last table in a card.
  */
