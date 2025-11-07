@@ -11,10 +11,10 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.922.0",
-    "@aws-sdk/client-s3": "^3.922.0",
-    "@aws-sdk/credential-providers": "^3.922.0",
-    "@aws-sdk/lib-storage": "^3.922.0",
+    "@aws-sdk/client-ecr": "^3.926.0",
+    "@aws-sdk/client-s3": "^3.926.0",
+    "@aws-sdk/credential-providers": "^3.926.0",
+    "@aws-sdk/lib-storage": "^3.926.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
@@ -45,13 +45,13 @@
   "devDependencies": {
     "@types/minimist": "^1.2.5",
     "@types/node": "^22.19.0",
-    "@vitest/coverage-v8": "^4.0.6",
+    "@vitest/coverage-v8": "^4.0.7",
     "fast-glob": "^3.3.3",
     "nodemon": "^3.1.10",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.0.6"
+    "vitest": "^4.0.7"
   },
   "nodemonConfig": {
     "ext": "js,jsx,ts,tsx,json,sql",

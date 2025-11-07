@@ -544,16 +544,27 @@ await updateEnrollmentStatus({
 
 In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `requestedRole` parameter is `'Student'`, but the current user is an instructor, so it would throw an error.
 
-In some cases, you may not have access to `authzData`, e.g. if you are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullSystemAuthz` function to build a dummy `authzData` object that allows you to perform the action as the system. NOTE: We need to revisit this concept as we build out this pattern.
+In some cases, you may not have access to `authzData`, e.g. if you are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullSystemAuthz` function to build a dummy `authzData` object that allows you to perform the action as the system.
 
 ```typescript
 await updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
+  // We are authorizing as the system, any non-System role will throw an error.
   requestedRole: 'System',
   authzData: dangerousFullSystemAuthz(),
 });
 ```
+
+### Exceptions to the pattern
+
+Model functions for course instances and courses are a notable exception to the pattern.
+
+The only way to obtain a full row object for a course instance or course is typically through `res.locals.authz_data`.
+
+Thus, the `select*` functions are not authenticated. Using these is a red flag in most cases, as you should be able to pick information from `res.locals.authz_data` to perform the action.
+
+Alternatively, if you want to check if you _might_ be authorized to perform an action, you can use `buildAuthzData` with the a course/instance ID to get an `authzData` object that you can use for data-modifying actions.
 
 ## State-modifying POST requests
 

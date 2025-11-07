@@ -147,7 +147,8 @@ router.post(
         await aiGrade({
           question: row.question,
           course: res.locals.course,
-          course_instance_id: assessment.course_instance_id,
+          course_instance: res.locals.course_instance,
+          assessment,
           assessment_question: row.assessment_question,
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,

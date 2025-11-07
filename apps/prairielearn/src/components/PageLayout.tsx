@@ -44,6 +44,8 @@ export function PageLayout({
     fullWidth?: boolean;
     /** Whether the main container should have a bottom padding of pb-4 in Bootstrap. */
     paddingBottom?: boolean;
+    /** Whether the main container should have no left and right padding in Bootstrap. */
+    paddingSides?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
     /** Enables an htmx extension for an element and all its children */
@@ -69,6 +71,7 @@ export function PageLayout({
   const resolvedOptions = {
     hxExt: '',
     paddingBottom: true,
+    paddingSides: true,
     enableEnhancedNav: true,
     dataAttributes: {},
     enableNavbar: true,
@@ -206,6 +209,7 @@ export function PageLayout({
                   class="${clsx(
                     resolvedOptions.fullWidth ? 'container-fluid' : 'container',
                     resolvedOptions.paddingBottom && 'pb-4',
+                    !resolvedOptions.paddingSides && 'px-0',
                     resolvedOptions.fullHeight && 'h-100',
                     'pt-3',
                     sideNavEnabled && 'px-3',
@@ -256,6 +260,7 @@ export function PageLayout({
             ${clsx(
               resolvedOptions.fullWidth ? 'container-fluid' : 'container',
               resolvedOptions.paddingBottom && 'pb-4',
+              !resolvedOptions.paddingSides && 'px-0',
               resolvedOptions.fullHeight && 'flex-grow-1',
             )}
           "

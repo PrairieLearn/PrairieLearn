@@ -13,8 +13,8 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@sentry/core": "^10.22.0",
-    "@sentry/node-core": "^10.22.0",
+    "@sentry/core": "^10.23.0",
+    "@sentry/node-core": "^10.23.0",
     "execa": "^9.6.0"
   },
   "devDependencies": {

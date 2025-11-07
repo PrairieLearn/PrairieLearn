@@ -107,6 +107,10 @@ coverage.xml
 ## Vitest
 .vitest-reports
 
+## Playwright
+apps/prairielearn/test-results/
+apps/prairielearn/playwright/.cache/
+
 ## TypeScript cache
 *.tsbuildinfo
 

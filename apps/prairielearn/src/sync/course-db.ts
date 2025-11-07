@@ -238,10 +238,25 @@ export async function loadFullCourse(
     // expired if it either has zero `allowAccess` rules (in which case it is never
     // accessible), or if it has one or more `allowAccess` rules and they all have
     // an `endDate` that is in the past.
-    const allowAccessRules = courseInstance.data?.allowAccess ?? [];
-    const courseInstanceExpired = allowAccessRules.every((rule) => {
-      const endDate = rule.endDate ? parseJsonDate(rule.endDate) : null;
-      return endDate && isPast(endDate);
+    //
+    // If the `allowAccess` section is not present, we instead consider publishing.endDate.
+
+    const allowAccessRules = courseInstance.data?.allowAccess;
+
+    const courseInstanceExpired = run(() => {
+      if (allowAccessRules !== undefined) {
+        return allowAccessRules.every((rule) => {
+          const endDate = rule.endDate ? parseJsonDate(rule.endDate) : null;
+          return endDate && isPast(endDate);
+        });
+      }
+
+      // We have no access rules, so we are using a modern publishing configuration.
+      return (
+        courseInstance.data?.publishing?.endDate == null ||
+        courseInstance.data.publishing.startDate == null ||
+        isPast(courseInstance.data.publishing.endDate)
+      );
     });
 
     const assessments = await loadAssessments({
@@ -1159,10 +1174,10 @@ function validateAssessment({
     errors.push(...dateErrors.errors);
   });
 
-  // When additional validation is added, we don't want to warn for past course
-  // instances that instructors will never touch again, as they won't benefit
-  // from fixing things. So, we'll only show some warnings for course instances
-  // which are accessible either now or any time in the future.
+  // We don't want to warn for past course instances that instructors will
+  // never touch again, as they won't benefit from fixing things. We'll
+  // only show certain warnings for course instances which are accessible
+  // either now or any time in the future.
   if (!courseInstanceExpired) {
     assessment.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
@@ -1457,8 +1472,55 @@ function validateCourseInstance({
     }
   }
 
-  let accessibleInFuture = false;
-  for (const rule of courseInstance.allowAccess) {
+  let parsedEndDate: Date | null = null;
+
+  if (courseInstance.allowAccess && courseInstance.publishing) {
+    errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
+  } else if (courseInstance.publishing) {
+    // TODO: Remove this once the UI is merged
+    warnings.push('"publishing" is not configurable yet.');
+
+    const hasEndDate = courseInstance.publishing.endDate != null;
+    const hasStartDate = courseInstance.publishing.startDate != null;
+    if (hasStartDate && !hasEndDate) {
+      errors.push('"publishing.endDate" is required if "publishing.startDate" is specified.');
+    }
+    if (!hasStartDate && hasEndDate) {
+      errors.push('"publishing.startDate" is required if "publishing.endDate" is specified.');
+    }
+
+    const parsedStartDate =
+      courseInstance.publishing.startDate == null
+        ? null
+        : parseJsonDate(courseInstance.publishing.startDate);
+
+    if (hasStartDate && parsedStartDate == null) {
+      errors.push('"publishing.startDate" is not a valid date.');
+    }
+
+    parsedEndDate =
+      courseInstance.publishing.endDate == null
+        ? null
+        : parseJsonDate(courseInstance.publishing.endDate);
+
+    if (hasEndDate && parsedEndDate == null) {
+      errors.push('"publishing.endDate" is not a valid date.');
+    }
+
+    if (
+      hasStartDate &&
+      hasEndDate &&
+      parsedStartDate != null &&
+      parsedEndDate != null &&
+      isAfter(parsedStartDate, parsedEndDate)
+    ) {
+      errors.push('"publishing.startDate" must be before "publishing.endDate".');
+    }
+  }
+
+  // Default to the publishing end date being in the future.
+  let accessibleInFuture = parsedEndDate != null && isFuture(parsedEndDate);
+  for (const rule of courseInstance.allowAccess ?? []) {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {
       accessibleInFuture = true;
@@ -1469,7 +1531,7 @@ function validateCourseInstance({
 
   if (accessibleInFuture) {
     // Only warn about new roles and invalid UIDs for current or future course instances.
-    courseInstance.allowAccess.forEach((rule) => {
+    courseInstance.allowAccess?.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
     });
 

@@ -22,7 +22,10 @@ function ColumnMenuItem<RowDataModel>({
 
   if (!column.getCanHide() && !column.getCanPin()) return null;
 
-  const header = typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id;
+  // Use meta.label if available, otherwise fall back to header or column.id
+  const header =
+    (column.columnDef.meta as any)?.label ??
+    (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
 
   return (
     <Dropdown.Item
@@ -153,7 +156,7 @@ export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataMod
         <i class="bi bi-view-list me-2" aria-hidden="true" />
         View
       </Dropdown.Toggle>
-      <Dropdown.Menu>
+      <Dropdown.Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>
         {pinnedColumns.length > 0 && (
           <>
             <div class="px-2 py-1 text-muted small" role="presentation">

@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
-import { calculateAuthData } from '../../lib/authz-data.js';
+import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { features } from '../../lib/features/index.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
 import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
@@ -43,7 +43,7 @@ router.get('/', [
     }
 
     const courseInstances = await queryRows(
-      sql.select_course_instances,
+      sql.select_course_instances_legacy_access,
       {
         user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,
@@ -73,16 +73,15 @@ router.post('/', [
       throw new error.HttpStatusError(400, 'Enrollment unavailable, managed via LTI');
     }
     if (req.body.__action === 'enroll') {
-      const { authResult, courseInstance, institution, course } = await calculateAuthData({
-        user: res.locals.authn_user,
-        course_id: null,
-        course_instance_id: req.body.course_instance_id,
-        ip: req.ip ?? null,
-        req_date: res.locals.req_date,
-        overrides: {
+      const { authzData, courseInstance, institution, course } =
+        await constructCourseOrInstanceContext({
+          user: res.locals.authn_user,
+          course_id: null,
+          course_instance_id: req.body.course_instance_id,
+          ip: req.ip ?? null,
+          req_date: res.locals.req_date,
           is_administrator: res.locals.is_administrator,
-        },
-      });
+        });
 
       if (courseInstance == null) {
         throw new error.HttpStatusError(403, 'Access denied');
@@ -132,7 +131,7 @@ router.post('/', [
         course,
         courseInstance,
         requestedRole: 'Student',
-        authzData: authResult,
+        authzData,
         actionDetail: 'explicit_joined',
       });
 
