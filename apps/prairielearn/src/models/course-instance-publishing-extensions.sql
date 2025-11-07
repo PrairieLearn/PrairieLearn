@@ -58,7 +58,6 @@ WHERE
   course_instance_publishing_extension_id = $extension_id
   AND enrollment_id = $enrollment_id;
 
-
 -- BLOCK delete_publishing_extension
 DELETE FROM course_instance_publishing_extensions
 WHERE
