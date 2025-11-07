@@ -4050,10 +4050,11 @@ __metadata:
   dependencies:
     "@prairielearn/marked-mathjax": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
+    "@types/jsdom": "npm:^27.0.0"
     "@types/node": "npm:^22.19.0"
     "@vitest/coverage-v8": "npm:^4.0.7"
     dompurify: "npm:^3.3.0"
-    happy-dom: "npm:^20.0.10"
+    jsdom: "npm:^27.1.0"
     marked: "npm:^16.4.1"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.20.6"
@@ -7031,15 +7032,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^20.0.0":
-  version: 20.19.24
-  resolution: "@types/node@npm:20.19.24"
-  dependencies:
-    undici-types: "npm:~6.21.0"
-  checksum: 10c0/c872ce80a1e832fe035a3c94a27acb2d6e45ffa1209c0241ac6e2d405db8d6f47eea7a2509b5c2dbedae6231dafb9dbed873dd5daaebbad1f11fdaa58726ce5e
-  languageName: node
-  linkType: hard
-
 "@types/oauth-signature@npm:^1.5.2":
   version: 1.5.2
   resolution: "@types/oauth-signature@npm:1.5.2"
@@ -7362,13 +7354,6 @@ __metadata:
   version: 3.0.3
   resolution: "@types/warning@npm:3.0.3"
   checksum: 10c0/82c1235bd05d7f6940f80012404844e225d589ad338aa4585b231a2c8deacc695b683f4168757c82c10047b81854cbeaaeefd60536dd67bb48f8a65e20410652
-  languageName: node
-  linkType: hard
-
-"@types/whatwg-mimetype@npm:^3.0.2":
-  version: 3.0.2
-  resolution: "@types/whatwg-mimetype@npm:3.0.2"
-  checksum: 10c0/dad39d1e4abe760a0a963c84bbdbd26b1df0eb68aff83bdf6ecbb50ad781ead777f6906d19a87007790b750f7500a12e5624d31fc6a1529d14bd19b5c3a316d1
   languageName: node
   linkType: hard
 
@@ -11928,17 +11913,6 @@ __metadata:
     gaxios: "npm:^7.0.0"
     jws: "npm:^4.0.0"
   checksum: 10c0/058538e5bbe081d30ada5f1fd34d3a8194357c2e6ecbf7c8a98daeefbf13f7e06c15649c7dace6a1d4cc3bc6dc5483bd484d6d7adc5852021896d7c05c439f37
-  languageName: node
-  linkType: hard
-
-"happy-dom@npm:^20.0.10":
-  version: 20.0.10
-  resolution: "happy-dom@npm:20.0.10"
-  dependencies:
-    "@types/node": "npm:^20.0.0"
-    "@types/whatwg-mimetype": "npm:^3.0.2"
-    whatwg-mimetype: "npm:^3.0.0"
-  checksum: 10c0/3e05425f3db943885b1d2235d968c8aab08bd32cb0d21bc1c8006db604445f5f6c1364d19b3763395fd748193dc00efd40695e6711ab15e3b9578791c5ce4207
   languageName: node
   linkType: hard
 
@@ -18792,13 +18766,6 @@ __metadata:
   dependencies:
     iconv-lite: "npm:0.6.3"
   checksum: 10c0/273b5f441c2f7fda3368a496c3009edbaa5e43b71b09728f90425e7f487e5cef9eb2b846a31bd760dd8077739c26faf6b5ca43a5f24033172b003b72cf61a93e
-  languageName: node
-  linkType: hard
-
-"whatwg-mimetype@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "whatwg-mimetype@npm:3.0.0"
-  checksum: 10c0/323895a1cda29a5fb0b9ca82831d2c316309fede0365047c4c323073e3239067a304a09a1f4b123b9532641ab604203f33a1403b5ca6a62ef405bcd7a204080f
   languageName: node
   linkType: hard
 

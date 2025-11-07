@@ -51,9 +51,9 @@ Note that `createMarkedInstance` does not use caching, so callers that rely on e
 
 ## Performance considerations
 
-⚠️ **Important**: When sanitization is enabled (the default), this package uses `happy-dom` and `dompurify` to sanitize HTML output. These libraries create DOM-like structures that need to be cleaned up properly.
+⚠️ **Important**: When sanitization is enabled (the default), this package uses `jsdom` and `dompurify` to sanitize HTML output. These libraries create DOM-like structures that need to be cleaned up properly.
 
-**This package is not suitable for use in long, synchronous tasks that don't yield to the event loop**, as they prevent `happy-dom` from cleaning up its resources and can ultimately lead to out-of-memory errors.
+**This package is not suitable for use in long, synchronous tasks that don't yield to the event loop**, as they prevent `jsdom` from cleaning up its resources and can ultimately lead to out-of-memory errors.
 
 If you need to process large amounts of markdown in a tight loop, consider:
 
