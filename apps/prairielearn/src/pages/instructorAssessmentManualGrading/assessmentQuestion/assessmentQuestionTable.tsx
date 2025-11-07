@@ -641,6 +641,12 @@ function AssessmentQuestionTable({
             columnHelper.accessor('rubric_difference', {
               id: 'rubric_difference',
               header: 'AI agreement',
+              size: 300,
+              minSize: 200,
+              maxSize: 600,
+              meta: {
+                wrapText: true,
+              },
               cell: (info) => {
                 const row = info.row.original;
                 if (row.point_difference === null) {

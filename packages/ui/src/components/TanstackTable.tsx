@@ -434,6 +434,8 @@ export function TanstackTable<RowDataModel>({
                       const canSort = cell.column.getCanSort();
                       const canFilter = cell.column.getCanFilter();
 
+                      const wrapText = (cell.column.columnDef.meta as any)?.wrapText ?? false;
+
                       return (
                         <td
                           key={cell.id}
@@ -455,9 +457,10 @@ export function TanstackTable<RowDataModel>({
                               cell.column.getIsPinned() === 'left'
                                 ? cell.column.getStart()
                                 : undefined,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
+                            whiteSpace: wrapText ? 'normal' : 'nowrap',
+                            overflow: wrapText ? 'visible' : 'hidden',
+                            textOverflow: wrapText ? undefined : 'ellipsis',
+                            verticalAlign: 'middle',
                           }}
                           onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })}
                           onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
