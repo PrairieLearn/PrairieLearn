@@ -196,7 +196,7 @@ jobs:
           retention-days: 1
       - name: Upload Playwright blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-blob-report-${{ matrix.shardIndex }}
           path: apps/prairielearn/test-results/blob-report/*
@@ -243,7 +243,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
       - name: Upload HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: html-report--attempt-${{ github.run_attempt }}
           path: playwright-report

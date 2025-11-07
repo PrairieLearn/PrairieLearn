@@ -1,5 +1,12 @@
 # @prairielearn/postgres
 
+## 4.5.0
+
+### Minor Changes
+
+- 3a09ac8: Update function name for test utils
+- 3a09ac8: Return user/database/host from `createDatabase` in test utils
+
 ## 4.4.3
 
 ### Patch Changes
