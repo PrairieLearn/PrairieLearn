@@ -13,6 +13,14 @@ ORDER BY
 LIMIT
   1;
 
+-- BLOCK select_publishing_extension_by_id
+SELECT
+  *
+FROM
+  course_instance_publishing_extensions
+WHERE
+  id = $id;
+
 -- BLOCK select_publishing_extension_by_name
 SELECT
   *
@@ -32,7 +40,7 @@ RETURNING
 
 -- BLOCK add_enrollment_to_publishing_extension
 INSERT INTO
-  course_instance_publishing_enrollment_extensions (
+  course_instance_publishing_extension_enrollments (
     course_instance_publishing_extension_id,
     enrollment_id
   )
@@ -67,7 +75,7 @@ SELECT
   ) AS user_data
 FROM
   course_instance_publishing_extensions AS ci_extensions
-  LEFT JOIN course_instance_publishing_enrollment_extensions AS ci_enrollment_extensions ON (
+  LEFT JOIN course_instance_publishing_extension_enrollments AS ci_enrollment_extensions ON (
     ci_enrollment_extensions.course_instance_publishing_extension_id = ci_extensions.id
   )
   LEFT JOIN enrollments AS e ON (e.id = ci_enrollment_extensions.enrollment_id)

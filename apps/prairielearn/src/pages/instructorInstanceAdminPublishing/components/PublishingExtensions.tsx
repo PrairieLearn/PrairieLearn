@@ -53,18 +53,17 @@ function ExtensionModal({
   onSaveSuccess: () => void;
 }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [stage, setStage] = useState<'editing' | 'confirming'>('editing');
-  const [unenrolledUids, setUnenrolledUids] = useState<string[]>([]);
+  const [stage, setStage] = useState<
+    { type: 'editing' } | { type: 'confirming'; unenrolledUids: string[] }
+  >({ type: 'editing' });
 
   const handleHide = () => {
-    setStage('editing');
-    setUnenrolledUids([]);
+    setStage({ type: 'editing' });
     onHide();
   };
 
   const handleContinueEditing = () => {
-    setStage('editing');
-    setUnenrolledUids([]);
+    setStage({ type: 'editing' });
   };
 
   const {
@@ -90,10 +89,14 @@ function ExtensionModal({
   };
 
   const validateEmails = async (value: string) => {
-    const uids = value
-      .split(/[\n,\s]+/)
-      .map((uid) => uid.trim())
-      .filter((uid) => uid.length > 0);
+    const uids = [
+      ...new Set(
+        value
+          .split(/[\n,\s]+/)
+          .map((uid) => uid.trim())
+          .filter((uid) => uid.length > 0),
+      ),
+    ];
 
     if (uids.length === 0) {
       return 'At least one UID is required';
@@ -107,7 +110,13 @@ function ExtensionModal({
 
     const params = new URLSearchParams();
     params.append('uids', uids.join(','));
-    const resp = await fetch(`${window.location.pathname}/extension/check?${params.toString()}`);
+    let resp: Response | null = null;
+    try {
+      resp = await fetch(`${window.location.pathname}/extension/check?${params.toString()}`);
+    } catch {
+      return 'Failed to validate UIDs';
+    }
+
     if (!resp.ok) return 'Failed to validate UIDs';
 
     const { success, data } = z
@@ -117,11 +126,15 @@ function ExtensionModal({
 
     const validCount = uids.length - data.invalidUids.length;
     if (validCount < 1) {
-      return 'At least one of the UIDs must be enrolled';
+      if (uids.length === 1) {
+        return 'The student must be enrolled to add an extension';
+      }
+      return 'Only enrolled students can be added to an extension';
     }
 
     if (data.invalidUids.length > 0) {
-      return `UNENROLLED:${JSON.stringify(data.invalidUids)}`;
+      setStage({ type: 'confirming', unenrolledUids: data.invalidUids });
+      return false;
     }
     return true;
   };
@@ -157,28 +170,10 @@ function ExtensionModal({
 
   const onFormSubmit = async (data: ExtensionFormValues, event?: React.FormEvent) => {
     event?.preventDefault();
-    setErrorMessage(null);
-
-    // Check if validation detected unenrolled UIDs
-    const uidError = errors.uids?.message;
-    if (uidError && typeof uidError === 'string' && uidError.startsWith('UNENROLLED:')) {
-      // Extract the unenrolled UIDs from the error message
-      const uidsJson = uidError.slice('UNENROLLED:'.length);
-      try {
-        const parsedUids = JSON.parse(uidsJson);
-        setUnenrolledUids(parsedUids);
-        setStage('confirming');
-        return;
-      } catch {
-        // If parsing fails, just proceed with save
-      }
-    }
-
-    // If we're in confirming stage or no unenrolled UIDs, proceed with save
     void saveMutation.mutate(data);
   };
 
-  if (stage === 'confirming') {
+  if (stage.type === 'confirming') {
     return (
       <Modal show={show} backdrop="static" onHide={handleHide}>
         <Modal.Header closeButton>
@@ -187,7 +182,7 @@ function ExtensionModal({
         <Modal.Body>
           <p>The following UIDs are not enrolled in this course instance:</p>
           <div class="mb-3 p-3 bg-light border rounded">
-            {unenrolledUids.map((uid) => (
+            {stage.unenrolledUids.map((uid) => (
               <div key={uid}>{uid}</div>
             ))}
           </div>
@@ -279,7 +274,7 @@ function ExtensionModal({
           )}
           <div class="mb-0">
             <label class="form-label" for="ext-uids">
-              UIDs{mode === 'edit' ? ' (replaces entire list)' : ''}
+              UIDs
             </label>
             <textarea
               id="ext-uids"

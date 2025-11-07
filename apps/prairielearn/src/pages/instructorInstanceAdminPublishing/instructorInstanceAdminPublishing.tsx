@@ -46,9 +46,11 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (must be a course instance viewer)');
     }
 
-    const accessControlExtensions = await selectPublishingExtensionsWithUsersByCourseInstance(
-      res.locals.course_instance.id,
-    );
+    const accessControlExtensions = await selectPublishingExtensionsWithUsersByCourseInstance({
+      courseInstance: res.locals.course_instance,
+      authzData: res.locals.authz_data,
+      requestedRole: 'Student Data Viewer',
+    });
     res.json(accessControlExtensions);
   }),
 );
@@ -90,9 +92,11 @@ router.get(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const publishingExtensions = await selectPublishingExtensionsWithUsersByCourseInstance(
-      res.locals.course_instance.id,
-    );
+    const publishingExtensions = await selectPublishingExtensionsWithUsersByCourseInstance({
+      courseInstance: res.locals.course_instance,
+      authzData: res.locals.authz_data,
+      requestedRole: 'Student Data Viewer',
+    });
 
     const {
       authz_data: {
@@ -282,10 +286,14 @@ router.post(
           uids: z.preprocess(
             (val) =>
               typeof val === 'string'
-                ? val
-                    .split(/[\n,\s]+/)
-                    .map((s) => s.trim())
-                    .filter((s) => s.length > 0)
+                ? [
+                    ...new Set(
+                      val
+                        .split(/[\n,\s]+/)
+                        .map((s) => s.trim())
+                        .filter((s) => s.length > 0),
+                    ),
+                  ]
                 : val,
             EmailsSchema,
           ),
@@ -361,6 +369,7 @@ router.post(
         res.status(200).json({ success: true });
         return;
       } catch (err) {
+        console.error(err);
         const message = err instanceof Error ? err.message : 'Failed to delete extension';
         res.status(400).json({ message });
         return;
@@ -433,9 +442,11 @@ router.post(
           const desiredEnrollmentIds = new Set(desiredRecords.map((r) => r.enrollment.id));
 
           // Current enrollments on this extension
-          const extensions = await selectPublishingExtensionsWithUsersByCourseInstance(
-            res.locals.course_instance.id,
-          );
+          const extensions = await selectPublishingExtensionsWithUsersByCourseInstance({
+            courseInstance: res.locals.course_instance,
+            authzData: res.locals.authz_data,
+            requestedRole: 'Student Data Viewer',
+          });
           const current = extensions.find((e) => e.id === body.extension_id);
           const currentEnrollmentIds = new Set(
             (current?.user_data ?? []).map((u) => u.enrollment_id),

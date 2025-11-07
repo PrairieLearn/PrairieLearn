@@ -9,7 +9,7 @@ ORDER BY
   ciar.number;
 
 -- BLOCK remove_student_from_extension
-DELETE FROM course_instance_publishing_enrollment_extensions
+DELETE FROM course_instance_publishing_extension_enrollments
 WHERE
   course_instance_publishing_extension_id = $extension_id
   AND enrollment_id = $enrollment_id;
@@ -28,7 +28,7 @@ WHERE
 
 -- BLOCK add_user_to_extension
 INSERT INTO
-  course_instance_publishing_enrollment_extensions (
+  course_instance_publishing_extension_enrollments (
     course_instance_publishing_extension_id,
     enrollment_id
   )
