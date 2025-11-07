@@ -21,25 +21,39 @@ interface SanitizeInstance {
 }
 
 let instance: SanitizeInstance | null = null;
+let instancePromise: Promise<SanitizeInstance> | null = null;
 
-export async function sanitizeHtml(html: string): Promise<string> {
-  if (!instance || instance.uses >= INSTANCE_MAX_USES) {
-    // Clean up the window from the old instance if it exists.
-    //
-    // NOTE: it's very important that we await the `close()` operation, as we
-    // need to ensure that we yield to the event loop to allow `happy-dom` to
-    // finalize the cleanup of its resources.
-    await instance?.window.happyDOM.close();
+async function getOrCreateInstance(): Promise<SanitizeInstance> {
+  if (instance && instance.uses < INSTANCE_MAX_USES) return instance;
 
-    // Create a new instance.
-    const window = new Window();
-    const dompurify = createDOMPurify(window as any);
-    instance = { window, dompurify, uses: 0 };
+  if (!instancePromise) {
+    // We do this funny little thing to avoid race conditions.
+    instancePromise = (async () => {
+      // Clean up the window from the old instance if it exists.
+      //
+      // NOTE: it's very important that we await the `close()` operation, as we
+      // need to ensure that we yield to the event loop to allow `happy-dom` to
+      // finalize the cleanup of its resources.
+      await instance?.window.happyDOM.close();
 
-    // Sanity check: make sure that DOMPurify is fully supported.
-    assert(dompurify.isSupported);
+      // Create a new instance.
+      const window = new Window();
+      const dompurify = createDOMPurify(window as any);
+
+      // Sanity check: make sure that DOMPurify is fully supported.
+      assert(dompurify.isSupported);
+
+      instance = { window, dompurify, uses: 0 };
+      instancePromise = null;
+      return instance;
+    })();
   }
 
+  return instancePromise;
+}
+
+export async function sanitizeHtml(html: string): Promise<string> {
+  const instance = await getOrCreateInstance();
   instance.uses += 1;
   return instance.dompurify.sanitize(html);
 }
