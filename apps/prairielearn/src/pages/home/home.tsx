@@ -91,17 +91,14 @@ router.get(
           return null;
         }
 
-        if (entry.latest_publishing_extension == null) {
+        if (
+          entry.latest_publishing_extension == null ||
+          entry.course_instance.publishing_end_date > entry.latest_publishing_extension.end_date
+        ) {
           return entry.course_instance.publishing_end_date;
         }
 
-        if (
-          entry.course_instance.publishing_end_date > entry.latest_publishing_extension.end_date
-        ) {
-          return entry.latest_publishing_extension.end_date;
-        }
-
-        return entry.course_instance.publishing_end_date;
+        return entry.latest_publishing_extension.end_date;
       });
 
       return (
