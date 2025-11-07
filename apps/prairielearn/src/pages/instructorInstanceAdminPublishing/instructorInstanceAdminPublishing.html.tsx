@@ -3,10 +3,10 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { type StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import type { CourseInstanceAccessRule } from '../../lib/db-types.js';
-import { type CourseInstancePublishingExtensionWithUsers } from '../../models/course-instance-publishing-extensions.types.js';
 
 import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
 import { PublishingForm } from './components/PublishingForm.js';
+import type { CourseInstancePublishingExtensionWithUsers } from './instructorInstanceAdminPublishing.types.js';
 
 export function InstructorInstanceAdminPublishing({
   courseInstance,

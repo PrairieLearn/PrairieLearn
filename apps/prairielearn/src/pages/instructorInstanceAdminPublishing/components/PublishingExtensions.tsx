@@ -13,7 +13,7 @@ import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import {
   type CourseInstancePublishingExtensionWithUsers,
   CourseInstancePublishingExtensionWithUsersSchema,
-} from '../../../models/course-instance-publishing-extensions.types.js';
+} from '../instructorInstanceAdminPublishing.types.js';
 import { DateToPlainDateTime, plainDateTimeStringToDate } from '../utils/dateUtils.js';
 
 interface PublishingExtensionsProps {

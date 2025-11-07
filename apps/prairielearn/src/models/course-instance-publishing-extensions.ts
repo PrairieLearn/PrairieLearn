@@ -16,12 +16,8 @@ import {
   CourseInstancePublishingExtensionEnrollmentSchema,
   CourseInstancePublishingExtensionSchema,
   type Enrollment,
+  EnrollmentSchema,
 } from '../lib/db-types.js';
-
-import {
-  type CourseInstancePublishingExtensionWithUsers,
-  CourseInstancePublishingExtensionWithUsersSchema,
-} from './course-instance-publishing-extensions.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -101,28 +97,6 @@ export async function selectPublishingExtensionByName({
 }
 
 /**
- * Finds all publishing extensions for a course instance with user data.
- *
- * Only returns extensions for joined users.
- */
-export async function selectPublishingExtensionsWithUsersByCourseInstance({
-  courseInstance,
-  authzData,
-  requestedRole,
-}: {
-  courseInstance: CourseInstance;
-  authzData: AuthzData;
-  requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
-}): Promise<CourseInstancePublishingExtensionWithUsers[]> {
-  assertHasRole(authzData, requestedRole);
-  return await queryRows(
-    sql.select_publishing_extensions_with_uids_by_course_instance,
-    { course_instance_id: courseInstance.id },
-    CourseInstancePublishingExtensionWithUsersSchema,
-  );
-}
-
-/**
  * Creates a new publishing extension for a course instance.
  */
 export async function insertPublishingExtension({
@@ -176,8 +150,26 @@ export async function addEnrollmentToPublishingExtension({
 }
 
 /**
- * Creates a publishing extension with enrollment links in a transaction.
+ * Removes a student from a publishing extension.
  */
+export async function removeStudentFromPublishingExtension({
+  courseInstancePublishingExtension,
+  enrollment,
+  authzData,
+  requestedRole,
+}: {
+  courseInstancePublishingExtension: CourseInstancePublishingExtension;
+  enrollment: Enrollment;
+  authzData: AuthzData;
+  requestedRole: 'System' | 'Student Data Editor' | 'Any';
+}): Promise<void> {
+  assertHasRole(authzData, requestedRole);
+  await execute(sql.remove_enrollment_from_publishing_extension, {
+    extension_id: courseInstancePublishingExtension.id,
+    enrollment_id: enrollment.id,
+  });
+}
+
 export async function createPublishingExtensionWithEnrollments({
   courseInstance,
   name,
@@ -237,6 +229,24 @@ export async function deletePublishingExtension({
   });
 }
 
+export async function selectEnrollmentsForPublishingExtension({
+  extension,
+  authzData,
+  requestedRole,
+}: {
+  extension: CourseInstancePublishingExtension;
+  authzData: AuthzData;
+  requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+}) {
+  assertHasRole(authzData, requestedRole);
+  return await queryRows(
+    sql.select_enrollments_for_publishing_extension,
+    {
+      extension_id: extension.id,
+    },
+    EnrollmentSchema,
+  );
+}
 /**
  * Updates a publishing extension.
  */

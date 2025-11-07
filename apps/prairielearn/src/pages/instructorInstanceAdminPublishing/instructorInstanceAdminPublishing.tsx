@@ -9,31 +9,58 @@ import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
-import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
+import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import {
+  addEnrollmentToPublishingExtension,
   createPublishingExtensionWithEnrollments,
   deletePublishingExtension,
+  removeStudentFromPublishingExtension,
+  selectEnrollmentsForPublishingExtension,
   selectPublishingExtensionById,
   selectPublishingExtensionByName,
-  selectPublishingExtensionsWithUsersByCourseInstance,
+  updatePublishingExtension,
 } from '../../models/course-instance-publishing-extensions.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
 import { InstructorInstanceAdminPublishing } from './instructorInstanceAdminPublishing.html.js';
+import { CourseInstancePublishingExtensionWithUsersSchema } from './instructorInstanceAdminPublishing.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
+
+/**
+ * Finds all publishing extensions for a course instance with user data.
+ *
+ * Only returns extensions for joined users.
+ */
+export async function selectPublishingExtensionsWithUsersByCourseInstance({
+  courseInstance,
+  authzData,
+  requestedRole,
+}: {
+  courseInstance: CourseInstance;
+  authzData: AuthzData;
+  requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+}) {
+  assertHasRole(authzData, requestedRole);
+  return await queryRows(
+    sql.select_publishing_extensions_with_users_by_course_instance,
+    { course_instance_id: courseInstance.id },
+    CourseInstancePublishingExtensionWithUsersSchema,
+  );
+}
 
 // Supports a client-side table refresh.
 router.get(
@@ -302,14 +329,15 @@ router.post(
         });
         const body = AddExtensionSchema.parse(req.body);
 
-        const records = await selectUsersAndEnrollmentsByUidsInCourseInstance({
-          uids: body.uids,
-          courseInstance: res.locals.course_instance,
-          requestedRole: 'Student Data Viewer',
-          authzData: res.locals.authz_data,
-        });
-
-        if (records.length === 0) {
+        const enrollments = (
+          await selectUsersAndEnrollmentsByUidsInCourseInstance({
+            uids: body.uids,
+            courseInstance: res.locals.course_instance,
+            requestedRole: 'Student Data Viewer',
+            authzData: res.locals.authz_data,
+          })
+        ).map((record) => record.enrollment);
+        if (enrollments.length === 0) {
           res.status(400).json({ message: 'No enrollments found for any of the provided UIDs' });
           return;
         }
@@ -330,8 +358,6 @@ router.post(
             return;
           }
         }
-
-        const enrollments = records.map(({ enrollment }) => enrollment);
 
         await createPublishingExtensionWithEnrollments({
           courseInstance: res.locals.course_instance,
@@ -421,61 +447,63 @@ router.post(
         }
 
         await runInTransactionAsync(async () => {
-          // Update extension metadata
-          await execute(sql.update_extension, {
-            extension_id: body.extension_id,
-            name: body.name,
-            end_date: body.end_date,
-            course_instance_id: res.locals.course_instance.id,
-          });
-
-          // Desired enrollments for provided UIDs
-          const desiredRecords = await selectUsersAndEnrollmentsByUidsInCourseInstance({
-            uids: body.uids,
+          const extension = await selectPublishingExtensionById({
+            id: body.extension_id,
             courseInstance: res.locals.course_instance,
             requestedRole: 'Student Data Viewer',
             authzData: res.locals.authz_data,
           });
 
-          if (desiredRecords.length === 0) {
+          const desiredEnrollments = (
+            await selectUsersAndEnrollmentsByUidsInCourseInstance({
+              uids: body.uids,
+              courseInstance: res.locals.course_instance,
+              authzData: res.locals.authz_data,
+              requestedRole: 'Student Data Viewer',
+            })
+          ).map((record) => record.enrollment);
+
+          if (desiredEnrollments.length === 0) {
             throw new Error('No enrollments found for provided UIDs');
           }
 
-          const desiredEnrollmentIds = new Set(desiredRecords.map((r) => r.enrollment.id));
+          await updatePublishingExtension({
+            extension,
+            name: body.name,
+            endDate: body.end_date ? new Date(body.end_date) : null,
+            authzData: res.locals.authz_data,
+            requestedRole: 'Student Data Editor',
+          });
 
-          // Current enrollments on this extension
-          const extensions = await selectPublishingExtensionsWithUsersByCourseInstance({
-            courseInstance: res.locals.course_instance,
+          const currentEnrollments = await selectEnrollmentsForPublishingExtension({
+            extension,
             authzData: res.locals.authz_data,
             requestedRole: 'Student Data Viewer',
           });
-          const current = extensions.find((e) => e.id === body.extension_id);
-          const currentEnrollmentIds = new Set(
-            (current?.user_data ?? []).map((u) => u.enrollment_id),
+          const desiredEnrollmentsIds = new Set(desiredEnrollments.map((e) => e.id));
+          const currentEnrollmentsIds = new Set(currentEnrollments.map((e) => e.id));
+          const enrollmentsToAdd = desiredEnrollments.filter(
+            (e) => !currentEnrollmentsIds.has(e.id),
+          );
+          const enrollmentsToRemove = currentEnrollments.filter(
+            (e) => !desiredEnrollmentsIds.has(e.id),
           );
 
-          // Compute diffs
-          const toAdd: string[] = [];
-          for (const id of desiredEnrollmentIds) {
-            if (!currentEnrollmentIds.has(id)) toAdd.push(id);
-          }
-          const toRemove: string[] = [];
-          for (const id of currentEnrollmentIds) {
-            if (!desiredEnrollmentIds.has(id)) toRemove.push(id);
-          }
-
-          // Apply removals
-          for (const enrollment_id of toRemove) {
-            await execute(sql.remove_student_from_extension, {
-              extension_id: body.extension_id,
-              enrollment_id,
+          for (const enrollment of enrollmentsToRemove) {
+            await removeStudentFromPublishingExtension({
+              courseInstancePublishingExtension: extension,
+              enrollment,
+              authzData: res.locals.authz_data,
+              requestedRole: 'Student Data Editor',
             });
           }
-          // Apply additions
-          for (const enrollment_id of toAdd) {
-            await execute(sql.add_user_to_extension, {
-              extension_id: body.extension_id,
-              enrollment_id,
+
+          for (const enrollment of enrollmentsToAdd) {
+            await addEnrollmentToPublishingExtension({
+              courseInstancePublishingExtension: extension,
+              enrollment,
+              authzData: res.locals.authz_data,
+              requestedRole: 'Student Data Editor',
             });
           }
         });
