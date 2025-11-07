@@ -24,7 +24,13 @@ let instance: SanitizeInstance | null = null;
 let instancePromise: Promise<SanitizeInstance> | null = null;
 
 async function getOrCreateInstance(): Promise<SanitizeInstance> {
-  if (instance && instance.uses < INSTANCE_MAX_USES) return instance;
+  if (instance && instance.uses < INSTANCE_MAX_USES) {
+    // Increment uses before returning to prevent race condition where another
+    // caller sees uses >= INSTANCE_MAX_USES and closes the window while this
+    // instance is still being used.
+    instance.uses += 1;
+    return instance;
+  }
 
   if (!instancePromise) {
     // We do this funny little thing to avoid race conditions.
@@ -43,7 +49,7 @@ async function getOrCreateInstance(): Promise<SanitizeInstance> {
       // Sanity check: make sure that DOMPurify is fully supported.
       assert(dompurify.isSupported);
 
-      instance = { window, dompurify, uses: 0 };
+      instance = { window, dompurify, uses: 1 };
       instancePromise = null;
       return instance;
     })();
@@ -54,6 +60,5 @@ async function getOrCreateInstance(): Promise<SanitizeInstance> {
 
 export async function sanitizeHtml(html: string): Promise<string> {
   const instance = await getOrCreateInstance();
-  instance.uses += 1;
   return instance.dompurify.sanitize(html);
 }
