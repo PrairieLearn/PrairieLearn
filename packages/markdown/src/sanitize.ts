@@ -24,18 +24,11 @@ let instance: SanitizeInstance | null = null;
 
 async function getOrCreateInstance(): Promise<SanitizeInstance> {
   if (instance && instance.uses < INSTANCE_MAX_USES) {
-    // Increment uses before returning to prevent race condition where another
-    // caller sees uses >= INSTANCE_MAX_USES and closes the window while this
-    // instance is still being used.
     instance.uses += 1;
     return instance;
   }
 
   // Clean up the window from the old instance if it exists.
-  //
-  // NOTE: it's very important that we await the `close()` operation, as we
-  // need to ensure that we yield to the event loop to allow `jsdom` to
-  // finalize the cleanup of its resources.
   instance?.jsdom.window.close();
 
   // Create a new instance.
