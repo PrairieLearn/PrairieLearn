@@ -36,11 +36,11 @@ If you are running PrairieLearn with the example course only, you may skip this 
 
 When you request your course, you will typically receive a GitHub repository URL to your course's content. You may use [Git](https://git-scm.com/) to clone (make a local copy of) this course content in your own computer. Make note of the directory you are cloning your course to. If you are working with multiple courses, you will need to store each course in a separate directory.
 
-If you are using Windows, you have two options to store your course repository(ies):
+If you are using Windows, store your course content inside the WSL 2 instance. This option typically provides the best performance when running PrairieLearn locally. You can clone the repository [using git commands](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository) inside your WSL shell. Note that, in this case, you will need to either update your files using WSL tools and editors, or access the files using the Linux file systems. [Instructions to do so are listed here](https://learn.microsoft.com/en-us/windows/wsl/filesystems). In this case, keep track of the path used by your course inside WSL (e.g., `$HOME/pl-tam212`).
 
-- Store your course content inside the WSL 2 instance. This option typically provides the best performance when running PrairieLearn locally. You can clone the repository [using git commands](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository) inside your WSL shell. Note that, in this case, you will need to either update your files using WSL tools and editors, or access the files using the Linux file systems. [Instructions to do so are listed here](https://learn.microsoft.com/en-us/windows/wsl/filesystems). In this case, keep track of the path used by your course inside WSL (e.g., `$HOME/pl-tam212`)
+!!! warning
 
-- It is no longer recommended to store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the `C:\` drive). There are potential performance issues with this approach.
+    While there are ways to store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the `C:\` drive) and to translate those paths to WSL mounted paths (e.g., via `/mnt/c/...` paths), these are not recommended due to performance concerns.
 
 ## Running instructions
 
