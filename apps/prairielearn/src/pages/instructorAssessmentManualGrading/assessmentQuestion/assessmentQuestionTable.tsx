@@ -11,7 +11,6 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import * as React from 'preact/compat';
 import { useEffect, useMemo, useState } from 'preact/compat';
 import { Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { z } from 'zod';
@@ -62,6 +61,7 @@ const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
 const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 
 const columnHelper = createColumnHelper<InstanceQuestionRow>();
+const queryClient = new QueryClient();
 
 /** Helper to generate AI grader name. */
 function generateAiGraderName(
@@ -1343,9 +1343,6 @@ function AssessmentQuestionManualGrading({
   isDevMode: boolean;
   numOpenInstances: number;
 } & Omit<AssessmentQuestionTableProps, 'numOpenInstances'>) {
-  // eslint-disable-next-line @eslint-react/naming-convention/use-state
-  const [queryClient, _setQueryClient] = React.useState(() => new QueryClient());
-
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
