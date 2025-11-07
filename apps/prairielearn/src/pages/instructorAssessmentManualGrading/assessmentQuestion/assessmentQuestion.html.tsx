@@ -348,7 +348,7 @@ export function AssessmentQuestion({
                 modalFor: 'selected',
                 numOpenInstances: num_open_instances,
                 csrfToken: __csrf_token,
-              }).toString()
+              }).toString(),
             }}
           />
         </form>
