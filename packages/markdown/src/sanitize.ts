@@ -33,25 +33,32 @@ async function getOrCreateInstance(): Promise<SanitizeInstance> {
   }
 
   if (!instancePromise) {
-    // We do this funny little thing to avoid race conditions.
     instancePromise = (async () => {
-      // Clean up the window from the old instance if it exists.
-      //
-      // NOTE: it's very important that we await the `close()` operation, as we
-      // need to ensure that we yield to the event loop to allow `happy-dom` to
-      // finalize the cleanup of its resources.
-      await instance?.window.happyDOM.close();
+      try {
+        // Clean up the window from the old instance if it exists.
+        //
+        // NOTE: it's very important that we await the `close()` operation, as we
+        // need to ensure that we yield to the event loop to allow `happy-dom` to
+        // finalize the cleanup of its resources.
+        await instance?.window.happyDOM.close();
 
-      // Create a new instance.
-      const window = new Window();
-      const dompurify = createDOMPurify(window as any);
+        // Create a new instance.
+        const window = new Window();
+        const dompurify = createDOMPurify(window as any);
 
-      // Sanity check: make sure that DOMPurify is fully supported.
-      assert(dompurify.isSupported);
+        // Sanity check: make sure that DOMPurify is fully supported.
+        assert(dompurify.isSupported);
 
-      instance = { window, dompurify, uses: 1 };
-      instancePromise = null;
-      return instance;
+        instance = { window, dompurify, uses: 1 };
+        return instance;
+      } catch (error) {
+        // If recreation fails, clear the instance so the next caller can retry.
+        instance = null;
+        throw error;
+      } finally {
+        // Always clear the promise so a failed recreation doesn't block future attempts.
+        instancePromise = null;
+      }
     })();
   }
 
