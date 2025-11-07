@@ -22,7 +22,7 @@ interface SanitizeInstance {
 
 let instance: SanitizeInstance | null = null;
 
-async function getOrCreateInstance(): Promise<SanitizeInstance> {
+function getOrCreateInstance(): SanitizeInstance {
   if (instance && instance.uses < INSTANCE_MAX_USES) {
     instance.uses += 1;
     return instance;
@@ -42,7 +42,7 @@ async function getOrCreateInstance(): Promise<SanitizeInstance> {
   return instance;
 }
 
-export async function sanitizeHtml(html: string): Promise<string> {
-  const instance = await getOrCreateInstance();
+export function sanitizeHtml(html: string): string {
+  const instance = getOrCreateInstance();
   return instance.dompurify.sanitize(html);
 }
