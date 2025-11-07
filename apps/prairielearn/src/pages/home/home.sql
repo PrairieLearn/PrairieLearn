@@ -14,7 +14,7 @@ WITH
             ci.long_name,
             'id',
             ci.id,
-            'archived',
+            'expired',
             FALSE -- Example courses never expire
           )
           ORDER BY
@@ -57,11 +57,11 @@ WITH
           ci.long_name,
           'id',
           ci.id,
-          'archived',
+          'expired',
           -- If no access rules exist, it is typically either a sandbox or a
           -- future CI that has not yet been configured. In both cases it should
-          -- not be considered archived.
-          coalesce(d.archived, FALSE)
+          -- not be considered expired.
+          coalesce(d.expired, FALSE)
         )
         ORDER BY
           d.start_date DESC NULLS LAST,
@@ -87,15 +87,15 @@ WITH
           -- Use new publishing dates if available, otherwise fall back to legacy access rules
           COALESCE(ci.publishing_start_date, min(ar.start_date)) AS start_date,
           COALESCE(ci.publishing_end_date, max(ar.end_date)) AS end_date,
-          -- Check if archived using new publishing dates or legacy access rules
+          -- Check if expired using new publishing dates or legacy access rules
           CASE
             WHEN ci.publishing_end_date IS NOT NULL THEN ci.publishing_end_date < now() - interval '1 month'
             ELSE bool_and(
               ar.end_date IS NOT NULL
-              -- Tolerance of 1 month to allow instructors to easily see recently archived courses
+              -- Tolerance of 1 month to allow instructors to easily see recently expired courses
               AND ar.end_date < now() - interval '1 month'
             )
-          END AS archived
+          END AS expired
         FROM
           course_instance_access_rules AS ar
         WHERE
