@@ -4052,6 +4052,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.19.0"
     "@vitest/coverage-v8": "npm:^4.0.7"
+    dompurify: "npm:^3.3.0"
     happy-dom: "npm:^20.0.10"
     marked: "npm:^16.4.1"
     mathjax: "npm:^3.2.2"
