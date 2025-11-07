@@ -237,4 +237,3 @@ function DeleteAllInstanceQuestionGroupResultsModal({ csrfToken }: { csrfToken: 
     ),
   });
 }
-

@@ -39,15 +39,11 @@ export function GroupInfoModal({
     <Modal show={show} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
       <form method="POST">
         <input type="hidden" name="__csrf_token" value={csrfToken} />
-        
+
         {modalFor === 'all' && (
-          <input
-            type="hidden"
-            name="__action"
-            value="ai_instance_question_group_assessment_all"
-          />
+          <input type="hidden" name="__action" value="ai_instance_question_group_assessment_all" />
         )}
-        
+
         {modalFor === 'ungrouped' && (
           <input
             type="hidden"
@@ -55,15 +51,11 @@ export function GroupInfoModal({
             value="ai_instance_question_group_assessment_ungrouped"
           />
         )}
-        
+
         {modalFor === 'selected' && (
           <>
             <input type="hidden" name="__action" value="batch_action" />
-            <input
-              type="hidden"
-              name="batch_action"
-              value="ai_instance_question_group_selected"
-            />
+            <input type="hidden" name="batch_action" value="ai_instance_question_group_selected" />
             {selectedIds.map((id) => (
               <input key={id} type="hidden" name="instance_question_id" value={id} />
             ))}
@@ -79,7 +71,6 @@ export function GroupInfoModal({
         </Modal.Header>
 
         <Modal.Body>
-
           <p>
             Groups student submission answers based on whether they
             <strong> match the correct answer exactly.</strong>
@@ -88,13 +79,12 @@ export function GroupInfoModal({
           <p>Answers that match go into one group, and those that don't are grouped separately.</p>
 
           <p>
-            To enable grouping, the correct answer must be provided in{' '}
-            <code>pl-answer-panel</code>.
+            To enable grouping, the correct answer must be provided in <code>pl-answer-panel</code>.
           </p>
 
           <p>
-            Grouping checks for exact equivalence to the final answer, considering only the boxed
-            or final answer to form groups.
+            Grouping checks for exact equivalence to the final answer, considering only the boxed or
+            final answer to form groups.
           </p>
 
           <p>Examples of what can and can't be grouped:</p>
@@ -168,4 +158,3 @@ export function GroupInfoModal({
     </Modal>
   );
 }
-
