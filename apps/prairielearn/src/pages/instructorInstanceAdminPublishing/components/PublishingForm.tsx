@@ -59,14 +59,14 @@ export function PublishingForm({
   canEdit,
   csrfToken,
   origHash,
-  accessControlExtensions,
+  publishingExtensions,
 }: {
   courseInstance: StaffCourseInstance;
   hasAccessRules: boolean;
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
-  accessControlExtensions: CourseInstancePublishingExtensionWithUsers[];
+  publishingExtensions: CourseInstancePublishingExtensionWithUsers[];
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -625,7 +625,7 @@ export function PublishingForm({
             <QueryClientProviderDebug client={queryClient} isDevMode={false}>
               <PublishingExtensions
                 courseInstance={courseInstance}
-                initialExtensions={accessControlExtensions}
+                initialExtensions={publishingExtensions}
                 canEdit={canEdit}
                 csrfToken={csrfToken}
               />

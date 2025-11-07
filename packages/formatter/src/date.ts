@@ -15,7 +15,7 @@ type TimePrecision = 'hour' | 'minute' | 'second';
  * @returns Human-readable string representing the date.
  */
 export function formatDate(
-  date: Date,
+  date: Date | Temporal.PlainDateTime,
   timeZone: string,
   {
     includeTz = true,
@@ -23,6 +23,10 @@ export function formatDate(
     includeMs = false,
   }: { includeTz?: boolean; longTz?: boolean; includeMs?: boolean } = {},
 ): string {
+  if (date instanceof Temporal.PlainDateTime) {
+    date = new Date(date.toZonedDateTime(timeZone).epochMilliseconds);
+  }
+
   const options: Intl.DateTimeFormatOptions = {
     timeZone,
     hourCycle: 'h23',
@@ -374,7 +378,7 @@ function formatDateFriendlyParts(
  * @returns Human-readable string representing the date and time.
  */
 export function formatDateFriendly(
-  date: Date | Temporal.ZonedDateTime,
+  date: Date | Temporal.PlainDateTime,
   timezone: string,
   {
     baseDate = new Date(),
@@ -394,8 +398,8 @@ export function formatDateFriendly(
     minPrecision?: TimePrecision;
   } = {},
 ): string {
-  if (date instanceof Temporal.ZonedDateTime) {
-    date = new Date(date.epochMilliseconds);
+  if (date instanceof Temporal.PlainDateTime) {
+    date = new Date(date.toZonedDateTime(timezone).epochMilliseconds);
   }
 
   const { dateFormatted, timeFormatted, timezoneFormatted } = formatDateFriendlyParts(

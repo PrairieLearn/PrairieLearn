@@ -29,19 +29,18 @@ export const InstructorHomePageCourseSchema = z.object({
 export type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
 
 export const StudentHomePageCourseSchema = z.object({
-  id: RawStudentCourseInstanceSchema.shape.id,
+  course_instance: RawStudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
-  long_name: RawStudentCourseInstanceSchema.shape.long_name,
   enrollment: StudentEnrollmentSchema,
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 
-export const StudentHomePageCourseWithExtensionsSchema = StudentHomePageCourseSchema.extend({
-  publishing_extensions: z.array(CourseInstancePublishingExtensionSchema),
+export const StudentHomePageCourseWithExtensionSchema = StudentHomePageCourseSchema.extend({
+  latest_publishing_extension: CourseInstancePublishingExtensionSchema.nullable(),
 });
-export type StudentHomePageCourseWithExtensions = z.infer<
-  typeof StudentHomePageCourseWithExtensionsSchema
+export type StudentHomePageCourseWithExtension = z.infer<
+  typeof StudentHomePageCourseWithExtensionSchema
 >;
 
 export function Home({

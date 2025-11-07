@@ -15,10 +15,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
-import {
-  convertAccessRuleToJson,
-  migrateAccessRuleJsonToPublishingConfiguration,
-} from '../../lib/course-instance-access.js';
 import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -94,7 +90,7 @@ router.get(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const accessControlExtensions = await selectPublishingExtensionsWithUsersByCourseInstance(
+    const publishingExtensions = await selectPublishingExtensionsWithUsersByCourseInstance(
       res.locals.course_instance.id,
     );
 
@@ -107,10 +103,7 @@ router.get(
 
     assert(hasCourseInstancePermissionEdit !== undefined);
     assert(hasCourseInstancePermissionView !== undefined);
-    const { course_instance: courseInstance, course } = getCourseInstanceContext(
-      res.locals,
-      'instructor',
-    );
+    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
 
     // Calculate orig_hash for the infoCourseInstance.json file
     const infoCourseInstancePath = path.join(
@@ -154,8 +147,7 @@ router.get(
               urlPrefix={res.locals.urlPrefix}
             />
             <InstructorInstanceAdminPublishing
-              isExampleCourse={course.example_course}
-              accessControlExtensions={accessControlExtensions}
+              publishingExtensions={publishingExtensions}
               courseInstance={courseInstance}
               hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
               hasCourseInstancePermissionView={hasCourseInstancePermissionView}
@@ -274,77 +266,6 @@ router.post(
         res.status(400).json({ message });
         return;
       }
-    } else if (req.body.__action === 'migrate_access_rules') {
-      const accessRules = await queryRows(
-        sql.course_instance_access_rules,
-        { course_instance_id: res.locals.course_instance.id },
-        CourseInstanceAccessRuleSchema,
-      );
-      const accessRuleJsonArray = accessRules.map((rule) =>
-        convertAccessRuleToJson(rule, res.locals.course_instance.display_timezone),
-      );
-      const migrationResult = migrateAccessRuleJsonToPublishingConfiguration(accessRuleJsonArray);
-
-      if (!migrationResult.success) {
-        flash('error', migrationResult.error);
-        res.redirect(req.originalUrl);
-        return;
-      }
-
-      // Read the existing infoCourseInstance.json file
-      const infoCourseInstancePath = path.join(
-        res.locals.course.path,
-        'courseInstances',
-        res.locals.course_instance.short_name,
-        'infoCourseInstance.json',
-      );
-
-      if (!(await fs.pathExists(infoCourseInstancePath))) {
-        flash('error', 'infoCourseInstance.json does not exist');
-        res.redirect(req.originalUrl);
-        return;
-      }
-
-      const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
-        await fs.readFile(infoCourseInstancePath, 'utf8'),
-      );
-
-      if (
-        courseInstanceInfo.publishing !== undefined &&
-        Object.keys(courseInstanceInfo.publishing).length > 0
-      ) {
-        flash('error', 'publishing settings already exist');
-        res.redirect(req.originalUrl);
-        return;
-      }
-
-      // Migrate the publishing settings
-      courseInstanceInfo.publishing = migrationResult.publishingConfiguration;
-      courseInstanceInfo.allowAccess = undefined;
-
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
-
-      const paths = getPaths(undefined, res.locals);
-      const editor = new FileModifyEditor({
-        locals: res.locals as any,
-        container: {
-          rootPath: paths.rootPath,
-          invalidRootPaths: paths.invalidRootPaths,
-        },
-        filePath: infoCourseInstancePath,
-        editContents: b64EncodeUnicode(formattedJson),
-        origHash: req.body.orig_hash,
-      });
-
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-        return;
-      }
-      flash('success', 'Access rules migrated to access control successfully');
-      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_extension') {
       try {
         const EmailsSchema = z

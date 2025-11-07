@@ -1,51 +1,23 @@
 import { formatDate } from '@prairielearn/formatter';
-import { Hydrate } from '@prairielearn/preact/server';
 
 import { CommentPopover } from '../../../components/CommentPopover.js';
-import { convertAccessRuleToJson } from '../../../lib/course-instance-access.js';
 import type { CourseInstance, CourseInstanceAccessRule } from '../../../lib/db-types.js';
-import type { AccessRuleJson } from '../../../schemas/infoCourseInstance.js';
-
-import { PublishingMigrationModal } from './PublishingMigrationModal.js';
 
 export function LegacyAccessRuleCard({
-  isExampleCourse,
   accessRules,
   showComments,
   courseInstance,
   hasCourseInstancePermissionView,
-  hasCourseInstancePermissionEdit,
-  csrfToken,
-  origHash,
 }: {
-  isExampleCourse: boolean;
   accessRules: CourseInstanceAccessRule[];
   showComments: boolean;
   courseInstance: CourseInstance;
   hasCourseInstancePermissionView: boolean;
-  hasCourseInstancePermissionEdit: boolean;
-  csrfToken: string;
-  origHash: string;
 }) {
-  const canMigrate =
-    !isExampleCourse && hasCourseInstancePermissionEdit && hasCourseInstancePermissionView;
-
-  const accessRuleJsonArray: AccessRuleJson[] = accessRules.map((rule) =>
-    convertAccessRuleToJson(rule, courseInstance.display_timezone),
-  );
   return (
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
         <h1>{courseInstance.long_name} course instance access rules</h1>
-        {canMigrate && (
-          <Hydrate>
-            <PublishingMigrationModal
-              accessRules={accessRuleJsonArray}
-              csrfToken={csrfToken}
-              origHash={origHash}
-            />
-          </Hydrate>
-        )}
       </div>
 
       <div class="table-responsive">
