@@ -343,14 +343,16 @@ export function AssessmentQuestion({
           </div>
           <div
             // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-            dangerouslySetInnerHTML={{ 
-              __html:
-                unsafeHtml(GroupInfoModal({
+            dangerouslySetInnerHTML={{
+              __html: unsafeHtml(
+                GroupInfoModal({
                   modalFor: 'selected',
-                numOpenInstances: num_open_instances,
-                csrfToken: __csrf_token,
-              }).toString()).toString()
-            }} />
+                  numOpenInstances: num_open_instances,
+                  csrfToken: __csrf_token,
+                }).toString(),
+              ).toString(),
+            }}
+          />
         </form>
       </>
     ),
