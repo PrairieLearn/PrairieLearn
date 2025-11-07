@@ -15,6 +15,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { config } from '../../lib/config.js';
 import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -158,6 +159,7 @@ router.get(
               accessRules={accessRules}
               csrfToken={res.locals.__csrf_token}
               origHash={origHash}
+              isDevMode={config.devMode}
             />
           </>
         ),
@@ -279,7 +281,7 @@ router.post(
           __action: z.literal('add_extension'),
           name: z
             .string()
-            .trim()
+            .trim() // remove whitespace from the name
             .optional()
             .transform((v) => (v === '' || v === undefined ? null : v)),
           end_date: z.string().trim().min(1, 'End date is required'),
@@ -384,7 +386,7 @@ router.post(
           extension_id: z.string().trim().min(1),
           name: z
             .string()
-            .trim()
+            .trim() // remove whitespace from the name
             .optional()
             .transform((v) => (v === '' || v === undefined ? null : v)),
           end_date: z.string().trim().optional().default(''),

@@ -17,7 +17,6 @@ import {
 
 import { PublishingExtensions } from './PublishingExtensions.js';
 
-// Create QueryClient outside component to ensure stability
 const queryClient = new QueryClient();
 
 type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
@@ -60,6 +59,7 @@ export function PublishingForm({
   csrfToken,
   origHash,
   publishingExtensions,
+  isDevMode,
 }: {
   courseInstance: StaffCourseInstance;
   hasAccessRules: boolean;
@@ -67,6 +67,7 @@ export function PublishingForm({
   csrfToken: string;
   origHash: string;
   publishingExtensions: CourseInstancePublishingExtensionWithUsers[];
+  isDevMode: boolean;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -622,7 +623,7 @@ export function PublishingForm({
         {startDate && (
           <>
             <hr class="my-4" />
-            <QueryClientProviderDebug client={queryClient} isDevMode={false}>
+            <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
               <PublishingExtensions
                 courseInstance={courseInstance}
                 initialExtensions={publishingExtensions}

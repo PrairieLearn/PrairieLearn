@@ -16,6 +16,7 @@ export function InstructorInstanceAdminPublishing({
   publishingExtensions,
   csrfToken,
   origHash,
+  isDevMode,
 }: {
   courseInstance: StaffCourseInstance;
   hasCourseInstancePermissionEdit: boolean;
@@ -24,6 +25,7 @@ export function InstructorInstanceAdminPublishing({
   publishingExtensions: CourseInstancePublishingExtensionWithUsers[];
   csrfToken: string;
   origHash: string;
+  isDevMode: boolean;
 }) {
   const showComments = accessRules.some((access_rule) =>
     isRenderableComment(access_rule.json_comment),
@@ -39,6 +41,7 @@ export function InstructorInstanceAdminPublishing({
           csrfToken={csrfToken}
           origHash={origHash}
           publishingExtensions={publishingExtensions}
+          isDevMode={isDevMode}
         />
       </Hydrate>
       {accessRules.length > 0 && (
