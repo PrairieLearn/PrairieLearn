@@ -126,9 +126,6 @@ function ExtensionModal({
 
     const validCount = uids.length - data.invalidUids.length;
     if (validCount < 1) {
-      if (uids.length === 1) {
-        return 'The student must be enrolled to add an extension';
-      }
       return 'Only enrolled students can be added to an extension';
     }
 

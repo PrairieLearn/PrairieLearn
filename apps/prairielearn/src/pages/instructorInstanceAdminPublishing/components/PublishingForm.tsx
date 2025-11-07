@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
+import { type CourseInstancePublishingExtensionWithUsers } from '../instructorInstanceAdminPublishing.types.js';
 import {
   DateToPlainDateTime,
   nowDateInTimezone,
