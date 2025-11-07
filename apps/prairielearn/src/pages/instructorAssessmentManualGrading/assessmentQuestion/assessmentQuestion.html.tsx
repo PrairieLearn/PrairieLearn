@@ -1,5 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
@@ -341,11 +341,16 @@ export function AssessmentQuestion({
             </div>
             <table id="grading-table" aria-label="Instance questions for manual grading" />
           </div>
-          <GroupInfoModal
-            modalFor="selected"
-            numOpenInstances={num_open_instances}
-            csrfToken={__csrf_token}
-          />
+          <div
+            // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+            dangerouslySetInnerHTML={{ 
+              __html:
+                unsafeHtml(GroupInfoModal({
+                  modalFor: 'selected',
+                numOpenInstances: num_open_instances,
+                csrfToken: __csrf_token,
+              }).toString()).toString()
+            }} />
         </form>
       </>
     ),
