@@ -1,20 +1,5 @@
 -- BLOCK select_instructor_courses
 WITH
-  admin_institutions AS (
-    -- Note that we only consider institutions where the user is explicitly
-    -- added as an administrator. We do not include all institutions if the
-    -- user is a global administrator, as that would be a very long list.
-    --
-    -- Global admins can access institutions/courses via the admin pages.
-    SELECT
-      i.*
-    FROM
-      institutions AS i
-      JOIN institution_administrators AS ia ON (
-        ia.institution_id = i.id
-        AND ia.user_id = $user_id
-      )
-  ),
   example_courses AS (
     SELECT
       c.short_name,

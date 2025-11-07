@@ -388,6 +388,7 @@ async function evaluateGeneratedQuestion({
     providerOptions: {
       openai: {
         reasoningEffort: 'low',
+        strictJsonSchema: true,
       } satisfies OpenAIChatLanguageModelOptions,
     },
   });

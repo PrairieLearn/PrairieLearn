@@ -29,7 +29,7 @@ import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
-import * as b64Util from './base64-util.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
@@ -421,6 +421,12 @@ export abstract class Editor {
             await job.exec('git', ['push'], {
               cwd: this.course.path,
               env: gitEnv,
+              // During GitHub incidents, we've observed GitHub taking multiple
+              // minutes to handle a `git push`. To avoid the job sitting for
+              // an unreasonable amount of time and causing a 504 when we fail
+              // to respond to the request in time, we'll use a relatively short
+              // timeout to fail the push if it takes too long.
+              cancelSignal: AbortSignal.timeout(10_000),
             });
             job.data.saveSucceeded = true;
 
@@ -442,6 +448,9 @@ export abstract class Editor {
             await job.exec('git', ['fetch'], {
               cwd: this.course.path,
               env: gitEnv,
+              // As with `git push` above, we'll use a timeout here to avoid
+              // long delays during GitHub incidents resulting in 504 errors.
+              cancelSignal: AbortSignal.timeout(10_000),
             });
 
             // This will both discard the commit we made locally and also pull
@@ -455,6 +464,8 @@ export abstract class Editor {
               await job.exec('git', ['push'], {
                 cwd: this.course.path,
                 env: gitEnv,
+                // See above `git push` attempt for an explanation of this timeout.
+                cancelSignal: AbortSignal.timeout(10_000),
               });
               job.data.saveSucceeded = true;
             } finally {
@@ -1662,7 +1673,7 @@ export class QuestionModifyEditor extends Editor {
       if (contents === null) {
         await fs.remove(resolvedPath);
       } else {
-        await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+        await fs.writeFile(resolvedPath, b64DecodeUnicode(contents));
       }
     }
 
@@ -2446,14 +2457,14 @@ export class FileModifyEditor extends Editor {
 
     debug('verify disk hash matches orig hash');
     const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
-    const diskContents = b64Util.b64EncodeUnicode(diskContentsUTF);
+    const diskContents = b64EncodeUnicode(diskContentsUTF);
     const diskHash = this.getHash(diskContents);
     if (this.origHash !== diskHash) {
       throw new Error('Another user made changes to the file you were editing.');
     }
 
     debug('write file');
-    await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
+    await fs.writeFile(this.filePath, b64DecodeUnicode(this.editContents));
 
     return {
       pathsToAdd: [this.filePath],

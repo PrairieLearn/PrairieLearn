@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
-import { HtmlSafeString, html } from '@prairielearn/html';
+import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
 
@@ -44,12 +44,20 @@ export function PageLayout({
     fullWidth?: boolean;
     /** Whether the main container should have a bottom padding of pb-4 in Bootstrap. */
     paddingBottom?: boolean;
+    /** Whether the main container should have no left and right padding in Bootstrap. */
+    paddingSides?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
     /** Enables an htmx extension for an element and all its children */
     hxExt?: string;
     /** Sets the html and body tag heights to 100% */
     fullHeight?: boolean;
+    /** Dataset attributes to add to the body tag. The "data-" prefix will be added, so do not include it. */
+    dataAttributes?: Record<string, string>;
+    /** Controls if the page should use enhanced navigation. */
+    enableEnhancedNav?: boolean;
+    /** Whether or not the navbar should be shown. */
+    enableNavbar?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
@@ -63,6 +71,10 @@ export function PageLayout({
   const resolvedOptions = {
     hxExt: '',
     paddingBottom: true,
+    paddingSides: true,
+    enableEnhancedNav: true,
+    dataAttributes: {},
+    enableNavbar: true,
     fullHeight: false,
     fullWidth: false,
     ...options,
@@ -73,7 +85,7 @@ export function PageLayout({
   const contentString = asHtmlSafe(content);
   const postContentString = asHtmlSafe(postContent);
 
-  if (resLocals.has_enhanced_navigation) {
+  if (resLocals.has_enhanced_navigation && resolvedOptions.enableEnhancedNav) {
     // The side navbar is only available if the user is in a page within a course or course instance.
     const sideNavEnabled =
       resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
@@ -128,6 +140,11 @@ export function PageLayout({
         <body
           class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
           hx-ext="${resolvedOptions.hxExt}"
+          ${unsafeHtml(
+            Object.entries(resolvedOptions.dataAttributes)
+              .map(([key, value]) => `data-${key}="${value}"`)
+              .join(' '),
+          )}
         >
           <div
             id="app-container"
@@ -142,16 +159,18 @@ export function PageLayout({
               'mobile-collapsed',
             )}"
           >
-            <div class="app-top-nav">
-              ${Navbar({
-                resLocals,
-                navPage: navContext.page,
-                navSubPage: navContext.subPage,
-                navbarType: navContext.type,
-                isInPageLayout: true,
-                sideNavEnabled,
-              })}
-            </div>
+            ${resolvedOptions.enableNavbar
+              ? html`<div class="app-top-nav">
+                  ${Navbar({
+                    resLocals,
+                    navPage: navContext.page,
+                    navSubPage: navContext.subPage,
+                    navbarType: navContext.type,
+                    isInPageLayout: true,
+                    sideNavEnabled,
+                  })}
+                </div>`
+              : ''}
             ${sideNavEnabled
               ? html`
                   <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
@@ -190,6 +209,7 @@ export function PageLayout({
                   class="${clsx(
                     resolvedOptions.fullWidth ? 'container-fluid' : 'container',
                     resolvedOptions.paddingBottom && 'pb-4',
+                    !resolvedOptions.paddingSides && 'px-0',
                     resolvedOptions.fullHeight && 'h-100',
                     'pt-3',
                     sideNavEnabled && 'px-3',
@@ -219,13 +239,20 @@ export function PageLayout({
         <body
           class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
           hx-ext="${resolvedOptions.hxExt}"
+          ${unsafeHtml(
+            Object.entries(resolvedOptions.dataAttributes)
+              .map(([key, value]) => `data-${key}="${value}"`)
+              .join(' '),
+          )}
         >
-          ${Navbar({
-            resLocals,
-            navPage: navContext.page,
-            navSubPage: navContext.subPage,
-            navbarType: navContext.type,
-          })}
+          ${resolvedOptions.enableNavbar
+            ? Navbar({
+                resLocals,
+                navPage: navContext.page,
+                navSubPage: navContext.subPage,
+                navbarType: navContext.type,
+              })
+            : ''}
           ${preContentString}
           <main
             id="content"
@@ -233,6 +260,7 @@ export function PageLayout({
             ${clsx(
               resolvedOptions.fullWidth ? 'container-fluid' : 'container',
               resolvedOptions.paddingBottom && 'pb-4',
+              !resolvedOptions.paddingSides && 'px-0',
               resolvedOptions.fullHeight && 'flex-grow-1',
             )}
           "

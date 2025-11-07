@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
-import { Hydrate } from '@prairielearn/preact/server';
 import { renderHtml } from '@prairielearn/preact';
+import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
@@ -131,6 +131,12 @@ export function AssessmentQuestion({
           </>
         )}
 
+        {/* Hidden form for test compatibility - allows tests to extract CSRF token.
+        This form is now in the header of a client-rendered table. */}
+        <form name="grading-form" class="d-none">
+          <input type="hidden" name="__csrf_token" value={__csrf_token} />
+        </form>
+
         <Hydrate fullHeight>
           <AssessmentQuestionManualGrading
             authzData={authz_data}
@@ -151,6 +157,7 @@ export function AssessmentQuestion({
             instanceQuestionGroups={instanceQuestionGroups}
             courseStaff={courseStaff}
             aiGradingStats={aiGradingStats}
+            numOpenInstances={num_open_instances}
             isDevMode={process.env.NODE_ENV === 'development'}
           />
         </Hydrate>
@@ -160,6 +167,11 @@ export function AssessmentQuestion({
       GradingConflictModal(),
       DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }),
       DeleteAllInstanceQuestionGroupResultsModal({ csrfToken: __csrf_token }),
+      GroupInfoModal({
+        modalFor: 'selected',
+        numOpenInstances: num_open_instances,
+        csrfToken: __csrf_token,
+      }),
       GroupInfoModal({
         modalFor: 'all',
         numOpenInstances: num_open_instances,
@@ -353,6 +365,60 @@ function GroupInfoModal({
         <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
           {modalFor === 'all' ? (
             <button class="btn btn-primary" type="submit">
+              Group submissions
+            </button>
+          ) : modalFor === 'selected' ? (
+            <button
+              class="btn btn-primary"
+              type="button"
+              // @ts-expect-error -- We don't want to hydrate this part of the DOM
+              onclick={`
+                const modal = document.getElementById('group-confirmation-modal-selected');
+                const selectedIds = modal?.getAttribute('data-selected-ids')?.split(',') || [];
+                const closedOnly = document.querySelector('#group-confirmation-modal-selected select[name="closed_instance_questions_only"]')?.value || 'true';
+                
+                if (selectedIds.length === 0) return;
+                
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '';
+                
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '__csrf_token';
+                csrfInput.value = '${csrfToken}';
+                form.appendChild(csrfInput);
+                
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = '__action';
+                actionInput.value = 'batch_action';
+                form.appendChild(actionInput);
+                
+                const batchActionInput = document.createElement('input');
+                batchActionInput.type = 'hidden';
+                batchActionInput.name = 'batch_action';
+                batchActionInput.value = 'ai_instance_question_group_selected';
+                form.appendChild(batchActionInput);
+                
+                const closedInput = document.createElement('input');
+                closedInput.type = 'hidden';
+                closedInput.name = 'closed_instance_questions_only';
+                closedInput.value = closedOnly;
+                form.appendChild(closedInput);
+                
+                selectedIds.forEach(id => {
+                  const idInput = document.createElement('input');
+                  idInput.type = 'hidden';
+                  idInput.name = 'instance_question_id';
+                  idInput.value = id;
+                  form.appendChild(idInput);
+                });
+                
+                document.body.appendChild(form);
+                form.submit();
+              `}
+            >
               Group submissions
             </button>
           ) : (

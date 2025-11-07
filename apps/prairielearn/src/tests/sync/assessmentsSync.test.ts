@@ -2277,8 +2277,7 @@ describe('Assessment syncing', () => {
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the assessment, add an error and re-sync
-    const newAssessment = { ...originalAssessment };
-    newAssessment.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
+    const newAssessment = { ...originalAssessment, uuid: '49c8b795-dfde-4c13-a040-0fd1ba711dc5' };
     // @ts-expect-error -- Breaking assessment by removing title.
     delete newAssessment.title;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['repeatedAssessment'] =

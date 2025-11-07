@@ -12,8 +12,10 @@ import { run } from '@prairielearn/run';
 import { logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import {
+  type Assessment,
   type AssessmentQuestion,
   type Course,
+  type CourseInstance,
   IdSchema,
   type InstanceQuestion,
   type Question,
@@ -54,8 +56,9 @@ const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
  */
 export async function aiGrade({
   course,
-  course_instance_id,
+  course_instance,
   question,
+  assessment,
   assessment_question,
   urlPrefix,
   authn_user_id,
@@ -65,7 +68,8 @@ export async function aiGrade({
 }: {
   question: Question;
   course: Course;
-  course_instance_id: string;
+  course_instance: CourseInstance;
+  assessment: Assessment;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   authn_user_id: string;
@@ -93,8 +97,8 @@ export async function aiGrade({
 
   const serverJob = await createServerJob({
     courseId: course.id,
-    courseInstanceId: course_instance_id,
-    assessmentId: assessment_question.assessment_id,
+    courseInstanceId: course_instance.id,
+    assessmentId: assessment.id,
     authnUserId: authn_user_id,
     userId: user_id,
     type: 'ai_grading',
@@ -163,7 +167,7 @@ export async function aiGrade({
     const gradeInstanceQuestion = async (
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
-    ) => {
+    ): Promise<boolean> => {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
         (job) => job.grading_method === 'Manual',
@@ -187,7 +191,7 @@ export async function aiGrade({
         locals,
       );
       if (render_question_results.courseIssues.length > 0) {
-        logger.info(render_question_results.courseIssues.toString());
+        logger.error(render_question_results.courseIssues.toString());
         logger.error('Errors occurred while AI grading, see output for details');
         return false;
       }
@@ -265,10 +269,11 @@ export async function aiGrade({
       });
 
       const openaiProviderOptions: OpenAIChatLanguageModelOptions = {
+        strictJsonSchema: true,
         metadata: {
           course_id: course.id,
-          course_instance_id,
-          assessment_id: assessment_question.assessment_id,
+          course_instance_id: course_instance.id,
+          assessment_id: assessment.id,
           assessment_question_id: assessment_question.id,
           instance_question_id: instance_question.id,
         },
@@ -303,93 +308,87 @@ export async function aiGrade({
           },
         });
 
-        try {
-          logResponseUsage({ response, logger });
+        logResponseUsage({ response, logger });
 
-          logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
-          const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
-            ai_rubric_items: response.object.rubric_items,
-            rubric_items,
+        logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
+        const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
+          ai_rubric_items: response.object.rubric_items,
+          rubric_items,
+        });
+        if (shouldUpdateScore) {
+          // Requires grading: update instance question score
+          const manual_rubric_data = {
+            rubric_id: rubric_items[0].rubric_id,
+            applied_rubric_items: appliedRubricItems,
+          };
+          await runInTransactionAsync(async () => {
+            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+              assessment,
+              instance_question.id,
+              submission.id,
+              null, // check_modified_at
+              {
+                // TODO: consider asking for and recording freeform feedback.
+                manual_rubric_data,
+                feedback: { manual: '' },
+              },
+              user_id,
+              true, // is_ai_graded
+            );
+            assert(grading_job_id);
+
+            await insertAiGradingJob({
+              grading_job_id,
+              job_sequence_id: serverJob.jobSequenceId,
+              prompt: input,
+              response,
+              course_id: course.id,
+              course_instance_id: course_instance.id,
+            });
           });
-          if (shouldUpdateScore) {
-            // Requires grading: update instance question score
-            const manual_rubric_data = {
-              rubric_id: rubric_items[0].rubric_id,
-              applied_rubric_items: appliedRubricItems,
-            };
-            await runInTransactionAsync(async () => {
-              const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
-                assessment_question.assessment_id,
-                instance_question.id,
-                submission.id,
-                null, // check_modified_at
-                {
-                  // TODO: consider asking for and recording freeform feedback.
-                  manual_rubric_data,
-                  feedback: { manual: '' },
-                },
-                user_id,
-                true, // is_ai_graded
-              );
-              assert(grading_job_id);
-
-              await insertAiGradingJob({
-                grading_job_id,
-                job_sequence_id: serverJob.jobSequenceId,
-                prompt: input,
-                response,
-                course_id: course.id,
-                course_instance_id,
-              });
+        } else {
+          // Does not require grading: only create grading job and rubric grading
+          await runInTransactionAsync(async () => {
+            assert(assessment_question.max_manual_points);
+            const manual_rubric_grading = await manualGrading.insertRubricGrading(
+              rubric_items[0].rubric_id,
+              assessment_question.max_points ?? 0,
+              assessment_question.max_manual_points,
+              appliedRubricItems,
+              0,
+            );
+            const score =
+              manual_rubric_grading.computed_points / assessment_question.max_manual_points;
+            const grading_job_id = await queryRow(
+              sql.insert_grading_job,
+              {
+                submission_id: submission.id,
+                authn_user_id: user_id,
+                grading_method: 'AI',
+                correct: null,
+                score,
+                auto_points: 0,
+                manual_points: manual_rubric_grading.computed_points,
+                manual_rubric_grading_id: manual_rubric_grading.id,
+                feedback: null,
+              },
+              IdSchema,
+            );
+            await insertAiGradingJob({
+              grading_job_id,
+              job_sequence_id: serverJob.jobSequenceId,
+              prompt: input,
+              response,
+              course_id: course.id,
+              course_instance_id: course_instance.id,
             });
-          } else {
-            // Does not require grading: only create grading job and rubric grading
-            await runInTransactionAsync(async () => {
-              assert(assessment_question.max_manual_points);
-              const manual_rubric_grading = await manualGrading.insertRubricGrading(
-                rubric_items[0].rubric_id,
-                assessment_question.max_points ?? 0,
-                assessment_question.max_manual_points,
-                appliedRubricItems,
-                0,
-              );
-              const score =
-                manual_rubric_grading.computed_points / assessment_question.max_manual_points;
-              const grading_job_id = await queryRow(
-                sql.insert_grading_job,
-                {
-                  submission_id: submission.id,
-                  authn_user_id: user_id,
-                  grading_method: 'AI',
-                  correct: null,
-                  score,
-                  auto_points: 0,
-                  manual_points: manual_rubric_grading.computed_points,
-                  manual_rubric_grading_id: manual_rubric_grading.id,
-                  feedback: null,
-                },
-                IdSchema,
-              );
-              await insertAiGradingJob({
-                grading_job_id,
-                job_sequence_id: serverJob.jobSequenceId,
-                prompt: input,
-                response,
-                course_id: course.id,
-                course_instance_id,
-              });
-            });
-          }
+          });
+        }
 
-          logger.info('AI rubric items:');
+        logger.info('AI rubric items:');
 
-          for (const item of appliedRubricDescription) {
-            logger.info(`- ${item}`);
-          }
-        } catch (err) {
-          logger.error(`ERROR AI grading for ${instance_question.id}`);
-          logger.error(err);
-          return false;
+        for (const item of appliedRubricDescription) {
+          logger.info(`- ${item}`);
         }
       } else {
         // OpenAI will take the property descriptions into account. See the
@@ -419,75 +418,70 @@ export async function aiGrade({
             openai: openaiProviderOptions,
           },
         });
-        try {
-          logResponseUsage({ response, logger });
 
-          logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
-          const score = response.object.score;
+        logResponseUsage({ response, logger });
 
-          if (shouldUpdateScore) {
-            // Requires grading: update instance question score
-            const feedback = response.object.feedback;
-            await runInTransactionAsync(async () => {
-              const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
-                assessment_question.assessment_id,
-                instance_question.id,
-                submission.id,
-                null, // check_modified_at
-                {
-                  manual_score_perc: score,
-                  feedback: { manual: feedback },
-                },
-                user_id,
-                true, // is_ai_graded
-              );
-              assert(grading_job_id);
+        logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
+        const score = response.object.score;
 
-              await insertAiGradingJob({
-                grading_job_id,
-                job_sequence_id: serverJob.jobSequenceId,
-                prompt: input,
-                response,
-                course_id: course.id,
-                course_instance_id,
-              });
+        if (shouldUpdateScore) {
+          // Requires grading: update instance question score
+          const feedback = response.object.feedback;
+          await runInTransactionAsync(async () => {
+            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+              assessment,
+              instance_question.id,
+              submission.id,
+              null, // check_modified_at
+              {
+                manual_score_perc: score,
+                feedback: { manual: feedback },
+              },
+              user_id,
+              true, // is_ai_graded
+            );
+            assert(grading_job_id);
+
+            await insertAiGradingJob({
+              grading_job_id,
+              job_sequence_id: serverJob.jobSequenceId,
+              prompt: input,
+              response,
+              course_id: course.id,
+              course_instance_id: course_instance.id,
             });
-          } else {
-            // Does not require grading: only create grading job and rubric grading
-            await runInTransactionAsync(async () => {
-              assert(assessment_question.max_manual_points);
-              const grading_job_id = await queryRow(
-                sql.insert_grading_job,
-                {
-                  submission_id: submission.id,
-                  authn_user_id: user_id,
-                  grading_method: 'AI',
-                  correct: null,
-                  score: score / 100,
-                  auto_points: 0,
-                  manual_points: (score * assessment_question.max_manual_points) / 100,
-                  manual_rubric_grading_id: null,
-                  feedback: null,
-                },
-                IdSchema,
-              );
-              await insertAiGradingJob({
-                grading_job_id,
-                job_sequence_id: serverJob.jobSequenceId,
-                prompt: input,
-                response,
-                course_id: course.id,
-                course_instance_id,
-              });
+          });
+        } else {
+          // Does not require grading: only create grading job and rubric grading
+          await runInTransactionAsync(async () => {
+            assert(assessment_question.max_manual_points);
+            const grading_job_id = await queryRow(
+              sql.insert_grading_job,
+              {
+                submission_id: submission.id,
+                authn_user_id: user_id,
+                grading_method: 'AI',
+                correct: null,
+                score: score / 100,
+                auto_points: 0,
+                manual_points: (score * assessment_question.max_manual_points) / 100,
+                manual_rubric_grading_id: null,
+                feedback: null,
+              },
+              IdSchema,
+            );
+            await insertAiGradingJob({
+              grading_job_id,
+              job_sequence_id: serverJob.jobSequenceId,
+              prompt: input,
+              response,
+              course_id: course.id,
+              course_instance_id: course_instance.id,
             });
-          }
-
-          logger.info(`AI score: ${response.object.score}`);
-        } catch (err) {
-          logger.error(`ERROR AI grading for ${instance_question.id}`);
-          logger.error(err);
-          return false;
+          });
         }
+
+        logger.info(`AI score: ${response.object.score}`);
       }
 
       return true;
@@ -519,6 +513,7 @@ export async function aiGrade({
           return await gradeInstanceQuestion(instance_question, logger);
         } catch (err) {
           logger.error(err);
+          return false;
         } finally {
           for (const log of logs) {
             switch (log.messageType) {

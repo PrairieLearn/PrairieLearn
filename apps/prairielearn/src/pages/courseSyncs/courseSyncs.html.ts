@@ -199,11 +199,15 @@ function ImageTable({
                 </td>
                 <td>${image.tag}</td>
                 <td>
-                  <code class="mb-0" title="${image.digest}">
-                    ${(image.digest?.length ?? 0) <= 24
-                      ? image.digest
-                      : `${image.digest?.slice(0, 24)}...`}
-                  </code>
+                  ${image.digest
+                    ? html`
+                        <code class="mb-0" title="${image.digest}">
+                          ${image.digest.length <= 24
+                            ? image.digest
+                            : `${image.digest.slice(0, 24)}...`}
+                        </code>
+                      `
+                    : html`&mdash;`}
                 </td>
                 <td>${(image.size ?? 0) > 0 ? filesize(image.size ?? 0) : ''}</td>
                 <td>

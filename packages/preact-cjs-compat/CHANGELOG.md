@@ -1,5 +1,13 @@
 # @prairielearn/preact-cjs-compat
 
+## 1.0.5
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/preact-cjs@1.1.5
+
 ## 1.0.4
 
 ### Patch Changes

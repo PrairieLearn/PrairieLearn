@@ -195,9 +195,9 @@ export function TanstackTable<RowDataModel>({
   useEffect(() => {
     const selector = `[data-grid-cell-row="${focusedCell.row}"][data-grid-cell-col="${focusedCell.col}"]`;
     const cell = tableRef.current?.querySelector(selector) as HTMLElement | null;
-    if (!cell) {
-      return;
-    }
+    if (!cell) return;
+
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-chain-state-updates
     cell.focus();
   }, [focusedCell]);
 
@@ -394,7 +394,7 @@ export function TanstackTable<RowDataModel>({
                               {canSort && (
                                 <button
                                   type="button"
-                                  class="btn btn-link text-muted p-0 ms-2"
+                                  class="btn btn-link text-muted p-0"
                                   aria-label={`Sort ${columnName.toLowerCase()}`}
                                   title={`Sort ${columnName.toLowerCase()}`}
                                   onClick={header.column.getToggleSortingHandler()}
@@ -434,6 +434,8 @@ export function TanstackTable<RowDataModel>({
                       const canSort = cell.column.getCanSort();
                       const canFilter = cell.column.getCanFilter();
 
+                      const wrapText = (cell.column.columnDef.meta as any)?.wrapText ?? false;
+
                       return (
                         <td
                           key={cell.id}
@@ -455,9 +457,10 @@ export function TanstackTable<RowDataModel>({
                               cell.column.getIsPinned() === 'left'
                                 ? cell.column.getStart()
                                 : undefined,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
+                            whiteSpace: wrapText ? 'normal' : 'nowrap',
+                            overflow: wrapText ? 'visible' : 'hidden',
+                            textOverflow: wrapText ? undefined : 'ellipsis',
+                            verticalAlign: 'middle',
                           }}
                           onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })}
                           onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
@@ -526,6 +529,8 @@ export function TanstackTable<RowDataModel>({
  * @param params.table - The table model
  * @param params.title - The title of the card
  * @param params.headerButtons - The buttons to display in the header
+ * @param params.columnManagerButtons - The buttons to display next to the column manager (View button)
+ * @param params.columnManagerTopContent - Optional content to display at the top of the column manager (View) dropdown menu
  * @param params.globalFilter - State management for the global filter
  * @param params.globalFilter.value
  * @param params.globalFilter.setValue
@@ -537,6 +542,8 @@ export function TanstackTableCard<RowDataModel>({
   table,
   title,
   headerButtons,
+  columnManagerButtons,
+  columnManagerTopContent,
   globalFilter,
   tableOptions,
   downloadButtonOptions = null,
@@ -544,6 +551,8 @@ export function TanstackTableCard<RowDataModel>({
   table: Table<RowDataModel>;
   title: string;
   headerButtons: JSX.Element;
+  columnManagerButtons?: JSX.Element;
+  columnManagerTopContent?: JSX.Element;
   globalFilter: {
     value: string;
     setValue: (value: string) => void;
@@ -603,8 +612,8 @@ export function TanstackTableCard<RowDataModel>({
       </div>
       <div class="card-body d-flex flex-column">
         <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
-          <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
-            <div class="input-group">
+          <div class="flex-grow-1 flex-nowrap align-items-center d-flex flex-row gap-2">
+            <div class="input-group" style={{ maxWidth: '400px' }}>
               <input
                 ref={searchInputRef}
                 type="text"
@@ -630,11 +639,21 @@ export function TanstackTableCard<RowDataModel>({
             </div>
             {/* We do this instead of CSS properties for the accessibility checker.
               We can't have two elements with the same id of 'column-manager-button'. */}
-            {isMediumOrLarger && <ColumnManager table={table} />}
+            {isMediumOrLarger && (
+              <>
+                <ColumnManager table={table} topContent={columnManagerTopContent} />
+                {columnManagerButtons}
+              </>
+            )}
           </div>
           {/* We do this instead of CSS properties for the accessibility checker.
             We can't have two elements with the same id of 'column-manager-button'. */}
-          {!isMediumOrLarger && <ColumnManager table={table} />}
+          {!isMediumOrLarger && (
+            <div class="d-flex flex-row flex-nowrap align-items-center gap-2 flex-shrink-0">
+              <ColumnManager table={table} topContent={columnManagerTopContent} />
+              {columnManagerButtons}
+            </div>
+          )}
           <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
             <div class="text-muted text-nowrap">
               Showing {displayedCount} of {totalCount} {title.toLowerCase()}

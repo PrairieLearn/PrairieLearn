@@ -194,7 +194,7 @@ function AssessmentQuestionRow({
       <td class="align-middle">
         <a href={gradingUrl}>
           {question.alternative_group_number}.
-          {question.alternative_group_size === 1 ? '' : `${question.number_in_alternative_group}.`}
+          {question.alternative_group_size === 1 ? '' : `${question.number_in_alternative_group}.`}{' '}
           {question.title}
         </a>
         {question.manual_rubric_id != null && (

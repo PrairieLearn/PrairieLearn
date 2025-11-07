@@ -1,5 +1,17 @@
 # @prairielearn/opentelemetry
 
+## 3.0.5
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 3.0.3
 
 ### Patch Changes

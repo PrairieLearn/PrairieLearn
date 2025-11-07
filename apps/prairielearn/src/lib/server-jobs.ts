@@ -32,6 +32,7 @@ interface CreateServerJobOptions {
 interface ServerJobExecOptions {
   cwd: string;
   env?: NodeJS.ProcessEnv;
+  cancelSignal?: AbortSignal;
 }
 
 export interface ServerJobResult {

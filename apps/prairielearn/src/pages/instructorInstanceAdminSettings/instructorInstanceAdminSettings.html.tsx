@@ -133,7 +133,7 @@ export function InstructorInstanceAdminSettings({
               <div class="invalid-feedback">{errors.ciid?.message}</div>
             )}
             <small class="form-text text-muted">
-              <span class={clsx(errors.ciid && errors.ciid.type === 'pattern' && 'text-danger')}>
+              <span class={clsx(errors.ciid?.type === 'pattern' && 'text-danger')}>
                 Use only letters, numbers, dashes, and underscores, with no spaces.
               </span>{' '}
               You may use forward slashes to separate directories. The recommended format is{' '}

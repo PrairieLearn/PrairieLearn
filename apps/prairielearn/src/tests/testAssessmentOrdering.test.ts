@@ -2,6 +2,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
+import { selectCourseById } from '../models/course.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -109,7 +110,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
 
   test.sequential('should default to grouping by Set', async function () {
     const courseInstance = await selectCourseInstanceByShortName({
-      course_id: '1',
+      course: await selectCourseById('1'),
       short_name: 'Fa19',
     });
     assert.equal(courseInstance.assessments_group_by, 'Set');

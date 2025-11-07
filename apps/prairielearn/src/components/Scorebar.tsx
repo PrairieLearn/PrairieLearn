@@ -11,7 +11,7 @@ export function Scorebar({
   score: number | null;
   minWidth?: string;
   maxWidth?: string;
-  class: string;
+  class?: string;
 }) {
   if (score == null) return '';
   return (

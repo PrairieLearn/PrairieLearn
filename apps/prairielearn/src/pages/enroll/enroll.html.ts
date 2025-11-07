@@ -7,12 +7,13 @@ import { HeadContents } from '../../components/HeadContents.js';
 import { Modal } from '../../components/Modal.js';
 import { Navbar } from '../../components/Navbar.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { EnrollmentSchema } from '../../lib/db-types.js';
 
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),
   short_label: z.string(),
   course_instance_id: z.string(),
-  enrolled: z.boolean(),
+  enrollment: EnrollmentSchema.nullable(),
   instructor_access: z.boolean(),
 });
 type CourseInstance = z.infer<typeof CourseInstanceRowSchema>;
@@ -53,7 +54,8 @@ export function Enroll({
                         `
                       : html`
                           <td class="align-middle text-center">
-                            ${!course_instance.enrolled
+                            ${!course_instance.enrollment ||
+                            !['joined'].includes(course_instance.enrollment.status)
                               ? html`
                                   <button
                                     type="button"

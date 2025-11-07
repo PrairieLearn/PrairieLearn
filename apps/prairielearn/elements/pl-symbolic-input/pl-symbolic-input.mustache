@@ -1,24 +1,59 @@
 {{#question}}
 {{#inline}}<span class="d-inline-block ms-2">{{/inline}}
-    <span class="input-group pl-symbolic-input">
+    <span class="input-group pl-symbolic-input {{#formula_editor}}w-100{{/formula_editor}}">
         {{#label}}
         <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-label">{{{label}}}</span>
         {{/label}}
-        <input
-            name="{{name}}"
-            type="text"
-            autocomplete="off"
-            autocorrect="off"
-            class="form-control pl-symbolic-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
-            {{#parse_error}}aria-invalid="true"{{/parse_error}}
-            size="{{size}}"
-            {{^editable}}disabled{{/editable}}
-            {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-            placeholder="{{placeholder}}"
-            {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
-            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
-            {{^aria_label}}{{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}{{/aria_label}}
-        />
+        {{#formula_editor}}
+        <script>
+            $(function() {
+                window.PLSymbolicInput("{{name}}");
+            });
+        </script>
+            <input
+                name="{{name}}"
+                id="symbolic-input-sub-{{name}}"
+                type="hidden"
+                value=""
+            />
+            <input
+                name="{{name}}-latex"
+                id="symbolic-input-latex-{{name}}"
+                type="hidden"
+                value=""
+            />
+            <math-field 
+                id="symbolic-input-{{name}}"
+                class="form-control pl-symbolic-input-input {{#parse_error}}has-validation is-invalid no-validation-icon{{/parse_error}}{{^formula_editor_buttons}} no-buttons{{/formula_editor_buttons}}"
+                {{#parse_error}}aria-invalid="true"{{/parse_error}}
+                {{^editable}}contentEditable="false"{{/editable}}
+                data-placeholder-text = "{{placeholder}}"
+                custom-functions="{{custom_functions}}"
+                {{#log_as_ln}}log-as-ln="log-as-ln"{{/log_as_ln}}
+                {{#imaginary_unit}}imaginary-unit="{{imaginary_unit}}"{{/imaginary_unit}}
+                {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
+                {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
+                >
+                {{#raw_submitted_answer_latex}}{{raw_submitted_answer_latex}}{{/raw_submitted_answer_latex}}
+            </math-field>
+        {{/formula_editor}}
+        {{^formula_editor}}
+            <input
+                name="{{name}}"
+                type="text"
+                autocomplete="off"
+                autocorrect="off"
+                class="form-control pl-symbolic-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
+                {{#parse_error}}aria-invalid="true"{{/parse_error}}
+                size="{{size}}"
+                {{^editable}}disabled{{/editable}}
+                {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+                placeholder="{{placeholder}}"
+                {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+                {{^aria_label}}{{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}{{/aria_label}}
+            />
+        {{/formula_editor}}
         {{#suffix}}
         <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-suffix">{{suffix}}</span>
         {{/suffix}}
@@ -75,7 +110,25 @@
 
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
+    {{#formula_editor}}
+        <script>
+            $(function() {
+                window.PLSymbolicInputParseError("{{uuid}}");
+            });
+        </script>
+        {{#raw_submitted_answer_latex}}
+            <math-field 
+                id="symbolic-input-parse-error-{{uuid}}" 
+                read-only 
+                custom-functions="{{custom_functions}}" 
+                {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}} 
+                class="read-only"
+            >{{raw_submitted_answer_latex}}</math-field>
+        {{/raw_submitted_answer_latex}}
+    {{/formula_editor}}
+    {{^formula_editor}}
+        {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
+    {{/formula_editor}}
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-danger">
@@ -124,12 +177,32 @@
 {{^error}}
 {{#label}}<span>{{{label}}}</span>{{/label}}
 ${{a_sub}}$
-
+{{#raw_submitted_answer_latex}}
+    <script>
+        $(function() {
+            window.PLSymbolicInputPopover("{{uuid}}");
+        });
+    </script>
+{{/raw_submitted_answer_latex}}
 <!-- Show submitted answer submission was parsed from -->
-<button type="button" class="ms-1 btn btn-sm btn-secondary small border"
+<button type="button" id="pl-symbolic-input-{{uuid}}-button" class="ms-1 btn btn-sm btn-secondary small border"
     data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
     title="Original Input" 
+    {{^raw_submitted_answer_latex}}
     data-bs-content="Parsed from <samp class=user-output>{{raw_submitted_answer}}</samp>"
+    {{/raw_submitted_answer_latex}}
+    {{#raw_submitted_answer_latex}}
+    data-bs-content='Parsed from 
+        <math-field 
+            read-only 
+            id="symbolic-input-popover-{{uuid}}"
+            {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
+            custom-functions="{{custom_functions}}"
+            class="read-only"
+        >
+            {{raw_submitted_answer_latex}}
+        </math-field>'
+    {{/raw_submitted_answer_latex}}
 >
     <i class="fa fa-question-circle" aria-hidden="true"></i>
 </button>

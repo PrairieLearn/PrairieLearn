@@ -33,10 +33,7 @@ export function MultiSelectColumnFilter<T extends readonly any[]>({
   columnValuesFilter: T[number][];
   setColumnValuesFilter: (value: T[number][]) => void;
 }) {
-  const selected = useMemo(
-    () => new Set(columnValuesFilter),
-    [columnValuesFilter],
-  );
+  const selected = useMemo(() => new Set(columnValuesFilter), [columnValuesFilter]);
 
   const toggleSelected = (value: T[number]) => {
     const set = new Set(selected);
@@ -54,7 +51,7 @@ export function MultiSelectColumnFilter<T extends readonly any[]>({
     <Dropdown align="end">
       <Dropdown.Toggle
         variant="link"
-        class="text-muted p-0 ms-2"
+        class="text-muted p-0"
         id={`filter-${columnId}`}
         aria-label={`Filter ${columnLabel.toLowerCase()}`}
         title={`Filter ${columnLabel.toLowerCase()}`}
@@ -89,7 +86,7 @@ export function MultiSelectColumnFilter<T extends readonly any[]>({
                     id={`${columnId}-${value}`}
                     onChange={() => toggleSelected(value)}
                   />
-                  <label class="form-check-label" for={`${columnId}-${value}`}>
+                  <label class="form-check-label fw-normal" for={`${columnId}-${value}`}>
                     {renderValueLabel({
                       value,
                       isSelected,

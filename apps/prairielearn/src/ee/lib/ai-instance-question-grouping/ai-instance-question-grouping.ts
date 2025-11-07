@@ -129,6 +129,7 @@ async function aiEvaluateStudentResponse({
     messages: input,
     providerOptions: {
       openai: {
+        strictJsonSchema: true,
         metadata: {
           course_id: course.id,
           course_instance_id,
@@ -202,7 +203,7 @@ export async function aiInstanceQuestionGrouping({
     description: 'Perform AI submission grouping',
   });
 
-  const instanceQuestionIdsSet = new Set<string>(instance_question_ids ?? []);
+  const instanceQuestionIdsSet = new Set<string>(instance_question_ids);
 
   serverJob.executeInBackground(async (job) => {
     if (!assessment_question.max_manual_points) {

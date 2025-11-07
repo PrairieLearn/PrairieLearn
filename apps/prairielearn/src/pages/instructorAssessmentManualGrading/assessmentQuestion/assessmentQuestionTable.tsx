@@ -1,4 +1,4 @@
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
@@ -11,9 +11,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import * as React from 'preact/compat';
 import { useEffect, useMemo, useState } from 'preact/compat';
-import { Button, Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { z } from 'zod';
 
 import {
@@ -27,7 +26,7 @@ import {
 
 import { EditQuestionPointsScoreButton } from '../../../components/EditQuestionPointsScore.js';
 import { RubricSettings } from '../../../components/RubricSettings.js';
-import { ScorebarHtml } from '../../../components/Scorebar.js';
+import { Scorebar } from '../../../components/Scorebar.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import {
   NuqsAdapter,
@@ -51,6 +50,7 @@ import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
 } from './assessmentQuestion.types.js';
+import { RubricItemsFilter } from './components/RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: [], right: [] };
@@ -58,9 +58,10 @@ const DEFAULT_GRADING_STATUS_FILTER: GradingStatusValue[] = [];
 const DEFAULT_ASSIGNED_GRADER_FILTER: string[] = [];
 const DEFAULT_GRADED_BY_FILTER: string[] = [];
 const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
-const DEFAULT_RUBRIC_ITEMS_FILTER: string[] = [];
+const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 
 const columnHelper = createColumnHelper<InstanceQuestionRow>();
+const queryClient = new QueryClient();
 
 /** Helper to generate AI grader name. */
 function generateAiGraderName(
@@ -136,13 +137,9 @@ function formatScoreWithEdit({
   return (
     <div class="d-flex align-items-center justify-content-center gap-1">
       {score != null && (
-        <div
-          class="d-inline-block align-middle"
-          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-          dangerouslySetInnerHTML={{
-            __html: ScorebarHtml(score, { minWidth: '10em' }).toString(),
-          }}
-        />
+        <div class="d-inline-block align-middle">
+          <Scorebar score={score} minWidth="10em" />
+        </div>
       )}
       {hasCourseInstancePermissionEdit && (
         <div
@@ -229,9 +226,13 @@ function AssessmentQuestionTable({
     'submission_group',
     parseAsArrayOf(parseAsString).withDefault(DEFAULT_SUBMISSION_GROUP_FILTER),
   );
+  const [aiAgreementFilter, setAiAgreementFilter] = useQueryState(
+    'ai_agreement',
+    parseAsArrayOf(parseAsString).withDefault(DEFAULT_AI_AGREEMENT_FILTER),
+  );
   const [rubricItemsFilter, setRubricItemsFilter] = useQueryState(
     'rubric_items',
-    parseAsArrayOf(parseAsString).withDefault(DEFAULT_RUBRIC_ITEMS_FILTER),
+    parseAsArrayOf(parseAsString).withDefault([]),
   );
 
   const [manualPointsFilter, setManualPointsFilter] = useQueryState(
@@ -267,7 +268,11 @@ function AssessmentQuestionTable({
     if (aiGradingMode && instanceQuestionGroups.length > 0) {
       filters.push({ id: 'instance_question_group_name', value: submissionGroupFilter });
     }
-    if (rubricData) {
+    if (aiGradingMode) {
+      filters.push({ id: 'rubric_difference', value: aiAgreementFilter });
+    }
+    // Filter by rubric items if any are selected
+    if (rubricData && rubricData.rubric_items.length > 0 && rubricItemsFilter.length > 0) {
       filters.push({ id: 'rubric_grading_item_ids', value: rubricItemsFilter });
     }
     if (assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0) {
@@ -283,6 +288,7 @@ function AssessmentQuestionTable({
     assignedGraderFilter,
     gradedByFilter,
     submissionGroupFilter,
+    aiAgreementFilter,
     rubricItemsFilter,
     manualPointsFilter,
     autoPointsFilter,
@@ -290,12 +296,14 @@ function AssessmentQuestionTable({
     scoreFilter,
     aiGradingMode,
     instanceQuestionGroups.length,
-    rubricData,
     assessmentQuestion.max_auto_points,
+    rubricData,
   ]);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowSelection, setRowSelection] = useState({});
+
+  const queryClient = useQueryClient();
 
   const { data: instanceQuestions = initialInstanceQuestions } = useQuery<InstanceQuestionRow[]>({
     queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
@@ -325,7 +333,7 @@ function AssessmentQuestionTable({
         graders.add(generateAiGraderName(row.ai_grading_status));
       }
     });
-    return Array.from(graders).sort();
+    return Array.from(graders).toSorted();
   }, [instanceQuestions]);
 
   // Get all unique submission groups
@@ -334,13 +342,24 @@ function AssessmentQuestionTable({
     instanceQuestions.forEach((row) => {
       if (row.instance_question_group_name) groups.add(row.instance_question_group_name);
     });
-    return Array.from(groups).sort();
+    return Array.from(groups).toSorted();
   }, [instanceQuestions]);
 
-  // Get all rubric items
-  const allRubricItems = useMemo(() => {
-    return (rubricData?.rubric_items ?? []).map((item) => item.id);
-  }, [rubricData]);
+  // Get all unique AI agreement items (rubric differences)
+  const allAiAgreementItems = useMemo(() => {
+    const itemsMap = new Map<string, { number: number; description: string }>();
+    instanceQuestions.forEach((row) => {
+      if (row.rubric_difference && Array.isArray(row.rubric_difference)) {
+        row.rubric_difference.forEach((item) => {
+          if (!itemsMap.has(item.description)) {
+            itemsMap.set(item.description, { number: item.number, description: item.description });
+          }
+        });
+      }
+    });
+    // Sort by number
+    return Array.from(itemsMap.values()).sort((a, b) => a.number - b.number);
+  }, [instanceQuestions]);
 
   const columns = useMemo(
     () => [
@@ -356,8 +375,7 @@ function AssessmentQuestionTable({
           />
         ),
         cell: ({ row, table }) => {
-          const checkboxProps = createCheckboxProps(row, table);
-          return <input type="checkbox" {...checkboxProps} />;
+          return <input type="checkbox" {...createCheckboxProps(row, table)} />;
         },
         size: 40,
         minSize: 40,
@@ -623,6 +641,12 @@ function AssessmentQuestionTable({
             columnHelper.accessor('rubric_difference', {
               id: 'rubric_difference',
               header: 'AI agreement',
+              size: 300,
+              minSize: 200,
+              maxSize: 600,
+              meta: {
+                wrapText: true,
+              },
               cell: (info) => {
                 const row = info.row.original;
                 if (row.point_difference === null) {
@@ -670,7 +694,15 @@ function AssessmentQuestionTable({
                   </div>
                 );
               },
-              enableColumnFilter: false,
+              filterFn: (row, columnId, filterValues: string[]) => {
+                if (filterValues.length === 0) return true;
+                const rubricDiff = row.original.rubric_difference;
+                if (!rubricDiff || !Array.isArray(rubricDiff)) return false;
+                // Check if ALL of the selected items are in the disagreement
+                return filterValues.every((description) =>
+                  rubricDiff.some((item) => item.description === description),
+                );
+              },
               sortingFn: (rowA, rowB) => {
                 const aDiff = rowA.original.point_difference;
                 const bDiff = rowB.original.point_difference;
@@ -692,24 +724,20 @@ function AssessmentQuestionTable({
           ]
         : []),
 
-      // Rubric items column (for filtering, not displayed)
-      ...(rubricData
-        ? [
-            columnHelper.accessor('rubric_grading_item_ids', {
-              id: 'rubric_grading_item_ids',
-              header: 'Rubric Items',
-              cell: () => null,
-              enableHiding: true,
-              filterFn: (row, columnId, filterValues: string[]) => {
-                if (filterValues.length === 0) return true;
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-                const rowItemIds = row.getValue(columnId) as string[];
-                // ALL selected items must be present (AND logic)
-                return filterValues.every((itemId) => rowItemIds.includes(itemId));
-              },
-            }),
-          ]
-        : []),
+      // Hidden column for filtering by rubric items
+      columnHelper.accessor('rubric_grading_item_ids', {
+        id: 'rubric_grading_item_ids',
+        header: 'Rubric Items',
+        enableHiding: false,
+        enableSorting: false,
+        cell: () => null,
+        filterFn: (row, columnId, filterValues: string[]) => {
+          if (filterValues.length === 0) return true;
+          const rubricItemIds = row.original.rubric_grading_item_ids;
+          // Check if ALL of the selected rubric item IDs are in the row's rubric_grading_item_ids
+          return filterValues.every((itemId) => rubricItemIds.includes(itemId));
+        },
+      }),
     ],
     [
       aiGradingMode,
@@ -720,7 +748,6 @@ function AssessmentQuestionTable({
       urlPrefix,
       csrfToken,
       assessmentId,
-      rubricData,
       createCheckboxProps,
     ],
   );
@@ -793,15 +820,107 @@ function AssessmentQuestionTable({
 
   // Handle show/hide student info toggle
   const toggleStudentInfo = () => {
-    const newVisibility = { ...table.getState().columnVisibility };
-    newVisibility.user_or_group_name = !showStudentInfo;
-    newVisibility.uid = !showStudentInfo;
-    void setColumnVisibility(newVisibility as any);
+    const newVisibility = {
+      ...table.getState().columnVisibility,
+      user_or_group_name: !showStudentInfo,
+      uid: !showStudentInfo,
+    };
+    void setColumnVisibility(newVisibility);
     setShowStudentInfo(!showStudentInfo);
   };
 
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = selectedRows.map((row) => row.original.id);
+
+  // Set up handlers for edit points popovers
+  // Once
+  useEffect(() => {
+    /**
+     * Handle AJAX form submission for editing points
+     */
+    async function handlePointsFormSubmit(this: HTMLFormElement, event: Event) {
+      event.preventDefault();
+      const formData = new FormData(this);
+      // @ts-expect-error - It doesn't like converting FormData to an object
+      const postBody = new URLSearchParams(Object.fromEntries(formData.entries()));
+
+      try {
+        const response = await fetch(this.action || '', { method: 'POST', body: postBody });
+        if (response.status !== 200) {
+          console.error(response.status, response.statusText);
+          return;
+        }
+
+        const data = await response.json();
+
+        // Check for grading conflict
+        if (data?.conflict_grading_job_id) {
+          const modal = document.getElementById('grading-conflict-modal');
+          if (modal) {
+            const link = modal.querySelector<HTMLAnchorElement>('.conflict-details-link');
+            if (link && data.conflict_details_url) {
+              link.href = data.conflict_details_url;
+            }
+            // Show the modal using Bootstrap's Modal API
+            const bsModal = new window.bootstrap.Modal(modal);
+            bsModal.show();
+          }
+        }
+
+        // Dismiss the popover before refetching data
+        // Find the button that triggered this form's popover
+        const popoverTriggers = document.querySelectorAll('[data-bs-toggle="popover"]');
+        popoverTriggers.forEach((trigger) => {
+          const popoverInstance = window.bootstrap.Popover.getInstance(trigger);
+          if (popoverInstance) {
+            popoverInstance.hide();
+          }
+        });
+
+        // Invalidate and refetch the query to update the table
+        await queryClient.invalidateQueries({
+          queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
+        });
+      } catch (err) {
+        console.error('Error submitting form:', err);
+      }
+    }
+
+    /**
+     * Set up event listeners when popover is shown
+     */
+    function handlePopoverShown(this: Element) {
+      // Focus the first non-hidden input
+      const form = document.querySelector<HTMLFormElement>('form[name=edit-points-form]');
+      if (!form) {
+        return;
+      }
+      const input = form.querySelector<HTMLInputElement>('input:not([type="hidden"])');
+      if (input) {
+        input.focus();
+      }
+
+      // Remove any existing event listeners to prevent duplicates
+      form.removeEventListener('submit', handlePointsFormSubmit);
+      form.addEventListener('submit', handlePointsFormSubmit);
+    }
+
+    // Attach event listeners to all popover trigger buttons
+    const popoverButtons = document.querySelectorAll('[data-bs-toggle="popover"]');
+    popoverButtons.forEach((button) => {
+      button.addEventListener('shown.bs.popover', handlePopoverShown);
+    });
+
+    // Cleanup function
+    return () => {
+      const form = document.querySelector<HTMLFormElement>('form[name=edit-points-form]');
+      form?.removeEventListener('submit', handlePointsFormSubmit);
+
+      popoverButtons.forEach((button) => {
+        button.removeEventListener('shown.bs.popover', handlePopoverShown);
+      });
+    };
+  }, [queryClient, urlPrefix, assessmentId, assessmentQuestionId, instanceQuestions]);
 
   // Handler for batch actions
   const handleBatchAction = (actionData: Record<string, any>) => {
@@ -825,12 +944,31 @@ function AssessmentQuestionTable({
     actionInput.value = 'batch_action';
     form.append(actionInput);
 
-    // Add action data
-    const dataInput = document.createElement('input');
-    dataInput.type = 'hidden';
-    dataInput.name = 'batch_action_data';
-    dataInput.value = JSON.stringify(actionData);
-    form.append(dataInput);
+    // Check if this is an AI grading or AI grouping action
+    if (actionData.batch_action) {
+      // For AI grading actions, add batch_action directly
+      const batchActionInput = document.createElement('input');
+      batchActionInput.type = 'hidden';
+      batchActionInput.name = 'batch_action';
+      batchActionInput.value = actionData.batch_action;
+      form.append(batchActionInput);
+
+      // Add closed_instance_questions_only if specified
+      if (actionData.closed_instance_questions_only !== undefined) {
+        const closedInput = document.createElement('input');
+        closedInput.type = 'hidden';
+        closedInput.name = 'closed_instance_questions_only';
+        closedInput.value = String(actionData.closed_instance_questions_only);
+        form.append(closedInput);
+      }
+    } else {
+      // For regular batch actions, add action data as JSON
+      const dataInput = document.createElement('input');
+      dataInput.type = 'hidden';
+      dataInput.name = 'batch_action_data';
+      dataInput.value = JSON.stringify(actionData);
+      form.append(dataInput);
+    }
 
     // Add selected instance question IDs
     selectedIds.forEach((id) => {
@@ -864,43 +1002,183 @@ function AssessmentQuestionTable({
       <TanstackTableCard
         table={table}
         title="Student instance questions"
+        columnManagerTopContent={
+          <div class="px-2 py-1">
+            <button
+              type="button"
+              class="btn btn-sm btn-secondary w-100 text-start text-nowrap"
+              onClick={toggleStudentInfo}
+            >
+              <i class={showStudentInfo ? 'bi bi-eye-slash' : 'bi bi-eye'} aria-hidden="true" />{' '}
+              {showStudentInfo ? 'Hide' : 'Show'} student info
+            </button>
+          </div>
+        }
+        columnManagerButtons={
+          <RubricItemsFilter
+            rubricData={rubricData}
+            instanceQuestions={instanceQuestions}
+            rubricItemsFilter={rubricItemsFilter}
+            setRubricItemsFilter={setRubricItemsFilter}
+          />
+        }
         headerButtons={
           <>
-            <Button variant="light" size="sm" onClick={toggleStudentInfo}>
-              <i class={showStudentInfo ? 'bi bi-eye-slash' : 'bi bi-eye'} aria-hidden="true" />{' '}
-              {showStudentInfo ? 'Hide student info' : 'Show student info'}
-            </Button>
-            {authzData.has_course_instance_permission_edit && (
-              <Dropdown>
-                <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
-                  <i class="fas fa-tags" aria-hidden="true" /> Tag for grading
-                </Dropdown.Toggle>
-                <Dropdown.Menu align="end">
-                  <Dropdown.Header>Assign for grading</Dropdown.Header>
-                  {courseStaff.map((grader) => (
+            {aiGradingMode ? (
+              <>
+                <Dropdown>
+                  <Dropdown.Toggle variant="light" size="sm">
+                    <i class="bi bi-stars" aria-hidden="true" /> AI grading
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu align="end">
                     <Dropdown.Item
-                      key={grader.user_id}
-                      onClick={() => handleBatchAction({ assigned_grader: grader.user_id })}
+                      onClick={() => {
+                        const form = document.getElementById(
+                          'ai-grading-graded',
+                        ) as HTMLFormElement | null;
+                        form?.submit();
+                      }}
                     >
-                      <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
+                      Grade all human-graded
                     </Dropdown.Item>
-                  ))}
-                  <Dropdown.Item onClick={() => handleBatchAction({ assigned_grader: null })}>
-                    <i class="fas fa-user-slash" /> Remove grader assignment
-                  </Dropdown.Item>
-                  <Dropdown.Divider />
-                  <Dropdown.Item
-                    onClick={() => handleBatchAction({ requires_manual_grading: true })}
-                  >
-                    <i class="fas fa-tag" /> Tag as required grading
-                  </Dropdown.Item>
-                  <Dropdown.Item
-                    onClick={() => handleBatchAction({ requires_manual_grading: false })}
-                  >
-                    <i class="fas fa-check-square" /> Tag as graded
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
+                    <Dropdown.Item
+                      disabled={selectedIds.length === 0}
+                      onClick={() =>
+                        handleBatchAction({ batch_action: 'ai_grade_assessment_selected' })
+                      }
+                    >
+                      Grade selected
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      onClick={() => {
+                        const form = document.getElementById(
+                          'ai-grading-all',
+                        ) as HTMLFormElement | null;
+                        form?.submit();
+                      }}
+                    >
+                      Grade all
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      onClick={() => {
+                        const modal = document.getElementById('delete-all-ai-grading-jobs-modal');
+                        if (modal) {
+                          const bsModal = new window.bootstrap.Modal(modal);
+                          bsModal.show();
+                        }
+                      }}
+                    >
+                      Delete all AI grading results
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
+                <Dropdown>
+                  <Dropdown.Toggle variant="light" size="sm">
+                    <i class="bi bi-stars" aria-hidden="true" /> AI submission grouping
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu align="end">
+                    <Dropdown.Item
+                      disabled={selectedIds.length === 0}
+                      onClick={() => {
+                        const modal = document.getElementById('group-confirmation-modal-selected');
+                        if (modal) {
+                          // Store selected IDs in the modal for later submission
+                          modal.setAttribute('data-selected-ids', selectedIds.join(','));
+                          const bsModal = new window.bootstrap.Modal(modal);
+                          bsModal.show();
+                        }
+                      }}
+                    >
+                      Group selected submissions
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      onClick={() => {
+                        const modal = document.getElementById('group-confirmation-modal-all');
+                        if (modal) {
+                          const bsModal = new window.bootstrap.Modal(modal);
+                          bsModal.show();
+                        }
+                      }}
+                    >
+                      Group all submissions
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      onClick={() => {
+                        const modal = document.getElementById('group-confirmation-modal-ungrouped');
+                        if (modal) {
+                          const bsModal = new window.bootstrap.Modal(modal);
+                          bsModal.show();
+                        }
+                      }}
+                    >
+                      Group ungrouped submissions
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      onClick={() => {
+                        const modal = document.getElementById(
+                          'delete-all-ai-instance-question-grouping-results-modal',
+                        );
+                        if (modal) {
+                          const bsModal = new window.bootstrap.Modal(modal);
+                          bsModal.show();
+                        }
+                      }}
+                    >
+                      Delete all AI groupings
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
+              </>
+            ) : (
+              authzData.has_course_instance_permission_edit && (
+                <Dropdown>
+                  <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
+                    <i class="fas fa-tags" aria-hidden="true" />{' '}
+                    <span class="d-none d-sm-inline">Tag for grading</span>
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu align="end">
+                    <Dropdown.Header class="d-flex align-items-center gap-1">
+                      Assign for grading
+                      <OverlayTrigger
+                        overlay={
+                          <Tooltip>
+                            Only staff with <strong>Student Data Editor</strong> permissions or
+                            higher can be assigned as graders
+                          </Tooltip>
+                        }
+                      >
+                        <span>
+                          <i class="fas fa-question-circle text-secondary" />
+                        </span>
+                      </OverlayTrigger>
+                    </Dropdown.Header>
+                    {courseStaff.map((grader) => (
+                      <Dropdown.Item
+                        key={grader.user_id}
+                        onClick={() => handleBatchAction({ assigned_grader: grader.user_id })}
+                      >
+                        <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
+                      </Dropdown.Item>
+                    ))}
+                    <Dropdown.Item onClick={() => handleBatchAction({ assigned_grader: null })}>
+                      <i class="fas fa-user-slash" /> Remove grader assignment
+                    </Dropdown.Item>
+                    <Dropdown.Divider />
+                    <Dropdown.Item
+                      onClick={() => handleBatchAction({ requires_manual_grading: true })}
+                    >
+                      <i class="fas fa-tag" /> Tag as required grading
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      onClick={() => handleBatchAction({ requires_manual_grading: false })}
+                    >
+                      <i class="fas fa-check-square" /> Tag as graded
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
+              )
             )}
           </>
         }
@@ -1000,23 +1278,22 @@ function AssessmentQuestionTable({
                   ),
                 }
               : {}),
-            ...(rubricData
+            ...(aiGradingMode
               ? {
-                  rubric_grading_item_ids: ({
+                  rubric_difference: ({
                     header,
                   }: {
                     header: Header<InstanceQuestionRow, unknown>;
                   }) => (
                     <MultiSelectColumnFilter
                       columnId={header.column.id}
-                      columnLabel="Rubric Items"
-                      allColumnValues={allRubricItems}
+                      columnLabel="AI Disagreements"
+                      allColumnValues={allAiAgreementItems.map((item) => item.description)}
                       renderValueLabel={({ value }) => {
-                        const item = rubricData.rubric_items.find((i) => i.id === value);
-                        return <span>{item?.description || value}</span>;
+                        return <span>{value}</span>;
                       }}
-                      columnValuesFilter={rubricItemsFilter}
-                      setColumnValuesFilter={setRubricItemsFilter}
+                      columnValuesFilter={aiAgreementFilter}
+                      setColumnValuesFilter={setAiAgreementFilter}
                     />
                   ),
                 }
@@ -1064,15 +1341,14 @@ function AssessmentQuestionManualGrading({
   instanceQuestionGroups,
   courseStaff,
   aiGradingStats,
+  numOpenInstances: _numOpenInstances,
   isDevMode,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
   search: string;
   isDevMode: boolean;
-} & AssessmentQuestionTableProps) {
-  // eslint-disable-next-line @eslint-react/naming-convention/use-state
-  const [queryClient, _setQueryClient] = React.useState(() => new QueryClient());
-
+  numOpenInstances: number;
+} & Omit<AssessmentQuestionTableProps, 'numOpenInstances'>) {
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>

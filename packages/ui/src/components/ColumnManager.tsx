@@ -1,4 +1,5 @@
 import { type Column, type Table } from '@tanstack/react-table';
+import * as React from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/compat';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
@@ -94,7 +95,15 @@ function ColumnMenuItem<RowDataModel>({
   );
 }
 
-export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataModel> }) {
+interface ColumnManagerProps<RowDataModel> {
+  table: Table<RowDataModel>;
+  topContent?: React.JSX.Element;
+}
+
+export function ColumnManager<RowDataModel>({
+  table,
+  topContent,
+}: ColumnManagerProps<RowDataModel>) {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -157,6 +166,12 @@ export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataMod
         View
       </Dropdown.Toggle>
       <Dropdown.Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+        {topContent && (
+          <>
+            {topContent}
+            <Dropdown.Divider />
+          </>
+        )}
         {pinnedColumns.length > 0 && (
           <>
             <div class="px-2 py-1 text-muted small" role="presentation">

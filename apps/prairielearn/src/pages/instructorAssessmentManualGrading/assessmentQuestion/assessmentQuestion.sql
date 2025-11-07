@@ -71,7 +71,10 @@ FROM
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
   LEFT JOIN groups AS g ON (g.id = ai.group_id)
   LEFT JOIN groups_uid_list (g.id) AS gul ON TRUE
-  LEFT JOIN enrollments AS e ON (e.user_id = ai.user_id AND e.course_instance_id = a.course_instance_id)
+  LEFT JOIN enrollments AS e ON (
+    e.user_id = ai.user_id
+    AND e.course_instance_id = a.course_instance_id
+  )
   LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
   LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
   LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)

@@ -30,7 +30,7 @@ export async function selectOptionalUserByUin({
 /**
  * Locks the user with `SELECT ... FOR NO KEY UPDATE` and returns the user.
  */
-export async function selectAndLockUserById(user_id: string): Promise<User> {
+export async function selectAndLockUser(user_id: string): Promise<User> {
   return await queryRow(sql.select_and_lock_user_by_id, { user_id }, UserSchema);
 }
 

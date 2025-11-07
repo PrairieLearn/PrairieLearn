@@ -42,7 +42,7 @@ router.get(
   }),
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     const courseStaff = await selectCourseInstanceGraderStaff({
-      course_instance_id: res.locals.course_instance.id,
+      course_instance: res.locals.course_instance,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const rubric_data = await manualGrading.selectRubricData({
@@ -173,7 +173,8 @@ router.post(
         const jobSequenceId = await aiGrade({
           question: res.locals.question,
           course: res.locals.course,
-          course_instance_id: res.locals.course_instance.id,
+          course_instance: res.locals.course_instance,
+          assessment: res.locals.assessment,
           assessment_question: res.locals.assessment_question,
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
@@ -215,7 +216,7 @@ router.post(
           : [req.body.instance_question_id];
         if (action_data?.assigned_grader != null) {
           const courseStaff = await selectCourseInstanceGraderStaff({
-            course_instance_id: res.locals.course_instance.id,
+            course_instance: res.locals.course_instance,
           });
           if (!courseStaff.some((staff) => idsEqual(staff.user_id, action_data.assigned_grader))) {
             throw new error.HttpStatusError(
@@ -232,11 +233,11 @@ router.post(
           update_assigned_grader: 'assigned_grader' in action_data,
           assigned_grader: action_data?.assigned_grader,
         });
-        res.send({});
+        res.redirect(req.originalUrl);
       }
     } else if (req.body.__action === 'edit_question_points') {
       const result = await manualGrading.updateInstanceQuestionScore(
-        res.locals.assessment.id,
+        res.locals.assessment,
         req.body.instance_question_id,
         null, // submission_id
         req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at
@@ -271,7 +272,8 @@ router.post(
       const jobSequenceId = await aiGrade({
         question: res.locals.question,
         course: res.locals.course,
-        course_instance_id: res.locals.course_instance.id,
+        course_instance: res.locals.course_instance,
+        assessment: res.locals.assessment,
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
@@ -351,6 +353,7 @@ router.post(
     } else if (req.body.__action === 'modify_rubric_settings') {
       try {
         await manualGrading.updateAssessmentQuestionRubric(
+          res.locals.assessment,
           res.locals.assessment_question.id,
           req.body.use_rubric,
           req.body.replace_auto_points,

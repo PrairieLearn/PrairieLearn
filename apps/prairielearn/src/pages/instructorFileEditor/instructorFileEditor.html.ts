@@ -59,7 +59,7 @@ export function InstructorFileEditor({
         name="ace-base-path"
         content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
       />
-      ${compiledScriptTag('instructorFileEditorClient.ts')}
+      ${compiledScriptTag('instructorFileEditorClient.tsx')}
     `,
     content: html`
       ${editorData.sync_errors
@@ -121,7 +121,12 @@ export function InstructorFileEditor({
                   )}
                 </span>
               </div>
-              <div class="col-auto collapse ${!draftEdit?.alertChoice ? 'show' : ''}" id="buttons">
+              <div
+                class="d-flex flex-wrap gap-2 col-auto collapse ${!draftEdit?.alertChoice
+                  ? 'show'
+                  : ''}"
+                id="buttons"
+              >
                 <button
                   type="button"
                   id="help-button"
@@ -166,7 +171,7 @@ export function InstructorFileEditor({
                   `
                 : html`
                     Doing so will write your changes to disk and will sync them to your local
-                    database. You will need to push these changes to the GitHub respository manually
+                    database. You will need to push these changes to the GitHub repository manually
                     (i.e., not in PrairieLearn), if desired.
                   `}
               If you reload or navigate away from this page, any unsaved changes will be lost.
