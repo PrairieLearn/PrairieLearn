@@ -155,10 +155,6 @@ export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
 export function isDangerousFullSystemAuthz(
   authzData: AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser,
 ): authzData is DangerousSystemAuthzData {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (authzData == null) {
-    throw new Error('Authz data is null');
-  }
   return authzData.user.user_id === null;
 }
 
