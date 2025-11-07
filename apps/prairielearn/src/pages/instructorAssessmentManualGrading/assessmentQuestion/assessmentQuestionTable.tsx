@@ -13,7 +13,7 @@ import {
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import * as React from 'preact/compat';
 import { useEffect, useMemo, useState } from 'preact/compat';
-import { Button, Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { z } from 'zod';
 
 import {
@@ -51,6 +51,7 @@ import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
 } from './assessmentQuestion.types.js';
+import { RubricItemsFilter } from './components/RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: [], right: [] };
@@ -229,6 +230,10 @@ function AssessmentQuestionTable({
     'ai_agreement',
     parseAsArrayOf(parseAsString).withDefault(DEFAULT_AI_AGREEMENT_FILTER),
   );
+  const [rubricItemsFilter, setRubricItemsFilter] = useQueryState(
+    'rubric_items',
+    parseAsArrayOf(parseAsString).withDefault([]),
+  );
 
   const [manualPointsFilter, setManualPointsFilter] = useQueryState(
     'manual_points',
@@ -248,7 +253,6 @@ function AssessmentQuestionTable({
   );
 
   const [showStudentInfo, setShowStudentInfo] = useState(false);
-  const [showOnlyRubricDisagreements, setShowOnlyRubricDisagreements] = useState(false);
   const { createCheckboxProps } = useShiftClickCheckbox<InstanceQuestionRow>();
 
   const columnFilters = useMemo(() => {
@@ -265,14 +269,11 @@ function AssessmentQuestionTable({
       filters.push({ id: 'instance_question_group_name', value: submissionGroupFilter });
     }
     if (aiGradingMode) {
-      // Apply rubric disagreements filter if enabled
-      const rubricFilter = showOnlyRubricDisagreements
-        ? [
-            ...aiAgreementFilter,
-            ...(aiAgreementFilter.length === 0 ? ['__HAS_DISAGREEMENT__'] : []),
-          ]
-        : aiAgreementFilter;
-      filters.push({ id: 'rubric_difference', value: rubricFilter });
+      filters.push({ id: 'rubric_difference', value: aiAgreementFilter });
+    }
+    // Filter by rubric items if any are selected
+    if (rubricData && rubricData.rubric_items.length > 0 && rubricItemsFilter.length > 0) {
+      filters.push({ id: 'rubric_grading_item_ids', value: rubricItemsFilter });
     }
     if (assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0) {
       filters.push({ id: 'auto_points', value: autoPointsFilter });
@@ -288,7 +289,7 @@ function AssessmentQuestionTable({
     gradedByFilter,
     submissionGroupFilter,
     aiAgreementFilter,
-    showOnlyRubricDisagreements,
+    rubricItemsFilter,
     manualPointsFilter,
     autoPointsFilter,
     totalPointsFilter,
@@ -296,6 +297,7 @@ function AssessmentQuestionTable({
     aiGradingMode,
     instanceQuestionGroups.length,
     assessmentQuestion.max_auto_points,
+    rubricData,
   ]);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
@@ -730,6 +732,21 @@ function AssessmentQuestionTable({
             }),
           ]
         : []),
+
+      // Hidden column for filtering by rubric items
+      columnHelper.accessor('rubric_grading_item_ids', {
+        id: 'rubric_grading_item_ids',
+        header: 'Rubric Items',
+        enableHiding: false,
+        enableSorting: false,
+        cell: () => null,
+        filterFn: (row, columnId, filterValues: string[]) => {
+          if (filterValues.length === 0) return true;
+          const rubricItemIds = row.original.rubric_grading_item_ids;
+          // Check if ANY of the selected rubric item IDs are in the row's rubric_grading_item_ids
+          return filterValues.some((itemId) => rubricItemIds.includes(itemId));
+        },
+      }),
     ],
     [
       aiGradingMode,
@@ -748,8 +765,8 @@ function AssessmentQuestionTable({
   const defaultColumnVisibility = Object.fromEntries(
     allColumnIds.map((id) => [
       id,
-      // Hide by default: user_or_group_name, uid, points
-      !['user_or_group_name', 'uid', 'points'].includes(id),
+      // Hide by default: user_or_group_name, uid, points, rubric_grading_item_ids
+      !['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(id),
     ]),
   );
 
@@ -994,36 +1011,25 @@ function AssessmentQuestionTable({
       <TanstackTableCard
         table={table}
         title="Student instance questions"
-        columnManagerButtons={
-          <>
-            {aiGradingMode && (
-              <Button
-                variant="light"
-                size="sm"
-                onClick={() => {
-                  setShowOnlyRubricDisagreements(!showOnlyRubricDisagreements);
-                  if (!showOnlyRubricDisagreements) {
-                    // When enabling, clear any existing ai agreement filters
-                    void setAiAgreementFilter([]);
-                  }
-                }}
-              >
-                <i
-                  class={showOnlyRubricDisagreements ? 'bi bi-funnel-fill' : 'bi bi-funnel'}
-                  aria-hidden="true"
-                />{' '}
-                <span class="d-none d-md-inline">
-                  {showOnlyRubricDisagreements ? 'Show all' : 'Rubric disagreements'}
-                </span>
-              </Button>
-            )}
-            <Button variant="light" size="sm" onClick={toggleStudentInfo}>
+        columnManagerTopContent={
+          <div class="px-2 py-1">
+            <button
+              type="button"
+              class="btn btn-sm btn-secondary w-100 text-start text-nowrap"
+              onClick={toggleStudentInfo}
+            >
               <i class={showStudentInfo ? 'bi bi-eye-slash' : 'bi bi-eye'} aria-hidden="true" />{' '}
-              <span class="d-none d-md-inline">
-                {showStudentInfo ? 'Hide' : 'Show'} student info
-              </span>
-            </Button>
-          </>
+              {showStudentInfo ? 'Hide' : 'Show'} student info
+            </button>
+          </div>
+        }
+        columnManagerButtons={
+          <RubricItemsFilter
+            rubricData={rubricData}
+            instanceQuestions={instanceQuestions}
+            rubricItemsFilter={rubricItemsFilter}
+            setRubricItemsFilter={setRubricItemsFilter}
+          />
         }
         headerButtons={
           <>

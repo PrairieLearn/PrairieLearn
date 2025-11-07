@@ -527,6 +527,7 @@ export function TanstackTable<RowDataModel>({
  * @param params.title - The title of the card
  * @param params.headerButtons - The buttons to display in the header
  * @param params.columnManagerButtons - The buttons to display next to the column manager (View button)
+ * @param params.columnManagerTopContent - Optional content to display at the top of the column manager (View) dropdown menu
  * @param params.globalFilter - State management for the global filter
  * @param params.globalFilter.value
  * @param params.globalFilter.setValue
@@ -539,6 +540,7 @@ export function TanstackTableCard<RowDataModel>({
   title,
   headerButtons,
   columnManagerButtons,
+  columnManagerTopContent,
   globalFilter,
   tableOptions,
   downloadButtonOptions = null,
@@ -547,6 +549,7 @@ export function TanstackTableCard<RowDataModel>({
   title: string;
   headerButtons: JSX.Element;
   columnManagerButtons?: JSX.Element;
+  columnManagerTopContent?: JSX.Element;
   globalFilter: {
     value: string;
     setValue: (value: string) => void;
@@ -606,8 +609,8 @@ export function TanstackTableCard<RowDataModel>({
       </div>
       <div class="card-body d-flex flex-column">
         <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
-          <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
-            <div class="input-group">
+          <div class="flex-grow-1 flex-nowrap align-items-center d-flex flex-row gap-2">
+            <div class="input-group" style={{ maxWidth: '400px' }}>
               <input
                 ref={searchInputRef}
                 type="text"
@@ -635,7 +638,7 @@ export function TanstackTableCard<RowDataModel>({
               We can't have two elements with the same id of 'column-manager-button'. */}
             {isMediumOrLarger && (
               <>
-                <ColumnManager table={table} />
+                <ColumnManager table={table} topContent={columnManagerTopContent} />
                 {columnManagerButtons}
               </>
             )}
@@ -643,10 +646,10 @@ export function TanstackTableCard<RowDataModel>({
           {/* We do this instead of CSS properties for the accessibility checker.
             We can't have two elements with the same id of 'column-manager-button'. */}
           {!isMediumOrLarger && (
-            <>
-              <ColumnManager table={table} />
+            <div class="d-flex flex-row flex-nowrap align-items-center gap-2 flex-shrink-0">
+              <ColumnManager table={table} topContent={columnManagerTopContent} />
               {columnManagerButtons}
-            </>
+            </div>
           )}
           <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
             <div class="text-muted text-nowrap">
