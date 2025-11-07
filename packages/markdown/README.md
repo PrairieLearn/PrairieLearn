@@ -4,8 +4,6 @@ Utilities for rendering and sanitizing Markdown content, with support for math r
 
 ## Usage
 
-The primary function is `markdownToHtml`, which converts markdown strings to HTML with various options for sanitization, math processing, and HTML handling.
-
 ```ts
 import { markdownToHtml } from '@prairielearn/markdown';
 
