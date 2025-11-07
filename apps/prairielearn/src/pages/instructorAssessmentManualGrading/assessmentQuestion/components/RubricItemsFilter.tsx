@@ -1,7 +1,7 @@
 import { useMemo } from 'preact/compat';
 import { Dropdown } from 'react-bootstrap';
 
-import type { RubricData } from '../assessmentQuestion.types.js';
+import type { RubricData } from '../../../../lib/manualGrading.types.js';
 import type { InstanceQuestionRow } from '../assessmentQuestion.types.js';
 
 interface RubricItemsFilterProps {
