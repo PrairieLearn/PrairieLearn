@@ -141,7 +141,8 @@ export async function nextInstanceQuestionUrl({
 /**
  * Selects a variety of rubric data for a given assessment question.
  * If a submission is provided, the rubric items are rendered
- * as Mustache templates with the submission's data.
+ * as Mustache templates with the submission's data. Empty strings
+ * are skipped to avoid unnecessary processing.
  */
 export async function selectRubricData({
   assessment_question,
