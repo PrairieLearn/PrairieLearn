@@ -14,7 +14,7 @@ Consequently, the correct answer is also fixed.
 
 ```
 
-This question uses the attribute `none-of-the-above="random"` in the `pl-multiple-choice` element. This attribute adds the option "None of the above" as an alternative among the other options defined by the `pl-answer` tags. The answer "None of the above" will be correct with probability proportional to the total number of correct choices (i.e., if there are N possible correct choices, "None of the above" will be correct with probability 1/N).
+This question uses the attribute `none-of-the-above="random"` in the `pl-multiple-choice` element. This attribute adds the option "None of the above" as an alternative among the other options defined by the `pl-answer` tags. The "None of the above" option will be randomly selected as the correct answer.
 
 Unfortunately, this implementation only creates one unique version of the question, with the same set of parameters and answers.
 The only level of randomization comes from the order in which the answers are displayed and the choice of the "None of the above" option as correct answer.
