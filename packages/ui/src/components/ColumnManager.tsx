@@ -14,8 +14,6 @@ function ColumnMenuItem<RowDataModel>({
   hidePinButton = false,
   onTogglePin,
 }: ColumnMenuItemProps<RowDataModel>) {
-  const pinButtonRef = useRef<HTMLButtonElement>(null);
-
   if (!column.getCanHide() && !column.getCanPin()) return null;
 
   // Use meta.label if available, otherwise fall back to header or column.id
@@ -41,7 +39,6 @@ function ColumnMenuItem<RowDataModel>({
       </label>
       {column.getCanPin() && !hidePinButton && (
         <button
-          ref={pinButtonRef}
           type="button"
           // Since the HTML changes, but we want to refocus the pin button, we track
           // the active pin button and refocuses it when the column manager is rerendered.
@@ -52,10 +49,7 @@ function ColumnMenuItem<RowDataModel>({
           }
           title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           data-bs-toggle="tooltip"
-          onClick={(e) => {
-            e.stopPropagation();
-            onTogglePin(column.id);
-          }}
+          onClick={() => onTogglePin(column.id)}
         >
           <i class={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} aria-hidden="true" />
         </button>
