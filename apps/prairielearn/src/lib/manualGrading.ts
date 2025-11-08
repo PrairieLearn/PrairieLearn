@@ -171,16 +171,15 @@ export async function selectRubricData({
     };
 
     await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
-      item.description_rendered = await markdownToHtml(
-        mustache.render(item.description || '', mustache_data),
-        { inline: true },
-      );
-      item.explanation_rendered = await markdownToHtml(
-        mustache.render(item.explanation || '', mustache_data),
-      );
-      item.grader_note_rendered = await markdownToHtml(
-        mustache.render(item.grader_note || '', mustache_data),
-      );
+      item.description_rendered = item.description
+        ? await markdownToHtml(mustache.render(item.description, mustache_data), { inline: true })
+        : '';
+      item.explanation_rendered = item.explanation
+        ? await markdownToHtml(mustache.render(item.explanation, mustache_data))
+        : '';
+      item.grader_note_rendered = item.grader_note
+        ? await markdownToHtml(mustache.render(item.grader_note, mustache_data))
+        : '';
     });
   }
 
