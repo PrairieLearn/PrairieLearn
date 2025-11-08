@@ -32,9 +32,9 @@
     {
       "questions": [
         { "id": "partialCredit1", "points": 1, "maxPoints": 5 },
-        { "id": "partialCredit2", "points": 2, "maxPoints": 10 },
+        { "id": "partialCredit2", "autoPoints": 2, "maxAutoPoints": 10, "manualPoints": 3 },
         { "id": "partialCredit3", "points": 2, "maxPoints": 10, "triesPerVariant": 3 },
-        { "id": "partialCredit4_v2", "points": 2, "maxPoints": 10 },
+        { "id": "partialCredit4_v2", "points": 3, "maxPoints": 10 },
         { "id": "partialCredit6_no_partial", "points": 3, "maxPoints": 11 }
       ]
     }

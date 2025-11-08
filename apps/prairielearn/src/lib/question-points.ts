@@ -210,10 +210,7 @@ async function computeInstanceQuestionPointsHomework({
   }
 
   if (correct && !assessment.constant_question_value) {
-    current_value = Math.min(
-      current_value + (assessmentQuestion.init_points ?? 0),
-      assessmentQuestion.max_points ?? 0,
-    );
+    current_value = Math.min(current_value + baseAutoValue, assessmentQuestion.max_points ?? 0);
   }
 
   const auto_points = Math.min(
