@@ -244,7 +244,7 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
             return pct
 
     # If we got here, invalid value
-    valid_values = ", ".join([pct.value for pct in PartialCreditType])
+    valid_values = ", ".join(pct.value for pct in PartialCreditType)
     raise ValueError(
         f'Invalid partial-credit value: "{partial_credit_str}". '
         f"Must be one of: {valid_values}"

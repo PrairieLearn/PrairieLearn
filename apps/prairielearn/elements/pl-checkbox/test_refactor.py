@@ -7,7 +7,7 @@ maintains the exact same behavior as the original code.
 
 import importlib
 from typing import Any, NamedTuple
-
+import math
 import lxml.html
 import pytest
 
