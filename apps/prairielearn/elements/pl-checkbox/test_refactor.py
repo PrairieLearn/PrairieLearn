@@ -6,8 +6,9 @@ maintains the exact same behavior as the original code.
 """
 
 import importlib
-from typing import Any, NamedTuple
 import math
+from typing import Any, NamedTuple
+
 import lxml.html
 import pytest
 
@@ -320,7 +321,7 @@ def test_partial_credit_type_conversion() -> None:
         == pl_checkbox.PartialCreditType.EACH_ANSWER
     )
 
-    with pytest.raises(ValueError, match="Unknown partial_credit_method"):
+    with pytest.raises(ValueError, match=r"Invalid partial-credit-method.*"):
         pl_checkbox.get_partial_credit_mode(build_element(True, "INVALID"))
 
 
