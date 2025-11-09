@@ -33,7 +33,7 @@ class AnswerTuple(NamedTuple):
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
-PARTIAL_CREDIT_DEFAULT = False
+PARTIAL_CREDIT_DEFAULT = PartialCreditType.NET_CORRECT
 PARTIAL_CREDIT_METHOD_DEFAULT = "PC"
 HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
@@ -169,48 +169,86 @@ def generate_insert_text(
 
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
-    """Convert external fixed-order attribute to internal enum.
+    """Gets order type in a backwards-compatible way. New display overwrites old."""
+    if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
+        raise ValueError(
+            'Setting answer choice order should be done with the "order" attribute.'
+        )
 
-    Args:
-        element: The pl-checkbox HTML element
+    fixed_order_default = False
+    fixed_order = pl.get_boolean_attrib(element, "fixed-order", fixed_order_default)
+    order_type_default = OrderType.FIXED if fixed_order else OrderType.RANDOM
 
-    Returns:
-        OrderType enum value
-    """
-    fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
-    return OrderType.FIXED if fixed_order else OrderType.RANDOM
+    return pl.get_enum_attrib(element, "order", OrderType, order_type_default)
 
 
 def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType:
-    """Convert external partial credit attributes to internal enum.
+    """Get partial credit mode with backward compatibility.
 
-    Args:
-        element: The pl-checkbox HTML element
+    New usage: partial-credit="off|coverage|each-answer|net-correct"
+    Old usage: partial-credit="true|false" + partial-credit-method="PC|COV|EDC"
 
     Returns:
         PartialCreditType enum value
 
     Raises:
-        ValueError: If partial_credit_method is not one of "PC", "COV", or "EDC"
+        ValueError: If invalid partial-credit value or deprecated partial-credit-method is used with new style
     """
-    partial_credit = pl.get_boolean_attrib(
-        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
-    )
-    partial_credit_method = pl.get_string_attrib(
-        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
-    )
+    if not pl.has_attrib(element, "partial-credit"):
+        # No attribute specified, use default
+        return PARTIAL_CREDIT_DEFAULT
 
-    if not partial_credit:
-        return PartialCreditType.ALL_OR_NOTHING
+    # Try to parse as enum first (new style)
+    partial_credit_str = pl.get_string_attrib(element, "partial-credit", "")
 
-    if partial_credit_method == "PC":
-        return PartialCreditType.NET_CORRECT
-    elif partial_credit_method == "COV":
-        return PartialCreditType.COVERAGE
-    elif partial_credit_method == "EDC":
-        return PartialCreditType.EACH_ANSWER
-    else:
-        raise ValueError(f"Unknown partial_credit_method: {partial_credit_method}")
+    # Handle backward compatibility: old boolean + method style
+    if partial_credit_str.lower() in ["true", "false"]:
+        if pl.has_attrib(element, "partial-credit-method"):
+            # Old style: partial-credit="true" + partial-credit-method="PC|COV|EDC"
+            partial_credit_bool = partial_credit_str.lower() == "true"
+            if not partial_credit_bool:
+                return PartialCreditType.ALL_OR_NOTHING
+
+            partial_credit_method = pl.get_string_attrib(
+                element, "partial-credit-method", "PC"
+            )
+            old_to_new_mapping = {
+                "PC": PartialCreditType.NET_CORRECT,
+                "COV": PartialCreditType.COVERAGE,
+                "EDC": PartialCreditType.EACH_ANSWER,
+            }
+            if partial_credit_method not in old_to_new_mapping:
+                raise ValueError(
+                    f'Invalid partial-credit-method: {partial_credit_method}. Must be "PC", "COV", or "EDC".'
+                )
+            return old_to_new_mapping[partial_credit_method]
+        else:
+            # Old style: partial-credit="true|false" without method (defaults to PC)
+            partial_credit_bool = partial_credit_str.lower() == "true"
+            return (
+                PartialCreditType.NET_CORRECT
+                if partial_credit_bool
+                else PartialCreditType.ALL_OR_NOTHING
+            )
+
+    # New style: partial-credit="off|coverage|each-answer|net-correct"
+    if pl.has_attrib(element, "partial-credit-method"):
+        raise ValueError(
+            'partial-credit-method is deprecated. Use partial-credit="off|coverage|each-answer|net-correct" instead.'
+        )
+
+    # Try to match against enum values (case-insensitive)
+    partial_credit_normalized = partial_credit_str.lower()
+    for pct in PartialCreditType:
+        if pct.value == partial_credit_normalized:
+            return pct
+
+    # If we got here, invalid value
+    valid_values = ", ".join([pct.value for pct in PartialCreditType])
+    raise ValueError(
+        f'Invalid partial-credit value: "{partial_credit_str}". '
+        f"Must be one of: {valid_values}"
+    )
 
 
 def validate_min_max_options(
@@ -223,21 +261,25 @@ def validate_min_max_options(
     max_select: int,
     min_select_default: int,
 ) -> None:
-    """Validate that min/max select and correct options have sensible values.
+    """Raise an exception if any of these are invalid. TODO do a better job comparmentalizing the logic here."""
+    if not (0 <= min_correct <= max_correct <= len_correct):
+        raise ValueError(
+            f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
+        )
 
-    Args:
-        min_correct: Minimum number of correct answers
-        max_correct: Maximum number of correct answers
-        len_correct: Total number of correct answers available
-        len_incorrect: Total number of incorrect answers available
-        number_answers: Total number of answers to display
-        min_select: Minimum number of options that must be selected
-        max_select: Maximum number of options that can be selected
-        min_select_default: Default value for min_select
+    min_incorrect = number_answers - max_correct
+    max_incorrect = number_answers - min_correct
+    if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
+        raise ValueError(
+            f"INTERNAL ERROR: incorrect number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
+        )
 
-    Raises:
-        ValueError: If any validation constraints are violated
-    """
+    if min_select < min_select_default:
+        raise ValueError(
+            f"The attribute min-select is {min_select}, but must be at least {min_select_default}"
+        )
+
+        # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
     if min_select > max_select:
         raise ValueError(
             f"min-select ({min_select}) is greater than max-select ({max_select})"
@@ -315,14 +357,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    partial_credit = pl.get_boolean_attrib(
-        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
-    )
-    partial_credit_method = pl.get_string_attrib(element, "partial-credit-method", None)
-    if not partial_credit and partial_credit_method is not None:
-        raise ValueError(
-            "Cannot specify partial-credit-method if partial-credit is not enabled"
-        )
+    # Don't use value but call getter here to do validation right away.
+    get_partial_credit_mode(element)
 
     correct_answers, incorrect_answers = categorize_options(element)
 
@@ -424,12 +460,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    partial_credit = pl.get_boolean_attrib(
-        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
-    )
-    partial_credit_method = pl.get_string_attrib(
-        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
-    )
+
+    partial_credit_mode = get_partial_credit_mode(element)
+
     hide_score_badge = pl.get_boolean_attrib(
         element, "hide-score-badge", HIDE_SCORE_BADGE_DEFAULT
     )
@@ -438,7 +471,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # answer feedback is not displayed when partial credit is True
     # (unless the question is disabled)
     show_answer_feedback = True
-    if (partial_credit and editable) or hide_score_badge:
+    if (
+        partial_credit_mode is not PartialCreditType.ALL_OR_NOTHING and editable
+    ) or hide_score_badge:
         show_answer_feedback = False
 
     display_answers = data["params"].get(name, [])
@@ -541,8 +576,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             info_params["gradingtext"] = generate_grading_text(
                 insert_text=insert_text,
                 num_display_answers=num_display_answers,
-                partial_credit=partial_credit,
-                partial_credit_method=partial_credit_method,
+                partial_credit=partial_credit_mode
+                is not PartialCreditType.ALL_OR_NOTHING,
+                partial_credit_method=partial_credit_mode.value,
             )
 
         with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
