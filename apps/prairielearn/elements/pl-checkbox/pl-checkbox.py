@@ -766,7 +766,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     submitted_set = set(submitted_keys)
     correct_set = set(correct_keys)
 
-    # NOTE should probably compute this in a separate function for easier testing
+    # TODO: compute this in a separate function for easier testing
     # if another method ever gets added.
     if partial_credit_mode is PartialCreditType.OFF:
         score = 1 if submitted_set == correct_set else 0
