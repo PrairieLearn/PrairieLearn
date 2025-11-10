@@ -3,4 +3,3 @@ import { registerHydratedComponent } from '@prairielearn/preact/hydrated-compone
 import { GroupInfoModal } from '../../../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/GroupInfoModal.js';
 
 registerHydratedComponent(GroupInfoModal);
-

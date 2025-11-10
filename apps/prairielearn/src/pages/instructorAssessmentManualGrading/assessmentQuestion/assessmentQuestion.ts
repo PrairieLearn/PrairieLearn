@@ -24,6 +24,7 @@ import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
@@ -56,6 +57,7 @@ router.get(
     const instance_questions = await queryRows(
       sql.select_instance_questions_manual_grading,
       {
+        // TODO: improve typing of res.locals
         assessment_id: (res.locals as any).assessment.id,
         assessment_question_id: res.locals.assessment_question.id,
       },
@@ -80,7 +82,7 @@ router.get(
         instanceQuestionGroups,
         rubric_data,
         instanceQuestions,
-        req,
+        search: getUrl(req).search,
       }),
     );
   }),

@@ -58,7 +58,6 @@ export interface AssessmentQuestionTableProps {
   instanceQuestions: InstanceQuestionRow[];
   urlPrefix: string;
   assessmentId: string;
-  assessmentQuestionId: string;
   assessmentQuestion: AssessmentQuestion;
   assessmentTid: string;
   questionQid: string;
@@ -79,7 +78,6 @@ export function AssessmentQuestionTable({
   instanceQuestions: initialInstanceQuestions,
   urlPrefix,
   assessmentId,
-  assessmentQuestionId,
   assessmentQuestion,
   assessmentTid,
   questionQid,
@@ -163,10 +161,10 @@ export function AssessmentQuestionTable({
 
   // Fetch instance questions data
   const { data: instanceQuestions = initialInstanceQuestions } = useQuery<InstanceQuestionRow[]>({
-    queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
+    queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestion.id],
     queryFn: async () => {
       const res = await fetch(
-        `${urlPrefix}/assessment/${assessmentId}/manual_grading/assessment_question/${assessmentQuestionId}/instances.json`,
+        `${urlPrefix}/assessment/${assessmentId}/manual_grading/assessment_question/${assessmentQuestion.id}/instances.json`,
       );
       if (!res.ok) throw new Error('Failed to fetch instance questions');
       const data = await res.json();
@@ -441,19 +439,9 @@ export function AssessmentQuestionTable({
           }
         }
 
-        // Dismiss the popover before refetching data
-        // Find the button that triggered this form's popover
-        const popoverTriggers = document.querySelectorAll('[data-bs-toggle="popover"]');
-        popoverTriggers.forEach((trigger) => {
-          const popoverInstance = window.bootstrap.Popover.getInstance(trigger);
-          if (popoverInstance) {
-            popoverInstance.hide();
-          }
-        });
-
         // Invalidate and refetch the query to update the table
         await queryClientInstance.invalidateQueries({
-          queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
+          queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestion.id],
         });
       } catch (err) {
         console.error('Error submitting form:', err);
@@ -494,7 +482,7 @@ export function AssessmentQuestionTable({
         button.removeEventListener('shown.bs.popover', handlePopoverShown);
       });
     };
-  }, [queryClientInstance, urlPrefix, assessmentId, assessmentQuestionId, instanceQuestions]);
+  }, [queryClientInstance, urlPrefix, assessmentId, assessmentQuestion.id, instanceQuestions]);
 
   // Use batch actions hook
   const {
@@ -506,7 +494,7 @@ export function AssessmentQuestionTable({
     csrfToken,
     urlPrefix,
     assessmentId,
-    assessmentQuestionId,
+    assessmentQuestionId: assessmentQuestion.id,
     setErrorMessage,
     setSuccessMessage,
   });

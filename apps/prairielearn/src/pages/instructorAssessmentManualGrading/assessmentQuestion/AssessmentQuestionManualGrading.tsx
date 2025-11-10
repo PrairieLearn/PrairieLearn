@@ -53,7 +53,6 @@ function AssessmentQuestionManualGradingInner({
   urlPrefix,
   csrfToken,
   assessmentId,
-  assessmentQuestionId,
   assessmentQuestion,
   assessmentTid,
   questionQid,
@@ -130,7 +129,6 @@ function AssessmentQuestionManualGradingInner({
         instanceQuestions={instanceQuestions}
         urlPrefix={urlPrefix}
         assessmentId={assessmentId}
-        assessmentQuestionId={assessmentQuestionId}
         assessmentQuestion={assessmentQuestion}
         assessmentTid={assessmentTid}
         questionQid={questionQid}

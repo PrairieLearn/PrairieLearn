@@ -37,10 +37,12 @@ export function formatPointsWithEdit({
   return (
     <div class="d-flex align-items-center justify-content-center gap-1">
       <span>
-        {formatPoints(points ?? 0)}{' '}
-        <small>
-          /<span class="text-muted">{maxPoints ?? 0}</span>
-        </small>
+        {points != null ? formatPoints(points) : '—'}
+        {maxPoints != null && (
+          <small>
+            /<span class="text-muted">{maxPoints}</span>
+          </small>
+        )}
       </span>
       {hasCourseInstancePermissionEdit && (
         <div

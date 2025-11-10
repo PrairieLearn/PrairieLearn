@@ -10,7 +10,6 @@ import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js'
 import { compiledStylesheetTag } from '../../../lib/assets.js';
 import type { AssessmentQuestion, InstanceQuestionGroup, User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
-import { getUrl } from '../../../lib/url.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.js';
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
@@ -24,7 +23,7 @@ export function AssessmentQuestion({
   instanceQuestionGroups,
   rubric_data,
   instanceQuestions,
-  req,
+  search,
 }: {
   resLocals: Record<string, any>;
   courseStaff: User[];
@@ -34,7 +33,7 @@ export function AssessmentQuestion({
   instanceQuestionGroups: InstanceQuestionGroup[];
   rubric_data: RubricData | null;
   instanceQuestions: InstanceQuestionRowWithAIGradingStats[];
-  req: any;
+  search: string;
 }) {
   const {
     number_in_alternative_group,
@@ -48,8 +47,6 @@ export function AssessmentQuestion({
     course_instance,
     course,
   } = resLocals;
-
-  const search = getUrl(req).search;
 
   return PageLayout({
     resLocals,
