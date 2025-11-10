@@ -190,6 +190,8 @@ describe('getCourseInstanceContext', () => {
       id: '1',
       long_name: 'Example Student Course Instance',
       short_name: 'Example Student Course',
+      publishing_end_date: null,
+      publishing_start_date: null,
     },
     course: {
       deleted_at: null,
