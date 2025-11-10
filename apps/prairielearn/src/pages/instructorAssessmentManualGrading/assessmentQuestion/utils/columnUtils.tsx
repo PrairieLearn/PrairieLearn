@@ -3,7 +3,6 @@ import { Scorebar } from '../../../../components/Scorebar.js';
 import { formatPoints } from '../../../../lib/format.js';
 import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
 
-/** Helper to generate AI grader name. */
 export function generateAiGraderName(
   ai_grading_status?: 'Graded' | 'OutdatedRubric' | 'LatestRubric',
 ): string {
@@ -17,7 +16,6 @@ export function generateAiGraderName(
   );
 }
 
-/** Helper to format points with edit button. */
 export function formatPointsWithEdit({
   row,
   field,
@@ -62,7 +60,6 @@ export function formatPointsWithEdit({
   );
 }
 
-/** Helper to format score with edit button. */
 export function formatScoreWithEdit({
   row,
   hasCourseInstancePermissionEdit,

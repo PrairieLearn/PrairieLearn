@@ -7,8 +7,11 @@ import {
 } from '@prairielearn/ui';
 
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
-import { GRADING_STATUS_VALUES, type GradingStatusValue } from '../assessmentQuestion.shared.js';
-import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
+import {
+  GRADING_STATUS_VALUES,
+  type GradingStatusValue,
+  type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
+} from '../assessmentQuestion.types.js';
 
 interface CreateColumnFiltersParams {
   allGraders: string[];
@@ -18,23 +21,44 @@ interface CreateColumnFiltersParams {
   instanceQuestionGroups: InstanceQuestionGroup[];
   assessmentQuestion: AssessmentQuestion;
   gradingStatusFilter: GradingStatusValue[];
-  setGradingStatusFilter: (value: any) => void;
+  setGradingStatusFilter: (
+    value:
+      | GradingStatusValue[]
+      | null
+      | ((prev: GradingStatusValue[]) => GradingStatusValue[] | null),
+  ) => Promise<URLSearchParams>;
   assignedGraderFilter: string[];
-  setAssignedGraderFilter: (value: any) => void;
+  setAssignedGraderFilter: (
+    value: string[] | null | ((prev: string[]) => string[] | null),
+  ) => Promise<URLSearchParams>;
   gradedByFilter: string[];
-  setGradedByFilter: (value: any) => void;
+  setGradedByFilter: (
+    value: string[] | null | ((prev: string[]) => string[] | null),
+  ) => Promise<URLSearchParams>;
   submissionGroupFilter: string[];
-  setSubmissionGroupFilter: (value: any) => void;
+  setSubmissionGroupFilter: (
+    value: string[] | null | ((prev: string[]) => string[] | null),
+  ) => Promise<URLSearchParams>;
   aiAgreementFilter: string[];
-  setAiAgreementFilter: (value: any) => void;
+  setAiAgreementFilter: (
+    value: string[] | null | ((prev: string[]) => string[] | null),
+  ) => Promise<URLSearchParams>;
   manualPointsFilter: string;
-  setManualPointsFilter: (value: any) => void;
+  setManualPointsFilter: (
+    value: string | null | ((prev: string) => string | null),
+  ) => Promise<URLSearchParams>;
   autoPointsFilter: string;
-  setAutoPointsFilter: (value: any) => void;
+  setAutoPointsFilter: (
+    value: string | null | ((prev: string) => string | null),
+  ) => Promise<URLSearchParams>;
   totalPointsFilter: string;
-  setTotalPointsFilter: (value: any) => void;
+  setTotalPointsFilter: (
+    value: string | null | ((prev: string) => string | null),
+  ) => Promise<URLSearchParams>;
   scoreFilter: string;
-  setScoreFilter: (value: any) => void;
+  setScoreFilter: (
+    value: string | null | ((prev: string) => string | null),
+  ) => Promise<URLSearchParams>;
 }
 
 export function createColumnFilters({

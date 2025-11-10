@@ -10,7 +10,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useRef, useState } from 'preact/compat';
+import { useEffect, useMemo, useState } from 'preact/compat';
 import { Alert, Button, Dropdown, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -31,8 +31,9 @@ import type {
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
-import { GRADING_STATUS_VALUES, type GradingStatusValue } from './assessmentQuestion.shared.js';
 import {
+  GRADING_STATUS_VALUES,
+  type GradingStatusValue,
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
 } from './assessmentQuestion.types.js';
@@ -355,9 +356,6 @@ export function AssessmentQuestionTable({
     },
   });
 
-  // Ref for the checkbox element to set indeterminate state
-  const studentInfoCheckboxRef = useRef<HTMLInputElement>(null);
-
   // Determine student info checkbox state based on column visibility
   const studentInfoCheckboxState = useMemo(() => {
     const visibility = columnVisibility;
@@ -368,13 +366,6 @@ export function AssessmentQuestionTable({
     if (nameVisible || uidVisible) return 'indeterminate';
     return 'unchecked';
   }, [columnVisibility]);
-
-  // Set indeterminate state on the checkbox element
-  useEffect(() => {
-    if (studentInfoCheckboxRef.current) {
-      studentInfoCheckboxRef.current.indeterminate = studentInfoCheckboxState === 'indeterminate';
-    }
-  }, [studentInfoCheckboxState]);
 
   // Handle student info checkbox click - toggles between checked (both visible) and unchecked (both hidden)
   const handleStudentInfoCheckboxClick = () => {
@@ -499,7 +490,6 @@ export function AssessmentQuestionTable({
     setSuccessMessage,
   });
 
-  // Create column filters using the extracted function
   const columnFiltersComponents = createColumnFilters({
     allGraders,
     allSubmissionGroups,
@@ -508,23 +498,23 @@ export function AssessmentQuestionTable({
     instanceQuestionGroups,
     assessmentQuestion,
     gradingStatusFilter,
-    setGradingStatusFilter: (value) => void setGradingStatusFilter(value),
+    setGradingStatusFilter,
     assignedGraderFilter,
-    setAssignedGraderFilter: (value) => void setAssignedGraderFilter(value),
+    setAssignedGraderFilter,
     gradedByFilter,
-    setGradedByFilter: (value) => void setGradedByFilter(value),
+    setGradedByFilter,
     submissionGroupFilter,
-    setSubmissionGroupFilter: (value) => void setSubmissionGroupFilter(value),
+    setSubmissionGroupFilter,
     aiAgreementFilter,
-    setAiAgreementFilter: (value) => void setAiAgreementFilter(value),
+    setAiAgreementFilter,
     manualPointsFilter,
-    setManualPointsFilter: (value) => void setManualPointsFilter(value),
+    setManualPointsFilter,
     autoPointsFilter,
-    setAutoPointsFilter: (value) => void setAutoPointsFilter(value),
+    setAutoPointsFilter,
     totalPointsFilter,
-    setTotalPointsFilter: (value) => void setTotalPointsFilter(value),
+    setTotalPointsFilter,
     scoreFilter,
-    setScoreFilter: (value) => void setScoreFilter(value),
+    setScoreFilter,
   });
 
   return (
@@ -560,9 +550,9 @@ export function AssessmentQuestionTable({
           <div class="px-2 py-1 d-flex align-items-center">
             <label class="form-check text-nowrap d-flex align-items-stretch">
               <input
-                ref={studentInfoCheckboxRef}
                 type="checkbox"
                 checked={studentInfoCheckboxState === 'checked'}
+                indeterminate={studentInfoCheckboxState === 'indeterminate'}
                 class="form-check-input"
                 onChange={handleStudentInfoCheckboxClick}
               />

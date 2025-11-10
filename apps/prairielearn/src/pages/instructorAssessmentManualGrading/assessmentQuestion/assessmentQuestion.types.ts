@@ -67,3 +67,10 @@ export type BatchActionParams =
         | 'ai_instance_question_group_assessment_all'
         | 'ai_instance_question_group_assessment_ungrouped';
     };
+
+// Grading status values for filtering
+export const GRADING_STATUS_VALUES = ['Requires grading', 'Graded'] as const;
+export type GradingStatusValue = (typeof GRADING_STATUS_VALUES)[number];
+
+// Writable version for state management
+export const GRADING_STATUS_VALUES_ARRAY: readonly GradingStatusValue[] = GRADING_STATUS_VALUES;

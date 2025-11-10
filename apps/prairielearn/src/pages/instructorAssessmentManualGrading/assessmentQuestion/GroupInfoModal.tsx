@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'preact/compat';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
+const defaultClosedOnly = true;
+
 export function GroupInfoModal({
   modalFor,
   numOpenInstances,
@@ -14,19 +16,19 @@ export function GroupInfoModal({
   onHide: () => void;
   onSubmit: (closedOnly: boolean) => void;
 }) {
-  const [closedOnly, setClosedOnly] = useState('true');
+  const [closedOnly, setClosedOnly] = useState(defaultClosedOnly);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleClose = useCallback(() => {
     onHide();
-    setClosedOnly('true'); // Reset to default when closing
+    setClosedOnly(defaultClosedOnly);
   }, [onHide]);
 
   const handleSubmit = useCallback(
     (e: Event) => {
       e.preventDefault();
       setIsSubmitting(true);
-      onSubmit(closedOnly === 'true');
+      onSubmit(closedOnly);
     },
     [onSubmit, closedOnly],
   );
@@ -105,8 +107,10 @@ export function GroupInfoModal({
                   <p class="my-0">Choose how to apply grouping:</p>
                   <select
                     class="form-select w-auto flex-shrink-0"
-                    value={closedOnly}
-                    onChange={(e) => setClosedOnly((e.target as HTMLSelectElement).value)}
+                    value={closedOnly ? 'true' : 'false'}
+                    onChange={(e) =>
+                      setClosedOnly((e.target as HTMLSelectElement).value === 'true')
+                    }
                   >
                     <option value="true">Only group closed submissions</option>
                     <option value="false">Group open & closed submissions</option>

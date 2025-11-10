@@ -53,7 +53,6 @@ router.get(
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 
-    // Fetch instance questions for initial render
     const instance_questions = await queryRows(
       sql.select_instance_questions_manual_grading,
       {
@@ -343,11 +342,6 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
       });
 
-      // flash(
-      //   'success',
-      //   `Deleted AI grading results for ${iqs.length} ${iqs.length === 1 ? 'question' : 'questions'}.`,
-      // );
-
       res.send({ success: true, numDeleted: iqs.length });
       return;
     } else if (req.body.__action === 'delete_ai_instance_question_groupings') {
@@ -359,8 +353,6 @@ router.post(
       const numDeleted = await deleteAiInstanceQuestionGroups({
         assessment_question_id: res.locals.assessment_question.id,
       });
-
-      // flash('success', `Deleted AI submission grouping results for ${numDeleted} questions.`);
 
       res.send({ success: true, numDeleted });
       return;

@@ -1,4 +1,4 @@
-import { type Table, createColumnHelper } from '@tanstack/react-table';
+import { type Row, type Table, createColumnHelper } from '@tanstack/react-table';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 import { numericColumnFilterFn } from '@prairielearn/ui';
@@ -21,7 +21,7 @@ interface CreateColumnsParams {
   urlPrefix: string;
   csrfToken: string;
   assessmentId: string;
-  createCheckboxProps: (row: any, table: Table<InstanceQuestionRow>) => any;
+  createCheckboxProps: (row: Row<InstanceQuestionRow>, table: Table<InstanceQuestionRow>) => any;
 }
 
 export function createColumns({

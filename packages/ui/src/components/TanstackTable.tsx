@@ -567,7 +567,7 @@ export function TanstackTableCard<RowDataModel>({
     placeholder: string;
   };
   tableOptions: Partial<Omit<TanstackTableProps<RowDataModel>, 'table'>>;
-  downloadButtonOptions: Omit<
+  downloadButtonOptions?: Omit<
     TanstackTableDownloadButtonProps<RowDataModel>,
     'table' | 'pluralLabel'
   >;
