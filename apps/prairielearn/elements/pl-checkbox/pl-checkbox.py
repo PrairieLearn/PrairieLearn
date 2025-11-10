@@ -32,7 +32,6 @@ class AnswerTuple(NamedTuple):
 
 
 WEIGHT_DEFAULT = 1
-FIXED_ORDER_DEFAULT = False
 # TODO change this https://github.com/PrairieLearn/PrairieLearn/issues/1671
 INLINE_DEFAULT = False
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NET_CORRECT
