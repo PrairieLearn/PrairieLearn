@@ -13,6 +13,8 @@ DECLARE
     lti_institution_id bigint;
     u users%rowtype;
     new_u users%rowtype;
+    course_instance course_instances%rowtype;
+    publishing_extension course_instance_publishing_extensions%rowtype;
 BEGIN
     -- find the LTI institution
     SELECT i.id
