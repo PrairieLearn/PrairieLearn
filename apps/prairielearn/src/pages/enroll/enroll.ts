@@ -115,9 +115,9 @@ router.post('/', [
         institution,
         course,
         courseInstance: course_instance,
-        requestedRole: 'Student',
-        authzData: res.locals.authz_data,
         actionDetail: 'explicit_joined',
+        authzData: res.locals.authz_data,
+        requestedRole: 'Student',
       });
 
       flash('success', `You have joined ${courseDisplayName}.`);
