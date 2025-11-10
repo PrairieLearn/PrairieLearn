@@ -22,6 +22,11 @@ class OrderType(Enum):
     FIXED = "fixed"
 
 
+class DisplayType(Enum):
+    BLOCK = "block"
+    INLINE = "inline"
+
+
 class AnswerTuple(NamedTuple):
     """Represents an answer option with its properties."""
 
@@ -32,8 +37,6 @@ class AnswerTuple(NamedTuple):
 
 
 WEIGHT_DEFAULT = 1
-# TODO change this https://github.com/PrairieLearn/PrairieLearn/issues/1671
-INLINE_DEFAULT = False
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NET_CORRECT
 HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
@@ -142,6 +145,28 @@ def generate_insert_text(
     insert_text += number_correct_text
 
     return insert_text
+
+
+def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
+    """Convert external display attribute to internal enum.
+
+    Args:
+        element: The pl-checkbox HTML element
+
+    Returns:
+        DisplayType enum value
+
+    Raises:
+        ValueError: If both display and inline attributes are set
+    """
+    if pl.has_attrib(element, "display") and pl.has_attrib(element, "inline"):
+        raise ValueError('Setting display should be done with the "display" attribute.')
+
+    inline_default = False
+    inline = pl.get_boolean_attrib(element, "inline", inline_default)
+    display_type_default = DisplayType.INLINE if inline else DisplayType.BLOCK
+
+    return pl.get_enum_attrib(element, "display", DisplayType, display_type_default)
 
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
@@ -340,7 +365,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "max-correct",
         "fixed-order",
         "inline",
-        "hide-answer-panel",
+        "displayhide-answer-panel",
         "hide-help-text",
         "detailed-help-text",
         "partial-credit",
@@ -473,7 +498,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         show_answer_feedback = False
 
     display_answers = data["params"].get(name, [])
-    inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
+    inline = get_display_type(element) is DisplayType.INLINE
     submitted_keys = data["submitted_answers"].get(name, [])
 
     # if there is only one key then it is passed as a string,
