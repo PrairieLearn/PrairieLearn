@@ -252,14 +252,12 @@ router.post(
         res.locals.authn_user.user_id,
       );
       if (result.modified_at_conflict) {
-        // TODO: update this handler when question points are edited differently
         res.send({
           conflict_grading_job_id: result.grading_job_id,
           conflict_details_url: `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.grading_job_id}`,
         });
       } else {
-        // TODO: update this handler when question points are edited differently
-        res.send();
+        res.send({ success: true });
       }
     } else if (req.body.__action === 'toggle_ai_grading_mode') {
       await toggleAiGradingMode(res.locals.assessment_question.id);
