@@ -37,14 +37,14 @@ For advanced use cases requiring custom Marked extensions, you can create your o
 ```ts
 import { createMarkedInstance } from '@prairielearn/markdown';
 
-const marked = await createMarkedInstance({
+const marked = createMarkedInstance({
   sanitize: true,
   allowHtml: true,
   interpretMath: true,
   extensions: [myCustomExtension],
 });
 
-const html = await marked.parse('# Custom markdown');
+const html = marked.parse('# Custom markdown');
 ```
 
 Note that `createMarkedInstance` does not use caching, so callers that rely on extensions should perform their own caching if needed.
