@@ -87,12 +87,12 @@ WITH
           -- Use new publishing dates if available, otherwise fall back to legacy access rules
           COALESCE(ci.publishing_start_date, min(ar.start_date)) AS start_date,
           COALESCE(ci.publishing_end_date, max(ar.end_date)) AS end_date,
-          -- Check if expired using new publishing dates or legacy access rules
+          -- Check if expired using new publishing dates or legacy access rules.
+          -- Use a tolerance of 1 month to allow instructors to easily see recently expired courses.
           CASE
             WHEN ci.publishing_end_date IS NOT NULL THEN ci.publishing_end_date < now() - interval '1 month'
             ELSE bool_and(
               ar.end_date IS NOT NULL
-              -- Tolerance of 1 month to allow instructors to easily see recently expired courses
               AND ar.end_date < now() - interval '1 month'
             )
           END AS expired
