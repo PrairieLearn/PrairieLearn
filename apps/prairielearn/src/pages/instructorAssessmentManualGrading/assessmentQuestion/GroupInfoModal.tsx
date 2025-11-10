@@ -22,6 +22,7 @@ export function GroupInfoModal({
   const handleClose = useCallback(() => {
     onHide();
     setClosedOnly(defaultClosedOnly);
+    setIsSubmitting(false);
   }, [onHide]);
 
   const handleSubmit = useCallback(
