@@ -12,7 +12,7 @@ import type { AssessmentQuestion, InstanceQuestionGroup, User } from '../../../l
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { getUrl } from '../../../lib/url.js';
 
-import { AssessmentQuestionManualGradingWithModals } from './AssessmentQuestionManualGradingWithModals.js';
+import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.js';
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
 
 export function AssessmentQuestion({
@@ -124,7 +124,7 @@ export function AssessmentQuestion({
         </form>
 
         <Hydrate fullHeight>
-          <AssessmentQuestionManualGradingWithModals
+          <AssessmentQuestionManualGrading
             authzData={authz_data}
             search={search}
             instanceQuestions={instanceQuestions}

@@ -43,3 +43,27 @@ export interface InstanceQuestionTableData {
   rubric_data: RubricData | null;
   instanceQuestionGroups: InstanceQuestionGroup[];
 }
+
+// Types for batch actions
+export type BatchActionData =
+  | { assigned_grader: string | null }
+  | { requires_manual_grading: boolean }
+  | { batch_action: 'ai_grade_assessment_selected'; closed_instance_questions_only?: boolean }
+  | {
+      batch_action: 'ai_instance_question_group_selected';
+      closed_instance_questions_only?: boolean;
+    };
+
+export type BatchActionParams =
+  | {
+      action: 'batch_action';
+      actionData: BatchActionData;
+      instanceQuestionIds: string[];
+    }
+  | {
+      action:
+        | 'ai_grade_assessment_graded'
+        | 'ai_grade_assessment_all'
+        | 'ai_instance_question_group_assessment_all'
+        | 'ai_instance_question_group_assessment_ungrouped';
+    };
