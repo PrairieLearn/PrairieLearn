@@ -139,7 +139,7 @@ SELECT
   u.uin,
   u.user_name,
   u.role,
-  e.id AS enrollment_id,
+  to_jsonb(e.*) AS enrollment,
   COALESCE(s.scores, '{}') AS scores
 FROM
   course_users AS u

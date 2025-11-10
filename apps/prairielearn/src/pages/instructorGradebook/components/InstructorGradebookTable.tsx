@@ -13,10 +13,17 @@ import {
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import * as React from 'preact/compat';
 import { useMemo, useState } from 'preact/compat';
+import { ButtonGroup, Dropdown } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { CategoricalColumnFilter, TanstackTableCard } from '@prairielearn/ui';
+import {
+  CategoricalColumnFilter,
+  NumericInputColumnFilter,
+  TanstackTableCard,
+  numericColumnFilterFn,
+} from '@prairielearn/ui';
 
+import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import {
   NuqsAdapter,
   parseAsColumnPinningState,
@@ -26,6 +33,7 @@ import {
 import type { PageContextWithAuthzData } from '../../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
+import { type EnumEnrollmentStatus, EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
 import {
   type CourseAssessmentRow,
   type GradebookRow,
@@ -35,10 +43,21 @@ import {
 import { EditScoreModal } from './EditScoreModal.js';
 
 const DEFAULT_SORT: SortingState = [{ id: 'role', desc: true }];
-const DEFAULT_PINNING: ColumnPinningState = { left: ['uid'], right: [] };
+const DEFAULT_PINNING: ColumnPinningState = { left: ['user_name'], right: [] };
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
 const DEFAULT_ROLE_FILTER: (typeof ROLE_VALUES)[number][] = [];
+
+const _ENROLLMENT_FILTER_OPTIONS = [
+  'students-and-staff',
+  'only-students',
+  'only-joined-students',
+] as const;
+type EnrollmentFilterOption = (typeof _ENROLLMENT_FILTER_OPTIONS)[number];
+
+const DEFAULT_ENROLLMENT_FILTER: EnrollmentFilterOption = 'only-joined-students';
+const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
+const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 
 const columnHelper = createColumnHelper<GradebookRow>();
 
@@ -73,8 +92,12 @@ function GradebookTable({
     parseAsArrayOf(parseAsStringLiteral(ROLE_VALUES)).withDefault(DEFAULT_ROLE_FILTER),
   );
 
-  const [studentsOnlyFilter, setStudentsOnlyFilter] = useState(false);
-  const [hideEmptyAssessments, setHideEmptyAssessments] = useState(false);
+  const [enrollmentFilter, setEnrollmentFilter] =
+    useState<EnrollmentFilterOption>(DEFAULT_ENROLLMENT_FILTER);
+  const [statusFilter, setStatusFilter] = useQueryState<EnumEnrollmentStatus[]>(
+    'status',
+    parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(DEFAULT_STATUS_FILTER),
+  );
 
   const [editScoreModal, setEditScoreModal] = useState<{
     show: boolean;
@@ -92,18 +115,26 @@ function GradebookTable({
   const columnFilters = useMemo<ColumnFiltersState>(() => {
     const filters: ColumnFiltersState = [];
 
-    // Apply role filter
+    // Apply status filter
+    if (statusFilter.length > 0) {
+      filters.push({ id: 'enrollment_status', value: statusFilter });
+    }
+
+    // Apply role filter from role column filter
     if (roleFilter.length > 0) {
       filters.push({ id: 'role', value: roleFilter });
     }
 
-    // Apply "Students Only" filter if enabled
-    if (studentsOnlyFilter) {
+    // Apply enrollment filter based on selection
+    if (enrollmentFilter === 'only-joined-students') {
+      filters.push({ id: 'enrollment_status', value: ['joined'] });
+    } else if (enrollmentFilter === 'only-students') {
       filters.push({ id: 'role', value: ['Student'] });
     }
+    // 'students-and-staff' shows everyone, no filter
 
     return filters;
-  }, [roleFilter, studentsOnlyFilter]);
+  }, [enrollmentFilter, statusFilter, roleFilter]);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
@@ -124,12 +155,24 @@ function GradebookTable({
 
   const columns = useMemo(
     () => [
-      // UID column (pinned left by default)
+      // Name column (pinned left by default)
+      columnHelper.accessor('user_name', {
+        id: 'user_name',
+        header: 'Name',
+        cell: (info) => {
+          const name = info.getValue();
+          const enrollmentId = info.row.original.enrollment?.id;
+          if (!name) return '—';
+          if (!enrollmentId) return name;
+          return <a href={getStudentEnrollmentUrl(urlPrefix, enrollmentId)}>{name}</a>;
+        },
+      }),
+
+      // UID column
       columnHelper.accessor('uid', {
         id: 'uid',
         header: 'UID',
         cell: (info) => info.getValue(),
-        enableHiding: false,
       }),
 
       // UIN column
@@ -137,19 +180,6 @@ function GradebookTable({
         id: 'uin',
         header: 'UIN',
         cell: (info) => info.getValue() || '—',
-      }),
-
-      // Name column
-      columnHelper.accessor('user_name', {
-        id: 'user_name',
-        header: 'Name',
-        cell: (info) => {
-          const name = info.getValue();
-          const enrollmentId = info.row.original.enrollment_id;
-          if (!name) return '—';
-          if (!enrollmentId) return name;
-          return <a href={getStudentEnrollmentUrl(urlPrefix, enrollmentId)}>{name}</a>;
-        },
       }),
 
       // Role column
@@ -174,6 +204,21 @@ function GradebookTable({
           </span>
         ),
         cell: (info) => info.getValue(),
+        filterFn: (row, columnId, filterValues: string[]) => {
+          if (filterValues.length === 0) return true;
+          const current = row.getValue<GradebookRow['role']>(columnId);
+          return filterValues.includes(current);
+        },
+      }),
+
+      // Enrollment Status column
+      columnHelper.accessor((row) => row.enrollment?.status, {
+        id: 'enrollment_status',
+        header: 'Status',
+        cell: (info) => {
+          const status = info.getValue();
+          return status ? <EnrollmentStatusIcon type="text" status={status} /> : '—';
+        },
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
           const current = row.getValue(columnId);
@@ -247,7 +292,7 @@ function GradebookTable({
                 </span>
               );
             },
-            enableColumnFilter: false,
+            filterFn: numericColumnFilterFn,
           },
         ),
       ),
@@ -256,50 +301,91 @@ function GradebookTable({
   );
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
-  const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
 
-  // Determine which assessment columns have no scores for any student
-  const emptyAssessmentColumns = useMemo(() => {
-    const empty = new Set<string>();
-    courseAssessments.forEach((assessment) => {
-      const hasAnyScore = gradebookRows.some((row) => {
-        const data = row.scores[assessment.assessment_id];
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        return data?.score_perc != null;
-      });
-      if (!hasAnyScore) {
-        empty.add(`assessment_${assessment.assessment_id}`);
+  // Set default visibility: hide UID, UIN, Role, and enrollment_status columns by default
+  const defaultColumnVisibility = Object.fromEntries(
+    allColumnIds.map((id) => {
+      if (id === 'uid' || id === 'uin' || id === 'role' || id === 'enrollment_status') {
+        return [id, false];
       }
-    });
-    return empty;
-  }, [courseAssessments, gradebookRows]);
+      return [id, true];
+    }),
+  );
 
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
 
-  // Update column visibility when hideEmptyAssessments changes
+  // Auto-update column visibility when filter changes (like clicking checkboxes in View menu)
+  const prevEnrollmentFilter = React.useRef<EnrollmentFilterOption>(enrollmentFilter);
+
   React.useEffect(() => {
-    if (hideEmptyAssessments) {
-      // Hide empty assessment columns
-      const newVisibility = { ...columnVisibility };
-      emptyAssessmentColumns.forEach((colId) => {
-        newVisibility[colId] = false;
-      });
-      void setColumnVisibility(newVisibility);
+    // Only update if filter actually changed
+    if (prevEnrollmentFilter.current === enrollmentFilter) return;
+
+    const updates: Record<string, boolean> = {};
+
+    if (enrollmentFilter === 'only-joined-students') {
+      updates.role = false;
+      updates.enrollment_status = false;
+    } else if (enrollmentFilter === 'only-students') {
+      updates.enrollment_status = true;
+      updates.role = false;
     } else {
-      // Show all columns that were previously hidden due to being empty
-      const newVisibility = { ...columnVisibility };
-      emptyAssessmentColumns.forEach((colId) => {
-        if (newVisibility[colId] === false) {
-          newVisibility[colId] = true;
-        }
-      });
-      void setColumnVisibility(newVisibility);
+      // students-and-staff: Show both
+      updates.role = true;
+      updates.enrollment_status = true;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hideEmptyAssessments]);
+
+    // Synchronize column visibility with filter selection
+    // eslint-disable-next-line
+    void setColumnVisibility((prev) => ({ ...prev, ...updates }));
+    prevEnrollmentFilter.current = enrollmentFilter;
+  }, [enrollmentFilter, setColumnVisibility]);
+
+  // Create filters for assessment columns
+  const filters = useMemo(() => {
+    const assessmentFilters: Record<string, (props: { header: any }) => React.JSX.Element> = {};
+
+    courseAssessments.forEach((assessment) => {
+      const columnId = `assessment_${assessment.assessment_id}`;
+      assessmentFilters[columnId] = ({ header }) => (
+        <NumericInputColumnFilter
+          columnId={header.column.id}
+          columnLabel={assessment.label}
+          value={(header.column.getFilterValue() as string | undefined) || ''}
+          onChange={(value) => {
+            header.column.setFilterValue(value || undefined);
+          }}
+        />
+      );
+    });
+
+    return {
+      role: ({ header }) => (
+        <CategoricalColumnFilter
+          columnId={header.column.id}
+          columnLabel="Role"
+          allColumnValues={ROLE_VALUES}
+          renderValueLabel={({ value }) => <span>{value}</span>}
+          columnValuesFilter={roleFilter}
+          setColumnValuesFilter={setRoleFilter}
+        />
+      ),
+      enrollment_status: ({ header }) => (
+        <CategoricalColumnFilter
+          columnId={header.column.id}
+          columnLabel="Status"
+          allColumnValues={STATUS_VALUES}
+          renderValueLabel={({ value }) => <EnrollmentStatusIcon type="text" status={value} />}
+          columnValuesFilter={statusFilter}
+          setColumnValuesFilter={setStatusFilter}
+        />
+      ),
+      ...assessmentFilters,
+    };
+  }, [courseAssessments, roleFilter, setRoleFilter, statusFilter, setStatusFilter]);
 
   const table = useReactTable({
     data: gradebookRows,
@@ -341,39 +427,65 @@ function GradebookTable({
       <TanstackTableCard
         table={table}
         title="Gradebook"
+        pluralLabel="students"
         headerButtons={
-          <>
-            <button
-              type="button"
-              class={`btn btn-sm btn-light ${studentsOnlyFilter ? 'active' : ''}`}
-              onClick={() => setStudentsOnlyFilter(!studentsOnlyFilter)}
-            >
-              <i class="fa fa-user-graduate" aria-hidden="true" />{' '}
-              {studentsOnlyFilter ? 'Show All' : 'Students Only'}
-            </button>
-            <button
-              type="button"
-              class={`btn btn-sm btn-light ${hideEmptyAssessments ? 'active' : ''}`}
-              title={
-                hideEmptyAssessments
-                  ? 'Show all assessment columns'
-                  : 'Hide assessment columns with no scores'
-              }
-              onClick={() => setHideEmptyAssessments(!hideEmptyAssessments)}
-            >
-              <i class="fa fa-eye-slash" aria-hidden="true" />{' '}
-              {hideEmptyAssessments ? 'Show Empty' : 'Hide Empty'}
-            </button>
-            <button
-              type="button"
-              class="btn btn-sm btn-light"
-              onClick={() => {
-                window.location.href = `${urlPrefix}/instance_admin/gradebook/${csvFilename}`;
-              }}
-            >
-              <i class="fa fa-download" aria-hidden="true" /> Download
-            </button>
-          </>
+          <button
+            type="button"
+            class="btn btn-sm btn-light"
+            onClick={() => {
+              window.location.href = `${urlPrefix}/instance_admin/gradebook/${csvFilename}`;
+            }}
+          >
+            <i class="fa fa-download" aria-hidden="true" /> Download
+          </button>
+        }
+        columnManagerButtons={
+          <Dropdown as={ButtonGroup}>
+            <Dropdown.Toggle variant="outline-secondary">
+              <i class="bi bi-funnel me-2" aria-hidden="true" />
+              Filter:{' '}
+              {enrollmentFilter === 'students-and-staff'
+                ? 'Students & Staff'
+                : enrollmentFilter === 'only-students'
+                  ? 'Students'
+                  : 'Joined Students'}
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+              <Dropdown.Item
+                as="button"
+                type="button"
+                active={enrollmentFilter === 'only-joined-students'}
+                onClick={() => setEnrollmentFilter('only-joined-students')}
+              >
+                <i
+                  class={`bi ${enrollmentFilter === 'only-joined-students' ? 'bi-check-circle-fill' : 'bi-circle'} me-2`}
+                />
+                Only joined students
+              </Dropdown.Item>
+              <Dropdown.Item
+                as="button"
+                type="button"
+                active={enrollmentFilter === 'only-students'}
+                onClick={() => setEnrollmentFilter('only-students')}
+              >
+                <i
+                  class={`bi ${enrollmentFilter === 'only-students' ? 'bi-check-circle-fill' : 'bi-circle'} me-2`}
+                />
+                Only students
+              </Dropdown.Item>
+              <Dropdown.Item
+                as="button"
+                type="button"
+                active={enrollmentFilter === 'students-and-staff'}
+                onClick={() => setEnrollmentFilter('students-and-staff')}
+              >
+                <i
+                  class={`bi ${enrollmentFilter === 'students-and-staff' ? 'bi-check-circle-fill' : 'bi-circle'} me-2`}
+                />
+                Students and staff
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>
         }
         globalFilter={{
           value: globalFilter,
@@ -381,20 +493,8 @@ function GradebookTable({
           placeholder: 'Search by UID, name...',
         }}
         tableOptions={{
-          filters: {
-            role: ({ header }) => (
-              <CategoricalColumnFilter
-                columnId={header.column.id}
-                columnLabel="Role"
-                allColumnValues={ROLE_VALUES}
-                renderValueLabel={({ value }) => <span>{value}</span>}
-                columnValuesFilter={roleFilter}
-                setColumnValuesFilter={setRoleFilter}
-              />
-            ),
-          },
+          filters,
         }}
-        downloadButtonOptions={null}
       />
       <EditScoreModal
         show={editScoreModal.show}
