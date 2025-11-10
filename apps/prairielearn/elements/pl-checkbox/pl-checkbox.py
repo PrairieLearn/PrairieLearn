@@ -363,8 +363,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "number-answers",
         "min-correct",
         "max-correct",
-        "fixed-order",
-        "inline",
         "display",
         "hide-answer-panel",
         "hide-help-text",
@@ -376,6 +374,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "min-select",
         "max-select",
         "show-number-correct",
+        "order",
+        # Deprecated
+        "fixed-order",
+        "inline",
     ]
 
     pl.check_attribs(element, required_attribs, optional_attribs)
