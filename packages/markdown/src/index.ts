@@ -6,7 +6,19 @@ import { addMathjaxExtension } from '@prairielearn/marked-mathjax';
 
 import { sanitizeHtml } from './sanitize.js';
 
-export async function createMarkedInstance({
+// We can safely do this at the top level, as this only takes ~10ms to load.
+const MathJax = await mathjax.init({
+  options: { ignoreHtmlClass: 'mathjax_ignore|tex2jax_ignore' },
+  tex: {
+    inlineMath: [
+      ['$', '$'],
+      ['\\(', '\\)'],
+    ],
+  },
+  loader: { load: ['input/tex'] },
+});
+
+export function createMarkedInstance({
   sanitize = true,
   allowHtml = true,
   interpretMath = true,
@@ -26,16 +38,6 @@ export async function createMarkedInstance({
   const marked = new Marked();
 
   if (interpretMath) {
-    const MathJax = await mathjax.init({
-      options: { ignoreHtmlClass: 'mathjax_ignore|tex2jax_ignore' },
-      tex: {
-        inlineMath: [
-          ['$', '$'],
-          ['\\(', '\\)'],
-        ],
-      },
-      loader: { load: ['input/tex'] },
-    });
     addMathjaxExtension(marked, MathJax);
   }
 
@@ -54,7 +56,7 @@ export async function createMarkedInstance({
   return marked;
 }
 
-const markedInstanceCache = new Map<string, Promise<Marked>>();
+const markedInstanceCache = new Map<string, Marked>();
 
 /**
  * Returns a cached instance of Marked with the specified options. Does not
@@ -65,27 +67,18 @@ function getMarkedInstance(options: {
   sanitize: boolean;
   allowHtml: boolean;
   interpretMath: boolean;
-}): Promise<Marked> {
+}): Marked {
   const key = `${options.sanitize}:${options.allowHtml}:${options.interpretMath}`;
-  let markedPromise = markedInstanceCache.get(key);
-  if (!markedPromise) {
-    markedPromise = createMarkedInstance({
+  let instance = markedInstanceCache.get(key);
+  if (!instance) {
+    instance = createMarkedInstance({
       sanitize: options.sanitize,
       allowHtml: options.allowHtml,
       interpretMath: options.interpretMath,
     });
-    // Cache the promise so that subsequent calls with the same options return
-    // the same instance. This ensures that we don't enter race conditions where
-    // multiple calls to getMarkedInstance with the same options create multiple
-    // instances of Marked if they are called before the first one resolves.
-    markedInstanceCache.set(key, markedPromise);
+    markedInstanceCache.set(key, instance);
   }
-  return markedPromise.catch((err) => {
-    // If the promise fails, remove it from the cache so that the next call
-    // will try to create a new instance.
-    markedInstanceCache.delete(key);
-    throw err;
-  });
+  return instance;
 }
 
 /**
@@ -103,7 +96,7 @@ function getMarkedInstance(options: {
  * be parsed by MathJax (assumes MathJax is available client-side).
  * @returns The HTML string resulting from the conversion.
  */
-export async function markdownToHtml(
+export function markdownToHtml(
   original: string,
   {
     sanitize = true,
@@ -111,7 +104,7 @@ export async function markdownToHtml(
     allowHtml = true,
     interpretMath = true,
   }: { sanitize?: boolean; inline?: boolean; allowHtml?: boolean; interpretMath?: boolean } = {},
-) {
-  const marked = await getMarkedInstance({ sanitize, allowHtml, interpretMath });
-  return await (inline ? marked.parseInline : marked.parse)(original, { async: true });
+): string {
+  const marked = getMarkedInstance({ sanitize, allowHtml, interpretMath });
+  return (inline ? marked.parseInline : marked.parse)(original, { async: false });
 }
