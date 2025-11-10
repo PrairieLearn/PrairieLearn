@@ -170,18 +170,21 @@ export async function selectRubricData({
       submitted_answers: submission.submitted_answer,
     };
 
-    await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
-      item.description_rendered = await markdownToHtml(
+    for (const item of rubric_data?.rubric_items || []) {
+      item.description_rendered = markdownToHtml(
         mustache.render(item.description || '', mustache_data),
         { inline: true },
       );
-      item.explanation_rendered = await markdownToHtml(
+      item.explanation_rendered = markdownToHtml(
         mustache.render(item.explanation || '', mustache_data),
       );
-      item.grader_note_rendered = await markdownToHtml(
+      item.grader_note_rendered = markdownToHtml(
         mustache.render(item.grader_note || '', mustache_data),
       );
-    });
+
+      // Yield to the event loop to avoid blocking too long.
+      await Promise.resolve();
+    }
   }
 
   return rubric_data;
@@ -204,9 +207,7 @@ export async function populateManualGradingData(submission: Record<string, any>)
     );
   }
   if (submission.feedback?.manual) {
-    submission.feedback_manual_html = await markdownToHtml(
-      submission.feedback?.manual?.toString() || '',
-    );
+    submission.feedback_manual_html = markdownToHtml(submission.feedback?.manual?.toString() || '');
   }
 }
 
