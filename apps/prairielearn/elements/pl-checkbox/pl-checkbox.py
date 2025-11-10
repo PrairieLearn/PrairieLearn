@@ -1,3 +1,4 @@
+import html
 import random
 from enum import Enum
 from itertools import count
@@ -32,9 +33,9 @@ class AnswerTuple(NamedTuple):
 
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
+# TODO change this https://github.com/PrairieLearn/PrairieLearn/issues/1671
 INLINE_DEFAULT = False
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NET_CORRECT
-PARTIAL_CREDIT_METHOD_DEFAULT = "PC"
 HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
@@ -350,10 +351,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             f"The attribute min-correct is {min_correct:d} but must be at least 1"
         )
 
-    # FIXME: why enforce a maximum number of options?
-    max_answers = 26  # will not display more than 26 checkbox answers
-
-    number_answers = max(0, min(len_total, max_answers, number_answers))
+    number_answers = max(0, min(len_total, number_answers))
     min_correct = min(
         len_correct, number_answers, max(0, number_answers - len_incorrect, min_correct)
     )
@@ -504,10 +502,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 element, "show-number-correct", SHOW_NUMBER_CORRECT_DEFAULT
             )
 
-            min_options_to_select = _get_min_options_to_select(
+            min_options_to_select = get_min_options_to_select(
                 element, MIN_SELECT_DEFAULT
             )
-            max_options_to_select = _get_max_options_to_select(
+            max_options_to_select = get_max_options_to_select(
                 element, len(display_answers)
             )
 
@@ -669,18 +667,18 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
 
     # Check that the selected options are a subset of the valid options
-    # FIXME: raise ValueError instead of treating as parse error?
     submitted_key_set = set(submitted_key)
     all_keys_set = set(all_keys)
     if not submitted_key_set.issubset(all_keys_set):
         one_bad_key = submitted_key_set.difference(all_keys_set).pop()
-        # FIXME: escape one_bad_key
-        data["format_errors"][name] = f"You selected an invalid option: {one_bad_key}"
+        data["format_errors"][name] = (
+            f"You selected an invalid option: {html.escape(one_bad_key)}"
+        )
         return
 
     # Get minimum and maximum number of options to be selected
-    min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
-    max_options_to_select = _get_max_options_to_select(
+    min_options_to_select = get_min_options_to_select(element, MIN_SELECT_DEFAULT)
+    max_options_to_select = get_max_options_to_select(
         element, len(data["params"][name])
     )
 
@@ -700,14 +698,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    partial_credit = pl.get_boolean_attrib(
-        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
-    )
+    partial_credit_mode = get_partial_credit_mode(element)
     number_answers = len(data["params"][name])
-    partial_credit_method = pl.get_string_attrib(
-        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
-    )
-
     submitted_keys = data["submitted_answers"].get(name, [])
     correct_answer_list = data["correct_answers"].get(name, [])
     correct_keys = [answer["key"] for answer in correct_answer_list]
@@ -718,31 +710,29 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     submitted_set = set(submitted_keys)
     correct_set = set(correct_keys)
 
-    score = 0
-    if not partial_credit and submitted_set == correct_set:
-        score = 1
-    elif partial_credit:
-        if partial_credit_method == "PC":
-            if submitted_set == correct_set:
-                score = 1
-            else:
-                n_correct_answers = len(correct_set) - len(correct_set - submitted_set)
-                points = n_correct_answers - len(submitted_set - correct_set)
-                score = max(0, points / len(correct_set))
-        elif partial_credit_method == "EDC":
-            number_wrong = len(submitted_set - correct_set) + len(
-                correct_set - submitted_set
-            )
-            score = 1 - 1.0 * number_wrong / number_answers
-        elif partial_credit_method == "COV":
-            n_correct_answers = len(correct_set & submitted_set)
-            base_score = n_correct_answers / len(correct_set)
-            guessing_factor = n_correct_answers / len(submitted_set)
-            score = base_score * guessing_factor
+    # NOTE should probably compute this in a separate function for easier testing
+    # if another method ever gets added.
+    if partial_credit_mode is PartialCreditType.OFF:
+        score = 1 if submitted_set == correct_set else 0
+    elif partial_credit_mode is PartialCreditType.NET_CORRECT:
+        if submitted_set == correct_set:
+            score = 1
         else:
-            raise ValueError(
-                f"Unknown value for partial_credit_method: {partial_credit_method}"
-            )
+            n_correct_answers = len(correct_set) - len(correct_set - submitted_set)
+            points = n_correct_answers - len(submitted_set - correct_set)
+            score = max(0, points / len(correct_set))
+    elif partial_credit_mode is PartialCreditType.EACH_ANSWER:
+        number_wrong = len(submitted_set - correct_set) + len(
+            correct_set - submitted_set
+        )
+        score = 1 - 1.0 * number_wrong / number_answers
+    elif partial_credit_mode is PartialCreditType.COVERAGE:
+        n_correct_answers = len(correct_set & submitted_set)
+        base_score = n_correct_answers / len(correct_set)
+        guessing_factor = n_correct_answers / len(submitted_set)
+        score = base_score * guessing_factor
+    else:
+        assert_never(partial_credit_mode)
 
     data["partial_scores"][name] = {
         "score": score,
@@ -755,20 +745,15 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    partial_credit = pl.get_boolean_attrib(
-        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
-    )
-    partial_credit_method = pl.get_string_attrib(
-        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
-    )
+    partial_credit_mode = get_partial_credit_mode(element)
 
     correct_answer_list = data["correct_answers"].get(name, [])
     correct_keys = [answer["key"] for answer in correct_answer_list]
     number_answers = len(data["params"][name])
     all_keys = [pl.index2key(i) for i in range(number_answers)]
 
-    min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
-    max_options_to_select = _get_max_options_to_select(element, number_answers)
+    min_options_to_select = get_min_options_to_select(element, MIN_SELECT_DEFAULT)
+    max_options_to_select = get_max_options_to_select(element, number_answers)
 
     result = data["test_type"]
 
@@ -798,32 +783,31 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 and min_options_to_select <= len(ans) <= max_options_to_select
             ):
                 break
-        if partial_credit:
-            if partial_credit_method == "PC":
-                if set(ans) == set(correct_keys):
-                    score = 1
-                else:
-                    n_correct_answers = len(set(correct_keys)) - len(
-                        set(correct_keys) - set(ans)
-                    )
-                    points = n_correct_answers - len(set(ans) - set(correct_keys))
-                    score = max(0, points / len(set(correct_keys)))
-            elif partial_credit_method == "EDC":
-                number_wrong = len(set(ans) - set(correct_keys)) + len(
+
+        if partial_credit_mode is PartialCreditType.OFF:
+            score = 0
+        elif partial_credit_mode is PartialCreditType.NET_CORRECT:
+            if set(ans) == set(correct_keys):
+                score = 1
+            else:
+                n_correct_answers = len(set(correct_keys)) - len(
                     set(correct_keys) - set(ans)
                 )
-                score = 1 - 1.0 * number_wrong / number_answers
-            elif partial_credit_method == "COV":
-                n_correct_answers = len(set(correct_keys) & set(ans))
-                base_score = n_correct_answers / len(set(correct_keys))
-                guessing_factor = n_correct_answers / len(set(ans))
-                score = base_score * guessing_factor
-            else:
-                raise ValueError(
-                    f"Unknown value for partial_credit_method: {partial_credit_method}"
-                )
+                points = n_correct_answers - len(set(ans) - set(correct_keys))
+                score = max(0, points / len(set(correct_keys)))
+        elif partial_credit_mode is PartialCreditType.EACH_ANSWER:
+            number_wrong = len(set(ans) - set(correct_keys)) + len(
+                set(correct_keys) - set(ans)
+            )
+            score = 1 - 1.0 * number_wrong / number_answers
+        elif partial_credit_mode is PartialCreditType.COVERAGE:
+            n_correct_answers = len(set(correct_keys) & set(ans))
+            base_score = n_correct_answers / len(set(correct_keys))
+            guessing_factor = n_correct_answers / len(set(ans))
+            score = base_score * guessing_factor
         else:
-            score = 0
+            assert_never(partial_credit_mode)
+
         feedback = {
             option["key"]: option.get("feedback", None)
             for option in data["params"][name]
@@ -842,7 +826,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         assert_never(result)
 
 
-def _get_min_options_to_select(element: lxml.html.HtmlElement, default_val: int) -> int:
+def get_min_options_to_select(element: lxml.html.HtmlElement, default_val: int) -> int:
     """
     Given an HTML fragment containing a pl-checkbox element, returns the minimum number of options that must be selected in
     the checkbox element for a submission to be valid. In order of descending priority, the returned value equals:
@@ -869,7 +853,7 @@ def _get_min_options_to_select(element: lxml.html.HtmlElement, default_val: int)
     return min_options_to_select
 
 
-def _get_max_options_to_select(element: lxml.html.HtmlElement, default_val: int) -> int:
+def get_max_options_to_select(element: lxml.html.HtmlElement, default_val: int) -> int:
     """
     Given an HTML fragment containing a pl-checkbox element, returns the maximum number of options that can be selected in
     the checkbox element for a submission to be valid. In order of descending priority, the returned value equals:
