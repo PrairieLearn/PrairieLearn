@@ -146,7 +146,17 @@ def generate_insert_text(
 
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
-    """Gets order type in a backwards-compatible way. New display overwrites old."""
+    """Convert external fixed-order attribute to internal enum.
+
+    Args:
+        element: The pl-checkbox HTML element
+
+    Returns:
+        OrderType enum value
+
+    Raises:
+        ValueError: If both fixed-order and order attributes are set
+    """
     if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
         raise ValueError(
             'Setting answer choice order should be done with the "order" attribute.'
@@ -164,6 +174,9 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
 
     New usage: partial-credit="off|coverage|each-answer|net-correct"
     Old usage: partial-credit="true|false" + partial-credit-method="PC|COV|EDC"
+
+    Args:
+        element: The pl-checkbox HTML element
 
     Returns:
         PartialCreditType enum value
@@ -234,7 +247,21 @@ def validate_min_max_options(
     max_select: int,
     min_select_default: int,
 ) -> None:
-    """Raise an exception if any of these are invalid. TODO do a better job comparmentalizing the logic here."""
+    """Validate that min/max select and correct options have sensible values.
+
+    Args:
+        min_correct: Minimum number of correct answers
+        max_correct: Maximum number of correct answers
+        len_correct: Total number of correct answers available
+        len_incorrect: Total number of incorrect answers available
+        number_answers: Total number of answers to display
+        min_select: Minimum number of options that must be selected
+        max_select: Maximum number of options that can be selected
+        min_select_default: Default value for min_select
+
+    Raises:
+        ValueError: If any validation constraints are violated
+    """
     if not (0 <= min_correct <= max_correct <= len_correct):
         raise ValueError(
             f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
