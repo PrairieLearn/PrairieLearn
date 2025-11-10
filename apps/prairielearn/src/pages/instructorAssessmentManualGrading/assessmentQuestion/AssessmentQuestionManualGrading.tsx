@@ -92,6 +92,8 @@ function AssessmentQuestionManualGradingInner({
 
       if (numOpenInstances > 0) {
         requestBody.closed_instance_questions_only = closedOnly;
+      } else {
+        requestBody.closed_instance_questions_only = false;
       }
 
       const response = await fetch('', {

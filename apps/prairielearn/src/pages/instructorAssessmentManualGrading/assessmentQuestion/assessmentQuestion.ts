@@ -206,7 +206,7 @@ router.post(
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
           instance_question_ids,
-          closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+          closed_instance_questions_only: req.body.closed_instance_questions_only,
           ungrouped_instance_questions_only: false,
         });
 
@@ -306,7 +306,7 @@ router.post(
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
-        closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+        closed_instance_questions_only: req.body.closed_instance_questions_only,
         ungrouped_instance_questions_only: false,
       });
 
@@ -326,7 +326,7 @@ router.post(
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
-        closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+        closed_instance_questions_only: req.body.closed_instance_questions_only,
         ungrouped_instance_questions_only: true,
       });
 
