@@ -117,19 +117,6 @@ export function AssessmentQuestion({
           )}
         </div>
 
-        {aiGradingEnabled && aiGradingMode && (
-          <>
-            <form method="POST" id="ai-grading-graded">
-              <input type="hidden" name="__action" value="ai_grade_assessment_graded" />
-              <input type="hidden" name="__csrf_token" value={__csrf_token} />
-            </form>
-            <form method="POST" id="ai-grading-all">
-              <input type="hidden" name="__action" value="ai_grade_assessment_all" />
-              <input type="hidden" name="__csrf_token" value={__csrf_token} />
-            </form>
-          </>
-        )}
-
         {/* Hidden form for test compatibility - allows tests to extract CSRF token.
         This form is now in the header of a client-rendered table. */}
         <form name="grading-form" class="d-none">

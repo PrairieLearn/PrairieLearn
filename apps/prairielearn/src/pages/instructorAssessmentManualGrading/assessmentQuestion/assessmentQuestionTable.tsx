@@ -1,9 +1,10 @@
-import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
   type Header,
   type SortingState,
+  type VisibilityState,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
@@ -11,8 +12,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useState } from 'preact/compat';
-import { Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { useEffect, useMemo, useRef, useState } from 'preact/compat';
+import { Alert, Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { z } from 'zod';
 
 import {
@@ -159,6 +160,30 @@ function formatScoreWithEdit({
   );
 }
 
+// Types for batch actions
+type BatchActionData =
+  | { assigned_grader: string | null }
+  | { requires_manual_grading: boolean }
+  | { batch_action: 'ai_grade_assessment_selected'; closed_instance_questions_only?: boolean }
+  | {
+      batch_action: 'ai_instance_question_group_selected';
+      closed_instance_questions_only?: boolean;
+    };
+
+type BatchActionParams =
+  | {
+      action: 'batch_action';
+      actionData: BatchActionData;
+      instanceQuestionIds: string[];
+    }
+  | {
+      action:
+        | 'ai_grade_assessment_graded'
+        | 'ai_grade_assessment_all'
+        | 'ai_instance_question_group_assessment_all'
+        | 'ai_instance_question_group_assessment_ungrouped';
+    };
+
 export interface AssessmentQuestionManualGradingProps {
   authzData: PageContextWithAuthzData['authz_data'];
   course: StaffCourseInstanceContext['course'];
@@ -258,7 +283,6 @@ function AssessmentQuestionTable({
     parseAsNumericFilter.withDefault(''),
   );
 
-  const [showStudentInfo, setShowStudentInfo] = useState(false);
   const { createCheckboxProps } = useShiftClickCheckbox<InstanceQuestionRow>();
 
   const columnFilters = useMemo(() => {
@@ -308,6 +332,7 @@ function AssessmentQuestionTable({
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowSelection, setRowSelection] = useState({});
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -324,7 +349,7 @@ function AssessmentQuestionTable({
       if (!parsedData.success) throw new Error('Failed to parse instance questions');
       return parsedData.data;
     },
-    refetchInterval: 30000, // 30 seconds
+    refetchInterval: 30000,
     staleTime: 0,
     initialData: initialInstanceQuestions,
   });
@@ -449,7 +474,9 @@ function AssessmentQuestionTable({
                       <OverlayTrigger
                         overlay={<Tooltip>{group.instance_question_group_description}</Tooltip>}
                       >
-                        <i class="fas fa-circle-info text-secondary" />
+                        <span>
+                          <i class="fas fa-circle-info text-secondary" />
+                        </span>
                       </OverlayTrigger>
                     )}
                   </span>
@@ -457,11 +484,12 @@ function AssessmentQuestionTable({
               },
               filterFn: (row, columnId, filterValues: string[]) => {
                 if (filterValues.length === 0) return true;
-                const current = row.getValue(columnId);
-                if (current === null || current === undefined) {
+                const current =
+                  row.getValue<InstanceQuestionRow['instance_question_group_name']>(columnId);
+                if (!current) {
                   return filterValues.includes('No Group');
                 }
-                return filterValues.includes(current as string);
+                return filterValues.includes(current);
               },
             }),
           ]
@@ -496,9 +524,9 @@ function AssessmentQuestionTable({
         id: 'requires_manual_grading',
         header: 'Grading status',
         cell: (info) => (info.getValue() ? 'Requires grading' : 'Graded'),
-        filterFn: (row, columnId, filterValues: string[]) => {
+        filterFn: ({ getValue }, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const requiresGrading = row.getValue(columnId);
+          const requiresGrading = getValue(columnId);
           const status = requiresGrading ? 'Requires grading' : 'Graded';
           return filterValues.includes(status);
         },
@@ -511,9 +539,9 @@ function AssessmentQuestionTable({
         cell: (info) => info.getValue() || 'Unassigned',
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const current = row.getValue(columnId);
+          const current = row.getValue<InstanceQuestionRow['assigned_grader_name']>(columnId);
           if (!current) return filterValues.includes('Unassigned');
-          return filterValues.includes(current as string);
+          return filterValues.includes(current);
         },
       }),
 
@@ -626,7 +654,7 @@ function AssessmentQuestionTable({
         },
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const current = row.getValue(columnId);
+          const current = row.getValue<InstanceQuestionRow['last_grader_name']>(columnId);
           if (!current) return filterValues.includes('Unassigned');
           const rowData = row.original;
 
@@ -637,7 +665,7 @@ function AssessmentQuestionTable({
           }
 
           // Check human grader
-          return filterValues.includes(current as string);
+          return filterValues.includes(current);
         },
       }),
 
@@ -824,22 +852,57 @@ function AssessmentQuestionTable({
     },
   });
 
-  // Handle show/hide student info toggle
-  const toggleStudentInfo = () => {
-    const newVisibility = {
-      ...table.getState().columnVisibility,
-      user_or_group_name: !showStudentInfo,
-      uid: !showStudentInfo,
-    };
+  // Ref for the checkbox element to set indeterminate state
+  const studentInfoCheckboxRef = useRef<HTMLInputElement>(null);
+
+  // Determine student info checkbox state based on column visibility
+  const studentInfoCheckboxState = useMemo(() => {
+    const visibility = columnVisibility;
+    const nameVisible = visibility.user_or_group_name;
+    const uidVisible = visibility.uid;
+
+    if (nameVisible && uidVisible) return 'checked';
+    if (nameVisible || uidVisible) return 'indeterminate';
+    return 'unchecked';
+  }, [columnVisibility]);
+
+  // Set indeterminate state on the checkbox element
+  useEffect(() => {
+    if (studentInfoCheckboxRef.current) {
+      studentInfoCheckboxRef.current.indeterminate = studentInfoCheckboxState === 'indeterminate';
+    }
+  }, [studentInfoCheckboxState]);
+
+  // Handle student info checkbox click - toggles between checked (both visible) and unchecked (both hidden)
+  const handleStudentInfoCheckboxClick = () => {
+    const currentState = studentInfoCheckboxState;
+    const currentVisibility = table.getState().columnVisibility;
+
+    let newVisibility: VisibilityState;
+    if (currentState === 'checked') {
+      // Checked -> Unchecked (hide both)
+      newVisibility = {
+        ...currentVisibility,
+        user_or_group_name: false,
+        uid: false,
+      };
+    } else {
+      // Unchecked or Indeterminate -> Checked (show both)
+      newVisibility = {
+        ...currentVisibility,
+        user_or_group_name: true,
+        uid: true,
+      };
+    }
+
     void setColumnVisibility(newVisibility);
-    setShowStudentInfo(!showStudentInfo);
   };
 
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = selectedRows.map((row) => row.original.id);
 
   // Set up handlers for edit points popovers
-  // Once
+  // FIXME: Clean up this useEffect once other pages handling point changes are also in React.
   useEffect(() => {
     /**
      * Handle AJAX form submission for editing points
@@ -928,65 +991,84 @@ function AssessmentQuestionTable({
     };
   }, [queryClient, urlPrefix, assessmentId, assessmentQuestionId, instanceQuestions]);
 
+  // Mutation for batch actions
+  const batchActionMutation = useMutation({
+    mutationFn: async (params: BatchActionParams) => {
+      const requestBody: Record<string, any> = {
+        __csrf_token: csrfToken,
+        __action: params.action,
+      };
+
+      // Add action-specific data
+      if (params.action === 'batch_action') {
+        const { actionData, instanceQuestionIds } = params;
+
+        if ('batch_action' in actionData) {
+          // For AI grading/grouping actions
+          requestBody.batch_action = actionData.batch_action;
+          if (actionData.closed_instance_questions_only !== undefined) {
+            requestBody.closed_instance_questions_only = actionData.closed_instance_questions_only;
+          }
+        } else {
+          // For regular batch actions
+          requestBody.batch_action_data = actionData;
+        }
+
+        // Add instance question IDs
+        requestBody.instance_question_id = instanceQuestionIds;
+      }
+
+      const response = await fetch('', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        redirect: 'manual', // Don't automatically follow redirects
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Request failed: ${response.status} ${response.statusText}`);
+      }
+
+      // Check if this is a redirect response
+      if (response.status >= 300 && response.status < 400) {
+        const redirectUrl = response.headers.get('Location');
+        if (redirectUrl) {
+          return { redirect: redirectUrl };
+        }
+      }
+
+      return { success: true };
+    },
+    onSuccess: (data) => {
+      setErrorMessage(null); // Clear any previous errors
+      if (data.redirect) {
+        // Redirect to job sequence page for long-running operations
+        window.location.href = data.redirect;
+      } else {
+        // Refresh the table data for quick operations
+        void queryClient.invalidateQueries({
+          queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('Batch action failed:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'An unknown error occurred');
+    },
+  });
+
   // Handler for batch actions
-  const handleBatchAction = (actionData: Record<string, any>) => {
+  const handleBatchAction = (actionData: BatchActionData) => {
     if (selectedIds.length === 0) return;
 
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '';
-
-    // Add CSRF token
-    const csrfInput = document.createElement('input');
-    csrfInput.type = 'hidden';
-    csrfInput.name = '__csrf_token';
-    csrfInput.value = csrfToken;
-    form.append(csrfInput);
-
-    // Add action type
-    const actionInput = document.createElement('input');
-    actionInput.type = 'hidden';
-    actionInput.name = '__action';
-    actionInput.value = 'batch_action';
-    form.append(actionInput);
-
-    // Check if this is an AI grading or AI grouping action
-    if (actionData.batch_action) {
-      // For AI grading actions, add batch_action directly
-      const batchActionInput = document.createElement('input');
-      batchActionInput.type = 'hidden';
-      batchActionInput.name = 'batch_action';
-      batchActionInput.value = actionData.batch_action;
-      form.append(batchActionInput);
-
-      // Add closed_instance_questions_only if specified
-      if (actionData.closed_instance_questions_only !== undefined) {
-        const closedInput = document.createElement('input');
-        closedInput.type = 'hidden';
-        closedInput.name = 'closed_instance_questions_only';
-        closedInput.value = String(actionData.closed_instance_questions_only);
-        form.append(closedInput);
-      }
-    } else {
-      // For regular batch actions, add action data as JSON
-      const dataInput = document.createElement('input');
-      dataInput.type = 'hidden';
-      dataInput.name = 'batch_action_data';
-      dataInput.value = JSON.stringify(actionData);
-      form.append(dataInput);
-    }
-
-    // Add selected instance question IDs
-    selectedIds.forEach((id) => {
-      const idInput = document.createElement('input');
-      idInput.type = 'hidden';
-      idInput.name = 'instance_question_id';
-      idInput.value = id;
-      form.append(idInput);
+    batchActionMutation.mutate({
+      action: 'batch_action',
+      actionData,
+      instanceQuestionIds: selectedIds,
     });
-
-    document.body.append(form);
-    form.submit();
   };
 
   return (
@@ -1005,19 +1087,26 @@ function AssessmentQuestionTable({
           }}
         />
       </div>
+      {errorMessage && (
+        <Alert variant="danger" class="mb-3" dismissible onClose={() => setErrorMessage(null)}>
+          <strong>Error:</strong> {errorMessage}
+        </Alert>
+      )}
       <TanstackTableCard
         table={table}
         title="Student instance questions"
         columnManagerTopContent={
           <div class="px-2 py-1">
-            <button
-              type="button"
-              class="btn btn-sm btn-secondary w-100 text-start text-nowrap"
-              onClick={toggleStudentInfo}
-            >
-              <i class={showStudentInfo ? 'bi bi-eye-slash' : 'bi bi-eye'} aria-hidden="true" />{' '}
-              {showStudentInfo ? 'Hide' : 'Show'} student info
-            </button>
+            <label class="d-flex align-items-center gap-2 cursor-pointer user-select-none px-2 py-1">
+              <input
+                ref={studentInfoCheckboxRef}
+                type="checkbox"
+                checked={studentInfoCheckboxState === 'checked'}
+                class="form-check-input m-0"
+                onChange={handleStudentInfoCheckboxClick}
+              />
+              <span class="text-nowrap">Show student info</span>
+            </label>
           </div>
         }
         columnManagerButtons={
@@ -1038,12 +1127,11 @@ function AssessmentQuestionTable({
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
-                      onClick={() => {
-                        const form = document.getElementById(
-                          'ai-grading-graded',
-                        ) as HTMLFormElement | null;
-                        form?.submit();
-                      }}
+                      onClick={() =>
+                        batchActionMutation.mutate({
+                          action: 'ai_grade_assessment_graded',
+                        })
+                      }
                     >
                       Grade all human-graded
                     </Dropdown.Item>
@@ -1056,12 +1144,11 @@ function AssessmentQuestionTable({
                       Grade selected
                     </Dropdown.Item>
                     <Dropdown.Item
-                      onClick={() => {
-                        const form = document.getElementById(
-                          'ai-grading-all',
-                        ) as HTMLFormElement | null;
-                        form?.submit();
-                      }}
+                      onClick={() =>
+                        batchActionMutation.mutate({
+                          action: 'ai_grade_assessment_all',
+                        })
+                      }
                     >
                       Grade all
                     </Dropdown.Item>
@@ -1332,6 +1419,9 @@ function AssessmentQuestionManualGrading({
   aiGradingStats,
   numOpenInstances: _numOpenInstances,
   isDevMode,
+  onShowGroupSelectedModal,
+  onShowGroupAllModal,
+  onShowGroupUngroupedModal,
 }: AssessmentQuestionManualGradingWrapperProps) {
   return (
     <NuqsAdapter search={search}>
@@ -1354,6 +1444,9 @@ function AssessmentQuestionManualGrading({
           instanceQuestionGroups={instanceQuestionGroups}
           courseStaff={courseStaff}
           aiGradingStats={aiGradingStats}
+          onShowGroupSelectedModal={onShowGroupSelectedModal}
+          onShowGroupAllModal={onShowGroupAllModal}
+          onShowGroupUngroupedModal={onShowGroupUngroupedModal}
         />
       </QueryClientProviderDebug>
     </NuqsAdapter>

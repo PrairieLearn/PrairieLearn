@@ -277,8 +277,7 @@ function StudentsCard({
         cell: (info) => <EnrollmentStatusIcon type="text" status={info.getValue()} />,
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const current = row.getValue(columnId);
-          if (typeof current !== 'string') return false;
+          const current = row.getValue<StudentRow['enrollment']['status']>(columnId);
           return filterValues.includes(current);
         },
       }),

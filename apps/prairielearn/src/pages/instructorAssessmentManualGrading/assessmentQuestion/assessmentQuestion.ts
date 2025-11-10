@@ -208,9 +208,7 @@ router.post(
 
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else {
-        const action_data = req.body.batch_action_data
-          ? JSON.parse(req.body.batch_action_data)
-          : {};
+        const action_data = req.body.batch_action_data ?? {};
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];

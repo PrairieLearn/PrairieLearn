@@ -59,3 +59,5 @@ export function AssessmentQuestionManualGradingWithModals(
     </>
   );
 }
+
+AssessmentQuestionManualGradingWithModals.displayName = 'AssessmentQuestionManualGradingWithModals';

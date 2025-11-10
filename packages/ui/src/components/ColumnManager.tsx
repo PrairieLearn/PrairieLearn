@@ -21,7 +21,7 @@ function ColumnMenuItem<RowDataModel>({
 }: ColumnMenuItemProps<RowDataModel>) {
   const pinButtonRef = useRef<HTMLButtonElement>(null);
 
-  if (!column.getCanHide() && !column.getCanPin()) return null;
+  if (!column.getCanHide()) return null;
 
   // Use meta.label if available, otherwise fall back to header or column.id
   const header =
@@ -44,7 +44,6 @@ function ColumnMenuItem<RowDataModel>({
             type="checkbox"
             class="form-check-input"
             checked={column.getIsVisible()}
-            disabled={!column.getCanHide()}
             aria-label={
               column.getIsVisible() ? `Hide '${header}' column` : `Show '${header}' column`
             }
