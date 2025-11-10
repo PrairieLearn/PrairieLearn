@@ -340,7 +340,13 @@ export function createColumns({
               }
 
               if (row.rubric_difference.length === 0) {
-                return <i class="bi bi-check-square-fill text-success" />;
+                return (
+                  <OverlayTrigger
+                    overlay={<Tooltip>AI and human grading are in agreement</Tooltip>}
+                  >
+                    <i class="bi bi-check-square-fill text-success" />
+                  </OverlayTrigger>
+                );
               }
 
               return (

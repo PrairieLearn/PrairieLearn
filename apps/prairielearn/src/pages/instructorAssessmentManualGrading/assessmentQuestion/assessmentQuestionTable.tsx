@@ -569,8 +569,8 @@ export function AssessmentQuestionTable({
         table={table}
         title="Student instance questions"
         columnManagerTopContent={
-          <div class="px-2 py-1">
-            <label class="form-check d-flex align-items-center cursor-pointer user-select-none">
+          <div class="px-2 py-1 d-flex align-items-center">
+            <label class="form-check text-nowrap d-flex align-items-stretch">
               <input
                 ref={studentInfoCheckboxRef}
                 type="checkbox"
@@ -578,7 +578,7 @@ export function AssessmentQuestionTable({
                 class="form-check-input"
                 onChange={handleStudentInfoCheckboxClick}
               />
-              <span class="form-check-label ms-2 text-nowrap">Show student info</span>
+              <span class="form-check-label ms-2">Show student info</span>
             </label>
           </div>
         }
@@ -761,7 +761,11 @@ export function AssessmentQuestionTable({
           <Button
             variant="danger"
             disabled={deleteAiGradingJobsMutation.isPending}
-            onClick={() => deleteAiGradingJobsMutation.mutate(undefined)}
+            onClick={() =>
+              deleteAiGradingJobsMutation.mutate(undefined, {
+                onSuccess: () => setShowDeleteAiGradingModal(false),
+              })
+            }
           >
             {deleteAiGradingJobsMutation.isPending ? 'Deleting...' : 'Delete'}
           </Button>
@@ -784,7 +788,11 @@ export function AssessmentQuestionTable({
           <Button
             variant="danger"
             disabled={deleteAiGroupingsMutation.isPending}
-            onClick={() => deleteAiGroupingsMutation.mutate(undefined)}
+            onClick={() =>
+              deleteAiGroupingsMutation.mutate(undefined, {
+                onSuccess: () => setShowDeleteAiGroupingsModal(false),
+              })
+            }
           >
             {deleteAiGroupingsMutation.isPending ? 'Deleting...' : 'Delete'}
           </Button>

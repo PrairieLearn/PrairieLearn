@@ -1,29 +1,35 @@
 import { useCallback, useState } from 'preact/compat';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
-interface GroupInfoModalProps {
-  modalFor: 'all' | 'selected' | 'ungrouped';
-  numOpenInstances: number;
-  csrfToken: string;
-  show: boolean;
-  selectedIds?: string[];
-  onHide: () => void;
-}
-
 export function GroupInfoModal({
   modalFor,
   numOpenInstances,
-  csrfToken,
   show,
-  selectedIds = [],
   onHide,
-}: GroupInfoModalProps) {
+  onSubmit,
+}: {
+  modalFor: 'all' | 'selected' | 'ungrouped';
+  numOpenInstances: number;
+  show: boolean;
+  onHide: () => void;
+  onSubmit: (closedOnly: boolean) => void;
+}) {
   const [closedOnly, setClosedOnly] = useState('true');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleClose = useCallback(() => {
     onHide();
     setClosedOnly('true'); // Reset to default when closing
   }, [onHide]);
+
+  const handleSubmit = useCallback(
+    (e: Event) => {
+      e.preventDefault();
+      setIsSubmitting(true);
+      onSubmit(closedOnly === 'true');
+    },
+    [onSubmit, closedOnly],
+  );
 
   const getTitle = () => {
     if (modalFor === 'all') {
@@ -37,35 +43,7 @@ export function GroupInfoModal({
 
   return (
     <Modal show={show} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
-      <form method="POST">
-        <input type="hidden" name="__csrf_token" value={csrfToken} />
-
-        {modalFor === 'all' && (
-          <input type="hidden" name="__action" value="ai_instance_question_group_assessment_all" />
-        )}
-
-        {modalFor === 'ungrouped' && (
-          <input
-            type="hidden"
-            name="__action"
-            value="ai_instance_question_group_assessment_ungrouped"
-          />
-        )}
-
-        {modalFor === 'selected' && (
-          <>
-            <input type="hidden" name="__action" value="batch_action" />
-            <input type="hidden" name="batch_action" value="ai_instance_question_group_selected" />
-            {selectedIds.map((id) => (
-              <input key={id} type="hidden" name="instance_question_id" value={id} />
-            ))}
-          </>
-        )}
-
-        {numOpenInstances > 0 && (
-          <input type="hidden" name="closed_instance_questions_only" value={closedOnly} />
-        )}
-
+      <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>{getTitle()}</Modal.Title>
         </Modal.Header>
@@ -142,11 +120,11 @@ export function GroupInfoModal({
         <Modal.Footer>
           <div class="m-0 w-100">
             <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
-              <Button variant="secondary" onClick={handleClose}>
+              <Button variant="secondary" disabled={isSubmitting} onClick={handleClose}>
                 Cancel
               </Button>
-              <Button variant="primary" type="submit">
-                Group submissions
+              <Button variant="primary" disabled={isSubmitting} type="submit">
+                {isSubmitting ? 'Submitting...' : 'Group submissions'}
               </Button>
             </div>
             <small class="text-muted my-0 text-end d-block">

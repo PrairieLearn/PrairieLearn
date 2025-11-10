@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
 
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
@@ -40,9 +40,13 @@ export interface AssessmentQuestionManualGradingProps {
   isDevMode: boolean;
 }
 
-export function AssessmentQuestionManualGrading({
+type AssessmentQuestionManualGradingInnerProps = Omit<
+  AssessmentQuestionManualGradingProps,
+  'search' | 'isDevMode'
+>;
+
+function AssessmentQuestionManualGradingInner({
   authzData,
-  search,
   instanceQuestions,
   course,
   courseInstance,
@@ -60,8 +64,7 @@ export function AssessmentQuestionManualGrading({
   courseStaff,
   aiGradingStats,
   numOpenInstances,
-  isDevMode,
-}: AssessmentQuestionManualGradingProps) {
+}: AssessmentQuestionManualGradingInnerProps) {
   const [showSelectedModal, setShowSelectedModal] = useState(false);
   const [showAllModal, setShowAllModal] = useState(false);
   const [showUngroupedModal, setShowUngroupedModal] = useState(false);
@@ -72,58 +75,128 @@ export function AssessmentQuestionManualGrading({
     setShowSelectedModal(true);
   };
 
+  const groupSubmissionMutation = useMutation<
+    { jobSequenceId?: string; success: boolean },
+    Error,
+    { action: string; closedOnly: boolean; instanceQuestionIds?: string[] }
+  >({
+    mutationFn: async ({ action, closedOnly, instanceQuestionIds }) => {
+      const requestBody: Record<string, any> = {
+        __csrf_token: csrfToken,
+        __action: action,
+      };
+
+      if (action === 'batch_action') {
+        requestBody.batch_action = 'ai_instance_question_group_selected';
+        requestBody.instance_question_id = instanceQuestionIds || [];
+      }
+
+      if (numOpenInstances > 0) {
+        requestBody.closed_instance_questions_only = closedOnly;
+      }
+
+      const response = await fetch('', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error('Request failed with status ' + response.status);
+      }
+
+      const data = await response.json();
+      return data as { jobSequenceId?: string; success: boolean };
+    },
+    onSuccess: (data) => {
+      if (data.jobSequenceId) {
+        window.location.href = `${urlPrefix}/jobSequence/${data.jobSequenceId}`;
+      }
+    },
+    onError: (error) => {
+      console.error('Group submission failed:', error);
+    },
+  });
+
+  return (
+    <>
+      <AssessmentQuestionTable
+        authzData={authzData}
+        course={course}
+        courseInstance={courseInstance}
+        csrfToken={csrfToken}
+        instanceQuestions={instanceQuestions}
+        urlPrefix={urlPrefix}
+        assessmentId={assessmentId}
+        assessmentQuestionId={assessmentQuestionId}
+        assessmentQuestion={assessmentQuestion}
+        assessmentTid={assessmentTid}
+        questionQid={questionQid}
+        aiGradingMode={aiGradingMode}
+        groupWork={groupWork}
+        rubricData={rubricData}
+        instanceQuestionGroups={instanceQuestionGroups}
+        courseStaff={courseStaff}
+        aiGradingStats={aiGradingStats}
+        onShowGroupSelectedModal={handleShowSelectedModal}
+        onShowGroupAllModal={() => setShowAllModal(true)}
+        onShowGroupUngroupedModal={() => setShowUngroupedModal(true)}
+      />
+
+      <GroupInfoModal
+        modalFor="selected"
+        numOpenInstances={numOpenInstances}
+        show={showSelectedModal}
+        onHide={() => setShowSelectedModal(false)}
+        onSubmit={(closedOnly) =>
+          groupSubmissionMutation.mutate({
+            action: 'batch_action',
+            closedOnly,
+            instanceQuestionIds: selectedIdsForGrouping,
+          })
+        }
+      />
+
+      <GroupInfoModal
+        modalFor="all"
+        numOpenInstances={numOpenInstances}
+        show={showAllModal}
+        onHide={() => setShowAllModal(false)}
+        onSubmit={(closedOnly) =>
+          groupSubmissionMutation.mutate({
+            action: 'ai_instance_question_group_assessment_all',
+            closedOnly,
+          })
+        }
+      />
+
+      <GroupInfoModal
+        modalFor="ungrouped"
+        numOpenInstances={numOpenInstances}
+        show={showUngroupedModal}
+        onHide={() => setShowUngroupedModal(false)}
+        onSubmit={(closedOnly) =>
+          groupSubmissionMutation.mutate({
+            action: 'ai_instance_question_group_assessment_ungrouped',
+            closedOnly,
+          })
+        }
+      />
+    </>
+  );
+}
+
+export function AssessmentQuestionManualGrading({
+  search,
+  isDevMode,
+  ...innerProps
+}: AssessmentQuestionManualGradingProps) {
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-        <>
-          <AssessmentQuestionTable
-            authzData={authzData}
-            course={course}
-            courseInstance={courseInstance}
-            csrfToken={csrfToken}
-            instanceQuestions={instanceQuestions}
-            urlPrefix={urlPrefix}
-            assessmentId={assessmentId}
-            assessmentQuestionId={assessmentQuestionId}
-            assessmentQuestion={assessmentQuestion}
-            assessmentTid={assessmentTid}
-            questionQid={questionQid}
-            aiGradingMode={aiGradingMode}
-            groupWork={groupWork}
-            rubricData={rubricData}
-            instanceQuestionGroups={instanceQuestionGroups}
-            courseStaff={courseStaff}
-            aiGradingStats={aiGradingStats}
-            onShowGroupSelectedModal={handleShowSelectedModal}
-            onShowGroupAllModal={() => setShowAllModal(true)}
-            onShowGroupUngroupedModal={() => setShowUngroupedModal(true)}
-          />
-
-          <GroupInfoModal
-            modalFor="selected"
-            numOpenInstances={numOpenInstances}
-            csrfToken={csrfToken}
-            show={showSelectedModal}
-            selectedIds={selectedIdsForGrouping}
-            onHide={() => setShowSelectedModal(false)}
-          />
-
-          <GroupInfoModal
-            modalFor="all"
-            numOpenInstances={numOpenInstances}
-            csrfToken={csrfToken}
-            show={showAllModal}
-            onHide={() => setShowAllModal(false)}
-          />
-
-          <GroupInfoModal
-            modalFor="ungrouped"
-            numOpenInstances={numOpenInstances}
-            csrfToken={csrfToken}
-            show={showUngroupedModal}
-            onHide={() => setShowUngroupedModal(false)}
-          />
-        </>
+        <AssessmentQuestionManualGradingInner {...innerProps} />
       </QueryClientProviderDebug>
     </NuqsAdapter>
   );
