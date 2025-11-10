@@ -163,6 +163,7 @@ router.post(
 
     if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {
+        console.log('ai_grade_assessment_selected');
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
         }
@@ -185,6 +186,7 @@ router.post(
 
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else if (req.body.batch_action === 'ai_instance_question_group_selected') {
+        console.log('ai_instance_question_group_selected');
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
         }

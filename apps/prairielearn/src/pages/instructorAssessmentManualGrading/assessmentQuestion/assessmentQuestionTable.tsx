@@ -1027,6 +1027,8 @@ function AssessmentQuestionTable({
         redirect: 'manual', // Don't automatically follow redirects
       });
 
+      console.log('response', response);
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || `Request failed: ${response.status} ${response.statusText}`);
