@@ -241,6 +241,7 @@
     "ua-parser-js": "^1.0.41",
     "unified": "^11.0.5",
     "unzipper": "^0.12.3",
+    "usehooks-ts": "^3.1.1",
     "vite": "^7.2.1",
     "winston": "^3.18.3",
     "xml-formatter": "^3.6.7",

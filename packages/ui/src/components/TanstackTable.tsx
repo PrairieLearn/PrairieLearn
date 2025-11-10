@@ -1,6 +1,9 @@
+import { DndContext, type DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
-import type { Header, Row, SortDirection, Table } from '@tanstack/table-core';
+import type { ColumnPinningState, Header, Row, SortDirection, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
@@ -55,8 +58,20 @@ function ResizeHandle<RowDataModel>({
       ? header.column.columnDef.header
       : header.column.id;
 
+  const handleMouseDown = (e: MouseEvent) => {
+    e.stopPropagation(); // Prevent drag from being triggered
+    const handler = header.getResizeHandler();
+    if (handler) handler(e);
+  };
+
+  const handleTouchStart = (e: TouchEvent) => {
+    e.stopPropagation(); // Prevent drag from being triggered
+    const handler = header.getResizeHandler();
+    if (handler) handler(e);
+  };
+
   return (
-    <div class="py-1 h-100" style={{ position: 'absolute', right: 0, top: 0, width: '4px' }}>
+    <div class="h-100" style={{ position: 'absolute', right: 0, top: 0, width: '20px' }}>
       {/* separator role is focusable, so these jsx-a11y-x rules are false positives.
         https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/separator_role#focusable_separator
       */}
@@ -76,14 +91,89 @@ function ResizeHandle<RowDataModel>({
           background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'var(--bs-gray-400)',
           cursor: 'col-resize',
           transition: 'background-color 0.2s',
+          width: '4px',
+          marginLeft: 'auto',
         }}
-        onMouseDown={header.getResizeHandler()}
-        onTouchStart={header.getResizeHandler()}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         onKeyDown={handleKeyDown}
       />
     </div>
   );
 }
+
+function DraggableColumnHeader<RowDataModel>({
+  header,
+  children,
+  lastColumnId,
+  tableRect,
+  table,
+}: {
+  header: Header<RowDataModel, unknown>;
+  children: JSX.Element;
+  lastColumnId: string;
+  tableRect: DOMRect | undefined;
+  table: Table<RowDataModel>;
+}) {
+  const isPinned = header.column.getIsPinned();
+  const sortDirection = header.column.getIsSorted();
+  const canSort = header.column.getCanSort();
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: header.column.id,
+    disabled: false, // Allow dragging all columns (pinned and unpinned)
+  });
+
+  const style: JSX.CSSProperties = {
+    width:
+      header.column.id === lastColumnId ? `max(100%, ${header.getSize()}px)` : header.getSize(),
+    position: 'sticky',
+    top: 0,
+    zIndex: isPinned === 'left' ? 2 : 1,
+    left: isPinned === 'left' ? header.getStart() : undefined,
+    boxShadow:
+      'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const ariaSortValue = canSort ? getAriaSort(sortDirection) : undefined;
+  // Destructure to avoid type conflicts with role attribute
+  const { role: _role, ...spreadAttributes } = attributes || {};
+
+  return (
+    <th
+      ref={setNodeRef}
+      key={header.id}
+      class={clsx(isPinned === 'left' && 'bg-light', 'draggable-column-header')}
+      style={style}
+      aria-sort={ariaSortValue}
+      data-pinned={isPinned !== false}
+      {...spreadAttributes}
+      {...listeners}
+    >
+      {children}
+      {tableRect?.width &&
+      tableRect.width > table.getTotalSize() &&
+      header.column.id === lastColumnId ? null : (
+        <ResizeHandle header={header} setColumnSizing={table.setColumnSizing} />
+      )}
+    </th>
+  );
+}
+
+// Helper function to get aria-sort value
+const getAriaSort = (sortDirection: false | SortDirection) => {
+  switch (sortDirection) {
+    case 'asc':
+      return 'ascending';
+    case 'desc':
+      return 'descending';
+    default:
+      return 'none';
+  }
+};
 
 const DefaultNoResultsState = (
   <>
@@ -106,6 +196,7 @@ interface TanstackTableProps<RowDataModel> {
   rowHeight?: number;
   noResultsState?: JSX.Element;
   emptyState?: JSX.Element;
+  onDragEnd?: (params: { newOrder: string[]; newPinning: ColumnPinningState }) => void;
 }
 
 const DEFAULT_FILTER_MAP = {};
@@ -119,6 +210,7 @@ const DEFAULT_FILTER_MAP = {};
  * @param params.rowHeight - The height of the rows in the table
  * @param params.noResultsState - The no results state for the table
  * @param params.emptyState - The empty state for the table
+ * @param params.onDragEnd - Optional callback for handling drag-and-drop column reordering
  */
 export function TanstackTable<RowDataModel>({
   table,
@@ -127,6 +219,7 @@ export function TanstackTable<RowDataModel>({
   rowHeight = 42,
   noResultsState = DefaultNoResultsState,
   emptyState = DefaultEmptyState,
+  onDragEnd: onDragEndProp,
 }: TanstackTableProps<RowDataModel>) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -264,20 +357,74 @@ export function TanstackTable<RowDataModel>({
     }
   }, []);
 
-  // Helper function to get aria-sort value
-  const getAriaSort = (sortDirection: false | SortDirection) => {
-    switch (sortDirection) {
-      case 'asc':
-        return 'ascending';
-      case 'desc':
-        return 'descending';
-      default:
-        return 'none';
-    }
-  };
-
   const displayedCount = table.getRowModel().rows.length;
   const totalCount = table.getCoreRowModel().rows.length;
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const allColumns = table.getAllLeafColumns();
+    const activeColumn = allColumns.find((col) => col.id === active.id);
+    const overColumn = allColumns.find((col) => col.id === over.id);
+
+    if (!activeColumn || !overColumn) return;
+
+    const oldIndex = allColumns.findIndex((col) => col.id === active.id);
+    const newIndex = allColumns.findIndex((col) => col.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const currentOrder = table.getState().columnOrder || allColumns.map((col) => col.id);
+      const newOrder = [...currentOrder];
+      const [movedColumn] = newOrder.splice(oldIndex, 1);
+      newOrder.splice(newIndex, 0, movedColumn);
+
+      const activeIsPinned = activeColumn.getIsPinned();
+      const currentPinning = table.getState().columnPinning;
+      let newPinning = currentPinning;
+
+      // Determine if the column should be pinned based on its new position
+      // Count how many currently pinned columns are before the new position
+      const pinnedSet = new Set(currentPinning.left || []);
+      let pinnedBeforeNewPosition = 0;
+      for (let i = 0; i < newIndex; i++) {
+        if (pinnedSet.has(newOrder[i]) && newOrder[i] !== active.id) {
+          pinnedBeforeNewPosition++;
+        }
+      }
+
+      // If there are pinned columns before the new position, the dragged column should be pinned
+      const shouldBePinned = pinnedBeforeNewPosition > 0;
+
+      if (shouldBePinned && activeIsPinned !== 'left') {
+        // Auto-pin: dragging an unpinned column into the pinned section
+        const newLeftPinned = [...(currentPinning.left || []), active.id as string];
+        newPinning = {
+          left: newLeftPinned,
+          right: currentPinning.right || [],
+        };
+      } else if (!shouldBePinned && activeIsPinned === 'left') {
+        // Auto-unpin: dragging a pinned column out of the pinned section
+        const newLeftPinned = (currentPinning.left || []).filter((id) => id !== active.id);
+        newPinning = {
+          left: newLeftPinned,
+          right: currentPinning.right || [],
+        };
+      }
+
+      // Update both order and pinning together
+      if (onDragEndProp) {
+        // Use custom handler that can update both atomically
+        onDragEndProp({ newOrder, newPinning });
+      } else {
+        // Fallback to separate updates
+        table.setColumnOrder(newOrder);
+        if (newPinning !== currentPinning) {
+          table.setColumnPinning(newPinning);
+        }
+      }
+    }
+  };
 
   return (
     <div style={{ position: 'relative' }} class="d-flex flex-column h-100">
@@ -306,117 +453,108 @@ export function TanstackTable<RowDataModel>({
             aria-label={title}
             role="grid"
           >
-            <thead>
-              {headerGroups.map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header, index) => {
-                    const isPinned = header.column.getIsPinned();
-                    const sortDirection = header.column.getIsSorted();
-                    const canSort = header.column.getCanSort();
-                    const canFilter = header.column.getCanFilter();
-                    const columnName =
-                      typeof header.column.columnDef.header === 'string'
-                        ? header.column.columnDef.header
-                        : header.column.id;
+            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <thead>
+                {headerGroups.map((headerGroup) => (
+                  <SortableContext
+                    key={headerGroup.id}
+                    items={headerGroup.headers.map((h) => h.column.id)}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    <tr>
+                      {headerGroup.headers.map((header) => {
+                        const canSort = header.column.getCanSort();
+                        const canFilter = header.column.getCanFilter();
+                        const sortDirection = header.column.getIsSorted();
+                        const columnName =
+                          typeof header.column.columnDef.header === 'string'
+                            ? header.column.columnDef.header
+                            : header.column.id;
 
-                    const style: JSX.CSSProperties = {
-                      width:
-                        header.column.id === lastColumnId
-                          ? `max(100%, ${header.getSize()}px)`
-                          : header.getSize(),
-                      position: 'sticky',
-                      top: 0,
-                      zIndex: isPinned === 'left' ? 2 : 1,
-                      left: isPinned === 'left' ? header.getStart() : undefined,
-                      boxShadow:
-                        'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
-                    };
-
-                    return (
-                      <th
-                        key={header.id}
-                        class={clsx(isPinned === 'left' && 'bg-light')}
-                        style={style}
-                        aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
-                        role="columnheader"
-                      >
-                        <div
-                          class={clsx(
-                            'd-flex align-items-center',
-                            canSort || canFilter
-                              ? 'justify-content-between'
-                              : 'justify-content-center',
-                          )}
-                        >
-                          <button
-                            class={clsx(
-                              'text-nowrap text-start',
-                              canSort || canFilter ? 'flex-grow-1' : '',
-                            )}
-                            style={{
-                              cursor: canSort ? 'pointer' : 'default',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              background: 'transparent',
-                              border: 'none',
-                            }}
-                            type="button"
-                            aria-label={
-                              canSort
-                                ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
-                                : undefined
-                            }
-                            onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                            onKeyDown={
-                              canSort
-                                ? (e) => {
-                                    const handleSort = header.column.getToggleSortingHandler();
-                                    if (e.key === 'Enter' && handleSort) {
-                                      e.preventDefault();
-                                      handleSort(e);
-                                    }
-                                  }
-                                : undefined
-                            }
+                        return (
+                          <DraggableColumnHeader
+                            key={header.id}
+                            header={header}
+                            lastColumnId={lastColumnId}
+                            tableRect={tableRect}
+                            table={table}
                           >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(header.column.columnDef.header, header.getContext())}
-                            {canSort && (
-                              <span class="visually-hidden">
-                                , {getAriaSort(sortDirection)}, click to sort
-                              </span>
-                            )}
-                          </button>
-
-                          {(canSort || canFilter) && (
-                            <div class="d-flex align-items-center">
-                              {canSort && (
-                                <button
-                                  type="button"
-                                  class="btn btn-link text-muted p-0"
-                                  aria-label={`Sort ${columnName.toLowerCase()}`}
-                                  title={`Sort ${columnName.toLowerCase()}`}
-                                  onClick={header.column.getToggleSortingHandler()}
-                                >
-                                  <SortIcon sortMethod={sortDirection || false} />
-                                </button>
+                            <div
+                              class={clsx(
+                                'd-flex align-items-center',
+                                canSort || canFilter
+                                  ? 'justify-content-between'
+                                  : 'justify-content-center',
                               )}
-                              {canFilter && filters[header.column.id]?.({ header })}
+                            >
+                              <button
+                                class={clsx(
+                                  'text-nowrap text-start',
+                                  canSort || canFilter ? 'flex-grow-1' : '',
+                                )}
+                                style={{
+                                  cursor: canSort ? 'pointer' : 'default',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  background: 'transparent',
+                                  border: 'none',
+                                }}
+                                type="button"
+                                aria-label={
+                                  canSort
+                                    ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
+                                    : undefined
+                                }
+                                onClick={
+                                  canSort ? header.column.getToggleSortingHandler() : undefined
+                                }
+                                onKeyDown={
+                                  canSort
+                                    ? (e) => {
+                                        const handleSort = header.column.getToggleSortingHandler();
+                                        if (e.key === 'Enter' && handleSort) {
+                                          e.preventDefault();
+                                          handleSort(e);
+                                        }
+                                      }
+                                    : undefined
+                                }
+                              >
+                                {header.isPlaceholder
+                                  ? null
+                                  : flexRender(header.column.columnDef.header, header.getContext())}
+                                {canSort && (
+                                  <span class="visually-hidden">
+                                    , {getAriaSort(sortDirection)}, click to sort
+                                  </span>
+                                )}
+                              </button>
+
+                              {(canSort || canFilter) && (
+                                <div class="d-flex align-items-center">
+                                  {canSort && (
+                                    <button
+                                      type="button"
+                                      class="btn btn-link text-muted p-0"
+                                      aria-label={`Sort ${columnName.toLowerCase()}`}
+                                      title={`Sort ${columnName.toLowerCase()}`}
+                                      onClick={header.column.getToggleSortingHandler()}
+                                    >
+                                      <SortIcon sortMethod={sortDirection || false} />
+                                    </button>
+                                  )}
+                                  {canFilter && filters[header.column.id]?.({ header })}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        {tableRect?.width &&
-                        tableRect.width > table.getTotalSize() &&
-                        index === headerGroup.headers.length - 1 ? null : (
-                          <ResizeHandle header={header} setColumnSizing={table.setColumnSizing} />
-                        )}
-                      </th>
-                    );
-                  })}
-                </tr>
-              ))}
-            </thead>
+                          </DraggableColumnHeader>
+                        );
+                      })}
+                    </tr>
+                  </SortableContext>
+                ))}
+              </thead>
+            </DndContext>
             <tbody>
               {before > 0 && (
                 <tr tabIndex={-1}>
@@ -533,6 +671,7 @@ export function TanstackTable<RowDataModel>({
  * @param params.globalFilter.placeholder
  * @param params.tableOptions - Specific options for the table. See {@link TanstackTableProps} for more details.
  * @param params.downloadButtonOptions - Specific options for the download button. See {@link TanstackTableDownloadButtonProps} for more details.
+ * @param params.onDragEnd - Optional callback for handling drag-and-drop column reordering
  */
 export function TanstackTableCard<RowDataModel>({
   table,
@@ -542,6 +681,7 @@ export function TanstackTableCard<RowDataModel>({
   globalFilter,
   tableOptions,
   downloadButtonOptions = null,
+  onDragEnd,
 }: {
   table: Table<RowDataModel>;
   title: string;
@@ -554,6 +694,7 @@ export function TanstackTableCard<RowDataModel>({
   };
   tableOptions: Partial<Omit<TanstackTableProps<RowDataModel>, 'table'>>;
   downloadButtonOptions?: Omit<TanstackTableDownloadButtonProps<RowDataModel>, 'table'> | null;
+  onDragEnd?: TanstackTableProps<RowDataModel>['onDragEnd'];
 }) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -655,7 +796,7 @@ export function TanstackTableCard<RowDataModel>({
           </div>
         </div>
         <div class="flex-grow-1">
-          <TanstackTable table={table} title={title} {...tableOptions} />
+          <TanstackTable table={table} title={title} onDragEnd={onDragEnd} {...tableOptions} />
         </div>
       </div>
     </div>

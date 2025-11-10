@@ -9,8 +9,8 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'preact/compat';
+import { parseAsArrayOf, parseAsString, parseAsStringLiteral } from 'nuqs';
+import { useCallback, useMemo, useState } from 'preact/compat';
 import {
   Alert,
   Button,
@@ -20,6 +20,7 @@ import {
   OverlayTrigger,
   Tooltip,
 } from 'react-bootstrap';
+import { useLocalStorage } from 'usehooks-ts';
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -30,9 +31,9 @@ import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import {
   NuqsAdapter,
-  parseAsColumnPinningState,
-  parseAsColumnVisibilityStateWithColumns,
+  parseAsColumnVisibilityAndOrderState,
   parseAsSortingState,
+  useQueryStateWithLocalStorage,
 } from '../../lib/client/nuqs.js';
 import type {
   PageContextWithAuthzData,
@@ -168,16 +169,20 @@ function StudentsCard({
 }: StudentsCardProps) {
   const queryClient = useQueryClient();
 
-  const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
-  const [sorting, setSorting] = useQueryState<SortingState>(
+  // clean out table state once a week
+  // table.student.search
+  const [globalFilter, setGlobalFilter] = useQueryStateWithLocalStorage(
+    'table.student',
+    'search',
+    parseAsString.withDefault(''),
+  );
+  const [sorting, setSorting] = useQueryStateWithLocalStorage<SortingState>(
+    'table.student',
     'sort',
     parseAsSortingState.withDefault(DEFAULT_SORT),
   );
-  const [columnPinning, setColumnPinning] = useQueryState(
-    'frozen',
-    parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
-  );
-  const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryState(
+  const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryStateWithLocalStorage(
+    'table.student',
     'status',
     parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(
       DEFAULT_ENROLLMENT_STATUS_FILTER,
@@ -195,7 +200,22 @@ function StudentsCard({
     ];
   }, [enrollmentStatusFilter]);
 
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [columnSizing, setColumnSizingState] = useLocalStorage<ColumnSizingState>(
+    'table.student:columnSizing',
+    {},
+  );
+
+  // Wrap the setter to handle TanStack Table's updater function pattern
+  const setColumnSizing = useCallback(
+    (updater: ColumnSizingState | ((old: ColumnSizingState) => ColumnSizingState)) => {
+      if (typeof updater === 'function') {
+        setColumnSizingState((old) => updater(old));
+      } else {
+        setColumnSizingState(updater);
+      }
+    },
+    [setColumnSizingState],
+  );
 
   const { data: students } = useQuery<StudentRow[]>({
     queryKey: ['enrollments', 'students'],
@@ -313,9 +333,73 @@ function StudentsCard({
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
   const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
-  const [columnVisibility, setColumnVisibility] = useQueryState(
+  const defaultColumnState = {
+    visibility: defaultColumnVisibility,
+    order: allColumnIds,
+    pinning: DEFAULT_PINNING,
+  };
+
+  const [columnState, setColumnState] = useQueryStateWithLocalStorage(
+    'table.student',
     'columns',
-    parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
+    parseAsColumnVisibilityAndOrderState(allColumnIds).withDefault(defaultColumnState),
+  );
+
+  const columnVisibility = columnState.visibility;
+  const columnOrder = columnState.order;
+  const columnPinning = columnState.pinning;
+
+  const setColumnVisibility = useCallback(
+    (
+      updater:
+        | typeof columnVisibility
+        | ((old: typeof columnVisibility) => typeof columnVisibility),
+    ) => {
+      const newVisibility =
+        typeof updater === 'function' ? updater(columnState.visibility) : updater;
+      void setColumnState({
+        visibility: newVisibility,
+        order: columnState.order,
+        pinning: columnState.pinning,
+      });
+    },
+    [columnState, setColumnState],
+  );
+
+  const setColumnOrder = useCallback(
+    (updater: string[] | ((old: string[]) => string[])) => {
+      const newOrder = typeof updater === 'function' ? updater(columnState.order) : updater;
+      void setColumnState({
+        visibility: columnState.visibility,
+        order: newOrder,
+        pinning: columnState.pinning,
+      });
+    },
+    [columnState, setColumnState],
+  );
+
+  const setColumnPinning = useCallback(
+    (updater: ColumnPinningState | ((old: ColumnPinningState) => ColumnPinningState)) => {
+      const newPinning = typeof updater === 'function' ? updater(columnState.pinning) : updater;
+      void setColumnState({
+        visibility: columnState.visibility,
+        order: columnState.order,
+        pinning: newPinning,
+      });
+    },
+    [columnState, setColumnState],
+  );
+
+  const handleDragEnd = useCallback(
+    ({ newOrder, newPinning }: { newOrder: string[]; newPinning: ColumnPinningState }) => {
+      // Update both order and pinning atomically
+      void setColumnState({
+        visibility: columnState.visibility,
+        order: newOrder,
+        pinning: newPinning,
+      });
+    },
+    [columnState.visibility, setColumnState],
   );
 
   const table = useReactTable({
@@ -330,16 +414,19 @@ function StudentsCard({
       columnSizing,
       columnVisibility,
       columnPinning,
+      columnOrder,
     },
     initialState: {
       columnPinning: DEFAULT_PINNING,
       columnVisibility: defaultColumnVisibility,
+      columnOrder: allColumnIds,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
+    onColumnOrderChange: setColumnOrder,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -439,6 +526,7 @@ function StudentsCard({
             </>
           ),
         }}
+        onDragEnd={handleDragEnd}
       />
       <InviteStudentModal
         show={showInvite}

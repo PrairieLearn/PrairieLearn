@@ -2,3 +2,19 @@ body.no-user-select {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* Drag-and-drop column reordering styles */
+.draggable-column-header {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.draggable-column-header:active {
+  cursor: grabbing;
+}
+
+.draggable-column-header.dragging {
+  opacity: 0.5;
+  z-index: 1000;
+}

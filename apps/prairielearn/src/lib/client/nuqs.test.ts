@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   parseAsColumnPinningState,
+  parseAsColumnVisibilityAndOrderState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsSortingState,
 } from './nuqs.js';
@@ -141,6 +142,240 @@ describe('parseAsColumnVisibilityStateWithColumns', () => {
 
   it('eq returns false for different visibility', () => {
     expect(parser.eq({ a: true, b: false, c: true }, { a: false, b: false, c: true })).toBe(false);
+  });
+});
+
+describe('parseAsColumnVisibilityAndOrderState', () => {
+  const allColumns = ['a', 'b', 'c'];
+  const parser = parseAsColumnVisibilityAndOrderState(allColumns);
+
+  describe('parse', () => {
+    it('parses empty string as all columns visible in default order with no pinning', () => {
+      expect(parser.parse('')).toEqual({
+        visibility: { a: true, b: true, c: true },
+        order: ['a', 'b', 'c'],
+        pinning: { left: [], right: [] },
+      });
+    });
+
+    it('parses comma-separated columns as only those visible in that order', () => {
+      expect(parser.parse('a,b')).toEqual({
+        visibility: { a: true, b: true, c: false },
+        order: ['a', 'b', 'c'], // visible first, then hidden in default order
+        pinning: { left: [], right: [] },
+      });
+      expect(parser.parse('b')).toEqual({
+        visibility: { a: false, b: true, c: false },
+        order: ['b', 'a', 'c'],
+        pinning: { left: [], right: [] },
+      });
+    });
+
+    it('parses reordered columns', () => {
+      expect(parser.parse('c,a,b')).toEqual({
+        visibility: { a: true, b: true, c: true },
+        order: ['c', 'a', 'b'],
+        pinning: { left: [], right: [] },
+      });
+    });
+
+    it('parses reordered with hidden columns', () => {
+      expect(parser.parse('c,a')).toEqual({
+        visibility: { a: true, b: false, c: true },
+        order: ['c', 'a', 'b'], // visible in order, then hidden in default order
+        pinning: { left: [], right: [] },
+      });
+    });
+
+    it('parses pinned columns with . prefix', () => {
+      expect(parser.parse('.a,.b,c')).toEqual({
+        visibility: { a: true, b: true, c: true },
+        order: ['a', 'b', 'c'],
+        pinning: { left: ['a', 'b'], right: [] },
+      });
+    });
+
+    it('parses mixed pinned and unpinned columns', () => {
+      expect(parser.parse('.a,c,b')).toEqual({
+        visibility: { a: true, b: true, c: true },
+        order: ['a', 'c', 'b'],
+        pinning: { left: ['a'], right: [] },
+      });
+    });
+
+    it('parses pinned columns with hidden columns', () => {
+      expect(parser.parse('.a,c')).toEqual({
+        visibility: { a: true, b: false, c: true },
+        order: ['a', 'c', 'b'],
+        pinning: { left: ['a'], right: [] },
+      });
+    });
+  });
+
+  describe('serialize', () => {
+    it('serializes all columns visible in default order as empty string', () => {
+      expect(
+        parser.serialize({
+          visibility: { a: true, b: true, c: true },
+          order: ['a', 'b', 'c'],
+          pinning: { left: [], right: [] },
+        }),
+      ).toBe('');
+    });
+
+    it('serializes partial visibility as comma-separated visible columns in order', () => {
+      expect(
+        parser.serialize({
+          visibility: { a: true, b: false, c: true },
+          order: ['a', 'c', 'b'],
+          pinning: { left: [], right: [] },
+        }),
+      ).toBe('a,c');
+      expect(
+        parser.serialize({
+          visibility: { a: false, b: true, c: false },
+          order: ['b', 'a', 'c'],
+          pinning: { left: [], right: [] },
+        }),
+      ).toBe('b');
+    });
+
+    it('serializes reordered visible columns', () => {
+      expect(
+        parser.serialize({
+          visibility: { a: true, b: true, c: true },
+          order: ['c', 'a', 'b'],
+          pinning: { left: [], right: [] },
+        }),
+      ).toBe('c,a,b');
+      expect(
+        parser.serialize({
+          visibility: { a: true, b: true, c: true },
+          order: ['b', 'c', 'a'],
+          pinning: { left: [], right: [] },
+        }),
+      ).toBe('b,c,a');
+    });
+
+    it('serializes reordered with hidden columns', () => {
+      expect(
+        parser.serialize({
+          visibility: { a: true, b: false, c: true },
+          order: ['c', 'a', 'b'],
+          pinning: { left: [], right: [] },
+        }),
+      ).toBe('c,a');
+    });
+
+    it('serializes pinned columns with . prefix', () => {
+      expect(
+        parser.serialize({
+          visibility: { a: true, b: true, c: true },
+          order: ['a', 'b', 'c'],
+          pinning: { left: ['a', 'b'], right: [] },
+        }),
+      ).toBe('.a,.b,c');
+    });
+
+    it('serializes mixed pinned and unpinned columns', () => {
+      expect(
+        parser.serialize({
+          visibility: { a: true, b: true, c: true },
+          order: ['a', 'c', 'b'],
+          pinning: { left: ['a'], right: [] },
+        }),
+      ).toBe('.a,c,b');
+    });
+
+    it('serializes pinned columns with hidden columns', () => {
+      expect(
+        parser.serialize({
+          visibility: { a: true, b: false, c: true },
+          order: ['a', 'c', 'b'],
+          pinning: { left: ['a'], right: [] },
+        }),
+      ).toBe('.a,c');
+    });
+
+    it('serializes all columns pinned', () => {
+      expect(
+        parser.serialize({
+          visibility: { a: true, b: true, c: true },
+          order: ['a', 'b', 'c'],
+          pinning: { left: ['a', 'b', 'c'], right: [] },
+        }),
+      ).toBe('.a,.b,.c');
+    });
+  });
+
+  describe('eq', () => {
+    it('returns true for equal visibility, order, and pinning', () => {
+      expect(
+        parser.eq(
+          {
+            visibility: { a: true, b: false, c: true },
+            order: ['a', 'c', 'b'],
+            pinning: { left: ['a'], right: [] },
+          },
+          {
+            visibility: { a: true, b: false, c: true },
+            order: ['a', 'c', 'b'],
+            pinning: { left: ['a'], right: [] },
+          },
+        ),
+      ).toBe(true);
+    });
+
+    it('returns false for different visibility', () => {
+      expect(
+        parser.eq(
+          {
+            visibility: { a: true, b: false, c: true },
+            order: ['a', 'c', 'b'],
+            pinning: { left: [], right: [] },
+          },
+          {
+            visibility: { a: false, b: false, c: true },
+            order: ['a', 'c', 'b'],
+            pinning: { left: [], right: [] },
+          },
+        ),
+      ).toBe(false);
+    });
+
+    it('returns false for different order', () => {
+      expect(
+        parser.eq(
+          {
+            visibility: { a: true, b: true, c: true },
+            order: ['a', 'b', 'c'],
+            pinning: { left: [], right: [] },
+          },
+          {
+            visibility: { a: true, b: true, c: true },
+            order: ['c', 'b', 'a'],
+            pinning: { left: [], right: [] },
+          },
+        ),
+      ).toBe(false);
+    });
+
+    it('returns false for different pinning', () => {
+      expect(
+        parser.eq(
+          {
+            visibility: { a: true, b: true, c: true },
+            order: ['a', 'b', 'c'],
+            pinning: { left: ['a'], right: [] },
+          },
+          {
+            visibility: { a: true, b: true, c: true },
+            order: ['a', 'b', 'c'],
+            pinning: { left: ['a', 'b'], right: [] },
+          },
+        ),
+      ).toBe(false);
+    });
   });
 });
 
