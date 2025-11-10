@@ -1,5 +1,5 @@
 CREATE FUNCTION
-    users_select_or_insert_and_enroll_lti(
+    users_select_or_insert_lti(
         IN uid text,
         IN name text,
         IN lti_course_instance_id bigint,
@@ -7,13 +7,19 @@ CREATE FUNCTION
         IN lti_context_id text,
         IN req_date timestamptz,
         OUT user_id bigint,
-        OUT has_access boolean
+        OUT has_legacy_access boolean,
+        OUT is_modern_publishing boolean,
+        OUT publishing_start_date timestamptz,
+        OUT publishing_end_date timestamptz,
+        OUT latest_publishing_extension_date timestamptz
     )
 AS $$
 DECLARE
     lti_institution_id bigint;
     u users%rowtype;
     new_u users%rowtype;
+    course_instance course_instances%rowtype;
+    publishing_extension course_instance_publishing_extensions%rowtype;
 BEGIN
     -- find the LTI institution
     SELECT i.id
@@ -30,7 +36,7 @@ BEGIN
     INTO u
     FROM users
     WHERE
-        users.uid = users_select_or_insert_and_enroll_lti.uid
+        users.uid = users_select_or_insert_lti.uid
         AND users.institution_id = lti_institution_id;
 
     -- if we don't have the user already, make it
@@ -38,10 +44,10 @@ BEGIN
         INSERT INTO users
             (uid, name, lti_course_instance_id, lti_user_id, lti_context_id, institution_id)
         VALUES
-            (users_select_or_insert_and_enroll_lti.uid, users_select_or_insert_and_enroll_lti.name,
-             users_select_or_insert_and_enroll_lti.lti_course_instance_id,
-             users_select_or_insert_and_enroll_lti.lti_user_id,
-             users_select_or_insert_and_enroll_lti.lti_context_id, lti_institution_id)
+            (users_select_or_insert_lti.uid, users_select_or_insert_lti.name,
+             users_select_or_insert_lti.lti_course_instance_id,
+             users_select_or_insert_lti.lti_user_id,
+             users_select_or_insert_lti.lti_context_id, lti_institution_id)
         RETURNING * INTO u;
 
         INSERT INTO audit_logs (table_name, row_id, action,   new_state)
@@ -51,7 +57,7 @@ BEGIN
     -- update user data as needed
     IF name IS NOT NULL AND name IS DISTINCT FROM u.name THEN
         UPDATE users
-        SET name = users_select_or_insert_and_enroll_lti.name
+        SET name = users_select_or_insert_lti.name
         WHERE users.user_id = u.user_id
         RETURNING * INTO new_u;
 
@@ -75,14 +81,21 @@ BEGIN
     END IF;
 
     -- check course instance access
-    SELECT check_course_instance_access(lti_course_instance_id, u.uid, u.institution_id, req_date) INTO has_access;
 
-    -- if user has access, then ensure enrollment
-    -- This doesn't log an audit event for enrollments if a student was enrolled this way.
-    IF has_access THEN
-        INSERT INTO enrollments (course_instance_id, user_id, status, first_joined_at)
-        VALUES (lti_course_instance_id, u.user_id, 'joined', now())
-        ON CONFLICT DO NOTHING;
+    SELECT * FROM course_instances WHERE id = lti_course_instance_id INTO course_instance;
+    
+    SELECT check_course_instance_access(lti_course_instance_id, u.uid, u.institution_id, req_date) INTO has_legacy_access;
+
+    latest_publishing_extension_date := NULL;
+    publishing_start_date := course_instance.publishing_start_date;
+    publishing_end_date := course_instance.publishing_end_date;
+    is_modern_publishing := course_instance.modern_publishing;
+
+    IF is_modern_publishing THEN
+        SELECT * FROM course_instance_publishing_extensions WHERE course_instance_id = lti_course_instance_id ORDER BY end_date DESC LIMIT 1 INTO publishing_extension;
+        IF FOUND THEN
+            latest_publishing_extension_date := publishing_extension.end_date;
+        END IF;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
