@@ -726,9 +726,9 @@ export function AssessmentQuestionTable({
           rowHeight: 48,
           filters: columnFiltersComponents,
         }}
+        pluralLabel="submissions"
         downloadButtonOptions={{
           filenameBase: `manual_grading_${questionQid}`,
-          pluralLabel: 'submissions',
           mapRowToData: (row) => ({
             Instance: row.id,
             [groupWork ? 'Group Name' : 'Name']: row.user_or_group_name || '',

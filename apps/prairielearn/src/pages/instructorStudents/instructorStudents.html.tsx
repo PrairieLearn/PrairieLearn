@@ -362,9 +362,9 @@ function StudentsCard({
       <TanstackTableCard
         table={table}
         title="Students"
+        pluralLabel="students"
         downloadButtonOptions={{
           filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
-          pluralLabel: 'students',
           mapRowToData: (row) => {
             return {
               uid: row.user?.uid ?? row.enrollment.pending_uid,

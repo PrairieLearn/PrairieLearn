@@ -533,6 +533,7 @@ export function TanstackTable<RowDataModel>({
  * @param params
  * @param params.table - The table model
  * @param params.title - The title of the card
+ * @param params.pluralLabel - The plural label for the table, e.g. "students"
  * @param params.headerButtons - The buttons to display in the header
  * @param params.columnManagerButtons - The buttons to display next to the column manager (View button)
  * @param params.columnManagerTopContent - Optional content to display at the top of the column manager (View) dropdown menu
@@ -546,15 +547,17 @@ export function TanstackTable<RowDataModel>({
 export function TanstackTableCard<RowDataModel>({
   table,
   title,
+  pluralLabel,
   headerButtons,
   columnManagerButtons,
   columnManagerTopContent,
   globalFilter,
   tableOptions,
-  downloadButtonOptions = null,
+  downloadButtonOptions,
 }: {
   table: Table<RowDataModel>;
   title: string;
+  pluralLabel: string;
   headerButtons: JSX.Element;
   columnManagerButtons?: JSX.Element;
   columnManagerTopContent?: JSX.Element;
@@ -564,7 +567,10 @@ export function TanstackTableCard<RowDataModel>({
     placeholder: string;
   };
   tableOptions: Partial<Omit<TanstackTableProps<RowDataModel>, 'table'>>;
-  downloadButtonOptions?: Omit<TanstackTableDownloadButtonProps<RowDataModel>, 'table'> | null;
+  downloadButtonOptions: Omit<
+    TanstackTableDownloadButtonProps<RowDataModel>,
+    'table' | 'pluralLabel'
+  >;
 }) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -610,7 +616,11 @@ export function TanstackTableCard<RowDataModel>({
             {headerButtons}
 
             {downloadButtonOptions && (
-              <TanstackTableDownloadButton table={table} {...downloadButtonOptions} />
+              <TanstackTableDownloadButton
+                table={table}
+                pluralLabel={pluralLabel}
+                {...downloadButtonOptions}
+              />
             )}
           </div>
         </div>
@@ -661,7 +671,7 @@ export function TanstackTableCard<RowDataModel>({
           )}
           <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
             <div class="text-muted text-nowrap">
-              Showing {displayedCount} of {totalCount} {title.toLowerCase()}
+              Showing {displayedCount} of {totalCount} {pluralLabel.toLowerCase()}
             </div>
           </div>
         </div>

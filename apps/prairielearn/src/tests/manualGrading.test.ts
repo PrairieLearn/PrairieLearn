@@ -635,13 +635,13 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
 
         await fetch(manualGradingAssessmentQuestionUrl, {
           method: 'POST',
-          headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             __action: 'batch_action',
             __csrf_token: token,
-            batch_action_data: JSON.stringify({ assigned_grader: mockStaff[0].user_id }),
+            batch_action_data: { assigned_grader: mockStaff[0].user_id },
             instance_question_id: iqId.toString(),
-          }).toString(),
+          }),
         });
       });
 
