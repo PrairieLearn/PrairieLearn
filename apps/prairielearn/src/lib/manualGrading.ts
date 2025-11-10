@@ -1,3 +1,5 @@
+import { setImmediate } from 'node:timers/promises';
+
 import * as async from 'async';
 import _ from 'lodash';
 import mustache from 'mustache';
@@ -183,7 +185,7 @@ export async function selectRubricData({
       );
 
       // Yield to the event loop to avoid blocking too long.
-      await Promise.resolve();
+      await setImmediate();
     }
   }
 
