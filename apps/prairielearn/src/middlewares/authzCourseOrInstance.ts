@@ -12,6 +12,7 @@ import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import {
   type ConstructedCourseOrInstanceSuccessContext,
   type CourseOrInstanceContextData,
+  type PlainAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
 } from '../lib/authz-data-lib.js';
@@ -554,7 +555,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       return {
         authzData: {
           user: effectiveUserData ? effectiveUserData.user : authnAuthzData.user,
-          is_administrator: false,
           course_role: 'None' as EnumCourseRole,
           ...calculateCourseRolePermissions('None'),
           ...(req.params.course_instance_id
@@ -567,7 +567,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
             : {}),
           mode: authnAuthzData.mode,
           mode_reason: authnAuthzData.mode_reason,
-        },
+        } as PlainAuthzData,
         course: authnCourse,
         institution: authnInstitution,
         courseInstance: authnCourseInstance,

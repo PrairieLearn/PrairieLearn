@@ -54,3 +54,6 @@ export function assertNever(value: never): never {
 }
 
 export type Result<T, E = Error> = { success: true; value: T } | { success: false; error: E };
+
+declare const __brand: unique symbol;
+export type Brand<K, T> = K & { [__brand]: T };

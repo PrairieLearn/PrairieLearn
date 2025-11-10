@@ -22,6 +22,7 @@ import {
   SprocAuthzCourseSchema,
   type User,
 } from './db-types.js';
+import type { Brand } from './types.js';
 
 /**
  * This schema isn't used to directly validate the authz data that ends up in
@@ -77,25 +78,28 @@ export interface DangerousSystemAuthzData {
   };
 }
 
+interface RawPlainAuthzData {
+  user: User;
+
+  course_role: EnumCourseRole;
+  has_course_permission_preview: boolean;
+  has_course_permission_view: boolean;
+  has_course_permission_edit: boolean;
+  has_course_permission_own: boolean;
+
+  course_instance_role?: EnumCourseInstanceRole;
+  has_course_instance_permission_view?: boolean;
+  has_course_instance_permission_edit?: boolean;
+  has_student_access_with_enrollment?: boolean;
+  has_student_access?: boolean;
+
+  mode: EnumMode;
+  mode_reason: EnumModeReason;
+}
+export type PlainAuthzData = Brand<RawPlainAuthzData, 'PlainAuthzData'>;
+
 export interface ConstructedCourseOrInstanceSuccessContext {
-  authzData: {
-    user: User;
-
-    course_role: EnumCourseRole;
-    has_course_permission_preview: boolean;
-    has_course_permission_view: boolean;
-    has_course_permission_edit: boolean;
-    has_course_permission_own: boolean;
-
-    course_instance_role?: EnumCourseInstanceRole;
-    has_course_instance_permission_view?: boolean;
-    has_course_instance_permission_edit?: boolean;
-    has_student_access_with_enrollment?: boolean;
-    has_student_access?: boolean;
-
-    mode: EnumMode;
-    mode_reason: EnumModeReason;
-  };
+  authzData: PlainAuthzData;
   course: Course;
   institution: Institution;
   courseInstance: CourseInstance | null;
@@ -122,9 +126,7 @@ export const CourseOrInstanceContextDataSchema = z.object({
 });
 export type CourseOrInstanceContextData = z.infer<typeof CourseOrInstanceContextDataSchema>;
 
-export type AuthzDataWithoutEffectiveUser =
-  | ConstructedCourseOrInstanceSuccessContext['authzData']
-  | DangerousSystemAuthzData;
+export type AuthzDataWithoutEffectiveUser = PlainAuthzData | DangerousSystemAuthzData;
 
 export type AuthzDataWithEffectiveUser = PageAuthzData | DangerousSystemAuthzData;
 

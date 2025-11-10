@@ -11,6 +11,7 @@ import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import {
   type ConstructedCourseOrInstanceContext,
   CourseOrInstanceContextDataSchema,
+  type PlainAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
   dangerousFullSystemAuthz,
@@ -274,7 +275,7 @@ export async function constructCourseOrInstanceContext({
   }
 
   return {
-    authzData,
+    authzData: authzData as PlainAuthzData,
     course: rawAuthzData.course,
     institution: rawAuthzData.institution,
     courseInstance: rawAuthzData.course_instance,
