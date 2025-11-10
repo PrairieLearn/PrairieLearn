@@ -86,7 +86,6 @@ def generate_grading_text(
 
     grading_text_params = {grading_key: True, "insert_text": insert_text}
 
-    # TODO make change here
     with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         return chevron.render(f, grading_text_params).strip()
 
@@ -175,14 +174,13 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
         # No attribute specified, use default
         return PARTIAL_CREDIT_DEFAULT
 
-    # Try to parse as enum first (new style)
-    partial_credit_str = pl.get_string_attrib(element, "partial-credit", "")
+    try:
+        # Try to parse as enum first (new style)
+        partial_credit_bool = pl.get_boolean_attrib(element, "partial-credit")
 
-    # Handle backward compatibility: old boolean + method style
-    if partial_credit_str.lower() in ["true", "false"]:
+        # Handle backward compatibility: old boolean + method style
         if pl.has_attrib(element, "partial-credit-method"):
             # Old style: partial-credit="true" + partial-credit-method="PC|COV|EDC"
-            partial_credit_bool = partial_credit_str.lower() == "true"
             if not partial_credit_bool:
                 return PartialCreditType.OFF
 
@@ -201,12 +199,14 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
             return old_to_new_mapping[partial_credit_method]
         else:
             # Old style: partial-credit="true|false" without method (defaults to PC)
-            partial_credit_bool = partial_credit_str.lower() == "true"
             return (
                 PartialCreditType.NET_CORRECT
                 if partial_credit_bool
                 else PartialCreditType.OFF
             )
+    except ValueError:
+        # Silently fall over to new style parsing if the old style doesn't work
+        pass
 
     # New style: partial-credit="off|coverage|each-answer|net-correct"
     if pl.has_attrib(element, "partial-credit-method"):

@@ -321,7 +321,7 @@ def test_partial_credit_type_conversion() -> None:
         == pl_checkbox.PartialCreditType.EACH_ANSWER
     )
 
-    with pytest.raises(ValueError, match=r"Invalid partial-credit-method.*"):
+    with pytest.raises(ValueError, match=r"partial-credit-method is deprecated.*"):
         pl_checkbox.get_partial_credit_mode(build_element(True, "INVALID"))
 
 
