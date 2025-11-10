@@ -16,7 +16,6 @@ import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { assertNever } from '../../lib/types.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByUid,
@@ -136,19 +135,16 @@ router.post(
       authn_user: { uid, user_id: userId },
     } = getPageContext(res.locals, { withAuthzData: false });
 
-    // TODO: Authenticate this access better (model functions for course instances)
-    const courseInstance = await selectCourseInstanceById(body.course_instance_id);
-
-    const { authzData } = await constructCourseOrInstanceContext({
+    const { authzData, courseInstance } = await constructCourseOrInstanceContext({
       user: res.locals.authn_user,
-      course_id: courseInstance.course_id,
-      course_instance_id: courseInstance.id,
+      course_id: null,
+      course_instance_id: body.course_instance_id,
       ip: req.ip ?? null,
       req_date: res.locals.req_date,
       is_administrator: res.locals.is_administrator,
     });
 
-    if (authzData === null) {
+    if (authzData === null || courseInstance === null) {
       throw new HttpStatusError(403, 'Access denied');
     }
 

@@ -1,4 +1,4 @@
-import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import {
   type EmbeddingModel,
   type GenerateTextResult,
@@ -419,7 +419,7 @@ export async function generateQuestion({
       providerOptions: {
         openai: {
           safetyIdentifier: openAiUserFromAuthn(authnUserId),
-        } satisfies OpenAIChatLanguageModelOptions,
+        } satisfies OpenAIResponsesProviderOptions,
       },
     });
 
@@ -646,7 +646,7 @@ async function regenInternal({
     providerOptions: {
       openai: {
         safetyIdentifier: openAiUserFromAuthn(authnUserId),
-      } satisfies OpenAIChatLanguageModelOptions,
+      } satisfies OpenAIResponsesProviderOptions,
     },
   });
 

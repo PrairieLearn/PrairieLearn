@@ -16,16 +16,18 @@
   },
   "dependencies": {
     "@prairielearn/marked-mathjax": "workspace:^",
-    "isomorphic-dompurify": "^2.31.0",
+    "dompurify": "^3.3.0",
+    "jsdom": "^27.1.0",
     "marked": "^16.4.1",
     "mathjax": "^3.2.2"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@types/jsdom": "^27.0.0",
     "@types/node": "^22.19.0",
-    "@vitest/coverage-v8": "^4.0.6",
+    "@vitest/coverage-v8": "^4.0.7",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.6"
+    "vitest": "^4.0.7"
   }
 }

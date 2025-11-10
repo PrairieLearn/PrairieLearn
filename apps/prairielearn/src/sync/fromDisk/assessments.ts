@@ -14,7 +14,7 @@ import {
   type ZoneQuestionJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
-import { isAccessRuleAccessibleInFuture } from '../dates.js';
+import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -402,10 +402,17 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   // not accessible.
   if (!courseInstance) return false;
 
-  // If there are no access rules, the course instance is not accessible.
-  if (courseInstance.allowAccess.length === 0) return false;
+  if (courseInstance.allowAccess != null) {
+    // If there are no access rules, the course instance is not accessible.
+    if (courseInstance.allowAccess.length === 0) return false;
+    return courseInstance.allowAccess.some((rule) => isDateInFuture(rule.endDate));
+  }
 
-  return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
+  if (courseInstance.publishing?.endDate == null) {
+    return false;
+  }
+
+  return isDateInFuture(courseInstance.publishing.endDate);
 }
 
 export async function sync(

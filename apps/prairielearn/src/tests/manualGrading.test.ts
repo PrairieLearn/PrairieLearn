@@ -1,10 +1,10 @@
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { InstanceQuestionSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -301,12 +301,9 @@ function checkSettingsResults(
   test.sequential('rubric settings modal should update with new values', async () => {
     const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-    const form = $manualGradingIQPage('form[name=rubric-settings]');
+    const form = $manualGradingIQPage('#rubric-editor');
 
-    assert.equal(
-      form.find(`input[name="starting_points"][value="${starting_points}"]`).is(':checked'),
-      true,
-    );
+    assert.equal(form.find('input[name="starting_points"]').val(), starting_points.toString());
     assert.equal(form.find('input[name="max_extra_points"]').val(), max_extra_points.toString());
     assert.equal(form.find('input[name="min_points"]').val(), min_points.toString());
 
@@ -320,21 +317,18 @@ function checkSettingsResults(
         item.id = idField.attr('value');
       }
       assert.equal(idField.val(), item.id);
-      assert.equal(idField.attr('name'), `rubric_item[cur${item.id}][id]`);
-      const points = form.find(`[name="rubric_item[cur${item.id}][points]"]`);
+      assert.equal(idField.attr('name'), `rubric_item[${item.id}][id]`);
+
+      const points = form.find(`[name="rubric_item[${item.id}][points]"]`);
       assert.equal(points.val(), item.points.toString());
-      const description = form.find(`[name="rubric_item[cur${item.id}][description]"]`);
+      const description = form.find(`[name="rubric_item[${item.id}][description]"]`);
       assert.equal(description.val(), item.description);
-      const explanation = form.find(
-        `button[data-input-name="rubric_item[cur${item.id}][explanation]"]`,
-      );
-      assert.equal(explanation.attr('data-current-value') ?? '', item.explanation ?? '');
-      const graderNote = form.find(
-        `button[data-input-name="rubric_item[cur${item.id}][grader_note]"]`,
-      );
-      assert.equal(graderNote.attr('data-current-value') ?? '', item.grader_note ?? '');
+      const explanation = form.find(`[name="rubric_item[${item.id}][explanation]"]`);
+      assert.equal(explanation.val() ?? '', b64EncodeUnicode(item.explanation ?? ''));
+      const graderNote = form.find(`[name="rubric_item[${item.id}][grader_note]"]`);
+      assert.equal(graderNote.val() ?? '', b64EncodeUnicode(item.grader_note ?? ''));
       const always_show_to_students = form.find(
-        `[name="rubric_item[cur${item.id}][always_show_to_students]"]:checked`,
+        `[name="rubric_item[${item.id}][always_show_to_students]"]`,
       );
       assert.equal(always_show_to_students.val(), item.always_show_to_students ? 'true' : 'false');
     });
@@ -371,17 +365,47 @@ function checkSettingsResults(
   });
 }
 
-function buildRubricItemFields(items: RubricItem[]): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(
-      _.mapKeys(items, (item, index) => (item.id ? `cur${item.id}` : `new${index}`)),
-    ).flatMap(([key, item], order) =>
-      Object.entries({ order, ...item }).map(([field, value]) => [
-        `rubric_item[${key}][${field}]`,
-        String(value),
-      ]),
+function buildRubricSettingsPayload({
+  manualGradingIQPage,
+  replace_auto_points,
+  starting_points,
+  min_points,
+  max_extra_points,
+  rubric_items,
+}: {
+  manualGradingIQPage: string;
+  replace_auto_points: boolean;
+  starting_points: number;
+  min_points: number;
+  max_extra_points: number;
+  rubric_items: RubricItem[];
+}) {
+  const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+  const form = $manualGradingIQPage('#rubric-editor');
+  return {
+    __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+    __action: form.find('input[name=__action]').attr('value') || '',
+    modified_at: form.find('input[name=modified_at]').attr('value') || '',
+    use_rubric: true,
+    replace_auto_points,
+    starting_points,
+    min_points,
+    max_extra_points,
+    rubric_items: rubric_items.map(
+      (
+        {
+          description_render: _description_render,
+          explanation_render: _explanation_render,
+          grader_note_render: _grader_note_render,
+          ...item
+        },
+        idx,
+      ) => ({
+        order: idx,
+        ...item,
+      }),
     ),
-  );
+  };
 }
 
 describe('Manual Grading', { timeout: 80_000 }, function () {
@@ -473,7 +497,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         async () => {
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
           const nextButton = row.find('.btn:contains("next submission")');
           assert.equal(nextButton.length, 1);
@@ -608,13 +635,13 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
 
         await fetch(manualGradingAssessmentQuestionUrl, {
           method: 'POST',
-          headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             __action: 'batch_action',
             __csrf_token: token,
-            batch_action_data: JSON.stringify({ assigned_grader: mockStaff[0].user_id }),
+            batch_action_data: { assigned_grader: mockStaff[0].user_id },
             instance_question_id: iqId.toString(),
-          }).toString(),
+          }),
         });
       });
 
@@ -750,8 +777,6 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         test.sequential('set rubric settings for positive grading should succeed', async () => {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
-          const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('form[name=rubric-settings]');
           rubric_items = [
             { points: 6, description: 'First rubric item', always_show_to_students: true },
             {
@@ -790,18 +815,17 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              __action: form.find('input[name=__action]').attr('value') || '',
-              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
-              modified_at: form.find('input[name=modified_at]').attr('value') || '',
-              use_rubric: 'true',
-              replace_auto_points: 'false',
-              starting_points: '0', // Positive grading
-              min_points: '-0.3',
-              max_extra_points: '0.3',
-              ...buildRubricItemFields(rubric_items),
-            }).toString(),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(
+              buildRubricSettingsPayload({
+                manualGradingIQPage,
+                replace_auto_points: false,
+                starting_points: 0,
+                min_points: -0.3,
+                max_extra_points: 0.3,
+                rubric_items,
+              }),
+            ),
           });
 
           assert.equal(response.ok, true);
@@ -825,8 +849,6 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         test.sequential('update rubric items should succeed', async () => {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
-          const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('form[name=rubric-settings]');
           assert.isDefined(rubric_items);
           rubric_items[2].points = 1;
           score_points = 5.4;
@@ -834,18 +856,17 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              __action: form.find('input[name=__action]').attr('value') || '',
-              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
-              modified_at: form.find('input[name=modified_at]').attr('value') || '',
-              use_rubric: 'true',
-              replace_auto_points: 'false',
-              starting_points: '0', // Positive grading
-              min_points: '-0.5',
-              max_extra_points: '0.5',
-              ...buildRubricItemFields(rubric_items),
-            }).toString(),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(
+              buildRubricSettingsPayload({
+                manualGradingIQPage,
+                replace_auto_points: false,
+                starting_points: 0,
+                min_points: -0.5,
+                max_extra_points: 0.5,
+                rubric_items,
+              }),
+            ),
           });
 
           assert.equal(response.ok, true);
@@ -870,24 +891,21 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         test.sequential('update rubric items should succeed', async () => {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
-          const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('form[name=rubric-settings]');
           assert.isDefined(rubric_items);
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              __action: form.find('input[name=__action]').attr('value') || '',
-              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
-              modified_at: form.find('input[name=modified_at]').attr('value') || '',
-              replace_auto_points: 'false',
-              use_rubric: 'true',
-              starting_points: '0', // Positive grading
-              min_points: '-0.3',
-              max_extra_points: '0.3',
-              ...buildRubricItemFields(rubric_items),
-            }).toString(),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(
+              buildRubricSettingsPayload({
+                manualGradingIQPage,
+                replace_auto_points: false,
+                starting_points: 0,
+                min_points: -0.3,
+                max_extra_points: 0.3,
+                rubric_items,
+              }),
+            ),
           });
 
           assert.equal(response.ok, true);
@@ -939,26 +957,23 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         test.sequential('update rubric items should succeed', async () => {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
-          const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('form[name=rubric-settings]');
           assert.isDefined(rubric_items);
           score_points = 6.9;
           score_percent = 115;
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              __action: form.find('input[name=__action]').attr('value') || '',
-              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
-              modified_at: form.find('input[name=modified_at]').attr('value') || '',
-              replace_auto_points: 'false',
-              use_rubric: 'true',
-              starting_points: '0', // Positive grading
-              min_points: '-0.3',
-              max_extra_points: '-0.3',
-              ...buildRubricItemFields(rubric_items),
-            }).toString(),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(
+              buildRubricSettingsPayload({
+                manualGradingIQPage,
+                replace_auto_points: false,
+                starting_points: 0,
+                min_points: -0.3,
+                max_extra_points: -0.3,
+                rubric_items,
+              }),
+            ),
           });
 
           assert.equal(response.ok, true);
@@ -984,8 +999,6 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         test.sequential('set rubric settings to negative grading should succeed', async () => {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
-          const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('form[name=rubric-settings]');
           rubric_items = [
             { points: 0, description: 'First rubric item', always_show_to_students: true },
             {
@@ -1025,18 +1038,17 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              __action: form.find('input[name=__action]').attr('value') || '',
-              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
-              modified_at: form.find('input[name=modified_at]').attr('value') || '',
-              replace_auto_points: 'false',
-              use_rubric: 'true',
-              starting_points: '6', // Negative grading
-              min_points: '-0.6',
-              max_extra_points: '0.6',
-              ...buildRubricItemFields(rubric_items),
-            }).toString(),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(
+              buildRubricSettingsPayload({
+                manualGradingIQPage,
+                replace_auto_points: false,
+                starting_points: 6,
+                min_points: -0.6,
+                max_extra_points: 0.6,
+                rubric_items,
+              }),
+            ),
           });
 
           assert.equal(response.ok, true);
@@ -1139,7 +1151,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         async () => {
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
 
           // Get assessment_question_id from the database

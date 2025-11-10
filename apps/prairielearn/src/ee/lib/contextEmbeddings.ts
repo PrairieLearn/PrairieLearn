@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { type EmbeddingModel, embed } from 'ai';
 import fs from 'fs-extra';
 import klaw from 'klaw';
@@ -41,7 +41,7 @@ export function openAiUserFromAuthn(authnUserId: string): string {
  *
  * @param embeddingModel The embedding model to use.
  * @param text The document text to embed.
- * @param openAiUser The OpenAI userstring requesting the embeddng.
+ * @param openAiUser The OpenAI userstring requesting the embedding.
  * @returns The resultant document embedding.
  */
 export async function createEmbedding(
@@ -55,7 +55,7 @@ export async function createEmbedding(
     providerOptions: {
       openai: {
         user: openAiUser,
-      } satisfies OpenAIChatLanguageModelOptions,
+      } satisfies OpenAIResponsesProviderOptions,
     },
   });
 

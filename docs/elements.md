@@ -924,18 +924,21 @@ Element to arrange given blocks of code or text that are displayed initially in 
 
 Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
-| Attribute             | Type               | Default | Description                                                                                                                                                                                                                                                                                                                                                            |
-| --------------------- | ------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `correct`             | boolean            | true    | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).                                                                                                                                                                                                                                                     |
-| `ranking`             | positive integer   | —       | This attribute is used when `grading-method="ranking"` and specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute. |
-| `indent`              | integer in [-1, 4] | -1      | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.                                                                                                               |
-| `depends`\*           | string             | —       | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends="1,3"` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"`.                                           |
-| `tag`\*               | string             | —       | Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.                                                                                                                                                                                                                                              |
-| `distractor-for`      | string             | —       | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                        |
-| `distractor-feedback` | string             | —       | Optional attribute, used when `correct=false` that indicates why a given block is incorrect or should not be included in the solution. Shown to the student after all attempts at a problem are exhausted, or if `feedback="first-wrong"` and the first incorrect line in their submission has `distractor-feedback`.                                                  |
-| `ordering-feedback`   | string             | —       | Optional attribute used when `grading-method="dag"` or `grading-method="ranking"` and `correct=true`. Used to provide specific feedback when the block is placed in the wrong position relative to other blocks. This feedback is shown to the student after submission to help clarify ordering errors.                                                               |
+| Attribute             | Type               | Default | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| --------------------- | ------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `correct`             | boolean            | true    | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).                                                                                                                                                                                                                                                                                                                                                                   |
+| `ranking`             | positive integer   | —       | This attribute is used when `grading-method="ranking"` and specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute.                                                                                                               |
+| `indent`              | integer in [-1, 4] | -1      | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.                                                                                                                                                                                                                             |
+| `depends`\*           | string             | —       | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends="1,3"` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"`. If if <code>depends="1&vert;3"</code>, then the block must appear later in the solution than than the block with `tag="1"` OR the block with `tag="3"`. |
+| `tag`\*               | string             | —       | Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.                                                                                                                                                                                                                                                                                                                                                            |
+| `distractor-for`      | string             | —       | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                                                                                                                                      |
+| `distractor-feedback` | string             | —       | Optional attribute, used when `correct=false` that indicates why a given block is incorrect or should not be included in the solution. Shown to the student after all attempts at a problem are exhausted, or if `feedback="first-wrong"` and the first incorrect line in their submission has `distractor-feedback`.                                                                                                                                                                |
+| `ordering-feedback`   | string             | —       | Optional attribute used when `grading-method="dag"` or `grading-method="ranking"` and `correct=true`. Used to provide specific feedback when the block is placed in the wrong position relative to other blocks. This feedback is shown to the student after submission to help clarify ordering errors.                                                                                                                                                                             |
+| `final`               | boolean            | —       | Required on exactly one `pl-answer` tag when `grading-method="dag"` and a <code>&vert;</code> is used to denote optional blocks.                                                                                                                                                                                                                                                                                                                                                     |
 
-> **_NOTE_:** Above attributes indicated with a \* can be applied to `pl-block-group` as well.
+!!! note
+
+    Above attributes indicated with a \* can be applied to `pl-block-group` as well.
 
 #### Details
 
@@ -954,9 +957,41 @@ Different ordering of the blocks in the source area defined via the attribute `s
 - `ordered`: the blocks appear in the source area in the same order they appear in the HTML file.
 - `alphabetized`: the blocks are alphabetized according to their HTML contents. Take care when including HTML in blocks. For instance, `<b>cat</b>` will appear before `<i>bat</i>`.
 
+#### Optional Blocks
+
+This feature allows users to write `pl-order-blocks` questions using the `dag` grading method to have multiple correct orderings that must include the same final block. This can extend existing questions utilizing the `dag` grading method to include blocks that can be either included or excluded in the final solution while still being correct. You can denote an "or" relationship between dependencies in the `depends` attribute by using the `|` operator, e.g., `depends="A|B"`.
+
+!!! note
+
+    When using optional blocks, the question must contain one block that serves as the final block in every ordering. The `pl-answer` tag that declares this block must have the attribute `final` set to `true`.
+    A question cannot include block groups with optional blocks.
+
+#### Optional Blocks Example
+
+![Screenshot of the pl-order-blocks element with optional lines](elements/pl-order-blocks-optional.png)
+
+```html title="question.html"
+<p>Construct a python function that computes the sum of two numbers.</p>
+<pl-order-blocks
+  answers-name="python-plus-equals"
+  grading-method="dag"
+  indentation="true"
+  format="code"
+  code-language="python"
+>
+  <pl-answer correct="true" tag="1" depends="" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" indent="1">sum = 0</pl-answer>
+  <pl-answer correct="true" tag="3" depends="2" indent="1">sum += first</pl-answer>
+  <pl-answer correct="true" tag="4" depends="2" indent="1">sum += second</pl-answer>
+  <pl-answer correct="true" tag="5" depends="2" indent="1">sum += first + second</pl-answer>
+  <pl-answer correct="true" tag="6" depends="3,4 | 5" indent="1" final="true">return sum</pl-answer>
+</pl-order-blocks>
+```
+
 #### Example implementations
 
 - [element/orderBlocks]
+- [element/orderBlocksOptional]
 - [demo/proofBlocks]
 - [demo/autograder/python/orderBlocksRandomParams]
 - [demo/autograder/python/orderBlocksAddNumpy]
@@ -2605,6 +2640,7 @@ that if there are many submitted answers, the page will load slowly.
 [element/numberinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/numberInput
 [element/unitsinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/unitsInput
 [element/orderblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
+[element/orderblocksoptional]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksOptional
 [element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
 [element/prairiedrawfigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/testCourse/questions/prairieDrawFigure
