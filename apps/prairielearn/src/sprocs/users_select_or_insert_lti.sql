@@ -6,12 +6,7 @@ CREATE FUNCTION
         IN lti_user_id text,
         IN lti_context_id text,
         IN req_date timestamptz,
-        OUT user_id bigint,
-        OUT has_legacy_access boolean,
-        OUT is_modern_publishing boolean,
-        OUT publishing_start_date timestamptz,
-        OUT publishing_end_date timestamptz,
-        OUT latest_publishing_extension_date timestamptz
+        OUT user_id bigint
     )
 AS $$
 DECLARE
@@ -78,24 +73,6 @@ BEGIN
     END IF;
     if user_id < 1 OR user_id > 1000000000 THEN
         RAISE EXCEPTION 'user_id out of bounds';
-    END IF;
-
-    -- check course instance access
-
-    SELECT * FROM course_instances WHERE id = lti_course_instance_id INTO course_instance;
-    
-    SELECT check_course_instance_access(lti_course_instance_id, u.uid, u.institution_id, req_date) INTO has_legacy_access;
-
-    latest_publishing_extension_date := NULL;
-    publishing_start_date := course_instance.publishing_start_date;
-    publishing_end_date := course_instance.publishing_end_date;
-    is_modern_publishing := course_instance.modern_publishing;
-
-    IF is_modern_publishing THEN
-        SELECT * FROM course_instance_publishing_extensions WHERE course_instance_id = lti_course_instance_id ORDER BY end_date DESC LIMIT 1 INTO publishing_extension;
-        IF FOUND THEN
-            latest_publishing_extension_date := publishing_extension.end_date;
-        END IF;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
