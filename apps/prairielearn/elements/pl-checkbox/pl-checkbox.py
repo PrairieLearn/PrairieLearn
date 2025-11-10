@@ -10,7 +10,7 @@ from typing_extensions import assert_never
 
 
 class PartialCreditType(Enum):
-    ALL_OR_NOTHING = "none"
+    OFF = "none"
     NET_CORRECT = "PC"
     EACH_ANSWER = "EDC"
     COVERAGE = "COV"
@@ -67,51 +67,28 @@ def generate_grading_text(
     *,
     insert_text: str,
     num_display_answers: int,
-    partial_credit: bool,
-    partial_credit_method: str,
+    partial_credit_mode: PartialCreditType,
 ) -> str:
     """Generate grading text for checkbox element."""
-    if partial_credit:
-        if partial_credit_method == "PC":
-            gradingtext = (
-                "You must select"
-                + insert_text
-                + " You will receive a score of <code>100% * (t - f) / n</code>, "
-                + "where <code>t</code> is the number of true options that you select, <code>f</code> "
-                + "is the number of false options that you select, and <code>n</code> is the total number of true options. "
-                + "At minimum, you will receive a score of 0%."
-            )
-        elif partial_credit_method == "EDC":
-            gradingtext = (
-                "You must select"
-                + insert_text
-                + " You will receive a score of <code>100% * (t + f) / "
-                + str(num_display_answers)
-                + "</code>, "
-                + "where <code>t</code> is the number of true options that you select and <code>f</code> "
-                + "is the number of false options that you do not select."
-            )
-        elif partial_credit_method == "COV":
-            gradingtext = (
-                "You must select"
-                + insert_text
-                + " You will receive a score of <code>100% * (t / c) * (t / n)</code>, "
-                + "where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options, "
-                + "and <code>n</code> is the total number of options you select."
-            )
-        else:
-            raise ValueError(
-                f"Unknown value for partial_credit_method: {partial_credit_method}"
-            )
-    else:
-        gradingtext = (
-            "You must select"
-            + insert_text
-            + " You will receive a score of 100% "
-            + "if you select all options that are true and no options that are false. "
-            + "Otherwise, you will receive a score of 0%."
-        )
-    return gradingtext
+    grading_key = ""
+
+    match partial_credit_mode:
+        case PartialCreditType.NET_CORRECT:
+            grading_key = "net-correct"
+        case PartialCreditType.EACH_ANSWER:
+            grading_key = "each-answer"
+        case PartialCreditType.COVERAGE:
+            grading_key = "coverage"
+        case PartialCreditType.OFF:
+            grading_key = "off"
+        case _:
+            assert_never(partial_credit_mode)
+
+    grading_text_params = {grading_key: True, "insert_text": insert_text}
+
+    # TODO make change here
+    with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
+        return chevron.render(f, grading_text_params).strip()
 
 
 def generate_insert_text(
@@ -207,7 +184,7 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
             # Old style: partial-credit="true" + partial-credit-method="PC|COV|EDC"
             partial_credit_bool = partial_credit_str.lower() == "true"
             if not partial_credit_bool:
-                return PartialCreditType.ALL_OR_NOTHING
+                return PartialCreditType.OFF
 
             partial_credit_method = pl.get_string_attrib(
                 element, "partial-credit-method", "PC"
@@ -228,7 +205,7 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
             return (
                 PartialCreditType.NET_CORRECT
                 if partial_credit_bool
-                else PartialCreditType.ALL_OR_NOTHING
+                else PartialCreditType.OFF
             )
 
     # New style: partial-credit="off|coverage|each-answer|net-correct"
@@ -236,19 +213,14 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
         raise ValueError(
             'partial-credit-method is deprecated. Use partial-credit="off|coverage|each-answer|net-correct" instead.'
         )
-
-    # Try to match against enum values (case-insensitive)
-    partial_credit_normalized = partial_credit_str.lower()
-    for pct in PartialCreditType:
-        if pct.value == partial_credit_normalized:
-            return pct
-
-    # If we got here, invalid value
-    valid_values = ", ".join(pct.value for pct in PartialCreditType)
-    raise ValueError(
-        f'Invalid partial-credit value: "{partial_credit_str}". '
-        f"Must be one of: {valid_values}"
-    )
+    try:
+        return pl.get_enum_attrib(
+            element, "partial-credit", PartialCreditType, PARTIAL_CREDIT_DEFAULT
+        )
+    except ValueError as e:
+        raise ValueError(
+            f"Invalid partial-credit-method: {pl.get_string_attrib(element, 'partial-credit')}"
+        ) from e
 
 
 def validate_min_max_options(
@@ -472,7 +444,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # (unless the question is disabled)
     show_answer_feedback = True
     if (
-        partial_credit_mode is not PartialCreditType.ALL_OR_NOTHING and editable
+        partial_credit_mode is not PartialCreditType.OFF and editable
     ) or hide_score_badge:
         show_answer_feedback = False
 
@@ -576,9 +548,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             info_params["gradingtext"] = generate_grading_text(
                 insert_text=insert_text,
                 num_display_answers=num_display_answers,
-                partial_credit=partial_credit_mode
-                is not PartialCreditType.ALL_OR_NOTHING,
-                partial_credit_method=partial_credit_mode.value,
+                partial_credit_mode=partial_credit_mode,
             )
 
         with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:

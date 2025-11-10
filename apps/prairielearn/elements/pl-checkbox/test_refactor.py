@@ -305,7 +305,7 @@ def test_partial_credit_type_conversion() -> None:
 
     assert (
         pl_checkbox.get_partial_credit_mode(build_element(False, "PC"))
-        == pl_checkbox.PartialCreditType.ALL_OR_NOTHING
+        == pl_checkbox.PartialCreditType.OFF
     )
 
     assert (
@@ -323,6 +323,36 @@ def test_partial_credit_type_conversion() -> None:
 
     with pytest.raises(ValueError, match=r"Invalid partial-credit-method.*"):
         pl_checkbox.get_partial_credit_mode(build_element(True, "INVALID"))
+
+
+def test_partial_credit_new() -> None:
+    """Test that internal enum conversion works correctly."""
+
+    def build_element(partial_credit_type: str) -> lxml.html.HtmlElement:
+        attrs = 'answers-name="test"'
+        attrs += f' partial-credit="{partial_credit_type}"'
+        return lxml.html.fragment_fromstring(f"<pl-checkbox {attrs}></pl-checkbox>")
+
+    assert (
+        pl_checkbox.get_partial_credit_mode(build_element("off"))
+        == pl_checkbox.PartialCreditType.OFF
+    )
+
+    assert (
+        pl_checkbox.get_partial_credit_mode(build_element("net-correct"))
+        == pl_checkbox.PartialCreditType.NET_CORRECT
+    )
+    assert (
+        pl_checkbox.get_partial_credit_mode(build_element("coverage"))
+        == pl_checkbox.PartialCreditType.COVERAGE
+    )
+    assert (
+        pl_checkbox.get_partial_credit_mode(build_element("each-answer"))
+        == pl_checkbox.PartialCreditType.EACH_ANSWER
+    )
+
+    with pytest.raises(ValueError, match=r"Invalid partial-credit-method.*"):
+        pl_checkbox.get_partial_credit_mode(build_element("other"))
 
 
 def test_order_type_conversion() -> None:
