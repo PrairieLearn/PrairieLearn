@@ -76,10 +76,6 @@ function getMarkedInstance(options: {
       allowHtml: options.allowHtml,
       interpretMath: options.interpretMath,
     });
-    // Cache the promise so that subsequent calls with the same options return
-    // the same instance. This ensures that we don't enter race conditions where
-    // multiple calls to getMarkedInstance with the same options create multiple
-    // instances of Marked if they are called before the first one resolves.
     markedInstanceCache.set(key, instance);
   }
   return instance;
