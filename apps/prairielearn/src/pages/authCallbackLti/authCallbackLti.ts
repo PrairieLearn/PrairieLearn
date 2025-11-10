@@ -129,6 +129,13 @@ router.post(
       IdSchema,
     );
 
+    // Persist the user's authentication data in the session. We do this before
+    // checking authorization so that user information is available for any
+    // subsequent requests or redirects (e.g. if `ensureCheckedEnrollment`
+    // redirects to a payment page).
+    req.session.user_id = userId;
+    req.session.authn_provider_name = 'LTI';
+
     // Check if the user would have access to the course instance.
     const user = await selectUserById(userId);
     const { authzData, institution, course, courseInstance } =
@@ -156,10 +163,6 @@ router.post(
         requestedRole: 'Student',
       });
     }
-
-    // Persist the user's authentication data in the session.
-    req.session.user_id = userId;
-    req.session.authn_provider_name = 'LTI';
 
     const linkResult = await sqldb.queryRow(
       sql.upsert_current_link,
