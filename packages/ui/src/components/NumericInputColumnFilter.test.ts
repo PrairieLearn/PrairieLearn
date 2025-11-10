@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { numericColumnFilterFn, parseNumericFilter } from './NumericInputColumnFilter.js';
+import {
+  numericColumnFilterFn,
+  numericColumnFilterFnWithEmpty,
+  parseNumericFilter,
+} from './NumericInputColumnFilter.js';
 
 describe('parseNumericFilter', () => {
   it('should parse equals operator', () => {
@@ -98,5 +102,39 @@ describe('numericColumnFilterFn', () => {
 
   it('should return true for null values when filter is empty', () => {
     expect(numericColumnFilterFn(createMockRow(null), 'col', '')).toBe(true);
+  });
+});
+
+describe('numericColumnFilterFnWithEmpty', () => {
+  const createMockRow = (value: number | null) => ({
+    getValue: () => value,
+  });
+
+  it('should filter with numeric filter as string', () => {
+    expect(numericColumnFilterFnWithEmpty(createMockRow(7), 'col', '>5')).toBe(true);
+    expect(numericColumnFilterFnWithEmpty(createMockRow(3), 'col', '>5')).toBe(false);
+  });
+
+  it('should filter with numeric filter as object', () => {
+    expect(
+      numericColumnFilterFnWithEmpty(createMockRow(7), 'col', { numeric: '>5', emptyOnly: false }),
+    ).toBe(true);
+    expect(
+      numericColumnFilterFnWithEmpty(createMockRow(3), 'col', { numeric: '>5', emptyOnly: false }),
+    ).toBe(false);
+  });
+
+  it('should show only empty values when emptyOnly is true', () => {
+    expect(
+      numericColumnFilterFnWithEmpty(createMockRow(null), 'col', { numeric: '', emptyOnly: true }),
+    ).toBe(true);
+    expect(
+      numericColumnFilterFnWithEmpty(createMockRow(5), 'col', { numeric: '', emptyOnly: true }),
+    ).toBe(false);
+  });
+
+  it('should return true for all when no filter is applied', () => {
+    expect(numericColumnFilterFnWithEmpty(createMockRow(5), 'col', '')).toBe(true);
+    expect(numericColumnFilterFnWithEmpty(createMockRow(null), 'col', '')).toBe(true);
   });
 });

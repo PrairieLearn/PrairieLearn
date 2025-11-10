@@ -11,8 +11,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import * as React from 'preact/compat';
-import { useMemo, useState } from 'preact/compat';
+import { useEffect, useMemo, useState } from 'preact/compat';
 import { ButtonGroup, Dropdown } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -20,7 +19,7 @@ import {
   CategoricalColumnFilter,
   NumericInputColumnFilter,
   TanstackTableCard,
-  numericColumnFilterFn,
+  numericColumnFilterFnWithEmpty,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
@@ -47,19 +46,14 @@ const DEFAULT_PINNING: ColumnPinningState = { left: ['user_name'], right: [] };
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
 const DEFAULT_ROLE_FILTER: (typeof ROLE_VALUES)[number][] = [];
-
-const _ENROLLMENT_FILTER_OPTIONS = [
-  'students-and-staff',
-  'only-students',
-  'only-joined-students',
-] as const;
-type EnrollmentFilterOption = (typeof _ENROLLMENT_FILTER_OPTIONS)[number];
+type EnrollmentFilterOption = 'students-and-staff' | 'only-students' | 'only-joined-students';
 
 const DEFAULT_ENROLLMENT_FILTER: EnrollmentFilterOption = 'only-joined-students';
 const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
 const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 
 const columnHelper = createColumnHelper<GradebookRow>();
+const queryClient = new QueryClient();
 
 interface GradebookTableProps {
   authzData: PageContextWithAuthzData['authz_data'];
@@ -292,7 +286,7 @@ function GradebookTable({
                 </span>
               );
             },
-            filterFn: numericColumnFilterFn,
+            filterFn: numericColumnFilterFnWithEmpty,
           },
         ),
       ),
@@ -317,31 +311,15 @@ function GradebookTable({
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
 
-  // Auto-update column visibility when filter changes (like clicking checkboxes in View menu)
-  const prevEnrollmentFilter = React.useRef<EnrollmentFilterOption>(enrollmentFilter);
-
-  React.useEffect(() => {
-    // Only update if filter actually changed
-    if (prevEnrollmentFilter.current === enrollmentFilter) return;
-
-    const updates: Record<string, boolean> = {};
-
+  useEffect(() => {
     if (enrollmentFilter === 'only-joined-students') {
-      updates.role = false;
-      updates.enrollment_status = false;
+      void setColumnVisibility((prev) => ({ ...prev, role: false, enrollment_status: false }));
     } else if (enrollmentFilter === 'only-students') {
-      updates.enrollment_status = true;
-      updates.role = false;
+      void setColumnVisibility((prev) => ({ ...prev, enrollment_status: true, role: false }));
     } else {
       // students-and-staff: Show both
-      updates.role = true;
-      updates.enrollment_status = true;
+      void setColumnVisibility((prev) => ({ ...prev, role: true, enrollment_status: true }));
     }
-
-    // Synchronize column visibility with filter selection
-    // eslint-disable-next-line
-    void setColumnVisibility((prev) => ({ ...prev, ...updates }));
-    prevEnrollmentFilter.current = enrollmentFilter;
   }, [enrollmentFilter, setColumnVisibility]);
 
   // Create filters for assessment columns
@@ -350,20 +328,39 @@ function GradebookTable({
 
     courseAssessments.forEach((assessment) => {
       const columnId = `assessment_${assessment.assessment_id}`;
-      assessmentFilters[columnId] = ({ header }) => (
-        <NumericInputColumnFilter
-          columnId={header.column.id}
-          columnLabel={assessment.label}
-          value={(header.column.getFilterValue() as string | undefined) || ''}
-          onChange={(value) => {
-            header.column.setFilterValue(value || undefined);
-          }}
-        />
-      );
+      assessmentFilters[columnId] = ({ header }: { header: any }) => {
+        const filterValue = header.column.getFilterValue() as
+          | string
+          | { numeric: string; emptyOnly: boolean }
+          | undefined;
+        const numericValue =
+          typeof filterValue === 'string' ? filterValue : filterValue?.numeric || '';
+        const emptyOnly = typeof filterValue === 'object' ? filterValue.emptyOnly : false;
+
+        return (
+          <NumericInputColumnFilter
+            columnId={header.column.id}
+            columnLabel={assessment.label}
+            value={numericValue}
+            emptyFilterChecked={emptyOnly}
+            allowEmptyFilter
+            onChange={(value) => {
+              // When typing in the input, always set as string (not object)
+              // This allows the input to work normally
+              // Set to undefined only if completely empty, otherwise keep the string even if incomplete
+              header.column.setFilterValue(value === '' ? undefined : value);
+            }}
+            onEmptyFilterChange={(checked) => {
+              const newFilter = checked ? { numeric: '', emptyOnly: true } : undefined;
+              header.column.setFilterValue(newFilter);
+            }}
+          />
+        );
+      };
     });
 
     return {
-      role: ({ header }) => (
+      role: ({ header }: { header: any }) => (
         <CategoricalColumnFilter
           columnId={header.column.id}
           columnLabel="Role"
@@ -373,7 +370,7 @@ function GradebookTable({
           setColumnValuesFilter={setRoleFilter}
         />
       ),
-      enrollment_status: ({ header }) => (
+      enrollment_status: ({ header }: { header: any }) => (
         <CategoricalColumnFilter
           columnId={header.column.id}
           columnLabel="Status"
@@ -525,9 +522,6 @@ export function InstructorGradebookTable({
   search: string;
   isDevMode: boolean;
 } & GradebookTableProps) {
-  // eslint-disable-next-line @eslint-react/naming-convention/use-state
-  const [queryClient, _setQueryClient] = React.useState(() => new QueryClient());
-
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
