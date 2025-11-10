@@ -23,6 +23,7 @@ import {
   EnumModeSchema,
   type User,
 } from './db-types.js';
+import { withBrand } from './types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -275,7 +276,7 @@ export async function constructCourseOrInstanceContext({
   }
 
   return {
-    authzData: authzData as PlainAuthzData,
+    authzData: withBrand<PlainAuthzData>(authzData),
     course: rawAuthzData.course,
     institution: rawAuthzData.institution,
     courseInstance: rawAuthzData.course_instance,

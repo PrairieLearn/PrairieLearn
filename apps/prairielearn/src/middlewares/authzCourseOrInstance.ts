@@ -30,7 +30,7 @@ import {
 } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
-import type { Result } from '../lib/types.js';
+import { type Result, withBrand } from '../lib/types.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -553,7 +553,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // are required.
     if (effectiveAuthResult === null) {
       return {
-        authzData: {
+        authzData: withBrand<PlainAuthzData>({
           user: effectiveUserData ? effectiveUserData.user : authnAuthzData.user,
           course_role: 'None' as EnumCourseRole,
           ...calculateCourseRolePermissions('None'),
@@ -567,7 +567,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
             : {}),
           mode: authnAuthzData.mode,
           mode_reason: authnAuthzData.mode_reason,
-        } as PlainAuthzData,
+        }),
         course: authnCourse,
         institution: authnInstitution,
         courseInstance: authnCourseInstance,
