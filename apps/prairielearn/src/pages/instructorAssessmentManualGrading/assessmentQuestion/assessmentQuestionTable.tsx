@@ -570,15 +570,15 @@ export function AssessmentQuestionTable({
         title="Student instance questions"
         columnManagerTopContent={
           <div class="px-2 py-1">
-            <label class="d-flex align-items-center gap-2 cursor-pointer user-select-none px-2 py-1">
+            <label class="form-check d-flex align-items-center cursor-pointer user-select-none">
               <input
                 ref={studentInfoCheckboxRef}
                 type="checkbox"
                 checked={studentInfoCheckboxState === 'checked'}
-                class="form-check-input m-0"
+                class="form-check-input"
                 onChange={handleStudentInfoCheckboxClick}
               />
-              <span class="text-nowrap">Show student info</span>
+              <span class="form-check-label ms-2 text-nowrap">Show student info</span>
             </label>
           </div>
         }

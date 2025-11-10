@@ -164,7 +164,9 @@ export function useBatchActions({
     },
     onSuccess: (data) => {
       setErrorMessage(null);
-      setSuccessMessage(`Deleted AI submission grouping results for ${data.numDeleted} questions.`);
+      setSuccessMessage(
+        `Deleted AI submission grouping results for ${data.numDeleted} ${data.numDeleted === 1 ? 'question' : 'questions'}.`,
+      );
       void queryClient.invalidateQueries({
         queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
       });

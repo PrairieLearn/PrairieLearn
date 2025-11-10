@@ -7,8 +7,8 @@ import {
 } from '@prairielearn/ui';
 
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
-import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
 import { GRADING_STATUS_VALUES, type GradingStatusValue } from '../assessmentQuestion.shared.js';
+import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
 
 interface CreateColumnFiltersParams {
   allGraders: string[];

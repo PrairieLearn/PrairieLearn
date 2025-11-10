@@ -408,9 +408,14 @@ export function TanstackTable<RowDataModel>({
                         </div>
                         {tableRect?.width &&
                         tableRect.width > table.getTotalSize() &&
-                        index === headerGroup.headers.length - 1 ? null : (
-                          <ResizeHandle header={header} setColumnSizing={table.setColumnSizing} />
-                        )}
+                        index === headerGroup.headers.length - 1
+                          ? null
+                          : header.column.getCanResize() && (
+                              <ResizeHandle
+                                header={header}
+                                setColumnSizing={table.setColumnSizing}
+                              />
+                            )}
                       </th>
                     );
                   })}

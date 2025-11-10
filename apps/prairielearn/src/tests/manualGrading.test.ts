@@ -497,7 +497,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         async () => {
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
           const nextButton = row.find('.btn:contains("next submission")');
           assert.equal(nextButton.length, 1);
@@ -1148,7 +1151,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         async () => {
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
 
           // Get assessment_question_id from the database

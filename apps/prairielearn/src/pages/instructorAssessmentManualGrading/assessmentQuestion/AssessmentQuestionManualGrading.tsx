@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
 
+import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import { NuqsAdapter } from '../../../lib/client/nuqs.js';
 import type {
   PageContextWithAuthzData,
@@ -10,10 +11,9 @@ import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
-import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
+import { GroupInfoModal } from './GroupInfoModal.js';
 import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from './assessmentQuestion.types.js';
 import { AssessmentQuestionTable } from './assessmentQuestionTable.js';
-import { GroupInfoModal } from './GroupInfoModal.js';
 
 const queryClient = new QueryClient();
 

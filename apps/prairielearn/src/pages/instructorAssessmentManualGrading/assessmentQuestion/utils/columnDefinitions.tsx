@@ -1,5 +1,4 @@
-import type { Table } from '@tanstack/react-table';
-import { createColumnHelper } from '@tanstack/react-table';
+import { type Table, createColumnHelper } from '@tanstack/react-table';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 import { numericColumnFilterFn } from '@prairielearn/ui';
