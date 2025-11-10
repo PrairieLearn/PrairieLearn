@@ -87,7 +87,12 @@ def generate_grading_text(
         case _:
             assert_never(partial_credit_mode)
 
-    grading_text_params = {grading_key: True, "insert_text": insert_text}
+    grading_text_params = {
+        "format": True,
+        grading_key: True,
+        "insert_text": insert_text,
+        "num_display_answers": num_display_answers,
+    }
 
     with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         return chevron.render(f, grading_text_params).strip()
@@ -539,7 +544,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 answer_html["incorrect"] = answer["key"] not in correct_keys
             answerset.append(answer_html)
 
-        info_params: dict[str, Any] = {"format": True}
+        grading_info = ""
         # Adds decorative help text per bootstrap formatting guidelines:
         # http://getbootstrap.com/docs/4.0/components/forms/#help-text
         # Determine whether we should add a choice selection requirement
@@ -597,21 +602,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
                 helptext = f'<small class="form-text text-muted">Select all possible options that apply.{number_correct_text}</small>'
 
-            info_params["gradingtext"] = generate_grading_text(
+            grading_info = generate_grading_text(
                 insert_text=insert_text,
                 num_display_answers=num_display_answers,
                 partial_credit_mode=partial_credit_mode,
             )
-
-        with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
-            info = chevron.render(f, info_params).strip()
 
         html_params: dict[str, Any] = {
             "question": True,
             "name": name,
             "editable": editable,
             "uuid": pl.get_uuid(),
-            "info": info,
+            "info": grading_info,
             "answers": answerset,
             "inline": inline,
             "hide_letter_keys": pl.get_boolean_attrib(
