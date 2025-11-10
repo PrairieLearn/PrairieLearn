@@ -78,6 +78,12 @@ export interface DangerousSystemAuthzData {
   };
 }
 
+/**
+ * Contains the authorization results for a user in the context of a specific
+ * course or course instance.
+ *
+ * Does not take into account effective user data or permissions.
+ */
 interface RawPlainAuthzData {
   user: User;
 
