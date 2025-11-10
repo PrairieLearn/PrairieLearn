@@ -117,7 +117,7 @@ router.post(
     const authName = parameters.lis_person_name_full || fallbackName;
 
     const userResult = await sqldb.callOptionalRow(
-      'users_select_or_insert_and_enroll_lti',
+      'users_select_or_insert_lti',
       [
         authUid,
         authName,

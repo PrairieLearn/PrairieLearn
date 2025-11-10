@@ -1,5 +1,5 @@
 CREATE FUNCTION
-    users_select_or_insert_and_enroll_lti(
+    users_select_or_insert_lti(
         IN uid text,
         IN name text,
         IN lti_course_instance_id bigint,
@@ -36,7 +36,7 @@ BEGIN
     INTO u
     FROM users
     WHERE
-        users.uid = users_select_or_insert_and_enroll_lti.uid
+        users.uid = users_select_or_insert_lti.uid
         AND users.institution_id = lti_institution_id;
 
     -- if we don't have the user already, make it
@@ -44,10 +44,10 @@ BEGIN
         INSERT INTO users
             (uid, name, lti_course_instance_id, lti_user_id, lti_context_id, institution_id)
         VALUES
-            (users_select_or_insert_and_enroll_lti.uid, users_select_or_insert_and_enroll_lti.name,
-             users_select_or_insert_and_enroll_lti.lti_course_instance_id,
-             users_select_or_insert_and_enroll_lti.lti_user_id,
-             users_select_or_insert_and_enroll_lti.lti_context_id, lti_institution_id)
+            (users_select_or_insert_lti.uid, users_select_or_insert_lti.name,
+             users_select_or_insert_lti.lti_course_instance_id,
+             users_select_or_insert_lti.lti_user_id,
+             users_select_or_insert_lti.lti_context_id, lti_institution_id)
         RETURNING * INTO u;
 
         INSERT INTO audit_logs (table_name, row_id, action,   new_state)
@@ -57,7 +57,7 @@ BEGIN
     -- update user data as needed
     IF name IS NOT NULL AND name IS DISTINCT FROM u.name THEN
         UPDATE users
-        SET name = users_select_or_insert_and_enroll_lti.name
+        SET name = users_select_or_insert_lti.name
         WHERE users.user_id = u.user_id
         RETURNING * INTO new_u;
 

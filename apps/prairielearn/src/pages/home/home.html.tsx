@@ -22,7 +22,7 @@ export const InstructorHomePageCourseSchema = z.object({
     z.object({
       id: RawStudentCourseSchema.shape.id,
       long_name: RawStudentCourseInstanceSchema.shape.long_name,
-      archived: z.boolean(),
+      expired: z.boolean(),
     }),
   ),
 });
@@ -198,14 +198,14 @@ function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCours
                 </td>
                 <td class="js-course-instance-list">
                   <CourseInstanceList
-                    courseInstances={course.course_instances.filter((ci) => !ci.archived)}
+                    courseInstances={course.course_instances.filter((ci) => !ci.expired)}
                     urlPrefix={urlPrefix}
                   />
-                  {course.course_instances.some((ci) => ci.archived) && (
+                  {course.course_instances.some((ci) => ci.expired) && (
                     <details>
                       <summary class="text-muted small">Older instances</summary>
                       <CourseInstanceList
-                        courseInstances={course.course_instances.filter((ci) => ci.archived)}
+                        courseInstances={course.course_instances.filter((ci) => ci.expired)}
                         urlPrefix={urlPrefix}
                       />
                     </details>
