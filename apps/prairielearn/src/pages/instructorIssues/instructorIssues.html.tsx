@@ -11,7 +11,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { Pager } from '../../components/Pager.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
-import { config } from '../../lib/config.js';
 import {
   AssessmentSetSchema,
   CourseInstanceSchema,
@@ -238,7 +237,7 @@ function IssueRow({
   authz_data: Record<string, any>;
   csrfToken: string;
 }) {
-  const plainUrlPrefix = config.urlPrefix;
+  const plainUrlPrefix = '/pl';
   const mailtoLink = `mailto:${
     issue.user_email || issue.user_uid || '-'
   }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(

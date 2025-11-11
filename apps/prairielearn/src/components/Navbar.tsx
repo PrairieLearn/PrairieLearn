@@ -296,13 +296,9 @@ function UserDropdownMenu({
               `
             : ''}
           ${!authz_data || authz_data?.mode === 'Public'
-            ? html`
-                <a class="dropdown-item" href="${config.urlPrefix}/request_course">
-                  Course Requests
-                </a>
-              `
+            ? html` <a class="dropdown-item" href="/pl/request_course"> Course Requests </a> `
             : ''}
-          <a class="dropdown-item" href="${config.urlPrefix}/settings">Settings</a>
+          <a class="dropdown-item" href="/pl/settings">Settings</a>
           <a
             class="dropdown-item news-item-link"
             href="${urlPrefix}/news_items"
@@ -318,7 +314,7 @@ function UserDropdownMenu({
               : ''}
           </a>
 
-          <a class="dropdown-item" href="${config.urlPrefix}/logout">Log out</a>
+          <a class="dropdown-item" href="/pl/logout">Log out</a>
         </div>
       </li>
     </ul>
@@ -399,9 +395,9 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   let studentLink = '#';
   if (viewType === 'instructor') {
     if (assessment?.id) {
-      studentLink = `${config.urlPrefix}/course_instance/${course_instance.id}/assessment/${assessment.id}`;
+      studentLink = `/pl/course_instance/${course_instance.id}/assessment/${assessment.id}`;
     } else {
-      studentLink = `${config.urlPrefix}/course_instance/${course_instance.id}/assessments`;
+      studentLink = `/pl/course_instance/${course_instance.id}/assessments`;
     }
   } else {
     if (question?.id) {
@@ -591,9 +587,9 @@ function AuthnOverrides({
     // It is ok to use the instructor route only to the effectiveUser page - this will redirect
     // to the student route if necessary.
     if (course_instance) {
-      effectiveUserUrl = `${config.urlPrefix}/course_instance/${course_instance.id}/instructor/effectiveUser`;
+      effectiveUserUrl = `/pl/course_instance/${course_instance.id}/instructor/effectiveUser`;
     } else {
-      effectiveUserUrl = `${config.urlPrefix}/course/${course.id}/effectiveUser`;
+      effectiveUserUrl = `/pl/course/${course.id}/effectiveUser`;
     }
   }
 
@@ -661,7 +657,7 @@ function NavbarPlain({ resLocals, navPage }: { resLocals: Record<string, any>; n
 
   return html`
     <li class="nav-item ${navPage === 'admin' ? 'active' : ''}">
-      <a class="nav-link" href="${config.urlPrefix}/administrator/admins">Admin</a>
+      <a class="nav-link" href="/pl/administrator/admins">Admin</a>
     </li>
   `;
 }
@@ -930,7 +926,7 @@ function NavbarInstructor({
               !(navSubPage === 'assessments' || navSubPage === 'gradebook')
                 ? 'active'
                 : ''}"
-              href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor/instance_admin"
+              href="/pl/course_instance/${course_instance.id}/instructor/instance_admin"
             >
               ${course_instance.short_name}
             </a>
