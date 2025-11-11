@@ -53,8 +53,8 @@ export function GroupInfoModal({
 
         <Modal.Body>
           <p>
-            Groups student submission answers based on whether they
-            <strong> match the correct answer exactly.</strong>
+            Groups student submission answers based on whether they{' '}
+            <strong>match the correct answer exactly.</strong>
           </p>
 
           <p>Answers that match go into one group, and those that don't are grouped separately.</p>
