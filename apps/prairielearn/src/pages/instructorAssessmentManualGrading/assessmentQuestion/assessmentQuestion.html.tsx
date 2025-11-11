@@ -8,7 +8,8 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import { compiledStylesheetTag } from '../../../lib/assets.js';
-import type { AssessmentQuestion, InstanceQuestionGroup, User } from '../../../lib/db-types.js';
+import type { StaffInstanceQuestionGroup, StaffUser } from '../../../lib/client/safe-db-types.js';
+import type { AssessmentQuestion } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.js';
@@ -26,11 +27,11 @@ export function AssessmentQuestion({
   search,
 }: {
   resLocals: Record<string, any>;
-  courseStaff: User[];
+  courseStaff: StaffUser[];
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats | null;
-  instanceQuestionGroups: InstanceQuestionGroup[];
+  instanceQuestionGroups: StaffInstanceQuestionGroup[];
   rubric_data: RubricData | null;
   instanceQuestions: InstanceQuestionRowWithAIGradingStats[];
   search: string;
@@ -129,7 +130,6 @@ export function AssessmentQuestion({
             urlPrefix={urlPrefix}
             csrfToken={__csrf_token}
             assessmentId={assessment.id}
-            assessmentQuestionId={assessment_question.id}
             assessmentQuestion={assessment_question as AssessmentQuestion}
             assessmentTid={assessment.tid}
             questionQid={question.qid}

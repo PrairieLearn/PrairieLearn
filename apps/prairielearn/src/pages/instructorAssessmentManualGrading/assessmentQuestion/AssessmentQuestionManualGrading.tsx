@@ -7,8 +7,11 @@ import type {
   PageContextWithAuthzData,
   StaffCourseInstanceContext,
 } from '../../../lib/client/page-context.js';
+import type {
+  StaffAssessmentQuestion,
+  StaffInstanceQuestionGroup,
+} from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from './assessmentQuestion.types.js';
@@ -25,14 +28,13 @@ export interface AssessmentQuestionManualGradingProps {
   instanceQuestions: InstanceQuestionRow[];
   urlPrefix: string;
   assessmentId: string;
-  assessmentQuestionId: string;
-  assessmentQuestion: AssessmentQuestion;
+  assessmentQuestion: StaffAssessmentQuestion;
   assessmentTid: string;
   questionQid: string;
   aiGradingMode: boolean;
   groupWork: boolean;
   rubricData: RubricData | null;
-  instanceQuestionGroups: InstanceQuestionGroup[];
+  instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: { user_id: string; name: string | null; uid: string }[];
   aiGradingStats: AiGradingGeneralStats | null;
   numOpenInstances: number;

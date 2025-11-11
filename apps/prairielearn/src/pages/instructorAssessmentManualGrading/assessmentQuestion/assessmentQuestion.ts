@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
@@ -20,6 +21,10 @@ import {
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
+import {
+  StaffInstanceQuestionGroupSchema,
+  StaffUserSchema,
+} from '../../../lib/client/safe-db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -41,17 +46,21 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
-    const courseStaff = await selectCourseInstanceGraderStaff({
-      course_instance: res.locals.course_instance,
-    });
+    const courseStaff = z.array(StaffUserSchema).parse(
+      await selectCourseInstanceGraderStaff({
+        course_instance: res.locals.course_instance,
+      }),
+    );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
     });
 
-    const instanceQuestionGroups = await selectInstanceQuestionGroups({
-      assessmentQuestionId: res.locals.assessment_question.id,
-    });
+    const instanceQuestionGroups = z.array(StaffInstanceQuestionGroupSchema).parse(
+      await selectInstanceQuestionGroups({
+        assessmentQuestionId: res.locals.assessment_question.id,
+      }),
+    );
 
     const instance_questions = await queryRows(
       sql.select_instance_questions_manual_grading,
