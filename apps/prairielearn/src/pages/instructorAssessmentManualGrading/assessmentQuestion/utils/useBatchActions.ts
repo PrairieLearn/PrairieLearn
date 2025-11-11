@@ -1,21 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { getJobSequenceUrl } from '../../../../lib/client/url.js';
 import type { BatchActionData, BatchActionParams } from '../assessmentQuestion.types.js';
 
 interface UseBatchActionsParams {
   csrfToken: string;
-  urlPrefix: string;
-  assessmentId: string;
-  assessmentQuestionId: string;
   setErrorMessage: (message: string | null) => void;
   setSuccessMessage: (message: string | null) => void;
 }
 
 export function useBatchActions({
   csrfToken,
-  urlPrefix,
-  assessmentId,
-  assessmentQuestionId,
   setErrorMessage,
   setSuccessMessage,
 }: UseBatchActionsParams) {
@@ -72,11 +67,11 @@ export function useBatchActions({
 
       if (data.jobSequenceId) {
         // Redirect to job sequence page for long-running operations (AI grading, AI grouping)
-        window.location.href = `${urlPrefix}/jobSequence/${data.jobSequenceId}`;
+        window.location.href = getJobSequenceUrl(data.jobSequenceId);
       } else if (data.success) {
         // Refresh the table data for quick operations (assign grader, manual grading flag)
         void queryClient.invalidateQueries({
-          queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
+          queryKey: ['instance-questions'],
         });
       }
     },
@@ -128,7 +123,7 @@ export function useBatchActions({
         `Deleted AI grading results for ${data.numDeleted} ${data.numDeleted === 1 ? 'question' : 'questions'}.`,
       );
       void queryClient.invalidateQueries({
-        queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
+        queryKey: ['instance-questions'],
       });
     },
     onError: (error) => {
@@ -168,7 +163,7 @@ export function useBatchActions({
         `Deleted AI submission grouping results for ${data.numDeleted} ${data.numDeleted === 1 ? 'question' : 'questions'}.`,
       );
       void queryClient.invalidateQueries({
-        queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestionId],
+        queryKey: ['instance-questions'],
       });
     },
     onError: (error) => {

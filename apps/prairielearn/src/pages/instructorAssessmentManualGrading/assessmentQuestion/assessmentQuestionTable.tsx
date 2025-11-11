@@ -162,11 +162,13 @@ export function AssessmentQuestionTable({
 
   // Fetch instance questions data
   const { data: instanceQuestions = initialInstanceQuestions } = useQuery<InstanceQuestionRow[]>({
-    queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestion.id],
+    queryKey: ['instance-questions'],
     queryFn: async () => {
-      const res = await fetch(
-        `${urlPrefix}/assessment/${assessmentId}/manual_grading/assessment_question/${assessmentQuestion.id}/instances.json`,
-      );
+      const res = await fetch(window.location.pathname + '/instances.json', {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
       if (!res.ok) throw new Error('Failed to fetch instance questions');
       const data = await res.json();
       if (!data.instance_questions) throw new Error('Invalid response format');
@@ -432,7 +434,7 @@ export function AssessmentQuestionTable({
 
         // Invalidate and refetch the query to update the table
         await queryClientInstance.invalidateQueries({
-          queryKey: ['instance-questions', urlPrefix, assessmentId, assessmentQuestion.id],
+          queryKey: ['instance-questions'],
         });
       } catch (err) {
         console.error('Error submitting form:', err);
@@ -473,7 +475,7 @@ export function AssessmentQuestionTable({
         button.removeEventListener('shown.bs.popover', handlePopoverShown);
       });
     };
-  }, [queryClientInstance, urlPrefix, assessmentId, assessmentQuestion.id, instanceQuestions]);
+  }, [queryClientInstance, instanceQuestions]);
 
   // Use batch actions hook
   const {
@@ -483,9 +485,6 @@ export function AssessmentQuestionTable({
     deleteAiGroupingsMutation,
   } = useBatchActions({
     csrfToken,
-    urlPrefix,
-    assessmentId,
-    assessmentQuestionId: assessmentQuestion.id,
     setErrorMessage,
     setSuccessMessage,
   });
