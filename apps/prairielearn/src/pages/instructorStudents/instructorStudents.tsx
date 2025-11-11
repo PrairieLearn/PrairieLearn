@@ -46,7 +46,7 @@ router.get(
 router.get(
   '/enrollment.json',
   asyncHandler(async (req, res) => {
-    if (!req.accepts('application/json')) {
+    if (req.accepts('html')) {
       throw new HttpStatusError(406, 'Not Acceptable');
     }
 
@@ -73,7 +73,7 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!req.accepts('application/json')) {
+    if (req.accepts('html')) {
       throw new HttpStatusError(406, 'Not Acceptable');
     }
 
