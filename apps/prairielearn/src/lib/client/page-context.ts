@@ -22,7 +22,6 @@ import {
 const BasePageContextSchema = z.object({
   __csrf_token: z.string(),
   urlPrefix: z.string(),
-  plainUrlPrefix: z.string(),
   authn_provider_name: z.string(),
   authn_is_administrator: SelectUserSchema.shape.is_administrator,
   access_as_administrator: z.boolean(),

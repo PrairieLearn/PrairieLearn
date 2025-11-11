@@ -59,7 +59,6 @@ describe('extractPageContext', () => {
         },
       },
       __csrf_token: '123',
-      plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',
       authn_institution: {
         id: '1',
@@ -133,7 +132,6 @@ describe('extractPageContext', () => {
         } as StaffUser,
       } as PageAuthzData,
       __csrf_token: '123',
-      plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',
       authn_institution: {
         id: '1',

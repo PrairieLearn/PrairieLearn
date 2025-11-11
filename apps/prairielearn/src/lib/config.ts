@@ -657,6 +657,5 @@ export function resetConfig() {
 
 export function setLocalsFromConfig(locals: Record<string, any>) {
   locals.urlPrefix = '/pl';
-  locals.plainUrlPrefix = '/pl';
   locals.navbarType = 'plain';
 }
