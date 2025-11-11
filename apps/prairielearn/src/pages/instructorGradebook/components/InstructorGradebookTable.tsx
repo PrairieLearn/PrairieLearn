@@ -335,7 +335,8 @@ function GradebookTable({
           | undefined;
         const numericValue =
           typeof filterValue === 'string' ? filterValue : filterValue?.numeric || '';
-        const emptyOnly = typeof filterValue === 'object' ? filterValue.emptyOnly : false;
+        const emptyOnly =
+          typeof filterValue === 'object' && filterValue !== null ? filterValue.emptyOnly : false;
 
         return (
           <NumericInputColumnFilter

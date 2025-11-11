@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useRef, useState } from 'preact/compat';
+import { useEffect, useState } from 'preact/compat';
 import Dropdown from 'react-bootstrap/Dropdown';
 import InputGroup from 'react-bootstrap/InputGroup';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
@@ -38,19 +38,23 @@ export function NumericInputColumnFilter({
   emptyFilterChecked = false,
   onEmptyFilterChange,
 }: NumericInputColumnFilterProps) {
-  // Use local state to manage the input value for smoother typing
+  // Use local state for smooth typing experience
   const [localValue, setLocalValue] = useState(value);
-  const prevValueRef = useRef(value);
 
-  // Sync local value with prop when prop changes externally
-  // We check if the prop changed to something different from what we last set
-  if (value !== prevValueRef.current) {
-    prevValueRef.current = value;
+  // Sync local state with prop when prop changes (e.g., when filter is cleared externally)
+  // This is a valid pattern for inputs that need responsive UX while staying in sync with external state
+  // eslint-disable-next-line react-you-might-not-need-an-effect/no-unnecessary-use-effect
+  useEffect(() => {
     setLocalValue(value);
-  }
+  }, [value]);
 
   const hasActiveFilter = localValue.trim().length > 0 || emptyFilterChecked;
   const isInvalid = localValue.trim().length > 0 && parseNumericFilter(localValue) === null;
+
+  const handleInputChange = (newValue: string) => {
+    setLocalValue(newValue);
+    onChange(newValue);
+  };
 
   const handleEmptyFilterChange = (checked: boolean) => {
     if (onEmptyFilterChange) {
@@ -120,9 +124,7 @@ export function NumericInputColumnFilter({
               disabled={emptyFilterChecked}
               onInput={(e) => {
                 if (e.target instanceof HTMLInputElement) {
-                  const newValue = e.target.value;
-                  setLocalValue(newValue);
-                  onChange(newValue);
+                  handleInputChange(e.target.value);
                 }
               }}
             />
@@ -257,8 +259,9 @@ export function numericColumnFilterFnWithEmpty(
   filterValue: string | { numeric: string; emptyOnly: boolean },
 ): boolean {
   // Handle object-based filter value
-  const numericFilter = typeof filterValue === 'string' ? filterValue : filterValue.numeric;
-  const emptyOnly = typeof filterValue === 'object' ? filterValue.emptyOnly : false;
+  const numericFilter = typeof filterValue === 'string' ? filterValue : filterValue?.numeric || '';
+  const emptyOnly =
+    typeof filterValue === 'object' && filterValue !== null ? filterValue.emptyOnly : false;
 
   const cellValue = row.getValue(columnId) as number | null;
   const isEmpty = cellValue === null || cellValue === undefined;
