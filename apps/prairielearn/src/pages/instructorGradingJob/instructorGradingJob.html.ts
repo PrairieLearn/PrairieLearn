@@ -9,6 +9,8 @@ import { config } from '../../lib/config.js';
 import { GradingJobSchema, QuestionSchema, UserSchema, VariantSchema } from '../../lib/db-types.js';
 
 export const GradingJobRowSchema = z.object({
+  // This object will have other columns, but we only care about this one
+  aai: z.object({ authorized: z.boolean() }).nullable(),
   grading_job: GradingJobSchema,
   question_id: QuestionSchema.shape.id,
   question_qid: QuestionSchema.shape.qid,

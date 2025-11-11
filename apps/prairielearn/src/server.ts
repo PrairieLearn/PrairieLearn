@@ -845,7 +845,10 @@ export async function initExpress(): Promise<Express> {
   // single assessment
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
-    [(await import('./middlewares/selectAndAuthzAssessment.js')).default],
+    [
+      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/selectAssessments.js')).default,
+    ],
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
@@ -1072,6 +1075,7 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
+      (await import('./middlewares/selectAssessments.js')).default,
       (await import('./pages/instructorAssessmentInstance/instructorAssessmentInstance.js'))
         .default,
     ],
