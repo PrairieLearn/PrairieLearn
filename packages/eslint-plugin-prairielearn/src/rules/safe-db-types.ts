@@ -1,5 +1,5 @@
+import { type TSESTree } from '@typescript-eslint/types';
 import { ESLintUtils } from '@typescript-eslint/utils';
-import { TSESTree } from '@typescript-eslint/types';
 import * as ts from 'typescript';
 
 function extractChild(children: TSESTree.JSXChild[]): TSESTree.JSXElement | null {
@@ -21,14 +21,17 @@ function extractChild(children: TSESTree.JSXChild[]): TSESTree.JSXElement | null
  * Check if a TypeScript type node references a type from db-types.ts
  * This checks the actual source code type annotation, not the resolved type.
  * Follows type aliases (imports) to their original declaration.
+ * Returns all violations found.
  */
 function checkTypeNodeForDbTypes(
   typeNode: ts.TypeNode,
   typeChecker: ts.TypeChecker,
   visited = new Set<ts.TypeNode>(),
-): { typeName: string; propName?: string } | null {
-  if (visited.has(typeNode)) return null;
+): { typeName: string; propName?: string }[] {
+  if (visited.has(typeNode)) return [];
   visited.add(typeNode);
+
+  const violations: { typeName: string; propName?: string }[] = [];
 
   // Check type references (e.g., User, Course, AuthnProvider)
   if (ts.isTypeReferenceNode(typeNode)) {
@@ -46,7 +49,28 @@ function checkTypeNodeForDbTypes(
           const sourceFile = decl.getSourceFile();
           if (sourceFile.fileName.endsWith('/db-types.ts')) {
             // Found a type from db-types.ts!
-            return { typeName: symbolToCheck.getName() };
+            violations.push({ typeName: symbolToCheck.getName() });
+          } else {
+            // If it's a type alias or interface defined locally, check its properties
+            if (ts.isTypeAliasDeclaration(decl) && decl.type) {
+              const nestedViolations = checkTypeNodeForDbTypes(decl.type, typeChecker, visited);
+              violations.push(...nestedViolations);
+            } else if (ts.isInterfaceDeclaration(decl)) {
+              // Check interface members
+              for (const member of decl.members) {
+                if (ts.isPropertySignature(member) && member.type) {
+                  const propName =
+                    member.name && ts.isIdentifier(member.name) ? member.name.text : 'unknown';
+                  const nestedViolations = checkTypeNodeForDbTypes(
+                    member.type,
+                    typeChecker,
+                    visited,
+                  );
+                  // Add property name context to nested violations
+                  violations.push(...nestedViolations.map((v) => ({ ...v, propName })));
+                }
+              }
+            }
           }
         }
       }
@@ -55,30 +79,31 @@ function checkTypeNodeForDbTypes(
     // Check type arguments (e.g., Array<User>, Promise<Course>)
     if (typeNode.typeArguments) {
       for (const typeArg of typeNode.typeArguments) {
-        const result = checkTypeNodeForDbTypes(typeArg, typeChecker, visited);
-        if (result) return result;
+        const nestedViolations = checkTypeNodeForDbTypes(typeArg, typeChecker, visited);
+        violations.push(...nestedViolations);
       }
     }
   }
 
   // Check array types (e.g., User[])
   if (ts.isArrayTypeNode(typeNode)) {
-    return checkTypeNodeForDbTypes(typeNode.elementType, typeChecker, visited);
+    const nestedViolations = checkTypeNodeForDbTypes(typeNode.elementType, typeChecker, visited);
+    violations.push(...nestedViolations);
   }
 
   // Check union types (e.g., User | null)
   if (ts.isUnionTypeNode(typeNode)) {
     for (const type of typeNode.types) {
-      const result = checkTypeNodeForDbTypes(type, typeChecker, visited);
-      if (result) return result;
+      const nestedViolations = checkTypeNodeForDbTypes(type, typeChecker, visited);
+      violations.push(...nestedViolations);
     }
   }
 
   // Check intersection types (e.g., User & { extra: string })
   if (ts.isIntersectionTypeNode(typeNode)) {
     for (const type of typeNode.types) {
-      const result = checkTypeNodeForDbTypes(type, typeChecker, visited);
-      if (result) return result;
+      const nestedViolations = checkTypeNodeForDbTypes(type, typeChecker, visited);
+      violations.push(...nestedViolations);
     }
   }
 
@@ -87,20 +112,21 @@ function checkTypeNodeForDbTypes(
     for (const member of typeNode.members) {
       if (ts.isPropertySignature(member) && member.type) {
         const propName = member.name && ts.isIdentifier(member.name) ? member.name.text : 'unknown';
-        const result = checkTypeNodeForDbTypes(member.type, typeChecker, visited);
-        if (result) {
-          return { ...result, propName };
-        }
+        const nestedViolations = checkTypeNodeForDbTypes(member.type, typeChecker, visited);
+        // Add property name context to nested violations
+        violations.push(...nestedViolations.map((v) => ({ ...v, propName })));
       }
     }
   }
 
   // Check indexed access types (e.g., User['name'])
+  // These are safe! We're only extracting a specific property, not passing the whole object.
+  // So we DON'T recurse into the object type for indexed access.
   if (ts.isIndexedAccessTypeNode(typeNode)) {
-    return checkTypeNodeForDbTypes(typeNode.objectType, typeChecker, visited);
+    // Do not check - indexed access is safe
   }
 
-  return null;
+  return violations;
 }
 
 export default ESLintUtils.RuleCreator.withoutDocs({
@@ -164,18 +190,20 @@ export default ESLintUtils.RuleCreator.withoutDocs({
         if (!propsTypeNode) return;
 
         // Check if any prop type references db-types.ts
-        const result = checkTypeNodeForDbTypes(propsTypeNode, typeChecker);
+        const results = checkTypeNodeForDbTypes(propsTypeNode, typeChecker);
 
-        if (result) {
-          // Report on the child component element
-          context.report({
-            node: child,
-            messageId: 'unsafeTypes',
-            data: {
-              propName: result.propName || 'unknown',
-              typeName: result.typeName,
-            },
-          });
+        if (results.length > 0) {
+          for (const result of results) {
+            // Report on the child component element
+            context.report({
+              node: child,
+              messageId: 'unsafeTypes',
+              data: {
+                propName: result.propName || 'unknown',
+                typeName: result.typeName,
+              },
+            });
+          }
         }
 
         const attributes = childOpeningElement.attributes;

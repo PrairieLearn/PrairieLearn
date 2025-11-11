@@ -5,7 +5,8 @@ import { downloadAsJSON } from '@prairielearn/browser-utils';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
-import type { AssessmentQuestion, RubricItem } from '../lib/db-types.js';
+import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
+import type { RubricItem } from '../lib/db-types.js';
 import type { RubricData } from '../lib/manualGrading.types.js';
 
 type RubricItemData = Partial<
@@ -30,7 +31,7 @@ export function RubricSettings({
   aiGradingStats,
   context,
 }: {
-  assessmentQuestion: AssessmentQuestion;
+  assessmentQuestion: StaffAssessmentQuestion;
   rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;

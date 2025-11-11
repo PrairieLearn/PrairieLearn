@@ -15,6 +15,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
+import { StaffAssessmentQuestionSchema } from '../../../lib/client/safe-db-types.js';
 import type { InstanceQuestionGroup, User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
@@ -160,7 +161,7 @@ export function AssessmentQuestion({
         <div class="mb-3">
           <Hydrate>
             <RubricSettings
-              assessmentQuestion={assessment_question}
+              assessmentQuestion={StaffAssessmentQuestionSchema.parse(assessment_question)}
               rubricData={rubric_data}
               csrfToken={__csrf_token}
               aiGradingStats={aiGradingStats}
