@@ -90,7 +90,7 @@ export function Navbar({
               </button>
             `
           : ''}
-        <a class="navbar-brand" href="${config.homeUrl}" aria-label="Homepage">
+        <a class="navbar-brand" href="/" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
             Go home <i class="fa fa-angle-right" aria-hidden="true"></i>

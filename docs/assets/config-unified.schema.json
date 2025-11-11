@@ -340,10 +340,6 @@
       "type": "string",
       "default": "master"
     },
-    "homeUrl": {
-      "type": "string",
-      "default": "/"
-    },
     "assetsPrefix": {
       "type": "string",
       "default": "/assets"

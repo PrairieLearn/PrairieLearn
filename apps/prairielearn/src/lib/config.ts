@@ -73,7 +73,6 @@ export const ConfigSchema = z.object({
     .array(z.string())
     .default([...STANDARD_COURSE_DIRS, EXAMPLE_COURSE_PATH, TEST_COURSE_PATH]),
   courseRepoDefaultBranch: z.string().default('master'),
-  homeUrl: z.string().default('/'),
   assetsPrefix: z
     .string()
     .default('/assets')
