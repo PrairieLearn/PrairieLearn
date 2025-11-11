@@ -2,6 +2,118 @@ import { type TSESTree } from '@typescript-eslint/types';
 import { ESLintUtils } from '@typescript-eslint/utils';
 import * as ts from 'typescript';
 
+/**
+ * Check if a variable declaration is a Zod schema that uses schemas from db-types.ts
+ * For example: const RubricDataSchema = RubricSchema.extend({...})
+ */
+function checkZodSchemaForDbTypes(
+  declaration: ts.VariableDeclaration,
+  typeChecker: ts.TypeChecker,
+): string[] {
+  const violations: string[] = [];
+
+  if (!declaration.initializer) return violations;
+
+  // Walk the expression tree to find all identifiers
+  const findIdentifiers = (node: ts.Node): void => {
+    // Check property access expressions like RubricSchema.extend()
+    if (ts.isPropertyAccessExpression(node)) {
+      const objectSymbol = typeChecker.getSymbolAtLocation(node.expression);
+      if (objectSymbol) {
+        const aliasedSymbol =
+          objectSymbol.flags & ts.SymbolFlags.Alias
+            ? typeChecker.getAliasedSymbol(objectSymbol)
+            : objectSymbol;
+        const decls = aliasedSymbol.getDeclarations();
+        if (decls && decls.length > 0) {
+          const sourceFile = decls[0].getSourceFile();
+          if (sourceFile.fileName.endsWith('/db-types.ts')) {
+            violations.push(aliasedSymbol.getName());
+          }
+        }
+      }
+    }
+
+    // Check call expressions for arguments
+    if (ts.isCallExpression(node)) {
+      for (const arg of node.arguments) {
+        // Check if argument is an identifier (e.g., RubricItemSchema)
+        if (ts.isIdentifier(arg)) {
+          const argSymbol = typeChecker.getSymbolAtLocation(arg);
+          if (argSymbol) {
+            const aliasedSymbol =
+              argSymbol.flags & ts.SymbolFlags.Alias
+                ? typeChecker.getAliasedSymbol(argSymbol)
+                : argSymbol;
+            const decls = aliasedSymbol.getDeclarations();
+            if (decls && decls.length > 0) {
+              const sourceFile = decls[0].getSourceFile();
+              if (sourceFile.fileName.endsWith('/db-types.ts')) {
+                violations.push(aliasedSymbol.getName());
+              }
+            }
+          }
+        }
+      }
+    }
+
+    ts.forEachChild(node, findIdentifiers);
+  };
+
+  findIdentifiers(declaration.initializer);
+  return violations;
+}
+
+/**
+ * Check if a type node is z.infer<typeof SchemaName> and if SchemaName uses db-types
+ * Returns the names of db-types that the schema depends on
+ */
+function checkForZodInferPattern(typeNode: ts.TypeNode, typeChecker: ts.TypeChecker): string[] {
+  // Check if this is a type reference with type arguments
+  if (!ts.isTypeReferenceNode(typeNode)) return [];
+
+  // Check if the type reference is named (e.g., "infer" from z.infer)
+  const typeName = typeNode.typeName;
+  if (!ts.isQualifiedName(typeName)) return [];
+
+  // Check if it's z.infer or similar pattern
+  // The pattern is: z.infer<typeof SchemaName>
+  const typeArgs = typeNode.typeArguments;
+  if (!typeArgs || typeArgs.length !== 1) return [];
+
+  const typeArg = typeArgs[0];
+
+  // Check if the type argument is a typeof expression
+  if (!ts.isTypeQueryNode(typeArg)) return [];
+
+  // Get the schema name from typeof X
+  const exprName = typeArg.exprName;
+  if (!ts.isIdentifier(exprName)) return [];
+
+  // Now find the schema variable declaration
+  const schemaSymbol = typeChecker.getSymbolAtLocation(exprName);
+  if (!schemaSymbol) return [];
+
+  const schemaDecls = schemaSymbol.getDeclarations();
+  if (!schemaDecls || schemaDecls.length === 0) return [];
+
+  // Check if it's a variable declaration
+  for (const decl of schemaDecls) {
+    if (ts.isVariableDeclaration(decl)) {
+      // If the schema is defined in safe-db-types.ts, it's safe by definition
+      const sourceFile = decl.getSourceFile();
+      if (sourceFile.fileName.endsWith('/safe-db-types.ts')) {
+        return [];
+      }
+
+      // Use our existing helper to check if the schema uses db-types
+      return checkZodSchemaForDbTypes(decl, typeChecker);
+    }
+  }
+
+  return [];
+}
+
 function extractChild(children: TSESTree.JSXChild[]): TSESTree.JSXElement | null {
   const nonWhitespaceChildren = children.filter((child) => {
     if (child.type === 'JSXText') {
@@ -21,17 +133,17 @@ function extractChild(children: TSESTree.JSXChild[]): TSESTree.JSXElement | null
  * Check if a TypeScript type node references a type from db-types.ts
  * This checks the actual source code type annotation, not the resolved type.
  * Follows type aliases (imports) to their original declaration.
- * Returns all violations found.
+ * Returns all unsafe type names found.
  */
 function checkTypeNodeForDbTypes(
   typeNode: ts.TypeNode,
   typeChecker: ts.TypeChecker,
   visited = new Set<ts.TypeNode>(),
-): { typeName: string; propName?: string }[] {
+): string[] {
   if (visited.has(typeNode)) return [];
   visited.add(typeNode);
 
-  const violations: { typeName: string; propName?: string }[] = [];
+  const violations: string[] = [];
 
   // Check type references (e.g., User, Course, AuthnProvider)
   if (ts.isTypeReferenceNode(typeNode)) {
@@ -49,25 +161,27 @@ function checkTypeNodeForDbTypes(
           const sourceFile = decl.getSourceFile();
           if (sourceFile.fileName.endsWith('/db-types.ts')) {
             // Found a type from db-types.ts!
-            violations.push({ typeName: symbolToCheck.getName() });
+            violations.push(symbolToCheck.getName());
           } else {
             // If it's a type alias or interface defined locally, check its properties
             if (ts.isTypeAliasDeclaration(decl) && decl.type) {
+              // Special case: Check if this is z.infer<typeof XxxSchema>
+              const zodSchemaViolations = checkForZodInferPattern(decl.type, typeChecker);
+              violations.push(...zodSchemaViolations);
+
+              // Also check the type itself
               const nestedViolations = checkTypeNodeForDbTypes(decl.type, typeChecker, visited);
               violations.push(...nestedViolations);
             } else if (ts.isInterfaceDeclaration(decl)) {
               // Check interface members
               for (const member of decl.members) {
                 if (ts.isPropertySignature(member) && member.type) {
-                  const propName =
-                    member.name && ts.isIdentifier(member.name) ? member.name.text : 'unknown';
                   const nestedViolations = checkTypeNodeForDbTypes(
                     member.type,
                     typeChecker,
                     visited,
                   );
-                  // Add property name context to nested violations
-                  violations.push(...nestedViolations.map((v) => ({ ...v, propName })));
+                  violations.push(...nestedViolations);
                 }
               }
             }
@@ -111,10 +225,8 @@ function checkTypeNodeForDbTypes(
   if (ts.isTypeLiteralNode(typeNode)) {
     for (const member of typeNode.members) {
       if (ts.isPropertySignature(member) && member.type) {
-        const propName = member.name && ts.isIdentifier(member.name) ? member.name.text : 'unknown';
         const nestedViolations = checkTypeNodeForDbTypes(member.type, typeChecker, visited);
-        // Add property name context to nested violations
-        violations.push(...nestedViolations.map((v) => ({ ...v, propName })));
+        violations.push(...nestedViolations);
       }
     }
   }
@@ -135,7 +247,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
     messages: {
       spreadAttributes: 'Spread attributes are not allowed in Hydrate children.',
       unsafeTypes:
-        'Prop "{{propName}}" has type "{{typeName}}" which is derived from db-types.ts. Use safe-db-types.ts instead.',
+        'Prop "{{propName}}" uses type "{{typeName}}" which is derived from db-types.ts. Use safe-db-types.ts instead.',
     },
     schema: [],
   },
@@ -189,20 +301,107 @@ export default ESLintUtils.RuleCreator.withoutDocs({
         const propsTypeNode = propsDeclaration.type;
         if (!propsTypeNode) return;
 
-        // Check if any prop type references db-types.ts
-        const results = checkTypeNodeForDbTypes(propsTypeNode, typeChecker);
+        // Check each property in the props type
+        if (ts.isTypeLiteralNode(propsTypeNode)) {
+          // Inline props object: { foo: string; bar: number }
+          for (const member of propsTypeNode.members) {
+            if (ts.isPropertySignature(member) && member.type && member.name) {
+              if (!ts.isIdentifier(member.name)) continue;
 
-        if (results.length > 0) {
-          for (const result of results) {
-            // Report on the child component element
-            context.report({
-              node: child,
-              messageId: 'unsafeTypes',
-              data: {
-                propName: result.propName || 'unknown',
-                typeName: result.typeName,
-              },
-            });
+              const propName = member.name.text;
+              const violations = checkTypeNodeForDbTypes(member.type, typeChecker);
+
+              if (violations.length > 0) {
+                // Find the JSX attribute for this prop
+                const attribute = childOpeningElement.attributes.find(
+                  (attr) =>
+                    attr.type === 'JSXAttribute' &&
+                    attr.name.type === 'JSXIdentifier' &&
+                    attr.name.name === propName,
+                );
+
+                for (const typeName of violations) {
+                  context.report({
+                    node: attribute || child,
+                    messageId: 'unsafeTypes',
+                    data: { propName, typeName },
+                  });
+                }
+              }
+            }
+          }
+        } else if (ts.isTypeReferenceNode(propsTypeNode)) {
+          // Props is a type reference (e.g., interface or type alias)
+          const symbol = typeChecker.getSymbolAtLocation(propsTypeNode.typeName);
+          if (symbol) {
+            const resolvedSymbol =
+              symbol.flags & ts.SymbolFlags.Alias ? typeChecker.getAliasedSymbol(symbol) : symbol;
+            const declarations = resolvedSymbol.getDeclarations();
+
+            if (declarations && declarations.length > 0) {
+              for (const decl of declarations) {
+                if (ts.isInterfaceDeclaration(decl) || ts.isTypeLiteralNode(decl)) {
+                  const members = ts.isInterfaceDeclaration(decl) ? decl.members : decl.members;
+
+                  for (const member of members) {
+                    if (ts.isPropertySignature(member) && member.type && member.name) {
+                      if (!ts.isIdentifier(member.name)) continue;
+
+                      const propName = member.name.text;
+                      const violations = checkTypeNodeForDbTypes(member.type, typeChecker);
+
+                      if (violations.length > 0) {
+                        // Find the JSX attribute for this prop
+                        const attribute = childOpeningElement.attributes.find(
+                          (attr) =>
+                            attr.type === 'JSXAttribute' &&
+                            attr.name.type === 'JSXIdentifier' &&
+                            attr.name.name === propName,
+                        );
+
+                        for (const typeName of violations) {
+                          context.report({
+                            node: attribute || child,
+                            messageId: 'unsafeTypes',
+                            data: { propName, typeName },
+                          });
+                        }
+                      }
+                    }
+                  }
+                } else if (ts.isTypeAliasDeclaration(decl) && decl.type) {
+                  // Type alias might be an inline object type
+                  if (ts.isTypeLiteralNode(decl.type)) {
+                    for (const member of decl.type.members) {
+                      if (ts.isPropertySignature(member) && member.type && member.name) {
+                        if (!ts.isIdentifier(member.name)) continue;
+
+                        const propName = member.name.text;
+                        const violations = checkTypeNodeForDbTypes(member.type, typeChecker);
+
+                        if (violations.length > 0) {
+                          // Find the JSX attribute for this prop
+                          const attribute = childOpeningElement.attributes.find(
+                            (attr) =>
+                              attr.type === 'JSXAttribute' &&
+                              attr.name.type === 'JSXIdentifier' &&
+                              attr.name.name === propName,
+                          );
+
+                          for (const typeName of violations) {
+                            context.report({
+                              node: attribute || child,
+                              messageId: 'unsafeTypes',
+                              data: { propName, typeName },
+                            });
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
 
