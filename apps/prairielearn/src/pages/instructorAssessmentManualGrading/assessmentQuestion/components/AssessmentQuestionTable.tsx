@@ -545,6 +545,7 @@ export function AssessmentQuestionTable({
       <TanstackTableCard
         table={table}
         title="Student instance questions"
+        style={{ height: '90vh' }}
         columnManagerTopContent={
           <div class="px-2 py-1 d-flex align-items-center">
             <label class="form-check text-nowrap d-flex align-items-stretch">
@@ -703,6 +704,7 @@ export function AssessmentQuestionTable({
           rowHeight: 48,
           filters: columnFiltersComponents,
         }}
+        singularLabel="submission"
         pluralLabel="submissions"
         downloadButtonOptions={{
           filenameBase: `manual_grading_${questionQid}`,

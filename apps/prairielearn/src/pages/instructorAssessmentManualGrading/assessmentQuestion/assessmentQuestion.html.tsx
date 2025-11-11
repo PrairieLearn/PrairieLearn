@@ -58,7 +58,6 @@ export function AssessmentQuestion({
     },
     options: {
       fullWidth: true,
-      fullHeight: true,
       pageNote: `Question ${number_in_alternative_group}`,
     },
     headContent: html` ${compiledStylesheetTag('tanstackTable.css')} `,

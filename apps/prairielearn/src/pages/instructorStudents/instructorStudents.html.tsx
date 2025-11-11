@@ -362,6 +362,8 @@ function StudentsCard({
       <TanstackTableCard
         table={table}
         title="Students"
+        class="h-100"
+        singularLabel="student"
         pluralLabel="students"
         downloadButtonOptions={{
           filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,

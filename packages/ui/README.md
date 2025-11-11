@@ -14,9 +14,11 @@ import { TanstackTableCard } from '@prairielearn/ui';
 <TanstackTableCard
   table={table}
   title="Students"
+  class="h-100"
+  singularLabel="student"
+  pluralLabel="students"
   downloadButtonOptions={{
     filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
-    singularLabel: 'student',
     mapRowToData: (row) => {
       return {
         uid: row.user?.uid ?? row.enrollment.pending_uid,

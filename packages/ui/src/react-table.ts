@@ -1,4 +1,4 @@
-import '@tanstack/react-table';
+import type { RowData } from '@tanstack/react-table';
 
 declare module '@tanstack/react-table' {
   // https://tanstack.com/table/latest/docs/api/core/column-def#meta
@@ -10,3 +10,6 @@ declare module '@tanstack/react-table' {
     label?: string;
   }
 }
+
+// eslint-disable-next-line unicorn/require-module-specifiers
+export {};
