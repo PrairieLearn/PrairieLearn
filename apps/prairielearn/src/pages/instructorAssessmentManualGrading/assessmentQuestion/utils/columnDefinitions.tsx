@@ -100,7 +100,7 @@ export function createColumns({
       ? [
           columnHelper.accessor('instance_question_group_name', {
             id: 'instance_question_group_name',
-            header: 'Submission Group',
+            header: 'Submission group',
             cell: (info) => {
               const value = info.getValue();
               if (!value) {
