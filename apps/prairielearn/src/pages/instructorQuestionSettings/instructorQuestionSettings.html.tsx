@@ -765,7 +765,6 @@ function DeleteQuestionModal({
                     <div class="h6">${a_with_q.short_name} (${a_with_q.long_name})</div>
                     ${a_with_q.assessments.map((assessment) =>
                       AssessmentBadgeHtml({
-                        plainUrlPrefix: '/pl',
                         courseInstanceId: a_with_q.course_instance_id,
                         assessment,
                       }),
