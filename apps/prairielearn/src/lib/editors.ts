@@ -8,7 +8,7 @@ import debugfn from 'debug';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
-import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { AugmentedError, HttpStatusError, formatErrorStack } from '@prairielearn/error';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
@@ -90,11 +90,12 @@ async function syncCourseFromDisk(
           await updateCourseCommitHash(course);
           return;
         } else {
-          job.info('Fast sync failed, falling back to full sync');
+          job.info('Could not perform fast sync, falling back to full sync');
         }
       }
     } catch (error) {
-      job.info(`Fast sync check failed: ${error.message}, falling back to full sync`);
+      job.error(formatErrorStack(error));
+      job.info('Fast sync check failed, falling back to full sync');
     }
   }
 
