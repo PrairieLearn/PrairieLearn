@@ -7,7 +7,7 @@ import { run } from '@prairielearn/run';
 import { EnrollmentPage } from '../../components/EnrollmentPage.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { hasRole } from '../../lib/authz-data-lib.js';
-import { getCourseInstanceContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
@@ -22,7 +22,10 @@ router.get(
     // If they were redirected here, it will have a url param named `url`.
     const { url } = req.query;
 
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance } = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     const enrollmentCode = courseInstance.enrollment_code;
     const redirectUrl =
       typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url : null;

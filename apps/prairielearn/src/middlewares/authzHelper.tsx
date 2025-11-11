@@ -10,7 +10,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../components/PageLayout.js';
-import { getPageContext } from '../lib/client/page-context.js';
+import { extractPageContext } from '../lib/client/page-context.js';
 
 import {
   AuthzAccessMismatch,
@@ -52,7 +52,10 @@ export const createAuthzMiddleware =
     // If we don't have authz data from the request, we fallback to the non-friendly error page.
     // We also do this fallback if we are in a test.
     if (authenticatedAccess && !req.cookies.pl_test_user && hasAuthzData) {
-      const pageContext = getPageContext(res.locals);
+      const pageContext = extractPageContext(res.locals, {
+        pageType: 'plain',
+        accessType: 'instructor',
+      });
 
       // Try to redirect to an accessible page. If we can't, then show the error page.
       const redirectUrl = getRedirectForEffectiveAccessDenied(res);

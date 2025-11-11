@@ -16,7 +16,7 @@ import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstance
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import {
   CourseInstanceCopyEditor,
@@ -45,14 +45,17 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     const {
       course_instance: courseInstance,
       course,
       institution,
       has_enhanced_navigation,
-    } = getCourseInstanceContext(res.locals, 'instructor');
-    const pageContext = getPageContext(res.locals);
-    const { plainUrlPrefix } = pageContext;
+      plainUrlPrefix,
+    } = pageContext;
 
     const shortNames = await sqldb.queryRows(sql.short_names, { course_id: course.id }, z.string());
     const enrollmentCount = await sqldb.queryRow(
@@ -209,8 +212,13 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'update_configuration') {
-      const { course_instance: courseInstanceContext, course: courseContext } =
-        getCourseInstanceContext(res.locals, 'instructor');
+      const { course_instance: courseInstanceContext, course: courseContext } = extractPageContext(
+        res.locals,
+        {
+          pageType: 'courseInstance',
+          accessType: 'instructor',
+        },
+      );
       const infoCourseInstancePath = path.join(
         courseContext.path,
         'courseInstances',
@@ -298,7 +306,10 @@ router.post(
         course_instance: courseInstance,
         course,
         institution,
-      } = getCourseInstanceContext(res.locals, 'instructor');
+      } = extractPageContext(res.locals, {
+        pageType: 'courseInstance',
+        accessType: 'instructor',
+      });
       const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
         institution_id: institution.id,
         course_id: course.id,

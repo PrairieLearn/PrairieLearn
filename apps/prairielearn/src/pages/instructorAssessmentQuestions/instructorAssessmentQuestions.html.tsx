@@ -4,11 +4,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  getAssessmentContext,
-  getCourseInstanceContext,
-  getPageContext,
-} from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
 
@@ -19,9 +15,11 @@ export function InstructorAssessmentQuestions({
   resLocals: Record<string, any>;
   questionRows: StaffAssessmentQuestionRow[];
 }) {
-  const { authz_data, urlPrefix } = getPageContext(resLocals);
-  const { course_instance, course } = getCourseInstanceContext(resLocals, 'instructor');
-  const { assessment, assessment_set } = getAssessmentContext(resLocals);
+  const { authz_data, urlPrefix, course_instance, course, assessment, assessment_set } =
+    extractPageContext(resLocals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
 
   return PageLayout({
     resLocals,
