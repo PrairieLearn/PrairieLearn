@@ -155,6 +155,7 @@ const minimalStaffAssessment: z.input<typeof StaffAssessmentSchema> = {
   json_grade_rate_minutes: null,
   max_bonus_points: null,
   max_points: null,
+  modern_access_control: false,
   multiple_instance: null,
   number: 'A1',
   obj: null,
