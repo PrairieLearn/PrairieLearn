@@ -14,6 +14,10 @@ import pytest
 
 pl_checkbox = importlib.import_module("pl-checkbox")
 
+# Type aliases for cleaner code
+DisplayType = pl_checkbox.DisplayType
+OrderType = pl_checkbox.OrderType
+
 
 def create_test_data(
     submitted: list[str], correct: list[str], all_params: list[str] | None = None
@@ -443,3 +447,140 @@ def test_generate_number_correct_text(case: NumberCorrectTestCase) -> None:
         show_number_correct=case.show_number_correct,
     )
     assert result == case.expected
+
+
+# Backward Compatibility Tests for Attribute Functions
+
+
+class DisplayTypeTestCase(NamedTuple):
+    html_attrs: str
+    expected_display_type: DisplayType
+    should_raise_error: bool
+    id: str
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        # Test new display attribute
+        DisplayTypeTestCase(
+            html_attrs='display="block"',
+            expected_display_type=DisplayType.BLOCK,
+            should_raise_error=False,
+            id="new_display_block",
+        ),
+        DisplayTypeTestCase(
+            html_attrs='display="inline"',
+            expected_display_type=DisplayType.INLINE,
+            should_raise_error=False,
+            id="new_display_inline",
+        ),
+        # Test deprecated inline attribute (backward compatibility)
+        DisplayTypeTestCase(
+            html_attrs='inline="true"',
+            expected_display_type=DisplayType.INLINE,
+            should_raise_error=False,
+            id="deprecated_inline_true",
+        ),
+        DisplayTypeTestCase(
+            html_attrs='inline="false"',
+            expected_display_type=DisplayType.BLOCK,
+            should_raise_error=False,
+            id="deprecated_inline_false",
+        ),
+        DisplayTypeTestCase(
+            html_attrs="",  # No attributes - should default to block
+            expected_display_type=DisplayType.BLOCK,
+            should_raise_error=False,
+            id="no_attributes_default",
+        ),
+        # Test error condition: both inline and display attributes set
+        DisplayTypeTestCase(
+            html_attrs='inline="true" display="block"',
+            expected_display_type=DisplayType.BLOCK,  # Not used due to error
+            should_raise_error=True,
+            id="both_inline_and_display_error",
+        ),
+    ],
+)
+def test_get_display_type_backward_compatibility(case: DisplayTypeTestCase) -> None:
+    """Test get_display_type function for backward compatibility with inline attribute."""
+    html_content = f"<pl-checkbox {case.html_attrs}></pl-checkbox>"
+    element = lxml.html.fragment_fromstring(html_content)
+
+    if case.should_raise_error:
+        with pytest.raises(
+            ValueError,
+            match='Setting display should be done with the "display" attribute',
+        ):
+            pl_checkbox.get_display_type(element)
+    else:
+        result = pl_checkbox.get_display_type(element)
+        assert result == case.expected_display_type
+
+
+class OrderTypeTestCase(NamedTuple):
+    html_attrs: str
+    expected_order_type: OrderType
+    should_raise_error: bool
+    id: str
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        # Test new order attribute
+        OrderTypeTestCase(
+            html_attrs='order="fixed"',
+            expected_order_type=OrderType.FIXED,
+            should_raise_error=False,
+            id="new_order_fixed",
+        ),
+        OrderTypeTestCase(
+            html_attrs='order="random"',
+            expected_order_type=OrderType.RANDOM,
+            should_raise_error=False,
+            id="new_order_random",
+        ),
+        # Test deprecated fixed-order attribute (backward compatibility)
+        OrderTypeTestCase(
+            html_attrs='fixed-order="true"',
+            expected_order_type=OrderType.FIXED,
+            should_raise_error=False,
+            id="deprecated_fixed_order_true",
+        ),
+        OrderTypeTestCase(
+            html_attrs='fixed-order="false"',
+            expected_order_type=OrderType.RANDOM,
+            should_raise_error=False,
+            id="deprecated_fixed_order_false",
+        ),
+        OrderTypeTestCase(
+            html_attrs="",  # No attributes - should default to random
+            expected_order_type=OrderType.RANDOM,
+            should_raise_error=False,
+            id="no_attributes_default",
+        ),
+        # Test error condition: both fixed-order and order attributes set
+        OrderTypeTestCase(
+            html_attrs='fixed-order="true" order="random"',
+            expected_order_type=OrderType.RANDOM,  # Not used due to error
+            should_raise_error=True,
+            id="both_fixed_order_and_order_error",
+        ),
+    ],
+)
+def test_get_order_type_backward_compatibility(case: OrderTypeTestCase) -> None:
+    """Test get_order_type function for backward compatibility with fixed-order attribute."""
+    html_content = f"<pl-checkbox {case.html_attrs}></pl-checkbox>"
+    element = lxml.html.fragment_fromstring(html_content)
+
+    if case.should_raise_error:
+        with pytest.raises(
+            ValueError,
+            match='Setting answer choice order should be done with the "order" attribute',
+        ):
+            pl_checkbox.get_order_type(element)
+    else:
+        result = pl_checkbox.get_order_type(element)
+        assert result == case.expected_order_type
