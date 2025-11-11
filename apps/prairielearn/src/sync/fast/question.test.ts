@@ -137,19 +137,20 @@ describe('fastSyncQuestion', () => {
     const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
 
     const questionData = makeQuestion(courseData);
-    questionData.tags = ['test'];
+    questionData.tags = ['test', 'another test'];
     courseData.questions['test-question'] = questionData;
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
-    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
+    const strategy = getFastSyncStrategy([path.join('questions', 'test-question', 'info.json')]);
     assert(strategy !== null);
     assert.isTrue(await attemptFastSync(course, strategy));
 
-    const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
+    const question = await selectQuestionByQid({ course_id: course.id, qid: 'test-question' });
     const tags = await selectTagsByQuestionId(question.id);
-    assert.lengthOf(tags, 1);
+    assert.lengthOf(tags, 2);
     assert.isTrue(tags.some((tag) => tag.name === 'test'));
+    assert.isTrue(tags.some((tag) => tag.name === 'another test'));
   });
 
   it('falls back to slow sync when tags do not exist', async () => {
