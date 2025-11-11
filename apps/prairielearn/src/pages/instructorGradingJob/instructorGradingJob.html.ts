@@ -6,7 +6,15 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.js';
 import { Navbar } from '../../components/Navbar.js';
 import { config } from '../../lib/config.js';
-import { GradingJobSchema, QuestionSchema, UserSchema, VariantSchema } from '../../lib/db-types.js';
+import {
+  AssessmentInstanceSchema,
+  AssessmentSchema,
+  GradingJobSchema,
+  GroupUserSchema,
+  QuestionSchema,
+  UserSchema,
+  VariantSchema,
+} from '../../lib/db-types.js';
 
 export const GradingJobRowSchema = z.object({
   grading_job: GradingJobSchema,
@@ -15,8 +23,11 @@ export const GradingJobRowSchema = z.object({
   user_uid: UserSchema.shape.uid,
   variant_id: VariantSchema.shape.id,
   instance_question_id: VariantSchema.shape.instance_question_id,
+  assessment: AssessmentSchema.nullable(),
+  assessment_instance: AssessmentInstanceSchema.nullable(),
+  assessment_instance_group_users: z.array(GroupUserSchema).nullable(),
 });
-type GradingJobRow = z.infer<typeof GradingJobRowSchema>;
+export type GradingJobRow = z.infer<typeof GradingJobRowSchema>;
 
 export function InstructorGradingJob({
   resLocals,

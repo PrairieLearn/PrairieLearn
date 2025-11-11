@@ -7,13 +7,40 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
+import type { User } from '../../lib/db-types.js';
 
-import { GradingJobRowSchema, InstructorGradingJob } from './instructorGradingJob.html.js';
+import {
+  type GradingJobRow,
+  GradingJobRowSchema,
+  InstructorGradingJob,
+} from './instructorGradingJob.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+/**
+ * Checks if a user needs student data viewer access to view a grading job.
+ *
+ * Assessment instances have an additional restriction: they must be accessed by a student data viewer,
+ * or the owner of the assessment instance.
+ */
+function userNeedsStudentDataViewerAccess(user: User, gradingJobRow: GradingJobRow) {
+  // If we don't have an assessment and assessment instance, they don't need student data viewer access
+  if (gradingJobRow.assessment == null || gradingJobRow.assessment_instance == null) {
+    return false;
+  }
+  if (gradingJobRow.assessment.group_work) {
+    // If the user doesn't match any of the group users, they need student data viewer access
+    return gradingJobRow.assessment_instance_group_users?.every(
+      (groupUser) => groupUser.user_id !== user.user_id,
+    );
+  }
+  // If the user is not the owner, they need student data viewer access
+  return gradingJobRow.assessment_instance.user_id !== user.user_id;
+}
 
 router.get(
   '/:job_id(\\d+)',
@@ -33,13 +60,32 @@ router.get(
       throw new error.HttpStatusError(404, 'Job not found');
     }
 
-    // 'instanceAuthorized' may be null on course pages.
-    const instanceAuthorized = res.locals.authz_data.has_course_instance_permission_view ?? false;
     const courseAuthorized = res.locals.authz_data.has_course_permission_preview;
 
-    // course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer'
-    if (!instanceAuthorized && !courseAuthorized) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    // 'courseInstanceAuthorized' may be null on course pages.
+    const courseInstanceAuthorized =
+      res.locals.authz_data.has_course_instance_permission_view ?? false;
+
+    const needsStudentDataViewerAccess = userNeedsStudentDataViewerAccess(
+      res.locals.authz_data.user,
+      gradingJobRow,
+    );
+
+    const authorized = run(() => {
+      if (needsStudentDataViewerAccess) {
+        return courseAuthorized && courseInstanceAuthorized;
+      }
+      return courseAuthorized || courseInstanceAuthorized;
+    });
+
+    if (!authorized) {
+      if (needsStudentDataViewerAccess) {
+        throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+      }
+      throw new error.HttpStatusError(
+        403,
+        'Access denied (must be a course viewer or course instance previewer)',
+      );
     }
     res.send(InstructorGradingJob({ resLocals: res.locals, gradingJobRow }));
   }),
@@ -72,13 +118,32 @@ router.get(
       throw new error.HttpStatusError(404, 'Job not found');
     }
 
-    // 'instanceAuthorized' may be null on course pages.
-    const instanceAuthorized = res.locals.authz_data.has_course_instance_permission_view ?? false;
     const courseAuthorized = res.locals.authz_data.has_course_permission_preview;
 
-    // course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer'
-    if (!instanceAuthorized && !courseAuthorized) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    // 'courseInstanceAuthorized' may be null on course pages.
+    const courseInstanceAuthorized =
+      res.locals.authz_data.has_course_instance_permission_view ?? false;
+
+    const needsStudentDataViewerAccess = userNeedsStudentDataViewerAccess(
+      res.locals.authz_data.user,
+      gradingJobRow,
+    );
+
+    const authorized = run(() => {
+      if (needsStudentDataViewerAccess) {
+        return courseAuthorized && courseInstanceAuthorized;
+      }
+      return courseAuthorized || courseInstanceAuthorized;
+    });
+
+    if (!authorized) {
+      if (needsStudentDataViewerAccess) {
+        throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+      }
+      throw new error.HttpStatusError(
+        403,
+        'Access denied (must be a course viewer or course instance previewer)',
+      );
     }
 
     const grading_job = gradingJobRow.grading_job;
