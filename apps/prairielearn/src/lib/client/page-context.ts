@@ -14,8 +14,8 @@ import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   StaffInstitutionSchema,
-  StaffUserSchema,
 } from './safe-db-types.js';
+import { UserSchema } from '../db-types.js';
 
 export const RawPageContextSchema = z.object({
   __csrf_token: z.string(),
@@ -23,7 +23,7 @@ export const RawPageContextSchema = z.object({
   plainUrlPrefix: z.string(),
 
   // authn data
-  authn_user: StaffUserSchema,
+  authn_user: UserSchema,
   authn_institution: StaffInstitutionSchema,
   authn_provider_name: z.string(),
   authn_is_administrator: SelectUserSchema.shape.is_administrator,

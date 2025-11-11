@@ -399,6 +399,7 @@ export default tseslint.config([
       '@prairielearn/aws-client-shared-config': 'error',
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
       '@prairielearn/no-unused-sql-blocks': 'error',
+      '@prairielearn/safe-db-types': 'error',
 
       '@stylistic/jsx-curly-brace-presence': [
         'error',
