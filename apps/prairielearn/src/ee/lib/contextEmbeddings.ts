@@ -41,7 +41,7 @@ export function openAiUserFromAuthn(authnUserId: string): string {
  *
  * @param embeddingModel The embedding model to use.
  * @param text The document text to embed.
- * @param openAiUser The OpenAI userstring requesting the embeddng.
+ * @param openAiUser The OpenAI userstring requesting the embedding.
  * @returns The resultant document embedding.
  */
 export async function createEmbedding(
