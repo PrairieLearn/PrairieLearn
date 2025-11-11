@@ -24,6 +24,7 @@ router.get(
 
     const { course_instance: courseInstance } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
+      // We should be careful to not pass `courseInstance` to the hydrated page.
       accessType: 'instructor',
     });
     const enrollmentCode = courseInstance.enrollment_code;

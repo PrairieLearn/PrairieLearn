@@ -120,7 +120,7 @@ router.get(
 
     const { authn_provider_name, __csrf_token, urlPrefix } = extractPageContext(res.locals, {
       pageType: 'plain',
-      accessType: 'instructor',
+      accessType: 'student',
       withAuthzData: false,
     });
 
@@ -181,7 +181,7 @@ router.post(
       authn_user: { uid, user_id: userId },
     } = extractPageContext(res.locals, {
       pageType: 'plain',
-      accessType: 'instructor',
+      accessType: 'student',
       withAuthzData: false,
     });
 

@@ -54,7 +54,7 @@ export const createAuthzMiddleware =
     if (authenticatedAccess && !req.cookies.pl_test_user && hasAuthzData) {
       const pageContext = extractPageContext(res.locals, {
         pageType: 'plain',
-        accessType: 'instructor',
+        accessType: 'student',
       });
 
       // Try to redirect to an accessible page. If we can't, then show the error page.
