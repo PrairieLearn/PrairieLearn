@@ -187,7 +187,7 @@ export function createColumns({
       },
     }),
 
-    // Auto points column (only if assessment has auto points)
+    // Auto points column (only if assessment question has auto points)
     ...(assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0
       ? [
           columnHelper.accessor('auto_points', {
