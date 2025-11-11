@@ -69,7 +69,7 @@ function userNeedsStudentDataViewerAccess(user: RawStaffUser, gradingJobRow: Gra
   }
   if (gradingJobRow.assessment.group_work) {
     if (gradingJobRow.assessment_instance_group_users == null) {
-      return false;
+      return true;
     }
     // If the user doesn't match any of the group users, they need student data viewer access
     return gradingJobRow.assessment_instance_group_users.every(
