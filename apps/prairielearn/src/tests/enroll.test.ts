@@ -6,11 +6,9 @@ import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
+import { features } from '../lib/features/index.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
-import {
-  selectCourseInstanceById,
-  selectOptionalCourseInstanceById,
-} from '../models/course-instances.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
   selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUserId,
@@ -501,9 +499,6 @@ describe('Self-enrollment institution restriction transitions', () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
 
-    const instance = await selectOptionalCourseInstanceById('1');
-    assert.isNotNull(instance);
-
     // Set uid_regexp for the default institution to allow @example.com UIDs
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
   });
@@ -623,18 +618,36 @@ describe('Self-enrollment institution restriction transitions', () => {
         );
         assert.isNull(initialEnrollment);
 
-        // Hit the assessments endpoint - this should NOT trigger auto-enrollment
-        const response = await fetch(assessmentsUrl);
+        await features.runWithGlobalOverrides({ 'enrollment-management': true }, async () => {
+          // Hit the assessments endpoint with the enrollment management feature enabled.
+          // This should NOT trigger auto-enrollment.
+          const response = await fetch(assessmentsUrl);
+          assert.equal(response.status, 403);
 
-        // Check that user is still not enrolled
-        const finalEnrollment = await queryOptionalRow(
-          'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-          { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
-          EnrollmentSchema,
-        );
-        assert.isNull(finalEnrollment);
+          // Check that user is still not enrolled.
+          const finalEnrollment = await queryOptionalRow(
+            'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
+            { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
+            EnrollmentSchema,
+          );
+          assert.isNull(finalEnrollment);
+        });
 
-        assert.equal(response.status, 403);
+        await features.runWithGlobalOverrides({ 'enrollment-management': false }, async () => {
+          // Hit the assessments endpoint with the enrollment management feature disabled.
+          // This SHOULD trigger auto-enrollment.
+          const response = await fetch(assessmentsUrl);
+          assert.equal(response.status, 200);
+
+          // Check that user is now enrolled.
+          const finalEnrollment = await queryOptionalRow(
+            'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
+            { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
+            EnrollmentSchema,
+          );
+          assert.isOk(finalEnrollment);
+          assert.equal(finalEnrollment.status, 'joined');
+        });
       },
     );
   });

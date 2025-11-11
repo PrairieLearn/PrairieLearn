@@ -1,9 +1,10 @@
-import DOMPurify from 'isomorphic-dompurify';
 import { Marked, type MarkedExtension } from 'marked';
 // @ts-expect-error MathJax does not include types
 import mathjax from 'mathjax';
 
 import { addMathjaxExtension } from '@prairielearn/marked-mathjax';
+
+import { sanitizeHtml } from './sanitize.js';
 
 export async function createMarkedInstance({
   sanitize = true,
@@ -47,7 +48,7 @@ export async function createMarkedInstance({
   }
 
   if (sanitize) {
-    marked.use({ hooks: { postprocess: (html) => DOMPurify.sanitize(html) } });
+    marked.use({ hooks: { postprocess: (html) => sanitizeHtml(html) } });
   }
 
   return marked;

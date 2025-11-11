@@ -1,5 +1,17 @@
 # @prairielearn/sanitize
 
+## 2.1.0
+
+### Minor Changes
+
+- 789fdfa: Add `truncate()` function
+
+## 2.0.22
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
 ## 2.0.21
 
 ### Patch Changes

@@ -556,6 +556,8 @@ function _checkServer(workspace: Workspace): Promise<void> {
           resolve();
         })
         .catch(() => {
+          // This includes cases where we couldn't connect to the docker container.
+
           // Do nothing, because errors are expected while the container is launching.
           const endTime = performance.now();
           if (endTime - startTime > startTimeout) {

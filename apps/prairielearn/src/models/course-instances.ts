@@ -21,18 +21,18 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
 });
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
-export async function selectCourseInstanceById(
-  course_instance_id: string,
-): Promise<CourseInstance> {
-  return queryRow(sql.select_course_instance_by_id, { course_instance_id }, CourseInstanceSchema);
+export async function selectCourseInstanceById(id: string) {
+  return await queryRow(
+    sql.select_course_instance_by_id,
+    { course_instance_id: id },
+    CourseInstanceSchema,
+  );
 }
 
-export async function selectOptionalCourseInstanceById(
-  course_instance_id: string,
-): Promise<CourseInstance | null> {
-  return queryOptionalRow(
+export async function selectOptionalCourseInstanceById(id: string) {
+  return await queryOptionalRow(
     sql.select_course_instance_by_id,
-    { course_instance_id },
+    { course_instance_id: id },
     CourseInstanceSchema,
   );
 }
@@ -51,14 +51,18 @@ export async function selectCourseInstanceByShortName({
   );
 }
 
-export async function selectOptionalCourseInstanceByEnrollmentCode(
-  enrollment_code: string,
-): Promise<CourseInstance | null> {
-  return queryOptionalRow(
+export async function selectOptionalCourseInstanceIdByEnrollmentCode({
+  enrollment_code,
+}: {
+  enrollment_code: string;
+}): Promise<string | null> {
+  const courseInstance = await queryOptionalRow(
     sql.select_course_instance_by_enrollment_code,
     { enrollment_code },
     CourseInstanceSchema,
   );
+
+  return courseInstance?.id ?? null;
 }
 
 /**

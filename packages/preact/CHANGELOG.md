@@ -1,5 +1,25 @@
 # @prairielearn/preact
 
+## 1.0.5
+
+### Patch Changes
+
+- c01279d: Change internal HTML structure
+- Updated dependencies [d087e37]
+  - @prairielearn/compiled-assets@3.3.0
+
+## 1.0.4
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+- Updated dependencies [0425922]
+  - @prairielearn/compiled-assets@3.2.9
+  - @prairielearn/preact-cjs@1.1.6
+  - @prairielearn/error@2.0.22
+  - @prairielearn/utils@2.0.3
+  - @prairielearn/html@4.0.22
+
 ## 1.0.3
 
 ### Patch Changes

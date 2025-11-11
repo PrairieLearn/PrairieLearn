@@ -40,12 +40,14 @@ export function renderHtmlDocument(content: VNode) {
 }
 
 interface HydrateProps {
-  /** The component to hydrate */
+  /** The component to hydrate. */
   children: ComponentChildren;
-  /** Optional override for the component's name or displayName */
+  /** Optional override for the component's name or displayName. */
   nameOverride?: string;
   /** Whether to apply full height styles. */
   fullHeight?: boolean;
+  /** Optional CSS class to apply to the container. */
+  class?: string;
 }
 
 /**
@@ -54,7 +56,12 @@ interface HydrateProps {
  * This component is intended to be used within a non-interactive Preact component
  * that will be rendered without hydration through `renderHtml`.
  */
-export function Hydrate({ children, nameOverride, fullHeight = false }: HydrateProps): VNode {
+export function Hydrate({
+  children,
+  nameOverride,
+  class: className,
+  fullHeight = false,
+}: HydrateProps): VNode {
   if (!isValidElement(children)) {
     throw new Error('<Hydrate> expects a single Preact component as its child');
   }
@@ -117,21 +124,20 @@ registerHydratedComponent(${componentName});</code></pre>
       {scriptPreloads.map((preloadPath) => (
         <link key={preloadPath} rel="modulepreload" href={preloadPath} />
       ))}
+      <script
+        type="application/json"
+        // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+        dangerouslySetInnerHTML={{
+          __html: escapeJsonForHtml(props),
+        }}
+        data-component={componentName}
+        data-component-props
+      />
       <div
         data-component={componentName}
-        class={clsx('js-hydrated-component', { 'h-100': fullHeight })}
+        class={clsx('js-hydrated-component', { 'h-100': fullHeight }, className)}
       >
-        <script
-          type="application/json"
-          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-          dangerouslySetInnerHTML={{
-            __html: escapeJsonForHtml(props),
-          }}
-          data-component-props
-        />
-        <div class={fullHeight ? 'h-100' : ''} data-component-root>
-          <Component {...props} />
-        </div>
+        <Component {...props} />
       </div>
     </Fragment>
   );
@@ -144,7 +150,10 @@ registerHydratedComponent(${componentName});</code></pre>
  * @param content - A Preact VNode to render to HTML.
  * @returns An `HtmlSafeString` containing the rendered HTML.
  */
-export function hydrateHtml<T>(content: VNode<T>): HtmlSafeString {
+export function hydrateHtml<T>(
+  content: VNode<T>,
+  props: Omit<HydrateProps, 'children'> = {},
+): HtmlSafeString {
   // Useful for adding Preact components to existing tagged-template pages.
-  return renderHtml(<Hydrate>{content}</Hydrate>);
+  return renderHtml(<Hydrate {...props}>{content}</Hydrate>);
 }

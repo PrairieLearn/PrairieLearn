@@ -59,7 +59,7 @@ export function InstructorFileEditor({
         name="ace-base-path"
         content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
       />
-      ${compiledScriptTag('instructorFileEditorClient.ts')}
+      ${compiledScriptTag('instructorFileEditorClient.tsx')}
     `,
     content: html`
       ${editorData.sync_errors
