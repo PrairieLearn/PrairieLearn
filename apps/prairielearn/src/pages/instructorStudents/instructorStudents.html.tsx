@@ -11,10 +11,19 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'preact/compat';
-import { Alert, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import {
+  Alert,
+  Button,
+  ButtonGroup,
+  Dropdown,
+  DropdownButton,
+  OverlayTrigger,
+  Tooltip,
+} from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
+import { run } from '@prairielearn/run';
 import { CategoricalColumnFilter, TanstackTableCard } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
@@ -31,7 +40,12 @@ import type {
 } from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { getStudentEnrollmentUrl } from '../../lib/client/url.js';
+import {
+  getSelfEnrollmentLinkUrl,
+  getSelfEnrollmentSettingsUrl,
+  getStudentCourseInstanceUrl,
+  getStudentEnrollmentUrl,
+} from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
@@ -47,6 +61,89 @@ const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
 const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 
 const columnHelper = createColumnHelper<StudentRow>();
+
+async function copyToClipboard(text: string) {
+  await navigator.clipboard.writeText(text);
+}
+
+function CopyEnrollmentLinkButton({
+  courseInstance,
+}: {
+  courseInstance: StaffCourseInstanceContext['course_instance'];
+}) {
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const selfEnrollmentCodeLink = getSelfEnrollmentLinkUrl({
+    courseInstanceId: courseInstance.id,
+    enrollmentCode: courseInstance.enrollment_code,
+  });
+
+  const handleCopyLink = async (e: Event) => {
+    e.stopPropagation();
+    const selfEnrollmentLink = run(() => {
+      if (!courseInstance.self_enrollment_use_enrollment_code) {
+        return getStudentCourseInstanceUrl(courseInstance.id);
+      }
+      return selfEnrollmentCodeLink;
+    });
+    await copyToClipboard(`${window.location.origin}${selfEnrollmentLink}`);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleCopyCode = async (e: Event) => {
+    e.stopPropagation();
+    const enrollmentCodeDashed =
+      courseInstance.enrollment_code.slice(0, 3) +
+      '-' +
+      courseInstance.enrollment_code.slice(3, 6) +
+      '-' +
+      courseInstance.enrollment_code.slice(6);
+    await copyToClipboard(enrollmentCodeDashed);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  return (
+    <DropdownButton
+      as={ButtonGroup}
+      title="Enrollment details"
+      disabled={!courseInstance.self_enrollment_enabled}
+      variant="light"
+    >
+      {courseInstance.self_enrollment_use_enrollment_code && (
+        <OverlayTrigger
+          placement="right"
+          overlay={<Tooltip>{copiedCode ? 'Copied!' : 'Copy'}</Tooltip>}
+          show={copiedCode ? true : undefined}
+        >
+          <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
+            <i class="bi bi-key me-2" />
+            Copy enrollment code
+          </Dropdown.Item>
+        </OverlayTrigger>
+      )}
+
+      {courseInstance.self_enrollment_enabled && (
+        <OverlayTrigger
+          placement="right"
+          overlay={<Tooltip>{copiedLink ? 'Copied!' : 'Copy'}</Tooltip>}
+          show={copiedLink ? true : undefined}
+        >
+          <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
+            <i class="bi bi-link-45deg me-2" />
+            Copy enrollment link
+          </Dropdown.Item>
+        </OverlayTrigger>
+      )}
+      <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
+        <i class="bi bi-gear me-2" />
+        Manage settings
+      </Dropdown.Item>
+    </DropdownButton>
+  );
+}
 
 interface StudentsCardProps {
   authzData: PageContextWithAuthzData['authz_data'];
@@ -286,14 +383,17 @@ function StudentsCard({
         headerButtons={
           <>
             {enrollmentManagementEnabled && (
-              <Button
-                variant="light"
-                disabled={!authzData.has_course_instance_permission_edit}
-                onClick={() => setShowInvite(true)}
-              >
-                <i class="bi bi-person-plus me-2" aria-hidden="true" />
-                Invite student
-              </Button>
+              <>
+                <Button
+                  variant="light"
+                  disabled={!authzData.has_course_instance_permission_edit}
+                  onClick={() => setShowInvite(true)}
+                >
+                  <i class="bi bi-person-plus me-2" aria-hidden="true" />
+                  Invite student
+                </Button>
+                <CopyEnrollmentLinkButton courseInstance={courseInstance} />
+              </>
             )}
           </>
         }
@@ -317,6 +417,27 @@ function StudentsCard({
               />
             ),
           },
+          emptyState: (
+            <>
+              <i class="bi bi-person-exclamation display-4 mb-2" aria-hidden="true" />
+              {/* medium screen and larger, 75% width */}
+              <p class="col-md-9">
+                No students found. To enroll students in your course, you can provide them with a
+                link to enroll (recommended) or invite them. You can manage the self-enrollment
+                settings on the
+                <a class="mx-1" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
+                  course instance settings
+                </a>
+                page.
+              </p>
+            </>
+          ),
+          noResultsState: (
+            <>
+              <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
+              <p class="mb-0">No students found matching your search criteria.</p>
+            </>
+          ),
         }}
       />
       <InviteStudentModal

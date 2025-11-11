@@ -469,7 +469,111 @@ FOR NO KEY UPDATE;
 
 - All state-modifying requests must (normally) be POST and all associated data must be in the body. GET requests may use query parameters for viewing options only.
 
+## Safely interacting with the database
+
+!!! note
+
+    This pattern is currently being rolled out as a gradual refactor of existing code on a model-by-model basis.
+
+Almost every page is dealing with database data, so it is important to understand how to interact with the database securely.
+
+For most API/POST handlers, we want to lookup or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. To help with this, we are moving to a pattern where model functions should accept full, typed row objects as parameters. As an example, we want to make it hard to update an enrollment status using just an enrollment ID.
+
+```typescript
+// We want to prove that we are authorized to read the course instance.
+// Most pages don't need to do this, as `res.locals.course_instance` is already set.
+const courseInstance = await selectCourseInstance({
+  id: course_instance_id,
+  requestedRole: 'Student',
+  authzData: res.locals.authz_data,
+});
+
+const enrollment = await selectEnrollment({
+  id: enrollment_id,
+  // This serves to require the caller to be aware of the role they want to authorize as.
+  // For example, on a student page, you would set requestedRole is 'Student'. Instructors don't have the 'Student' role.
+  requestedRole: 'Student',
+  // Information to prove we are authorized to read the record.
+  // E.g. we need to prove that we have access to the course instance it's in,
+  // and that we have the correct permissions to read the enrollment record.
+  courseInstance,
+  authzData: res.locals.authz_data,
+});
+```
+
+!!! note "Sample model function"
+
+    This is a sample model function that demonstrates the pattern from `src/models/enrollment.ts`.
+
+    ```typescript
+    export async function selectEnrollmentById({
+      id,
+      courseInstance,
+      requestedRole,
+      authzData,
+    }) {
+      assertHasRole(authzData, requestedRole, [
+        // The allowable roles that can call this function
+        'Student',
+        'Student Data Viewer',
+        'Student Data Editor',
+      ]);
+      const enrollment = await queryRow(sql.select_enrollment_by_id, { id }, EnrollmentSchema);
+      assertEnrollmentInCourseInstance(enrollment, courseInstance);
+      if (requestedRole === 'Student') {
+        assertEnrollmentBelongsToUser(enrollment, authzData);
+      }
+      return enrollment;
+    }
+    ```
+
+This is good, because in order to perform an update, you need to pass in a full row object, and a request body won't have enough information for this. Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks. For example, in the above example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance. It will throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollment`). This also forced the caller to prove access to the course instance in order to read the enrollment record.
+
+Once you have a full row object, you have asserted that the caller is authorized to _read_ the record. You will also need to assert that the caller is authorized to _write_ the record.
+
+```typescript
+await updateEnrollmentStatus({
+  enrollment: myEnrollment,
+  status: 'joined',
+  // What role are we trying to authorize as?
+  requestedRole: 'Student',
+  // Information to prove we are authorized to write the record
+  authzData: res.locals.authz_data,
+});
+```
+
+In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `requestedRole` parameter is `'Student'`, but the current user is an instructor, so it would throw an error.
+
+In some cases, you may not have access to `authzData`, e.g. if you are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullSystemAuthz` function to build a dummy `authzData` object that allows you to perform the action as the system.
+
+```typescript
+await updateEnrollmentStatus({
+  enrollment: myEnrollment,
+  status: 'joined',
+  // We are authorizing as the system, any non-System role will throw an error.
+  requestedRole: 'System',
+  authzData: dangerousFullSystemAuthz(),
+});
+```
+
+### Exceptions to the pattern
+
+Model functions for course instances and courses are a notable exception to the pattern.
+
+The only way to obtain a full row object for a course instance or course is typically through `res.locals.authz_data`.
+
+Thus, the `select*` functions are not authenticated. Using these is a red flag in most cases, as you should be able to pick information from `res.locals.authz_data` to perform the action.
+
+Alternatively, if you want to check if you _might_ be authorized to perform an action, you can use `buildAuthzData` with the a course/instance ID to get an `authzData` object that you can use for data-modifying actions.
+
 ## State-modifying POST requests
+
+??? note
+
+    This section is outdated. It is now preferred to do the following things:
+
+    1. Use a Zod schema to validate the request body.
+    2. Call model functions instead of directly executing SQL (see above).
 
 - Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern for all state modification. This means that the initial GET should render the page with a `<form>` that has no `action` set, so it will submit back to the current page. This should be handled by a POST handler that performs the state modification and then issues a redirect back to the same page as a GET:
 

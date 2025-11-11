@@ -133,6 +133,7 @@ router.get(
                 hasEnhancedNavigation={has_enhanced_navigation}
                 canEdit={canEdit}
                 courseInstance={courseInstance}
+                institution={institution}
                 shortNames={shortNames}
                 availableTimezones={availableTimezones}
                 origHash={origHash}
@@ -180,7 +181,7 @@ router.post(
 
       const courseInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
-        course_id: res.locals.course.id,
+        course: res.locals.course,
       });
 
       flash(
@@ -272,6 +273,11 @@ router.post(
         parsedBody.self_enrollment_use_enrollment_code,
         false,
       );
+      const selfEnrollmentRestrictToInstitution = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.restrictToInstitution,
+        parsedBody.self_enrollment_restrict_to_institution,
+        true,
+      );
 
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
@@ -283,8 +289,10 @@ router.post(
       );
 
       const hasSelfEnrollmentSettings =
-        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode ?? selfEnrollmentBeforeDate) !==
-        undefined;
+        (selfEnrollmentEnabled ??
+          selfEnrollmentUseEnrollmentCode ??
+          selfEnrollmentRestrictToInstitution ??
+          selfEnrollmentBeforeDate) !== undefined;
 
       const {
         course_instance: courseInstance,
@@ -302,6 +310,7 @@ router.post(
         courseInstanceInfo.selfEnrollment = {
           enabled: selfEnrollmentEnabled,
           useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+          restrictToInstitution: selfEnrollmentRestrictToInstitution,
           beforeDate: selfEnrollmentBeforeDate,
         };
       } else {

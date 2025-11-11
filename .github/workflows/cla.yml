@@ -24,7 +24,7 @@ jobs:
           path-to-signatures: signatures.json
           path-to-document: https://github.com/PrairieLearn/cla/blob/main/CLA.md
           branch: main
-          allowlist: dependabot[bot],nwalters512,mwest1066,mfsilva22
+          allowlist: dependabot[bot],Copilot,nwalters512,mwest1066,mfsilva22
           custom-pr-sign-comment: I have reviewed and hereby sign the CLA
           create-file-commit-message: Create signatures.json
           signed-commit-message: '$contributorName signed the CLA in https://github.com/PrairieLearn/PrairieLearn/pull/$pullRequestNo'
