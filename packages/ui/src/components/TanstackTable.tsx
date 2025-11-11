@@ -439,7 +439,7 @@ export function TanstackTable<RowDataModel>({
                       const canSort = cell.column.getCanSort();
                       const canFilter = cell.column.getCanFilter();
 
-                      const wrapText = (cell.column.columnDef.meta as any)?.wrapText ?? false;
+                      const wrapText = cell.column.columnDef.meta?.wrapText ?? false;
 
                       return (
                         <td

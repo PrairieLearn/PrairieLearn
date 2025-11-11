@@ -16,32 +16,32 @@ import { z } from 'zod';
 
 import { TanstackTableCard, useShiftClickCheckbox } from '@prairielearn/ui';
 
-import { RubricSettings } from '../../../components/RubricSettings.js';
-import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
+import { RubricSettings } from '../../../../components/RubricSettings.js';
+import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import {
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsNumericFilter,
   parseAsSortingState,
-} from '../../../lib/client/nuqs.js';
+} from '../../../../lib/client/nuqs.js';
 import type {
   PageContextWithAuthzData,
   StaffCourseInstanceContext,
-} from '../../../lib/client/page-context.js';
-import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../lib/db-types.js';
-import type { RubricData } from '../../../lib/manualGrading.types.js';
-
+} from '../../../../lib/client/page-context.js';
+import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
+import type { RubricData } from '../../../../lib/manualGrading.types.js';
 import {
   GRADING_STATUS_VALUES,
   type GradingStatusValue,
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
-} from './assessmentQuestion.types.js';
-import { RubricItemsFilter } from './components/RubricItemsFilter.js';
-import { createColumns } from './utils/columnDefinitions.js';
-import { createColumnFilters } from './utils/columnFilters.js';
-import { generateAiGraderName } from './utils/columnUtils.js';
-import { useBatchActions } from './utils/useBatchActions.js';
+} from '../assessmentQuestion.types.js';
+import { createColumns } from '../utils/columnDefinitions.js';
+import { createColumnFilters } from '../utils/columnFilters.js';
+import { generateAiGraderName } from '../utils/columnUtils.js';
+import { useBatchActions } from '../utils/useBatchActions.js';
+
+import { RubricItemsFilter } from './RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: [], right: [] };

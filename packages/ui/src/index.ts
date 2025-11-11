@@ -1,3 +1,6 @@
+// Augment @tanstack/react-table types
+import './react-table.js';
+
 export { TanstackTable, TanstackTableCard } from './components/TanstackTable.js';
 export { ColumnManager } from './components/ColumnManager.js';
 export { TanstackTableDownloadButton } from './components/TanstackTableDownloadButton.js';

@@ -126,6 +126,8 @@ export function createColumns({
             },
             filterFn: (row, columnId, filterValues: string[]) => {
               if (filterValues.length === 0) return true;
+              // We have to do this cast because columnId is a string.
+              // See https://github.com/TanStack/table/issues/4142#issuecomment-3518670925.
               const current =
                 row.getValue<InstanceQuestionRow['instance_question_group_name']>(columnId);
               if (!current) {

@@ -25,7 +25,7 @@ function ColumnMenuItem<RowDataModel>({
 
   // Use meta.label if available, otherwise fall back to header or column.id
   const header =
-    (column.columnDef.meta as any)?.label ??
+    column.columnDef.meta?.label ??
     (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
 
   return (

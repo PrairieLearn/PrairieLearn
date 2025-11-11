@@ -12,7 +12,7 @@
     "./*.css": "./dist/*.css"
   },
   "scripts": {
-    "build": "tsc && tscp",
+    "build": "tsc && tscp && cp src/react-table.d.ts dist/react-table.d.ts",
     "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
     "test": "vitest run --coverage"
   },

@@ -11,9 +11,9 @@ import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
-import { GroupInfoModal } from './GroupInfoModal.js';
 import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from './assessmentQuestion.types.js';
-import { AssessmentQuestionTable } from './assessmentQuestionTable.js';
+import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
+import { GroupInfoModal } from './components/GroupInfoModal.js';
 
 const queryClient = new QueryClient();
 
