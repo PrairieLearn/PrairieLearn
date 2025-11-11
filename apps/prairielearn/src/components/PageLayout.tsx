@@ -58,6 +58,13 @@ export function PageLayout({
     enableEnhancedNav?: boolean;
     /** Whether or not the navbar should be shown. */
     enableNavbar?: boolean;
+    /** The default state of the side navigation toggle. */
+    defaultNavToggleState?: boolean;
+    /**
+     * Whether or not to persist the navigation toggle state after it's changed
+     * by the user on the client. Defaults to true.
+     */
+    persistNavToggleState?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
@@ -77,6 +84,7 @@ export function PageLayout({
     enableNavbar: true,
     fullHeight: false,
     fullWidth: false,
+    persistNavToggleState: true,
     ...options,
   };
 
@@ -90,7 +98,8 @@ export function PageLayout({
     const sideNavEnabled =
       resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
 
-    const sideNavExpanded = sideNavEnabled && resLocals.side_nav_expanded;
+    const sideNavExpanded =
+      sideNavEnabled && (resolvedOptions.defaultNavToggleState ?? resLocals.side_nav_expanded);
 
     let showContextNavigation = true;
 
@@ -179,6 +188,8 @@ export function PageLayout({
                         resLocals,
                         page: navContext.page,
                         subPage: navContext.subPage,
+                        sideNavExpanded,
+                        persistToggleState: resolvedOptions.persistNavToggleState,
                       })}
                     </div>
                   </nav>
