@@ -140,7 +140,7 @@ export function createColumns({
     // User/Group name column (hidden by default)
     columnHelper.accessor('user_or_group_name', {
       id: 'user_or_group_name',
-      header: groupWork ? 'Group Name' : 'Name',
+      header: groupWork ? 'Group name' : 'Name',
       cell: (info) => info.getValue() || '—',
       enableHiding: true,
     }),
