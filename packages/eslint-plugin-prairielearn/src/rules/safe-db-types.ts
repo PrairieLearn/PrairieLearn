@@ -16,7 +16,7 @@ function checkZodSchemaForDbTypes(
 
   // Walk the expression tree to find all identifiers
   const findIdentifiers = (node: ts.Node): void => {
-    // Check property access expressions like RubricSchema.extend()
+    // Check property access expressions like RubricSchema.extend() or InstanceQuestionSchema.shape
     if (ts.isPropertyAccessExpression(node)) {
       const objectSymbol = typeChecker.getSymbolAtLocation(node.expression);
       if (objectSymbol) {
@@ -29,6 +29,56 @@ function checkZodSchemaForDbTypes(
           const sourceFile = decls[0].getSourceFile();
           if (sourceFile.fileName.endsWith('/db-types.ts')) {
             violations.push(aliasedSymbol.getName());
+          }
+        }
+      }
+    }
+
+    // Check spread elements in object literals (e.g., ...SomeSchema.shape)
+    if (ts.isSpreadAssignment(node)) {
+      // The expression being spread (e.g., SomeSchema.shape)
+      const spreadExpr = node.expression;
+
+      // Check if it's a property access (e.g., accessing .shape)
+      if (ts.isPropertyAccessExpression(spreadExpr)) {
+        const objectSymbol = typeChecker.getSymbolAtLocation(spreadExpr.expression);
+        if (objectSymbol) {
+          const aliasedSymbol =
+            objectSymbol.flags & ts.SymbolFlags.Alias
+              ? typeChecker.getAliasedSymbol(objectSymbol)
+              : objectSymbol;
+          const decls = aliasedSymbol.getDeclarations();
+          if (decls && decls.length > 0) {
+            const sourceFile = decls[0].getSourceFile();
+            if (sourceFile.fileName.endsWith('/db-types.ts')) {
+              violations.push(aliasedSymbol.getName());
+            } else {
+              // The schema is defined locally, check if IT uses db-types
+              for (const decl of decls) {
+                if (ts.isVariableDeclaration(decl)) {
+                  // Recursively check the local schema
+                  const nestedViolations = checkZodSchemaForDbTypes(decl, typeChecker);
+                  violations.push(...nestedViolations);
+                }
+              }
+            }
+          }
+        }
+      }
+      // Also check if the spread is a direct identifier (e.g., ...someObject)
+      else if (ts.isIdentifier(spreadExpr)) {
+        const spreadSymbol = typeChecker.getSymbolAtLocation(spreadExpr);
+        if (spreadSymbol) {
+          const aliasedSymbol =
+            spreadSymbol.flags & ts.SymbolFlags.Alias
+              ? typeChecker.getAliasedSymbol(spreadSymbol)
+              : spreadSymbol;
+          const decls = aliasedSymbol.getDeclarations();
+          if (decls && decls.length > 0) {
+            const sourceFile = decls[0].getSourceFile();
+            if (sourceFile.fileName.endsWith('/db-types.ts')) {
+              violations.push(aliasedSymbol.getName());
+            }
           }
         }
       }
