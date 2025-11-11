@@ -33,13 +33,12 @@ router.get(
       throw new error.HttpStatusError(404, 'Job not found');
     }
 
-    // If the grading job is associated with an assessment instance (through a
-    // submission, a variant, and an instance question), then we need to check
-    // if the effective user is authorized to view this assessment instance.
-    //
-    // The way we implement this check right now with authz_assessment_instance
-    // is overkill, yes, but is easy and robust (we hope).
-    if (gradingJobRow.aai && !gradingJobRow.aai.authorized) {
+    // 'instanceAuthorized' may be null on course pages.
+    const instanceAuthorized = res.locals.authz_data.has_course_instance_permission_view ?? false;
+    const courseAuthorized = res.locals.authz_data.has_course_permission_preview;
+
+    // course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer'
+    if (!instanceAuthorized && !courseAuthorized) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     res.send(InstructorGradingJob({ resLocals: res.locals, gradingJobRow }));
@@ -72,13 +71,13 @@ router.get(
     if (gradingJobRow === null) {
       throw new error.HttpStatusError(404, 'Job not found');
     }
-    // If the grading job is associated with an assessment instance (through a
-    // submission, a variant, and an instance question), then we need to check
-    // if the effective user is authorized to view this assessment instance.
-    //
-    // The way we implement this check right now with authz_assessment_instance
-    // is overkill, yes, but is easy and robust (we hope).
-    if (gradingJobRow.aai && !gradingJobRow.aai.authorized) {
+
+    // 'instanceAuthorized' may be null on course pages.
+    const instanceAuthorized = res.locals.authz_data.has_course_instance_permission_view ?? false;
+    const courseAuthorized = res.locals.authz_data.has_course_permission_preview;
+
+    // course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer'
+    if (!instanceAuthorized && !courseAuthorized) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
