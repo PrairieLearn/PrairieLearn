@@ -35,6 +35,15 @@ export default (function (err, req, res, _next) {
     response_id: res.locals.response_id,
   });
 
+  // Check if the client accepts JSON
+  if (req.accepts('json')) {
+    res.status(err.status).send({
+      error: err.message,
+      errorId,
+    });
+    return;
+  }
+
   res.send(
     ErrorPage({
       // Hide error details in production.
