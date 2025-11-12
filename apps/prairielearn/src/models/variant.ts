@@ -135,8 +135,8 @@ export async function selectAndAuthzVariant(options: {
     VariantSchema,
   );
 
-  function denyAccess(): never {
-    throw new AugmentedError('Access denied', {
+  function denyAccess(msg?: string): never {
+    throw new AugmentedError(msg ?? 'Access denied', {
       status: 403,
       data: options,
     });
@@ -201,7 +201,7 @@ export async function selectAndAuthzVariant(options: {
     // variant's course instance.
     let authnHasCourseInstancePermissionView =
       authz_data?.authn_has_course_instance_permission_view;
-    let hasCourseInstancePermissionView = authz_data?.has_course_permission_view;
+    let hasCourseInstancePermissionView = authz_data?.has_course_instance_permission_view;
 
     // If we're missing authz data, accessing the variant from a
     // non-course-instance route, or accessing the variant from a different
@@ -239,7 +239,7 @@ export async function selectAndAuthzVariant(options: {
       !is_administrator &&
       (!authnHasCourseInstancePermissionView || !hasCourseInstancePermissionView)
     ) {
-      denyAccess();
+      denyAccess('Access denied (must have student data viewer permissions)');
     }
   }
 
