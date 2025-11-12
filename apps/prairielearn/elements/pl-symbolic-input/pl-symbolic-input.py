@@ -712,7 +712,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         with ThreadingTimeout(SYMPY_TIMEOUT) as ctx:
             pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
         if ctx.state == TimeoutState.TIMED_OUT:
-            # If sympy times out, it's because the comparison couldn't converge, so the answer was likely wrong.
+            # If sympy times out, it's because the comparison couldn't converge, so we return an error.
             data["format_errors"][name] = (
                 "Your answer did not converge, try a simpler expression."
             )

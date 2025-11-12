@@ -298,7 +298,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 weight=weight,
             )
         if ctx.state == TimeoutState.TIMED_OUT:
-            # If sympy times out, it's because the comparison couldn't converge, so the answer was likely wrong.
+            # If sympy times out, it's because the comparison couldn't converge, so we return an error.
             data["format_errors"][name] = (
                 "Your answer did not converge, so your expression may be too loose or tight."
             )
