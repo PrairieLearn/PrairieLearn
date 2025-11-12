@@ -241,7 +241,12 @@ export function InstructorQuestionSettings({
                   ${shouldShowAssessmentsList
                     ? html`<tr>
                         <th class="align-middle">Assessments</th>
-                        <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
+                        <td>
+                          ${AssessmentBadges({
+                            assessmentsWithQuestion,
+                            courseInstanceId: resLocals.course_instance.id,
+                          })}
+                        </td>
                       </tr>`
                     : ''}
                 </tbody>
@@ -870,13 +875,11 @@ function QuestionSharing({
 
 function AssessmentBadges({
   assessmentsWithQuestion,
-  resLocals,
+  courseInstanceId,
 }: {
   assessmentsWithQuestion: SelectedAssessments[];
-  resLocals: Record<string, any>;
+  courseInstanceId: string;
 }) {
-  const courseInstanceId = resLocals.course_instance.id;
-
   const assessmentsInCourseInstance = assessmentsWithQuestion.find((a) =>
     idsEqual(a.course_instance_id, courseInstanceId),
   );
