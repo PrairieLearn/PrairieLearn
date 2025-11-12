@@ -13,7 +13,9 @@ import {
   RawStaffCourseSchema,
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
+  StaffAssessmentQuestionSchema,
   StaffInstitutionSchema,
+  StaffQuestionSchema,
   StaffUserSchema,
   StudentUserSchema,
 } from './safe-db-types.js';
@@ -134,8 +136,17 @@ const RawStaffAssessmentContextSchema = z.object({
 });
 const StaffAssessmentContextSchema =
   RawStaffAssessmentContextSchema.brand<'StaffAssessmentContext'>();
-
 export type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema>;
+
+const RawStaffAssessmentQuestionContextSchema = z.object({
+  assessment_question: StaffAssessmentQuestionSchema,
+  question: StaffQuestionSchema,
+  number_in_alternative_group: z.string(),
+  num_open_instances: z.number(),
+});
+const StaffAssessmentQuestionContextSchema =
+  RawStaffAssessmentQuestionContextSchema.brand<'StaffAssessmentQuestionContext'>();
+export type StaffAssessmentQuestionContext = z.infer<typeof StaffAssessmentQuestionContextSchema>;
 
 /** Combined page context types for extractPageContext */
 export type StudentCourseInstancePageContext = StudentPlainPageContext &
@@ -151,30 +162,39 @@ export type StaffAssessmentPageContext = StaffCourseInstancePageContext & StaffA
 export type StaffAssessmentPageContextWithAuthzData = StaffCourseInstancePageContextWithAuthzData &
   StaffAssessmentContext;
 
+export type StaffAssessmentQuestionPageContext = StaffAssessmentPageContext &
+  StaffAssessmentQuestionContext;
+export type StaffAssessmentQuestionPageContextWithAuthzData =
+  StaffAssessmentPageContextWithAuthzData & StaffAssessmentQuestionContext;
+
 /** Type maps for extractPageContext - must use type for conditional/mapped types */
 interface StudentPageTypeReturnMap {
   plain: StudentPlainPageContext;
   courseInstance: StudentCourseInstancePageContext;
   /** Students can't access assessment context */
   assessment: never;
+  assessmentQuestion: never;
 }
 
 interface StudentPageTypeReturnMapWithAuthz {
   plain: StudentPlainPageContextWithAuthzData;
   courseInstance: StudentCourseInstancePageContextWithAuthzData;
   assessment: never;
+  assessmentQuestion: never;
 }
 
 interface InstructorPageTypeReturnMap {
   plain: StaffPlainPageContext;
   courseInstance: StaffCourseInstancePageContext;
   assessment: StaffAssessmentPageContext;
+  assessmentQuestion: StaffAssessmentQuestionPageContext;
 }
 
 interface InstructorPageTypeReturnMapWithAuthz {
   plain: StaffPlainPageContextWithAuthzData;
   courseInstance: StaffCourseInstancePageContextWithAuthzData;
   assessment: StaffAssessmentPageContextWithAuthzData;
+  assessmentQuestion: StaffAssessmentQuestionPageContextWithAuthzData;
 }
 
 type AccessType = 'student' | 'instructor';
@@ -193,9 +213,10 @@ type PageTypeReturnMapWithAuthz<T extends AccessType> = T extends 'student'
  * - pageType 'plain': returns base page context
  * - pageType 'courseInstance': returns base + course instance context
  * - pageType 'assessment': returns base + course instance + assessment context
+ * - pageType 'assessmentQuestion': returns base + course instance + assessment + assessment question context
  */
 export function extractPageContext<
-  T extends 'plain' | 'courseInstance' | 'assessment',
+  T extends 'plain' | 'courseInstance' | 'assessment' | 'assessmentQuestion',
   A extends AccessType,
   WithAuthz extends boolean = true,
 >(
@@ -242,18 +263,34 @@ export function extractPageContext<
     } as ReturnType;
   }
 
-  if (pageType === 'assessment') {
+  const assessmentSchema = run(() => {
     if (accessType === 'student') {
       throw new Error('Assessment context is only available for instructors');
     }
-    const assessmentSchema = run(() => {
-      return StaffAssessmentContextSchema;
-    });
+    return StaffAssessmentContextSchema;
+  });
 
+  if (pageType === 'assessment') {
     return {
       ...baseSchema.parse(resLocals),
       ...ciSchema.parse(resLocals),
       ...assessmentSchema.parse(resLocals),
+    } as ReturnType;
+  }
+
+  const assessmentQuestionSchema = run(() => {
+    if (accessType === 'student') {
+      throw new Error('Assessment question context is only available for instructors');
+    }
+    return StaffAssessmentQuestionContextSchema;
+  });
+
+  if (pageType === 'assessmentQuestion') {
+    return {
+      ...baseSchema.parse(resLocals),
+      ...ciSchema.parse(resLocals),
+      ...assessmentSchema.parse(resLocals),
+      ...assessmentQuestionSchema.parse(resLocals),
     } as ReturnType;
   }
 
