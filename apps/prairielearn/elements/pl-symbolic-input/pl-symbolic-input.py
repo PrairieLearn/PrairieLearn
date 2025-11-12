@@ -713,7 +713,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
         if ctx.state == TimeoutState.TIMED_OUT:
             # If sympy times out, it's because the comparison couldn't converge, so the answer was likely wrong.
-            data["partial_scores"][name] = {"score": 0.0, "weight": weight}
+            data["format_errors"][name] = (
+                    "Your answer did not converge, try a simpler expression."
+                )
     except ValueError as e:
         # We only want to catch the integer string conversion limit ValueError.
         # Others might be outside of the student's control and should error like normal.
