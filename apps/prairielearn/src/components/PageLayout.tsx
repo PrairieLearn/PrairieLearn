@@ -92,11 +92,15 @@ export function PageLayout({
 
     const sideNavExpanded = sideNavEnabled && resLocals.side_nav_expanded;
 
-    let showContextNavigation = sideNavEnabled;
+    let showContextNavigation = [
+      'plain',
+      'instructor',
+      'administrator_institution',
+      'institution',
+    ].includes(navContext.type ?? '');
 
-    // ContextNavigation by default is shown if the side nav is shown.
-    // If additional navigation capabilities are not needed, such as on the course admin settings pages,
-    // then ContextNavigation is not shown.
+    // If additional navigation capabilities are not needed, such as on the course admin pages other
+    // than the settings pages, then the context navigation is not shown.
     if (navContext.page === 'course_admin') {
       const navPageTabs = getNavPageTabs(true);
 
