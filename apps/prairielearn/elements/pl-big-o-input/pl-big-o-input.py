@@ -300,8 +300,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         if ctx.state == TimeoutState.TIMED_OUT:
             # If sympy times out, it's because the comparison couldn't converge, so the answer was likely wrong.
             data["format_errors"][name] = (
-                    "Your answer did not converge, so your expression may be too loose or tight."
-                )
+                "Your answer did not converge, so your expression may be too loose or tight."
+            )
     except ValueError as e:
         # See https://github.com/PrairieLearn/PrairieLearn/pull/13178 for more context as to why we catch this error.
         if "integer string conversion" in str(e):
