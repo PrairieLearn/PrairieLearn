@@ -6,13 +6,21 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import { compiledStylesheetTag } from '../../../lib/assets.js';
-import type {
-  StaffAssessmentQuestion,
-  StaffInstanceQuestionGroup,
-  StaffUser,
+import {
+  getAssessmentContext,
+  getCourseInstanceContext,
+  getPageContext,
+} from '../../../lib/client/page-context.js';
+import {
+  type StaffAssessmentQuestion,
+  StaffAssessmentQuestionSchema,
+  type StaffInstanceQuestionGroup,
+  StaffQuestionSchema,
+  type StaffUser,
 } from '../../../lib/client/safe-db-types.js';
 import type { AssessmentQuestion } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.js';
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
@@ -28,7 +36,7 @@ export function AssessmentQuestion({
   instanceQuestions,
   search,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage['instructor-assessment-question'];
   courseStaff: StaffUser[];
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
@@ -38,18 +46,17 @@ export function AssessmentQuestion({
   instanceQuestions: InstanceQuestionRowWithAIGradingStats[];
   search: string;
 }) {
-  const {
-    number_in_alternative_group,
-    urlPrefix,
-    assessment,
-    question,
-    __csrf_token,
-    authz_data,
-    assessment_question,
-    num_open_instances,
-    course_instance,
-    course,
-  } = resLocals;
+  const { authz_data, urlPrefix, __csrf_token } = getPageContext(resLocals);
+  const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
+
+  const { course_instance, course } = getCourseInstanceContext(resLocals, 'instructor');
+
+  const { assessment } = getAssessmentContext(resLocals);
+
+  const question = StaffQuestionSchema.parse(resLocals.question);
+  const assessment_question = StaffAssessmentQuestionSchema.parse(resLocals.assessment_question);
+
+  const { num_open_instances } = resLocals;
 
   return PageLayout({
     resLocals,
@@ -61,7 +68,7 @@ export function AssessmentQuestion({
     },
     options: {
       fullWidth: true,
-      pageNote: `Question ${number_in_alternative_group}`,
+      pageNote: `Question ${assessment_question.number_in_alternative_group}`,
     },
     headContent: html` ${compiledStylesheetTag('tanstackTable.css')} `,
     content: (
@@ -88,7 +95,7 @@ export function AssessmentQuestion({
                 </a>
               </li>
               <li class="breadcrumb-item active" aria-current="page">
-                Question {number_in_alternative_group}. {question.title}
+                Question {assessment_question.number_in_alternative_group}. {question.title}
               </li>
             </ol>
           </nav>
@@ -118,7 +125,7 @@ export function AssessmentQuestion({
 
         <Hydrate fullHeight>
           <AssessmentQuestionManualGrading
-            authzData={authz_data}
+            hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
             search={search}
             instanceQuestions={instanceQuestions}
             course={course}
@@ -128,10 +135,10 @@ export function AssessmentQuestion({
             assessmentId={assessment.id}
             // TODO: FIXME:
             assessmentQuestion={assessment_question as unknown as StaffAssessmentQuestion}
-            assessmentTid={assessment.tid}
-            questionQid={question.qid}
+            assessmentTid={assessment.tid!}
+            questionQid={question.qid!}
             aiGradingMode={aiGradingMode}
-            groupWork={assessment.group_work}
+            groupWork={assessment.group_work ?? false}
             rubricData={rubric_data}
             instanceQuestionGroups={instanceQuestionGroups}
             courseStaff={courseStaff}

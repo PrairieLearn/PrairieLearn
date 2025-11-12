@@ -17,7 +17,7 @@ interface CreateColumnsParams {
   instanceQuestionGroups: InstanceQuestionGroup[];
   groupWork: boolean;
   assessmentQuestion: AssessmentQuestion;
-  authzDataHasCourseInstancePermissionEdit: boolean;
+  hasCourseInstancePermissionEdit: boolean;
   urlPrefix: string;
   csrfToken: string;
   assessmentId: string;
@@ -29,7 +29,7 @@ export function createColumns({
   instanceQuestionGroups,
   groupWork,
   assessmentQuestion,
-  authzDataHasCourseInstancePermissionEdit,
+  hasCourseInstancePermissionEdit,
   urlPrefix,
   csrfToken,
   assessmentId,
@@ -199,7 +199,7 @@ export function createColumns({
               formatPointsWithEdit({
                 row: info.row.original,
                 field: 'auto_points',
-                hasCourseInstancePermissionEdit: authzDataHasCourseInstancePermissionEdit,
+                hasCourseInstancePermissionEdit,
                 urlPrefix,
                 csrfToken,
               }),
@@ -216,7 +216,7 @@ export function createColumns({
         formatPointsWithEdit({
           row: info.row.original,
           field: 'manual_points',
-          hasCourseInstancePermissionEdit: authzDataHasCourseInstancePermissionEdit,
+          hasCourseInstancePermissionEdit,
           urlPrefix,
           csrfToken,
         }),
@@ -231,7 +231,7 @@ export function createColumns({
         formatPointsWithEdit({
           row: info.row.original,
           field: 'points',
-          hasCourseInstancePermissionEdit: authzDataHasCourseInstancePermissionEdit,
+          hasCourseInstancePermissionEdit,
           urlPrefix,
           csrfToken,
         }),
@@ -248,7 +248,7 @@ export function createColumns({
             cell: (info) =>
               formatScoreWithEdit({
                 row: info.row.original,
-                hasCourseInstancePermissionEdit: authzDataHasCourseInstancePermissionEdit,
+                hasCourseInstancePermissionEdit,
                 urlPrefix,
                 csrfToken,
               }),

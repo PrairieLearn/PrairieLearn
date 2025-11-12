@@ -3,10 +3,7 @@ import { useState } from 'preact/compat';
 
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import { NuqsAdapter } from '../../../lib/client/nuqs.js';
-import type {
-  PageContextWithAuthzData,
-  StaffCourseInstanceContext,
-} from '../../../lib/client/page-context.js';
+import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
 import type {
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
@@ -22,7 +19,7 @@ import { GroupInfoModal } from './components/GroupInfoModal.js';
 const queryClient = new QueryClient();
 
 export interface AssessmentQuestionManualGradingProps {
-  authzData: PageContextWithAuthzData['authz_data'];
+  hasCourseInstancePermissionEdit: boolean;
   course: StaffCourseInstanceContext['course'];
   courseInstance: StaffCourseInstanceContext['course_instance'];
   csrfToken: string;
@@ -49,7 +46,7 @@ type AssessmentQuestionManualGradingInnerProps = Omit<
 >;
 
 function AssessmentQuestionManualGradingInner({
-  authzData,
+  hasCourseInstancePermissionEdit,
   instanceQuestions,
   course,
   courseInstance,
@@ -134,7 +131,7 @@ function AssessmentQuestionManualGradingInner({
   return (
     <>
       <AssessmentQuestionTable
-        authzData={authzData}
+        hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
         course={course}
         courseInstance={courseInstance}
         csrfToken={csrfToken}

@@ -24,10 +24,7 @@ import {
   parseAsNumericFilter,
   parseAsSortingState,
 } from '../../../../lib/client/nuqs.js';
-import type {
-  PageContextWithAuthzData,
-  StaffCourseInstanceContext,
-} from '../../../../lib/client/page-context.js';
+import type { StaffCourseInstanceContext } from '../../../../lib/client/page-context.js';
 import type {
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
@@ -55,7 +52,7 @@ const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
 const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 
 export interface AssessmentQuestionTableProps {
-  authzData: PageContextWithAuthzData['authz_data'];
+  hasCourseInstancePermissionEdit: boolean;
   course: StaffCourseInstanceContext['course'];
   courseInstance: StaffCourseInstanceContext['course_instance'];
   csrfToken: string;
@@ -78,7 +75,7 @@ export interface AssessmentQuestionTableProps {
 }
 
 export function AssessmentQuestionTable({
-  authzData,
+  hasCourseInstancePermissionEdit,
   csrfToken,
   instanceQuestions: initialInstanceQuestions,
   urlPrefix,
@@ -277,8 +274,7 @@ export function AssessmentQuestionTable({
         instanceQuestionGroups,
         groupWork,
         assessmentQuestion,
-        authzDataHasCourseInstancePermissionEdit:
-          authzData.has_course_instance_permission_edit ?? false,
+        hasCourseInstancePermissionEdit,
         urlPrefix,
         csrfToken,
         assessmentId,
@@ -289,7 +285,7 @@ export function AssessmentQuestionTable({
       instanceQuestionGroups,
       groupWork,
       assessmentQuestion,
-      authzData,
+      hasCourseInstancePermissionEdit,
       urlPrefix,
       csrfToken,
       assessmentId,
@@ -633,7 +629,7 @@ export function AssessmentQuestionTable({
                 </Dropdown>
               </>
             ) : (
-              authzData.has_course_instance_permission_edit && (
+              hasCourseInstancePermissionEdit && (
                 <Dropdown>
                   <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
                     <i class="fas fa-tags" aria-hidden="true" />{' '}
