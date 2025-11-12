@@ -58,13 +58,14 @@ export function PageLayout({
     enableEnhancedNav?: boolean;
     /** Whether or not the navbar should be shown. */
     enableNavbar?: boolean;
-    /** The default state of the side navigation toggle. */
-    defaultNavToggleState?: boolean;
     /**
-     * Whether or not to persist the navigation toggle state after it's changed
-     * by the user on the client. Defaults to true.
+     * Forces the side nav to be in a specific state when the page loads,
+     * regardless of the user's previous preference.
+     *
+     * If a value is provided, any state toggles that happen on the client
+     * will not be persisted to the user's session.
      */
-    persistNavToggleState?: boolean;
+    forcedInitialNavToggleState?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
@@ -84,7 +85,6 @@ export function PageLayout({
     enableNavbar: true,
     fullHeight: false,
     fullWidth: false,
-    persistNavToggleState: true,
     ...options,
   };
 
@@ -99,7 +99,8 @@ export function PageLayout({
       resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
 
     const sideNavExpanded =
-      sideNavEnabled && (resolvedOptions.defaultNavToggleState ?? resLocals.side_nav_expanded);
+      sideNavEnabled &&
+      (resolvedOptions.forcedInitialNavToggleState ?? resLocals.side_nav_expanded);
 
     let showContextNavigation = true;
 
@@ -189,7 +190,8 @@ export function PageLayout({
                         page: navContext.page,
                         subPage: navContext.subPage,
                         sideNavExpanded,
-                        persistToggleState: resolvedOptions.persistNavToggleState,
+                        persistToggleState:
+                          resolvedOptions.forcedInitialNavToggleState === undefined,
                       })}
                     </div>
                   </nav>
