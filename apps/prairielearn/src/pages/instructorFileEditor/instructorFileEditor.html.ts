@@ -319,7 +319,9 @@ export function InstructorFileEditor({
                     class="col js-version-choice-content"
                     data-contents="${editorData.diskContents}"
                     data-ace-mode="${editorData.aceMode}"
-                    data-file-metadata="${JSON.stringify(editorData.fileMetadata)}"
+                    data-file-metadata="${editorData.fileMetadata
+                      ? JSON.stringify(editorData.fileMetadata)
+                      : ''}"
                   >
                     <div class="card p-0">
                       <div class="card-header text-center">
