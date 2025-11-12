@@ -97,7 +97,6 @@ export function PageLayout({
     // ContextNavigation by default is shown if the side nav is shown.
     // If additional navigation capabilities are not needed, such as on the course admin settings pages,
     // then ContextNavigation is not shown.
-
     if (navContext.page === 'course_admin') {
       const navPageTabs = getNavPageTabs(true);
 
