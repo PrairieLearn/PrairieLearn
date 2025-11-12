@@ -116,7 +116,6 @@ class InstructorFileEditor {
   editor: ace.Ace.Editor;
   fileMetadata?: FileMetadata;
   aceMode?: string;
-  private confirmedSave = false;
   private abortController?: AbortController;
 
   constructor({
@@ -188,18 +187,12 @@ class InstructorFileEditor {
    * or proceeding with the save if the user has already confirmed.
    */
   async handleSaveClick(event: MouseEvent) {
-    if (this.confirmedSave) {
-      // User has confirmed the save, so we need to restore the original UUID
-      await this.restoreOriginalUuid();
-      this.confirmedSave = false;
-      return;
-    }
-
     const errorResult = this.checkForSaveIssues();
 
     if (errorResult) {
       event.preventDefault();
       this.showConfirmationModal(errorResult);
+      return;
     }
 
     // Otherwise, continue with the save
@@ -336,9 +329,9 @@ class InstructorFileEditor {
 
     confirmButton.addEventListener(
       'click',
-      () => {
+      async () => {
         modal.hide();
-        this.confirmedSave = true;
+        await this.restoreOriginalUuid();
         this.saveElement?.click();
       },
       { signal: this.abortController.signal },
