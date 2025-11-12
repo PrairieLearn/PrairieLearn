@@ -1,6 +1,6 @@
 import type { Question } from '../lib/db-types.js';
 
-import { type EffectiveQuestionType, type QuestionServer } from './types.js';
+import type { EffectiveQuestionType, QuestionServer } from './types.js';
 
 export * from './types.js';
 
