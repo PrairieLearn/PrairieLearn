@@ -52,11 +52,11 @@ router.get(
     );
     const host = getCanonicalHost(req);
     const studentLink = new URL(
-      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
+      `/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
       host,
     ).href;
     const publicLink = new URL(
-      `${res.locals.plainUrlPrefix}/public/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}/questions`,
+      `/pl/public/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}/questions`,
       host,
     ).href;
     const infoAssessmentPath = encodePath(

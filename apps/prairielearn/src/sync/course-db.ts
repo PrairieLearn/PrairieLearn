@@ -1477,9 +1477,6 @@ function validateCourseInstance({
   if (courseInstance.allowAccess && courseInstance.publishing) {
     errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
   } else if (courseInstance.publishing) {
-    // TODO: Remove this once the UI is merged
-    warnings.push('"publishing" is not configurable yet.');
-
     const hasEndDate = courseInstance.publishing.endDate != null;
     const hasStartDate = courseInstance.publishing.startDate != null;
     if (hasStartDate && !hasEndDate) {
