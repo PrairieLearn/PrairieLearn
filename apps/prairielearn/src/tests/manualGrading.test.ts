@@ -628,10 +628,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         setUser(defaultUser);
         const manualGradingAQPage = await (await fetch(manualGradingAssessmentQuestionUrl)).text();
         const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
-        const token =
-          $manualGradingAQPage('form[name=grading-form]')
-            .find('input[name=__csrf_token]')
-            .attr('value') || '';
+        const token = $manualGradingAQPage('#test_csrf_token').text() || '';
 
         await fetch(manualGradingAssessmentQuestionUrl, {
           method: 'POST',

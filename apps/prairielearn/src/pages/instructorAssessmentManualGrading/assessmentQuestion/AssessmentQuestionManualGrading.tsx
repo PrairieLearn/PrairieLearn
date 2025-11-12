@@ -16,6 +16,7 @@ import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from './assessmentQuestion.types.js';
 import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
+import { GradingConflictModal } from './components/GradingConflictModal.js';
 import { GroupInfoModal } from './components/GroupInfoModal.js';
 
 const queryClient = new QueryClient();
@@ -70,10 +71,17 @@ function AssessmentQuestionManualGradingInner({
   const [showAllModal, setShowAllModal] = useState(false);
   const [showUngroupedModal, setShowUngroupedModal] = useState(false);
   const [selectedIdsForGrouping, setSelectedIdsForGrouping] = useState<string[]>([]);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflictDetailsUrl, setConflictDetailsUrl] = useState('/');
 
   const handleShowSelectedModal = (ids: string[]) => {
     setSelectedIdsForGrouping(ids);
     setShowSelectedModal(true);
+  };
+
+  const handleShowConflictModal = (url: string) => {
+    setConflictDetailsUrl(url);
+    setShowConflictModal(true);
   };
 
   const groupSubmissionMutation = useMutation<
@@ -145,6 +153,7 @@ function AssessmentQuestionManualGradingInner({
         onShowGroupSelectedModal={handleShowSelectedModal}
         onShowGroupAllModal={() => setShowAllModal(true)}
         onShowGroupUngroupedModal={() => setShowUngroupedModal(true)}
+        onShowConflictModal={handleShowConflictModal}
       />
 
       <GroupInfoModal
@@ -185,6 +194,12 @@ function AssessmentQuestionManualGradingInner({
             closedOnly,
           })
         }
+      />
+
+      <GradingConflictModal
+        show={showConflictModal}
+        conflictDetailsUrl={conflictDetailsUrl}
+        onHide={() => setShowConflictModal(false)}
       />
     </>
   );

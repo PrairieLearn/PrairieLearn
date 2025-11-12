@@ -1,14 +1,16 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
-import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import { compiledStylesheetTag } from '../../../lib/assets.js';
-import type { StaffInstanceQuestionGroup, StaffUser } from '../../../lib/client/safe-db-types.js';
+import type {
+  StaffAssessmentQuestion,
+  StaffInstanceQuestionGroup,
+  StaffUser,
+} from '../../../lib/client/safe-db-types.js';
 import type { AssessmentQuestion } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
@@ -114,12 +116,6 @@ export function AssessmentQuestion({
           )}
         </div>
 
-        {/* Hidden form for test compatibility - allows tests to extract CSRF token.
-        This form is now in the header of a client-rendered table. */}
-        <form name="grading-form" class="d-none">
-          <input type="hidden" name="__csrf_token" value={__csrf_token} />
-        </form>
-
         <Hydrate fullHeight>
           <AssessmentQuestionManualGrading
             authzData={authz_data}
@@ -130,7 +126,8 @@ export function AssessmentQuestion({
             urlPrefix={urlPrefix}
             csrfToken={__csrf_token}
             assessmentId={assessment.id}
-            assessmentQuestion={assessment_question as AssessmentQuestion}
+            // TODO: FIXME:
+            assessmentQuestion={assessment_question as unknown as StaffAssessmentQuestion}
             assessmentTid={assessment.tid}
             questionQid={question.qid}
             aiGradingMode={aiGradingMode}
@@ -144,79 +141,6 @@ export function AssessmentQuestion({
           />
         </Hydrate>
       </>
-    ),
-    postContent: [
-      GradingConflictModal(),
-      DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }),
-      DeleteAllInstanceQuestionGroupResultsModal({ csrfToken: __csrf_token }),
-    ],
-  });
-}
-
-function GradingConflictModal() {
-  return Modal({
-    id: 'grading-conflict-modal',
-    title: 'Grading conflict detected',
-    body: renderHtml(<p>Another grader has already graded this submission.</p>),
-    footer: renderHtml(
-      <>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Dismiss
-        </button>
-        <a class="btn btn-primary conflict-details-link" href="/">
-          See details
-        </a>
-      </>,
-    ),
-  });
-}
-
-function DeleteAllAIGradingJobsModal({ csrfToken }: { csrfToken: string }) {
-  return Modal({
-    id: 'delete-all-ai-grading-jobs-modal',
-    title: 'Delete all AI grading results',
-    body: renderHtml(
-      <>
-        Are you sure you want to delete <strong>all AI grading results</strong> for this assessment?
-        This action cannot be undone.
-      </>,
-    ),
-    footer: renderHtml(
-      <>
-        <input type="hidden" name="__csrf_token" value={csrfToken} />
-        <input type="hidden" name="__action" value="delete_ai_grading_jobs" />
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Cancel
-        </button>
-        <button type="submit" class="btn btn-danger">
-          Delete
-        </button>
-      </>,
-    ),
-  });
-}
-
-function DeleteAllInstanceQuestionGroupResultsModal({ csrfToken }: { csrfToken: string }) {
-  return Modal({
-    id: 'delete-all-ai-instance-question-grouping-results-modal',
-    title: 'Delete all AI submission groupings',
-    body: renderHtml(
-      <>
-        Are you sure you want to delete <strong>all AI submission groupings</strong> for this
-        assessment? This action cannot be undone.
-      </>,
-    ),
-    footer: renderHtml(
-      <>
-        <input type="hidden" name="__csrf_token" value={csrfToken} />
-        <input type="hidden" name="__action" value="delete_ai_instance_question_groupings" />
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Cancel
-        </button>
-        <button type="submit" class="btn btn-danger">
-          Delete
-        </button>
-      </>,
     ),
   });
 }

@@ -74,6 +74,7 @@ export interface AssessmentQuestionTableProps {
   onShowGroupSelectedModal?: (ids: string[]) => void;
   onShowGroupAllModal?: () => void;
   onShowGroupUngroupedModal?: () => void;
+  onShowConflictModal?: (conflictDetailsUrl: string) => void;
 }
 
 export function AssessmentQuestionTable({
@@ -96,6 +97,7 @@ export function AssessmentQuestionTable({
   onShowGroupSelectedModal,
   onShowGroupAllModal,
   onShowGroupUngroupedModal,
+  onShowConflictModal,
 }: AssessmentQuestionTableProps) {
   // Query state management
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
@@ -422,17 +424,8 @@ export function AssessmentQuestionTable({
         const data = await response.json();
 
         // Check for grading conflict
-        if (data?.conflict_grading_job_id) {
-          const modal = document.getElementById('grading-conflict-modal');
-          if (modal) {
-            const link = modal.querySelector<HTMLAnchorElement>('.conflict-details-link');
-            if (link && data.conflict_details_url) {
-              link.href = data.conflict_details_url;
-            }
-            // Show the modal using Bootstrap's Modal API
-            const bsModal = new window.bootstrap.Modal(modal);
-            bsModal.show();
-          }
+        if (data?.conflict_grading_job_id && data?.conflict_details_url) {
+          onShowConflictModal?.(data.conflict_details_url);
         }
 
         // Invalidate and refetch the query to update the table
@@ -478,7 +471,7 @@ export function AssessmentQuestionTable({
         button.removeEventListener('shown.bs.popover', handlePopoverShown);
       });
     };
-  }, [queryClientInstance, instanceQuestions]);
+  }, [queryClientInstance, instanceQuestions, onShowConflictModal]);
 
   // Use batch actions hook
   const {
