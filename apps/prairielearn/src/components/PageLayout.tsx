@@ -98,8 +98,8 @@ export function PageLayout({
       'institution',
     ].includes(navContext.type ?? '');
 
-    // If additional navigation capabilities are not needed, such as on the course admin pages other
-    // than the settings pages, then the context navigation is not shown.
+    // If additional navigation capabilities are not needed, such as on the
+    // course staff and sync pages, then the context navigation is not shown.
     if (navContext.page === 'course_admin') {
       const navPageTabs = getNavPageTabs(true);
 
