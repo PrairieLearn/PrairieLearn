@@ -1,4 +1,3 @@
-import assert from 'node:assert';
 import type * as stream from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
@@ -69,7 +68,10 @@ function userNeedsStudentDataViewerAccess(user: RawStaffUser, gradingJobRow: Gra
     return false;
   }
   if (gradingJobRow.assessment.group_work) {
-    assert(gradingJobRow.assessment_instance_group_users !== null);
+    // If there are no users in the group, the user needs student data viewer access
+    if (gradingJobRow.assessment_instance_group_users == null) {
+      return true;
+    }
     // If the user doesn't match any of the group users, they need student data viewer access
     return gradingJobRow.assessment_instance_group_users.some(
       (groupUser) => groupUser.user_id !== user.user_id,
@@ -88,8 +90,6 @@ router.get(
         job_id: req.params.job_id,
         course_instance_id: res.locals.course_instance?.id ?? null,
         course_id: res.locals.course.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
       },
       GradingJobRowSchema,
     );
@@ -121,8 +121,6 @@ router.get(
         job_id: req.params.job_id,
         course_instance_id: res.locals.course_instance?.id ?? null,
         course_id: res.locals.course.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
       },
       GradingJobRowSchema,
     );
