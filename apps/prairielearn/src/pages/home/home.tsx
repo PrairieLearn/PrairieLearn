@@ -11,7 +11,7 @@ import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
-import { getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
@@ -118,7 +118,9 @@ router.get(
       StaffInstitutionSchema,
     );
 
-    const { authn_provider_name, __csrf_token, urlPrefix } = getPageContext(res.locals, {
+    const { authn_provider_name, __csrf_token, urlPrefix } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'student',
       withAuthzData: false,
     });
 
@@ -177,7 +179,11 @@ router.post(
 
     const {
       authn_user: { uid, user_id: userId },
-    } = getPageContext(res.locals, { withAuthzData: false });
+    } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'student',
+      withAuthzData: false,
+    });
 
     const { authzData, courseInstance } = await constructCourseOrInstanceContext({
       user: res.locals.authn_user,

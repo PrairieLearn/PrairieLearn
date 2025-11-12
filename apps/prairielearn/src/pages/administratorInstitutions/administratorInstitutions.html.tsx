@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { type AuthnProvider, AuthnProviderSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -28,7 +28,11 @@ export function AdministratorInstitutions({
   supportedAuthenticationProviders: AuthnProvider[];
   resLocals: Record<string, any>;
 }) {
-  const pageContext = getPageContext(resLocals, { withAuthzData: false });
+  const pageContext = extractPageContext(resLocals, {
+    pageType: 'plain',
+    accessType: 'instructor',
+    withAuthzData: false,
+  });
 
   return PageLayout({
     resLocals,
