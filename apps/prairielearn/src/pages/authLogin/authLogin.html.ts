@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { type HtmlValue, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { HeadContents } from '../../components/HeadContents.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { assetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import type { AuthnProvider } from '../../lib/db-types.js';
@@ -19,6 +19,112 @@ export interface InstitutionSupportedProvider {
   is_default: boolean;
 }
 
+function getLoginPageStyles() {
+  return html`
+    <style>
+      html,
+      body {
+        min-height: 100vh;
+      }
+
+      .login-container-wrapper {
+        width: 100%;
+        height: 100%;
+      }
+
+      .login-container {
+        background-color: white;
+        padding: 20px;
+        height: 100%;
+      }
+
+      @media (min-width: 576px) {
+        html,
+        body {
+          background-color: var(--bs-dark);
+        }
+
+        .login-container-wrapper {
+          max-width: 500px;
+          margin: auto;
+          height: auto;
+        }
+
+        .login-container {
+          border-radius: 5px;
+          box-shadow:
+            0 19px 38px rgba(0, 0, 0, 0.3),
+            0 15px 12px rgba(0, 0, 0, 0.22);
+          height: auto;
+          margin: 20px;
+        }
+      }
+
+      .subheader {
+        font-weight: 300;
+        font-size: 1.2rem;
+      }
+
+      .btn .social-icon {
+        position: absolute;
+        left: 7px;
+        height: 24px;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+      }
+
+      .btn-shib {
+        background-color: ${config.shibLinkColors.normal.background};
+        border-color: ${config.shibLinkColors.normal.border};
+        color: ${config.shibLinkColors.normal.text};
+      }
+
+      .btn-shib:hover {
+        background-color: ${config.shibLinkColors.hover.background};
+        border-color: ${config.shibLinkColors.hover.border};
+        color: ${config.shibLinkColors.hover.text};
+      }
+
+      .btn-shib:focus {
+        box-shadow: 0 0 0 0.2rem ${config.shibLinkColors.focus.shadow};
+      }
+
+      .btn-shib:active {
+        background-color: ${config.shibLinkColors.active.background};
+        border-color: ${config.shibLinkColors.active.border};
+        color: ${config.shibLinkColors.active.text};
+      }
+
+      .institution-header {
+        overflow: hidden;
+        text-align: center;
+      }
+
+      .institution-header:before,
+      .institution-header:after {
+        background-color: #000;
+        content: '';
+        display: inline-block;
+        height: 1px;
+        position: relative;
+        vertical-align: middle;
+        width: 50%;
+      }
+
+      .institution-header:before {
+        right: 0.5em;
+        margin-left: -50%;
+      }
+
+      .institution-header:after {
+        left: 0.5em;
+        margin-right: -50%;
+      }
+    </style>
+  `;
+}
+
 function LoginPageContainer({
   children,
   service,
@@ -28,148 +134,53 @@ function LoginPageContainer({
   service: string | null;
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
-        <style>
-          html,
-          body {
-            min-height: 100vh;
-          }
-
-          .login-container-wrapper {
-            width: 100%;
-            height: 100%;
-          }
-
-          .login-container {
-            background-color: white;
-            padding: 20px;
-            height: 100%;
-          }
-
-          @media (min-width: 576px) {
-            html,
-            body {
-              background-color: var(--bs-dark);
-            }
-
-            .login-container-wrapper {
-              max-width: 500px;
-              margin: auto;
-              height: auto;
-            }
-
-            .login-container {
-              border-radius: 5px;
-              box-shadow:
-                0 19px 38px rgba(0, 0, 0, 0.3),
-                0 15px 12px rgba(0, 0, 0, 0.22);
-              height: auto;
-              margin: 20px;
-            }
-          }
-
-          .subheader {
-            font-weight: 300;
-            font-size: 1.2rem;
-          }
-
-          .btn .social-icon {
-            position: absolute;
-            left: 7px;
-            height: 24px;
-            top: 0;
-            bottom: 0;
-            margin: auto;
-          }
-
-          .btn-shib {
-            background-color: ${config.shibLinkColors.normal.background};
-            border-color: ${config.shibLinkColors.normal.border};
-            color: ${config.shibLinkColors.normal.text};
-          }
-
-          .btn-shib:hover {
-            background-color: ${config.shibLinkColors.hover.background};
-            border-color: ${config.shibLinkColors.hover.border};
-            color: ${config.shibLinkColors.hover.text};
-          }
-
-          .btn-shib:focus {
-            box-shadow: 0 0 0 0.2rem ${config.shibLinkColors.focus.shadow};
-          }
-
-          .btn-shib:active {
-            background-color: ${config.shibLinkColors.active.background};
-            border-color: ${config.shibLinkColors.active.border};
-            color: ${config.shibLinkColors.active.text};
-          }
-
-          .institution-header {
-            overflow: hidden;
-            text-align: center;
-          }
-
-          .institution-header:before,
-          .institution-header:after {
-            background-color: #000;
-            content: '';
-            display: inline-block;
-            height: 1px;
-            position: relative;
-            vertical-align: middle;
-            width: 50%;
-          }
-
-          .institution-header:before {
-            right: 0.5em;
-            margin-left: -50%;
-          }
-
-          .institution-header:after {
-            left: 0.5em;
-            margin-right: -50%;
-          }
-        </style>
-      </head>
-      <body class="d-flex flex-column">
-        <main class="login-container-wrapper">
-          <div class="login-container">
-            <div>
-              <h1 class="text-center">
-                <a
-                  href="https://www.prairielearn.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  class="text-body"
-                >
-                  PrairieLearn
-                </a>
-              </h1>
-              <h2 class="text-center subheader mb-5">
-                Sign in ${service ? `to continue to ${service}` : ''}
-              </h2>
-              ${children}
-            </div>
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Sign In',
+    navContext: { type: 'public', page: 'login' },
+    options: {
+      enableNavbar: false,
+      fullHeight: true,
+      paddingBottom: false,
+      paddingSides: false,
+      enableEnhancedNav: false,
+    },
+    headContent: getLoginPageStyles(),
+    content: html`
+      <div class="login-container-wrapper">
+        <div class="login-container">
+          <div>
+            <h1 class="text-center">
+              <a
+                href="https://www.prairielearn.com/"
+                target="_blank"
+                rel="noreferrer"
+                class="text-body"
+              >
+                PrairieLearn
+              </a>
+            </h1>
+            <h2 class="text-center subheader mb-5">
+              Sign in ${service ? `to continue to ${service}` : ''}
+            </h2>
+            ${children}
           </div>
-        </main>
-        ${config.homepageFooterText && config.homepageFooterTextHref
-          ? html`
-              <footer class="footer small fw-light text-light text-center">
-                <div class="bg-secondary p-1">
-                  <a class="text-light" href="${config.homepageFooterTextHref}">
-                    ${config.homepageFooterText}
-                  </a>
-                </div>
-              </footer>
-            `
-          : ''}
-      </body>
-    </html>
-  `;
+        </div>
+      </div>
+    `,
+    postContent:
+      config.homepageFooterText && config.homepageFooterTextHref
+        ? html`
+            <footer class="footer small fw-light text-light text-center">
+              <div class="bg-secondary p-1">
+                <a class="text-light" href="${config.homepageFooterTextHref}">
+                  ${config.homepageFooterText}
+                </a>
+              </div>
+            </footer>
+          `
+        : undefined,
+  });
 }
 
 function ShibLoginButton() {
@@ -248,7 +259,7 @@ export function AuthLogin({
           `
         : ''}
     `,
-  }).toString();
+  });
 }
 
 function isLtiProvider(provider: InstitutionSupportedProvider) {
@@ -384,7 +395,7 @@ export function AuthLoginInstitution({
         ]}
       </div>
     `,
-  }).toString();
+  });
 }
 
 function DevModeBypass() {
