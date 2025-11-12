@@ -200,6 +200,7 @@ SELECT
 FROM
   all_rows
 WHERE
+  -- TODO: update this query
   authorized
 ORDER BY
   CASE
