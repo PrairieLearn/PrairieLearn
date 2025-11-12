@@ -23,6 +23,7 @@ export const IssueRenderDataSchema = IssueSchema.extend({
   user_name: z.string().nullable(),
   user_email: z.string().nullable(),
 });
+
 type IssueRenderData = z.infer<typeof IssueRenderDataSchema>;
 
 export interface QuestionUrls {
@@ -39,6 +40,7 @@ export interface QuestionUrls {
   externalImageCaptureUrl: string | null;
   workspaceUrl?: string;
 }
+
 /**
  * All properties that are added to the locals by {@link getAndRenderVariant}.
  */
