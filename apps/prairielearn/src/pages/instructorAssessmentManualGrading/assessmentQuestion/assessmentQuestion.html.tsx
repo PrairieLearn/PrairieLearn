@@ -341,10 +341,15 @@ export function AssessmentQuestion({
             </div>
             <table id="grading-table" aria-label="Instance questions for manual grading" />
           </div>
-          <GroupInfoModal
-            modalFor="selected"
-            numOpenInstances={num_open_instances}
-            csrfToken={__csrf_token}
+          <div
+            // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+            dangerouslySetInnerHTML={{
+              __html: GroupInfoModal({
+                modalFor: 'selected',
+                numOpenInstances: num_open_instances,
+                csrfToken: __csrf_token,
+              }).toString(),
+            }}
           />
         </form>
       </>

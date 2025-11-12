@@ -760,7 +760,6 @@ export async function renderPanelsForSubmission({
 
   const locals = {
     urlPrefix,
-    plainUrlPrefix: config.urlPrefix,
     questionRenderContext,
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     ...buildLocals({
