@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import type * as stream from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
@@ -30,7 +31,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function assertHasAccessToGradingJob(authzData: PageAuthzData, gradingJobRow: GradingJobRow) {
   const courseAuthorized = authzData.has_course_permission_preview;
 
-  // 'courseInstanceAuthorized' may be null on course pages.
+  // 'has_course_instance_permission_view' may be null on course pages.
   const courseInstanceAuthorized = authzData.has_course_instance_permission_view ?? false;
 
   const needsStudentDataViewerAccess = userNeedsStudentDataViewerAccess(
@@ -47,11 +48,14 @@ function assertHasAccessToGradingJob(authzData: PageAuthzData, gradingJobRow: Gr
 
   if (!authorized) {
     if (needsStudentDataViewerAccess) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+      throw new error.HttpStatusError(
+        403,
+        'Access denied (must be a course previewer and student data viewer)',
+      );
     }
     throw new error.HttpStatusError(
       403,
-      'Access denied (must be a course viewer or course instance previewer)',
+      'Access denied (must be a course previewer or student data viewer)',
     );
   }
 }
@@ -68,12 +72,10 @@ function userNeedsStudentDataViewerAccess(user: RawStaffUser, gradingJobRow: Gra
     return false;
   }
   if (gradingJobRow.assessment.group_work) {
-    if (gradingJobRow.assessment_instance_group_users == null) {
-      return true;
-    }
+    assert(gradingJobRow.assessment_instance_group_users !== null);
     // If the user doesn't match any of the group users, they need student data viewer access
-    return gradingJobRow.assessment_instance_group_users.every(
-      (groupUser) => groupUser.user_id !== user.user_id,
+    return gradingJobRow.assessment_instance_group_users.some(
+      (groupUser) => groupUser.user_id === user.user_id,
     );
   }
   // If the user is not the owner, they need student data viewer access
