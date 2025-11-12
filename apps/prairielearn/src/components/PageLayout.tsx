@@ -88,7 +88,10 @@ export function PageLayout({
   if (resLocals.has_enhanced_navigation && resolvedOptions.enableEnhancedNav) {
     // The side navbar is only available if the user is in a page within a course or course instance.
     const sideNavEnabled =
-      resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
+      resLocals.course &&
+      ['plain', 'instructor', 'administrator_institution', 'institution'].includes(
+        navContext.type ?? '',
+      );
 
     const sideNavExpanded = sideNavEnabled && resLocals.side_nav_expanded;
 
