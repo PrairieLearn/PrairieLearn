@@ -93,10 +93,9 @@ export function PageLayout({
     const sideNavExpanded = sideNavEnabled && resLocals.side_nav_expanded;
 
     let showContextNavigation = navContext.type !== 'student' && navContext.type !== 'public';
+    // ContextNavigation is shown if you are on an instructor page and the page is not a student assessment page.
+    // additional navigation capabilities are needed, such as on the course admin settings pages.
 
-    // ContextNavigation is shown if either:
-    // The side nav is not shown.
-    // The side nav is shown and additional navigation capabilities are needed, such as on the course admin settings pages.
     if (navContext.page === 'course_admin') {
       const navPageTabs = getNavPageTabs(true);
 
