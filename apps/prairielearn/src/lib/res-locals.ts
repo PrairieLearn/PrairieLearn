@@ -84,7 +84,7 @@ export function getResLocalsForPage<T extends PageType>(
  * @example
  * ```ts
  * router.get('/', typedAsyncHandler<'course'>(async (req, res) => {
- *   res.send('Hello, world!');
+ *   res.send(`Hello, ${res.locals.course.short_name}`);
  * }));
  * ```
  *
