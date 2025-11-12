@@ -20,7 +20,6 @@ import {
 export const RawPageContextSchema = z.object({
   __csrf_token: z.string(),
   urlPrefix: z.string(),
-  plainUrlPrefix: z.string(),
 
   // authn data
   authn_user: StaffUserSchema,
@@ -46,6 +45,12 @@ export const PageContextWithAuthzDataSchema =
   RawPageContextWithAuthzDataSchema.brand<'PageContextWithAuthzData'>();
 export type PageContextWithAuthzData = z.infer<typeof PageContextWithAuthzDataSchema>;
 
+/**
+ * TODO: We want to merge
+ * getPageContext, getCourseInstanceContext, and getAssessmentContext into a single function.
+ *
+ * New options will be withAuthzData, pageType, and requestedRole.
+ */
 export function getPageContext(
   resLocals: Record<string, any>,
   options?: {

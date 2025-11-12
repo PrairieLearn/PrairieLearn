@@ -21,7 +21,7 @@ dependencies = [
   "pandas==2.3.3",
   "Pillow==12.0.0",
   "Pint==0.24.4",
-  "psutil==7.1.2",
+  "psutil==7.1.3",
   "PuLP==3.3.0",
   "pyarrow==22.0.0",
   "pycryptodome==3.23.0",
@@ -29,7 +29,7 @@ dependencies = [
   "Pygments==2.19.2",
   "pygraphviz==1.14",
   "pyquaternion==0.9.9",
-  "regex==2025.10.23",
+  "regex==2025.11.3",
   "requests==2.32.5",
   "schemdraw==0.21",
   "scikit-learn==1.7.2",
@@ -48,9 +48,9 @@ dev = [
   "pytest-repeat==0.9.4",
   "pytest-github-actions-annotate-failures==0.3.0",
   "pytest==8.4.2",
-  "ruff==0.13.2",
-  "squawk-cli==2.27.0",
-  "sqlfluff==3.4.2",
+  "ruff==0.14.3",
+  "squawk-cli==2.30.0",
+  "sqlfluff==3.5.0",
   "types-chevron==0.14.2.20250103",
   "types-lxml==2025.8.25",
   "types-Pygments==2.19.0.20250809",
@@ -64,14 +64,14 @@ docs = [
   "mkdocs-exclude==1.0.2",
   "mkdocs-gen-files==0.5.0",
   "mkdocs-literate-nav==0.6.2",
-  "mkdocs-material==9.6.21",
+  "mkdocs-material==9.6.23",
   "mkdocs==1.6.1",
   "mkdocstrings-python==1.18.2",
   "mkdocstrings==0.30.1",
   "pymdown-extensions==10.16.1",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
-  "ruff==0.13.2",
+  "ruff==0.14.3",
 ]
 
 # We only use pyproject.toml for the Python dependencies, so we don't need to
@@ -254,7 +254,6 @@ include = [
 ]
 ignore = [
   "./apps/prairielearn/elements/pl-drawing",            # requires refactor
-  "./apps/prairielearn/elements/pl-checkbox",           # requires refactor
   "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
   "./apps/prairielearn/elements/pl-threejs",            # deprecated
   "./exampleCourse/questions/**/tests",                 # autograder tests, use different dependencies

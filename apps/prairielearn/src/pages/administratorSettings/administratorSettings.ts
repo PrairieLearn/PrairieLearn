@@ -88,7 +88,7 @@ router.post(
         embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
         generationModel: openai(QUESTION_GENERATION_OPENAI_MODEL),
         evaluationModel: openai(QUESTION_BENCHMARKING_OPENAI_MODEL),
-        authnUserId: res.locals.authn_user.user_id,
+        user: res.locals.authn_user,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
     } else {

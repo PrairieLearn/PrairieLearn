@@ -140,3 +140,52 @@ export const parseAsColumnPinningState = createParser<ColumnPinningState>({
     return aLeft.every((v, i) => v === bLeft[i]);
   },
 });
+
+/**
+ * Parses and serializes numeric filter strings to/from URL-friendly format.
+ * Used for numeric column filters with comparison operators.
+ *
+ * Internal format: `>=5`, `<=10`, `>3`, `<7`, `=5`
+ * URL format: `gte_5`, `lte_10`, `gt_3`, `lt_7`, `eq_5`
+ *
+ * Example: `gte_5` <-> `>=5`
+ */
+export const parseAsNumericFilter = createParser<string>({
+  parse(queryValue) {
+    if (!queryValue) return '';
+    // Parse format: {operator}_{value}
+    const match = queryValue.match(/^(gte|lte|gt|lt|eq)_(.+)$/);
+    if (!match) return '';
+    const [, opCode, value] = match;
+    const opMap: Record<string, string> = {
+      gte: '>=',
+      lte: '<=',
+      gt: '>',
+      lt: '<',
+      eq: '=',
+    };
+    const operator = opMap[opCode];
+    if (!operator) return '';
+    return `${operator}${value}`;
+  },
+  serialize(value) {
+    if (!value) return '';
+    // Serialize format: internal (>=5) -> URL (gte_5)
+    const match = value.match(/^(>=|<=|>|<|=)(.+)$/);
+    if (!match) return '';
+    const [, operator, val] = match;
+    const opMap: Record<string, string> = {
+      '>=': 'gte',
+      '<=': 'lte',
+      '>': 'gt',
+      '<': 'lt',
+      '=': 'eq',
+    };
+    const opCode = opMap[operator];
+    if (!opCode) return '';
+    return `${opCode}_${val}`;
+  },
+  eq(a, b) {
+    return a === b;
+  },
+});

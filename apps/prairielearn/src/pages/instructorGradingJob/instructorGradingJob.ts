@@ -7,13 +7,79 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
+import type { PageAuthzData } from '../../lib/authz-data-lib.js';
 import { makeS3ClientConfig } from '../../lib/aws.js';
+import type { RawStaffUser } from '../../lib/client/safe-db-types.js';
 
-import { GradingJobRowSchema, InstructorGradingJob } from './instructorGradingJob.html.js';
+import {
+  type GradingJobRow,
+  GradingJobRowSchema,
+  InstructorGradingJob,
+} from './instructorGradingJob.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+/**
+ * Asserts that the user has access to the grading job.
+ *
+ * Throws an error if the user does not have access to the grading job.
+ */
+function assertHasAccessToGradingJob(authzData: PageAuthzData, gradingJobRow: GradingJobRow) {
+  const courseAuthorized = authzData.has_course_permission_preview;
+
+  // 'has_course_instance_permission_view' may be null on course pages.
+  const courseInstanceAuthorized = authzData.has_course_instance_permission_view ?? false;
+
+  const needsStudentDataViewerAccess = userNeedsStudentDataViewerAccess(
+    authzData.user,
+    gradingJobRow,
+  );
+
+  const authorized = run(() => {
+    if (needsStudentDataViewerAccess) {
+      return courseInstanceAuthorized;
+    }
+    return courseAuthorized || courseInstanceAuthorized;
+  });
+
+  if (!authorized) {
+    if (needsStudentDataViewerAccess) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+    throw new error.HttpStatusError(
+      403,
+      'Access denied (must be a course previewer or student data viewer)',
+    );
+  }
+}
+
+/**
+ * Checks if a user needs student data viewer access to view a grading job.
+ *
+ * Assessment instances have an additional restriction: they must be accessed by a student data viewer,
+ * or the owner of the assessment instance.
+ */
+function userNeedsStudentDataViewerAccess(user: RawStaffUser, gradingJobRow: GradingJobRow) {
+  // If we don't have an assessment and assessment instance, they don't need student data viewer access
+  if (gradingJobRow.assessment == null || gradingJobRow.assessment_instance == null) {
+    return false;
+  }
+  if (gradingJobRow.assessment.group_work) {
+    // If there are no users in the group, the user needs student data viewer access
+    if (gradingJobRow.assessment_instance_group_users == null) {
+      return true;
+    }
+    // If the user doesn't match any of the group users, they need student data viewer access
+    return gradingJobRow.assessment_instance_group_users.some(
+      (groupUser) => groupUser.user_id !== user.user_id,
+    );
+  }
+  // If the user is not the owner, they need student data viewer access
+  return gradingJobRow.assessment_instance.user_id !== user.user_id;
+}
 
 router.get(
   '/:job_id(\\d+)',
@@ -24,8 +90,6 @@ router.get(
         job_id: req.params.job_id,
         course_instance_id: res.locals.course_instance?.id ?? null,
         course_id: res.locals.course.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
       },
       GradingJobRowSchema,
     );
@@ -33,15 +97,8 @@ router.get(
       throw new error.HttpStatusError(404, 'Job not found');
     }
 
-    // If the grading job is associated with an assessment instance (through a
-    // submission, a variant, and an instance question), then we need to check
-    // if the effective user is authorized to view this assessment instance.
-    //
-    // The way we implement this check right now with authz_assessment_instance
-    // is overkill, yes, but is easy and robust (we hope).
-    if (gradingJobRow.aai && !gradingJobRow.aai.authorized) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
+    assertHasAccessToGradingJob(res.locals.authz_data, gradingJobRow);
+
     res.send(InstructorGradingJob({ resLocals: res.locals, gradingJobRow }));
   }),
 );
@@ -64,23 +121,14 @@ router.get(
         job_id: req.params.job_id,
         course_instance_id: res.locals.course_instance?.id ?? null,
         course_id: res.locals.course.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
       },
       GradingJobRowSchema,
     );
     if (gradingJobRow === null) {
       throw new error.HttpStatusError(404, 'Job not found');
     }
-    // If the grading job is associated with an assessment instance (through a
-    // submission, a variant, and an instance question), then we need to check
-    // if the effective user is authorized to view this assessment instance.
-    //
-    // The way we implement this check right now with authz_assessment_instance
-    // is overkill, yes, but is easy and robust (we hope).
-    if (gradingJobRow.aai && !gradingJobRow.aai.authorized) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
+
+    assertHasAccessToGradingJob(res.locals.authz_data, gradingJobRow);
 
     const grading_job = gradingJobRow.grading_job;
 
