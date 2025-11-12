@@ -41,17 +41,14 @@ function assertHasAccessToGradingJob(authzData: PageAuthzData, gradingJobRow: Gr
 
   const authorized = run(() => {
     if (needsStudentDataViewerAccess) {
-      return courseAuthorized && courseInstanceAuthorized;
+      return courseInstanceAuthorized;
     }
     return courseAuthorized || courseInstanceAuthorized;
   });
 
   if (!authorized) {
     if (needsStudentDataViewerAccess) {
-      throw new error.HttpStatusError(
-        403,
-        'Access denied (must be a course previewer and student data viewer)',
-      );
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     throw new error.HttpStatusError(
       403,
@@ -75,7 +72,7 @@ function userNeedsStudentDataViewerAccess(user: RawStaffUser, gradingJobRow: Gra
     assert(gradingJobRow.assessment_instance_group_users !== null);
     // If the user doesn't match any of the group users, they need student data viewer access
     return gradingJobRow.assessment_instance_group_users.some(
-      (groupUser) => groupUser.user_id === user.user_id,
+      (groupUser) => groupUser.user_id !== user.user_id,
     );
   }
   // If the user is not the owner, they need student data viewer access
