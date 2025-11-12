@@ -13,4 +13,5 @@ foreign-key constraints
     exams_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(course_id)
 
 referenced by
+    access_control_prairietest_exam: FOREIGN KEY (exam_id) REFERENCES exams(exam_id) ON UPDATE CASCADE ON DELETE CASCADE
     reservations: FOREIGN KEY (exam_id) REFERENCES exams(exam_id)
