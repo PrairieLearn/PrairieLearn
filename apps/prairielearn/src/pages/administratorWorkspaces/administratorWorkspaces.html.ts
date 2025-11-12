@@ -35,7 +35,7 @@ export function AdministratorWorkspaces({
     resLocals,
     pageTitle: 'Workspaces',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'workspaces',
     },
