@@ -9,7 +9,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const courseHasCourseInstances = await selectCourseHasCourseInstances({
-      course_id: res.locals.course.id,
+      course: res.locals.course,
     });
 
     if (!courseHasCourseInstances && res.locals.course.show_getting_started) {

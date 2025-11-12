@@ -29,7 +29,7 @@ import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
-import * as b64Util from './base64-util.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
@@ -421,6 +421,12 @@ export abstract class Editor {
             await job.exec('git', ['push'], {
               cwd: this.course.path,
               env: gitEnv,
+              // During GitHub incidents, we've observed GitHub taking multiple
+              // minutes to handle a `git push`. To avoid the job sitting for
+              // an unreasonable amount of time and causing a 504 when we fail
+              // to respond to the request in time, we'll use a relatively short
+              // timeout to fail the push if it takes too long.
+              cancelSignal: AbortSignal.timeout(10_000),
             });
             job.data.saveSucceeded = true;
 
@@ -442,6 +448,9 @@ export abstract class Editor {
             await job.exec('git', ['fetch'], {
               cwd: this.course.path,
               env: gitEnv,
+              // As with `git push` above, we'll use a timeout here to avoid
+              // long delays during GitHub incidents resulting in 504 errors.
+              cancelSignal: AbortSignal.timeout(10_000),
             });
 
             // This will both discard the commit we made locally and also pull
@@ -455,6 +464,8 @@ export abstract class Editor {
               await job.exec('git', ['push'], {
                 cwd: this.course.path,
                 env: gitEnv,
+                // See above `git push` attempt for an explanation of this timeout.
+                cancelSignal: AbortSignal.timeout(10_000),
               });
               job.data.saveSucceeded = true;
             } finally {
@@ -1076,6 +1087,7 @@ export class CourseInstanceCopyEditor extends Editor {
         // such as ordering the two courses by `id` and locking in that order.
         const { questionPath, qid } = await copyQuestion({
           course: this.course,
+          from_course: this.from_course,
           from_path,
           from_qid,
           uuid,
@@ -1526,7 +1538,14 @@ export class QuestionAddEditor extends Editor {
       }
 
       debug(`Copy question from ${fromPath} to ${newQuestionPath}`);
-      await fs.copy(fromPath, newQuestionPath, { overwrite: false, errorOnExist: true });
+
+      await copyQuestionFiles({
+        fromPath,
+        toPath: newQuestionPath,
+        // When copying from example course templates, skip README.md files at the root.
+        // They are specific to the template and will quickly drift from the copied question.
+        skipReadme: this.template_source === 'example' && this.template_qid.startsWith('template/'),
+      });
 
       debug('Read info.json');
       const infoJson = await fs.readJson(path.join(newQuestionPath, 'info.json'));
@@ -1654,7 +1673,7 @@ export class QuestionModifyEditor extends Editor {
       if (contents === null) {
         await fs.remove(resolvedPath);
       } else {
-        await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+        await fs.writeFile(resolvedPath, b64DecodeUnicode(contents));
       }
     }
 
@@ -1832,8 +1851,9 @@ export class QuestionRenameEditor extends Editor {
 }
 
 export class QuestionCopyEditor extends Editor {
+  private from_course: Course;
+  private from_course_label: string;
   private from_qid: string;
-  private from_course: string;
   private from_path: string;
   private is_transfer: boolean;
 
@@ -1841,25 +1861,26 @@ export class QuestionCopyEditor extends Editor {
 
   constructor(
     params: BaseEditorOptions & {
+      from_course: Course;
       from_qid: string;
-      from_course_short_name: Course['short_name'];
       from_path: string;
       is_transfer: boolean;
     },
   ) {
-    const { from_qid, from_course_short_name, from_path, is_transfer } = params;
+    const { from_qid, from_course, from_path, is_transfer } = params;
 
-    const from_course =
-      from_course_short_name == null ? 'unknown course' : `course ${from_course_short_name}`;
+    const from_course_label =
+      from_course.short_name == null ? 'unknown course' : `course ${from_course.short_name}`;
 
     super({
       ...params,
-      description: `Copy question ${from_qid}${is_transfer ? ` from ${from_course}` : ''}`,
+      description: `Copy question ${from_qid}${is_transfer ? ` from ${from_course_label}` : ''}`,
     });
 
+    this.from_course = from_course;
+    this.from_course_label = from_course_label;
     this.from_qid = from_qid;
     this.from_path = from_path;
-    this.from_course = from_course;
     this.is_transfer = is_transfer;
 
     this.uuid = crypto.randomUUID();
@@ -1870,6 +1891,7 @@ export class QuestionCopyEditor extends Editor {
 
     const { questionPath, qid } = await copyQuestion({
       course: this.course,
+      from_course: this.from_course,
       from_path: this.from_path,
       from_qid: this.from_qid,
       uuid: this.uuid,
@@ -1882,7 +1904,7 @@ export class QuestionCopyEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.from_qid}${this.is_transfer ? ` (from ${this.from_course})` : ''} to ${qid}`,
+      commitMessage: `copy question ${this.from_qid}${this.is_transfer ? ` (from ${this.from_course_label})` : ''} to ${qid}`,
     };
   }
 }
@@ -1903,8 +1925,41 @@ async function selectQuestionUuidsForCourse(course: Course): Promise<string[]> {
   );
 }
 
+/**
+ * Copy question files from one location to another, optionally skipping README.md
+ * files at the root of example course template questions.
+ *
+ * @param options
+ * @param options.fromPath - Source directory path
+ * @param options.toPath - Destination directory path
+ * @param options.skipReadme - If true, skip copying README.md at the root of the source directory
+ */
+async function copyQuestionFiles({
+  fromPath,
+  toPath,
+  skipReadme,
+}: {
+  fromPath: string;
+  toPath: string;
+  skipReadme: boolean;
+}): Promise<void> {
+  await fs.copy(fromPath, toPath, {
+    overwrite: false,
+    errorOnExist: true,
+    filter: (src: string) => {
+      // When copying from example course templates, skip README.md files at the root.
+      // They are specific to the template and will quickly drift from the copied question.
+      if (skipReadme && src === path.join(fromPath, 'README.md')) {
+        return false;
+      }
+      return true;
+    },
+  });
+}
+
 async function copyQuestion({
   course,
+  from_course,
   from_path,
   from_qid,
   uuid,
@@ -1912,6 +1967,7 @@ async function copyQuestion({
   existingQids: oldShortNames,
 }: {
   course: Course;
+  from_course: Course;
   from_path: string;
   from_qid: string;
   uuid: string;
@@ -1938,7 +1994,14 @@ async function copyQuestion({
   const toPath = questionPath;
 
   debug(`Copy question from ${fromPath} to ${toPath}`);
-  await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+  await copyQuestionFiles({
+    fromPath,
+    toPath,
+    // When copying from example course templates, skip README.md files at the root.
+    // They are specific to the template and will quickly drift from the copied question.
+    skipReadme: from_course.path === EXAMPLE_COURSE_PATH && from_qid.startsWith('template/'),
+  });
 
   debug('Read info.json');
   const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
@@ -2394,14 +2457,14 @@ export class FileModifyEditor extends Editor {
 
     debug('verify disk hash matches orig hash');
     const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
-    const diskContents = b64Util.b64EncodeUnicode(diskContentsUTF);
+    const diskContents = b64EncodeUnicode(diskContentsUTF);
     const diskHash = this.getHash(diskContents);
     if (this.origHash !== diskHash) {
       throw new Error('Another user made changes to the file you were editing.');
     }
 
     debug('write file');
-    await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
+    await fs.writeFile(this.filePath, b64DecodeUnicode(this.editContents));
 
     return {
       pathsToAdd: [this.filePath],

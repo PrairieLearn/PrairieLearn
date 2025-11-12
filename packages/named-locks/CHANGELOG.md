@@ -1,5 +1,21 @@
 # @prairielearn/named-locks
 
+## 3.0.26
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+- Updated dependencies [0425922]
+  - @prairielearn/postgres@4.4.3
+
+## 3.0.25
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/postgres@4.4.2
+
 ## 3.0.24
 
 ### Patch Changes

@@ -39,14 +39,15 @@ onDocumentReady(() => {
       // If you forget to register a component with `registerHydratedComponent`, this is going to hang.
       const Component = await registry.getComponent(componentName);
 
-      const dataElement = el.querySelector('script[data-component-props]');
+      const dataElement = el.previousElementSibling;
       if (!dataElement) throw new Error('No data element found');
+      if (!dataElement.hasAttribute('data-component-props')) {
+        throw new Error('Data element is missing data-component-props attribute');
+      }
       if (!dataElement.textContent) throw new Error('Data element has no content');
       const data: object = superjson.parse(dataElement.textContent);
 
-      const rootElement = el.querySelector('div[data-component-root]');
-      if (!rootElement) throw new Error('No root element found');
-      hydrate(<Component {...data} />, rootElement);
+      hydrate(<Component {...data} />, el);
     },
   });
 });

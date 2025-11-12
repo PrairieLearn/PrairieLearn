@@ -1,4 +1,4 @@
-import { type OpenAIChatLanguageModelOptions, createOpenAI } from '@ai-sdk/openai';
+import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { type LanguageModel, type ModelMessage, generateObject } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
@@ -129,6 +129,7 @@ async function aiEvaluateStudentResponse({
     messages: input,
     providerOptions: {
       openai: {
+        strictJsonSchema: true,
         metadata: {
           course_id: course.id,
           course_instance_id,
@@ -138,7 +139,7 @@ async function aiEvaluateStudentResponse({
         },
         promptCacheKey: `assessment_question_${instance_question.assessment_question_id}_grouping`,
         safetyIdentifier: `course_${course.id}`,
-      } satisfies OpenAIChatLanguageModelOptions,
+      } satisfies OpenAIResponsesProviderOptions,
     },
   });
 
@@ -202,7 +203,7 @@ export async function aiInstanceQuestionGrouping({
     description: 'Perform AI submission grouping',
   });
 
-  const instanceQuestionIdsSet = new Set<string>(instance_question_ids ?? []);
+  const instanceQuestionIdsSet = new Set<string>(instance_question_ids);
 
   serverJob.executeInBackground(async (job) => {
     if (!assessment_question.max_manual_points) {

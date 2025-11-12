@@ -7,8 +7,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
+import type { CourseInstance } from '../../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -23,8 +26,9 @@ import { getOrCreateUser } from '../utils/auth.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('effective user', { timeout: 60_000 }, function () {
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+  let courseInstance: CourseInstance;
+
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.pageUrlTestCourse = `${context.baseUrl}/course/1`;
   context.pageUrlExampleCourse = `${context.baseUrl}/course/2`;
@@ -101,12 +105,13 @@ describe('effective user', { timeout: 60_000 }, function () {
       email: 'student@example.com',
     });
     studentId = student.user_id;
+    courseInstance = await selectCourseInstanceById('1');
     await ensureEnrollment({
-      user_id: studentId,
-      course_instance_id: '1',
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+      userId: studentId,
+      courseInstance,
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
     });
   });
 
@@ -181,7 +186,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await insertCourseInstancePermissions({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -196,7 +201,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -212,7 +217,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_date=1900-01-19T00:00:01; pl2_requested_uid=student@example.com',
+          'pl_test_user=test_instructor; pl2_requested_date=1950-01-19T00:00:01; pl2_requested_uid=student@example.com',
       };
       const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
       assert.equal(res.status, 200);
@@ -224,7 +229,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_date=1700-01-19T00:00:01; pl2_requested_uid=student@example.com',
+          'pl_test_user=test_instructor; pl2_requested_date=1890-01-19T00:00:01; pl2_requested_uid=student@example.com',
       };
       const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
       assert.equal(res.status, 403);
@@ -332,7 +337,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await insertCourseInstancePermissions({
       course_id: '1',
       user_id: staffId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -348,14 +353,14 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: staffId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -395,7 +400,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -411,7 +416,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -493,7 +498,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -582,11 +587,11 @@ describe('effective user', { timeout: 60_000 }, function () {
         email: 'student@example.com',
       });
       await ensureEnrollment({
-        course_instance_id: courseInstanceId,
-        agent_user_id: null,
-        agent_authn_user_id: null,
-        user_id: user.user_id,
-        action_detail: 'implicit_joined',
+        courseInstance,
+        userId: user.user_id,
+        requestedRole: 'System',
+        authzData: dangerousFullSystemAuthz(),
+        actionDetail: 'implicit_joined',
       });
 
       const headers = {

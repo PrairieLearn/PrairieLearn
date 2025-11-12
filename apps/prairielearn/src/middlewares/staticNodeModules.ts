@@ -19,7 +19,7 @@ const NODE_MODULES_PATHS = [
  * The first argument is a path within `node_modules` to serve. This can be '.'
  * to serve all files, or a subdirectory like `mathjax/es5`.
  */
-export default function (servePath: string, options?: ServeStaticOptions) {
+export default function (servePath: string, options?: Omit<ServeStaticOptions, 'fallthrough'>) {
   const router = Router();
 
   NODE_MODULES_PATHS.forEach((p) => {

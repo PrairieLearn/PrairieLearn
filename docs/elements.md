@@ -1,106 +1,65 @@
 # PrairieLearn Elements for use in `question.html`
 
-When writing questions, there exists a core pool of elements that provides
-common structures associated with assessment items. These elements can be
-split into three distinct groups: **submission**, **decorative**, and
-**conditional**. Within this document, all of PrairieLearn's elements are
-displayed alongside links to sample elements within the example course. To
-build your own PrairieLearn element, please see [Question Element Writing](devElements.md)
-documentation.
+When writing questions, there exists a core pool of elements that provides common structures associated with assessment items. These elements can be split into three distinct groups: **submission**, **decorative**, and **conditional**. Within this document, all of PrairieLearn's elements are displayed alongside links to sample elements within the example course. To build your own PrairieLearn element, please see [Question Element Writing](devElements.md) documentation.
 
-**Submission** elements act as a way to receive a response or input from the
-student. These elements are traditionally referred to as form input fields.
-PrairieLearn presently provides the following templated **input field** elements:
+**Submission** elements act as a way to receive a response or input from the student. These elements are traditionally referred to as form input fields. PrairieLearn presently provides the following templated **input field** elements:
 
-- [`pl-big-o-input`](#pl-big-o-input-element): Fill in a **symbolic** value
-  representing asymptotic input.
-- [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
-  list.
-- [`pl-excalidraw`](#pl-excalidraw-element): Draw a **vector diagram** using
-  [excalidraw](https://github.com/excalidraw/excalidraw).
-- [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor
-  for writing and submitting code.
-- [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
-  to obtain a file with a specific naming scheme.
+- [`pl-big-o-input`](#pl-big-o-input-element): Fill in a **symbolic** value representing asymptotic input.
+- [`pl-checkbox`](#pl-checkbox-element): Select **multiple options** from a list.
+- [`pl-excalidraw`](#pl-excalidraw-element): Draw a **vector diagram** using [excalidraw](https://github.com/excalidraw/excalidraw).
+- [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor for writing and submitting code.
+- [`pl-file-upload`](#pl-file-upload-element): Provide a submission area to obtain a file with a specific naming scheme.
 - [`pl-image-capture`](#pl-image-capture-element): Capture images of handwritten work from a local camera or external device such as a phone or tablet.
-- [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
-  such as -71, 0, 5, 21, and so on.
-- [`pl-matching`](#pl-matching-element): Select a matching option for each entry in
-  a group.
-- [`pl-matrix-component-input`](#pl-matrix-component-input-element): Fill in
-  a **matrix** using grid that has an input area for each element.
-- [`pl-matrix-input`](#pl-matrix-input-element): Supply a matrix in a supported
-  programming language format.
-- [`pl-multiple-choice`](#pl-multiple-choice-element): Selecting only
-  **one option** from a list.
-- [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
-  within a specific tolerance level such as 3.14, -1.921, and so on.
+- [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value such as -71, 0, 5, 21, and so on.
+- [`pl-matching`](#pl-matching-element): Select a matching option for each entry in a group.
+- [`pl-matrix-component-input`](#pl-matrix-component-input-element): Fill in a **matrix** using grid that has an input area for each element.
+- [`pl-matrix-input`](#pl-matrix-input-element): Supply a matrix in a supported programming language format.
+- [`pl-multiple-choice`](#pl-multiple-choice-element): Select only **one option** from a list.
+- [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-order-blocks`](#pl-order-blocks-element): Select and arrange given blocks of code or text.
-- [`pl-rich-text-editor`](#pl-rich-text-editor-element): Provide an in-browser formattable text editor
-  for writing and submitting code.
-- [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
-  such as `"Illinois"`, `"GATTACA"`, `"computer"`, and so on.
-- [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value
-  such as `x^2`, `sin(z)`, `mc^2`, and so on.
-- [`pl-units-input`](#pl-units-input-element): Fill in a **number** and a **unit**
-  such as "1.5 m", "14 ms", "6.3 ft", and so on.
+- [`pl-rich-text-editor`](#pl-rich-text-editor-element): Provide an in-browser formattable text editor for open-ended responses and essays.
+- [`pl-string-input`](#pl-string-input-element): Fill in a **string** value such as `"Illinois"`, `"GATTACA"`, `"computer"`, and so on.
+- [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value such as `x^2`, `sin(z)`, `mc^2`, and so on.
+- [`pl-units-input`](#pl-units-input-element): Fill in a **number** and a **unit** such as "1.5 m", "14 ms", "6.3 ft", and so on.
 
-**Decorative** elements are meant to improve how the question is displayed to
-students. Elements under this category include ways to specify question markup,
-images, files, and code display. The following **decorative** elements are available:
+**Decorative** elements are meant to improve how the question is displayed to students. Elements under this category include ways to specify question markup, images, files, and code display. The following **decorative** elements are available:
 
-- [`pl-card`](#pl-card-element): Displays content within a card-styled component.
-- [`pl-code`](#pl-code-element): Displays code rendered with the appropriate
-  syntax highlighting.
+- [`pl-card`](#pl-card-element): Display content within a card-styled component.
+- [`pl-code`](#pl-code-element): Display code rendered with the appropriate syntax highlighting.
 - [`pl-dataframe`](#pl-dataframe-element): Display DataFrames with various options.
-- [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
-  collection of graphic objects
-- [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
+- [`pl-drawing`](#pl-drawing-element): Create an image from pre-defined collection of graphic objects.
+- [`pl-external-grader-variables`](#pl-external-grader-variables-element): Display expected and given variables for externally graded questions.
 - [`pl-figure`](#pl-figure-element): Embed an image file in the question.
-- [`pl-file-download`](#pl-file-download-element): Enable file downloads for
-  data-centric questions.
-- [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
-- [`pl-graph`](#pl-graph-element): Displays graphs, using [GraphViz DOT notation](https://graphviz.org/doc/info/lang.html), an adjacency matrix, or a [`networkx`](https://networkx.org/) graph.
-- [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
-  appropriate LaTeX commands for use in a mathematical expression.
-- [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
+- [`pl-file-download`](#pl-file-download-element): Enable file downloads for data-centric questions.
+- [`pl-file-preview`](#pl-file-preview-element): Display a preview of submitted files.
+- [`pl-graph`](#pl-graph-element): Display graphs using [GraphViz DOT notation](https://graphviz.org/doc/info/lang.html), an adjacency matrix, or a [`networkx`](https://networkx.org/) graph.
+- [`pl-matrix-latex`](#pl-matrix-latex-element): Display matrices using appropriate LaTeX commands for use in a mathematical expression.
+- [`pl-overlay`](#pl-overlay-element): Layer existing elements on top of one another in specified positions.
 - [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python variables.
-- [`pl-variable-output`](#pl-variable-output-element): Displays matrices in
-  code form for supported programming languages.
-- [`pl-template`](#pl-template-element): Displays content from mustache templates.
-- [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
+- [`pl-variable-output`](#pl-variable-output-element): Display matrices in code form for supported programming languages.
+- [`pl-template`](#pl-template-element): Display content from mustache templates.
+- [`pl-xss-safe`](#pl-xss-safe-element): Remove potentially unsafe content from HTML code.
 
-**Conditional** elements are meant to improve the feedback and question structure.
-These elements conditionally render their content depending on the question state.
-The following **Conditional** elements are available:
+**Conditional** elements are meant to improve the feedback and question structure. These elements conditionally render their content depending on the question state. The following **Conditional** elements are available:
 
-- [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
-  answer to a given question.
-- [`pl-external-grader-results`](#pl-external-grader-results-element):
-  Displays results from questions that are externally graded.
+- [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct answer to a given question.
+- [`pl-external-grader-results`](#pl-external-grader-results-element): Displays results from questions that are externally graded.
 - [`pl-hide-in-panel`](#pl-hide-in-panel-element): Hides content in one or more display panels.
 - [`pl-hide-in-manual-grading`](#pl-hide-in-manual-grading-element): Hides content in the manual grading page.
 - [`pl-hidden-hints`](#pl-hidden-hints-element): Displays hints as a student submits more on the current variant.
 - [`pl-manual-grading-only`](#pl-manual-grading-only-element): Shows content only in manual grading.
-- [`pl-question-panel`](#pl-question-panel-element): Displays the text of a
-  question.
-- [`pl-submission-panel`](#pl-submission-panel-element): Displays the answer
-  given by the student.
+- [`pl-question-panel`](#pl-question-panel-element): Displays the text of a question.
+- [`pl-submission-panel`](#pl-submission-panel-element): Displays the answer given by the student.
 
-Note: PrairieLearn Elements listed next have been
-**deprecated**. These elements are still supported for backwards
-compatibility, but they should not be used in new questions.
+Note: PrairieLearn Elements listed next have been **deprecated**. These elements are still supported for backwards compatibility, but they should not be used in new questions.
 
 - [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
   - **Deprecated**: use [`pl-multiple-choice`](#pl-multiple-choice-element) with `display="dropdown"` for individual elements, or [`pl-matching`](#pl-matching-element) for multiple dropdowns with the same set of options.
-- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
-  figure.
+- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw figure.
   - **Deprecated**: use [`pl-drawing`](#pl-drawing-element) instead.
-- [`pl-threejs`](#pl-threejs-element): Enables 3D scene display and problem
-  submission.
+- [`pl-threejs`](#pl-threejs-element): Enables 3D scene display and problem submission.
   - **Deprecated**: the features of required libraries are no longer maintained.
-- [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
-  for a submitted element.
+- [`pl-variable-score`](#pl-variable-score-element): Displays a partial score for a submitted element.
   - **Deprecated** as submission elements in `v3` all have score display options.
 
 ## Submission Elements
@@ -118,20 +77,20 @@ Gives automated feedback in the case of improper asymptotic input.
 
 #### Customizations
 
-| Attribute        | Type                                                               | Default                   | Description                                                                                                                                                          |
-| ---------------- | ------------------------------------------------------------------ | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`   | string                                                             | —                         | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
-| `type`           | `"big-o"`, `"theta"`, `"omega"`, `"little-o"`, or `"little-omega"` | `"big-o"`                 | Type of asymptotic answer required.                                                                                                                                  |
-| `weight`         | integer                                                            | 1                         | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `correct-answer` | string                                                             | —                         | Correct answer for grading.                                                                                                                                          |
-| `display`        | `"block"` or `"inline"`                                            | `"inline"`                | How to display the input field.                                                                                                                                      |
-| `variable`       | string                                                             | —                         | A symbol for use in the symbolic expression. Only one variable supported.                                                                                            |
-| `size`           | integer                                                            | 35                        | Size of the input box.                                                                                                                                               |
-| `show-help-text` | boolean                                                            | true                      | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
-| `placeholder`    | string                                                             | `"asymptotic expression"` | Hint displayed inside the input box describing the expected type of input.                                                                                           |
-| `show-score`     | boolean                                                            | true                      | Whether to show the score badge and feedback next to this element.                                                                                                   |
-| `allow-blank`    | boolean                                                            | false                     | Whether an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                            |
-| `blank-value`    | string                                                             | 1 (one)                   | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                                     |
+| Attribute        | Type                                                               | Default                   | Description                                                                                                                                                                       |
+| ---------------- | ------------------------------------------------------------------ | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`   | string                                                             | —                         | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.              |
+| `type`           | `"big-o"`, `"theta"`, `"omega"`, `"little-o"`, or `"little-omega"` | `"big-o"`                 | Type of asymptotic answer required.                                                                                                                                               |
+| `weight`         | integer                                                            | 1                         | Weight to use when computing a weighted average score over elements.                                                                                                              |
+| `correct-answer` | string                                                             | —                         | Correct answer for grading.                                                                                                                                                       |
+| `display`        | `"block"` or `"inline"`                                            | `"inline"`                | How to display the input field.                                                                                                                                                   |
+| `variable`       | string                                                             | —                         | A symbol for use in the symbolic expression. Only one variable supported.                                                                                                         |
+| `size`           | integer                                                            | 35                        | Size of the input box.                                                                                                                                                            |
+| `show-help-text` | boolean                                                            | true                      | Show the question mark at the end of the input displaying required input parameters.                                                                                              |
+| `placeholder`    | string                                                             | `"asymptotic expression"` | Hint displayed inside the input box describing the expected type of input.                                                                                                        |
+| `show-score`     | boolean                                                            | true                      | Whether to show the score badge and feedback next to this element.                                                                                                                |
+| `allow-blank`    | boolean                                                            | false                     | Whether an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                         |
+| `blank-value`    | string                                                             | 1 (one)                   | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must be `""` (empty string) or follow the same format as an expected user input. |
 
 #### Details
 
@@ -506,7 +465,7 @@ def generate(data):
 | `weight`         | integer                 | 1               | Weight to use when computing a weighted average score over elements.                                                                                                 |
 | `correct-answer` | string                  | See description | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.         |
 | `allow-blank`    | boolean                 | false           | Whether an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                            |
-| `blank-value`    | integer                 | 0 (zero)        | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                                     |
+| `blank-value`    | string                  | 0 (zero)        | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must be `""` (empty string) or an integer.                          |
 | `label`          | string                  | —               | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                    |
 | `aria-label`     | string                  | —               | An accessible label for the element.                                                                                                                                 |
 | `suffix`         | string                  | —               | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                    |
@@ -901,11 +860,11 @@ def generate(data):
 | `allow-complex`       | boolean                               | false           | Whether to allow complex numbers as answers. If the correct answer is set in `server.py` as a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                                                                                                                                                                                                                                                                           |
 | `allow-blank`         | boolean                               | false           | Whether an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                                                                         |
 | `show-score`          | boolean                               | true            | Whether to show the score badge next to this element.                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `blank-value`         | string                                | 0 (zero)        | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, complex numbers if allowed, etc.).                                                                                                                                                                                                                                                                            |
+| `blank-value`         | string                                | 0 (zero)        | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must be `""` (empty string) or follow the same format as an expected user input (e.g., fractions if allowed, complex numbers if allowed, etc.).                                                                                                                                                                                                                                                  |
 | `show-help-text`      | boolean                               | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `placeholder`         | string                                | See description | Custom placeholder text. By default, the placeholder text shown is the default comparison.                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `size`                | integer                               | 35              | Size of the input box.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `show-correct-answer` | boolean                               | true            | Whether to show the correct answer in the submitted answers panel.                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `show-correct-answer` | boolean                               | true            | Whether to show the correct reference answer in the submission panel if the submitted answer was correct (i.e., within the specified tolerance).                                                                                                                                                                                                                                                                                                                                                  |
 | `allow-fractions`     | boolean                               | true            | Whether to allow answers expressed as a rational number of the format `a/b`.                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `custom-format`       | string                                | See description | Custom format to use when formatting the submitted or correct answer. By default, submitted answers are shown with the format `".12g"`, while the correct answer uses `".12g"` if the comparison method is `"relabs"`, or a custom format based on the number of digits if the comparison method is `"sigfig"` or `"decdig"`. A full description of the format can be found [on the Python documentation page](https://docs.python.org/3/library/string.html#format-specification-mini-language). |
 
@@ -965,18 +924,21 @@ Element to arrange given blocks of code or text that are displayed initially in 
 
 Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
-| Attribute             | Type               | Default | Description                                                                                                                                                                                                                                                                                                                                                            |
-| --------------------- | ------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `correct`             | boolean            | true    | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).                                                                                                                                                                                                                                                     |
-| `ranking`             | positive integer   | —       | This attribute is used when `grading-method="ranking"` and specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute. |
-| `indent`              | integer in [-1, 4] | -1      | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.                                                                                                               |
-| `depends`\*           | string             | —       | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends="1,3"` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"`.                                           |
-| `tag`\*               | string             | —       | Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.                                                                                                                                                                                                                                              |
-| `distractor-for`      | string             | —       | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                        |
-| `distractor-feedback` | string             | —       | Optional attribute, used when `correct=false` that indicates why a given block is incorrect or should not be included in the solution. Shown to the student after all attempts at a problem are exhausted, or if `feedback="first-wrong"` and the first incorrect line in their submission has `distractor-feedback`.                                                  |
-| `ordering-feedback`   | string             | —       | Optional attribute used when `grading-method="dag"` or `grading-method="ranking"` and `correct=true`. Used to provide specific feedback when the block is placed in the wrong position relative to other blocks. This feedback is shown to the student after submission to help clarify ordering errors.                                                               |
+| Attribute             | Type               | Default | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| --------------------- | ------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `correct`             | boolean            | true    | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).                                                                                                                                                                                                                                                                                                                                                                   |
+| `ranking`             | positive integer   | —       | This attribute is used when `grading-method="ranking"` and specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute.                                                                                                               |
+| `indent`              | integer in [-1, 4] | -1      | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.                                                                                                                                                                                                                             |
+| `depends`\*           | string             | —       | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends="1,3"` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"`. If if <code>depends="1&vert;3"</code>, then the block must appear later in the solution than than the block with `tag="1"` OR the block with `tag="3"`. |
+| `tag`\*               | string             | —       | Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.                                                                                                                                                                                                                                                                                                                                                            |
+| `distractor-for`      | string             | —       | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                                                                                                                                      |
+| `distractor-feedback` | string             | —       | Optional attribute, used when `correct=false` that indicates why a given block is incorrect or should not be included in the solution. Shown to the student after all attempts at a problem are exhausted, or if `feedback="first-wrong"` and the first incorrect line in their submission has `distractor-feedback`.                                                                                                                                                                |
+| `ordering-feedback`   | string             | —       | Optional attribute used when `grading-method="dag"` or `grading-method="ranking"` and `correct=true`. Used to provide specific feedback when the block is placed in the wrong position relative to other blocks. This feedback is shown to the student after submission to help clarify ordering errors.                                                                                                                                                                             |
+| `final`               | boolean            | —       | Required on exactly one `pl-answer` tag when `grading-method="dag"` and a <code>&vert;</code> is used to denote optional blocks.                                                                                                                                                                                                                                                                                                                                                     |
 
-> **_NOTE_:** Above attributes indicated with a \* can be applied to `pl-block-group` as well.
+!!! note
+
+    Above attributes indicated with a \* can be applied to `pl-block-group` as well.
 
 #### Details
 
@@ -995,9 +957,41 @@ Different ordering of the blocks in the source area defined via the attribute `s
 - `ordered`: the blocks appear in the source area in the same order they appear in the HTML file.
 - `alphabetized`: the blocks are alphabetized according to their HTML contents. Take care when including HTML in blocks. For instance, `<b>cat</b>` will appear before `<i>bat</i>`.
 
+#### Optional Blocks
+
+This feature allows users to write `pl-order-blocks` questions using the `dag` grading method to have multiple correct orderings that must include the same final block. This can extend existing questions utilizing the `dag` grading method to include blocks that can be either included or excluded in the final solution while still being correct. You can denote an "or" relationship between dependencies in the `depends` attribute by using the `|` operator, e.g., `depends="A|B"`.
+
+!!! note
+
+    When using optional blocks, the question must contain one block that serves as the final block in every ordering. The `pl-answer` tag that declares this block must have the attribute `final` set to `true`.
+    A question cannot include block groups with optional blocks.
+
+#### Optional Blocks Example
+
+![Screenshot of the pl-order-blocks element with optional lines](elements/pl-order-blocks-optional.png)
+
+```html title="question.html"
+<p>Construct a python function that computes the sum of two numbers.</p>
+<pl-order-blocks
+  answers-name="python-plus-equals"
+  grading-method="dag"
+  indentation="true"
+  format="code"
+  code-language="python"
+>
+  <pl-answer correct="true" tag="1" depends="" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" indent="1">sum = 0</pl-answer>
+  <pl-answer correct="true" tag="3" depends="2" indent="1">sum += first</pl-answer>
+  <pl-answer correct="true" tag="4" depends="2" indent="1">sum += second</pl-answer>
+  <pl-answer correct="true" tag="5" depends="2" indent="1">sum += first + second</pl-answer>
+  <pl-answer correct="true" tag="6" depends="3,4 | 5" indent="1" final="true">return sum</pl-answer>
+</pl-order-blocks>
+```
+
 #### Example implementations
 
 - [element/orderBlocks]
+- [element/orderBlocksOptional]
 - [demo/proofBlocks]
 - [demo/autograder/python/orderBlocksRandomParams]
 - [demo/autograder/python/orderBlocksAddNumpy]
@@ -1143,6 +1137,7 @@ def generate(data):
 | `label`                         | string                  | —                       | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                                                                                                                                               |
 | `aria-label`                    | string                  | —                       | An accessible label for the element.                                                                                                                                                                                                                                                                                                            |
 | `display`                       | `"block"` or `"inline"` | `"inline"`              | How to display the input field.                                                                                                                                                                                                                                                                                                                 |
+| `formula-editor`                | boolean                 | false                   | Whether the element should provide a visual formula editor for students (recommended when answers are long or contain nested mathematical expressions).                                                                                                                                                                                         |
 | `variables`                     | string                  | —                       | A comma-delimited list of symbols that can be used in the symbolic expression.                                                                                                                                                                                                                                                                  |
 | `allow-complex`                 | boolean                 | false                   | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                                                                                                                                                        |
 | `imaginary-unit-for-display`    | string                  | `"i"`                   | The imaginary unit that is used for display. It must be either `"i"` or `"j"`. Again, this is _only_ for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.                                                                                                                           |
@@ -1150,7 +1145,7 @@ def generate(data):
 | `display-simplified-expression` | boolean                 | `true`                  | Whether expressions submitted by students should be displayed in their simplified form. Setting `display-simplified-expression="false"` can prevent unintended simplifications that might confuse students. Note that, regardless of this setting, answers are always simplified for grading purposes.                                          |
 | `allow-trig-functions`          | boolean                 | true                    | Whether trigonometric functions (`cos`, `atanh`, ...) are allowed.                                                                                                                                                                                                                                                                              |
 | `allow-blank`                   | boolean                 | false                   | Whether an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                                                                                                                                                      |
-| `blank-value`                   | string                  | 0 (zero)                | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).                                                                                                                                                    |
+| `blank-value`                   | string                  | 0 (zero)                | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must be `""` (empty string) or follow the same format as an expected user input (e.g., same variables, etc.).                                                                                                                          |
 | `size`                          | integer                 | 35                      | Size of the input box.                                                                                                                                                                                                                                                                                                                          |
 | `show-help-text`                | boolean                 | true                    | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                                            |
 | `placeholder`                   | string                  | `"symbolic expression"` | Hint displayed inside the input box describing the expected type of input.                                                                                                                                                                                                                                                                      |
@@ -1208,7 +1203,7 @@ Fill in the blank field that allows for **numeric** input and accompanying **uni
 | `atol`                     | string                                             | 1e-8            | Absolute tolerance for `comparison="relabs"` and `grading-mode="with-units"`. In `grading-mode="with-units"`, the default value copies the units used in the correct answer, and custom values must include units.                                                                                                            |
 | `digits`                   | integer                                            | 2               | Number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                                                                     |
 | `allow-blank`              | boolean                                            | false           | Whether an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                                     |
-| `blank-value`              | string                                             | ""              | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input.                                                                                                                                                                       |
+| `blank-value`              | string                                             | ""              | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must be `""` (empty string) or follow the same format as an expected user input.                                                                                                                                             |
 | `size`                     | integer                                            | 35              | Size of the input box.                                                                                                                                                                                                                                                                                                        |
 | `show-help-text`           | boolean                                            | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                          |
 | `placeholder`              | string                                             | —               | String to override default placeholder text. The default placeholder gives information about the comparison type used.                                                                                                                                                                                                        |
@@ -2645,6 +2640,7 @@ that if there are many submitted answers, the page will load slowly.
 [element/numberinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/numberInput
 [element/unitsinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/unitsInput
 [element/orderblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
+[element/orderblocksoptional]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksOptional
 [element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
 [element/prairiedrawfigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/testCourse/questions/prairieDrawFigure
