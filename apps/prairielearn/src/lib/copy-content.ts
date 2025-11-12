@@ -188,7 +188,7 @@ export async function copyQuestionBetweenCourses(
     fromFilename,
   });
 
-  res.redirect(`${res.locals.plainUrlPrefix}/course/${toCourseId}/file_transfer/${fileTransferId}`);
+  res.redirect(`/pl/course/${toCourseId}/file_transfer/${fileTransferId}`);
 }
 
 export async function copyCourseInstanceBetweenCourses(
@@ -216,5 +216,5 @@ export async function copyCourseInstanceBetweenCourses(
     fromFilename,
   });
 
-  res.redirect(`${res.locals.plainUrlPrefix}/course/${toCourseId}/file_transfer/${fileTransferId}`);
+  res.redirect(`/pl/course/${toCourseId}/file_transfer/${fileTransferId}`);
 }

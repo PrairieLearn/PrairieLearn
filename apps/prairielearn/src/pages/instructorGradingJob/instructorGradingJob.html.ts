@@ -5,7 +5,6 @@ import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.js';
 import { Navbar } from '../../components/Navbar.js';
-import { config } from '../../lib/config.js';
 import { GradingJobSchema, QuestionSchema, UserSchema, VariantSchema } from '../../lib/db-types.js';
 
 export const GradingJobRowSchema = z.object({
@@ -37,7 +36,7 @@ export function InstructorGradingJob({
       : html`&mdash;`;
   const variantLink =
     gradingJobRow.instance_question_id != null
-      ? `${config.urlPrefix}/course_instance/${resLocals.course_instance.id}/instance_question/${gradingJobRow.instance_question_id}?variant_id=${gradingJobRow.variant_id}`
+      ? `/pl/course_instance/${resLocals.course_instance.id}/instance_question/${gradingJobRow.instance_question_id}?variant_id=${gradingJobRow.variant_id}`
       : `${resLocals.urlPrefix}/question/${gradingJobRow.question_id}/preview?variant_id=${gradingJobRow.variant_id}`;
 
   return html`

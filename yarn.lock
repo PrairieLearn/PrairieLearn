@@ -1707,13 +1707,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cortex-js/compute-engine@npm:0.29.1":
-  version: 0.29.1
-  resolution: "@cortex-js/compute-engine@npm:0.29.1"
+"@cortex-js/compute-engine@npm:0.30.2":
+  version: 0.30.2
+  resolution: "@cortex-js/compute-engine@npm:0.30.2"
   dependencies:
     complex-esm: "npm:^2.1.1-esm1"
-    decimal.js: "npm:^10.4.3"
-  checksum: 10c0/4f192c698006373b9f977cce878bda153c5f81f34dc7705a79f829197f92ef6a10768abffb8d517bf81904151201334d446089c276be0874e54a1459277722ac
+    decimal.js: "npm:^10.6.0"
+  checksum: 10c0/9f6d8d251a3a3dec0cc71bbdd5b561965db82a1719cee72fa9154b4fd3d726dcbda9502358b20ea20107f442b75de0833eeaa09a8fed6a331cea90b4899b912f
   languageName: node
   linkType: hard
 
@@ -4050,9 +4050,11 @@ __metadata:
   dependencies:
     "@prairielearn/marked-mathjax": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
+    "@types/jsdom": "npm:^27.0.0"
     "@types/node": "npm:^22.19.0"
     "@vitest/coverage-v8": "npm:^4.0.7"
-    isomorphic-dompurify: "npm:^2.31.0"
+    dompurify: "npm:^3.3.0"
+    jsdom: "npm:^27.1.0"
     marked: "npm:^16.4.1"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.20.6"
@@ -4437,7 +4439,7 @@ __metadata:
     lru-cache: "npm:^11.2.2"
     marked: "npm:^16.4.1"
     mathjax: "npm:^3.2.2"
-    mathlive: "npm:^0.107.1"
+    mathlive: "npm:^0.108"
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
     mime: "npm:^4.1.0"
@@ -4663,6 +4665,7 @@ __metadata:
     react-bootstrap: "npm:3.0.0-beta.5"
     typescript: "npm:^5.9.3"
     typescript-cp: "npm:^0.1.9"
+    vitest: "npm:^4.0.7"
   languageName: unknown
   linkType: soft
 
@@ -12679,16 +12682,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"isomorphic-dompurify@npm:^2.31.0":
-  version: 2.31.0
-  resolution: "isomorphic-dompurify@npm:2.31.0"
-  dependencies:
-    dompurify: "npm:^3.3.0"
-    jsdom: "npm:^27.1.0"
-  checksum: 10c0/9ff758e1cb5cd6eb3f082337b868a66fa2d9258fbe990b53b28531a350cc4cdc4757eae445a6cc39cf90a7f0ec0df5fdea6ccdcf6f51c34c29e7365d997b4d41
-  languageName: node
-  linkType: hard
-
 "isomorphic.js@npm:^0.2.4":
   version: 0.2.5
   resolution: "isomorphic.js@npm:0.2.5"
@@ -13633,12 +13626,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mathlive@npm:^0.107.1":
-  version: 0.107.1
-  resolution: "mathlive@npm:0.107.1"
+"mathlive@npm:^0.108":
+  version: 0.108.0
+  resolution: "mathlive@npm:0.108.0"
   dependencies:
-    "@cortex-js/compute-engine": "npm:0.29.1"
-  checksum: 10c0/c5fd65f17c5dd90ff39583425dd1edf9a8b6138063cc446e547586bd77225d23f5529001aba46e36a36ee5a17ca449e9c6c108b50eba88d3d7d06407275a626d
+    "@cortex-js/compute-engine": "npm:0.30.2"
+  checksum: 10c0/964db596e10c1f9bd8030775bf1481b00c61350030030401247d18fbacbd71fa07c280e09ca89a2152b47b349857bfdbf1be0018d4cdae331559195b14afe8d9
   languageName: node
   linkType: hard
 
