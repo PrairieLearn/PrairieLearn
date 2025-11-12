@@ -73,8 +73,6 @@ export const ConfigSchema = z.object({
     .array(z.string())
     .default([...STANDARD_COURSE_DIRS, EXAMPLE_COURSE_PATH, TEST_COURSE_PATH]),
   courseRepoDefaultBranch: z.string().default('master'),
-  urlPrefix: z.string().default('/pl'),
-  homeUrl: z.string().default('/'),
   assetsPrefix: z
     .string()
     .default('/assets')
@@ -658,7 +656,6 @@ export function resetConfig() {
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {
-  locals.urlPrefix = config.urlPrefix;
-  locals.plainUrlPrefix = config.urlPrefix;
+  locals.urlPrefix = '/pl';
   locals.navbarType = 'plain';
 }
