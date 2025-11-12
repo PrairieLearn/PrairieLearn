@@ -4,8 +4,8 @@ import { type StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import type { CourseInstanceAccessRule } from '../../lib/db-types.js';
 
+import { CourseInstancePublishingForm } from './components/CourseInstancePublishingForm.js';
 import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
-import { PublishingForm } from './components/PublishingForm.js';
 
 export function InstructorInstanceAdminPublishing({
   courseInstance,
@@ -28,22 +28,22 @@ export function InstructorInstanceAdminPublishing({
 
   return (
     <>
-      <Hydrate>
-        <PublishingForm
-          courseInstance={courseInstance}
-          hasAccessRules={accessRules.length > 0}
-          canEdit={hasCourseInstancePermissionEdit}
-          csrfToken={csrfToken}
-          origHash={origHash}
-        />
-      </Hydrate>
-      {accessRules.length > 0 && (
+      {accessRules.length > 0 ? (
         <LegacyAccessRuleCard
           accessRules={accessRules}
           showComments={showComments}
           courseInstance={courseInstance}
           hasCourseInstancePermissionView={hasCourseInstancePermissionView}
         />
+      ) : (
+        <Hydrate>
+          <CourseInstancePublishingForm
+            courseInstance={courseInstance}
+            canEdit={hasCourseInstancePermissionEdit}
+            csrfToken={csrfToken}
+            origHash={origHash}
+          />
+        </Hydrate>
       )}
     </>
   );

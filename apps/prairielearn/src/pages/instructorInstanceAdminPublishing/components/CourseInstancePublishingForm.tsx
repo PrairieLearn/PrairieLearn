@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import {
-  DateToPlainDateTime,
+  dateToPlainDateTime,
   nowDateInTimezone,
   plainDateTimeStringToDate,
 } from '../utils/dateUtils.js';
@@ -45,21 +45,31 @@ interface PublishingFormValues {
   endDate: string;
 }
 
-export function PublishingForm({
+export function CourseInstancePublishingForm({
   courseInstance,
-  hasAccessRules,
   canEdit,
   csrfToken,
   origHash,
 }: {
   courseInstance: StaffCourseInstance;
-  hasAccessRules: boolean;
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
 }) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [state, setState] = useState<
+    | {
+        type: 'error';
+        message: string;
+      }
+    | {
+        type: 'submitting';
+      }
+    | {
+        type: 'success';
+      }
+  >({
+    type: 'success',
+  });
 
   const originalStartDate = courseInstance.publishing_start_date;
   const originalEndDate = courseInstance.publishing_end_date;
@@ -74,10 +84,10 @@ export function PublishingForm({
 
   const defaultValues: PublishingFormValues = {
     startDate: originalStartDate
-      ? DateToPlainDateTime(originalStartDate, courseInstance.display_timezone).toString()
+      ? dateToPlainDateTime(originalStartDate, courseInstance.display_timezone).toString()
       : '',
     endDate: originalEndDate
-      ? DateToPlainDateTime(originalEndDate, courseInstance.display_timezone).toString()
+      ? dateToPlainDateTime(originalEndDate, courseInstance.display_timezone).toString()
       : '',
   };
 
@@ -118,7 +128,7 @@ export function PublishingForm({
 
     // "Now" must be rounded to the nearest second, as that's what `datetime-local` supports.
     now = nowDateInTimezone(courseInstance.display_timezone);
-    const nowTemporal = DateToPlainDateTime(now, courseInstance.display_timezone);
+    const nowTemporal = dateToPlainDateTime(now, courseInstance.display_timezone);
 
     const oneWeekLater = nowTemporal.add({ weeks: 1 });
     const eighteenWeeksLater = nowTemporal.add({ weeks: 18 });
@@ -135,18 +145,18 @@ export function PublishingForm({
         // If the original dates from the form put the course instance in a unpublished state,
         // use those dates.
         if (originalStartDate && originalEndDate && now >= originalEndDate) {
-          updatedStartDate = DateToPlainDateTime(
+          updatedStartDate = dateToPlainDateTime(
             originalStartDate,
             courseInstance.display_timezone,
           );
-          updatedEndDate = DateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
+          updatedEndDate = dateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
           break;
         }
 
         // If the original start date was in the past, use that.
         // Otherwise, we are transitioning from 'scheduled publish' to 'unpublished'. Drop both dates.
         if (originalStartDate && originalStartDate < now) {
-          updatedStartDate = DateToPlainDateTime(
+          updatedStartDate = dateToPlainDateTime(
             originalStartDate,
             courseInstance.display_timezone,
           );
@@ -161,17 +171,17 @@ export function PublishingForm({
         // If the original dates from the form put the course instance in a publish scheduled state,
         // use those dates.
         if (originalStartDate && originalEndDate && now <= originalStartDate) {
-          updatedStartDate = DateToPlainDateTime(
+          updatedStartDate = dateToPlainDateTime(
             originalStartDate,
             courseInstance.display_timezone,
           );
-          updatedEndDate = DateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
+          updatedEndDate = dateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
           break;
         }
 
         if (originalStartDate && now <= originalStartDate) {
           // Try to re-use the original start date if it is in the future.
-          updatedStartDate = DateToPlainDateTime(
+          updatedStartDate = dateToPlainDateTime(
             originalStartDate,
             courseInstance.display_timezone,
           );
@@ -184,7 +194,7 @@ export function PublishingForm({
 
         if (originalEndDate && now <= originalEndDate) {
           // Try to re-use the original end date if it is in the future.
-          updatedEndDate = DateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
+          updatedEndDate = dateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
         } else if (
           currentEndDate === null ||
           Temporal.PlainDateTime.compare(currentEndDate, nowTemporal) <= 0 ||
@@ -197,7 +207,7 @@ export function PublishingForm({
       case 'published': {
         if (originalStartDate && now >= originalStartDate) {
           // Try to re-use the original start date if it is in the past.
-          updatedStartDate = DateToPlainDateTime(
+          updatedStartDate = dateToPlainDateTime(
             originalStartDate,
             courseInstance.display_timezone,
           );
@@ -211,7 +221,7 @@ export function PublishingForm({
 
         if (originalEndDate && now <= originalEndDate) {
           // Try to re-use the original end date if it is in the future.
-          updatedEndDate = DateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
+          updatedEndDate = dateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
         } else if (
           currentEndDate === null ||
           // If the current end date is in the past, set it to 18 weeks from now.
@@ -222,14 +232,14 @@ export function PublishingForm({
         break;
       }
     }
-    setValue('startDate', updatedStartDate === null ? '' : updatedStartDate.toString());
-    setValue('endDate', updatedEndDate === null ? '' : updatedEndDate.toString());
+    setValue('startDate', updatedStartDate?.toString() ?? '');
+    setValue('endDate', updatedEndDate?.toString() ?? '');
   };
 
   const onSubmit = async (data: PublishingFormValues) => {
     if (!canEdit) return;
 
-    setIsSubmitting(true);
+    setState({ type: 'submitting' });
     try {
       const requestBody = {
         __csrf_token: csrfToken,
@@ -256,13 +266,13 @@ export function PublishingForm({
 
       const errorData = await response.json();
       if (errorData.message) {
-        setErrorMessage(errorData.message);
+        setState({ type: 'error', message: errorData.message });
+        return;
       }
+      setState({ type: 'success' });
     } catch (error) {
       console.error('Error updating access control:', error);
-      setErrorMessage('Failed to update access control. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+      setState({ type: 'error', message: 'Failed to update access control. Please try again.' });
     }
   };
 
@@ -310,21 +320,15 @@ export function PublishingForm({
     return true;
   };
 
-  if (hasAccessRules) {
-    return (
-      <div class="alert alert-warning" role="alert">
-        <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy
-        allowAccess system. To use the new access control system, you must first remove all
-        allowAccess rules from the course configuration.
-      </div>
-    );
-  }
-
   return (
     <>
-      {errorMessage && (
-        <Alert variant="danger" dismissible onClose={() => setErrorMessage(null)}>
-          {errorMessage}
+      {state.type === 'error' && state.message && (
+        <Alert
+          variant="danger"
+          dismissible
+          onClose={() => setState({ type: 'error', message: '' })}
+        >
+          {state.message}
         </Alert>
       )}
       <div class="mb-4">
@@ -592,8 +596,8 @@ export function PublishingForm({
           {/* Save and Cancel Buttons */}
           {canEdit && (
             <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save'}
+              <button type="submit" class="btn btn-primary" disabled={state.type === 'submitting'}>
+                {state.type === 'submitting' ? 'Saving...' : 'Save'}
               </button>
               <button
                 type="button"
@@ -612,4 +616,4 @@ export function PublishingForm({
   );
 }
 
-PublishingForm.displayName = 'PublishingForm';
+CourseInstancePublishingForm.displayName = 'CourseInstancePublishingForm';

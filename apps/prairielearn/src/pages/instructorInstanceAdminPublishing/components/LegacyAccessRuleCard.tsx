@@ -17,7 +17,12 @@ export function LegacyAccessRuleCard({
   return (
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-        <h1>{courseInstance.long_name} course instance access rules</h1>
+        <h1>Access rules</h1>
+      </div>
+      <div class="alert alert-warning" role="alert">
+        <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy
+        allowAccess system. To use the new access control system, you must first remove all
+        allowAccess rules from the course configuration.
       </div>
 
       <div class="table-responsive">
