@@ -22,46 +22,51 @@ import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
 } from './question-render.types.js';
+import type { Prettify } from './types.js';
 
 export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig {
   __csrf_token: string;
 }
 
 export interface ResLocalsForPage {
-  course: ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount;
-  'course-instance': ResLocals & ResLocalsCourseInstance;
-  'instructor-instance-question': ResLocals &
-    ResLocalsCourseInstance &
-    ResLocalsInstructorQuestionWithCourseInstance &
-    ResLocalsInstanceQuestion &
-    ResLocalsInstanceQuestionRender &
-    ResLocalsQuestionRender & {
-      questionRenderContext: 'manual_grading' | 'ai_grading';
-      navbarType: 'instructor';
-    };
-  'course-question': ResLocals &
-    ResLocalsCourse &
-    ResLocalsQuestionRender &
-    ResLocalsInstructorQuestion;
-  'course-instance-question': ResLocals &
-    ResLocalsCourseInstance &
-    ResLocalsInstructorQuestion &
-    ResLocalsQuestionRender;
-  'instructor-assessment-question': ResLocals &
-    ResLocalsCourseInstance &
-    ResLocalsInstructorQuestion &
-    ResLocalsQuestionRender &
-    ResLocalsAssessmentQuestion;
-  'instance-question': ResLocals &
-    ResLocalsCourseInstance &
-    ResLocalsInstanceQuestion &
-    ResLocalsInstanceQuestionRender;
-  'assessment-question': ResLocals &
-    ResLocalsAssessment &
-    ResLocalsAssessmentQuestion &
-    ResLocalsInstanceQuestionRender;
-  'assessment-instance': ResLocals & ResLocalsAssessment & ResLocalsAssessmentInstance;
-  assessment: ResLocals & ResLocalsCourseInstance & ResLocalsAssessment;
+  course: Prettify<ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount>;
+  'course-instance': Prettify<ResLocals & ResLocalsCourseInstance>;
+  'instructor-instance-question': Prettify<
+    ResLocals &
+      ResLocalsCourseInstance &
+      ResLocalsInstructorQuestionWithCourseInstance &
+      ResLocalsInstanceQuestion &
+      ResLocalsInstanceQuestionRender &
+      ResLocalsQuestionRender & {
+        questionRenderContext: 'manual_grading' | 'ai_grading';
+        navbarType: 'instructor';
+      }
+  >;
+  'instructor-question': Prettify<
+    ResLocals &
+      ResLocalsCourse &
+      Partial<ResLocalsCourseInstance> &
+      ResLocalsInstructorQuestion &
+      ResLocalsQuestionRender
+  >;
+  'instructor-assessment-question': Prettify<
+    ResLocals &
+      ResLocalsCourseInstance &
+      ResLocalsInstructorQuestion &
+      ResLocalsQuestionRender &
+      ResLocalsAssessmentQuestion
+  >;
+  'instance-question': Prettify<
+    ResLocals &
+      ResLocalsCourseInstance &
+      ResLocalsInstanceQuestion &
+      ResLocalsInstanceQuestionRender
+  >;
+  'assessment-question': Prettify<
+    ResLocals & ResLocalsAssessment & ResLocalsAssessmentQuestion & ResLocalsInstanceQuestionRender
+  >;
+  'assessment-instance': Prettify<ResLocals & ResLocalsAssessment & ResLocalsAssessmentInstance>;
+  assessment: Prettify<ResLocals & ResLocalsCourseInstance & ResLocalsAssessment>;
 }
 
 export type PageType = keyof ResLocalsForPage;
@@ -89,7 +94,7 @@ export function getResLocalsForPage<T extends PageType>(
  * - `course-instance`: A course instance page.
  * - `instructor-instance-question`: An instructor instance question page.
  * - `public-question`: A public question page.
- * - `course-instance-question`: An instructor question page.
+ * - `instructor-question`: An instructor question page.
  * - `instructor-assessment-question`: An instructor assessment question page.
  * - `instance-question`: An instance question page.
  * - `assessment-question`: An assessment question page.

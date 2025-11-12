@@ -72,3 +72,7 @@ export function withBrand<B extends Brand<any, any>>(
 ): B {
   return value as B;
 }
+
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+} & {};

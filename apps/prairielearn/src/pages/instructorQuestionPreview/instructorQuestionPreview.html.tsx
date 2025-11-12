@@ -29,7 +29,7 @@ export function InstructorQuestionPreview({
   renderSubmissionSearchParams: URLSearchParams;
   readmeHtml: string;
   questionCopyTargets: CopyTarget[] | null;
-  resLocals: ResLocalsForPage['course-instance-question'];
+  resLocals: ResLocalsForPage['instructor-question'];
 }) {
   return PageLayout({
     resLocals,

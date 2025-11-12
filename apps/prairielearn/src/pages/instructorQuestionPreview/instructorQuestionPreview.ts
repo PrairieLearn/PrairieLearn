@@ -29,7 +29,7 @@ const router = Router();
 
 router.post(
   '/',
-  typedAsyncHandler<'course-instance-question'>(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variant_id = await processSubmission(req, res);
       res.redirect(
@@ -48,7 +48,7 @@ router.post(
 
 router.get(
   '/',
-  typedAsyncHandler<'course-instance-question'>(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
     const aiGradingPreviewEnabled = aiGradingEnabled && req.query.ai_grading_preview === 'true';
@@ -159,7 +159,7 @@ router.get(
 
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
-  typedAsyncHandler<'course-instance-question'>(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
     // As with the normal route, we need to respect the `manual_grading_preview`
@@ -172,7 +172,7 @@ router.get(
       variant_course: res.locals.course,
       question_id: res.locals.question.id,
       // TODO: The types are wrong for typedAsyncHandler. See https://github.com/PrairieLearn/PrairieLearn/pull/12620
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+
       course_instance_id: res.locals.course_instance?.id,
       authz_data: res.locals.authz_data,
       authn_user: res.locals.authn_user,
