@@ -93,7 +93,6 @@ export function getResLocalsForPage<T extends PageType>(
  * - `course`: A course page.
  * - `course-instance`: A course instance page.
  * - `instructor-instance-question`: An instructor instance question page.
- * - `public-question`: A public question page.
  * - `instructor-question`: An instructor question page.
  * - `instructor-assessment-question`: An instructor assessment question page.
  * - `instance-question`: An instance question page.

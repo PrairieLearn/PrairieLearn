@@ -21,7 +21,7 @@ interface TitleOptions {
     navbarType?: string;
   };
   pageTitle?: string;
-  pageNote?: string | null;
+  pageNote?: string;
 }
 
 export function HeadContents(titleOptions: TitleOptions) {

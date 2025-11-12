@@ -47,7 +47,7 @@ export function PageLayout({
     /** Whether the main container should have no left and right padding in Bootstrap. */
     paddingSides?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
-    pageNote?: string | null;
+    pageNote?: string;
     /** Enables an htmx extension for an element and all its children */
     hxExt?: string;
     /** Sets the html and body tag heights to 100% */

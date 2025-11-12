@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
@@ -31,6 +33,8 @@ export function InstructorQuestionPreview({
   questionCopyTargets: CopyTarget[] | null;
   resLocals: ResLocalsForPage['instructor-question'];
 }) {
+  assert(resLocals.question.qid !== null);
+
   return PageLayout({
     resLocals,
     pageTitle: 'Question Preview',
