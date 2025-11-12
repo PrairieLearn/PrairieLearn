@@ -8,23 +8,19 @@ import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import {
   dateToPlainDateTime,
-  nowDateInTimezone,
+  nowRoundedToSeconds,
   plainDateTimeStringToDate,
 } from '../utils/dateUtils.js';
 
 type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
 
 /** Helper to compute status from dates and current time. */
-function computeStatus(
-  startDate: Date | null,
-  endDate: Date | null,
-  courseInstance: StaffCourseInstance,
-): PublishingStatus {
+function computeStatus(startDate: Date | null, endDate: Date | null): PublishingStatus {
   if (!startDate && !endDate) {
     return 'unpublished';
   }
 
-  const now = nowDateInTimezone(courseInstance.display_timezone);
+  const now = nowRoundedToSeconds();
 
   if (startDate && endDate) {
     if (endDate <= now) {
@@ -77,7 +73,6 @@ export function CourseInstancePublishingForm({
   const originalStatus = computeStatus(
     courseInstance.publishing_start_date,
     courseInstance.publishing_end_date,
-    courseInstance,
   );
 
   const [selectedStatus, setSelectedStatus] = useState<PublishingStatus>(originalStatus);
@@ -120,14 +115,13 @@ export function CourseInstancePublishingForm({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
-  let now = nowDateInTimezone(courseInstance.display_timezone);
+  let now = nowRoundedToSeconds();
 
   // Update form values when status changes
   const handleStatusChange = (newStatus: PublishingStatus) => {
     setSelectedStatus(newStatus);
 
-    // "Now" must be rounded to the nearest second, as that's what `datetime-local` supports.
-    now = nowDateInTimezone(courseInstance.display_timezone);
+    now = nowRoundedToSeconds();
     const nowTemporal = dateToPlainDateTime(now, courseInstance.display_timezone);
 
     const oneWeekLater = nowTemporal.add({ weeks: 1 });
@@ -296,7 +290,7 @@ export function CourseInstancePublishingForm({
       }
       // Check if start date is in the future
       const startDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
-      if (startDateTime <= nowDateInTimezone(courseInstance.display_timezone)) {
+      if (startDateTime <= nowRoundedToSeconds()) {
         return 'Start date must be in the future for scheduled publishing';
       }
     }

@@ -1,15 +1,13 @@
-import { Temporal } from '@js-temporal/polyfill';
-
 /**
  * Date utility functions for publishing configuration
  */
 
-export function nowDateInTimezone(timezone: string): Date {
-  return new Date(
-    Temporal.Now.zonedDateTimeISO(timezone)
-      .round({ smallestUnit: 'seconds' })
-      .toInstant().epochMilliseconds,
-  );
+import { Temporal } from '@js-temporal/polyfill';
+
+export function nowRoundedToSeconds(): Date {
+  const now = new Date();
+  now.setMilliseconds(0);
+  return now;
 }
 
 /** Convert a datetime-local string to a Date object */
