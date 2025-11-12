@@ -38,9 +38,9 @@ export function StudentAssessment({
     `,
     content: html`
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>${assessment_set.abbreviation}${assessment.number}: ${assessment.title}</h1>
-          ${assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
+          ${assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
         </div>
 
         <div class="card-body">

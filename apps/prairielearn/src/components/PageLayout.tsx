@@ -92,7 +92,7 @@ export function PageLayout({
 
     const sideNavExpanded = sideNavEnabled && resLocals.side_nav_expanded;
 
-    let showContextNavigation = true;
+    let showContextNavigation = navContext.type !== 'student' && navContext.type !== 'public';
 
     // ContextNavigation is shown if either:
     // The side nav is not shown.
