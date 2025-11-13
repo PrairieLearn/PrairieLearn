@@ -538,15 +538,15 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
             await fetch(manualGradingAssessmentQuestionUrl + '/instances.json', {
               headers: { Accept: 'application/json' },
             })
-          ).json()) as { instance_questions: { id: string | number; [key: string]: any }[] };
+          ).json()) as { instance_questions: InstanceQuestionRowWithAIGradingStats[] };
           const instanceList = manualGradingAQData.instance_questions;
           assert(instanceList);
           assert.lengthOf(instanceList, 1);
-          assert.equal(instanceList[0].id, iqId);
-          assert.isOk(instanceList[0].requires_manual_grading);
-          assert.isNotOk(instanceList[0].assigned_grader);
+          assert.equal(instanceList[0].instance_question.id, iqId);
+          assert.isOk(instanceList[0].instance_question.requires_manual_grading);
+          assert.isNotOk(instanceList[0].instance_question.assigned_grader);
           assert.isNotOk(instanceList[0].assigned_grader_name);
-          assert.isNotOk(instanceList[0].last_grader);
+          assert.isNotOk(instanceList[0].instance_question.last_grader);
           assert.isNotOk(instanceList[0].last_grader_name);
         },
       );
@@ -1166,11 +1166,14 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           const questionLink = row.find('td:first-child a').attr('href');
           assert(questionLink);
           manualGradingAssessmentQuestionUrl = siteUrl + questionLink;
+
+          // The "next submission" button only shows if the current user has questions assigned to them
+          // or if there are unassigned questions. The current user, "defaultUser",
+          // does not have any questions assigned to them,
+          // because it was assigned to "mockStaff[0]" in the previous test.
           const nextButton = row.find('.btn:contains("next submission")');
-          assert.equal(nextButton.length, 1);
-          const nextUngradedLink = nextButton.attr('href');
-          assert(nextUngradedLink);
-          manualGradingNextUngradedUrl = siteUrl + nextUngradedLink;
+          assert.equal(nextButton.length, 0);
+          manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
         },
       );
 

@@ -1,6 +1,5 @@
 import { type Column, type Table } from '@tanstack/react-table';
-import * as React from 'preact/compat';
-import { useEffect, useRef, useState } from 'preact/compat';
+import { type JSX, useEffect, useRef, useState } from 'preact/compat';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
@@ -96,7 +95,7 @@ function ColumnMenuItem<RowDataModel>({
 
 interface ColumnManagerProps<RowDataModel> {
   table: Table<RowDataModel>;
-  topContent?: React.JSX.Element;
+  topContent?: JSX.Element;
 }
 
 export function ColumnManager<RowDataModel>({
