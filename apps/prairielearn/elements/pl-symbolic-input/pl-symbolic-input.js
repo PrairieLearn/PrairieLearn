@@ -642,14 +642,10 @@
         value: '\\cdot',
       },
       '|': {
-        value: '|{#0}|',
-      },
-      // Prevent double | key presses being replaced by absabs
-      '||': {
-        value: '|{#0}|',
+        value: '|{#@}|',
       },
       sqrt: {
-        value: '\\sqrt{#0}',
+        value: '\\sqrt{#@}',
       },
       pi: {
         value: '\\pi',
