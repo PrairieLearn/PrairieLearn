@@ -1,43 +1,41 @@
 #!/bin/bash
 set -ex
 
-# If you need to rebuild this image without actually changing anything,
-# add a dot to the following line:
-# .
+export DEBIAN_FRONTEND=noninteractive
 
-dnf update -y
+apt-get update -y
+apt-get upgrade -y
+
+# Add PostgreSQL APT repository for PostgreSQL 16 (from https://www.postgresql.org/download/linux/ubuntu/)
+apt-get install -y curl ca-certificates
+install -d /usr/share/postgresql-common/pgdg
+curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $VERSION_CODENAME-pgdg main' > /etc/apt/sources.list.d/pgdg.list
 
 # Notes:
-# - `gcc-c++` is needed to build the native bindings in `packages/bind-mount`
-# - `libjpeg-devel` is needed by the Pillow package
-# - `procps-ng` is needed for the `pkill` executable, which is used by `zygote.py`
-# - `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
-dnf -y install \
+# - `g++` (via build-essential) is needed to build the native bindings in `packages/bind-mount`
+# - `libjpeg-dev` is needed by the Pillow package
+# - `procps` is needed for the `pkill` executable, which is used by `zygote.py`
+# - `texlive` and `texlive-latex-extra` are needed for matplotlib LaTeX labels
+apt-get install -y --no-install-recommends \
     bash-completion \
-    gcc \
-    gcc-c++ \
+    build-essential \
+    curl \
     git \
     graphviz \
-    graphviz-devel \
-    ImageMagick \
-    libjpeg-devel \
+    libgraphviz-dev \
+    imagemagick \
+    libjpeg-dev \
     lsof \
-    make \
     openssl \
-    postgresql16 \
-    postgresql16-server \
-    postgresql16-contrib \
-    procps-ng \
-    redis6 \
+    postgresql-16 \
+    postgresql-contrib-16 \
+    procps \
+    redis-server \
     tar \
     texlive \
-    texlive-dvipng \
-    texlive-type1cm \
+    texlive-latex-extra \
     tmux
-
-# Redis 7 isn't available on Amazon Linux 2023. Symlink the versioned
-# executables to make them work with scripts that expect unversioned ones.
-ln -s /usr/bin/redis6-cli /usr/bin/redis-cli && ln -s /usr/bin/redis6-server /usr/bin/redis-server
 
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm
@@ -51,10 +49,10 @@ for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 
 echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
-su postgres -c "initdb -D /var/postgres"
+su postgres -c "/usr/lib/postgresql/16/bin/initdb -D /var/postgres"
 
 echo "installing pgvector..."
-dnf -y install postgresql16-server-devel
+apt-get install -y --no-install-recommends postgresql-server-dev-16
 cd /tmp
 git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git
 cd pgvector
@@ -65,8 +63,8 @@ cd pgvector
 make OPTFLAGS=""
 make install
 rm -rf /tmp/pgvector
-dnf -y remove postgresql16-server-devel
-dnf -y autoremove
+apt-get remove -y postgresql-server-dev-16
+apt-get autoremove -y
 
 # TODO: use standard OS Python installation? The only reason we switched to Conda
 # was to support R and `rpy2`, but now that we've removed those, we might not
@@ -79,7 +77,8 @@ curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Min
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
 # Clear various caches to minimize the final image size.
-dnf clean all
+apt-get clean
+rm -rf /var/lib/apt/lists/*
 conda clean --all
 nvm cache clear
 rm Miniforge3-Linux-${arch}.sh
