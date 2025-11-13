@@ -14,7 +14,7 @@ export function AdministratorSettings({ resLocals }) {
     resLocals,
     pageTitle: 'Administrator Settings',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'settings',
     },

@@ -38,7 +38,7 @@ export function AdministratorFeatures({
     resLocals,
     pageTitle: 'Features',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'features',
     },
@@ -87,7 +87,7 @@ export function AdministratorFeature({
     resLocals,
     pageTitle: 'Features',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'features',
     },
