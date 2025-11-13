@@ -16,7 +16,7 @@ export function generateAiGraderName(
   );
 }
 
-export function formatPointsWithEdit({
+export function PointsWithEditButton({
   row,
   field,
   hasCourseInstancePermissionEdit,
@@ -64,7 +64,7 @@ export function formatPointsWithEdit({
   );
 }
 
-export function formatScoreWithEdit({
+export function ScoreWithEditButton({
   row,
   hasCourseInstancePermissionEdit,
   urlPrefix,

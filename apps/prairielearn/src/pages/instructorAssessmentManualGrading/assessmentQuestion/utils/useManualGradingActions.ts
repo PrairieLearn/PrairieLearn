@@ -49,7 +49,6 @@ export function useManualGradingActions({
         __action: params.action,
       };
 
-      // Add action-specific data
       if (params.action === 'batch_action') {
         const { actionData, instanceQuestionIds } = params;
 

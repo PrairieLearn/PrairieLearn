@@ -29,6 +29,7 @@ import type {
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
+  StaffUser,
 } from '../../../../lib/client/safe-db-types.js';
 import type { RubricData } from '../../../../lib/manualGrading.types.js';
 import {
@@ -67,7 +68,7 @@ export interface AssessmentQuestionTableProps {
   aiGradingMode: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
-  courseStaff: { user_id: string; name: string | null; uid: string }[];
+  courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onShowConflictModal: (conflictDetailsUrl: string) => void;

@@ -76,13 +76,13 @@ export function RubricItemsFilter({
                   });
                 }}
               />
-              <div class="flex-grow-1" style={{ minWidth: 0 }}>
+              <div class="flex-grow-1">
                 <div class="text-truncate">{item.description}</div>
                 <small class="text-muted">
                   {item.points > 0 ? `+${item.points}` : item.points} pts
                 </small>
               </div>
-              <span class="badge bg-secondary ms-2">{rubricItemUsage.get(item.id) || 0}</span>
+              <span class="badge bg-secondary ms-2">{rubricItemUsage.get(item.id) ?? 0}</span>
             </div>
           </Dropdown.Item>
         ))}

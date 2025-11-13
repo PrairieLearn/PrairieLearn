@@ -33,6 +33,17 @@ const GradingJobInfoSchema = z.object({
 });
 type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
+type FillInstanceQuestionColumnEntriesResultType<
+  T extends {
+    instance_question: {
+      id: string;
+      ai_instance_question_group_id: string | null;
+      manual_instance_question_group_id: string | null;
+    };
+  },
+> = Omit<T, 'instance_question'> & {
+  instance_question: WithAIGradingStats<T['instance_question']>;
+};
 /**
  * Fills in missing columns for manual grading assessment question page.
  * This includes organizing information about past graders
@@ -49,11 +60,7 @@ export async function fillInstanceQuestionColumnEntries<
 >(
   info_with_instance_questions: T[],
   assessment_question: AssessmentQuestion,
-): Promise<
-  (Omit<T, 'instance_question'> & {
-    instance_question: WithAIGradingStats<T['instance_question']>;
-  })[]
-> {
+): Promise<FillInstanceQuestionColumnEntriesResultType<T>[]> {
   const rubric_modify_time = await queryOptionalRow(
     sql.select_rubric_time,
     { rubric_id: assessment_question.manual_rubric_id },
@@ -73,11 +80,7 @@ export async function fillInstanceQuestionColumnEntries<
     return acc;
   }, {});
 
-  type ResultType = Omit<T, 'instance_question'> & {
-    instance_question: WithAIGradingStats<T['instance_question']>;
-  };
-
-  const results: ResultType[] = [];
+  const results: FillInstanceQuestionColumnEntriesResultType<T>[] = [];
 
   for (const item of info_with_instance_questions) {
     const base_instance_question = item.instance_question;

@@ -9,6 +9,7 @@ import type {
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
+  StaffUser,
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
@@ -35,7 +36,7 @@ export interface AssessmentQuestionManualGradingProps {
   initialAiGradingMode: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
-  courseStaff: { user_id: string; name: string | null; uid: string }[];
+  courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
   numOpenInstances: number;
   search: string;
@@ -78,10 +79,8 @@ function AssessmentQuestionManualGradingInner({
     setShowConflictModal(true);
   };
 
-  // State for AI grading mode (initialized from prop, managed by mutation)
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
 
-  // Use manual grading actions hook
   const { groupSubmissionMutation, toggleAiGradingModeMutation, ...mutations } =
     useManualGradingActions({
       csrfToken,

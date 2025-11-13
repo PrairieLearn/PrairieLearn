@@ -9,7 +9,7 @@ import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/
 import { formatPoints } from '../../../../lib/format.js';
 import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
 
-import { formatPointsWithEdit, formatScoreWithEdit, generateAiGraderName } from './columnUtils.js';
+import { PointsWithEditButton, ScoreWithEditButton, generateAiGraderName } from './columnUtils.js';
 
 const columnHelper = createColumnHelper<InstanceQuestionRow>();
 
@@ -40,6 +40,27 @@ export function createColumns({
   onEditPointsConflict,
   scrollRef,
 }: CreateColumnsParams) {
+  const PointsCell = ({
+    row,
+    field,
+  }: {
+    row: InstanceQuestionRow;
+    field: 'manual_points' | 'auto_points' | 'points';
+  }) => {
+    return (
+      <PointsWithEditButton
+        row={row}
+        field={field}
+        hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+        urlPrefix={urlPrefix}
+        csrfToken={csrfToken}
+        scrollRef={scrollRef}
+        onSuccess={onEditPointsSuccess}
+        onConflict={onEditPointsConflict}
+      />
+    );
+  };
+
   return [
     // Checkbox column for batch selection
     columnHelper.display({
@@ -202,17 +223,7 @@ export function createColumns({
           columnHelper.accessor((row) => row.instance_question.auto_points, {
             id: 'auto_points',
             header: 'Auto points',
-            cell: (info) =>
-              formatPointsWithEdit({
-                row: info.row.original,
-                field: 'auto_points',
-                hasCourseInstancePermissionEdit,
-                urlPrefix,
-                csrfToken,
-                onSuccess: onEditPointsSuccess,
-                onConflict: onEditPointsConflict,
-                scrollRef,
-              }),
+            cell: (info) => <PointsCell row={info.row.original} field="auto_points" />,
             filterFn: numericColumnFilterFn,
           }),
         ]
@@ -222,17 +233,7 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.manual_points, {
       id: 'manual_points',
       header: 'Manual points',
-      cell: (info) =>
-        formatPointsWithEdit({
-          row: info.row.original,
-          field: 'manual_points',
-          hasCourseInstancePermissionEdit,
-          urlPrefix,
-          csrfToken,
-          onSuccess: onEditPointsSuccess,
-          onConflict: onEditPointsConflict,
-          scrollRef,
-        }),
+      cell: (info) => <PointsCell row={info.row.original} field="manual_points" />,
       filterFn: numericColumnFilterFn,
     }),
 
@@ -240,17 +241,7 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.points, {
       id: 'points',
       header: 'Total points',
-      cell: (info) =>
-        formatPointsWithEdit({
-          row: info.row.original,
-          field: 'points',
-          hasCourseInstancePermissionEdit,
-          urlPrefix,
-          csrfToken,
-          onSuccess: onEditPointsSuccess,
-          onConflict: onEditPointsConflict,
-          scrollRef,
-        }),
+      cell: (info) => <PointsCell row={info.row.original} field="points" />,
       filterFn: numericColumnFilterFn,
       enableHiding: true,
     }),
@@ -259,16 +250,17 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.score_perc, {
       id: 'score_perc',
       header: 'Percentage score',
-      cell: (info) =>
-        formatScoreWithEdit({
-          row: info.row.original,
-          hasCourseInstancePermissionEdit,
-          urlPrefix,
-          csrfToken,
-          onSuccess: onEditPointsSuccess,
-          onConflict: onEditPointsConflict,
-          scrollRef,
-        }),
+      cell: (info) => (
+        <ScoreWithEditButton
+          row={info.row.original}
+          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+          urlPrefix={urlPrefix}
+          csrfToken={csrfToken}
+          scrollRef={scrollRef}
+          onSuccess={onEditPointsSuccess}
+          onConflict={onEditPointsConflict}
+        />
+      ),
       filterFn: numericColumnFilterFn,
       minSize: 160,
       size: 200,

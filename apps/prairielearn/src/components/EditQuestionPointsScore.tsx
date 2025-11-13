@@ -21,7 +21,7 @@ function findLabel(field: EditableField) {
   }[field];
 }
 
-export function HtmlEditQuestionPointsScoreButton({
+export function EditQuestionPointsScoreButtonHtml({
   field,
   instance_question,
   assessment_question,
@@ -34,7 +34,7 @@ export function HtmlEditQuestionPointsScoreButton({
   urlPrefix: string;
   csrfToken: string;
 }) {
-  const editForm = HtmlEditQuestionPointsScoreForm({
+  const editForm = EditQuestionPointsScoreFormHtml({
     field,
     instance_question,
     assessment_question,
@@ -57,7 +57,7 @@ export function HtmlEditQuestionPointsScoreButton({
   </button>`;
 }
 
-function HtmlEditQuestionPointsScoreForm({
+function EditQuestionPointsScoreFormHtml({
   field,
   instance_question,
   assessment_question,
