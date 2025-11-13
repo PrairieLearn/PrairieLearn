@@ -196,12 +196,17 @@ export function useManualGradingActions({
     Error,
     {
       action: string;
-      closedOnly: boolean;
+      closedSubmissionsOnly: boolean;
       numOpenInstances: number;
       instanceQuestionIds?: string[];
     }
   >({
-    mutationFn: async ({ action, closedOnly, numOpenInstances, instanceQuestionIds }) => {
+    mutationFn: async ({
+      action,
+      closedSubmissionsOnly,
+      numOpenInstances,
+      instanceQuestionIds,
+    }) => {
       const requestBody: Record<string, any> = {
         __csrf_token: csrfToken,
         __action: action,
@@ -213,7 +218,7 @@ export function useManualGradingActions({
       }
 
       if (numOpenInstances > 0) {
-        requestBody.closed_instance_questions_only = closedOnly;
+        requestBody.closed_instance_questions_only = closedSubmissionsOnly;
       } else {
         requestBody.closed_instance_questions_only = false;
       }

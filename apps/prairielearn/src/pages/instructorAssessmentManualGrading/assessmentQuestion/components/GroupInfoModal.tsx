@@ -4,7 +4,7 @@ import { Alert, Button, Modal } from 'react-bootstrap';
 import { assertNever } from '../../../../lib/types.js';
 import type { useManualGradingActions } from '../utils/useManualGradingActions.js';
 
-const defaultClosedOnly = true;
+const defaultClosedSubmissionsOnly = true;
 
 export type GroupInfoModalState =
   | { type: 'selected'; ids: string[] }
@@ -23,7 +23,7 @@ export function GroupInfoModal({
   mutation: ReturnType<typeof useManualGradingActions>['groupSubmissionMutation'];
   onHide: () => void;
 }) {
-  const [closedOnly, setClosedOnly] = useState(defaultClosedOnly);
+  const [closedSubmissionsOnly, setClosedSubmissionsOnly] = useState(true);
 
   // Close modal on successful mutation
   // eslint-disable-next-line react-you-might-not-need-an-effect/no-manage-parent
@@ -34,7 +34,7 @@ export function GroupInfoModal({
   }, [mutation.isSuccess, onHide]);
 
   const handleClose = useCallback(() => {
-    setClosedOnly(defaultClosedOnly);
+    setClosedSubmissionsOnly(defaultClosedSubmissionsOnly);
     mutation.reset();
     onHide();
   }, [onHide, mutation]);
@@ -48,7 +48,7 @@ export function GroupInfoModal({
         case 'selected': {
           mutation.mutate({
             action: 'batch_action',
-            closedOnly,
+            closedSubmissionsOnly,
             numOpenInstances,
             instanceQuestionIds: modalState.ids,
           });
@@ -57,7 +57,7 @@ export function GroupInfoModal({
         case 'all': {
           mutation.mutate({
             action: 'ai_instance_question_group_assessment_all',
-            closedOnly,
+            closedSubmissionsOnly,
             numOpenInstances,
           });
           break;
@@ -65,7 +65,7 @@ export function GroupInfoModal({
         case 'ungrouped': {
           mutation.mutate({
             action: 'ai_instance_question_group_assessment_ungrouped',
-            closedOnly,
+            closedSubmissionsOnly,
             numOpenInstances,
           });
           break;
@@ -74,7 +74,7 @@ export function GroupInfoModal({
           assertNever(modalState);
       }
     },
-    [modalState, closedOnly, numOpenInstances, mutation],
+    [modalState, closedSubmissionsOnly, numOpenInstances, mutation],
   );
 
   if (!modalState) return null;
@@ -156,9 +156,9 @@ export function GroupInfoModal({
                   <select
                     id="grouping-application-select"
                     class="form-select w-auto flex-shrink-0"
-                    value={closedOnly ? 'true' : 'false'}
+                    value={closedSubmissionsOnly ? 'true' : 'false'}
                     onChange={(e) =>
-                      setClosedOnly((e.target as HTMLSelectElement).value === 'true')
+                      setClosedSubmissionsOnly((e.target as HTMLSelectElement).value === 'true')
                     }
                   >
                     <option value="true">Only group closed submissions</option>

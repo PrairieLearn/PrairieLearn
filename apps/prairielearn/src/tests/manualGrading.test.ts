@@ -505,14 +505,13 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           const nextButton = row.find('.btn:contains("next submission")');
           assert.equal(nextButton.length, 1);
 
-          // Get assessment_question_id from the database
-          const instanceQuestion = await sqldb.queryRow(
-            sql.get_instance_question,
-            { iqId },
-            InstanceQuestionSchema,
-          );
-          manualGradingAssessmentQuestionUrl = `${manualGradingAssessmentUrl}/assessment_question/${instanceQuestion.assessment_question_id}`;
-          manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
+          // Extract URLs from the HTML to verify they're correct
+          const questionLink = row.find('td:first-child a').attr('href');
+          assert(questionLink);
+          manualGradingAssessmentQuestionUrl = siteUrl + questionLink;
+          const nextUngradedLink = nextButton.attr('href');
+          assert(nextUngradedLink);
+          manualGradingNextUngradedUrl = siteUrl + nextUngradedLink;
         },
       );
 
@@ -1154,14 +1153,15 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
             .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
 
-          // Get assessment_question_id from the database
-          const instanceQuestion = await sqldb.queryRow(
-            sql.get_instance_question,
-            { iqId },
-            InstanceQuestionSchema,
-          );
-          manualGradingAssessmentQuestionUrl = `${manualGradingAssessmentUrl}/assessment_question/${instanceQuestion.assessment_question_id}`;
-          manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
+          // Extract URLs from the HTML to verify they're correct
+          const questionLink = row.find('td:first-child a').attr('href');
+          assert(questionLink);
+          manualGradingAssessmentQuestionUrl = siteUrl + questionLink;
+          const nextButton = row.find('.btn:contains("next submission")');
+          assert.equal(nextButton.length, 1);
+          const nextUngradedLink = nextButton.attr('href');
+          assert(nextUngradedLink);
+          manualGradingNextUngradedUrl = siteUrl + nextUngradedLink;
         },
       );
 
