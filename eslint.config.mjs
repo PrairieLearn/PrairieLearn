@@ -399,7 +399,15 @@ export default tseslint.config([
       '@prairielearn/aws-client-shared-config': 'error',
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
       '@prairielearn/no-unused-sql-blocks': 'error',
-      '@prairielearn/safe-db-types': 'error',
+      '@prairielearn/safe-db-types': [
+        'error',
+        {
+          allowDbTypes: [
+            // This is innocuous, it's just a string enum.
+            'SprocUsersGetDisplayedRoleSchema',
+          ],
+        },
+      ],
 
       '@stylistic/jsx-curly-brace-presence': [
         'error',

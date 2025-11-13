@@ -315,6 +315,18 @@ function checkTypeNodeForDbTypes(
 }
 
 /**
+ * Check if a type name is in the allowlist of safe types
+ */
+function isTypeInAllowlist(typeName: string, allowlist: (string | RegExp)[]): boolean {
+  return allowlist.some((pattern) => {
+    if (typeof pattern === 'string') {
+      return typeName === pattern;
+    }
+    return pattern.test(typeName);
+  });
+}
+
+/**
  * Check the props of a component for unsafe types from db-types.ts
  */
 function checkComponentProps(
@@ -328,6 +340,7 @@ function checkComponentProps(
   tsComponentNode: ts.Node,
   jsxElement: TSESTree.JSXElement,
   reportNode: TSESTree.Node,
+  allowlist: (string | RegExp)[],
 ): void {
   const childOpeningElement = jsxElement.openingElement;
 
@@ -369,6 +382,8 @@ function checkComponentProps(
           );
 
           for (const typeName of violations) {
+            if (isTypeInAllowlist(typeName, allowlist)) continue;
+
             context.report({
               node: attribute || reportNode,
               messageId: 'unsafeTypes',
@@ -408,6 +423,8 @@ function checkComponentProps(
                   );
 
                   for (const typeName of violations) {
+                    if (isTypeInAllowlist(typeName, allowlist)) continue;
+
                     context.report({
                       node: attribute || reportNode,
                       messageId: 'unsafeTypes',
@@ -437,6 +454,8 @@ function checkComponentProps(
                     );
 
                     for (const typeName of violations) {
+                      if (isTypeInAllowlist(typeName, allowlist)) continue;
+
                       context.report({
                         node: attribute || reportNode,
                         messageId: 'unsafeTypes',
@@ -466,7 +485,10 @@ function checkComponentProps(
   }
 }
 
-export default ESLintUtils.RuleCreator.withoutDocs({
+export default ESLintUtils.RuleCreator.withoutDocs<
+  [{ allowDbTypes?: (string | RegExp)[] }?],
+  'spreadAttributes' | 'unsafeTypes'
+>({
   meta: {
     type: 'problem',
     messages: {
@@ -474,10 +496,25 @@ export default ESLintUtils.RuleCreator.withoutDocs({
       unsafeTypes:
         'Prop "{{propName}}" uses type "{{typeName}}" which is derived from db-types.ts. Use safe-db-types.ts instead.',
     },
-    schema: [],
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          allowDbTypes: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
   },
-  defaultOptions: [],
+  defaultOptions: [{}],
   create(context) {
+    const options = context.options[0] || {};
+    const allowlist = options.allowDbTypes || [];
     return {
       JSXElement(node) {
         const openingElementNameExpression = node.openingElement.name;
@@ -505,14 +542,22 @@ export default ESLintUtils.RuleCreator.withoutDocs({
 
         if (!componentSymbol) return;
 
-        checkComponentProps(context, typeChecker, componentSymbol, tsChildNode, child, child);
+        checkComponentProps(
+          context,
+          typeChecker,
+          componentSymbol,
+          tsChildNode,
+          child,
+          child,
+          allowlist,
+        );
       },
 
       CallExpression(node) {
         // Check for hydrateHtml(<Component ... />, props?) calls
         if (node.callee.type !== 'Identifier' || node.callee.name !== 'hydrateHtml') return;
 
-        // Should have at least one argument, the first is JSX element
+        // Should have at least one argument, the first is JSX element.
         if (node.arguments.length === 0) return;
 
         const arg = node.arguments[0];
@@ -532,7 +577,15 @@ export default ESLintUtils.RuleCreator.withoutDocs({
 
         if (!componentSymbol) return;
 
-        checkComponentProps(context, typeChecker, componentSymbol, tsElementNode, jsxElement, node);
+        checkComponentProps(
+          context,
+          typeChecker,
+          componentSymbol,
+          tsElementNode,
+          jsxElement,
+          node,
+          allowlist,
+        );
       },
     };
   },
