@@ -17,6 +17,15 @@ export const AppliedRubricItemSchema = z.object({
 });
 export type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
 
+export const RenderedRubricItemSchema = z.object({
+  rubric_item: RubricItemSchema,
+  num_submissions: z.number(),
+  description_rendered: z.string().optional(),
+  explanation_rendered: z.string().optional(),
+  grader_note_rendered: z.string().optional(),
+});
+export type RenderedRubricItem = z.infer<typeof RenderedRubricItemSchema>;
+
 export const RubricDataSchema = RubricSchema.extend({
   rubric_items: z.array(
     RubricItemSchema.extend({
