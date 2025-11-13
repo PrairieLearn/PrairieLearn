@@ -6,7 +6,7 @@ import { downloadAsJSON } from '@prairielearn/browser-utils';
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
-import type { Rubric, RubricItem } from '../lib/db-types.js';
+import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
 
 type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'> & {
@@ -28,28 +28,27 @@ declare global {
 
 export function RubricSettings({
   assessmentQuestion,
-  rubric,
-  renderedRubricItems,
+  rubricData,
   csrfToken,
   aiGradingStats,
   context,
 }: {
   assessmentQuestion: StaffAssessmentQuestion;
-  rubric: Rubric | null;
-  renderedRubricItems: RenderedRubricItem[];
+  rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
-  const rubricItemDataMerged = renderedRubricItems.map((item) => ({
-    ...item,
-    disagreement_count:
-      item.rubric_item.id in rubricItemsWithDisagreementCount
-        ? rubricItemsWithDisagreementCount[item.rubric_item.id]
-        : null,
-  }));
+  const rubricItemDataMerged =
+    rubricData?.rubric_items.map((item) => ({
+      ...item,
+      disagreement_count:
+        item.rubric_item.id in rubricItemsWithDisagreementCount
+          ? rubricItemsWithDisagreementCount[item.rubric_item.id]
+          : null,
+    })) ?? [];
   const { variant_params, variant_true_answer, submission_submitted_answer } = context;
   const groups = {
     params: variant_params,
@@ -63,29 +62,33 @@ export function RubricSettings({
   // Define states
   const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubricItemDataMerged);
   const [replaceAutoPoints, setReplaceAutoPoints] = useState<boolean>(
-    rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
+    rubricData?.rubric.replace_auto_points ?? !assessmentQuestion.max_manual_points,
   );
-  const [startingPoints, setStartingPoints] = useState<number>(rubric?.starting_points ?? 0);
-  const [minPoints, setMinPoints] = useState<number>(rubric?.min_points ?? 0);
-  const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubric?.max_extra_points ?? 0);
+  const [startingPoints, setStartingPoints] = useState<number>(
+    rubricData?.rubric.starting_points ?? 0,
+  );
+  const [minPoints, setMinPoints] = useState<number>(rubricData?.rubric.min_points ?? 0);
+  const [maxExtraPoints, setMaxExtraPoints] = useState<number>(
+    rubricData?.rubric.max_extra_points ?? 0,
+  );
   const [tagForGrading, setTagForGrading] = useState<boolean>(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFile = useRef<HTMLInputElement>(null);
-  const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubric));
-  const [modifiedAt, setModifiedAt] = useState<Date | null>(rubric?.modified_at ?? null);
+  const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
+  const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
 
   // Also define default for rubric-related variables
   const defaultRubricItems = useRef<RubricItemData[]>(rubricItemDataMerged);
   const defaultReplaceAutoPoints = useRef<boolean>(
-    rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
+    rubricData?.rubric.replace_auto_points ?? !assessmentQuestion.max_manual_points,
   );
-  const defaultStartingPoints = useRef<number>(rubric?.starting_points ?? 0);
-  const defaultMinPoints = useRef<number>(rubric?.min_points ?? 0);
-  const defaultMaxExtraPoints = useRef<number>(rubric?.max_extra_points ?? 0);
+  const defaultStartingPoints = useRef<number>(rubricData?.rubric.starting_points ?? 0);
+  const defaultMinPoints = useRef<number>(rubricData?.rubric.min_points ?? 0);
+  const defaultMaxExtraPoints = useRef<number>(rubricData?.rubric.max_extra_points ?? 0);
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
@@ -427,8 +430,8 @@ export function RubricSettings({
       // after saving. Suppose we start with setting A, and update it to B and save it. Ideally we would expect a "Discard changes"
       // to reset to B instead of A. We are updating the default values with B so "Discard changes" would reset correctly.
       const rubricData = data.rubric_data as RubricData | null;
-      const rubricItemsWithSelectionCount = (rubricData?.rubric_items ??
-        []) as unknown as RenderedRubricItem[];
+      const rubric = rubricData?.rubric ?? null;
+      const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
       const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
       const rubricItemDataMerged = rubricItemsWithSelectionCount.map((item) => ({
         ...item,
@@ -440,12 +443,12 @@ export function RubricSettings({
 
       defaultRubricItems.current = rubricItemDataMerged;
       defaultReplaceAutoPoints.current =
-        rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
-      defaultStartingPoints.current = rubricData?.starting_points ?? 0;
-      defaultMinPoints.current = rubricData?.min_points ?? 0;
-      defaultMaxExtraPoints.current = rubricData?.max_extra_points ?? 0;
-      setWasUsingRubric(Boolean(rubricData));
-      setModifiedAt(rubricData ? new Date(rubricData.modified_at) : null);
+        rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
+      defaultStartingPoints.current = rubric?.starting_points ?? 0;
+      defaultMinPoints.current = rubric?.min_points ?? 0;
+      defaultMaxExtraPoints.current = rubric?.max_extra_points ?? 0;
+      setWasUsingRubric(Boolean(rubric));
+      setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
       onCancel();
     } else {
       window.location.replace(res.url);
