@@ -96,6 +96,7 @@ function AssessmentQuestionManualGradingInner({
   const { groupSubmissionMutation, toggleAiGradingModeMutation, ...mutations } =
     useManualGradingActions({
       csrfToken,
+      courseInstanceId: courseInstance.id,
     });
 
   return (

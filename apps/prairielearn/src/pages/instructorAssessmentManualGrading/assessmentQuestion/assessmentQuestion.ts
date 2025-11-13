@@ -169,6 +169,10 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    if (req.accepts('html')) {
+      throw new error.HttpStatusError(406, 'Not Acceptable');
+    }
+
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
@@ -176,12 +180,8 @@ router.post(
 
     if (req.body.__action === 'toggle_ai_grading_mode') {
       await toggleAiGradingMode(res.locals.assessment_question.id);
-      res.redirect(req.originalUrl);
-    }
-
-    // For all other actions, we only support JSON responses.
-    if (req.accepts('html')) {
-      throw new error.HttpStatusError(406, 'Not Acceptable');
+      res.json({});
+      return;
     }
 
     if (req.body.__action === 'batch_action') {

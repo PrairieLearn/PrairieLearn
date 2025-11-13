@@ -75,11 +75,7 @@ export interface AssessmentQuestionTableProps {
   onShowConflictModal?: (conflictDetailsUrl: string) => void;
   mutations: {
     batchActionMutation: UseMutationResult<{ job_sequence_id: string }, Error, BatchActionParams>;
-    handleBatchAction: (
-      actionData: BatchActionData,
-      instanceQuestionIds: string[],
-      urlPrefix: string,
-    ) => void;
+    handleBatchAction: (actionData: BatchActionData, instanceQuestionIds: string[]) => void;
     deleteAiGradingJobsMutation: UseMutationResult<
       { success: boolean; numDeleted: number },
       Error,
@@ -112,8 +108,6 @@ export function AssessmentQuestionTable({
   onShowConflictModal,
   mutations,
 }: AssessmentQuestionTableProps) {
-  const queryClient = useQueryClient();
-
   // Query state management
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
@@ -627,22 +621,9 @@ export function AssessmentQuestionTable({
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
                       onClick={() =>
-                        batchActionMutation.mutate(
-                          {
-                            action: 'ai_grade_assessment_graded',
-                          },
-                          {
-                            onSuccess: (data) => {
-                              if (data.job_sequence_id) {
-                                window.location.href = `${urlPrefix}/jobSequence/${data.job_sequence_id}`;
-                              } else {
-                                void queryClient.invalidateQueries({
-                                  queryKey: ['instance-questions'],
-                                });
-                              }
-                            },
-                          },
-                        )
+                        batchActionMutation.mutate({
+                          action: 'ai_grade_assessment_graded',
+                        })
                       }
                     >
                       Grade all human-graded
@@ -653,7 +634,6 @@ export function AssessmentQuestionTable({
                         handleBatchAction(
                           { batch_action: 'ai_grade_assessment_selected' },
                           selectedIds,
-                          urlPrefix,
                         )
                       }
                     >
@@ -661,22 +641,9 @@ export function AssessmentQuestionTable({
                     </Dropdown.Item>
                     <Dropdown.Item
                       onClick={() =>
-                        batchActionMutation.mutate(
-                          {
-                            action: 'ai_grade_assessment_all',
-                          },
-                          {
-                            onSuccess: (data) => {
-                              if (data.job_sequence_id) {
-                                window.location.href = `${urlPrefix}/jobSequence/${data.job_sequence_id}`;
-                              } else {
-                                void queryClient.invalidateQueries({
-                                  queryKey: ['instance-questions'],
-                                });
-                              }
-                            },
-                          },
-                        )
+                        batchActionMutation.mutate({
+                          action: 'ai_grade_assessment_all',
+                        })
                       }
                     >
                       Grade all
@@ -738,38 +705,28 @@ export function AssessmentQuestionTable({
                       <Dropdown.Item
                         key={grader.user_id}
                         onClick={() =>
-                          handleBatchAction(
-                            { assigned_grader: grader.user_id },
-                            selectedIds,
-                            urlPrefix,
-                          )
+                          handleBatchAction({ assigned_grader: grader.user_id }, selectedIds)
                         }
                       >
                         <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
                       </Dropdown.Item>
                     ))}
                     <Dropdown.Item
-                      onClick={() =>
-                        handleBatchAction({ assigned_grader: null }, selectedIds, urlPrefix)
-                      }
+                      onClick={() => handleBatchAction({ assigned_grader: null }, selectedIds)}
                     >
                       <i class="fas fa-user-slash" /> Remove grader assignment
                     </Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item
                       onClick={() =>
-                        handleBatchAction({ requires_manual_grading: true }, selectedIds, urlPrefix)
+                        handleBatchAction({ requires_manual_grading: true }, selectedIds)
                       }
                     >
                       <i class="fas fa-tag" /> Tag as required grading
                     </Dropdown.Item>
                     <Dropdown.Item
                       onClick={() =>
-                        handleBatchAction(
-                          { requires_manual_grading: false },
-                          selectedIds,
-                          urlPrefix,
-                        )
+                        handleBatchAction({ requires_manual_grading: false }, selectedIds)
                       }
                     >
                       <i class="fas fa-check-square" /> Tag as graded
