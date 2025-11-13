@@ -109,6 +109,17 @@ export async function selectAndAuthzVariant(options: {
   variant_course: Course;
   question_id: string;
   course_instance_id?: string;
+  /**
+   * This parameter serves two purposes:
+   *
+   * - If provided, it's used as a safety check to ensure that the variant being accessed
+   *   belongs to the given instance question.
+   * - If not provided, it indicates that the variant is being accessed outside the
+   *   context of a specific instance question, which means that additional authorization
+   *   checks are necessary. Specifically, if not provided, we can't assume that the
+   *   caller has validated access to the enclosing assessment instance, so we perform
+   *   additional checks to ensure that the caller has permission to view student data.
+   */
   instance_question_id?: string;
   authz_data?: Record<string, any>;
   authn_user: User;
