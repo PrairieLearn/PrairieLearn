@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -65,8 +64,7 @@ router.get(
     const unfilledInstanceQuestionInfo = await queryRows(
       sql.select_instance_questions_manual_grading,
       {
-        // TODO: improve typing of res.locals
-        assessment_id: (res.locals as any).assessment.id,
+        assessment_id: res.locals.assessment.id,
         assessment_question_id: res.locals.assessment_question.id,
       },
       InstanceQuestionRowSchema,
@@ -98,7 +96,7 @@ router.get(
 
 router.get(
   '/instances.json',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     if (req.accepts('html')) {
       throw new error.HttpStatusError(406, 'Not Acceptable');
     }
@@ -127,7 +125,7 @@ router.get(
 
 router.get(
   '/next_ungraded',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
@@ -168,7 +166,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     if (req.accepts('html')) {
       throw new error.HttpStatusError(406, 'Not Acceptable');
     }
