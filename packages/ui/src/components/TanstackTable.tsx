@@ -302,6 +302,7 @@ export function TanstackTable<RowDataModel>({
         ref={scrollContainerRef}
         style={{
           // This probably isn't the cleanest way to do this, but it works.
+          // TODO: It does not work in all cases. Make sure you check that empty states work as intended.
           ...(!noTableResults && {
             position: 'absolute',
             top: 0,
@@ -531,6 +532,8 @@ export function TanstackTable<RowDataModel>({
         <div
           class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
           style={{
+            // TODO: These elements are also not in the document flow, presumably because
+            // otherwise there is weird behavior alongside the absolutely positioned table.
             position: 'absolute',
             top: 0,
             left: 0,
