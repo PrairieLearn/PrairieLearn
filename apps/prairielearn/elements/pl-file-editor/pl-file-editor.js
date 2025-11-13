@@ -429,5 +429,4 @@ PLFileEditor.prototype.preview = {
   // Additional preview types can be created by extensions, by adding entries to PLFileEditor.prototype.preview.
 };
 
-/** @type {new (uuid: string, options: PLFileEditorOptions) => PLFileEditor} */
 window.PLFileEditor = PLFileEditor;
