@@ -487,7 +487,7 @@
             ? {
                 class: 'small',
                 latex: '\\tan',
-                insert: '\\tan({#0})',
+                insert: '\\operatorname{tan}\\left({#@}\\right)',
                 variants: [
                   {
                     class: 'small',
