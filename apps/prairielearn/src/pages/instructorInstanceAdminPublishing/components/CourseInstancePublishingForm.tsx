@@ -1,7 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import clsx from 'clsx';
 import { useEffect, useState } from 'preact/compat';
-import { Alert } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
@@ -50,23 +49,8 @@ export function CourseInstancePublishingForm({
   courseInstance: StaffCourseInstance;
   canEdit: boolean;
   csrfToken: string;
-  origHash: string;
+  origHash: string | null;
 }) {
-  const [state, setState] = useState<
-    | {
-        type: 'error';
-        message: string;
-      }
-    | {
-        type: 'submitting';
-      }
-    | {
-        type: 'success';
-      }
-  >({
-    type: 'success',
-  });
-
   const originalStartDate = courseInstance.publishing_start_date;
   const originalEndDate = courseInstance.publishing_end_date;
 
@@ -88,7 +72,6 @@ export function CourseInstancePublishingForm({
 
   const {
     register,
-    handleSubmit,
     watch,
     setValue,
     trigger,
@@ -230,46 +213,6 @@ export function CourseInstancePublishingForm({
     setValue('endDate', updatedEndDate?.toString() ?? '');
   };
 
-  const onSubmit = async (data: PublishingFormValues) => {
-    if (!canEdit) return;
-
-    setState({ type: 'submitting' });
-    try {
-      const requestBody = {
-        __csrf_token: csrfToken,
-        __action: 'update_access_control',
-        accessControl: {
-          startDate: data.startDate === '' ? null : data.startDate,
-          endDate: data.endDate === '' ? null : data.endDate,
-        },
-        orig_hash: origHash,
-      };
-
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (response.ok) {
-        window.location.reload();
-        return;
-      }
-
-      const errorData = await response.json();
-      if (errorData.message) {
-        setState({ type: 'error', message: errorData.message });
-        return;
-      }
-      setState({ type: 'success' });
-    } catch (error) {
-      console.error('Error updating access control:', error);
-      setState({ type: 'error', message: 'Failed to update access control. Please try again.' });
-    }
-  };
-
   const handleAddWeek = async (field: 'startDate' | 'endDate') => {
     const currentValue = field === 'startDate' ? startDate : endDate;
     if (currentValue) {
@@ -316,15 +259,6 @@ export function CourseInstancePublishingForm({
 
   return (
     <>
-      {state.type === 'error' && state.message && (
-        <Alert
-          variant="danger"
-          dismissible
-          onClose={() => setState({ type: 'error', message: '' })}
-        >
-          {state.message}
-        </Alert>
-      )}
       <div class="mb-4">
         <h4 class="mb-4">Publishing</h4>
 
@@ -333,9 +267,17 @@ export function CourseInstancePublishingForm({
             You do not have permission to edit access control settings.
           </div>
         )}
+        {origHash === null && (
+          <div class="alert alert-warning" role="alert">
+            You cannot edit access control settings because the <code>infoCourseInstance.json</code>{' '}
+            file does not exist.
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form method="POST">
           <input type="hidden" name="__csrf_token" value={csrfToken} />
+          <input type="hidden" name="__action" value="update_access_control" />
+          <input type="hidden" name="orig_hash" value={origHash ?? ''} />
 
           {/* Status Radio Buttons */}
           <div class="mb-4">
@@ -349,7 +291,7 @@ export function CourseInstancePublishingForm({
                   id="status-unpublished"
                   value="unpublished"
                   checked={selectedStatus === 'unpublished'}
-                  disabled={!canEdit}
+                  disabled={!canEdit || origHash === null}
                   onChange={(e) => {
                     const target = e.target as HTMLInputElement;
                     if (target.checked) {
@@ -396,7 +338,7 @@ export function CourseInstancePublishingForm({
                   id="status-publish-scheduled"
                   value="publish_scheduled"
                   checked={selectedStatus === 'publish_scheduled'}
-                  disabled={!canEdit}
+                  disabled={!canEdit || origHash === null}
                   onChange={(e) => {
                     const target = e.target as HTMLInputElement;
                     if (target.checked) {
@@ -512,7 +454,7 @@ export function CourseInstancePublishingForm({
                   id="status-published"
                   value="published"
                   checked={selectedStatus === 'published'}
-                  disabled={!canEdit}
+                  disabled={!canEdit || origHash === null}
                   onChange={(e) => {
                     const target = e.target as HTMLInputElement;
                     if (target.checked) {
@@ -571,7 +513,7 @@ export function CourseInstancePublishingForm({
                         class={clsx('form-control', errors.endDate && 'is-invalid')}
                         id="endDate"
                         step="1"
-                        disabled={!canEdit}
+                        disabled={!canEdit || origHash === null}
                         {...register('endDate', {
                           validate: validateEndDate,
                         })}
@@ -588,10 +530,10 @@ export function CourseInstancePublishingForm({
           </div>
 
           {/* Save and Cancel Buttons */}
-          {canEdit && (
+          {canEdit && origHash !== null && (
             <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary" disabled={state.type === 'submitting'}>
-                {state.type === 'submitting' ? 'Saving...' : 'Save'}
+              <button type="submit" class="btn btn-primary">
+                Save
               </button>
               <button
                 type="button"

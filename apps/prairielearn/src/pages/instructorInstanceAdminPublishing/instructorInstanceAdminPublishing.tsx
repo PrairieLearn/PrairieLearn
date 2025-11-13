@@ -83,7 +83,7 @@ router.get(
       'infoCourseInstance.json',
     );
     const infoCourseInstancePathExists = await fs.pathExists(infoCourseInstancePath);
-    let origHash = '';
+    let origHash: string | null = null;
     if (infoCourseInstancePathExists) {
       origHash = sha256(
         b64EncodeUnicode(await fs.readFile(infoCourseInstancePath, 'utf8')),
@@ -143,98 +143,92 @@ router.post(
     }
 
     if (req.body.__action === 'update_access_control') {
-      try {
-        // Validate that we're not mixing systems
-        const accessRules = await queryRows(
-          sql.course_instance_access_rules,
-          { course_instance_id: res.locals.course_instance.id },
-          CourseInstanceAccessRuleSchema,
-        );
+      // Validate that we're not mixing systems
+      const accessRules = await queryRows(
+        sql.course_instance_access_rules,
+        { course_instance_id: res.locals.course_instance.id },
+        CourseInstanceAccessRuleSchema,
+      );
 
-        if (accessRules.length > 0) {
-          res.status(400).json({
-            message: 'Cannot update access control when legacy allowAccess rules are present',
-          });
-          return;
-        }
-
-        // Read the existing infoCourseInstance.json file
-        const infoCourseInstancePath = path.join(
-          res.locals.course.path,
-          'courseInstances',
-          res.locals.course_instance.short_name,
-          'infoCourseInstance.json',
-        );
-
-        if (!(await fs.pathExists(infoCourseInstancePath))) {
-          res.status(400).json({ message: 'infoCourseInstance.json does not exist' });
-          return;
-        }
-
-        const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
-          await fs.readFile(infoCourseInstancePath, 'utf8'),
-        );
-
-        const parsedBody = z
-          .object({
-            accessControl: z.object({
-              startDate: z.string().nullable(),
-              endDate: z.string().nullable(),
-            }),
-          })
-          .parse(req.body);
-
-        // Update the publishing settings
-        const resolvedPublishing = {
-          startDate: propertyValueWithDefault(
-            courseInstanceInfo.publishing?.startDate,
-            parsedBody.accessControl.startDate,
-            (v: string | null) => v === null || v === '',
-          ),
-          endDate: propertyValueWithDefault(
-            courseInstanceInfo.publishing?.endDate,
-            parsedBody.accessControl.endDate,
-            (v: string | null) => v === null || v === '',
-          ),
-        };
-        const hasPublishing = Object.values(resolvedPublishing).some((v) => v !== undefined);
-        if (!hasPublishing) {
-          courseInstanceInfo.publishing = undefined;
-        } else {
-          courseInstanceInfo.publishing = resolvedPublishing;
-        }
-
-        // Format and write the updated JSON
-        const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
-
-        // JSON file has been formatted and is ready to be written
-        const paths = getPaths(undefined, res.locals);
-        const editor = new FileModifyEditor({
-          locals: res.locals as any,
-          container: {
-            rootPath: paths.rootPath,
-            invalidRootPaths: paths.invalidRootPaths,
-          },
-          filePath: infoCourseInstancePath,
-          editContents: b64EncodeUnicode(formattedJson),
-          origHash: req.body.orig_hash,
-        });
-
-        const serverJob = await editor.prepareServerJob();
-        try {
-          await editor.executeWithServerJob(serverJob);
-        } catch {
-          res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-          return;
-        }
-
-        flash('success', 'Access control settings updated successfully');
+      if (accessRules.length > 0) {
+        flash('error', 'Cannot update access control when legacy allowAccess rules are present');
         res.redirect(req.originalUrl);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to update access control';
-        res.status(400).json({ message });
         return;
       }
+
+      // Read the existing infoCourseInstance.json file
+      const infoCourseInstancePath = path.join(
+        res.locals.course.path,
+        'courseInstances',
+        res.locals.course_instance.short_name,
+        'infoCourseInstance.json',
+      );
+
+      if (!(await fs.pathExists(infoCourseInstancePath))) {
+        flash('error', 'infoCourseInstance.json does not exist');
+        res.redirect(req.originalUrl);
+        return;
+      }
+
+      const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
+        await fs.readFile(infoCourseInstancePath, 'utf8'),
+      );
+
+      const parsedBody = z
+        .object({
+          accessControl: z.object({
+            startDate: z.string().nullable(),
+            endDate: z.string().nullable(),
+          }),
+        })
+        .parse(req.body);
+
+      // Update the publishing settings
+      const resolvedPublishing = {
+        startDate: propertyValueWithDefault(
+          courseInstanceInfo.publishing?.startDate,
+          parsedBody.accessControl.startDate,
+          (v: string | null) => v === null || v === '',
+        ),
+        endDate: propertyValueWithDefault(
+          courseInstanceInfo.publishing?.endDate,
+          parsedBody.accessControl.endDate,
+          (v: string | null) => v === null || v === '',
+        ),
+      };
+      const hasPublishing = Object.values(resolvedPublishing).some((v) => v !== undefined);
+      if (!hasPublishing) {
+        courseInstanceInfo.publishing = undefined;
+      } else {
+        courseInstanceInfo.publishing = resolvedPublishing;
+      }
+
+      // Format and write the updated JSON
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
+
+      // JSON file has been formatted and is ready to be written
+      const paths = getPaths(undefined, res.locals);
+      const editor = new FileModifyEditor({
+        locals: res.locals as any,
+        container: {
+          rootPath: paths.rootPath,
+          invalidRootPaths: paths.invalidRootPaths,
+        },
+        filePath: infoCourseInstancePath,
+        editContents: b64EncodeUnicode(formattedJson),
+        origHash: req.body.orig_hash,
+      });
+
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch {
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
+      }
+
+      flash('success', 'Access control settings updated successfully');
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, 'Unknown action');
     }

@@ -20,7 +20,7 @@ export function InstructorInstanceAdminPublishing({
   hasCourseInstancePermissionView: boolean;
   accessRules: CourseInstanceAccessRule[];
   csrfToken: string;
-  origHash: string;
+  origHash: string | null;
 }) {
   const showComments = accessRules.some((access_rule) =>
     isRenderableComment(access_rule.json_comment),

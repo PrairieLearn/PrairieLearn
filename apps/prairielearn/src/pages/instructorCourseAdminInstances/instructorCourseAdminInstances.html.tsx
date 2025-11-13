@@ -112,10 +112,14 @@ export function InstructorCourseAdminInstances({
                       const isLegacyEndDate = row.publishing_end_date === null;
                       const startDate = row.publishing_start_date
                         ? `${formatDate(row.publishing_start_date, row.display_timezone)}`
-                        : row.formatted_start_date;
+                        : row.start_date
+                          ? `${formatDate(row.start_date, row.display_timezone)}`
+                          : '—';
                       const endDate = row.publishing_end_date
                         ? `${formatDate(row.publishing_end_date, row.display_timezone)}`
-                        : row.formatted_end_date;
+                        : row.end_date
+                          ? `${formatDate(row.end_date, row.display_timezone)}`
+                          : '—';
                       return html`
                         <tr>
                           <td class="align-left">
