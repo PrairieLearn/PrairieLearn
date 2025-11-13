@@ -47,7 +47,7 @@ WITH
       ls.instance_question_id
   )
 SELECT
-  iq.*,
+  to_jsonb(iq.*) AS instance_question,
   ai.open AS assessment_open,
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
   COALESCE(agu.name, agu.uid) AS assigned_grader_name,

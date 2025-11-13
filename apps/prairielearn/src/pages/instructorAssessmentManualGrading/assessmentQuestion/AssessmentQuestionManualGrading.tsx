@@ -12,7 +12,7 @@ import type {
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
-import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from './assessmentQuestion.types.js';
+import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
 import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
 import { GradingConflictModal } from './components/GradingConflictModal.js';
 import { GroupInfoModal } from './components/GroupInfoModal.js';
@@ -25,7 +25,7 @@ export interface AssessmentQuestionManualGradingProps {
   course: StaffCourseInstanceContext['course'];
   courseInstance: StaffCourseInstanceContext['course_instance'];
   csrfToken: string;
-  instanceQuestions: InstanceQuestionRow[];
+  instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessmentId: string;
   assessmentQuestion: StaffAssessmentQuestion;
@@ -52,7 +52,7 @@ type AssessmentQuestionManualGradingInnerProps = Omit<
 
 function AssessmentQuestionManualGradingInner({
   hasCourseInstancePermissionEdit,
-  instanceQuestions,
+  instanceQuestionsInfo,
   course,
   courseInstance,
   urlPrefix,
@@ -163,7 +163,7 @@ function AssessmentQuestionManualGradingInner({
         course={course}
         courseInstance={courseInstance}
         csrfToken={csrfToken}
-        instanceQuestions={instanceQuestions}
+        instanceQuestionsInfo={instanceQuestionsInfo}
         urlPrefix={urlPrefix}
         assessmentId={assessmentId}
         assessmentQuestion={assessmentQuestion}

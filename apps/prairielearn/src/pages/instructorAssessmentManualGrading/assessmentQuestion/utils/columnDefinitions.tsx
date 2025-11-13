@@ -22,6 +22,8 @@ interface CreateColumnsParams {
   csrfToken: string;
   assessmentId: string;
   createCheckboxProps: (row: Row<InstanceQuestionRow>, table: Table<InstanceQuestionRow>) => any;
+  onEditPointsSuccess?: () => void;
+  onEditPointsConflict?: (conflictDetailsUrl: string) => void;
 }
 
 export function createColumns({
@@ -34,6 +36,8 @@ export function createColumns({
   csrfToken,
   assessmentId,
   createCheckboxProps,
+  onEditPointsSuccess,
+  onEditPointsConflict,
 }: CreateColumnsParams) {
   return [
     // Checkbox column for batch selection
@@ -68,7 +72,7 @@ export function createColumns({
         return (
           <div>
             <a
-              href={`${urlPrefix}/assessment/${assessmentId}/manual_grading/instance_question/${row.id}`}
+              href={`${urlPrefix}/assessment/${assessmentId}/manual_grading/instance_question/${row.instance_question.id}`}
             >
               Instance {info.getValue() + 1}
             </a>
@@ -98,7 +102,7 @@ export function createColumns({
     // Submission group column (AI grading mode only)
     ...(aiGradingMode && instanceQuestionGroups.length > 0
       ? [
-          columnHelper.accessor('instance_question_group_name', {
+          columnHelper.accessor((row) => row.instance_question.instance_question_group_name, {
             id: 'instance_question_group_name',
             header: 'Submission group',
             cell: (info) => {
@@ -129,7 +133,9 @@ export function createColumns({
               // We have to do this cast because columnId is a string.
               // See https://github.com/TanStack/table/issues/4142#issuecomment-3518670925.
               const current =
-                row.getValue<InstanceQuestionRow['instance_question_group_name']>(columnId);
+                row.getValue<
+                  InstanceQuestionRow['instance_question']['instance_question_group_name']
+                >(columnId);
               if (!current) {
                 return filterValues.includes('No Group');
               }
@@ -164,7 +170,7 @@ export function createColumns({
     }),
 
     // Grading status column
-    columnHelper.accessor('requires_manual_grading', {
+    columnHelper.accessor((row) => row.instance_question.requires_manual_grading, {
       id: 'requires_manual_grading',
       header: 'Grading status',
       cell: (info) => (info.getValue() ? 'Requires grading' : 'Graded'),
@@ -192,7 +198,7 @@ export function createColumns({
     // Auto points column (only if assessment question has auto points)
     ...(assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0
       ? [
-          columnHelper.accessor('auto_points', {
+          columnHelper.accessor((row) => row.instance_question.auto_points, {
             id: 'auto_points',
             header: 'Auto points',
             cell: (info) =>
@@ -202,6 +208,8 @@ export function createColumns({
                 hasCourseInstancePermissionEdit,
                 urlPrefix,
                 csrfToken,
+                onSuccess: onEditPointsSuccess,
+                onConflict: onEditPointsConflict,
               }),
             filterFn: numericColumnFilterFn,
           }),
@@ -209,7 +217,7 @@ export function createColumns({
       : []),
 
     // Manual points column
-    columnHelper.accessor('manual_points', {
+    columnHelper.accessor((row) => row.instance_question.manual_points, {
       id: 'manual_points',
       header: 'Manual points',
       cell: (info) =>
@@ -219,12 +227,14 @@ export function createColumns({
           hasCourseInstancePermissionEdit,
           urlPrefix,
           csrfToken,
+          onSuccess: onEditPointsSuccess,
+          onConflict: onEditPointsConflict,
         }),
       filterFn: numericColumnFilterFn,
     }),
 
     // Total points column (hidden by default)
-    columnHelper.accessor('points', {
+    columnHelper.accessor((row) => row.instance_question.points, {
       id: 'points',
       header: 'Total points',
       cell: (info) =>
@@ -234,6 +244,8 @@ export function createColumns({
           hasCourseInstancePermissionEdit,
           urlPrefix,
           csrfToken,
+          onSuccess: onEditPointsSuccess,
+          onConflict: onEditPointsConflict,
         }),
       filterFn: numericColumnFilterFn,
       enableHiding: true,
@@ -242,7 +254,7 @@ export function createColumns({
     // Score percentage column (not in AI grading mode)
     ...(!aiGradingMode
       ? [
-          columnHelper.accessor('score_perc', {
+          columnHelper.accessor((row) => row.instance_question.score_perc, {
             id: 'score_perc',
             header: 'Percentage score',
             cell: (info) =>
@@ -251,6 +263,8 @@ export function createColumns({
                 hasCourseInstancePermissionEdit,
                 urlPrefix,
                 csrfToken,
+                onSuccess: onEditPointsSuccess,
+                onConflict: onEditPointsConflict,
               }),
             filterFn: numericColumnFilterFn,
           }),
@@ -264,27 +278,32 @@ export function createColumns({
       cell: (info) => {
         const row = info.row.original;
         if (aiGradingMode) {
-          const showPlus = row.ai_grading_status !== 'None' && row.last_human_grader;
+          const showPlus =
+            row.instance_question.ai_grading_status !== 'None' &&
+            row.instance_question.last_human_grader;
           return (
             <span>
-              {row.ai_grading_status !== 'None' && (
+              {row.instance_question.ai_grading_status !== 'None' && (
                 <span
                   class={`badge rounded-pill text-bg-light border ${
-                    row.ai_grading_status === 'Graded' || row.ai_grading_status === 'LatestRubric'
+                    row.instance_question.ai_grading_status === 'Graded' ||
+                    row.instance_question.ai_grading_status === 'LatestRubric'
                       ? ''
                       : 'text-muted'
                   }`}
                 >
-                  {generateAiGraderName(row.ai_grading_status)}
+                  {generateAiGraderName(row.instance_question.ai_grading_status)}
                 </span>
               )}
               {showPlus && ' + '}
-              {row.last_human_grader && <span>{row.last_human_grader}</span>}
+              {row.instance_question.last_human_grader && (
+                <span>{row.instance_question.last_human_grader}</span>
+              )}
             </span>
           );
         } else {
           if (!info.getValue()) return 'Unassigned';
-          if (row.is_ai_graded) {
+          if (row.instance_question.is_ai_graded) {
             return (
               <span class="badge rounded-pill text-bg-light border">{generateAiGraderName()}</span>
             );
@@ -299,8 +318,8 @@ export function createColumns({
         const rowData = row.original;
 
         // Check AI grader
-        if (rowData.ai_grading_status !== 'None') {
-          const aiGraderName = generateAiGraderName(rowData.ai_grading_status);
+        if (rowData.instance_question.ai_grading_status !== 'None') {
+          const aiGraderName = generateAiGraderName(rowData.instance_question.ai_grading_status);
           if (filterValues.includes(aiGraderName)) return true;
         }
 
@@ -312,7 +331,7 @@ export function createColumns({
     // AI agreement column (AI grading mode only)
     ...(aiGradingMode
       ? [
-          columnHelper.accessor('rubric_difference', {
+          columnHelper.accessor((row) => row.instance_question.rubric_difference, {
             id: 'rubric_difference',
             header: 'AI agreement',
             size: 300,
@@ -323,25 +342,25 @@ export function createColumns({
             },
             cell: (info) => {
               const row = info.row.original;
-              if (row.point_difference === null) {
+              if (row.instance_question.point_difference === null) {
                 return '—';
               }
 
-              if (row.rubric_difference === null) {
-                if (!row.point_difference) {
+              if (row.instance_question.rubric_difference === null) {
+                if (!row.instance_question.point_difference) {
                   return <i class="bi bi-check-square-fill text-success" />;
                 } else {
-                  const prefix = row.point_difference < 0 ? '' : '+';
+                  const prefix = row.instance_question.point_difference < 0 ? '' : '+';
                   return (
                     <span class="text-danger">
                       <i class="bi bi-x-square-fill" /> {prefix}
-                      {formatPoints(row.point_difference)}
+                      {formatPoints(row.instance_question.point_difference)}
                     </span>
                   );
                 }
               }
 
-              if (row.rubric_difference.length === 0) {
+              if (row.instance_question.rubric_difference.length === 0) {
                 return (
                   <OverlayTrigger
                     overlay={<Tooltip>AI and human grading are in agreement</Tooltip>}
@@ -353,7 +372,7 @@ export function createColumns({
 
               return (
                 <div>
-                  {row.rubric_difference.map((item) => (
+                  {row.instance_question.rubric_difference.map((item) => (
                     <div key={item.description}>
                       {item.false_positive ? (
                         <OverlayTrigger
@@ -376,7 +395,7 @@ export function createColumns({
             },
             filterFn: (row, columnId, filterValues: string[]) => {
               if (filterValues.length === 0) return true;
-              const rubricDiff = row.original.rubric_difference;
+              const rubricDiff = row.original.instance_question.rubric_difference;
               if (!rubricDiff || !Array.isArray(rubricDiff)) return false;
               // Check if ALL of the selected items are in the disagreement
               return filterValues.every((description) =>
@@ -384,15 +403,15 @@ export function createColumns({
               );
             },
             sortingFn: (rowA, rowB) => {
-              const aDiff = rowA.original.point_difference;
-              const bDiff = rowB.original.point_difference;
+              const aDiff = rowA.original.instance_question.point_difference;
+              const bDiff = rowB.original.instance_question.point_difference;
 
               if (aDiff === null && bDiff === null) return 0;
               if (aDiff === null) return 1;
               if (bDiff === null) return -1;
 
-              const aRubricDiff = rowA.original.rubric_difference?.length ?? 0;
-              const bRubricDiff = rowB.original.rubric_difference?.length ?? 0;
+              const aRubricDiff = rowA.original.instance_question.rubric_difference?.length ?? 0;
+              const bRubricDiff = rowB.original.instance_question.rubric_difference?.length ?? 0;
 
               if (aRubricDiff !== bRubricDiff) {
                 return aRubricDiff - bRubricDiff;

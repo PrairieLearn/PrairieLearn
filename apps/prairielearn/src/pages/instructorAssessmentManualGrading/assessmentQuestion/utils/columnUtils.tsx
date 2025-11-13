@@ -1,7 +1,7 @@
 import { EditQuestionPointsScoreButton } from '../../../../components/EditQuestionPointsScore.js';
 import { Scorebar } from '../../../../components/Scorebar.js';
 import { formatPoints } from '../../../../lib/format.js';
-import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
+import type { InstanceQuestionRowWithAIGradingStats } from '../assessmentQuestion.types.js';
 
 export function generateAiGraderName(
   ai_grading_status?: 'Graded' | 'OutdatedRubric' | 'LatestRubric',
@@ -22,14 +22,18 @@ export function formatPointsWithEdit({
   hasCourseInstancePermissionEdit,
   urlPrefix,
   csrfToken,
+  onSuccess,
+  onConflict,
 }: {
-  row: InstanceQuestionRow;
+  row: InstanceQuestionRowWithAIGradingStats;
   field: 'manual_points' | 'auto_points' | 'points';
   hasCourseInstancePermissionEdit: boolean;
   urlPrefix: string;
   csrfToken: string;
+  onSuccess?: () => void;
+  onConflict?: (conflictDetailsUrl: string) => void;
 }) {
-  const points = row[field];
+  const points = row.instance_question[field];
   const maxPoints = row.assessment_question[`max_${field}`];
 
   return (
@@ -43,17 +47,14 @@ export function formatPointsWithEdit({
         )}
       </span>
       {hasCourseInstancePermissionEdit && (
-        <div
-          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-          dangerouslySetInnerHTML={{
-            __html: EditQuestionPointsScoreButton({
-              field,
-              instance_question: row,
-              assessment_question: row.assessment_question,
-              urlPrefix,
-              csrfToken,
-            }).toString(),
-          }}
+        <EditQuestionPointsScoreButton
+          field={field}
+          instanceQuestion={row.instance_question}
+          assessmentQuestion={row.assessment_question}
+          urlPrefix={urlPrefix}
+          csrfToken={csrfToken}
+          onSuccess={onSuccess}
+          onConflict={onConflict}
         />
       )}
     </div>
@@ -65,13 +66,17 @@ export function formatScoreWithEdit({
   hasCourseInstancePermissionEdit,
   urlPrefix,
   csrfToken,
+  onSuccess,
+  onConflict,
 }: {
-  row: InstanceQuestionRow;
+  row: InstanceQuestionRowWithAIGradingStats;
   hasCourseInstancePermissionEdit: boolean;
   urlPrefix: string;
   csrfToken: string;
+  onSuccess?: () => void;
+  onConflict?: (conflictDetailsUrl: string) => void;
 }) {
-  const score = row.score_perc;
+  const score = row.instance_question.score_perc;
 
   return (
     <div class="d-flex align-items-center justify-content-center gap-1">
@@ -81,17 +86,14 @@ export function formatScoreWithEdit({
         </div>
       )}
       {hasCourseInstancePermissionEdit && (
-        <div
-          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-          dangerouslySetInnerHTML={{
-            __html: EditQuestionPointsScoreButton({
-              field: 'score_perc',
-              instance_question: row,
-              assessment_question: row.assessment_question,
-              urlPrefix,
-              csrfToken,
-            }).toString(),
-          }}
+        <EditQuestionPointsScoreButton
+          field="score_perc"
+          instanceQuestion={row.instance_question}
+          assessmentQuestion={row.assessment_question}
+          urlPrefix={urlPrefix}
+          csrfToken={csrfToken}
+          onSuccess={onSuccess}
+          onConflict={onConflict}
         />
       )}
     </div>

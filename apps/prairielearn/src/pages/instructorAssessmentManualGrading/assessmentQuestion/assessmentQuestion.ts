@@ -8,7 +8,7 @@ import { run } from '@prairielearn/run';
 
 import {
   calculateAiGradingStats,
-  fillInstanceQuestionColumns,
+  fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
@@ -62,7 +62,7 @@ router.get(
       }),
     );
 
-    const instance_questions = await queryRows(
+    const unfilledInstanceQuestionInfo = await queryRows(
       sql.select_instance_questions_manual_grading,
       {
         // TODO: improve typing of res.locals
@@ -72,8 +72,8 @@ router.get(
       InstanceQuestionRowSchema,
     );
 
-    const instanceQuestions = await fillInstanceQuestionColumns(
-      instance_questions,
+    const instanceQuestionsInfo = await fillInstanceQuestionColumnEntries(
+      unfilledInstanceQuestionInfo,
       res.locals.assessment_question,
     );
 
@@ -89,7 +89,7 @@ router.get(
             : null,
         instanceQuestionGroups,
         rubric_data,
-        instanceQuestions,
+        instanceQuestionsInfo,
         search: getUrl(req).search,
       }),
     );
@@ -117,7 +117,7 @@ router.get(
     );
 
     res.send({
-      instance_questions: await fillInstanceQuestionColumns(
+      instance_questions: await fillInstanceQuestionColumnEntries(
         instance_questions,
         res.locals.assessment_question,
       ),

@@ -5,7 +5,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
-import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.js';
+import { HtmlEditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
@@ -380,7 +380,7 @@ export function InstructorAssessmentInstance({
                         component: 'auto',
                       })}
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? HtmlEditQuestionPointsScoreButton({
                             field: 'auto_points',
                             instance_question,
                             assessment_question: instance_question.assessment_question,
@@ -396,7 +396,7 @@ export function InstructorAssessmentInstance({
                         component: 'manual',
                       })}
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? HtmlEditQuestionPointsScoreButton({
                             field: 'manual_points',
                             instance_question,
                             assessment_question: instance_question.assessment_question,
@@ -412,7 +412,7 @@ export function InstructorAssessmentInstance({
                         component: 'total',
                       })}
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? HtmlEditQuestionPointsScoreButton({
                             field: 'points',
                             instance_question,
                             assessment_question: instance_question.assessment_question,
@@ -426,7 +426,7 @@ export function InstructorAssessmentInstance({
                     </td>
                     <td style="width: 1em;">
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? HtmlEditQuestionPointsScoreButton({
                             field: 'score_perc',
                             instance_question,
                             assessment_question: instance_question.assessment_question,

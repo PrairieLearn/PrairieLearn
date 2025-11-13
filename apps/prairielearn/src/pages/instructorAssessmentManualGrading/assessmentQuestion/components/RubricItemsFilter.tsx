@@ -2,18 +2,18 @@ import { useMemo } from 'preact/compat';
 import { Dropdown } from 'react-bootstrap';
 
 import type { RubricData } from '../../../../lib/manualGrading.types.js';
-import type { InstanceQuestionRow } from '../assessmentQuestion.types.js';
+import type { InstanceQuestionRowWithAIGradingStats } from '../assessmentQuestion.types.js';
 
 interface RubricItemsFilterProps {
   rubricData: RubricData | null;
-  instanceQuestions: InstanceQuestionRow[];
+  instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   rubricItemsFilter: string[];
   setRubricItemsFilter: (value: string[] | ((prev: string[]) => string[])) => Promise<unknown>;
 }
 
 export function RubricItemsFilter({
   rubricData,
-  instanceQuestions,
+  instanceQuestionsInfo,
   rubricItemsFilter,
   setRubricItemsFilter,
 }: RubricItemsFilterProps) {
@@ -28,14 +28,14 @@ export function RubricItemsFilter({
     });
 
     // Count how many students selected each item
-    instanceQuestions.forEach((iq) => {
+    instanceQuestionsInfo.forEach((iq) => {
       iq.rubric_grading_item_ids.forEach((itemId) => {
         usage.set(itemId, (usage.get(itemId) || 0) + 1);
       });
     });
 
     return usage;
-  }, [rubricData, instanceQuestions]);
+  }, [rubricData, instanceQuestionsInfo]);
 
   // Sort rubric items by their number
   const sortedRubricItems = useMemo(() => {

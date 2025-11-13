@@ -32,7 +32,7 @@ export function AssessmentQuestion({
   aiGradingStats,
   instanceQuestionGroups,
   rubric_data,
-  instanceQuestions,
+  instanceQuestionsInfo,
   search,
 }: {
   resLocals: ResLocalsForPage['instructor-assessment-question'];
@@ -42,7 +42,7 @@ export function AssessmentQuestion({
   aiGradingStats: AiGradingGeneralStats | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   rubric_data: RubricData | null;
-  instanceQuestions: InstanceQuestionRowWithAIGradingStats[];
+  instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   search: string;
 }) {
   const { authz_data, urlPrefix, __csrf_token } = getPageContext(resLocals);
@@ -89,7 +89,7 @@ export function AssessmentQuestion({
           <AssessmentQuestionManualGrading
             hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
             search={search}
-            instanceQuestions={instanceQuestions}
+            instanceQuestionsInfo={instanceQuestionsInfo}
             course={course}
             courseInstance={course_instance}
             urlPrefix={urlPrefix}

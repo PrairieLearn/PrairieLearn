@@ -37,6 +37,7 @@ import {
   type GradingStatusValue,
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
+  type InstanceQuestionRowWithAIGradingStats,
 } from '../assessmentQuestion.types.js';
 import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
@@ -57,7 +58,7 @@ export interface AssessmentQuestionTableProps {
   course: StaffCourseInstanceContext['course'];
   courseInstance: StaffCourseInstanceContext['course_instance'];
   csrfToken: string;
-  instanceQuestions: InstanceQuestionRow[];
+  instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessmentId: string;
   assessmentQuestion: StaffAssessmentQuestion;
@@ -69,10 +70,10 @@ export interface AssessmentQuestionTableProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: { user_id: string; name: string | null; uid: string }[];
   aiGradingStats: AiGradingGeneralStats | null;
-  onShowGroupSelectedModal?: (ids: string[]) => void;
-  onShowGroupAllModal?: () => void;
-  onShowGroupUngroupedModal?: () => void;
-  onShowConflictModal?: (conflictDetailsUrl: string) => void;
+  onShowGroupSelectedModal: (ids: string[]) => void;
+  onShowGroupAllModal: () => void;
+  onShowGroupUngroupedModal: () => void;
+  onShowConflictModal: (conflictDetailsUrl: string) => void;
   mutations: {
     batchActionMutation: UseMutationResult<{ job_sequence_id: string }, Error, BatchActionParams>;
     handleBatchAction: (actionData: BatchActionData, instanceQuestionIds: string[]) => void;
@@ -84,7 +85,7 @@ export interface AssessmentQuestionTableProps {
 export function AssessmentQuestionTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
-  instanceQuestions: initialInstanceQuestions,
+  instanceQuestionsInfo: initialInstanceQuestionsInfo,
   urlPrefix,
   assessmentId,
   assessmentQuestion,
@@ -169,7 +170,9 @@ export function AssessmentQuestionTable({
   const queryClientInstance = useQueryClient();
 
   // Fetch instance questions data
-  const { data: instanceQuestions = initialInstanceQuestions } = useQuery<InstanceQuestionRow[]>({
+  const { data: instanceQuestionsInfo = initialInstanceQuestionsInfo } = useQuery<
+    InstanceQuestionRow[]
+  >({
     queryKey: ['instance-questions'],
     queryFn: async () => {
       const res = await fetch(window.location.pathname + '/instances.json', {
@@ -186,37 +189,42 @@ export function AssessmentQuestionTable({
     },
     refetchInterval: 30000,
     staleTime: 0,
-    initialData: initialInstanceQuestions,
+    initialData: initialInstanceQuestionsInfo,
   });
 
   // Get all unique graders from the data
   const allGraders = useMemo(() => {
     const graders = new Set<string>();
-    instanceQuestions.forEach((row) => {
+    instanceQuestionsInfo.forEach((row) => {
       if (row.assigned_grader_name) graders.add(row.assigned_grader_name);
       if (row.last_grader_name) graders.add(row.last_grader_name);
-      if (row.ai_grading_status !== 'None') {
-        graders.add(generateAiGraderName(row.ai_grading_status));
+      if (row.instance_question.ai_grading_status !== 'None') {
+        graders.add(generateAiGraderName(row.instance_question.ai_grading_status));
       }
     });
     return Array.from(graders).toSorted();
-  }, [instanceQuestions]);
+  }, [instanceQuestionsInfo]);
 
   // Get all unique submission groups
   const allSubmissionGroups = useMemo(() => {
     const groups = new Set<string>();
-    instanceQuestions.forEach((row) => {
-      if (row.instance_question_group_name) groups.add(row.instance_question_group_name);
+    instanceQuestionsInfo.forEach((row) => {
+      if (row.instance_question.instance_question_group_name) {
+        groups.add(row.instance_question.instance_question_group_name);
+      }
     });
     return Array.from(groups).toSorted();
-  }, [instanceQuestions]);
+  }, [instanceQuestionsInfo]);
 
   // Get all unique AI agreement items (rubric differences)
   const allAiAgreementItems = useMemo(() => {
     const itemsMap = new Map<string, { number: number; description: string }>();
-    instanceQuestions.forEach((row) => {
-      if (row.rubric_difference && Array.isArray(row.rubric_difference)) {
-        row.rubric_difference.forEach((item) => {
+    instanceQuestionsInfo.forEach((row) => {
+      if (
+        row.instance_question.rubric_difference &&
+        Array.isArray(row.instance_question.rubric_difference)
+      ) {
+        row.instance_question.rubric_difference.forEach((item) => {
           if (!itemsMap.has(item.description)) {
             itemsMap.set(item.description, { number: item.number, description: item.description });
           }
@@ -225,7 +233,7 @@ export function AssessmentQuestionTable({
     });
     // Sort by number
     return Array.from(itemsMap.values()).sort((a, b) => a.number - b.number);
-  }, [instanceQuestions]);
+  }, [instanceQuestionsInfo]);
 
   // Use prop for AI grading mode
   const effectiveAiGradingMode = aiGradingMode;
@@ -288,6 +296,14 @@ export function AssessmentQuestionTable({
         csrfToken,
         assessmentId,
         createCheckboxProps,
+        onEditPointsSuccess: () => {
+          void queryClientInstance.invalidateQueries({
+            queryKey: ['instance-questions'],
+          });
+        },
+        onEditPointsConflict: (conflictDetailsUrl: string) => {
+          onShowConflictModal(conflictDetailsUrl);
+        },
       }),
     [
       effectiveAiGradingMode,
@@ -299,6 +315,8 @@ export function AssessmentQuestionTable({
       csrfToken,
       assessmentId,
       createCheckboxProps,
+      queryClientInstance,
+      onShowConflictModal,
     ],
   );
 
@@ -331,10 +349,10 @@ export function AssessmentQuestionTable({
   }, [aiGradingMode, setColumnVisibility]);
 
   const table = useReactTable({
-    data: instanceQuestions,
+    data: instanceQuestionsInfo,
     columns,
     columnResizeMode: 'onChange',
-    getRowId: (row) => row.id,
+    getRowId: (row) => row.instance_question.id,
     state: {
       sorting,
       columnFilters,
@@ -405,78 +423,7 @@ export function AssessmentQuestionTable({
   };
 
   const selectedRows = table.getSelectedRowModel().rows;
-  const selectedIds = selectedRows.map((row) => row.original.id);
-
-  // Set up handlers for edit points popovers
-  // FIXME: Clean up this useEffect once other pages handling point changes are also in React.
-  useEffect(() => {
-    /**
-     * Handle AJAX form submission for editing points
-     */
-    async function handlePointsFormSubmit(this: HTMLFormElement, event: Event) {
-      event.preventDefault();
-      const formData = new FormData(this);
-      // @ts-expect-error - It doesn't like converting FormData to an object
-      const postBody = new URLSearchParams(Object.fromEntries(formData.entries()));
-
-      try {
-        const response = await fetch(this.action || '', { method: 'POST', body: postBody });
-        if (response.status !== 200) {
-          console.error(response.status, response.statusText);
-          return;
-        }
-
-        const data = await response.json();
-
-        // Check for grading conflict
-        if (data?.conflict_grading_job_id && data?.conflict_details_url) {
-          onShowConflictModal?.(data.conflict_details_url);
-        }
-
-        // Invalidate and refetch the query to update the table
-        await queryClientInstance.invalidateQueries({
-          queryKey: ['instance-questions'],
-        });
-      } catch (err) {
-        console.error('Error submitting form:', err);
-      }
-    }
-
-    /**
-     * Set up event listeners when popover is shown
-     */
-    function handlePopoverShown(this: Element) {
-      // Focus the first non-hidden input
-      const form = document.querySelector<HTMLFormElement>('form[name=edit-points-form]');
-      if (!form) {
-        return;
-      }
-      const input = form.querySelector<HTMLInputElement>('input:not([type="hidden"])');
-      if (input) {
-        input.focus();
-      }
-
-      // Remove any existing event listeners to prevent duplicates
-      form.removeEventListener('submit', handlePointsFormSubmit);
-      form.addEventListener('submit', handlePointsFormSubmit);
-    }
-
-    // Attach event listeners to all popover trigger buttons
-    const popoverButtons = document.querySelectorAll('[data-bs-toggle="popover"]');
-    popoverButtons.forEach((button) => {
-      button.addEventListener('shown.bs.popover', handlePopoverShown);
-    });
-
-    // Cleanup function
-    return () => {
-      const form = document.querySelector<HTMLFormElement>('form[name=edit-points-form]');
-      form?.removeEventListener('submit', handlePointsFormSubmit);
-
-      popoverButtons.forEach((button) => {
-        button.removeEventListener('shown.bs.popover', handlePopoverShown);
-      });
-    };
-  }, [queryClientInstance, instanceQuestions, onShowConflictModal]);
+  const selectedIds = selectedRows.map((row) => row.original.instance_question.id);
 
   const {
     batchActionMutation,
@@ -601,7 +548,7 @@ export function AssessmentQuestionTable({
         columnManagerButtons={
           <RubricItemsFilter
             rubricData={rubricData}
-            instanceQuestions={instanceQuestions}
+            instanceQuestionsInfo={instanceQuestionsInfo}
             rubricItemsFilter={rubricItemsFilter}
             setRubricItemsFilter={setRubricItemsFilter}
           />
@@ -657,14 +604,14 @@ export function AssessmentQuestionTable({
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
                       disabled={selectedIds.length === 0}
-                      onClick={() => onShowGroupSelectedModal?.(selectedIds)}
+                      onClick={() => onShowGroupSelectedModal(selectedIds)}
                     >
                       Group selected submissions
                     </Dropdown.Item>
-                    <Dropdown.Item onClick={() => onShowGroupAllModal?.()}>
+                    <Dropdown.Item onClick={() => onShowGroupAllModal()}>
                       Group all submissions
                     </Dropdown.Item>
-                    <Dropdown.Item onClick={() => onShowGroupUngroupedModal?.()}>
+                    <Dropdown.Item onClick={() => onShowGroupUngroupedModal()}>
                       Group ungrouped submissions
                     </Dropdown.Item>
                     <Dropdown.Divider />
@@ -747,17 +694,29 @@ export function AssessmentQuestionTable({
         downloadButtonOptions={{
           filenameBase: `manual_grading_${questionQid}`,
           mapRowToData: (row) => ({
-            Instance: row.id,
+            Instance: row.instance_question.id,
             [groupWork ? 'Group Name' : 'Name']: row.user_or_group_name || '',
             [groupWork ? 'UIDs' : 'UID']: row.uid || '',
-            'Grading Status': row.requires_manual_grading ? 'Requires grading' : 'Graded',
+            'Grading Status': row.instance_question.requires_manual_grading
+              ? 'Requires grading'
+              : 'Graded',
             'Assigned Grader': row.assigned_grader_name || '',
-            'Auto Points': row.auto_points != null ? row.auto_points.toString() : '',
-            'Manual Points': row.manual_points != null ? row.manual_points.toString() : '',
-            'Total Points': row.points != null ? row.points.toString() : '',
-            'Score %': row.score_perc != null ? row.score_perc.toString() : '',
+            'Auto Points':
+              row.instance_question.auto_points != null
+                ? row.instance_question.auto_points.toString()
+                : '',
+            'Manual Points':
+              row.instance_question.manual_points != null
+                ? row.instance_question.manual_points.toString()
+                : '',
+            'Total Points':
+              row.instance_question.points != null ? row.instance_question.points.toString() : '',
+            'Score %':
+              row.instance_question.score_perc != null
+                ? row.instance_question.score_perc.toString()
+                : '',
             'Graded By': row.last_grader_name || '',
-            'Modified At': row.modified_at.toISOString(),
+            'Modified At': row.instance_question.modified_at.toISOString(),
           }),
         }}
       />
