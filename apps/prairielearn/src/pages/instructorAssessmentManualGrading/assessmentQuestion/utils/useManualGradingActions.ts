@@ -59,13 +59,11 @@ export function useManualGradingActions({
     },
     onSuccess: (data) => {
       if (data.job_sequence_id) {
-        // Redirect to job sequence page for long-running operations (AI grading, AI grouping)
         window.location.href = getCourseInstanceJobSequenceUrl(
           courseInstanceId,
           data.job_sequence_id,
         );
       } else {
-        // Refresh the table data for quick operations (assign grader, manual grading flag)
         void queryClient.invalidateQueries({
           queryKey: ['instance-questions'],
         });
@@ -103,11 +101,7 @@ export function useManualGradingActions({
   };
 
   // Mutation for deleting all AI grading jobs
-  const deleteAiGradingJobsMutation = useMutation<
-    { success: boolean; numDeleted: number },
-    Error,
-    undefined
-  >({
+  const deleteAiGradingJobsMutation = useMutation<{ num_deleted: number }, Error, undefined>({
     mutationFn: async () => {
       const response = await fetch(window.location.pathname, {
         method: 'POST',
@@ -121,11 +115,12 @@ export function useManualGradingActions({
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Request failed with status ' + response.status);
+        throw new Error(data.error);
       }
 
-      const data = await response.json();
       return data;
     },
     onSuccess: () => {

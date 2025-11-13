@@ -57,6 +57,9 @@ export function getSelfEnrollmentLookupUrl(
   return `/pl/course_instance/lookup?${params.toString()}`;
 }
 
-export function getJobSequenceUrl(jobSequenceId: string): string {
-  return `/pl/jobSequence/${jobSequenceId}`;
+export function getCourseInstanceJobSequenceUrl(
+  courseInstanceId: string,
+  jobSequenceId: string,
+): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/jobSequence/${jobSequenceId}`;
 }

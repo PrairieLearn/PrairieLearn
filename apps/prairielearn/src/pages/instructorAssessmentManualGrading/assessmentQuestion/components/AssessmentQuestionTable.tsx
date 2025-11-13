@@ -76,11 +76,7 @@ export interface AssessmentQuestionTableProps {
   mutations: {
     batchActionMutation: UseMutationResult<{ job_sequence_id: string }, Error, BatchActionParams>;
     handleBatchAction: (actionData: BatchActionData, instanceQuestionIds: string[]) => void;
-    deleteAiGradingJobsMutation: UseMutationResult<
-      { success: boolean; numDeleted: number },
-      Error,
-      undefined
-    >;
+    deleteAiGradingJobsMutation: UseMutationResult<{ num_deleted: number }, Error, undefined>;
     deleteAiGroupingsMutation: UseMutationResult<{ num_deleted: number }, Error, undefined>;
   };
 }
@@ -569,8 +565,8 @@ export function AssessmentQuestionTable({
           dismissible
           onClose={() => deleteAiGradingJobsMutation.reset()}
         >
-          Deleted AI grading results for {deleteAiGradingJobsMutation.data.numDeleted}{' '}
-          {deleteAiGradingJobsMutation.data.numDeleted === 1 ? 'question' : 'questions'}.
+          Deleted AI grading results for {deleteAiGradingJobsMutation.data.num_deleted}{' '}
+          {deleteAiGradingJobsMutation.data.num_deleted === 1 ? 'question' : 'questions'}.
         </Alert>
       )}
       {deleteAiGroupingsMutation.isSuccess && (
