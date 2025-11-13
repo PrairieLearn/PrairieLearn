@@ -22,15 +22,10 @@ export function RubricItemsFilter({
     if (!rubricData) return new Map<string, number>();
     const usage = new Map<string, number>();
 
-    // Initialize all items to 0
-    rubricData.rubric_items.forEach((item) => {
-      usage.set(item.id, 0);
-    });
-
     // Count how many students selected each item
     instanceQuestionsInfo.forEach((iq) => {
       iq.rubric_grading_item_ids.forEach((itemId) => {
-        usage.set(itemId, (usage.get(itemId) || 0) + 1);
+        usage.set(itemId, (usage.get(itemId) ?? 0) + 1);
       });
     });
 

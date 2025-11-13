@@ -5,6 +5,8 @@ import clsx from 'clsx';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
 
+import type { ComponentProps } from '@prairielearn/preact-cjs';
+
 import { ColumnManager } from './ColumnManager.js';
 import {
   TanstackTableDownloadButton,
@@ -110,6 +112,7 @@ interface TanstackTableProps<RowDataModel> {
   rowHeight?: number;
   noResultsState?: JSX.Element;
   emptyState?: JSX.Element;
+  scrollRef?: React.RefObject<HTMLDivElement> | null;
 }
 
 const DEFAULT_FILTER_MAP = {};
@@ -123,6 +126,7 @@ const DEFAULT_FILTER_MAP = {};
  * @param params.rowHeight - The height of the rows in the table
  * @param params.noResultsState - The no results state for the table
  * @param params.emptyState - The empty state for the table
+ * @param params.scrollRef - Optional ref that will be attached to the scroll container element.
  */
 export function TanstackTable<RowDataModel>({
   table,
@@ -131,13 +135,16 @@ export function TanstackTable<RowDataModel>({
   rowHeight = 42,
   noResultsState = DefaultNoResultsState,
   emptyState = DefaultEmptyState,
+  scrollRef,
 }: TanstackTableProps<RowDataModel>) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = scrollRef ?? parentRef;
+
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => rowHeight,
     overscan: 10,
     measureElement: (el) => el?.getBoundingClientRect().height ?? rowHeight,
@@ -292,7 +299,7 @@ export function TanstackTable<RowDataModel>({
   return (
     <div style={{ position: 'relative' }} class="d-flex flex-column h-100">
       <div
-        ref={parentRef}
+        ref={scrollContainerRef}
         style={{
           // This probably isn't the cleanest way to do this, but it works.
           ...(!noTableResults && {
@@ -564,7 +571,6 @@ export function TanstackTableCard<RowDataModel>({
   table,
   title,
   class: className,
-  style,
   singularLabel,
   pluralLabel,
   headerButtons,
@@ -573,11 +579,10 @@ export function TanstackTableCard<RowDataModel>({
   globalFilter,
   tableOptions,
   downloadButtonOptions,
+  ...divProps
 }: {
   table: Table<RowDataModel>;
   title: string;
-  class?: string;
-  style?: JSX.CSSProperties;
   singularLabel: string;
   pluralLabel: string;
   headerButtons: JSX.Element;
@@ -593,7 +598,7 @@ export function TanstackTableCard<RowDataModel>({
     TanstackTableDownloadButtonProps<RowDataModel>,
     'table' | 'singularLabel' | 'pluralLabel'
   >;
-}) {
+} & ComponentProps<'div'>) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Track screen size for aria-hidden
@@ -630,7 +635,7 @@ export function TanstackTableCard<RowDataModel>({
   const totalCount = table.getCoreRowModel().rows.length;
 
   return (
-    <div class={clsx('card d-flex flex-column', className)} style={style}>
+    <div class={clsx('card d-flex flex-column', className)} {...divProps}>
       <div class="card-header bg-primary text-white">
         <div class="d-flex align-items-center justify-content-between gap-2">
           <div>{title}</div>

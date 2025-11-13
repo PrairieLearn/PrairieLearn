@@ -178,7 +178,7 @@ router.post(
 
     if (req.body.__action === 'toggle_ai_grading_mode') {
       await toggleAiGradingMode(res.locals.assessment_question.id);
-      res.json({});
+      res.sendStatus(204);
       return;
     }
 
@@ -254,7 +254,7 @@ router.post(
           update_assigned_grader: 'assigned_grader' in action_data,
           assigned_grader: action_data?.assigned_grader,
         });
-        res.send({});
+        res.sendStatus(204);
         return;
       }
     } else if (req.body.__action === 'edit_question_points') {
@@ -277,7 +277,7 @@ router.post(
           conflict_details_url: `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.grading_job_id}`,
         });
       } else {
-        res.send({});
+        res.sendStatus(204);
       }
     } else if (
       ['ai_grade_assessment', 'ai_grade_assessment_graded', 'ai_grade_assessment_all'].includes(
@@ -377,7 +377,7 @@ router.post(
         req.body.tag_for_manual_grading,
         res.locals.authn_user.user_id,
       );
-      res.json({});
+      res.sendStatus(204);
       return;
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

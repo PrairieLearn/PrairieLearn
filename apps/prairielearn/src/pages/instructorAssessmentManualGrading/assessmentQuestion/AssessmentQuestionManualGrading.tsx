@@ -16,7 +16,7 @@ import type { RubricData } from '../../../lib/manualGrading.types.js';
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
 import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
 import { GradingConflictModal } from './components/GradingConflictModal.js';
-import { GroupInfoModal } from './components/GroupInfoModal.js';
+import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
 const queryClient = new QueryClient();
@@ -69,17 +69,9 @@ function AssessmentQuestionManualGradingInner({
   questionTitle,
   questionNumber,
 }: AssessmentQuestionManualGradingInnerProps) {
-  const [showSelectedModal, setShowSelectedModal] = useState(false);
-  const [showAllModal, setShowAllModal] = useState(false);
-  const [showUngroupedModal, setShowUngroupedModal] = useState(false);
-  const [selectedIdsForGrouping, setSelectedIdsForGrouping] = useState<string[]>([]);
+  const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [conflictDetailsUrl, setConflictDetailsUrl] = useState('/');
-
-  const handleShowSelectedModal = (ids: string[]) => {
-    setSelectedIdsForGrouping(ids);
-    setShowSelectedModal(true);
-  };
 
   const handleShowConflictModal = (url: string) => {
     setConflictDetailsUrl(url);
@@ -171,53 +163,15 @@ function AssessmentQuestionManualGradingInner({
         courseStaff={courseStaff}
         aiGradingStats={aiGradingStats}
         mutations={mutations}
-        onShowGroupSelectedModal={handleShowSelectedModal}
-        onShowGroupAllModal={() => setShowAllModal(true)}
-        onShowGroupUngroupedModal={() => setShowUngroupedModal(true)}
+        onSetGroupInfoModalState={setGroupInfoModalState}
         onShowConflictModal={handleShowConflictModal}
       />
 
       <GroupInfoModal
-        modalFor="selected"
+        modalState={groupInfoModalState}
         numOpenInstances={numOpenInstances}
-        show={showSelectedModal}
-        onHide={() => setShowSelectedModal(false)}
-        onSubmit={(closedOnly) =>
-          groupSubmissionMutation.mutate({
-            action: 'batch_action',
-            closedOnly,
-            numOpenInstances,
-            instanceQuestionIds: selectedIdsForGrouping,
-          })
-        }
-      />
-
-      <GroupInfoModal
-        modalFor="all"
-        numOpenInstances={numOpenInstances}
-        show={showAllModal}
-        onHide={() => setShowAllModal(false)}
-        onSubmit={(closedOnly) =>
-          groupSubmissionMutation.mutate({
-            action: 'ai_instance_question_group_assessment_all',
-            closedOnly,
-            numOpenInstances,
-          })
-        }
-      />
-
-      <GroupInfoModal
-        modalFor="ungrouped"
-        numOpenInstances={numOpenInstances}
-        show={showUngroupedModal}
-        onHide={() => setShowUngroupedModal(false)}
-        onSubmit={(closedOnly) =>
-          groupSubmissionMutation.mutate({
-            action: 'ai_instance_question_group_assessment_ungrouped',
-            closedOnly,
-            numOpenInstances,
-          })
-        }
+        mutation={groupSubmissionMutation}
+        onHide={() => setGroupInfoModalState(null)}
       />
 
       <GradingConflictModal

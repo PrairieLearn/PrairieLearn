@@ -22,8 +22,9 @@ interface CreateColumnsParams {
   csrfToken: string;
   assessment: StaffAssessment;
   createCheckboxProps: (row: Row<InstanceQuestionRow>, table: Table<InstanceQuestionRow>) => any;
-  onEditPointsSuccess?: () => void;
-  onEditPointsConflict?: (conflictDetailsUrl: string) => void;
+  onEditPointsSuccess: () => void;
+  onEditPointsConflict: (conflictDetailsUrl: string) => void;
+  scrollRef: React.RefObject<HTMLDivElement> | null;
 }
 
 export function createColumns({
@@ -37,6 +38,7 @@ export function createColumns({
   createCheckboxProps,
   onEditPointsSuccess,
   onEditPointsConflict,
+  scrollRef,
 }: CreateColumnsParams) {
   return [
     // Checkbox column for batch selection
@@ -209,6 +211,7 @@ export function createColumns({
                 csrfToken,
                 onSuccess: onEditPointsSuccess,
                 onConflict: onEditPointsConflict,
+                scrollRef,
               }),
             filterFn: numericColumnFilterFn,
           }),
@@ -228,6 +231,7 @@ export function createColumns({
           csrfToken,
           onSuccess: onEditPointsSuccess,
           onConflict: onEditPointsConflict,
+          scrollRef,
         }),
       filterFn: numericColumnFilterFn,
     }),
@@ -245,6 +249,7 @@ export function createColumns({
           csrfToken,
           onSuccess: onEditPointsSuccess,
           onConflict: onEditPointsConflict,
+          scrollRef,
         }),
       filterFn: numericColumnFilterFn,
       enableHiding: true,
@@ -262,8 +267,11 @@ export function createColumns({
           csrfToken,
           onSuccess: onEditPointsSuccess,
           onConflict: onEditPointsConflict,
+          scrollRef,
         }),
       filterFn: numericColumnFilterFn,
+      minSize: 160,
+      size: 200,
     }),
 
     // Graded by column

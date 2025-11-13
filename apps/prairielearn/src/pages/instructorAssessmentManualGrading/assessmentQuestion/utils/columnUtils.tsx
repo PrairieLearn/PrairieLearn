@@ -24,14 +24,16 @@ export function formatPointsWithEdit({
   csrfToken,
   onSuccess,
   onConflict,
+  scrollRef,
 }: {
   row: InstanceQuestionRowWithAIGradingStats;
   field: 'manual_points' | 'auto_points' | 'points';
   hasCourseInstancePermissionEdit: boolean;
   urlPrefix: string;
   csrfToken: string;
-  onSuccess?: () => void;
-  onConflict?: (conflictDetailsUrl: string) => void;
+  onSuccess: () => void;
+  onConflict: (conflictDetailsUrl: string) => void;
+  scrollRef: React.RefObject<HTMLDivElement> | null;
 }) {
   const points = row.instance_question[field];
   const maxPoints = row.assessment_question[`max_${field}`];
@@ -41,7 +43,7 @@ export function formatPointsWithEdit({
       <span>
         {points != null ? formatPoints(points) : '—'}
         {maxPoints != null && (
-          <small>
+          <small class="ms-1">
             /<span class="text-muted">{maxPoints}</span>
           </small>
         )}
@@ -53,6 +55,7 @@ export function formatPointsWithEdit({
           assessmentQuestion={row.assessment_question}
           urlPrefix={urlPrefix}
           csrfToken={csrfToken}
+          scrollRef={scrollRef}
           onSuccess={onSuccess}
           onConflict={onConflict}
         />
@@ -68,13 +71,15 @@ export function formatScoreWithEdit({
   csrfToken,
   onSuccess,
   onConflict,
+  scrollRef,
 }: {
   row: InstanceQuestionRowWithAIGradingStats;
   hasCourseInstancePermissionEdit: boolean;
   urlPrefix: string;
   csrfToken: string;
-  onSuccess?: () => void;
-  onConflict?: (conflictDetailsUrl: string) => void;
+  onSuccess: () => void;
+  onConflict: (conflictDetailsUrl: string) => void;
+  scrollRef: React.RefObject<HTMLDivElement> | null;
 }) {
   const score = row.instance_question.score_perc;
 
@@ -92,6 +97,7 @@ export function formatScoreWithEdit({
           assessmentQuestion={row.assessment_question}
           urlPrefix={urlPrefix}
           csrfToken={csrfToken}
+          scrollRef={scrollRef}
           onSuccess={onSuccess}
           onConflict={onConflict}
         />

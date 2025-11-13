@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useEffect, useRef, useState } from 'preact/compat';
 import { Button, OverlayTrigger, Popover } from 'react-bootstrap';
 
 import { escapeHtml, html } from '@prairielearn/html';
@@ -44,8 +44,7 @@ export function HtmlEditQuestionPointsScoreButton({
 
   return html`<button
     type="button"
-    class="btn btn-link p-0 text-muted"
-    style="font-size: 0.75rem;"
+    class="btn btn-xs btn-ghost p-0 text-muted"
     data-bs-toggle="popover"
     data-bs-container="body"
     data-bs-html="true"
@@ -123,7 +122,7 @@ function HtmlEditQuestionPointsScoreForm({
             value="${pointsOrScore}"
             aria-label="${findLabel(field)}"
           />
-          <span class="input-group-text">
+          <span class="ms-1 input-group-text">
             ${field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}
           </span>
         </div>
@@ -154,10 +153,10 @@ interface EditQuestionPointsMutationParams {
   value: number | null;
 }
 
-interface EditQuestionPointsMutationResponse {
-  conflict_grading_job_id?: string;
-  conflict_details_url?: string;
-}
+type EditQuestionPointsMutationResponse = {
+  conflict_grading_job_id: string;
+  conflict_details_url: string;
+} | null;
 
 export function useEditQuestionPointsMutation({ csrfToken }: { csrfToken: string }) {
   return useMutation<EditQuestionPointsMutationResponse, Error, EditQuestionPointsMutationParams>({
@@ -179,12 +178,16 @@ export function useEditQuestionPointsMutation({ csrfToken }: { csrfToken: string
         body: JSON.stringify(requestBody),
       });
 
-      const data = await response.json();
+      if (response.status === 204) {
+        return null;
+      }
+
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.error);
       }
 
-      return data;
+      return await response.json();
     },
   });
 }
@@ -264,7 +267,7 @@ function EditQuestionPointsScoreForm({
         value: numValue,
       });
 
-      if (result.conflict_grading_job_id && result.conflict_details_url) {
+      if (result) {
         onConflict?.(result.conflict_details_url);
       } else {
         onSuccess?.();
@@ -333,6 +336,7 @@ interface EditQuestionPointsScoreButtonProps {
   urlPrefix: string;
   onSuccess?: () => void;
   onConflict?: (conflictDetailsUrl: string) => void;
+  scrollRef?: React.RefObject<HTMLDivElement> | null;
 }
 
 export function EditQuestionPointsScoreButton({
@@ -343,9 +347,11 @@ export function EditQuestionPointsScoreButton({
   urlPrefix,
   onSuccess,
   onConflict,
+  scrollRef,
 }: EditQuestionPointsScoreButtonProps) {
   const mutation = useEditQuestionPointsMutation({ csrfToken });
   const [show, setShow] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handleSuccess = () => {
     setShow(false);
@@ -361,6 +367,38 @@ export function EditQuestionPointsScoreButton({
     setShow(false);
     mutation.reset();
   };
+
+  // Close popover when table scrolls
+  useEffect(() => {
+    if (!show || !buttonRef.current || !scrollRef) return;
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      if (!buttonRef.current) return;
+
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+
+      // Check if button is outside the visible scroll area
+      const isOutOfView =
+        buttonRect.bottom < containerRect.top ||
+        buttonRect.top > containerRect.bottom ||
+        buttonRect.right < containerRect.left ||
+        buttonRect.left > containerRect.right;
+
+      if (isOutOfView) {
+        setShow(false);
+      }
+    };
+
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [show]);
 
   const popover = (
     <Popover id={`edit-points-popover-${field}-${instanceQuestion.id}`}>
@@ -389,9 +427,9 @@ export function EditQuestionPointsScoreButton({
       onToggle={setShow}
     >
       <button
+        ref={buttonRef}
         type="button"
-        class="btn btn-link p-0 text-muted"
-        style="font-size: 0.75rem;"
+        class="btn btn-xs btn-ghost p-0 text-muted"
         aria-label={`Change question ${findLabel(field)}`}
         data-testid={`edit-question-points-score-button-${field}`}
       >

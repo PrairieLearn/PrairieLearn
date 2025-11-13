@@ -1,43 +1,88 @@
-import { useCallback, useState } from 'preact/compat';
+import { useCallback, useEffect, useState } from 'preact/compat';
 import { Alert, Button, Modal } from 'react-bootstrap';
+
+import { assertNever } from '../../../../lib/types.js';
+import type { useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 const defaultClosedOnly = true;
 
+export type GroupInfoModalState =
+  | { type: 'selected'; ids: string[] }
+  | { type: 'all' }
+  | { type: 'ungrouped' }
+  | null;
+
 export function GroupInfoModal({
-  modalFor,
+  modalState,
   numOpenInstances,
-  show,
+  mutation,
   onHide,
-  onSubmit,
 }: {
-  modalFor: 'all' | 'selected' | 'ungrouped';
+  modalState: GroupInfoModalState;
   numOpenInstances: number;
-  show: boolean;
+  mutation: ReturnType<typeof useManualGradingActions>['groupSubmissionMutation'];
   onHide: () => void;
-  onSubmit: (closedOnly: boolean) => void;
 }) {
   const [closedOnly, setClosedOnly] = useState(defaultClosedOnly);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Close modal on successful mutation
+  // eslint-disable-next-line react-you-might-not-need-an-effect/no-manage-parent
+  useEffect(() => {
+    if (mutation.isSuccess) {
+      onHide();
+    }
+  }, [mutation.isSuccess, onHide]);
 
   const handleClose = useCallback(() => {
-    onHide();
     setClosedOnly(defaultClosedOnly);
-    setIsSubmitting(false);
-  }, [onHide]);
+    mutation.reset();
+    onHide();
+  }, [onHide, mutation]);
 
   const handleSubmit = useCallback(
     (e: Event) => {
       e.preventDefault();
-      setIsSubmitting(true);
-      onSubmit(closedOnly);
+      if (!modalState) return;
+
+      switch (modalState.type) {
+        case 'selected': {
+          mutation.mutate({
+            action: 'batch_action',
+            closedOnly,
+            numOpenInstances,
+            instanceQuestionIds: modalState.ids,
+          });
+          break;
+        }
+        case 'all': {
+          mutation.mutate({
+            action: 'ai_instance_question_group_assessment_all',
+            closedOnly,
+            numOpenInstances,
+          });
+          break;
+        }
+        case 'ungrouped': {
+          mutation.mutate({
+            action: 'ai_instance_question_group_assessment_ungrouped',
+            closedOnly,
+            numOpenInstances,
+          });
+          break;
+        }
+        default:
+          assertNever(modalState);
+      }
     },
-    [onSubmit, closedOnly],
+    [modalState, closedOnly, numOpenInstances, mutation],
   );
 
+  if (!modalState) return null;
+
   const getTitle = () => {
-    if (modalFor === 'all') {
+    if (modalState.type === 'all') {
       return 'Group all submissions';
-    } else if (modalFor === 'ungrouped') {
+    } else if (modalState.type === 'ungrouped') {
       return 'Group ungrouped submissions';
     } else {
       return 'Group selected submissions';
@@ -45,7 +90,7 @@ export function GroupInfoModal({
   };
 
   return (
-    <Modal show={show} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
+    <Modal show={true} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
       <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>{getTitle()}</Modal.Title>
@@ -105,8 +150,11 @@ export function GroupInfoModal({
                   </p>
                 </div>
                 <div class="col-12 col-md-6 d-flex flex-column gap-2">
-                  <p class="my-0">Choose how to apply grouping:</p>
+                  <label for="grouping-application-select" class="my-0">
+                    Choose how to apply grouping:
+                  </label>
                   <select
+                    id="grouping-application-select"
                     class="form-select w-auto flex-shrink-0"
                     value={closedOnly ? 'true' : 'false'}
                     onChange={(e) =>
@@ -124,12 +172,17 @@ export function GroupInfoModal({
 
         <Modal.Footer>
           <div class="m-0 w-100">
+            {mutation.isError && (
+              <Alert variant="danger" class="mb-2">
+                <strong>Error:</strong> {mutation.error.message}
+              </Alert>
+            )}
             <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
-              <Button variant="secondary" disabled={isSubmitting} onClick={handleClose}>
+              <Button variant="secondary" disabled={mutation.isPending} onClick={handleClose}>
                 Cancel
               </Button>
-              <Button variant="primary" disabled={isSubmitting} type="submit">
-                {isSubmitting ? 'Submitting...' : 'Group submissions'}
+              <Button variant="primary" disabled={mutation.isPending} type="submit">
+                {mutation.isPending ? 'Submitting...' : 'Group submissions'}
               </Button>
             </div>
             <small class="text-muted my-0 text-end d-block">

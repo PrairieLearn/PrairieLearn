@@ -1,7 +1,30 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
-import type { BatchActionData, BatchActionParams } from '../assessmentQuestion.types.js';
+
+// Types for batch actions
+export type BatchActionData =
+  | { assigned_grader: string | null }
+  | { requires_manual_grading: boolean }
+  | { batch_action: 'ai_grade_assessment_selected'; closed_instance_questions_only?: boolean }
+  | {
+      batch_action: 'ai_instance_question_group_selected';
+      closed_instance_questions_only?: boolean;
+    };
+
+export type BatchActionParams =
+  | {
+      action: 'batch_action';
+      actionData: BatchActionData;
+      instanceQuestionIds: string[];
+    }
+  | {
+      action:
+        | 'ai_grade_assessment_graded'
+        | 'ai_grade_assessment_all'
+        | 'ai_instance_question_group_assessment_all'
+        | 'ai_instance_question_group_assessment_ungrouped';
+    };
 
 interface UseManualGradingActionsParams {
   csrfToken: string;
@@ -15,7 +38,11 @@ export function useManualGradingActions({
   const queryClient = useQueryClient();
 
   // Mutation for batch actions
-  const batchActionMutation = useMutation<{ job_sequence_id: string }, Error, BatchActionParams>({
+  const batchActionMutation = useMutation<
+    { job_sequence_id: string } | null,
+    Error,
+    BatchActionParams
+  >({
     mutationFn: async (params: BatchActionParams) => {
       const requestBody: Record<string, any> = {
         __csrf_token: csrfToken,
@@ -50,6 +77,10 @@ export function useManualGradingActions({
         body: JSON.stringify(requestBody),
       });
 
+      if (response.status === 204) {
+        return null;
+      }
+
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error);
@@ -58,7 +89,7 @@ export function useManualGradingActions({
       return data;
     },
     onSuccess: (data) => {
-      if (data.job_sequence_id) {
+      if (data) {
         window.location.href = getCourseInstanceJobSequenceUrl(
           courseInstanceId,
           data.job_sequence_id,
@@ -83,7 +114,7 @@ export function useManualGradingActions({
       },
       {
         onSuccess: (data) => {
-          if (data.job_sequence_id) {
+          if (data) {
             // Redirect to job sequence page for long-running operations (AI grading, AI grouping)
             window.location.href = getCourseInstanceJobSequenceUrl(
               courseInstanceId,
@@ -161,7 +192,7 @@ export function useManualGradingActions({
 
   // Mutation for group submission actions
   const groupSubmissionMutation = useMutation<
-    { job_sequence_id: string },
+    { job_sequence_id: string } | null,
     Error,
     {
       action: string;
@@ -196,6 +227,10 @@ export function useManualGradingActions({
         body: JSON.stringify(requestBody),
       });
 
+      if (response.status === 204) {
+        return null;
+      }
+
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error);
@@ -204,7 +239,7 @@ export function useManualGradingActions({
       return data;
     },
     onSuccess: (data) => {
-      if (data.job_sequence_id) {
+      if (data) {
         window.location.href = getCourseInstanceJobSequenceUrl(
           courseInstanceId,
           data.job_sequence_id,
@@ -227,6 +262,10 @@ export function useManualGradingActions({
           __action: 'toggle_ai_grading_mode',
         }),
       });
+
+      if (response.status === 204) {
+        return null;
+      }
 
       const data = await response.json();
       if (!response.ok) {

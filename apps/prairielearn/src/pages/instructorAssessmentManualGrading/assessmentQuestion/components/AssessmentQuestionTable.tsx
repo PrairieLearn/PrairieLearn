@@ -1,4 +1,4 @@
-import { type UseMutationResult, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
@@ -10,7 +10,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useState } from 'preact/compat';
+import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 import { Alert, Button, Dropdown, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -32,8 +32,6 @@ import type {
 } from '../../../../lib/client/safe-db-types.js';
 import type { RubricData } from '../../../../lib/manualGrading.types.js';
 import {
-  type BatchActionData,
-  type BatchActionParams,
   GRADING_STATUS_VALUES,
   type GradingStatusValue,
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
@@ -43,7 +41,9 @@ import {
 import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
+import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
+import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];
@@ -69,15 +69,17 @@ export interface AssessmentQuestionTableProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: { user_id: string; name: string | null; uid: string }[];
   aiGradingStats: AiGradingGeneralStats | null;
-  onShowGroupSelectedModal: (ids: string[]) => void;
-  onShowGroupAllModal: () => void;
-  onShowGroupUngroupedModal: () => void;
+  onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onShowConflictModal: (conflictDetailsUrl: string) => void;
   mutations: {
-    batchActionMutation: UseMutationResult<{ job_sequence_id: string }, Error, BatchActionParams>;
-    handleBatchAction: (actionData: BatchActionData, instanceQuestionIds: string[]) => void;
-    deleteAiGradingJobsMutation: UseMutationResult<{ num_deleted: number }, Error, undefined>;
-    deleteAiGroupingsMutation: UseMutationResult<{ num_deleted: number }, Error, undefined>;
+    batchActionMutation: ReturnType<typeof useManualGradingActions>['batchActionMutation'];
+    handleBatchAction: ReturnType<typeof useManualGradingActions>['handleBatchAction'];
+    deleteAiGradingJobsMutation: ReturnType<
+      typeof useManualGradingActions
+    >['deleteAiGradingJobsMutation'];
+    deleteAiGroupingsMutation: ReturnType<
+      typeof useManualGradingActions
+    >['deleteAiGroupingsMutation'];
   };
 }
 
@@ -96,9 +98,7 @@ export function AssessmentQuestionTable({
   course,
   courseInstance,
   aiGradingStats,
-  onShowGroupSelectedModal,
-  onShowGroupAllModal,
-  onShowGroupUngroupedModal,
+  onSetGroupInfoModalState,
   onShowConflictModal,
   mutations,
 }: AssessmentQuestionTableProps) {
@@ -163,6 +163,7 @@ export function AssessmentQuestionTable({
   const [rowSelection, setRowSelection] = useState({});
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const queryClientInstance = useQueryClient();
 
@@ -188,8 +189,7 @@ export function AssessmentQuestionTable({
       if (!parsedData.success) throw new Error('Failed to parse instance questions');
       return parsedData.data;
     },
-    refetchInterval: 30000,
-    staleTime: 0,
+    refetchInterval: false,
     initialData: initialInstanceQuestionsInfo,
   });
 
@@ -203,7 +203,7 @@ export function AssessmentQuestionTable({
         graders.add(generateAiGraderName(row.instance_question.ai_grading_status));
       }
     });
-    return Array.from(graders).toSorted();
+    return Array.from(graders).sort();
   }, [instanceQuestionsInfo]);
 
   // Get all unique submission groups
@@ -214,7 +214,7 @@ export function AssessmentQuestionTable({
         groups.add(row.instance_question.instance_question_group_name);
       }
     });
-    return Array.from(groups).toSorted();
+    return Array.from(groups).sort();
   }, [instanceQuestionsInfo]);
 
   // Get all unique AI agreement items (rubric differences)
@@ -296,6 +296,7 @@ export function AssessmentQuestionTable({
         urlPrefix,
         csrfToken,
         createCheckboxProps,
+        scrollRef,
         onEditPointsSuccess: () => {
           void queryClientInstance.invalidateQueries({
             queryKey: ['instance-questions'],
@@ -314,6 +315,7 @@ export function AssessmentQuestionTable({
       urlPrefix,
       csrfToken,
       createCheckboxProps,
+      scrollRef,
       queryClientInstance,
       onShowConflictModal,
     ],
@@ -615,14 +617,16 @@ export function AssessmentQuestionTable({
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
                       disabled={selectedIds.length === 0}
-                      onClick={() => onShowGroupSelectedModal(selectedIds)}
+                      onClick={() =>
+                        onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
+                      }
                     >
                       Group selected submissions
                     </Dropdown.Item>
-                    <Dropdown.Item onClick={() => onShowGroupAllModal()}>
+                    <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
                       Group all submissions
                     </Dropdown.Item>
-                    <Dropdown.Item onClick={() => onShowGroupUngroupedModal()}>
+                    <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}>
                       Group ungrouped submissions
                     </Dropdown.Item>
                     <Dropdown.Divider />
@@ -699,6 +703,7 @@ export function AssessmentQuestionTable({
         tableOptions={{
           rowHeight: 48,
           filters: columnFiltersComponents,
+          scrollRef,
         }}
         singularLabel="submission"
         pluralLabel="submissions"
