@@ -287,16 +287,21 @@ export function TanstackTable<RowDataModel>({
   const displayedCount = table.getRowModel().rows.length;
   const totalCount = table.getCoreRowModel().rows.length;
 
+  const noTableResults = table.getVisibleLeafColumns().length === 0 || displayedCount === 0;
+
   return (
     <div style={{ position: 'relative' }} class="d-flex flex-column h-100">
       <div
         ref={parentRef}
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          // This probably isn't the cleanest way to do this, but it works.
+          ...(!noTableResults && {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }),
           overflow: 'auto',
           overflowAnchor: 'none',
         }}
