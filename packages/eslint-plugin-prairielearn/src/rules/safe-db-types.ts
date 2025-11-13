@@ -107,6 +107,23 @@ function checkZodSchemaForDbTypes(
       }
     }
 
+    // Check object literal property assignments (e.g., { rubric: RubricSchema })
+    if (ts.isPropertyAssignment(node) && ts.isIdentifier(node.initializer)) {
+      const identifier = node.initializer;
+      const symbol = typeChecker.getSymbolAtLocation(identifier);
+      if (symbol) {
+        const aliasedSymbol =
+          symbol.flags & ts.SymbolFlags.Alias ? typeChecker.getAliasedSymbol(symbol) : symbol;
+        const decls = aliasedSymbol.getDeclarations();
+        if (decls && decls.length > 0) {
+          const sourceFile = decls[0].getSourceFile();
+          if (sourceFile.fileName.endsWith('/db-types.ts')) {
+            violations.push(aliasedSymbol.getName());
+          }
+        }
+      }
+    }
+
     ts.forEachChild(node, findIdentifiers);
   };
 
@@ -144,7 +161,13 @@ function checkForZodInferPattern(typeNode: ts.TypeNode, typeChecker: ts.TypeChec
   const schemaSymbol = typeChecker.getSymbolAtLocation(exprName);
   if (!schemaSymbol) return [];
 
-  const schemaDecls = schemaSymbol.getDeclarations();
+  // Check if this is an imported symbol (alias) - follow it to the original
+  const symbolToCheck =
+    schemaSymbol.flags & ts.SymbolFlags.Alias
+      ? typeChecker.getAliasedSymbol(schemaSymbol)
+      : schemaSymbol;
+
+  const schemaDecls = symbolToCheck.getDeclarations();
   if (!schemaDecls || schemaDecls.length === 0) return [];
 
   // Check if it's a variable declaration
@@ -291,6 +314,158 @@ function checkTypeNodeForDbTypes(
   return violations;
 }
 
+/**
+ * Check the props of a component for unsafe types from db-types.ts
+ */
+function checkComponentProps(
+  context: ReturnType<typeof ESLintUtils.RuleCreator.withoutDocs>['create'] extends (
+    context: infer C,
+  ) => any
+    ? C
+    : never,
+  typeChecker: ts.TypeChecker,
+  componentSymbol: ts.Symbol,
+  tsComponentNode: ts.Node,
+  jsxElement: TSESTree.JSXElement,
+  reportNode: TSESTree.Node,
+): void {
+  const childOpeningElement = jsxElement.openingElement;
+
+  // Get the component's type (function or class component)
+  const componentType = typeChecker.getTypeOfSymbolAtLocation(componentSymbol, tsComponentNode);
+  const signatures = componentType.getCallSignatures();
+
+  if (signatures.length === 0) return;
+
+  // Get the first parameter (props) of the component function
+  const propsParam = signatures[0].getParameters()[0];
+  if (!propsParam) return;
+
+  const propsDeclaration = propsParam.valueDeclaration;
+
+  if (!propsDeclaration || !ts.isParameter(propsDeclaration)) return;
+
+  // Get the type annotation node from the props parameter
+  const propsTypeNode = propsDeclaration.type;
+  if (!propsTypeNode) return;
+
+  // Check each property in the props type
+  if (ts.isTypeLiteralNode(propsTypeNode)) {
+    // Inline props object: { foo: string; bar: number }
+    for (const member of propsTypeNode.members) {
+      if (ts.isPropertySignature(member) && member.type && member.name) {
+        if (!ts.isIdentifier(member.name)) continue;
+
+        const propName = member.name.text;
+        const violations = checkTypeNodeForDbTypes(member.type, typeChecker);
+
+        if (violations.length > 0) {
+          // Find the JSX attribute for this prop
+          const attribute = childOpeningElement.attributes.find(
+            (attr) =>
+              attr.type === 'JSXAttribute' &&
+              attr.name.type === 'JSXIdentifier' &&
+              attr.name.name === propName,
+          );
+
+          for (const typeName of violations) {
+            context.report({
+              node: attribute || reportNode,
+              messageId: 'unsafeTypes',
+              data: { propName, typeName },
+            });
+          }
+        }
+      }
+    }
+  } else if (ts.isTypeReferenceNode(propsTypeNode)) {
+    // Props is a type reference (e.g., interface or type alias)
+    const symbol = typeChecker.getSymbolAtLocation(propsTypeNode.typeName);
+    if (symbol) {
+      const resolvedSymbol =
+        symbol.flags & ts.SymbolFlags.Alias ? typeChecker.getAliasedSymbol(symbol) : symbol;
+      const declarations = resolvedSymbol.getDeclarations();
+
+      if (declarations && declarations.length > 0) {
+        for (const decl of declarations) {
+          if (ts.isInterfaceDeclaration(decl) || ts.isTypeLiteralNode(decl)) {
+            const members = ts.isInterfaceDeclaration(decl) ? decl.members : decl.members;
+
+            for (const member of members) {
+              if (ts.isPropertySignature(member) && member.type && member.name) {
+                if (!ts.isIdentifier(member.name)) continue;
+
+                const propName = member.name.text;
+                const violations = checkTypeNodeForDbTypes(member.type, typeChecker);
+
+                if (violations.length > 0) {
+                  // Find the JSX attribute for this prop
+                  const attribute = childOpeningElement.attributes.find(
+                    (attr) =>
+                      attr.type === 'JSXAttribute' &&
+                      attr.name.type === 'JSXIdentifier' &&
+                      attr.name.name === propName,
+                  );
+
+                  for (const typeName of violations) {
+                    context.report({
+                      node: attribute || reportNode,
+                      messageId: 'unsafeTypes',
+                      data: { propName, typeName },
+                    });
+                  }
+                }
+              }
+            }
+          } else if (ts.isTypeAliasDeclaration(decl) && decl.type) {
+            // Type alias might be an inline object type
+            if (ts.isTypeLiteralNode(decl.type)) {
+              for (const member of decl.type.members) {
+                if (ts.isPropertySignature(member) && member.type && member.name) {
+                  if (!ts.isIdentifier(member.name)) continue;
+
+                  const propName = member.name.text;
+                  const violations = checkTypeNodeForDbTypes(member.type, typeChecker);
+
+                  if (violations.length > 0) {
+                    // Find the JSX attribute for this prop
+                    const attribute = childOpeningElement.attributes.find(
+                      (attr) =>
+                        attr.type === 'JSXAttribute' &&
+                        attr.name.type === 'JSXIdentifier' &&
+                        attr.name.name === propName,
+                    );
+
+                    for (const typeName of violations) {
+                      context.report({
+                        node: attribute || reportNode,
+                        messageId: 'unsafeTypes',
+                        data: { propName, typeName },
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Check for spread attributes
+  const attributes = childOpeningElement.attributes;
+  for (const attr of attributes) {
+    if (attr.type === 'JSXSpreadAttribute') {
+      context.report({
+        node: reportNode,
+        messageId: 'spreadAttributes',
+      });
+      continue;
+    }
+  }
+}
+
 export default ESLintUtils.RuleCreator.withoutDocs({
   meta: {
     type: 'problem',
@@ -304,7 +479,6 @@ export default ESLintUtils.RuleCreator.withoutDocs({
   defaultOptions: [],
   create(context) {
     return {
-      // TODO: handle `hydrateHtml(...)` calls as well?
       JSXElement(node) {
         const openingElementNameExpression = node.openingElement.name;
 
@@ -314,8 +488,6 @@ export default ESLintUtils.RuleCreator.withoutDocs({
         const elementName = openingElementNameExpression.name;
         if (elementName !== 'Hydrate') return;
 
-        // Check children, there should be exactly one.
-        // TODO: should we have an error case here?
         const child = extractChild(node.children);
         if (!child) return;
 
@@ -333,138 +505,34 @@ export default ESLintUtils.RuleCreator.withoutDocs({
 
         if (!componentSymbol) return;
 
-        // Get the component's type (function or class component)
-        const componentType = typeChecker.getTypeOfSymbolAtLocation(componentSymbol, tsChildNode);
-        const signatures = componentType.getCallSignatures();
+        checkComponentProps(context, typeChecker, componentSymbol, tsChildNode, child, child);
+      },
 
-        if (signatures.length === 0) return;
+      CallExpression(node) {
+        // Check for hydrateHtml(<Component ... />, props?) calls
+        if (node.callee.type !== 'Identifier' || node.callee.name !== 'hydrateHtml') return;
 
-        // Get the first parameter (props) of the component function
-        const propsParam = signatures[0].getParameters()[0];
-        if (!propsParam) return;
+        // Should have at least one argument, the first is JSX element
+        if (node.arguments.length === 0) return;
 
-        const propsDeclaration = propsParam.valueDeclaration;
+        const arg = node.arguments[0];
+        if (arg.type !== 'JSXElement') return;
 
-        if (!propsDeclaration || !ts.isParameter(propsDeclaration)) return;
+        const jsxElement = arg;
+        const openingElement = jsxElement.openingElement;
+        const elementName = openingElement.name;
 
-        // Get the type annotation node from the props parameter
-        const propsTypeNode = propsDeclaration.type;
-        if (!propsTypeNode) return;
+        if (elementName.type !== 'JSXIdentifier') return;
 
-        // Check each property in the props type
-        if (ts.isTypeLiteralNode(propsTypeNode)) {
-          // Inline props object: { foo: string; bar: number }
-          for (const member of propsTypeNode.members) {
-            if (ts.isPropertySignature(member) && member.type && member.name) {
-              if (!ts.isIdentifier(member.name)) continue;
+        // Get the component's type to inspect its props
+        const services = ESLintUtils.getParserServices(context);
+        const typeChecker = services.program.getTypeChecker();
+        const tsElementNode = services.esTreeNodeToTSNodeMap.get(elementName);
+        const componentSymbol = typeChecker.getSymbolAtLocation(tsElementNode);
 
-              const propName = member.name.text;
-              const violations = checkTypeNodeForDbTypes(member.type, typeChecker);
+        if (!componentSymbol) return;
 
-              if (violations.length > 0) {
-                // Find the JSX attribute for this prop
-                const attribute = childOpeningElement.attributes.find(
-                  (attr) =>
-                    attr.type === 'JSXAttribute' &&
-                    attr.name.type === 'JSXIdentifier' &&
-                    attr.name.name === propName,
-                );
-
-                for (const typeName of violations) {
-                  context.report({
-                    node: attribute || child,
-                    messageId: 'unsafeTypes',
-                    data: { propName, typeName },
-                  });
-                }
-              }
-            }
-          }
-        } else if (ts.isTypeReferenceNode(propsTypeNode)) {
-          // Props is a type reference (e.g., interface or type alias)
-          const symbol = typeChecker.getSymbolAtLocation(propsTypeNode.typeName);
-          if (symbol) {
-            const resolvedSymbol =
-              symbol.flags & ts.SymbolFlags.Alias ? typeChecker.getAliasedSymbol(symbol) : symbol;
-            const declarations = resolvedSymbol.getDeclarations();
-
-            if (declarations && declarations.length > 0) {
-              for (const decl of declarations) {
-                if (ts.isInterfaceDeclaration(decl) || ts.isTypeLiteralNode(decl)) {
-                  const members = ts.isInterfaceDeclaration(decl) ? decl.members : decl.members;
-
-                  for (const member of members) {
-                    if (ts.isPropertySignature(member) && member.type && member.name) {
-                      if (!ts.isIdentifier(member.name)) continue;
-
-                      const propName = member.name.text;
-                      const violations = checkTypeNodeForDbTypes(member.type, typeChecker);
-
-                      if (violations.length > 0) {
-                        // Find the JSX attribute for this prop
-                        const attribute = childOpeningElement.attributes.find(
-                          (attr) =>
-                            attr.type === 'JSXAttribute' &&
-                            attr.name.type === 'JSXIdentifier' &&
-                            attr.name.name === propName,
-                        );
-
-                        for (const typeName of violations) {
-                          context.report({
-                            node: attribute || child,
-                            messageId: 'unsafeTypes',
-                            data: { propName, typeName },
-                          });
-                        }
-                      }
-                    }
-                  }
-                } else if (ts.isTypeAliasDeclaration(decl) && decl.type) {
-                  // Type alias might be an inline object type
-                  if (ts.isTypeLiteralNode(decl.type)) {
-                    for (const member of decl.type.members) {
-                      if (ts.isPropertySignature(member) && member.type && member.name) {
-                        if (!ts.isIdentifier(member.name)) continue;
-
-                        const propName = member.name.text;
-                        const violations = checkTypeNodeForDbTypes(member.type, typeChecker);
-
-                        if (violations.length > 0) {
-                          // Find the JSX attribute for this prop
-                          const attribute = childOpeningElement.attributes.find(
-                            (attr) =>
-                              attr.type === 'JSXAttribute' &&
-                              attr.name.type === 'JSXIdentifier' &&
-                              attr.name.name === propName,
-                          );
-
-                          for (const typeName of violations) {
-                            context.report({
-                              node: attribute || child,
-                              messageId: 'unsafeTypes',
-                              data: { propName, typeName },
-                            });
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        const attributes = childOpeningElement.attributes;
-        for (const attr of attributes) {
-          if (attr.type === 'JSXSpreadAttribute') {
-            context.report({
-              node,
-              messageId: 'spreadAttributes',
-            });
-            continue;
-          }
-        }
+        checkComponentProps(context, typeChecker, componentSymbol, tsElementNode, jsxElement, node);
       },
     };
   },
