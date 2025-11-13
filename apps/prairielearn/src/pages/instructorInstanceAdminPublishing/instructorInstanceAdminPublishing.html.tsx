@@ -39,7 +39,7 @@ export function InstructorInstanceAdminPublishing({
         <Hydrate>
           <CourseInstancePublishingForm
             courseInstance={courseInstance}
-            canEdit={hasCourseInstancePermissionEdit}
+            canEdit={hasCourseInstancePermissionEdit && origHash !== null}
             csrfToken={csrfToken}
             origHash={origHash}
           />

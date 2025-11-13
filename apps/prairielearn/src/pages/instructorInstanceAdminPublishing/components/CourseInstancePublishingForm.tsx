@@ -262,12 +262,12 @@ export function CourseInstancePublishingForm({
       <div class="mb-4">
         <h4 class="mb-4">Publishing</h4>
 
-        {!canEdit && (
+        {!canEdit && origHash !== null && (
           <div class="alert alert-info" role="alert">
             You do not have permission to edit access control settings.
           </div>
         )}
-        {origHash === null && (
+        {!canEdit && origHash === null && (
           <div class="alert alert-warning" role="alert">
             You cannot edit access control settings because the <code>infoCourseInstance.json</code>{' '}
             file does not exist.
@@ -291,7 +291,7 @@ export function CourseInstancePublishingForm({
                   id="status-unpublished"
                   value="unpublished"
                   checked={selectedStatus === 'unpublished'}
-                  disabled={!canEdit || origHash === null}
+                  disabled={!canEdit}
                   onChange={(e) => {
                     const target = e.target as HTMLInputElement;
                     if (target.checked) {
@@ -338,7 +338,7 @@ export function CourseInstancePublishingForm({
                   id="status-publish-scheduled"
                   value="publish_scheduled"
                   checked={selectedStatus === 'publish_scheduled'}
-                  disabled={!canEdit || origHash === null}
+                  disabled={!canEdit}
                   onChange={(e) => {
                     const target = e.target as HTMLInputElement;
                     if (target.checked) {
@@ -377,7 +377,7 @@ export function CourseInstancePublishingForm({
                       <label class="form-label mb-0" for="startDate">
                         Start date
                       </label>
-                      {canEdit && origHash !== null && (
+                      {canEdit && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-primary"
@@ -394,7 +394,7 @@ export function CourseInstancePublishingForm({
                         class={clsx('form-control', errors.startDate && 'is-invalid')}
                         id="startDate"
                         step="1"
-                        disabled={!canEdit || origHash === null}
+                        disabled={!canEdit}
                         {...register('startDate', {
                           validate: validateStartDate,
                           deps: ['endDate'],
@@ -412,7 +412,7 @@ export function CourseInstancePublishingForm({
                       <label class="form-label mb-0" for="endDate">
                         End date
                       </label>
-                      {canEdit && origHash !== null && (
+                      {canEdit && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-primary"
@@ -429,7 +429,7 @@ export function CourseInstancePublishingForm({
                         class={clsx('form-control', errors.endDate && 'is-invalid')}
                         id="endDate"
                         step="1"
-                        disabled={!canEdit || origHash === null}
+                        disabled={!canEdit}
                         {...register('endDate', {
                           validate: validateEndDate,
                         })}
@@ -454,7 +454,7 @@ export function CourseInstancePublishingForm({
                   id="status-published"
                   value="published"
                   checked={selectedStatus === 'published'}
-                  disabled={!canEdit || origHash === null}
+                  disabled={!canEdit}
                   onChange={(e) => {
                     const target = e.target as HTMLInputElement;
                     if (target.checked) {
@@ -496,7 +496,7 @@ export function CourseInstancePublishingForm({
                       <label class="form-label mb-0" for="endDate">
                         End date
                       </label>
-                      {canEdit && origHash !== null && (
+                      {canEdit && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-primary"
@@ -513,7 +513,7 @@ export function CourseInstancePublishingForm({
                         class={clsx('form-control', errors.endDate && 'is-invalid')}
                         id="endDate"
                         step="1"
-                        disabled={!canEdit || origHash === null}
+                        disabled={!canEdit}
                         {...register('endDate', {
                           validate: validateEndDate,
                         })}
@@ -530,7 +530,7 @@ export function CourseInstancePublishingForm({
           </div>
 
           {/* Save and Cancel Buttons */}
-          {canEdit && origHash !== null && (
+          {canEdit && (
             <div class="d-flex gap-2">
               <button type="submit" class="btn btn-primary">
                 Save
