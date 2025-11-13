@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'preact/compat';
+import { useCallback, useState } from 'preact/compat';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
 import { assertNever } from '../../../../lib/types.js';
@@ -25,14 +25,6 @@ export function GroupInfoModal({
 }) {
   const [closedSubmissionsOnly, setClosedSubmissionsOnly] = useState(true);
 
-  // Close modal on successful mutation
-  // eslint-disable-next-line react-you-might-not-need-an-effect/no-manage-parent
-  useEffect(() => {
-    if (mutation.isSuccess) {
-      onHide();
-    }
-  }, [mutation.isSuccess, onHide]);
-
   const handleClose = useCallback(() => {
     setClosedSubmissionsOnly(defaultClosedSubmissionsOnly);
     mutation.reset();
@@ -46,35 +38,50 @@ export function GroupInfoModal({
 
       switch (modalState.type) {
         case 'selected': {
-          mutation.mutate({
-            action: 'batch_action',
-            closedSubmissionsOnly,
-            numOpenInstances,
-            instanceQuestionIds: modalState.ids,
-          });
+          mutation.mutate(
+            {
+              action: 'batch_action',
+              closedSubmissionsOnly,
+              numOpenInstances,
+              instanceQuestionIds: modalState.ids,
+            },
+            {
+              onSuccess: onHide,
+            },
+          );
           break;
         }
         case 'all': {
-          mutation.mutate({
-            action: 'ai_instance_question_group_assessment_all',
-            closedSubmissionsOnly,
-            numOpenInstances,
-          });
+          mutation.mutate(
+            {
+              action: 'ai_instance_question_group_assessment_all',
+              closedSubmissionsOnly,
+              numOpenInstances,
+            },
+            {
+              onSuccess: onHide,
+            },
+          );
           break;
         }
         case 'ungrouped': {
-          mutation.mutate({
-            action: 'ai_instance_question_group_assessment_ungrouped',
-            closedSubmissionsOnly,
-            numOpenInstances,
-          });
+          mutation.mutate(
+            {
+              action: 'ai_instance_question_group_assessment_ungrouped',
+              closedSubmissionsOnly,
+              numOpenInstances,
+            },
+            {
+              onSuccess: onHide,
+            },
+          );
           break;
         }
         default:
           assertNever(modalState);
       }
     },
-    [modalState, closedSubmissionsOnly, numOpenInstances, mutation],
+    [modalState, closedSubmissionsOnly, numOpenInstances, mutation, onHide],
   );
 
   if (!modalState) return null;

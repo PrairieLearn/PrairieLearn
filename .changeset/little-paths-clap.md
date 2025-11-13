@@ -9,4 +9,3 @@
 - Add scrollRef to TanstackTable
 - Add virtualized element measuring to TanstackTable
 - Improve keyboard navigation in TanstackTable
-- Add
