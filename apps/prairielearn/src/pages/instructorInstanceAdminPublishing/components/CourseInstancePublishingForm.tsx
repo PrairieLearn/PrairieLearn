@@ -377,7 +377,7 @@ export function CourseInstancePublishingForm({
                       <label class="form-label mb-0" for="startDate">
                         Start date
                       </label>
-                      {canEdit && (
+                      {canEdit && origHash !== null && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-primary"
@@ -394,7 +394,7 @@ export function CourseInstancePublishingForm({
                         class={clsx('form-control', errors.startDate && 'is-invalid')}
                         id="startDate"
                         step="1"
-                        disabled={!canEdit}
+                        disabled={!canEdit || origHash === null}
                         {...register('startDate', {
                           validate: validateStartDate,
                           deps: ['endDate'],
@@ -412,7 +412,7 @@ export function CourseInstancePublishingForm({
                       <label class="form-label mb-0" for="endDate">
                         End date
                       </label>
-                      {canEdit && (
+                      {canEdit && origHash !== null && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-primary"
@@ -429,7 +429,7 @@ export function CourseInstancePublishingForm({
                         class={clsx('form-control', errors.endDate && 'is-invalid')}
                         id="endDate"
                         step="1"
-                        disabled={!canEdit}
+                        disabled={!canEdit || origHash === null}
                         {...register('endDate', {
                           validate: validateEndDate,
                         })}
@@ -496,7 +496,7 @@ export function CourseInstancePublishingForm({
                       <label class="form-label mb-0" for="endDate">
                         End date
                       </label>
-                      {canEdit && (
+                      {canEdit && origHash !== null && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-primary"
