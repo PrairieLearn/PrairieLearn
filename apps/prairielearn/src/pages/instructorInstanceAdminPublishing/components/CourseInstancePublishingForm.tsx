@@ -36,8 +36,8 @@ function computeStatus(startDate: Date | null, endDate: Date | null): Publishing
 }
 
 interface PublishingFormValues {
-  startDate: string;
-  endDate: string;
+  start_date: string;
+  end_date: string;
 }
 
 export function CourseInstancePublishingForm({
@@ -62,10 +62,10 @@ export function CourseInstancePublishingForm({
   const [selectedStatus, setSelectedStatus] = useState<PublishingStatus>(originalStatus);
 
   const defaultValues: PublishingFormValues = {
-    startDate: originalStartDate
+    start_date: originalStartDate
       ? dateToPlainDateTime(originalStartDate, courseInstance.display_timezone).toString()
       : '',
-    endDate: originalEndDate
+    end_date: originalEndDate
       ? dateToPlainDateTime(originalEndDate, courseInstance.display_timezone).toString()
       : '',
   };
@@ -75,14 +75,14 @@ export function CourseInstancePublishingForm({
     watch,
     setValue,
     trigger,
-    formState: { errors, isDirty },
+    formState: { errors, isDirty, isValid },
   } = useForm<PublishingFormValues>({
     mode: 'onChange',
     defaultValues,
   });
 
-  const startDate = watch('startDate');
-  const endDate = watch('endDate');
+  const startDate = watch('start_date');
+  const endDate = watch('end_date');
 
   // Add browser prompt when navigating away with unsaved changes
   useEffect(() => {
@@ -99,6 +99,13 @@ export function CourseInstancePublishingForm({
   }, [isDirty]);
 
   let now = nowRoundedToSeconds();
+
+  const onSubmit = (e: SubmitEvent) => {
+    if (!isValid) {
+      e.preventDefault();
+      return;
+    }
+  };
 
   // Update form values when status changes
   const handleStatusChange = (newStatus: PublishingStatus) => {
@@ -209,19 +216,19 @@ export function CourseInstancePublishingForm({
         break;
       }
     }
-    setValue('startDate', updatedStartDate?.toString() ?? '');
-    setValue('endDate', updatedEndDate?.toString() ?? '');
+    setValue('start_date', updatedStartDate?.toString() ?? '');
+    setValue('end_date', updatedEndDate?.toString() ?? '');
   };
 
-  const handleAddWeek = async (field: 'startDate' | 'endDate') => {
-    const currentValue = field === 'startDate' ? startDate : endDate;
+  const handleAddWeek = async (field: 'start_date' | 'end_date') => {
+    const currentValue = field === 'start_date' ? startDate : endDate;
     if (currentValue) {
       const currentDate = Temporal.PlainDateTime.from(currentValue);
       const newValue = currentDate.add({ weeks: 1 });
       setValue(field, newValue.toString());
       // setValue doesn't seem to trigger validation so we need to trigger it manually
-      await trigger('startDate');
-      await trigger('endDate');
+      await trigger('start_date');
+      await trigger('end_date');
     }
   };
 
@@ -274,7 +281,7 @@ export function CourseInstancePublishingForm({
           </div>
         )}
 
-        <form method="POST">
+        <form method="POST" onSubmit={onSubmit}>
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="__action" value="update_access_control" />
           <input type="hidden" name="orig_hash" value={origHash ?? ''} />
@@ -304,27 +311,31 @@ export function CourseInstancePublishingForm({
                 </label>
               </div>
               {selectedStatus === 'unpublished' && (
-                <div class="ms-4 mt-1 small text-muted">
-                  Course is not accessible by any students
-                  {startDate && ' except those with extensions'}.
-                  {endDate && (
-                    <>
-                      <br />
-                      The course{' '}
-                      {plainDateTimeStringToDate(endDate, courseInstance.display_timezone) < now
-                        ? 'was'
-                        : 'will be'}{' '}
-                      unpublished at{' '}
-                      <FriendlyDate
-                        date={plainDateTimeStringToDate(endDate, courseInstance.display_timezone)}
-                        timezone={courseInstance.display_timezone}
-                        tooltip={true}
-                        options={{ timeFirst: true }}
-                      />
-                      .
-                    </>
-                  )}
-                </div>
+                <>
+                  <input type="hidden" name="start_date" value={startDate} />
+                  <input type="hidden" name="end_date" value={endDate} />
+                  <div class="ms-4 mt-1 small text-muted">
+                    Course is not accessible by any students
+                    {startDate && ' except those with extensions'}.
+                    {endDate && (
+                      <>
+                        <br />
+                        The course{' '}
+                        {plainDateTimeStringToDate(endDate, courseInstance.display_timezone) < now
+                          ? 'was'
+                          : 'will be'}{' '}
+                        unpublished at{' '}
+                        <FriendlyDate
+                          date={plainDateTimeStringToDate(endDate, courseInstance.display_timezone)}
+                          timezone={courseInstance.display_timezone}
+                          tooltip={true}
+                          options={{ timeFirst: true }}
+                        />
+                        .
+                      </>
+                    )}
+                  </div>
+                </>
               )}
             </div>
 
@@ -351,96 +362,99 @@ export function CourseInstancePublishingForm({
                   {/* Published at a scheduled future date */}
                 </label>
               </div>
-              {selectedStatus === 'publish_scheduled' && startDate && endDate && (
-                <div class="ms-4 mt-1 small text-muted">
-                  The course will be published at{' '}
-                  <FriendlyDate
-                    date={Temporal.PlainDateTime.from(startDate)}
-                    timezone={courseInstance.display_timezone}
-                    tooltip={true}
-                    options={{ timeFirst: true }}
-                  />{' '}
-                  and will be unpublished at{' '}
-                  <FriendlyDate
-                    date={Temporal.PlainDateTime.from(endDate)}
-                    timezone={courseInstance.display_timezone}
-                    tooltip={true}
-                    options={{ timeFirst: true }}
-                  />
-                  .
-                </div>
-              )}
-              {selectedStatus === 'publish_scheduled' && (
-                <div class="ms-4 mt-2">
-                  <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <label class="form-label mb-0" for="startDate">
-                        Start date
-                      </label>
-                      {canEdit && (
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-outline-primary"
-                          disabled={!startDate}
-                          onClick={() => handleAddWeek('startDate')}
-                        >
-                          +1 week
-                        </button>
-                      )}
-                    </div>
-                    <div class="input-group mt-2">
-                      <input
-                        type="datetime-local"
-                        class={clsx('form-control', errors.startDate && 'is-invalid')}
-                        id="startDate"
-                        step="1"
-                        disabled={!canEdit}
-                        {...register('startDate', {
-                          validate: validateStartDate,
-                          deps: ['endDate'],
-                        })}
-                      />
-                      <span class="input-group-text">{courseInstance.display_timezone}</span>
-                    </div>
-                    {errors.startDate && (
-                      <div class="text-danger small mt-1">{errors.startDate.message}</div>
-                    )}
-                  </div>
 
-                  <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <label class="form-label mb-0" for="endDate">
-                        End date
-                      </label>
-                      {canEdit && (
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-outline-primary"
-                          disabled={!endDate}
-                          onClick={() => handleAddWeek('endDate')}
-                        >
-                          +1 week
-                        </button>
+              {selectedStatus === 'publish_scheduled' && (
+                <>
+                  {startDate && endDate && (
+                    <div class="ms-4 mt-1 small text-muted">
+                      The course will be published at{' '}
+                      <FriendlyDate
+                        date={Temporal.PlainDateTime.from(startDate)}
+                        timezone={courseInstance.display_timezone}
+                        tooltip={true}
+                        options={{ timeFirst: true }}
+                      />{' '}
+                      and will be unpublished at{' '}
+                      <FriendlyDate
+                        date={Temporal.PlainDateTime.from(endDate)}
+                        timezone={courseInstance.display_timezone}
+                        tooltip={true}
+                        options={{ timeFirst: true }}
+                      />
+                      .
+                    </div>
+                  )}
+                  <div class="ms-4 mt-2">
+                    <div class="mb-3">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label mb-0" for="start_date">
+                          Start date
+                        </label>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            disabled={!startDate}
+                            onClick={() => handleAddWeek('start_date')}
+                          >
+                            +1 week
+                          </button>
+                        )}
+                      </div>
+                      <div class="input-group mt-2">
+                        <input
+                          type="datetime-local"
+                          class={clsx('form-control', errors.start_date && 'is-invalid')}
+                          id="start_date"
+                          step="1"
+                          disabled={!canEdit}
+                          {...register('start_date', {
+                            validate: validateStartDate,
+                            deps: ['end_date'],
+                          })}
+                        />
+                        <span class="input-group-text">{courseInstance.display_timezone}</span>
+                      </div>
+                      {errors.start_date && (
+                        <div class="text-danger small mt-1">{errors.start_date.message}</div>
                       )}
                     </div>
-                    <div class="input-group mt-2">
-                      <input
-                        type="datetime-local"
-                        class={clsx('form-control', errors.endDate && 'is-invalid')}
-                        id="endDate"
-                        step="1"
-                        disabled={!canEdit}
-                        {...register('endDate', {
-                          validate: validateEndDate,
-                        })}
-                      />
-                      <span class="input-group-text">{courseInstance.display_timezone}</span>
+
+                    <div class="mb-3">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label mb-0" for="end_date">
+                          End date
+                        </label>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            disabled={!endDate}
+                            onClick={() => handleAddWeek('end_date')}
+                          >
+                            +1 week
+                          </button>
+                        )}
+                      </div>
+                      <div class="input-group mt-2">
+                        <input
+                          type="datetime-local"
+                          class={clsx('form-control', errors.end_date && 'is-invalid')}
+                          id="end_date"
+                          step="1"
+                          disabled={!canEdit}
+                          {...register('end_date', {
+                            validate: validateEndDate,
+                          })}
+                        />
+                        <span class="input-group-text">{courseInstance.display_timezone}</span>
+                      </div>
+                      {errors.end_date && (
+                        <div class="text-danger small mt-1">{errors.end_date.message}</div>
+                      )}
                     </div>
-                    {errors.endDate && (
-                      <div class="text-danger small mt-1">{errors.endDate.message}</div>
-                    )}
                   </div>
-                </div>
+                </>
               )}
             </div>
 
@@ -466,65 +480,68 @@ export function CourseInstancePublishingForm({
                   Published
                 </label>
               </div>
-              {selectedStatus === 'published' && startDate && endDate && (
-                <div class="ms-4 mt-1 small text-muted">
-                  The course{' '}
-                  {plainDateTimeStringToDate(startDate, courseInstance.display_timezone) < now
-                    ? 'was'
-                    : 'will be'}{' '}
-                  published at{' '}
-                  <FriendlyDate
-                    date={Temporal.PlainDateTime.from(startDate)}
-                    timezone={courseInstance.display_timezone}
-                    tooltip={true}
-                    options={{ timeFirst: true }}
-                  />{' '}
-                  and will be unpublished at{' '}
-                  <FriendlyDate
-                    date={Temporal.PlainDateTime.from(endDate)}
-                    timezone={courseInstance.display_timezone}
-                    tooltip={true}
-                    options={{ timeFirst: true }}
-                  />
-                  .
-                </div>
-              )}
               {selectedStatus === 'published' && (
-                <div class="ms-4 mt-2">
-                  <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <label class="form-label mb-0" for="endDate">
-                        End date
-                      </label>
-                      {canEdit && (
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-outline-primary"
-                          disabled={!endDate}
-                          onClick={() => handleAddWeek('endDate')}
-                        >
-                          +1 week
-                        </button>
+                <>
+                  {startDate && endDate && (
+                    <div class="ms-4 mt-1 small text-muted">
+                      The course{' '}
+                      {plainDateTimeStringToDate(startDate, courseInstance.display_timezone) < now
+                        ? 'was'
+                        : 'will be'}{' '}
+                      published at{' '}
+                      <FriendlyDate
+                        date={Temporal.PlainDateTime.from(startDate)}
+                        timezone={courseInstance.display_timezone}
+                        tooltip={true}
+                        options={{ timeFirst: true }}
+                      />{' '}
+                      and will be unpublished at{' '}
+                      <FriendlyDate
+                        date={Temporal.PlainDateTime.from(endDate)}
+                        timezone={courseInstance.display_timezone}
+                        tooltip={true}
+                        options={{ timeFirst: true }}
+                      />
+                      .
+                    </div>
+                  )}
+                  <input type="hidden" name="start_date" value={startDate} />
+                  <div class="ms-4 mt-2">
+                    <div class="mb-3">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label mb-0" for="end_date">
+                          End date
+                        </label>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            disabled={!endDate}
+                            onClick={() => handleAddWeek('end_date')}
+                          >
+                            +1 week
+                          </button>
+                        )}
+                      </div>
+                      <div class="input-group mt-2">
+                        <input
+                          type="datetime-local"
+                          class={clsx('form-control', errors.end_date && 'is-invalid')}
+                          id="end_date"
+                          step="1"
+                          disabled={!canEdit}
+                          {...register('end_date', {
+                            validate: validateEndDate,
+                          })}
+                        />
+                        <span class="input-group-text">{courseInstance.display_timezone}</span>
+                      </div>
+                      {errors.end_date && (
+                        <div class="text-danger small mt-1">{errors.end_date.message}</div>
                       )}
                     </div>
-                    <div class="input-group mt-2">
-                      <input
-                        type="datetime-local"
-                        class={clsx('form-control', errors.endDate && 'is-invalid')}
-                        id="endDate"
-                        step="1"
-                        disabled={!canEdit}
-                        {...register('endDate', {
-                          validate: validateEndDate,
-                        })}
-                      />
-                      <span class="input-group-text">{courseInstance.display_timezone}</span>
-                    </div>
-                    {errors.endDate && (
-                      <div class="text-danger small mt-1">{errors.endDate.message}</div>
-                    )}
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>

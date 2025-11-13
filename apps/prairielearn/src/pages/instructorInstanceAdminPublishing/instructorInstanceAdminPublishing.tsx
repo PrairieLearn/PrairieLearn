@@ -176,10 +176,9 @@ router.post(
 
       const parsedBody = z
         .object({
-          accessControl: z.object({
-            startDate: z.string().nullable(),
-            endDate: z.string().nullable(),
-          }),
+          start_date: z.string(),
+          end_date: z.string(),
+          status: z.enum(['unpublished', 'publish_scheduled', 'published']),
         })
         .parse(req.body);
 
@@ -187,13 +186,13 @@ router.post(
       const resolvedPublishing = {
         startDate: propertyValueWithDefault(
           courseInstanceInfo.publishing?.startDate,
-          parsedBody.accessControl.startDate,
-          (v: string | null) => v === null || v === '',
+          parsedBody.start_date,
+          (v: string) => v === '',
         ),
         endDate: propertyValueWithDefault(
           courseInstanceInfo.publishing?.endDate,
-          parsedBody.accessControl.endDate,
-          (v: string | null) => v === null || v === '',
+          parsedBody.end_date,
+          (v: string) => v === '',
         ),
       };
       const hasPublishing = Object.values(resolvedPublishing).some((v) => v !== undefined);
