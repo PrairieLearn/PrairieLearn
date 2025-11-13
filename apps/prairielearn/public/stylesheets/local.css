@@ -336,7 +336,8 @@ a.badge {
 }
 
 /** override bootstrap's code styles with a github-like style */
-code {
+code,
+.user-output {
   color: var(--bs-body-color);
   background: var(--bs-secondary-bg);
   padding: 0.2em 0.4em;
@@ -355,20 +356,8 @@ pre code {
 .user-output-invalid {
   display: inline;
   font-size: 14px;
+  display: inline;
   white-space: pre;
-  color: #444;
-  background: #f0f0f0;
-
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 2px;
-  padding-right: 2px;
-
-  border-radius: 2px;
-  border-color: #ccc;
-  border-width: 1px;
-  border-style: solid;
-
   line-height: 28px;
 }
 
