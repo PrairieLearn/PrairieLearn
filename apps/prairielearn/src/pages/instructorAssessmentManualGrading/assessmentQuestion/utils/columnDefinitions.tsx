@@ -3,6 +3,7 @@ import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 import { numericColumnFilterFn } from '@prairielearn/ui';
 
+import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
 import { formatPoints } from '../../../../lib/format.js';
@@ -15,12 +16,11 @@ const columnHelper = createColumnHelper<InstanceQuestionRow>();
 interface CreateColumnsParams {
   aiGradingMode: boolean;
   instanceQuestionGroups: InstanceQuestionGroup[];
-  groupWork: boolean;
   assessmentQuestion: AssessmentQuestion;
   hasCourseInstancePermissionEdit: boolean;
   urlPrefix: string;
   csrfToken: string;
-  assessmentId: string;
+  assessment: StaffAssessment;
   createCheckboxProps: (row: Row<InstanceQuestionRow>, table: Table<InstanceQuestionRow>) => any;
   onEditPointsSuccess?: () => void;
   onEditPointsConflict?: (conflictDetailsUrl: string) => void;
@@ -29,12 +29,11 @@ interface CreateColumnsParams {
 export function createColumns({
   aiGradingMode,
   instanceQuestionGroups,
-  groupWork,
+  assessment,
   assessmentQuestion,
   hasCourseInstancePermissionEdit,
   urlPrefix,
   csrfToken,
-  assessmentId,
   createCheckboxProps,
   onEditPointsSuccess,
   onEditPointsConflict,
@@ -72,7 +71,7 @@ export function createColumns({
         return (
           <div>
             <a
-              href={`${urlPrefix}/assessment/${assessmentId}/manual_grading/instance_question/${row.instance_question.id}`}
+              href={`${urlPrefix}/assessment/${assessment.id}/manual_grading/instance_question/${row.instance_question.id}`}
             >
               Instance {info.getValue() + 1}
             </a>
@@ -148,7 +147,7 @@ export function createColumns({
     // User/Group name column (hidden by default)
     columnHelper.accessor('user_or_group_name', {
       id: 'user_or_group_name',
-      header: groupWork ? 'Group name' : 'Name',
+      header: assessment.group_work ? 'Group name' : 'Name',
       cell: (info) => info.getValue() || '—',
       enableHiding: true,
     }),
@@ -156,7 +155,7 @@ export function createColumns({
     // UID column (hidden by default)
     columnHelper.accessor('uid', {
       id: 'uid',
-      header: groupWork ? 'UIDs' : 'UID',
+      header: assessment.group_work ? 'UIDs' : 'UID',
       cell: (info) => {
         const uid = info.getValue();
         const enrollmentId = info.row.original.enrollment_id;
@@ -251,25 +250,21 @@ export function createColumns({
       enableHiding: true,
     }),
 
-    // Score percentage column (not in AI grading mode)
-    ...(!aiGradingMode
-      ? [
-          columnHelper.accessor((row) => row.instance_question.score_perc, {
-            id: 'score_perc',
-            header: 'Percentage score',
-            cell: (info) =>
-              formatScoreWithEdit({
-                row: info.row.original,
-                hasCourseInstancePermissionEdit,
-                urlPrefix,
-                csrfToken,
-                onSuccess: onEditPointsSuccess,
-                onConflict: onEditPointsConflict,
-              }),
-            filterFn: numericColumnFilterFn,
-          }),
-        ]
-      : []),
+    // Score percentage column
+    columnHelper.accessor((row) => row.instance_question.score_perc, {
+      id: 'score_perc',
+      header: 'Percentage score',
+      cell: (info) =>
+        formatScoreWithEdit({
+          row: info.row.original,
+          hasCourseInstancePermissionEdit,
+          urlPrefix,
+          csrfToken,
+          onSuccess: onEditPointsSuccess,
+          onConflict: onEditPointsConflict,
+        }),
+      filterFn: numericColumnFilterFn,
+    }),
 
     // Graded by column
     columnHelper.accessor('last_grader_name', {

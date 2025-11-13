@@ -289,7 +289,7 @@ function EditQuestionPointsScoreForm({
               setValue((e.target as HTMLInputElement).value);
             }}
           />
-          <span class="input-group-text">
+          <span class="ms-1 input-group-text">
             {field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}
           </span>
         </div>

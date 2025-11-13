@@ -26,6 +26,7 @@ import {
 } from '../../../../lib/client/nuqs.js';
 import type { StaffCourseInstanceContext } from '../../../../lib/client/page-context.js';
 import type {
+  StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
 } from '../../../../lib/client/safe-db-types.js';
@@ -60,12 +61,10 @@ export interface AssessmentQuestionTableProps {
   csrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
-  assessmentId: string;
+  assessment: StaffAssessment;
   assessmentQuestion: StaffAssessmentQuestion;
-  assessmentTid: string;
   questionQid: string;
   aiGradingMode: boolean;
-  groupWork: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: { user_id: string; name: string | null; uid: string }[];
@@ -87,12 +86,10 @@ export function AssessmentQuestionTable({
   csrfToken,
   instanceQuestionsInfo: initialInstanceQuestionsInfo,
   urlPrefix,
-  assessmentId,
+  assessment,
   assessmentQuestion,
-  assessmentTid,
   questionQid,
   aiGradingMode,
-  groupWork,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
@@ -170,9 +167,11 @@ export function AssessmentQuestionTable({
   const queryClientInstance = useQueryClient();
 
   // Fetch instance questions data
-  const { data: instanceQuestionsInfo = initialInstanceQuestionsInfo } = useQuery<
-    InstanceQuestionRow[]
-  >({
+  const {
+    data: instanceQuestionsInfo = initialInstanceQuestionsInfo,
+    error: instanceQuestionsError,
+    isError: isInstanceQuestionsError,
+  } = useQuery<InstanceQuestionRow[]>({
     queryKey: ['instance-questions'],
     queryFn: async () => {
       const res = await fetch(window.location.pathname + '/instances.json', {
@@ -180,8 +179,10 @@ export function AssessmentQuestionTable({
           Accept: 'application/json',
         },
       });
-      if (!res.ok) throw new Error('Failed to fetch instance questions');
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error);
+      }
       if (!data.instance_questions) throw new Error('Invalid response format');
       const parsedData = z.array(InstanceQuestionRowSchema).safeParse(data.instance_questions);
       if (!parsedData.success) throw new Error('Failed to parse instance questions');
@@ -289,12 +290,11 @@ export function AssessmentQuestionTable({
       createColumns({
         aiGradingMode: effectiveAiGradingMode,
         instanceQuestionGroups,
-        groupWork,
+        assessment,
         assessmentQuestion,
         hasCourseInstancePermissionEdit,
         urlPrefix,
         csrfToken,
-        assessmentId,
         createCheckboxProps,
         onEditPointsSuccess: () => {
           void queryClientInstance.invalidateQueries({
@@ -308,12 +308,11 @@ export function AssessmentQuestionTable({
     [
       effectiveAiGradingMode,
       instanceQuestionGroups,
-      groupWork,
+      assessment,
       assessmentQuestion,
       hasCourseInstancePermissionEdit,
       urlPrefix,
       csrfToken,
-      assessmentId,
       createCheckboxProps,
       queryClientInstance,
       onShowConflictModal,
@@ -470,7 +469,7 @@ export function AssessmentQuestionTable({
           context={{
             course_short_name: course.short_name,
             course_instance_short_name: courseInstance.short_name,
-            assessment_tid: assessmentTid,
+            assessment_tid: assessment.tid!,
             question_qid: questionQid,
           }}
         />
@@ -525,6 +524,18 @@ export function AssessmentQuestionTable({
         >
           Deleted AI submission grouping results for {deleteAiGroupingsMutation.data.num_deleted}{' '}
           {deleteAiGroupingsMutation.data.num_deleted === 1 ? 'question' : 'questions'}.
+        </Alert>
+      )}
+      {isInstanceQuestionsError && (
+        <Alert
+          variant="danger"
+          class="mb-3"
+          dismissible
+          onClose={() => {
+            void queryClientInstance.refetchQueries({ queryKey: ['instance-questions'] });
+          }}
+        >
+          <strong>Error loading instance questions:</strong> {instanceQuestionsError.message}
         </Alert>
       )}
       <TanstackTableCard
@@ -695,8 +706,8 @@ export function AssessmentQuestionTable({
           filenameBase: `manual_grading_${questionQid}`,
           mapRowToData: (row) => ({
             Instance: row.instance_question.id,
-            [groupWork ? 'Group Name' : 'Name']: row.user_or_group_name || '',
-            [groupWork ? 'UIDs' : 'UID']: row.uid || '',
+            [assessment.group_work ? 'Group Name' : 'Name']: row.user_or_group_name || '',
+            [assessment.group_work ? 'UIDs' : 'UID']: row.uid || '',
             'Grading Status': row.instance_question.requires_manual_grading
               ? 'Requires grading'
               : 'Graded',

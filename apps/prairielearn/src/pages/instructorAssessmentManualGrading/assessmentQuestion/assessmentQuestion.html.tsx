@@ -94,13 +94,11 @@ export function AssessmentQuestion({
             courseInstance={course_instance}
             urlPrefix={urlPrefix}
             csrfToken={__csrf_token}
-            assessmentId={assessment.id}
+            assessment={assessment}
             assessmentQuestion={assessment_question}
-            assessmentTid={assessment.tid!}
             questionQid={question.qid!}
             aiGradingEnabled={aiGradingEnabled}
             initialAiGradingMode={aiGradingMode}
-            groupWork={assessment.group_work ?? false}
             rubricData={rubric_data}
             instanceQuestionGroups={instanceQuestionGroups}
             courseStaff={courseStaff}

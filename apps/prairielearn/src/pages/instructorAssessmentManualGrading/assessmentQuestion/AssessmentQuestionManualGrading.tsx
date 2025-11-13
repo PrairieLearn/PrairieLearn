@@ -6,6 +6,7 @@ import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js'
 import { NuqsAdapter } from '../../../lib/client/nuqs.js';
 import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
 import type {
+  StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
 } from '../../../lib/client/safe-db-types.js';
@@ -27,13 +28,11 @@ export interface AssessmentQuestionManualGradingProps {
   csrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
-  assessmentId: string;
+  assessment: StaffAssessment;
   assessmentQuestion: StaffAssessmentQuestion;
-  assessmentTid: string;
   questionQid: string;
   aiGradingEnabled: boolean;
   initialAiGradingMode: boolean;
-  groupWork: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: { user_id: string; name: string | null; uid: string }[];
@@ -57,13 +56,11 @@ function AssessmentQuestionManualGradingInner({
   courseInstance,
   urlPrefix,
   csrfToken,
-  assessmentId,
+  assessment,
   assessmentQuestion,
-  assessmentTid,
   questionQid,
   aiGradingEnabled,
   initialAiGradingMode,
-  groupWork,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
@@ -125,7 +122,7 @@ function AssessmentQuestionManualGradingInner({
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item">
-              <a href={`${urlPrefix}/assessment/${assessmentId}/manual_grading`}>Manual grading</a>
+              <a href={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}>Manual grading</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
               Question {questionNumber != null ? questionNumber : ''}. {questionTitle}
@@ -165,12 +162,10 @@ function AssessmentQuestionManualGradingInner({
         csrfToken={csrfToken}
         instanceQuestionsInfo={instanceQuestionsInfo}
         urlPrefix={urlPrefix}
-        assessmentId={assessmentId}
+        assessment={assessment}
         assessmentQuestion={assessmentQuestion}
-        assessmentTid={assessmentTid}
         questionQid={questionQid}
         aiGradingMode={aiGradingMode}
-        groupWork={groupWork}
         rubricData={rubricData}
         instanceQuestionGroups={instanceQuestionGroups}
         courseStaff={courseStaff}
