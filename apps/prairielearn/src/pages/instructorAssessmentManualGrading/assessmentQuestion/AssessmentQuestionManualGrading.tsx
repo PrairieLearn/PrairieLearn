@@ -90,16 +90,6 @@ function AssessmentQuestionManualGradingInner({
 
   return (
     <>
-      {groupSubmissionMutation.isError && (
-        <Alert
-          variant="danger"
-          class="mb-3"
-          dismissible
-          onClose={() => groupSubmissionMutation.reset()}
-        >
-          <strong>Error:</strong> {groupSubmissionMutation.error.message}
-        </Alert>
-      )}
       {toggleAiGradingModeMutation.isError && (
         <Alert
           variant="danger"

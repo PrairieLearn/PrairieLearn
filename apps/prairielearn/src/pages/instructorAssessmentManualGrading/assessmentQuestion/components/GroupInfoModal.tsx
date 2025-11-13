@@ -173,7 +173,7 @@ export function GroupInfoModal({
         <Modal.Footer>
           <div class="m-0 w-100">
             {mutation.isError && (
-              <Alert variant="danger" class="mb-2">
+              <Alert variant="danger" class="mb-2" dismissible onClose={() => mutation.reset()}>
                 <strong>Error:</strong> {mutation.error.message}
               </Alert>
             )}
