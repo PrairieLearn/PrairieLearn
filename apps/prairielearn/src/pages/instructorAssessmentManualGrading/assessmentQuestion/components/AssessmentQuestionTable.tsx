@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { type UseMutationResult, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
@@ -31,6 +31,8 @@ import type {
 } from '../../../../lib/client/safe-db-types.js';
 import type { RubricData } from '../../../../lib/manualGrading.types.js';
 import {
+  type BatchActionData,
+  type BatchActionParams,
   GRADING_STATUS_VALUES,
   type GradingStatusValue,
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
@@ -39,7 +41,6 @@ import {
 import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
-import { useBatchActions } from '../utils/useBatchActions.js';
 
 import { RubricItemsFilter } from './RubricItemsFilter.js';
 
@@ -72,6 +73,20 @@ export interface AssessmentQuestionTableProps {
   onShowGroupAllModal?: () => void;
   onShowGroupUngroupedModal?: () => void;
   onShowConflictModal?: (conflictDetailsUrl: string) => void;
+  mutations: {
+    batchActionMutation: UseMutationResult<{ job_sequence_id: string }, Error, BatchActionParams>;
+    handleBatchAction: (
+      actionData: BatchActionData,
+      instanceQuestionIds: string[],
+      urlPrefix: string,
+    ) => void;
+    deleteAiGradingJobsMutation: UseMutationResult<
+      { success: boolean; numDeleted: number },
+      Error,
+      undefined
+    >;
+    deleteAiGroupingsMutation: UseMutationResult<{ num_deleted: number }, Error, undefined>;
+  };
 }
 
 export function AssessmentQuestionTable({
@@ -95,7 +110,10 @@ export function AssessmentQuestionTable({
   onShowGroupAllModal,
   onShowGroupUngroupedModal,
   onShowConflictModal,
+  mutations,
 }: AssessmentQuestionTableProps) {
+  const queryClient = useQueryClient();
+
   // Query state management
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
@@ -155,8 +173,6 @@ export function AssessmentQuestionTable({
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowSelection, setRowSelection] = useState({});
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
 
@@ -221,6 +237,9 @@ export function AssessmentQuestionTable({
     return Array.from(itemsMap.values()).sort((a, b) => a.number - b.number);
   }, [instanceQuestions]);
 
+  // Use prop for AI grading mode
+  const effectiveAiGradingMode = aiGradingMode;
+
   const columnFilters = useMemo(() => {
     const filters = [
       { id: 'requires_manual_grading', value: gradingStatusFilter },
@@ -231,10 +250,10 @@ export function AssessmentQuestionTable({
     ];
 
     // Only add filters for columns that exist
-    if (aiGradingMode && instanceQuestionGroups.length > 0) {
+    if (effectiveAiGradingMode && instanceQuestionGroups.length > 0) {
       filters.push({ id: 'instance_question_group_name', value: submissionGroupFilter });
     }
-    if (aiGradingMode) {
+    if (effectiveAiGradingMode) {
       filters.push({ id: 'rubric_difference', value: aiAgreementFilter });
     }
     // Filter by rubric items if any are selected
@@ -244,7 +263,7 @@ export function AssessmentQuestionTable({
     if (assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0) {
       filters.push({ id: 'auto_points', value: autoPointsFilter });
     }
-    if (!aiGradingMode) {
+    if (!effectiveAiGradingMode) {
       filters.push({ id: 'score_perc', value: scoreFilter });
     }
 
@@ -260,7 +279,7 @@ export function AssessmentQuestionTable({
     autoPointsFilter,
     totalPointsFilter,
     scoreFilter,
-    aiGradingMode,
+    effectiveAiGradingMode,
     instanceQuestionGroups.length,
     assessmentQuestion.max_auto_points,
     rubricData,
@@ -270,7 +289,7 @@ export function AssessmentQuestionTable({
   const columns = useMemo(
     () =>
       createColumns({
-        aiGradingMode,
+        aiGradingMode: effectiveAiGradingMode,
         instanceQuestionGroups,
         groupWork,
         assessmentQuestion,
@@ -281,7 +300,7 @@ export function AssessmentQuestionTable({
         createCheckboxProps,
       }),
     [
-      aiGradingMode,
+      effectiveAiGradingMode,
       instanceQuestionGroups,
       groupWork,
       assessmentQuestion,
@@ -469,23 +488,18 @@ export function AssessmentQuestionTable({
     };
   }, [queryClientInstance, instanceQuestions, onShowConflictModal]);
 
-  // Use batch actions hook
   const {
     batchActionMutation,
     handleBatchAction,
     deleteAiGradingJobsMutation,
     deleteAiGroupingsMutation,
-  } = useBatchActions({
-    csrfToken,
-    setErrorMessage,
-    setSuccessMessage,
-  });
+  } = mutations;
 
   const columnFiltersComponents = createColumnFilters({
     allGraders,
     allSubmissionGroups,
     allAiAgreementItems,
-    aiGradingMode,
+    aiGradingMode: effectiveAiGradingMode,
     instanceQuestionGroups,
     assessmentQuestion,
     gradingStatusFilter,
@@ -524,14 +538,56 @@ export function AssessmentQuestionTable({
           }}
         />
       </div>
-      {errorMessage && (
-        <Alert variant="danger" class="mb-3" dismissible onClose={() => setErrorMessage(null)}>
-          <strong>Error:</strong> {errorMessage}
+      {batchActionMutation.isError && (
+        <Alert
+          variant="danger"
+          class="mb-3"
+          dismissible
+          onClose={() => batchActionMutation.reset()}
+        >
+          <strong>Error:</strong> {batchActionMutation.error.message}
         </Alert>
       )}
-      {successMessage && (
-        <Alert variant="success" class="mb-3" dismissible onClose={() => setSuccessMessage(null)}>
-          {successMessage}
+      {deleteAiGradingJobsMutation.isError && (
+        <Alert
+          variant="danger"
+          class="mb-3"
+          dismissible
+          onClose={() => deleteAiGradingJobsMutation.reset()}
+        >
+          <strong>Error:</strong> {deleteAiGradingJobsMutation.error.message}
+        </Alert>
+      )}
+      {deleteAiGroupingsMutation.isError && (
+        <Alert
+          variant="danger"
+          class="mb-3"
+          dismissible
+          onClose={() => deleteAiGroupingsMutation.reset()}
+        >
+          <strong>Error:</strong> {deleteAiGroupingsMutation.error.message}
+        </Alert>
+      )}
+      {deleteAiGradingJobsMutation.isSuccess && (
+        <Alert
+          variant="success"
+          class="mb-3"
+          dismissible
+          onClose={() => deleteAiGradingJobsMutation.reset()}
+        >
+          Deleted AI grading results for {deleteAiGradingJobsMutation.data.numDeleted}{' '}
+          {deleteAiGradingJobsMutation.data.numDeleted === 1 ? 'question' : 'questions'}.
+        </Alert>
+      )}
+      {deleteAiGroupingsMutation.isSuccess && (
+        <Alert
+          variant="success"
+          class="mb-3"
+          dismissible
+          onClose={() => deleteAiGroupingsMutation.reset()}
+        >
+          Deleted AI submission grouping results for {deleteAiGroupingsMutation.data.num_deleted}{' '}
+          {deleteAiGroupingsMutation.data.num_deleted === 1 ? 'question' : 'questions'}.
         </Alert>
       )}
       <TanstackTableCard
@@ -562,7 +618,7 @@ export function AssessmentQuestionTable({
         }
         headerButtons={
           <>
-            {aiGradingMode ? (
+            {effectiveAiGradingMode ? (
               <>
                 <Dropdown>
                   <Dropdown.Toggle variant="light" size="sm">
@@ -571,9 +627,22 @@ export function AssessmentQuestionTable({
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
                       onClick={() =>
-                        batchActionMutation.mutate({
-                          action: 'ai_grade_assessment_graded',
-                        })
+                        batchActionMutation.mutate(
+                          {
+                            action: 'ai_grade_assessment_graded',
+                          },
+                          {
+                            onSuccess: (data) => {
+                              if (data.job_sequence_id) {
+                                window.location.href = `${urlPrefix}/jobSequence/${data.job_sequence_id}`;
+                              } else {
+                                void queryClient.invalidateQueries({
+                                  queryKey: ['instance-questions'],
+                                });
+                              }
+                            },
+                          },
+                        )
                       }
                     >
                       Grade all human-graded
@@ -584,6 +653,7 @@ export function AssessmentQuestionTable({
                         handleBatchAction(
                           { batch_action: 'ai_grade_assessment_selected' },
                           selectedIds,
+                          urlPrefix,
                         )
                       }
                     >
@@ -591,9 +661,22 @@ export function AssessmentQuestionTable({
                     </Dropdown.Item>
                     <Dropdown.Item
                       onClick={() =>
-                        batchActionMutation.mutate({
-                          action: 'ai_grade_assessment_all',
-                        })
+                        batchActionMutation.mutate(
+                          {
+                            action: 'ai_grade_assessment_all',
+                          },
+                          {
+                            onSuccess: (data) => {
+                              if (data.job_sequence_id) {
+                                window.location.href = `${urlPrefix}/jobSequence/${data.job_sequence_id}`;
+                              } else {
+                                void queryClient.invalidateQueries({
+                                  queryKey: ['instance-questions'],
+                                });
+                              }
+                            },
+                          },
+                        )
                       }
                     >
                       Grade all
@@ -655,28 +738,38 @@ export function AssessmentQuestionTable({
                       <Dropdown.Item
                         key={grader.user_id}
                         onClick={() =>
-                          handleBatchAction({ assigned_grader: grader.user_id }, selectedIds)
+                          handleBatchAction(
+                            { assigned_grader: grader.user_id },
+                            selectedIds,
+                            urlPrefix,
+                          )
                         }
                       >
                         <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
                       </Dropdown.Item>
                     ))}
                     <Dropdown.Item
-                      onClick={() => handleBatchAction({ assigned_grader: null }, selectedIds)}
+                      onClick={() =>
+                        handleBatchAction({ assigned_grader: null }, selectedIds, urlPrefix)
+                      }
                     >
                       <i class="fas fa-user-slash" /> Remove grader assignment
                     </Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item
                       onClick={() =>
-                        handleBatchAction({ requires_manual_grading: true }, selectedIds)
+                        handleBatchAction({ requires_manual_grading: true }, selectedIds, urlPrefix)
                       }
                     >
                       <i class="fas fa-tag" /> Tag as required grading
                     </Dropdown.Item>
                     <Dropdown.Item
                       onClick={() =>
-                        handleBatchAction({ requires_manual_grading: false }, selectedIds)
+                        handleBatchAction(
+                          { requires_manual_grading: false },
+                          selectedIds,
+                          urlPrefix,
+                        )
                       }
                     >
                       <i class="fas fa-check-square" /> Tag as graded

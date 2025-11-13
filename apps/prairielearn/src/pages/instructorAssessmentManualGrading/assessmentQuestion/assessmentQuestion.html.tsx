@@ -12,7 +12,6 @@ import {
   getPageContext,
 } from '../../../lib/client/page-context.js';
 import {
-  type StaffAssessmentQuestion,
   StaffAssessmentQuestionSchema,
   type StaffInstanceQuestionGroup,
   StaffQuestionSchema,
@@ -53,10 +52,10 @@ export function AssessmentQuestion({
 
   const { assessment } = getAssessmentContext(resLocals);
 
+  // TODO: see https://github.com/PrairieLearn/PrairieLearn/pull/13348
   const question = StaffQuestionSchema.parse(resLocals.question);
   const assessment_question = StaffAssessmentQuestionSchema.parse(resLocals.assessment_question);
-
-  const { num_open_instances } = resLocals;
+  const { num_open_instances, number_in_alternative_group } = resLocals;
 
   return PageLayout({
     resLocals,
@@ -68,7 +67,7 @@ export function AssessmentQuestion({
     },
     options: {
       fullWidth: true,
-      pageNote: `Question ${assessment_question.number_in_alternative_group}`,
+      pageNote: `Question ${number_in_alternative_group}`,
     },
     headContent: html` ${compiledStylesheetTag('tanstackTable.css')} `,
     content: (
@@ -85,43 +84,6 @@ export function AssessmentQuestion({
           assessmentId={assessment.id}
           urlPrefix={urlPrefix}
         />
-        <div class="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
-          <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-              <li class="breadcrumb-item">
-                <a href={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}>
-                  {' '}
-                  Manual grading{' '}
-                </a>
-              </li>
-              <li class="breadcrumb-item active" aria-current="page">
-                Question {assessment_question.number_in_alternative_group}. {question.title}
-              </li>
-            </ol>
-          </nav>
-
-          {aiGradingEnabled && (
-            <form method="POST" id="toggle-ai-grading-mode-form" class="card px-3 py-2 mb-0">
-              <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
-              <input type="hidden" name="__csrf_token" value={__csrf_token} />
-              <div class="form-check form-switch mb-0">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  role="switch"
-                  id="switchCheckDefault"
-                  checked={aiGradingMode}
-                  // @ts-expect-error -- We don't want to hydrate this part of the DOM
-                  onchange="setTimeout(() => this.form.submit(), 150)"
-                />
-                <label class="form-check-label" for="switchCheckDefault">
-                  <i class="bi bi-stars" />
-                  AI grading mode
-                </label>
-              </div>
-            </form>
-          )}
-        </div>
 
         <Hydrate fullHeight>
           <AssessmentQuestionManualGrading
@@ -133,11 +95,11 @@ export function AssessmentQuestion({
             urlPrefix={urlPrefix}
             csrfToken={__csrf_token}
             assessmentId={assessment.id}
-            // TODO: FIXME:
-            assessmentQuestion={assessment_question as unknown as StaffAssessmentQuestion}
+            assessmentQuestion={assessment_question}
             assessmentTid={assessment.tid!}
             questionQid={question.qid!}
-            aiGradingMode={aiGradingMode}
+            aiGradingEnabled={aiGradingEnabled}
+            initialAiGradingMode={aiGradingMode}
             groupWork={assessment.group_work ?? false}
             rubricData={rubric_data}
             instanceQuestionGroups={instanceQuestionGroups}
@@ -145,6 +107,8 @@ export function AssessmentQuestion({
             aiGradingStats={aiGradingStats}
             numOpenInstances={num_open_instances}
             isDevMode={process.env.NODE_ENV === 'development'}
+            questionTitle={question.title ?? ''}
+            questionNumber={Number(number_in_alternative_group)}
           />
         </Hydrate>
       </>
