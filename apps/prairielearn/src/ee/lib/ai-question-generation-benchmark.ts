@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { type EmbeddingModel, type LanguageModel, generateObject } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
@@ -11,7 +11,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import type { OpenAIModelId } from '../../lib/ai.js';
 import { config } from '../../lib/config.js';
-import { AiQuestionGenerationPromptSchema } from '../../lib/db-types.js';
+import { AiQuestionGenerationPromptSchema, type User } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import { insertCourse } from '../../models/course.js';
@@ -170,12 +170,12 @@ export async function benchmarkAiQuestionGeneration({
   embeddingModel,
   generationModel,
   evaluationModel,
-  authnUserId,
+  user,
 }: {
   embeddingModel: EmbeddingModel;
   generationModel: LanguageModel;
   evaluationModel: LanguageModel;
-  authnUserId: string;
+  user: User;
 }): Promise<string> {
   // Safety check: for now, we really only want this to run in dev mode.
   if (!config.devMode) {
@@ -185,7 +185,7 @@ export async function benchmarkAiQuestionGeneration({
   const serverJob = await createServerJob({
     type: 'ai_question_generation_benchmark',
     description: 'Benchmark AI question generation',
-    authnUserId,
+    authnUserId: user.user_id,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -219,7 +219,7 @@ export async function benchmarkAiQuestionGeneration({
       path: courseDirectory.path,
       repository: null,
       branch: 'master',
-      authn_user_id: authnUserId,
+      authn_user_id: user.user_id,
     });
 
     // Sync the course to the database so future edits will do their thing.
@@ -246,9 +246,9 @@ export async function benchmarkAiQuestionGeneration({
         model: generationModel,
         embeddingModel,
         courseId: course.id,
-        authnUserId,
+        authnUserId: user.user_id,
         prompt: benchmark.prompt,
-        userId: authnUserId,
+        userId: user.user_id,
         hasCoursePermissionEdit: true,
       });
 
@@ -388,7 +388,8 @@ async function evaluateGeneratedQuestion({
     providerOptions: {
       openai: {
         reasoningEffort: 'low',
-      } satisfies OpenAIChatLanguageModelOptions,
+        strictJsonSchema: true,
+      } satisfies OpenAIResponsesProviderOptions,
     },
   });
 

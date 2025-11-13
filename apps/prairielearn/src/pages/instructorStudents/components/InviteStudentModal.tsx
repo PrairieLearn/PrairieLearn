@@ -86,6 +86,11 @@ export function InviteStudentModal({
                   const params = new URLSearchParams({ uid });
                   const res = await fetch(
                     `${window.location.pathname}/enrollment.json?${params.toString()}`,
+                    {
+                      headers: {
+                        Accept: 'application/json',
+                      },
+                    },
                   );
                   if (!res.ok) return 'Failed to fetch enrollment';
                   const data: StaffEnrollment | null = await res.json();

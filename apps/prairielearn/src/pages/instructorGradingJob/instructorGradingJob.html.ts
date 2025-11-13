@@ -5,20 +5,28 @@ import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.js';
 import { Navbar } from '../../components/Navbar.js';
-import { config } from '../../lib/config.js';
-import { GradingJobSchema, QuestionSchema, UserSchema, VariantSchema } from '../../lib/db-types.js';
+import {
+  AssessmentInstanceSchema,
+  AssessmentSchema,
+  GradingJobSchema,
+  GroupUserSchema,
+  QuestionSchema,
+  UserSchema,
+  VariantSchema,
+} from '../../lib/db-types.js';
 
 export const GradingJobRowSchema = z.object({
-  // This object will have other columns, but we only care about this one
-  aai: z.object({ authorized: z.boolean() }).nullable(),
   grading_job: GradingJobSchema,
   question_id: QuestionSchema.shape.id,
   question_qid: QuestionSchema.shape.qid,
   user_uid: UserSchema.shape.uid,
   variant_id: VariantSchema.shape.id,
   instance_question_id: VariantSchema.shape.instance_question_id,
+  assessment: AssessmentSchema.nullable(),
+  assessment_instance: AssessmentInstanceSchema.nullable(),
+  assessment_instance_group_users: z.array(GroupUserSchema).nullable(),
 });
-type GradingJobRow = z.infer<typeof GradingJobRowSchema>;
+export type GradingJobRow = z.infer<typeof GradingJobRowSchema>;
 
 export function InstructorGradingJob({
   resLocals,
@@ -37,7 +45,7 @@ export function InstructorGradingJob({
       : html`&mdash;`;
   const variantLink =
     gradingJobRow.instance_question_id != null
-      ? `${config.urlPrefix}/course_instance/${resLocals.course_instance.id}/instance_question/${gradingJobRow.instance_question_id}?variant_id=${gradingJobRow.variant_id}`
+      ? `/pl/course_instance/${resLocals.course_instance.id}/instance_question/${gradingJobRow.instance_question_id}?variant_id=${gradingJobRow.variant_id}`
       : `${resLocals.urlPrefix}/question/${gradingJobRow.question_id}/preview?variant_id=${gradingJobRow.variant_id}`;
 
   return html`

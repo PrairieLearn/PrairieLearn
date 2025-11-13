@@ -340,14 +340,6 @@
       "type": "string",
       "default": "master"
     },
-    "urlPrefix": {
-      "type": "string",
-      "default": "/pl"
-    },
-    "homeUrl": {
-      "type": "string",
-      "default": "/"
-    },
     "assetsPrefix": {
       "type": "string",
       "default": "/assets"

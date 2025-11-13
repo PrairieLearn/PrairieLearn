@@ -71,12 +71,16 @@ function CopyEnrollmentLinkButton({
 }: {
   courseInstance: StaffCourseInstanceContext['course_instance'];
 }) {
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
   const selfEnrollmentCodeLink = getSelfEnrollmentLinkUrl({
     courseInstanceId: courseInstance.id,
     enrollmentCode: courseInstance.enrollment_code,
   });
 
-  const handleCopyLink = async () => {
+  const handleCopyLink = async (e: Event) => {
+    e.stopPropagation();
     const selfEnrollmentLink = run(() => {
       if (!courseInstance.self_enrollment_use_enrollment_code) {
         return getStudentCourseInstanceUrl(courseInstance.id);
@@ -84,9 +88,12 @@ function CopyEnrollmentLinkButton({
       return selfEnrollmentCodeLink;
     });
     await copyToClipboard(`${window.location.origin}${selfEnrollmentLink}`);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const handleCopyCode = async () => {
+  const handleCopyCode = async (e: Event) => {
+    e.stopPropagation();
     const enrollmentCodeDashed =
       courseInstance.enrollment_code.slice(0, 3) +
       '-' +
@@ -94,6 +101,8 @@ function CopyEnrollmentLinkButton({
       '-' +
       courseInstance.enrollment_code.slice(6);
     await copyToClipboard(enrollmentCodeDashed);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   return (
@@ -104,17 +113,29 @@ function CopyEnrollmentLinkButton({
       variant="light"
     >
       {courseInstance.self_enrollment_use_enrollment_code && (
-        <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
-          <i class="bi bi-key me-2" />
-          Copy enrollment code
-        </Dropdown.Item>
+        <OverlayTrigger
+          placement="right"
+          overlay={<Tooltip>{copiedCode ? 'Copied!' : 'Copy'}</Tooltip>}
+          show={copiedCode ? true : undefined}
+        >
+          <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
+            <i class="bi bi-key me-2" />
+            Copy enrollment code
+          </Dropdown.Item>
+        </OverlayTrigger>
       )}
 
       {courseInstance.self_enrollment_enabled && (
-        <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
-          <i class="bi bi-link-45deg me-2" />
-          Copy enrollment link
-        </Dropdown.Item>
+        <OverlayTrigger
+          placement="right"
+          overlay={<Tooltip>{copiedLink ? 'Copied!' : 'Copy'}</Tooltip>}
+          show={copiedLink ? true : undefined}
+        >
+          <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
+            <i class="bi bi-link-45deg me-2" />
+            Copy enrollment link
+          </Dropdown.Item>
+        </OverlayTrigger>
       )}
       <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
         <i class="bi bi-gear me-2" />
@@ -179,7 +200,11 @@ function StudentsCard({
   const { data: students } = useQuery<StudentRow[]>({
     queryKey: ['enrollments', 'students'],
     queryFn: async () => {
-      const res = await fetch(window.location.pathname + '/data.json');
+      const res = await fetch(window.location.pathname + '/data.json', {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
       if (!res.ok) throw new Error('Failed to fetch students');
       const data = await res.json();
       const parsedData = z.array(StudentRowSchema).safeParse(data);
@@ -203,6 +228,9 @@ function StudentsCard({
       const res = await fetch(window.location.href, {
         method: 'POST',
         body,
+        headers: {
+          Accept: 'application/json',
+        },
       });
       const json = await res.json();
       if (!res.ok) {
