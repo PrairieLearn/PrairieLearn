@@ -10,17 +10,19 @@ apt-get upgrade -y
 apt-get install -y curl ca-certificates
 install -d /usr/share/postgresql-common/pgdg
 curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
-echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $VERSION_CODENAME-pgdg main' > /etc/apt/sources.list.d/pgdg.list
+echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main' > /etc/apt/sources.list.d/pgdg.list
 
 # Notes:
 # - `g++` (via build-essential) is needed to build the native bindings in `packages/bind-mount`
 # - `libjpeg-dev` is needed by the Pillow package
 # - `procps` is needed for the `pkill` executable, which is used by `zygote.py`
-# - `texlive` and `texlive-latex-extra` are needed for matplotlib LaTeX labels
+# - `texlive`, `dvipng`, and `texlive-latex-extra` are needed for matplotlib LaTeX labels
+#   (type1cm is only available in texlive-latex-extra, see https://github.com/matplotlib/matplotlib/issues/27654)
 apt-get install -y --no-install-recommends \
     bash-completion \
     build-essential \
     curl \
+    dvipng \
     git \
     graphviz \
     libgraphviz-dev \
