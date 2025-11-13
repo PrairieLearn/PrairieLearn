@@ -200,7 +200,11 @@ function StudentsCard({
   const { data: students } = useQuery<StudentRow[]>({
     queryKey: ['enrollments', 'students'],
     queryFn: async () => {
-      const res = await fetch(window.location.pathname + '/data.json');
+      const res = await fetch(window.location.pathname + '/data.json', {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
       if (!res.ok) throw new Error('Failed to fetch students');
       const data = await res.json();
       const parsedData = z.array(StudentRowSchema).safeParse(data);
@@ -224,6 +228,9 @@ function StudentsCard({
       const res = await fetch(window.location.href, {
         method: 'POST',
         body,
+        headers: {
+          Accept: 'application/json',
+        },
       });
       const json = await res.json();
       if (!res.ok) {
