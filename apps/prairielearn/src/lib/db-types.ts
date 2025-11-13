@@ -331,6 +331,7 @@ export const AssessmentSchema = z.object({
   json_grade_rate_minutes: z.number().nullable(),
   max_bonus_points: z.number().nullable(),
   max_points: z.number().nullable(),
+  modern_access_control: z.boolean(),
   multiple_instance: z.boolean().nullable(),
   number: z.string(),
   obj: z.any().nullable(),

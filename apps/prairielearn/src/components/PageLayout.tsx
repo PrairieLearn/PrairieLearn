@@ -60,10 +60,14 @@ export function PageLayout({
     enableNavbar?: boolean;
     /** Whether or not to include padding around the content. */
     contentPadding?: boolean;
-    /** The default state of the side navigation toggle. */
-    defaultNavToggleState?: boolean;
-    /** Whether or not to persist the navigation toggle state. Defaults to true. */
-    persistNavToggleState?: boolean;
+    /**
+     * Forces the side nav to be in a specific state when the page loads,
+     * regardless of the user's previous preference.
+     *
+     * If a value is provided, any state toggles that happen on the client
+     * will not be persisted to the user's session.
+     */
+    forcedInitialNavToggleState?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
@@ -94,18 +98,22 @@ export function PageLayout({
   const postContentString = asHtmlSafe(postContent);
 
   if (resLocals.has_enhanced_navigation && resolvedOptions.enableEnhancedNav) {
-    // The side navbar is only available if the user is in a page within a course or course instance.
-    const sideNavEnabled =
-      resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
+    // The side navbar is only available if the user is on an course instructor page.
+    const sideNavEnabled = resLocals.course && navContext.type === 'instructor';
 
     const sideNavExpanded =
-      sideNavEnabled && (resolvedOptions.defaultNavToggleState ?? resLocals.side_nav_expanded);
+      sideNavEnabled &&
+      (resolvedOptions.forcedInitialNavToggleState ?? resLocals.side_nav_expanded);
 
-    let showContextNavigation = true;
+    let showContextNavigation = [
+      'instructor',
+      'administrator_institution',
+      'administrator',
+      'institution',
+    ].includes(navContext.type ?? '');
 
-    // ContextNavigation is shown if either:
-    // The side nav is not shown.
-    // The side nav is shown and additional navigation capabilities are needed, such as on the course admin settings pages.
+    // If additional navigation capabilities are not needed, such as on the
+    // course staff and sync pages, then the context navigation is not shown.
     if (navContext.page === 'course_admin') {
       const navPageTabs = getNavPageTabs(true);
 
@@ -189,7 +197,8 @@ export function PageLayout({
                         page: navContext.page,
                         subPage: navContext.subPage,
                         sideNavExpanded,
-                        persistToggleState: resolvedOptions.persistNavToggleState,
+                        persistToggleState:
+                          resolvedOptions.forcedInitialNavToggleState === undefined,
                       })}
                     </div>
                   </nav>

@@ -121,7 +121,7 @@ router.get(
         );
         // Redirect to the copied course instance
         res.redirect(
-          `${res.locals.plainUrlPrefix}/course_instance/${courseInstance.id}/instructor/instance_admin/assessments`,
+          `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/assessments`,
         );
         break;
       }

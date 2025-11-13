@@ -9,7 +9,6 @@ import {
 } from '../../admin_queries/lib/util.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
-import { config } from '../../lib/config.js';
 import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 
 export const AdministratorQueryRunParamsSchema = z.object({
@@ -47,7 +46,7 @@ export function AdministratorQuery({
     resLocals,
     pageTitle: queryFilename,
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'queries',
     },
@@ -268,20 +267,20 @@ function renderCell(row: any, col: string, columns: string[], info: Administrato
   if (col === 'course' && 'course_id' in row) {
     return html`
       <td ${tdAttributes}>
-        <a href="${config.urlPrefix}/course/${row.course_id}">${row[col]}</a>
+        <a href="/pl/course/${row.course_id}">${row[col]}</a>
       </td>
     `;
   } else if (col === 'course_instance' && 'course_instance_id' in row) {
     return html`
       <td ${tdAttributes}>
-        <a href="${config.urlPrefix}/course_instance/${row.course_instance_id}">${row[col]}</a>
+        <a href="/pl/course_instance/${row.course_instance_id}">${row[col]}</a>
       </td>
     `;
   } else if (col === 'assessment' && 'assessment_id' in row && 'course_instance_id' in row) {
     return html`
       <td ${tdAttributes}>
         <a
-          href="${config.urlPrefix}/course_instance/${row.course_instance_id}/instructor/assessment/${row.assessment_id}"
+          href="/pl/course_instance/${row.course_instance_id}/instructor/assessment/${row.assessment_id}"
         >
           ${row[col]}
         </a>
