@@ -62,7 +62,6 @@ export function createColumns({
   };
 
   return [
-    // Checkbox column for batch selection
     columnHelper.display({
       id: 'select',
       header: ({ table }) => (
@@ -85,7 +84,6 @@ export function createColumns({
       enableResizing: false,
     }),
 
-    // Instance number column
     columnHelper.accessor((row, index) => index, {
       id: 'index',
       header: 'Instance',
@@ -121,7 +119,6 @@ export function createColumns({
       enableColumnFilter: false,
     }),
 
-    // Submission group column
     columnHelper.accessor((row) => row.instance_question.instance_question_group_name, {
       id: 'instance_question_group_name',
       header: 'Submission group',
@@ -162,14 +159,12 @@ export function createColumns({
       enableHiding: aiGradingMode && instanceQuestionGroups.length > 0,
     }),
 
-    // User/Group name column
     columnHelper.accessor('user_or_group_name', {
       id: 'user_or_group_name',
       header: assessment.group_work ? 'Group name' : 'Name',
       cell: (info) => info.getValue() || '—',
     }),
 
-    // UID column
     columnHelper.accessor('uid', {
       id: 'uid',
       header: assessment.group_work ? 'UIDs' : 'UID',
@@ -184,7 +179,6 @@ export function createColumns({
       },
     }),
 
-    // Grading status column
     columnHelper.accessor((row) => row.instance_question.requires_manual_grading, {
       id: 'requires_manual_grading',
       header: 'Grading status',
@@ -197,7 +191,6 @@ export function createColumns({
       },
     }),
 
-    // Assigned grader column
     columnHelper.accessor('assigned_grader_name', {
       id: 'assigned_grader_name',
       header: 'Assigned grader',
@@ -210,7 +203,6 @@ export function createColumns({
       },
     }),
 
-    // Auto points column
     columnHelper.accessor((row) => row.instance_question.auto_points, {
       id: 'auto_points',
       header: 'Auto points',
@@ -219,7 +211,6 @@ export function createColumns({
       enableHiding: (assessmentQuestion.max_auto_points ?? 0) > 0,
     }),
 
-    // Manual points column
     columnHelper.accessor((row) => row.instance_question.manual_points, {
       id: 'manual_points',
       header: 'Manual points',
@@ -227,7 +218,6 @@ export function createColumns({
       filterFn: numericColumnFilterFn,
     }),
 
-    // Total points column
     columnHelper.accessor((row) => row.instance_question.points, {
       id: 'points',
       header: 'Total points',
@@ -235,7 +225,6 @@ export function createColumns({
       filterFn: numericColumnFilterFn,
     }),
 
-    // Score percentage column
     columnHelper.accessor((row) => row.instance_question.score_perc, {
       id: 'score_perc',
       header: 'Percentage score',
@@ -255,7 +244,6 @@ export function createColumns({
       size: 200,
     }),
 
-    // Graded by column
     columnHelper.accessor('last_grader_name', {
       id: 'last_grader_name',
       header: 'Graded by',
@@ -301,13 +289,11 @@ export function createColumns({
         if (!current) return filterValues.includes('Unassigned');
         const rowData = row.original;
 
-        // Check AI grader
         if (rowData.instance_question.ai_grading_status !== 'None') {
           const aiGraderName = generateAiGraderName(rowData.instance_question.ai_grading_status);
           if (filterValues.includes(aiGraderName)) return true;
         }
 
-        // Check human grader
         return filterValues.includes(current);
       },
     }),
@@ -373,7 +359,7 @@ export function createColumns({
         if (filterValues.length === 0) return true;
         const rubricDiff = row.original.instance_question.rubric_difference;
         if (!rubricDiff || !Array.isArray(rubricDiff)) return false;
-        // Check if ALL of the selected items are in the disagreement
+
         return filterValues.every((description) =>
           rubricDiff.some((item) => item.description === description),
         );
@@ -398,7 +384,6 @@ export function createColumns({
       enableHiding: aiGradingMode,
     }),
 
-    // Hidden column for filtering by rubric items
     columnHelper.accessor('rubric_grading_item_ids', {
       id: 'rubric_grading_item_ids',
       header: 'Rubric Items',
@@ -408,7 +393,6 @@ export function createColumns({
       filterFn: (row, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
         const rubricItemIds = row.original.rubric_grading_item_ids;
-        // Check if ALL of the selected rubric item IDs are in the row's rubric_grading_item_ids
         return filterValues.every((itemId) => rubricItemIds.includes(itemId));
       },
     }),
