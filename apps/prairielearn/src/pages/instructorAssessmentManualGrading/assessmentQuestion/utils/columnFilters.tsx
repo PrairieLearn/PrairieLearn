@@ -6,7 +6,6 @@ import {
   NumericInputColumnFilter,
 } from '@prairielearn/ui';
 
-import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
 import {
   GRADING_STATUS_VALUES,
   type GradingStatusValue,
@@ -17,9 +16,6 @@ interface CreateColumnFiltersParams {
   allGraders: string[];
   allSubmissionGroups: string[];
   allAiAgreementItems: { number: number; description: string }[];
-  aiGradingMode: boolean;
-  instanceQuestionGroups: InstanceQuestionGroup[];
-  assessmentQuestion: AssessmentQuestion;
   gradingStatusFilter: GradingStatusValue[];
   setGradingStatusFilter: (
     value:
@@ -65,9 +61,6 @@ export function createColumnFilters({
   allGraders,
   allSubmissionGroups,
   allAiAgreementItems,
-  aiGradingMode,
-  instanceQuestionGroups,
-  assessmentQuestion,
   gradingStatusFilter,
   setGradingStatusFilter,
   assignedGraderFilter,
@@ -115,23 +108,19 @@ export function createColumnFilters({
         setColumnValuesFilter={setGradedByFilter}
       />
     ),
-    ...(aiGradingMode && instanceQuestionGroups.length > 0
-      ? {
-          instance_question_group_name: ({
-            header,
-          }: {
-            header: Header<InstanceQuestionRow, unknown>;
-          }) => (
-            <CategoricalColumnFilter
-              columnId={header.column.id}
-              columnLabel="Submission Group"
-              allColumnValues={[...allSubmissionGroups, 'No Group']}
-              columnValuesFilter={submissionGroupFilter}
-              setColumnValuesFilter={setSubmissionGroupFilter}
-            />
-          ),
-        }
-      : {}),
+    instance_question_group_name: ({
+      header,
+    }: {
+      header: Header<InstanceQuestionRow, unknown>;
+    }) => (
+      <CategoricalColumnFilter
+        columnId={header.column.id}
+        columnLabel="Submission Group"
+        allColumnValues={[...allSubmissionGroups, 'No Group']}
+        columnValuesFilter={submissionGroupFilter}
+        setColumnValuesFilter={setSubmissionGroupFilter}
+      />
+    ),
     manual_points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
       <NumericInputColumnFilter
         columnId={header.column.id}
@@ -140,18 +129,14 @@ export function createColumnFilters({
         onChange={setManualPointsFilter}
       />
     ),
-    ...(assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0
-      ? {
-          auto_points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
-            <NumericInputColumnFilter
-              columnId={header.column.id}
-              columnLabel="Auto Points"
-              value={autoPointsFilter}
-              onChange={setAutoPointsFilter}
-            />
-          ),
-        }
-      : {}),
+    auto_points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
+      <NumericInputColumnFilter
+        columnId={header.column.id}
+        columnLabel="Auto Points"
+        value={autoPointsFilter}
+        onChange={setAutoPointsFilter}
+      />
+    ),
     points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
       <NumericInputColumnFilter
         columnId={header.column.id}
@@ -160,30 +145,22 @@ export function createColumnFilters({
         onChange={setTotalPointsFilter}
       />
     ),
-    ...(!aiGradingMode
-      ? {
-          score_perc: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
-            <NumericInputColumnFilter
-              columnId={header.column.id}
-              columnLabel="Score"
-              value={scoreFilter}
-              onChange={setScoreFilter}
-            />
-          ),
-        }
-      : {}),
-    ...(aiGradingMode
-      ? {
-          rubric_difference: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
-            <MultiSelectColumnFilter
-              columnId={header.column.id}
-              columnLabel="AI Disagreements"
-              allColumnValues={allAiAgreementItems.map((item) => item.description)}
-              columnValuesFilter={aiAgreementFilter}
-              setColumnValuesFilter={setAiAgreementFilter}
-            />
-          ),
-        }
-      : {}),
+    score_perc: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
+      <NumericInputColumnFilter
+        columnId={header.column.id}
+        columnLabel="Score"
+        value={scoreFilter}
+        onChange={setScoreFilter}
+      />
+    ),
+    rubric_difference: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
+      <MultiSelectColumnFilter
+        columnId={header.column.id}
+        columnLabel="AI Disagreements"
+        allColumnValues={allAiAgreementItems.map((item) => item.description)}
+        columnValuesFilter={aiAgreementFilter}
+        setColumnValuesFilter={setAiAgreementFilter}
+      />
+    ),
   };
 }

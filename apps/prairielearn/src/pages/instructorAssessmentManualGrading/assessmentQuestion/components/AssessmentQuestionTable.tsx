@@ -322,19 +322,49 @@ export function AssessmentQuestionTable({
     ],
   );
 
-  const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
-  const defaultColumnVisibility = Object.fromEntries(
-    allColumnIds.map((id) => [
-      id,
-      // Hide by default: user_or_group_name, uid, points, rubric_grading_item_ids
-      !['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(id),
-    ]),
-  );
+  const allColumnIds = columns.map((col) => col.id!);
+  const defaultColumnVisibility = useMemo(() => {
+    return Object.fromEntries(
+      columns.map((col) => {
+        if (col.id === 'select') {
+          return [col.id, true];
+        }
+        // If you can't show/hide the column, the default state is hidden.
+        if (col.enableHiding === false) {
+          return [col.id, false];
+        }
+        // Some columns have a default visibility that depends on AI grading mode.
+        if (['requires_manual_grading', 'assigned_grader_name', 'score_perc'].includes(col.id!)) {
+          return [col.id, !aiGradingMode];
+        }
+        if (['instance_question_group_name', 'rubric_difference'].includes(col.id!)) {
+          return [col.id, aiGradingMode];
+        }
+        // Some columns are always hidden by default.
+        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
+          return [col.id, false];
+        }
+
+        return [col.id, true];
+      }),
+    );
+  }, [columns, aiGradingMode]);
+
+  // Use a ref to store the current default so the parser always uses the latest value
+  // This is pretty hacky, but @reteps couldn't figure out a better way to do this.
+  const defaultColumnVisibilityRef = useRef(defaultColumnVisibility);
 
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
-    parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
+    parseAsColumnVisibilityStateWithColumns(allColumnIds, defaultColumnVisibilityRef).withDefault(
+      defaultColumnVisibility,
+    ),
   );
+
+  useEffect(() => {
+    defaultColumnVisibilityRef.current = defaultColumnVisibility;
+    // Super hacky, we need to update the ref when the column visibility changes for some reason.
+  }, [defaultColumnVisibility, columnVisibility]);
 
   // Update column visibility when AI grading mode changes
   useEffect(() => {
@@ -468,9 +498,6 @@ export function AssessmentQuestionTable({
     allGraders,
     allSubmissionGroups,
     allAiAgreementItems,
-    aiGradingMode: effectiveAiGradingMode,
-    instanceQuestionGroups,
-    assessmentQuestion,
     gradingStatusFilter,
     setGradingStatusFilter,
     assignedGraderFilter,

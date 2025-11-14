@@ -83,8 +83,14 @@ export const parseAsSortingState = createParser<SortingState>({
  * Parses a comma-separated list of visible columns from a query string, e.g. 'a,b'.
  * Serializes to a comma-separated list of visible columns, omitting if all are visible.
  * Used for reflecting column visibility in the URL.
+ *
+ * @param allColumns - Array of all column IDs
+ * @param defaultValueRef - A ref object with a `current` property that contains the default visibility state.
  */
-export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
+export function parseAsColumnVisibilityStateWithColumns(
+  allColumns: string[],
+  defaultValueRef?: React.RefObject<VisibilityState>,
+) {
   return createParser<VisibilityState>({
     parse(queryValue: string) {
       const shown =
@@ -99,14 +105,17 @@ export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
     },
     serialize(value) {
       // Only output columns that are visible
-      const visible = allColumns.filter((col) => value[col]);
-      if (visible.length === allColumns.length) return '';
+      const visible = Object.keys(value).filter((col) => value[col]);
       return visible.join(',');
     },
-    eq(a, b) {
-      const aKeys = Object.keys(a);
-      const bKeys = Object.keys(b);
-      return aKeys.length === bKeys.length && aKeys.every((col) => a[col] === b[col]);
+    eq(value, defaultValue) {
+      const currentDefault = defaultValueRef?.current ?? defaultValue;
+      const valueKeys = Object.keys(value);
+      const defaultValueKeys = Object.keys(currentDefault);
+      const result =
+        valueKeys.length === defaultValueKeys.length &&
+        valueKeys.every((col) => value[col] === currentDefault[col]);
+      return result;
     },
   });
 }

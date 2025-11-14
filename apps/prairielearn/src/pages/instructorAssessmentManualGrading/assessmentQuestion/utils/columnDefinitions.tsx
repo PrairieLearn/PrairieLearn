@@ -121,61 +121,55 @@ export function createColumns({
       enableColumnFilter: false,
     }),
 
-    // Submission group column (AI grading mode only)
-    ...(aiGradingMode && instanceQuestionGroups.length > 0
-      ? [
-          columnHelper.accessor((row) => row.instance_question.instance_question_group_name, {
-            id: 'instance_question_group_name',
-            header: 'Submission group',
-            cell: (info) => {
-              const value = info.getValue();
-              if (!value) {
-                return <span class="text-secondary">No Group</span>;
-              }
-              const group = instanceQuestionGroups.find(
-                (g) => g.instance_question_group_name === value,
-              );
-              return (
-                <span class="d-flex align-items-center gap-2">
-                  {value}
-                  {group && (
-                    <OverlayTrigger
-                      overlay={<Tooltip>{group.instance_question_group_description}</Tooltip>}
-                    >
-                      <span>
-                        <i class="fas fa-circle-info text-secondary" />
-                      </span>
-                    </OverlayTrigger>
-                  )}
+    // Submission group column
+    columnHelper.accessor((row) => row.instance_question.instance_question_group_name, {
+      id: 'instance_question_group_name',
+      header: 'Submission group',
+      cell: (info) => {
+        const value = info.getValue();
+        if (!value) {
+          return <span class="text-secondary">No Group</span>;
+        }
+        const group = instanceQuestionGroups.find((g) => g.instance_question_group_name === value);
+        return (
+          <span class="d-flex align-items-center gap-2">
+            {value}
+            {group && (
+              <OverlayTrigger
+                overlay={<Tooltip>{group.instance_question_group_description}</Tooltip>}
+              >
+                <span>
+                  <i class="fas fa-circle-info text-secondary" />
                 </span>
-              );
-            },
-            filterFn: (row, columnId, filterValues: string[]) => {
-              if (filterValues.length === 0) return true;
-              // We have to do this cast because columnId is a string.
-              // See https://github.com/TanStack/table/issues/4142#issuecomment-3518670925.
-              const current =
-                row.getValue<
-                  InstanceQuestionRow['instance_question']['instance_question_group_name']
-                >(columnId);
-              if (!current) {
-                return filterValues.includes('No Group');
-              }
-              return filterValues.includes(current);
-            },
-          }),
-        ]
-      : []),
+              </OverlayTrigger>
+            )}
+          </span>
+        );
+      },
+      filterFn: (row, columnId, filterValues: string[]) => {
+        if (filterValues.length === 0) return true;
+        // We have to do this cast because columnId is a string.
+        // See https://github.com/TanStack/table/issues/4142#issuecomment-3518670925.
+        const current =
+          row.getValue<InstanceQuestionRow['instance_question']['instance_question_group_name']>(
+            columnId,
+          );
+        if (!current) {
+          return filterValues.includes('No Group');
+        }
+        return filterValues.includes(current);
+      },
+      enableHiding: aiGradingMode && instanceQuestionGroups.length > 0,
+    }),
 
-    // User/Group name column (hidden by default)
+    // User/Group name column
     columnHelper.accessor('user_or_group_name', {
       id: 'user_or_group_name',
       header: assessment.group_work ? 'Group name' : 'Name',
       cell: (info) => info.getValue() || '—',
-      enableHiding: true,
     }),
 
-    // UID column (hidden by default)
+    // UID column
     columnHelper.accessor('uid', {
       id: 'uid',
       header: assessment.group_work ? 'UIDs' : 'UID',
@@ -188,7 +182,6 @@ export function createColumns({
         }
         return uid;
       },
-      enableHiding: true,
     }),
 
     // Grading status column
@@ -217,17 +210,14 @@ export function createColumns({
       },
     }),
 
-    // Auto points column (only if assessment question has auto points)
-    ...(assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0
-      ? [
-          columnHelper.accessor((row) => row.instance_question.auto_points, {
-            id: 'auto_points',
-            header: 'Auto points',
-            cell: (info) => <PointsCell row={info.row.original} field="auto_points" />,
-            filterFn: numericColumnFilterFn,
-          }),
-        ]
-      : []),
+    // Auto points column
+    columnHelper.accessor((row) => row.instance_question.auto_points, {
+      id: 'auto_points',
+      header: 'Auto points',
+      cell: (info) => <PointsCell row={info.row.original} field="auto_points" />,
+      filterFn: numericColumnFilterFn,
+      enableHiding: (assessmentQuestion.max_auto_points ?? 0) > 0,
+    }),
 
     // Manual points column
     columnHelper.accessor((row) => row.instance_question.manual_points, {
@@ -237,13 +227,12 @@ export function createColumns({
       filterFn: numericColumnFilterFn,
     }),
 
-    // Total points column (hidden by default)
+    // Total points column
     columnHelper.accessor((row) => row.instance_question.points, {
       id: 'points',
       header: 'Total points',
       cell: (info) => <PointsCell row={info.row.original} field="points" />,
       filterFn: numericColumnFilterFn,
-      enableHiding: true,
     }),
 
     // Score percentage column
@@ -323,100 +312,91 @@ export function createColumns({
       },
     }),
 
-    // AI agreement column (AI grading mode only)
-    ...(aiGradingMode
-      ? [
-          columnHelper.accessor((row) => row.instance_question.rubric_difference, {
-            id: 'rubric_difference',
-            header: 'AI agreement',
-            size: 300,
-            minSize: 200,
-            maxSize: 600,
-            meta: {
-              wrapText: true,
-            },
-            cell: (info) => {
-              const row = info.row.original;
-              if (row.instance_question.point_difference === null) {
-                return '—';
-              }
+    // AI agreement column
+    columnHelper.accessor((row) => row.instance_question.rubric_difference, {
+      id: 'rubric_difference',
+      header: 'AI agreement',
+      size: 300,
+      minSize: 200,
+      maxSize: 600,
+      meta: {
+        wrapText: true,
+      },
+      cell: (info) => {
+        const row = info.row.original;
+        if (row.instance_question.point_difference === null) {
+          return '—';
+        }
 
-              if (row.instance_question.rubric_difference === null) {
-                if (!row.instance_question.point_difference) {
-                  return <i class="bi bi-check-square-fill text-success" />;
-                } else {
-                  const prefix = row.instance_question.point_difference < 0 ? '' : '+';
-                  return (
-                    <span class="text-danger">
-                      <i class="bi bi-x-square-fill" /> {prefix}
-                      {formatPoints(row.instance_question.point_difference)}
-                    </span>
-                  );
-                }
-              }
+        if (row.instance_question.rubric_difference === null) {
+          if (!row.instance_question.point_difference) {
+            return <i class="bi bi-check-square-fill text-success" />;
+          } else {
+            const prefix = row.instance_question.point_difference < 0 ? '' : '+';
+            return (
+              <span class="text-danger">
+                <i class="bi bi-x-square-fill" /> {prefix}
+                {formatPoints(row.instance_question.point_difference)}
+              </span>
+            );
+          }
+        }
 
-              if (row.instance_question.rubric_difference.length === 0) {
-                return (
-                  <OverlayTrigger
-                    overlay={<Tooltip>AI and human grading are in agreement</Tooltip>}
-                  >
-                    <i class="bi bi-check-square-fill text-success" />
+        if (row.instance_question.rubric_difference.length === 0) {
+          return (
+            <OverlayTrigger overlay={<Tooltip>AI and human grading are in agreement</Tooltip>}>
+              <i class="bi bi-check-square-fill text-success" />
+            </OverlayTrigger>
+          );
+        }
+
+        return (
+          <div>
+            {row.instance_question.rubric_difference.map((item) => (
+              <div key={item.description}>
+                {item.false_positive ? (
+                  <OverlayTrigger overlay={<Tooltip>Selected by AI but not by human</Tooltip>}>
+                    <i class="bi bi-plus-square-fill text-danger" />
                   </OverlayTrigger>
-                );
-              }
+                ) : (
+                  <OverlayTrigger overlay={<Tooltip>Selected by human but not by AI</Tooltip>}>
+                    <i class="bi bi-dash-square-fill text-danger" />
+                  </OverlayTrigger>
+                )}{' '}
+                <span>{item.description}</span>
+              </div>
+            ))}
+          </div>
+        );
+      },
+      filterFn: (row, columnId, filterValues: string[]) => {
+        if (filterValues.length === 0) return true;
+        const rubricDiff = row.original.instance_question.rubric_difference;
+        if (!rubricDiff || !Array.isArray(rubricDiff)) return false;
+        // Check if ALL of the selected items are in the disagreement
+        return filterValues.every((description) =>
+          rubricDiff.some((item) => item.description === description),
+        );
+      },
+      sortingFn: (rowA, rowB) => {
+        const aDiff = rowA.original.instance_question.point_difference;
+        const bDiff = rowB.original.instance_question.point_difference;
 
-              return (
-                <div>
-                  {row.instance_question.rubric_difference.map((item) => (
-                    <div key={item.description}>
-                      {item.false_positive ? (
-                        <OverlayTrigger
-                          overlay={<Tooltip>Selected by AI but not by human</Tooltip>}
-                        >
-                          <i class="bi bi-plus-square-fill text-danger" />
-                        </OverlayTrigger>
-                      ) : (
-                        <OverlayTrigger
-                          overlay={<Tooltip>Selected by human but not by AI</Tooltip>}
-                        >
-                          <i class="bi bi-dash-square-fill text-danger" />
-                        </OverlayTrigger>
-                      )}{' '}
-                      <span>{item.description}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            },
-            filterFn: (row, columnId, filterValues: string[]) => {
-              if (filterValues.length === 0) return true;
-              const rubricDiff = row.original.instance_question.rubric_difference;
-              if (!rubricDiff || !Array.isArray(rubricDiff)) return false;
-              // Check if ALL of the selected items are in the disagreement
-              return filterValues.every((description) =>
-                rubricDiff.some((item) => item.description === description),
-              );
-            },
-            sortingFn: (rowA, rowB) => {
-              const aDiff = rowA.original.instance_question.point_difference;
-              const bDiff = rowB.original.instance_question.point_difference;
+        if (aDiff === null && bDiff === null) return 0;
+        if (aDiff === null) return 1;
+        if (bDiff === null) return -1;
 
-              if (aDiff === null && bDiff === null) return 0;
-              if (aDiff === null) return 1;
-              if (bDiff === null) return -1;
+        const aRubricDiff = rowA.original.instance_question.rubric_difference?.length ?? 0;
+        const bRubricDiff = rowB.original.instance_question.rubric_difference?.length ?? 0;
 
-              const aRubricDiff = rowA.original.instance_question.rubric_difference?.length ?? 0;
-              const bRubricDiff = rowB.original.instance_question.rubric_difference?.length ?? 0;
+        if (aRubricDiff !== bRubricDiff) {
+          return aRubricDiff - bRubricDiff;
+        }
 
-              if (aRubricDiff !== bRubricDiff) {
-                return aRubricDiff - bRubricDiff;
-              }
-
-              return Math.abs(aDiff) - Math.abs(bDiff);
-            },
-          }),
-        ]
-      : []),
+        return Math.abs(aDiff) - Math.abs(bDiff);
+      },
+      enableHiding: aiGradingMode,
+    }),
 
     // Hidden column for filtering by rubric items
     columnHelper.accessor('rubric_grading_item_ids', {
