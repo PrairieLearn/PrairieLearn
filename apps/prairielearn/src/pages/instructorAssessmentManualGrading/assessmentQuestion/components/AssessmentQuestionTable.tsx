@@ -234,12 +234,8 @@ export function AssessmentQuestionTable({
         });
       }
     });
-    // Sort by number
     return Array.from(itemsMap.values()).sort((a, b) => a.number - b.number);
   }, [instanceQuestionsInfo]);
-
-  // Use prop for AI grading mode
-  const effectiveAiGradingMode = aiGradingMode;
 
   const columnFilters = useMemo(() => {
     const filters = [
@@ -251,10 +247,10 @@ export function AssessmentQuestionTable({
     ];
 
     // Only add filters for columns that exist
-    if (effectiveAiGradingMode && instanceQuestionGroups.length > 0) {
+    if (aiGradingMode && instanceQuestionGroups.length > 0) {
       filters.push({ id: 'instance_question_group_name', value: submissionGroupFilter });
     }
-    if (effectiveAiGradingMode) {
+    if (aiGradingMode) {
       filters.push({ id: 'rubric_difference', value: aiAgreementFilter });
     }
     // Filter by rubric items if any are selected
@@ -264,7 +260,7 @@ export function AssessmentQuestionTable({
     if (assessmentQuestion.max_auto_points && assessmentQuestion.max_auto_points > 0) {
       filters.push({ id: 'auto_points', value: autoPointsFilter });
     }
-    if (!effectiveAiGradingMode) {
+    if (!aiGradingMode) {
       filters.push({ id: 'score_perc', value: scoreFilter });
     }
 
@@ -280,7 +276,7 @@ export function AssessmentQuestionTable({
     autoPointsFilter,
     totalPointsFilter,
     scoreFilter,
-    effectiveAiGradingMode,
+    aiGradingMode,
     instanceQuestionGroups.length,
     assessmentQuestion.max_auto_points,
     rubricData,
@@ -290,7 +286,7 @@ export function AssessmentQuestionTable({
   const columns = useMemo(
     () =>
       createColumns({
-        aiGradingMode: effectiveAiGradingMode,
+        aiGradingMode,
         instanceQuestionGroups,
         assessment,
         assessmentQuestion,
@@ -309,7 +305,7 @@ export function AssessmentQuestionTable({
         },
       }),
     [
-      effectiveAiGradingMode,
+      aiGradingMode,
       instanceQuestionGroups,
       assessment,
       assessmentQuestion,
@@ -362,10 +358,10 @@ export function AssessmentQuestionTable({
     ),
   );
 
-  useEffect(() => {
-    defaultColumnVisibilityRef.current = defaultColumnVisibility;
-    // Super hacky, we need to update the ref when the column visibility changes for some reason.
-  }, [defaultColumnVisibility, columnVisibility]);
+  // useEffect(() => {
+  //   defaultColumnVisibilityRef.current = defaultColumnVisibility;
+  //   // Super hacky, we need to update the ref when the column visibility changes for some reason.
+  // }, [defaultColumnVisibility, columnVisibility]);
 
   // Update column visibility when AI grading mode changes
   useEffect(() => {
@@ -380,6 +376,13 @@ export function AssessmentQuestionTable({
       rubric_difference: aiGradingMode,
     }));
   }, [aiGradingMode, setColumnVisibility]);
+
+  console.log(
+    'columnVisibility',
+    Object.entries(columnVisibility)
+      .filter(([_, value]) => value)
+      .map(([key]) => key),
+  );
 
   const table = useReactTable({
     data: instanceQuestionsInfo,
@@ -627,7 +630,7 @@ export function AssessmentQuestionTable({
         }
         headerButtons={
           <>
-            {effectiveAiGradingMode ? (
+            {aiGradingMode ? (
               <>
                 <Dropdown>
                   <Dropdown.Toggle variant="light" size="sm">
