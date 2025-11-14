@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { ArrayFromCheckboxSchema, IdSchema } from '@prairielearn/zod';
 
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
+import { StaffAuthnProviderSchema } from '../../lib/client/safe-db-types.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { updateInstitutionAuthnProviders } from '../../models/institution-authn-provider.js';
 
@@ -28,9 +29,9 @@ router.get(
 
     // Only show Google and Microsoft for institution creation. Other providers
     // can be enabled later via SSO settings.
-    const supportedAuthenticationProviders = allSupportedProviders.filter(
-      (provider) => provider.name === 'Google' || provider.name === 'Azure',
-    );
+    const supportedAuthenticationProviders = allSupportedProviders
+      .filter((provider) => provider.name === 'Google' || provider.name === 'Azure')
+      .map((provider) => StaffAuthnProviderSchema.parse(provider));
 
     res.send(
       AdministratorInstitutions({

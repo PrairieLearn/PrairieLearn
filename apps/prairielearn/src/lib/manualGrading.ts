@@ -174,14 +174,16 @@ export async function selectRubricData({
     };
 
     for (const item of rubric_data?.rubric_items || []) {
-      item.description_rendered = item.description
-        ? markdownToHtml(mustache.render(item.description || '', mustache_data), { inline: true })
+      item.description_rendered = item.rubric_item.description
+        ? markdownToHtml(mustache.render(item.rubric_item.description || '', mustache_data), {
+            inline: true,
+          })
         : '';
-      item.explanation_rendered = item.explanation
-        ? markdownToHtml(mustache.render(item.explanation || '', mustache_data))
+      item.explanation_rendered = item.rubric_item.explanation
+        ? markdownToHtml(mustache.render(item.rubric_item.explanation || '', mustache_data))
         : '';
-      item.grader_note_rendered = item.grader_note
-        ? markdownToHtml(mustache.render(item.grader_note || '', mustache_data))
+      item.grader_note_rendered = item.rubric_item.grader_note
+        ? markdownToHtml(mustache.render(item.rubric_item.grader_note || '', mustache_data))
         : '';
 
       // Yield to the event loop to avoid blocking too long.

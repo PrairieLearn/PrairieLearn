@@ -4,7 +4,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.js';
 import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
-import { type RubricData } from '../../src/lib/manualGrading.types.js';
+import { type RenderedRubricItem } from '../../src/lib/manualGrading.types.js';
 import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
@@ -155,7 +155,7 @@ onDocumentReady(() => {
         },
       },
       rubricFilter: {
-        html: rubricFilterHtml(rubric_data),
+        html: rubricFilterHtml(rubric_data?.rubric_items ?? null),
       },
     },
     onUncheck: updateGradingTagButton,
@@ -541,7 +541,7 @@ onDocumentReady(() => {
 
   // Build an internal state of filter selection to avoid reading from the html again on click
   const rubricFilterState: Record<string, boolean> = Object.fromEntries(
-    (rubric_data?.rubric_items ?? []).map((item) => [item.id, false]),
+    (rubric_data?.rubric_items ?? []).map((item) => [item.rubric_item.id, false]),
   );
 
   document.querySelectorAll('.js-rubric-item-filter').forEach((checkbox) =>
@@ -567,8 +567,8 @@ onDocumentReady(() => {
   );
 });
 
-function rubricFilterHtml(rubric_data: RubricData | null): string {
-  if (!rubric_data) return '';
+function rubricFilterHtml(items: RenderedRubricItem[] | null): string {
+  if (!items) return '';
   return html`
     <div class="btn-group">
       <button
@@ -581,11 +581,15 @@ function rubricFilterHtml(rubric_data: RubricData | null): string {
         <i class="fas fa-filter"></i> Filter by rubric items
       </button>
       <div class="dropdown-menu dropdown-menu-end" id="rubric-item-filter-container">
-        ${rubric_data.rubric_items.map(
+        ${items.map(
           (item) => html`
             <label class="dropdown-item"
-              ><input type="checkbox" class="js-rubric-item-filter" value="${item.id}" />
-              <span>${item.description}</span></label
+              ><input
+                type="checkbox"
+                class="js-rubric-item-filter"
+                value="${item.rubric_item.id}"
+              />
+              <span>${item.rubric_item.description}</span></label
             >
           `,
         )}
