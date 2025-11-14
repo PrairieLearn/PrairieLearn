@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile-upstream:master-labs
-FROM amazonlinux:2023
+FROM ubuntu:24.04
 ARG CACHEBUST=2025-10-15-14-17-30
 
 WORKDIR /PrairieLearn
@@ -56,7 +56,7 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && /PrairieLearn/scripts/start_postgres.sh \
     && make build \
     && node apps/prairielearn/dist/server.js --migrate-and-exit \
-    && su postgres -c "createuser -s root" \
+    && su postgres -c "/usr/lib/postgresql/16/bin/createuser -s root" \
     && /PrairieLearn/scripts/start_postgres.sh stop \
     && /PrairieLearn/scripts/gen_ssl.sh \
     && git config --global user.email "dev@example.com" \
