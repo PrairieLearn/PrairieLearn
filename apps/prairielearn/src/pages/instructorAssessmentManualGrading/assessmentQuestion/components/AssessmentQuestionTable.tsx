@@ -191,7 +191,7 @@ export function AssessmentQuestionTable({
       if (!parsedData.success) throw new Error('Failed to parse instance questions');
       return parsedData.data;
     },
-    refetchInterval: false,
+    staleTime: Infinity,
     initialData: initialInstanceQuestionsInfo,
   });
 
