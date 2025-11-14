@@ -574,7 +574,6 @@ export function TanstackTable<RowDataModel>({
 export function TanstackTableCard<RowDataModel>({
   table,
   title,
-  class: className,
   singularLabel,
   pluralLabel,
   headerButtons,
@@ -583,6 +582,7 @@ export function TanstackTableCard<RowDataModel>({
   globalFilter,
   tableOptions,
   downloadButtonOptions,
+  className,
   ...divProps
 }: {
   table: Table<RowDataModel>;
@@ -602,7 +602,7 @@ export function TanstackTableCard<RowDataModel>({
     TanstackTableDownloadButtonProps<RowDataModel>,
     'table' | 'singularLabel' | 'pluralLabel'
   >;
-} & ComponentProps<'div'>) {
+} & Omit<ComponentProps<'div'>, 'class'>) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Focus the search input when Ctrl+F is pressed
