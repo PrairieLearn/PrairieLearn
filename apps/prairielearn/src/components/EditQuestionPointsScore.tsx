@@ -429,7 +429,6 @@ export function EditQuestionPointsScoreButton({
         type="button"
         class="btn btn-xs btn-ghost text-muted"
         aria-label={`Change question ${findLabel(field)}`}
-        data-testid={`edit-question-points-score-button-${field}`}
       >
         <i class="bi bi-pencil-square" aria-hidden="true" />
       </button>
