@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 
-// Types for batch actions
 export type BatchActionData =
   | { assigned_grader: string | null }
   | { requires_manual_grading: boolean }
@@ -37,20 +36,22 @@ export function useManualGradingActions({
 }: UseManualGradingActionsParams) {
   const queryClient = useQueryClient();
 
-  // Mutation for batch actions
   const batchActionMutation = useMutation<
     { job_sequence_id: string } | null,
     Error,
     BatchActionParams
   >({
     mutationFn: async (params: BatchActionParams) => {
+      // TODO: Once we use Zod on the backend, we should improve how this is constructed.
       const requestBody: Record<string, any> = {
         __csrf_token: csrfToken,
         __action: params.action,
+        instance_question_id:
+          'instanceQuestionIds' in params ? params.instanceQuestionIds : undefined,
       };
 
       if (params.action === 'batch_action') {
-        const { actionData, instanceQuestionIds } = params;
+        const { actionData } = params;
 
         if ('batch_action' in actionData) {
           // For AI grading/grouping actions
@@ -62,9 +63,6 @@ export function useManualGradingActions({
           // For regular batch actions
           requestBody.batch_action_data = actionData;
         }
-
-        // Add instance question IDs
-        requestBody.instance_question_id = instanceQuestionIds;
       }
 
       const response = await fetch(window.location.pathname, {
@@ -101,7 +99,6 @@ export function useManualGradingActions({
     },
   });
 
-  // Handler for batch actions
   const handleBatchAction = (actionData: BatchActionData, instanceQuestionIds: string[]) => {
     if (instanceQuestionIds.length === 0) return;
 
@@ -114,13 +111,11 @@ export function useManualGradingActions({
       {
         onSuccess: (data) => {
           if (data) {
-            // Redirect to job sequence page for long-running operations (AI grading, AI grouping)
             window.location.href = getCourseInstanceJobSequenceUrl(
               courseInstanceId,
               data.job_sequence_id,
             );
           } else {
-            // Refresh the table data for quick operations (assign grader, manual grading flag)
             void queryClient.invalidateQueries({
               queryKey: ['instance-questions'],
             });
@@ -130,7 +125,6 @@ export function useManualGradingActions({
     );
   };
 
-  // Mutation for deleting all AI grading jobs
   const deleteAiGradingJobsMutation = useMutation<{ num_deleted: number }, Error, undefined>({
     mutationFn: async () => {
       const response = await fetch(window.location.pathname, {
@@ -160,7 +154,6 @@ export function useManualGradingActions({
     },
   });
 
-  // Mutation for deleting all AI instance question groupings
   const deleteAiGroupingsMutation = useMutation<{ num_deleted: number }, Error, undefined>({
     mutationFn: async () => {
       const response = await fetch(window.location.pathname, {
@@ -189,7 +182,6 @@ export function useManualGradingActions({
     },
   });
 
-  // Mutation for group submission actions
   const groupSubmissionMutation = useMutation<
     { job_sequence_id: string } | null,
     Error,
@@ -252,7 +244,6 @@ export function useManualGradingActions({
     },
   });
 
-  // Mutation for toggling AI grading mode
   const toggleAiGradingModeMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(window.location.pathname, {
