@@ -1,0 +1,35 @@
+{
+  "name": "@prairielearn/ui",
+  "version": "1.2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/ui"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./*.css": "./dist/*.css"
+  },
+  "scripts": {
+    "build": "tsc && tscp",
+    "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@prairielearn/browser-utils": "workspace:^",
+    "@prairielearn/preact-cjs": "workspace:^",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.12",
+    "@tanstack/table-core": "^8.21.3",
+    "clsx": "^2.1.1",
+    "react-bootstrap": "3.0.0-beta.5"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^22.19.0",
+    "typescript": "^5.9.3",
+    "typescript-cp": "^0.1.9",
+    "vitest": "^4.0.7"
+  }
+}

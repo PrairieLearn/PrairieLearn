@@ -1,5 +1,31 @@
 # @prairielearn/browser-utils
 
+## 2.5.1
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/html@4.0.21
+
+## 2.5.0
+
+### Minor Changes
+
+- 19f0bf7: Improved support for focus on radio groups
+
+## 2.4.0
+
+### Minor Changes
+
+- 5b46852: Add `downloadTextFile`, `downloadAsJSON` and `downloadAsCSV` utilities
+
+## 2.3.0
+
+### Minor Changes
+
+- 65c63e0: Change the default return type of `decodeData` to unknown
+
 ## 2.2.14
 
 ### Patch Changes

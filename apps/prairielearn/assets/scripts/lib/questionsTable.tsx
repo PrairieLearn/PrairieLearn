@@ -3,6 +3,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.js';
+import { type QuestionsTableData } from '../../../src/components/QuestionsTable.types.js';
 import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
@@ -43,8 +44,7 @@ onDocumentReady(() => {
     showAiGenerateQuestionButton,
     qidPrefix,
     urlPrefix,
-    plainUrlPrefix,
-  } = decodeData('questions-table-data');
+  } = decodeData<QuestionsTableData>('questions-table-data');
 
   window.topicList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
@@ -175,7 +175,6 @@ onDocumentReady(() => {
       )
       .map((assessment) =>
         AssessmentBadgeHtml({
-          plainUrlPrefix,
           courseInstanceId: course_instance_id,
           assessment,
         }).toString(),

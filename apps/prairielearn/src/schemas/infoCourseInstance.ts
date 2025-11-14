@@ -24,11 +24,30 @@ const AccessRuleJsonSchema = z
     'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
   );
 
-const AccessControlJsonSchema = z
+export type AccessRuleJson = z.infer<typeof AccessRuleJsonSchema>;
+
+const AllowAccessJsonSchema = z
   .array(AccessRuleJsonSchema)
   .describe(
     'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
   );
+
+const PublishingJsonSchema = z.object({
+  startDate: z
+    .string()
+    .describe(
+      'When the course instance is published. If specified, endDate must also be specified.',
+    )
+    .optional(),
+  endDate: z
+    .string()
+    .describe(
+      'When the course instance is unpublished. If specified, startDate must also be specified.',
+    )
+    .optional(),
+});
+
+export type PublishingJson = z.infer<typeof PublishingJsonSchema>;
 
 export const CourseInstanceJsonSchema = z
   .object({
@@ -55,19 +74,19 @@ export const CourseInstanceJsonSchema = z
           )
           .optional()
           .default(true),
+        restrictToInstitution: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment is restricted to users from the same institution as the course. If false, any user can self-enroll.',
+          )
+          .optional()
+          .default(true),
         beforeDate: z
           .string()
           .describe(
-            'Before this date, self-enrollment is enabled if beforeDateEnabled is true. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on enabled property.',
+            'If specified, self-enrollment is allowed before this date and forbidden after this date. If not specified, self-enrollment depends on enabled property.',
           )
           .optional(),
-        beforeDateEnabled: z
-          .boolean()
-          .describe(
-            'If true, self-enrollment is enabled before the beforeDate. If false, self-enrollment is controlled by the enabled property.',
-          )
-          .optional()
-          .default(false),
         useEnrollmentCode: z
           .boolean()
           .describe(
@@ -86,7 +105,8 @@ export const CourseInstanceJsonSchema = z
       .optional()
       .default(false),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
-    allowAccess: AccessControlJsonSchema.optional().default([]),
+    publishing: PublishingJsonSchema.optional(),
+    allowAccess: AllowAccessJsonSchema.optional(),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(

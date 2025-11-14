@@ -83,7 +83,6 @@ export default tseslint.config([
       // We violate these rules in a lot of places.
       '@html-eslint/id-naming-convention': 'off',
       '@html-eslint/quotes': ['error', 'double', { enforceTemplatedAttrValue: true }],
-      '@html-eslint/require-button-type': 'off',
     },
   },
   {
@@ -201,7 +200,6 @@ export default tseslint.config([
       'require-atomic-updates': 'off',
       'require-await': 'off', // TODO: Consider enabling this
       'require-unicode-regexp': 'off',
-
       'sort-vars': 'off',
 
       // Enforce alphabetical order of import specifiers within each import group.
@@ -302,6 +300,7 @@ export default tseslint.config([
       'unicorn/no-array-callback-reference': 'off',
       'unicorn/no-array-method-this-argument': 'off',
       'unicorn/no-array-reduce': 'off', // Sometimes, an array reduce is more readable
+      'unicorn/no-array-sort': 'off', // Disabling for the time being to avoid unnecessary diffs
       'unicorn/no-hex-escape': 'off',
       'unicorn/no-lonely-if': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2252261293
       'unicorn/no-null': 'off',
@@ -440,6 +439,12 @@ export default tseslint.config([
         { exceptAfterSingleLine: true },
       ],
       '@stylistic/no-tabs': 'error',
+      '@stylistic/padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', next: 'function', prev: '*' },
+        { blankLine: 'always', next: '*', prev: 'import' },
+        { blankLine: 'any', next: 'import', prev: 'import' },
+      ],
       // Blocks double-quote strings (unless a single quote is present in the
       // string) and backticks (unless there is a tag or substitution in place).
       '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
@@ -567,7 +572,7 @@ export default tseslint.config([
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['vite.config.ts', 'vitest.config.ts'],
+          allowDefaultProject: ['playwright.config.ts', 'vite.config.ts', 'vitest.config.ts'],
         },
         tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
       },
@@ -642,17 +647,6 @@ export default tseslint.config([
     },
   },
   {
-    // TODO: enable this rule for all files.
-    files: [
-      'apps/prairielearn/src/middlewares/**/*.ts',
-      'apps/prairielearn/assets/scripts/**/*.ts',
-      'apps/prairielearn/*.config.ts',
-    ],
-    rules: {
-      '@typescript-eslint/no-unnecessary-condition': 'off',
-    },
-  },
-  {
     files: ['apps/prairielearn/assets/scripts/**/*', 'apps/prairielearn/elements/**/*.js'],
     languageOptions: {
       globals: {
@@ -671,6 +665,23 @@ export default tseslint.config([
     files: ['apps/prairielearn/src/tests/**/*', 'scripts/**/*', 'contrib/**/*'],
     rules: {
       'no-console': 'off',
+    },
+  },
+  {
+    files: ['apps/prairielearn/src/models/**/*'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/safe-db-types.js'],
+              message:
+                'Import from db-types instead of safe-db-types in the models directory. Otherwise, this code should live in the lib directory.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

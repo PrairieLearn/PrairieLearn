@@ -9,8 +9,8 @@ import {
 import { PageLayout } from '../../components/PageLayout.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
+import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
-import type { StaffAssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function PublicAssessmentQuestions({
   resLocals,
@@ -54,7 +54,7 @@ export function PublicAssessmentQuestions({
           <p>
             This course doesn't have a sharing name. If you are an Owner of this course, please
             choose a sharing name on the
-            <a href="${resLocals.plainUrlPrefix}/course/${resLocals.course.id}/course_admin/sharing"
+            <a href="/pl/course/${resLocals.course.id}/course_admin/sharing"
               >course sharing settings page</a
             >.
           </p>
@@ -121,7 +121,6 @@ function AssessmentQuestionsTable({
                             color: assessment.assessment_set_color,
                             label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
                           },
-                          plainUrlPrefix: urlPrefix,
                           courseInstanceId: course_instance_id,
                           publicURL: true,
                         });

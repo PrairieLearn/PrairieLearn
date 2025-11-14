@@ -220,8 +220,8 @@ export function postInstanceQuestion(locals: Record<string, any>) {
           __action: locals.postAction,
           __csrf_token: locals.__csrf_token,
           __variant_id: locals.variant?.id,
+          ...locals.submittedAnswer,
         };
-        Object.assign(form, locals.submittedAnswer);
       } else {
         assert.fail('bad question.type:' + locals.question?.type);
       }
@@ -295,8 +295,8 @@ export function postInstanceQuestionAndFail(locals: Record<string, any>, expecte
           __action: locals.postAction,
           __csrf_token: locals.__csrf_token,
           __variant_id: locals.variant?.id,
+          ...locals.submittedAnswer,
         };
-        Object.assign(form, locals.submittedAnswer);
       } else {
         assert.fail('bad question.type:' + locals.question?.type);
       }

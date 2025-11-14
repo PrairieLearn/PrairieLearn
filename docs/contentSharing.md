@@ -35,7 +35,7 @@ In order for another course to use questions from your course into their assessm
 
 Questions can either be shared publicly so that anyone can preview the questions and use them in their course, or shared only to specific other courses using sharing sets.
 
-Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC license](https://www.creativecommons.org/licenses/by-nc/4.0/).
+Any question that is marked for sharing will be considered and displayed as being published for free use under a Creative Commons license ([CC-BY-NC-ND](https://www.creativecommons.org/licenses/by-nc-nd/4.0/) for `"sharePublicly": true`, [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) for `"shareSourcePublicly": true`). This license is granted in addition to the [User Content License](https://www.prairielearn.com/legal/terms#3-user-content-license-grant) described by the PrairieLearn Terms of Service. We recommend adding an `authors` field to the [metadata](question/index.md#metadata-infojson) of shared questions to allow attribution of the original author(s).
 
 ### Sharing sets
 
@@ -61,10 +61,10 @@ Just as anyone with access to a question in your course can access any file in `
 
 **Note:** Once a question is added to a sharing set, the question cannot be renamed, deleted, or removed from the sharing set because doing so could break the assessments of people who have used the shared question.
 
-1. On your course admin page, visit the "Sharing" tab.
+1. On your course settings page, visit the "Sharing" tab.
 2. Choose a sharing name for your course.
 3. Create a sharing set by adding it to your course's `infoCourse.json` file.
-4. Have the instructor or the course you would like to share your question with visit the "Sharing" tab on their course admin page and provide you with their course's sharing token.
+4. Have the instructor or the course you would like to share your question with visit the "Sharing" tab on their course settings page and provide you with their course's sharing token.
 5. Use the provided sharing token to add the other instructor's course as a consumer of the sharing set you created.
 6. Add the sharing set to the `sharingSets` list in `info.json` file of the questions you would like to share.
 7. The course you have shared the question with may now use it by referencing it in their assessments.
@@ -73,7 +73,7 @@ Just as anyone with access to a question in your course can access any file in `
 
 **Note:** Once a question is publicly shared, the question cannot be renamed, deleted, or un-publicly shared because doing so could break the assessments of people who have used the shared question. Sharing the source code of a question may be un-done.
 
-1. On your course admin page, visit the "Sharing" tab.
+1. On your course settings page, visit the "Sharing" tab.
 2. Choose a sharing name for your course.
 3. Add `"sharePublicly": true` to the `info.json` file of questions you would like to share publicly.
 4. Optionally, add `"shareSourcePublicly": true` to the `info.json` file if you would like people to also be able to view and copy the source code of your question.

@@ -4,7 +4,7 @@ import z from 'zod';
 
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -17,6 +17,7 @@ import { features } from '../../lib/features/index.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import { selectOptionalUserByUid } from '../../models/user.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -45,6 +46,10 @@ router.get(
 router.get(
   '/enrollment.json',
   asyncHandler(async (req, res) => {
+    if (req.accepts('html')) {
+      throw new HttpStatusError(406, 'Not Acceptable');
+    }
+
     const pageContext = getPageContext(res.locals);
     if (!pageContext.authz_data.has_course_instance_permission_view) {
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
@@ -55,8 +60,10 @@ router.get(
       throw new HttpStatusError(400, 'UID must be a string');
     }
     const enrollment = await selectOptionalEnrollmentByUid({
-      course_instance_id: courseInstance.id,
+      courseInstance,
       uid,
+      requestedRole: 'Student Data Viewer',
+      authzData: res.locals.authz_data,
     });
     const staffEnrollment = StaffEnrollmentSchema.nullable().parse(enrollment);
     res.json(staffEnrollment);
@@ -66,52 +73,67 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    if (req.accepts('html')) {
+      throw new HttpStatusError(406, 'Not Acceptable');
+    }
+
     const pageContext = getPageContext(res.locals);
     if (!pageContext.authz_data.has_course_instance_permission_edit) {
-      res.status(403).json({ error: 'Access denied (must be an instructor)' });
-      return;
+      throw new HttpStatusError(403, 'Access denied (must be an instructor)');
     }
 
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
 
-    try {
-      const BodySchema = z.object({
-        uid: z.string().min(1),
-        __action: z.literal('invite_by_uid'),
-      });
-      const body = BodySchema.parse(req.body);
+    const BodySchema = z.object({
+      uid: z.string().min(1),
+      __action: z.literal('invite_by_uid'),
+    });
+    const body = BodySchema.parse(req.body);
 
-      // Try to find an existing enrollment so we can error gracefully.
-      const existingEnrollment = await selectOptionalEnrollmentByUid({
-        course_instance_id: courseInstance.id,
-        uid: body.uid,
-      });
+    const user = await selectOptionalUserByUid(body.uid);
 
-      if (existingEnrollment) {
-        if (existingEnrollment.status === 'joined') {
-          res.status(400).json({ error: 'The user is already enrolled' });
-          return;
-        }
+    if (user == null) {
+      throw new HttpStatusError(400, 'User not found');
+    }
 
-        if (existingEnrollment.status === 'invited') {
-          res.status(400).json({ error: 'The user has an existing invitation' });
-          return;
-        }
+    const isInstructor = await callRow(
+      'users_is_instructor_in_course_instance',
+      [user.user_id, courseInstance.id],
+      z.boolean(),
+    );
+
+    if (isInstructor) {
+      throw new HttpStatusError(400, 'The user is an instructor');
+    }
+
+    // Try to find an existing enrollment so we can error gracefully.
+    const existingEnrollment = await selectOptionalEnrollmentByUid({
+      courseInstance,
+      uid: body.uid,
+      requestedRole: 'Student Data Viewer',
+      authzData: res.locals.authz_data,
+    });
+
+    if (existingEnrollment) {
+      if (existingEnrollment.status === 'joined') {
+        throw new HttpStatusError(400, 'The user is already enrolled');
       }
 
-      const enrollment = await inviteStudentByUid({
-        course_instance_id: courseInstance.id,
-        uid: body.uid,
-        agent_user_id: pageContext.authz_data.user.user_id,
-        agent_authn_user_id: pageContext.authn_user.user_id,
-      });
-
-      const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
-
-      res.json({ ok: true, data: staffEnrollment });
-    } catch (err) {
-      res.status(400).json({ error: err.message });
+      if (existingEnrollment.status === 'invited') {
+        throw new HttpStatusError(400, 'The user has an existing invitation');
+      }
     }
+
+    const enrollment = await inviteStudentByUid({
+      courseInstance,
+      uid: body.uid,
+      requestedRole: 'Student Data Editor',
+      authzData: res.locals.authz_data,
+    });
+
+    const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
+
+    res.json({ data: staffEnrollment });
   }),
 );
 

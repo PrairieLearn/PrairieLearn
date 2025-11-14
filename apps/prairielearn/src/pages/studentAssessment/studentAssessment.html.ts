@@ -2,8 +2,7 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
-import { HeadContents } from '../../components/HeadContents.js';
-import { Navbar } from '../../components/Navbar.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
 import { type GroupInfo } from '../../lib/groups.js';
 
@@ -22,68 +21,67 @@ export function StudentAssessment({
 }) {
   const { assessment_set, assessment, course, authz_result, user, __csrf_token } = resLocals;
 
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })} ${compiledScriptTag('studentAssessmentClient.ts')}
-        <style>
-          .honor-code :last-child {
-            margin-bottom: 0;
-          }
-        </style>
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <h1>${assessment_set.abbreviation}${assessment.number}: ${assessment.title}</h1>
-              ${assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
-            </div>
+  return PageLayout({
+    resLocals,
+    pageTitle: `${assessment_set.abbreviation}${assessment.number}: ${assessment.title}`,
+    navContext: {
+      type: 'student',
+      page: 'assessment',
+    },
+    headContent: html`
+      ${compiledScriptTag('studentAssessmentClient.ts')}
+      <style>
+        .honor-code :last-child {
+          margin-bottom: 0;
+        }
+      </style>
+    `,
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h1>${assessment_set.abbreviation}${assessment.number}: ${assessment.title}</h1>
+          ${assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
+        </div>
 
-            <div class="card-body">
-              ${authz_result.mode === 'Exam' || authz_result.password != null
-                ? html`
-                    <p class="lead text-center">
-                      Please wait until instructed to start by a proctor
-                    </p>
-                  `
-                : ''}
+        <div class="card-body">
+          ${authz_result.mode === 'Exam' || authz_result.password != null
+            ? html`
+                <p class="lead text-center">Please wait until instructed to start by a proctor</p>
+              `
+            : ''}
 
-              <p class="lead text-center">
-                This is
-                <strong>${assessment_set.name} ${assessment.number}: ${assessment.title}</strong>
-                for <strong>${course.short_name}</strong>
-              </p>
+          <p class="lead text-center">
+            This is
+            <strong>${assessment_set.name} ${assessment.number}: ${assessment.title}</strong>
+            for <strong>${course.short_name}</strong>
+          </p>
 
-              ${authz_result.time_limit_min != null
-                ? html`
-                    <p class="lead text-center">
-                      The time limit for this assessment is
-                      <strong>
-                        ${authz_result.time_limit_min}
-                        ${authz_result.time_limit_min === 1 ? 'minute' : 'minutes'}
-                      </strong>
-                    </p>
-                  `
-                : ''}
-              ${assessment.group_work
-                ? StudentGroupControls({ groupConfig, groupInfo, userCanAssignRoles, resLocals })
-                : StartAssessmentForm({
-                    assessment,
-                    user,
-                    __csrf_token,
-                    startAllowed: true,
-                    customHonorCode,
-                  })}
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+          ${authz_result.time_limit_min != null
+            ? html`
+                <p class="lead text-center">
+                  The time limit for this assessment is
+                  <strong>
+                    ${authz_result.time_limit_min}
+                    ${authz_result.time_limit_min === 1 ? 'minute' : 'minutes'}
+                  </strong>
+                </p>
+              `
+            : ''}
+          ${assessment.group_work
+            ? StudentGroupControls({ groupConfig, groupInfo, userCanAssignRoles, resLocals })
+            : StartAssessmentForm({
+                assessment,
+                user,
+                __csrf_token,
+                startAllowed: true,
+                customHonorCode,
+              })}
+        </div>
+      </div>
+    `,
+  });
 }
+
 function StartAssessmentForm({
   assessment,
   user,

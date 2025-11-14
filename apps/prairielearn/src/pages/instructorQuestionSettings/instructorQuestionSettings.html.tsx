@@ -13,7 +13,6 @@ import { TagDescription } from '../../components/TagDescription.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
 import { TopicDescription } from '../../components/TopicDescription.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
   AssessmentSetSchema,
@@ -228,7 +227,7 @@ export function InstructorQuestionSettings({
                                         data-name="${tag.name}"
                                         data-description="${tag.implicit
                                           ? ''
-                                          : TagDescription(tag)}"
+                                          : renderHtml(<TagDescription tag={tag} />)}"
                                         ${questionTagNames.has(tag.name) ? 'selected' : ''}
                                       ></option>
                                     `;
@@ -242,7 +241,12 @@ export function InstructorQuestionSettings({
                   ${shouldShowAssessmentsList
                     ? html`<tr>
                         <th class="align-middle">Assessments</th>
-                        <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
+                        <td>
+                          ${AssessmentBadges({
+                            assessmentsWithQuestion,
+                            courseInstanceId: resLocals.course_instance.id,
+                          })}
+                        </td>
                       </tr>`
                     : ''}
                 </tbody>
@@ -652,7 +656,7 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
         </div>
         ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) || canEdit
           ? html`
-              <div class="card-footer">
+              <div class="card-footer d-flex flex-wrap gap-2">
                 ${editableCourses.length > 0 &&
                 resLocals.authz_data.has_course_permission_view &&
                 resLocals.question.course_id === resLocals.course.id
@@ -766,7 +770,6 @@ function DeleteQuestionModal({
                     <div class="h6">${a_with_q.short_name} (${a_with_q.long_name})</div>
                     ${a_with_q.assessments.map((assessment) =>
                       AssessmentBadgeHtml({
-                        plainUrlPrefix: config.urlPrefix,
                         courseInstanceId: a_with_q.course_instance_id,
                         assessment,
                       }),
@@ -800,7 +803,12 @@ function QuestionTestsForm({
   questionTestCsrfToken: string;
 }) {
   return html`
-    <form name="question-tests-form" method="POST" action="${questionTestPath}">
+    <form
+      name="question-tests-form"
+      method="POST"
+      action="${questionTestPath}"
+      class="d-flex flex-wrap gap-2"
+    >
       <input type="hidden" name="__csrf_token" value="${questionTestCsrfToken}" />
       <button
         type="submit"
@@ -867,13 +875,11 @@ function QuestionSharing({
 
 function AssessmentBadges({
   assessmentsWithQuestion,
-  resLocals,
+  courseInstanceId,
 }: {
   assessmentsWithQuestion: SelectedAssessments[];
-  resLocals: Record<string, any>;
+  courseInstanceId: string;
 }) {
-  const courseInstanceId = resLocals.course_instance.id;
-
   const assessmentsInCourseInstance = assessmentsWithQuestion.find((a) =>
     idsEqual(a.course_instance_id, courseInstanceId),
   );

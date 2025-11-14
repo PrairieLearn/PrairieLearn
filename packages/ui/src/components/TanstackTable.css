@@ -1,0 +1,53 @@
+body.no-user-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tanstack-table-search-input {
+  padding-right: 2.5rem;
+}
+
+.tanstack-table-clear-search {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.25rem 0.5rem;
+  color: var(--bs-secondary);
+  opacity: 0.6;
+  transition: opacity 0.15s ease-in-out;
+  text-decoration: none;
+}
+
+.tanstack-table-clear-search:hover {
+  opacity: 1;
+  color: var(--bs-secondary);
+  text-decoration: none;
+}
+
+.tanstack-table-clear-search:focus {
+  opacity: 1;
+  color: var(--bs-secondary);
+  text-decoration: none;
+}
+
+.btn.btn-tanstack-table {
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-bg: var(--bs-input-bg);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-bg: var(--bs-border-color);
+  --bs-btn-hover-border-color: var(--bs-border-color);
+  --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
+  --bs-btn-active-color: var(--bs-body-color);
+  --bs-btn-active-bg: var(--bs-border-color);
+  --bs-btn-active-border-color: var(--bs-border-color);
+  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  --bs-btn-disabled-color: var(--bs-body-color);
+  --bs-btn-disabled-bg: var(--bs-secondary-bg);
+  --bs-btn-disabled-border-color: var(--bs-border-color);
+}
+
+.tanstack-table-focusable-shadow:not(:focus-visible) {
+  box-shadow: var(--bs-box-shadow-sm);
+}

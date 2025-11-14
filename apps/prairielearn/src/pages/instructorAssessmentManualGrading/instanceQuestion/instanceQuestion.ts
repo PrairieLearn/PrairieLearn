@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -8,6 +7,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
+import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   selectLastSubmissionId,
   selectRubricGradingItems,
@@ -45,7 +45,6 @@ import {
   GradingJobDataSchema,
   InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
-import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -56,7 +55,7 @@ async function prepareLocalsForRender(
 ) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
-  // submissions or even create a new one. We don't want that behaviour, so we select the last
+  // submissions or even create a new one. We don't want that behavior, so we select the last
   // submission and pass it along to getAndRenderVariant explicitly.
   const variant_with_submission_id = await sqldb.queryOptionalRow(
     sql.select_variant_with_last_submission,
@@ -87,7 +86,7 @@ async function prepareLocalsForRender(
   }
 
   const graders = await selectCourseInstanceGraderStaff({
-    course_instance_id: resLocals.course_instance.id,
+    course_instance: resLocals.course_instance,
   });
   return { resLocals, conflict_grading_job, graders };
 }
@@ -172,12 +171,14 @@ router.get(
         // time, the explanation wasn't included in the completion at all, so it
         // may legitimately be missing.
         //
-        // The responses API changed the format here. We'll need to handle both the
-        // old and new formats.
+        // Over the lifetime of this feature, we've changed which APIs/libraries we
+        // use to generate the completion, so we need to handle all formats we've ever
+        // used for backwards-compatibility. Each one is documented below.
         const explanation = run(() => {
           const completion = ai_grading_job_data.completion;
           if (!completion) return null;
 
+          // OpenAI chat completion format
           if (completion.choices) {
             const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
             if (typeof explanation !== 'string') return null;
@@ -185,8 +186,17 @@ router.get(
             return explanation.trim() || null;
           }
 
+          // OpenAI response format
           if (completion.output_parsed) {
             const explanation = completion?.output_parsed?.explanation;
+            if (typeof explanation !== 'string') return null;
+
+            return explanation.trim() || null;
+          }
+
+          // `ai` package format
+          if (completion.object) {
+            const explanation = completion?.object?.explanation;
             if (typeof explanation !== 'string') return null;
 
             return explanation.trim() || null;
@@ -216,6 +226,10 @@ router.get(
         aiGradingEnabled,
         aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
         aiGradingInfo,
+        aiGradingStats:
+          aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
+            ? await calculateAiGradingStats(res.locals.assessment_question)
+            : null,
         skipGradedSubmissions: req.session.skip_graded_submissions,
       }),
     );
@@ -285,8 +299,18 @@ router.get(
         ...locals,
         context: 'main',
       }).toString();
-      const rubricSettings = RubricSettingsModal(locals).toString();
-      res.send({ gradingPanel, rubricSettings });
+      const rubric_data = await manualGrading.selectRubricData({
+        assessment_question: res.locals.assessment_question,
+      });
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      res.json({
+        gradingPanel,
+        rubric_data,
+        aiGradingStats:
+          aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
+            ? await calculateAiGradingStats(res.locals.assessment_question)
+            : null,
+      });
     } catch (err) {
       res.send({ err: String(err) });
     }
@@ -303,7 +327,7 @@ const PostBodySchema = z.union([
     ]),
     submission_id: IdSchema,
     modified_at: DateFromISOString,
-    rubric_item_selected_manual: IdSchema.or(z.record(z.string(), IdSchema))
+    rubric_item_selected_manual: IdSchema.or(z.array(IdSchema))
       .nullish()
       .transform((val) =>
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
@@ -315,7 +339,7 @@ const PostBodySchema = z.union([
     score_auto_points: z.coerce.number().nullish(),
     score_auto_percent: z.coerce.number().nullish(),
     submission_note: z.string().nullish(),
-    unsafe_issue_ids_close: IdSchema.or(z.record(z.string(), IdSchema))
+    unsafe_issue_ids_close: IdSchema.or(z.array(IdSchema))
       .nullish()
       .transform((val) =>
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
@@ -324,24 +348,14 @@ const PostBodySchema = z.union([
   }),
   z.object({
     __action: z.literal('modify_rubric_settings'),
-    use_rubric: z
-      .enum(['true', 'false'])
-      .optional()
-      .transform((val) => val === 'true'),
-    replace_auto_points: z
-      .enum(['true', 'false'])
-      .optional()
-      .transform((val) => val === 'true'),
+    use_rubric: z.boolean(),
+    replace_auto_points: z.boolean(),
     starting_points: z.coerce.number(),
     min_points: z.coerce.number(),
     max_extra_points: z.coerce.number(),
-    tag_for_manual_grading: z
-      .literal('true')
-      .optional()
-      .transform((val) => val === 'true'),
-    rubric_item: z
-      .record(
-        z.string(),
+    tag_for_manual_grading: z.boolean().default(false),
+    rubric_items: z
+      .array(
         z.object({
           id: z.string().optional(),
           order: z.coerce.number(),
@@ -349,10 +363,10 @@ const PostBodySchema = z.union([
           description: z.string(),
           explanation: z.string().optional(),
           grader_note: z.string().optional(),
-          always_show_to_students: z.string().transform((val) => val === 'true'),
+          always_show_to_students: z.boolean(),
         }),
       )
-      .default({}),
+      .default([]),
   }),
   z.object({
     __action: z.custom<`reassign_${string}`>(
@@ -376,16 +390,7 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
-    const body = PostBodySchema.parse(
-      // Parse using qs, which allows deep objects to be created based on parameter names
-      // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
-      // Array parsing is disabled, as it has special cases for 22+ items that
-      // we don't want to double-handle, so we always receive an object and
-      // convert it to an array if necessary
-      // (https://github.com/ljharb/qs#parsing-arrays).
-      // The order of the items in arrays is never important, so using Object.values is fine.
-      qs.parse(qs.stringify(req.body), { parseArrays: false }),
-    );
+    const body = PostBodySchema.parse(req.body);
     if (body.__action === 'add_manual_grade') {
       req.session.skip_graded_submissions = body.skip_graded_submissions;
 
@@ -400,7 +405,7 @@ router.post(
         : undefined;
       const { modified_at_conflict, grading_job_id } =
         await manualGrading.updateInstanceQuestionScore(
-          res.locals.assessment.id,
+          res.locals.assessment,
           res.locals.instance_question.id,
           body.submission_id,
           body.modified_at, // check_modified_at
@@ -546,7 +551,7 @@ router.post(
 
       for (const instanceQuestion of instanceQuestionsInGroup) {
         const { modified_at_conflict } = await manualGrading.updateInstanceQuestionScore(
-          res.locals.assessment.id,
+          res.locals.assessment,
           instanceQuestion.instance_question_id,
           instanceQuestion.submission_id,
           null,
@@ -586,13 +591,14 @@ router.post(
     } else if (body.__action === 'modify_rubric_settings') {
       try {
         await manualGrading.updateAssessmentQuestionRubric(
+          res.locals.assessment,
           res.locals.instance_question.assessment_question_id,
           body.use_rubric,
           body.replace_auto_points,
           body.starting_points,
           body.min_points,
           body.max_extra_points,
-          Object.values(body.rubric_item), // rubric items
+          body.rubric_items,
           body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
         );
@@ -605,7 +611,7 @@ router.post(
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
-          course_instance_id: res.locals.course_instance.id,
+          course_instance: res.locals.course_instance,
         });
         if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
           throw new error.HttpStatusError(

@@ -41,9 +41,7 @@ SHOW_SCORE_DEFAULT = True
 ANSWER_INSUFFICIENT_PRECISION_WARNING = (
     "Your answer does not have precision within the specified relative tolerance."
 )
-ANSWER_SHOULD_BE_BLANK_WARNING = "The correct answer was to leave this input blank."
-
-
+ANSWER_BLANK_CORRECT_FEEDBACK = "The correct answer used for grading was blank."
 NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-number-input.mustache"
 
 
@@ -105,7 +103,7 @@ def format_true_ans(
     element: lxml.html.HtmlElement, data: pl.QuestionData, name: str
 ) -> str:
     correct_answer = pl.from_json(data["correct_answers"].get(name, None))
-    if correct_answer != "":
+    if correct_answer is not None and correct_answer != "":
         # Get format and comparison parameters
         custom_format = pl.get_string_attrib(element, "custom-format", None)
         comparison = pl.get_enum_attrib(
@@ -380,7 +378,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_answer = data["submitted_answers"].get(name, None)
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
         submitted_answer = blank_value
-    if submitted_answer == "":
+    if submitted_answer == "" and allow_blank:
         data["submitted_answers"][name] = ""
     else:
         res = pl.string_fraction_to_number(
@@ -427,20 +425,26 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         feedback = ""
         is_correct = None
 
+        can_show_if_correct = pl.get_boolean_attrib(
+            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
+        )
+
         # Special cases: submitted or correct answer are the empty string
-        if isinstance(correct_answer, str) and correct_answer.strip() == "":
-            if isinstance(submitted_answer, str) and submitted_answer.strip() == "":
-                return (
-                    True,
-                    "The correct answer used for grading was blank",
-                )
-            return (False, ANSWER_SHOULD_BE_BLANK_WARNING)
-        elif isinstance(submitted_answer, str) and submitted_answer.strip() == "":
-            correct_answer_converted = np.float64(correct_answer)
-            return (
-                False,
-                f"The correct answer used for grading was {correct_answer_converted}. Your answer was blank.",
-            )
+        is_submitted_blank = (
+            isinstance(submitted_answer, str) and submitted_answer.strip() == ""
+        )
+        is_correct_blank = (
+            isinstance(correct_answer, str) and correct_answer.strip() == ""
+        )
+
+        if is_submitted_blank or is_correct_blank:
+            if is_submitted_blank and is_correct_blank:
+                is_correct = True
+                feedback = ANSWER_BLANK_CORRECT_FEEDBACK if can_show_if_correct else ""
+            else:
+                is_correct = False
+                feedback = ""
+            return (is_correct, feedback)
 
         # Cast both submitted and true answers as np.float64, because...
         #
@@ -503,11 +507,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         else:
             assert_never(comparison)
 
-        if is_correct and pl.get_boolean_attrib(
-            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
-        ):
+        if is_correct and can_show_if_correct:
             feedback = (
-                f"The correct answer used for grading was {correct_answer_converted}"
+                f"The correct answer used for grading was {correct_answer_converted}."
             )
         return (is_correct, feedback)
 
@@ -518,6 +520,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
@@ -553,7 +556,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
         if show_correct:
             data["partial_scores"][name]["feedback"] = (
-                f"The correct answer used for grading was {correct_answer_converted}"
+                f"The correct answer used for grading was {correct_answer_converted}."
             )
     elif result == "incorrect":
         data["partial_scores"][name] = {
@@ -578,7 +581,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         # If the empty answer is correct, use 0 as an arbitrary starting point for incorrect answers
         if correct_answer_converted == "blank":
             answer = random.choice([-1.1, 1.1])
-            feedback = ANSWER_SHOULD_BE_BLANK_WARNING
         elif comparison is ComparisonType.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
@@ -635,9 +637,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         data["raw_submitted_answers"][name] = str(answer)
     elif result == "invalid":
-        # FIXME: add more invalid expressions, make text of format_errors
-        # correct, and randomize
-        data["raw_submitted_answers"][name] = "1 + 2"
+        invalid_answers = ["1 + 2", "test", "pi", "None"]
+        if not allow_blank:
+            invalid_answers.append("")
+        data["raw_submitted_answers"][name] = random.choice(invalid_answers)
         data["format_errors"][name] = "invalid"
     else:
         assert_never(result)

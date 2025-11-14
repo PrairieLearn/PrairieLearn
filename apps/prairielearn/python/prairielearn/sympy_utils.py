@@ -130,6 +130,9 @@ class _Constants:
             "sec": sympy.sec,
             "cot": sympy.cot,
             "csc": sympy.csc,
+            "cosh": sympy.cosh,
+            "sinh": sympy.sinh,
+            "tanh": sympy.tanh,
             "arccos": sympy.acos,
             "arcsin": sympy.asin,
             "arctan": sympy.atan,
@@ -832,6 +835,13 @@ def validate_string_as_sympy(
             "Note that the location of the syntax error is approximate."
         )
     except HasParseError as exc:
+        # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
+        # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
+        if exc.offset == -1:
+            return (
+                "Your answer has a syntax error. "
+                "This issue might be caused by mismatched parentheses or some other misplaced symbol."
+            )
         return (
             f"Your answer has a syntax error. "
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
@@ -877,7 +887,7 @@ def get_items_list(items_string: str | None) -> list[str]:
 
 def greek_unicode_transform(input_str: str) -> str:
     """Return input_str where all unicode greek letters are replaced by their spelled-out english names."""
-    # From https://gist.github.com/beniwohli/765262
+    # From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda
     greek_alphabet = {
         "\u0391": "Alpha",
         "\u0392": "Beta",
@@ -889,7 +899,7 @@ def greek_unicode_transform(input_str: str) -> str:
         "\u0398": "Theta",
         "\u0399": "Iota",
         "\u039a": "Kappa",
-        "\u039b": "Lamda",
+        "\u039b": "Lambda",
         "\u039c": "Mu",
         "\u039d": "Nu",
         "\u039e": "Xi",
@@ -913,7 +923,7 @@ def greek_unicode_transform(input_str: str) -> str:
         "\u03b8": "theta",
         "\u03b9": "iota",
         "\u03ba": "kappa",
-        "\u03bb": "lamda",
+        "\u03bb": "lambda",
         "\u03bc": "mu",
         "\u03bd": "nu",
         "\u03be": "xi",

@@ -1,12 +1,12 @@
+import { createOpenAI } from '@ai-sdk/openai';
 import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import * as b64Util from '../../../lib/base64-util.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
@@ -105,14 +105,14 @@ async function saveRevisedQuestion({
   const client = getCourseFilesClient();
 
   const files: Record<string, string | null> = {
-    'question.html': b64Util.b64EncodeUnicode(html),
+    'question.html': b64EncodeUnicode(html),
   };
 
   // We'll delete the `server.py` file if the Python code is empty. Setting
   // it to `null` instructs the editor to delete the file.
   const trimmedPython = python?.trim() ?? '';
   if (trimmedPython !== '') {
-    files['server.py'] = b64Util.b64EncodeUnicode(trimmedPython);
+    files['server.py'] = b64EncodeUnicode(trimmedPython);
   } else {
     files['server.py'] = null;
   }
@@ -245,7 +245,7 @@ router.post(
 
     assertCanCreateQuestion(res.locals);
 
-    const client = new OpenAI({
+    const openai = createOpenAI({
       apiKey: config.aiQuestionGenerationOpenAiApiKey,
       organization: config.aiQuestionGenerationOpenAiOrganization,
     });
@@ -287,18 +287,19 @@ router.post(
         return;
       }
 
-      const result = await regenerateQuestion(
-        client,
-        res.locals.course.id,
-        res.locals.authn_user.user_id,
-        prompts[0]?.user_prompt,
-        req.body.prompt,
-        prompts[prompts.length - 1].html || '',
-        prompts[prompts.length - 1].python || '',
-        question.qid,
-        res.locals.authn_user.user_id,
-        res.locals.authz_data.has_course_permission_edit,
-      );
+      const result = await regenerateQuestion({
+        model: openai(QUESTION_GENERATION_OPENAI_MODEL),
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
+        courseId: res.locals.course.id,
+        authnUserId: res.locals.authn_user.user_id,
+        originalPrompt: prompts[0]?.user_prompt,
+        revisionPrompt: req.body.prompt,
+        originalHTML: prompts[prompts.length - 1].html || '',
+        originalPython: prompts[prompts.length - 1].python || '',
+        questionQid: question.qid,
+        userId: res.locals.authn_user.user_id,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      });
 
       await addCompletionCostToIntervalUsage({
         userId: res.locals.authn_user.user_id,
@@ -370,8 +371,8 @@ router.post(
         authn_user: res.locals.authn_user,
         authz_data: res.locals.authz_data,
         urlPrefix: res.locals.urlPrefix,
-        html: b64Util.b64DecodeUnicode(req.body.html),
-        python: b64Util.b64DecodeUnicode(req.body.python),
+        html: b64DecodeUnicode(req.body.html),
+        python: b64DecodeUnicode(req.body.python),
         prompt: 'Manually update question.',
         promptType: 'manual_change',
       });

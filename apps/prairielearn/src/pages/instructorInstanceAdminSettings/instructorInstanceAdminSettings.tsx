@@ -52,7 +52,6 @@ router.get(
       has_enhanced_navigation,
     } = getCourseInstanceContext(res.locals, 'instructor');
     const pageContext = getPageContext(res.locals);
-    const { plainUrlPrefix } = pageContext;
 
     const shortNames = await sqldb.queryRows(sql.short_names, { course_id: course.id }, z.string());
     const enrollmentCount = await sqldb.queryRow(
@@ -61,12 +60,9 @@ router.get(
       z.number(),
     );
     const host = getCanonicalHost(req);
-    const studentLink = new URL(`${plainUrlPrefix}/course_instance/${courseInstance.id}`, host)
+    const studentLink = new URL(`/pl/course_instance/${courseInstance.id}`, host).href;
+    const publicLink = new URL(`/pl/public/course_instance/${courseInstance.id}/assessments`, host)
       .href;
-    const publicLink = new URL(
-      `${plainUrlPrefix}/public/course_instance/${courseInstance.id}/assessments`,
-      host,
-    ).href;
 
     const selfEnrollLink = new URL(
       getSelfEnrollmentLinkUrl({
@@ -133,6 +129,7 @@ router.get(
                 hasEnhancedNavigation={has_enhanced_navigation}
                 canEdit={canEdit}
                 courseInstance={courseInstance}
+                institution={institution}
                 shortNames={shortNames}
                 availableTimezones={availableTimezones}
                 origHash={origHash}
@@ -180,7 +177,7 @@ router.post(
 
       const courseInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
-        course_id: res.locals.course.id,
+        course: res.locals.course,
       });
 
       flash(
@@ -188,10 +185,7 @@ router.post(
         'Course instance copied successfully. You are new viewing your copy of the course instance.',
       );
       res.redirect(
-        res.locals.plainUrlPrefix +
-          '/course_instance/' +
-          courseInstance.id +
-          '/instructor/instance_admin/settings',
+        '/pl/course_instance/' + courseInstance.id + '/instructor/instance_admin/settings',
       );
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
@@ -201,9 +195,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-        res.redirect(
-          `${res.locals.plainUrlPrefix}/course/${res.locals.course.id}/course_admin/instances`,
-        );
+        res.redirect(`/pl/course/${res.locals.course.id}/course_admin/instances`);
       } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
@@ -272,23 +264,25 @@ router.post(
         parsedBody.self_enrollment_use_enrollment_code,
         false,
       );
-      const selfEnrollmentBeforeDateEnabled = propertyValueWithDefault(
-        courseInstanceInfo.selfEnrollment?.beforeDateEnabled,
-        parsedBody.self_enrollment_enabled_before_date_enabled,
-        false,
-        { isUIBoolean: true },
+      const selfEnrollmentRestrictToInstitution = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.restrictToInstitution,
+        parsedBody.self_enrollment_restrict_to_institution,
+        true,
       );
 
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
-        parseDateTime(parsedBody.self_enrollment_enabled_before_date),
+        // We'll only serialize the value if self-enrollment is enabled.
+        parsedBody.self_enrollment_enabled && parsedBody.self_enrollment_enabled_before_date
+          ? parseDateTime(parsedBody.self_enrollment_enabled_before_date)
+          : undefined,
         undefined,
       );
 
       const hasSelfEnrollmentSettings =
         (selfEnrollmentEnabled ??
           selfEnrollmentUseEnrollmentCode ??
-          selfEnrollmentBeforeDateEnabled ??
+          selfEnrollmentRestrictToInstitution ??
           selfEnrollmentBeforeDate) !== undefined;
 
       const {
@@ -307,7 +301,7 @@ router.post(
         courseInstanceInfo.selfEnrollment = {
           enabled: selfEnrollmentEnabled,
           useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
-          beforeDateEnabled: selfEnrollmentBeforeDateEnabled,
+          restrictToInstitution: selfEnrollmentRestrictToInstitution,
           beforeDate: selfEnrollmentBeforeDate,
         };
       } else {
