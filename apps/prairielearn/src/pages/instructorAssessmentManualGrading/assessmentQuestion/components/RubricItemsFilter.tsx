@@ -52,19 +52,18 @@ export function RubricItemsFilter({
         />
         Filter by rubric items
       </Dropdown.Toggle>
-      <Dropdown.Menu align="end" style={{ maxWidth: '400px' }}>
+      <Dropdown.Menu align="end" style={{ width: '400px' }}>
         {sortedRubricItems.map((item) => (
           <Dropdown.Item
             key={item.id}
             as="label"
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: 'pointer', whiteSpace: 'normal' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center gap-2">
               <input
                 type="checkbox"
                 checked={rubricItemsFilter.includes(item.id)}
-                class="me-2"
                 onChange={(e) => {
                   const checked = (e.target as HTMLInputElement).checked;
                   void setRubricItemsFilter((prev) => {
@@ -76,13 +75,11 @@ export function RubricItemsFilter({
                   });
                 }}
               />
-              <div class="flex-grow-1">
-                <div class="text-truncate">{item.description}</div>
-                <small class="text-muted">
-                  {item.points > 0 ? `+${item.points}` : item.points} pts
-                </small>
-              </div>
-              <span class="badge bg-secondary ms-2">{rubricItemUsage.get(item.id) ?? 0}</span>
+              <div>{item.description}</div>
+              <small class="text-muted text-nowrap">
+                {item.points > 0 ? `+${item.points}` : item.points} pts
+              </small>
+              <span class="badge bg-secondary">{rubricItemUsage.get(item.id) ?? 0}</span>
             </div>
           </Dropdown.Item>
         ))}
