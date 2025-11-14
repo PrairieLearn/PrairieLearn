@@ -75,7 +75,7 @@ function AssessmentQuestionManualGradingInner({
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
 
-  const { groupSubmissionMutation, toggleAiGradingModeMutation, ...mutations } =
+  const { groupSubmissionMutation, setAiGradingModeMutation, ...mutations } =
     useManualGradingActions({
       csrfToken,
       courseInstanceId: courseInstance.id,
@@ -83,14 +83,14 @@ function AssessmentQuestionManualGradingInner({
 
   return (
     <>
-      {toggleAiGradingModeMutation.isError && (
+      {setAiGradingModeMutation.isError && (
         <Alert
           variant="danger"
           class="mb-3"
           dismissible
-          onClose={() => toggleAiGradingModeMutation.reset()}
+          onClose={() => setAiGradingModeMutation.reset()}
         >
-          <strong>Error:</strong> {toggleAiGradingModeMutation.error.message}
+          <strong>Error:</strong> {setAiGradingModeMutation.error.message}
         </Alert>
       )}
       <div class="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
@@ -113,9 +113,9 @@ function AssessmentQuestionManualGradingInner({
                 role="switch"
                 id="switchCheckDefault"
                 checked={aiGradingMode}
-                disabled={toggleAiGradingModeMutation.isPending}
+                disabled={setAiGradingModeMutation.isPending}
                 onChange={() =>
-                  toggleAiGradingModeMutation.mutate(undefined, {
+                  setAiGradingModeMutation.mutate(!aiGradingMode, {
                     onSuccess: () => {
                       setAiGradingMode((prev) => !prev);
                     },

@@ -244,8 +244,8 @@ export function useManualGradingActions({
     },
   });
 
-  const toggleAiGradingModeMutation = useMutation({
-    mutationFn: async () => {
+  const setAiGradingModeMutation = useMutation({
+    mutationFn: async (value: boolean) => {
       const response = await fetch(window.location.pathname, {
         method: 'POST',
         headers: {
@@ -254,7 +254,8 @@ export function useManualGradingActions({
         },
         body: JSON.stringify({
           __csrf_token: csrfToken,
-          __action: 'toggle_ai_grading_mode',
+          __action: 'set_ai_grading_mode',
+          value,
         }),
       });
 
@@ -275,6 +276,6 @@ export function useManualGradingActions({
     deleteAiGradingJobsMutation,
     deleteAiGroupingsMutation,
     groupSubmissionMutation,
-    toggleAiGradingModeMutation,
+    setAiGradingModeMutation,
   };
 }

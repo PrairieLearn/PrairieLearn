@@ -11,7 +11,7 @@ import {
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
-  toggleAiGradingMode,
+  setAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
@@ -176,12 +176,16 @@ router.post(
     }
     // TODO: parse req.body with Zod
 
-    if (req.body.__action === 'toggle_ai_grading_mode') {
+    if (req.body.__action === 'set_ai_grading_mode') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      await toggleAiGradingMode(res.locals.assessment_question.id);
+      if (typeof req.body.value !== 'boolean') {
+        throw new error.HttpStatusError(400, 'value must be a boolean');
+      }
+
+      await setAiGradingMode(res.locals.assessment_question.id, req.body.value);
       res.sendStatus(204);
     } else if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {
