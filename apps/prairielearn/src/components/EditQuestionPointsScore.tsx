@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'preact/compat';
-import { Button, OverlayTrigger, Popover } from 'react-bootstrap';
+import { Alert, Button, OverlayTrigger, Popover } from 'react-bootstrap';
 
 import { escapeHtml, html } from '@prairielearn/html';
 
@@ -250,7 +250,7 @@ function EditQuestionPointsScoreForm({
     );
   }
 
-  const handleSubmit = async (e: Event) => {
+  const handleSubmit = (e: Event) => {
     e.preventDefault();
     setError(null);
 
@@ -260,22 +260,23 @@ function EditQuestionPointsScoreForm({
       return;
     }
 
-    try {
-      const result = await mutation.mutateAsync({
+    mutation.mutate(
+      {
         instance_question_id: instanceQuestion.id,
         modified_at: instanceQuestion.modified_at.toISOString(),
         field,
         value: numValue,
-      });
-
-      if (result) {
-        onConflict(result.conflict_details_url);
-      } else {
-        onSuccess();
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update points');
-    }
+      },
+      {
+        onSuccess: (data) => {
+          if (data) {
+            onConflict(data.conflict_details_url);
+          } else {
+            onSuccess();
+          }
+        },
+      },
+    );
   };
 
   return (
@@ -299,9 +300,9 @@ function EditQuestionPointsScoreForm({
         </div>
         {error && <div class="text-danger mt-2">{error}</div>}
         {mutation.isError && (
-          <div class="text-danger mt-2">
-            {mutation.error.message || 'An error occurred while updating points'}
-          </div>
+          <Alert variant="danger" class="mt-2" dismissible onClose={() => mutation.reset()}>
+            {mutation.error.message}
+          </Alert>
         )}
       </div>
       <p>
