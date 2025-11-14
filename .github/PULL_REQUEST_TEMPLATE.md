@@ -23,7 +23,7 @@ https://prairielearn.readthedocs.io/en/latest/contributing
 
 - Share how you tested your changes.
 - If you're fixing a bug, explain how to reproduce the original issue.
-- If possible, include the commit that testing was performed on.
+- If you re-test your PR after significant changes, add a comment to the PR saying so.
 - If applicable, make sure you've authored unit and/or integration tests.
 - If applicable, provide instructions for a reviewer to test the changes for themselves.
 - If applicable, mention any accessibility testing that was done.
