@@ -1,5 +1,5 @@
 {
-  "$schema": "https://pgtools.dev/main/schema.json",
+  "$schema": "https://pg-language-server.com/main/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",

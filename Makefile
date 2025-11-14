@@ -164,7 +164,7 @@ typecheck-js:
 typecheck-python: python-deps
 	@yarn pyright
 typecheck-sql:
-	@yarn postgrestools check .
+	@yarn postgres-language-server check .
 
 changeset:
 	@yarn changeset
