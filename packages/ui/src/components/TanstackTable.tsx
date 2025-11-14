@@ -95,17 +95,13 @@ function ResizeHandle<RowDataModel>({
 }
 
 const DefaultNoResultsState = (
-  <>
-    <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
-    <p class="mb-0">No results found matching your search criteria.</p>
-  </>
+  <TanstackTableEmptyState iconName="bi-search">
+    No results found matching your search criteria.
+  </TanstackTableEmptyState>
 );
 
 const DefaultEmptyState = (
-  <>
-    <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true" />
-    <p class="mb-0">No results found.</p>
-  </>
+  <TanstackTableEmptyState iconName="bi-eye-slash">No results found.</TanstackTableEmptyState>
 );
 
 interface TanstackTableProps<RowDataModel> {
