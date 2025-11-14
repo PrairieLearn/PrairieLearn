@@ -45,7 +45,10 @@ export function RubricItemsFilter({
 
   return (
     <Dropdown autoClose="outside">
-      <Dropdown.Toggle variant="outline-secondary">
+      <Dropdown.Toggle
+        // This is a special button variant defined in the `@prairielearn/ui` CSS.
+        variant="tanstack-table"
+      >
         <i
           class={rubricItemsFilter.length > 0 ? 'bi bi-funnel-fill me-2' : 'bi bi-funnel me-2'}
           aria-hidden="true"
