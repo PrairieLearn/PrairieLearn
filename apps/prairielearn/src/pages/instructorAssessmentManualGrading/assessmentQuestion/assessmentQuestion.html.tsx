@@ -69,7 +69,7 @@ export function AssessmentQuestion({
       fullWidth: true,
       pageNote: `Question ${number_in_alternative_group}`,
     },
-    headContent: html` ${compiledStylesheetTag('tanstackTable.css')} `,
+    headContent: compiledStylesheetTag('tanstackTable.css'),
     content: (
       <>
         <AssessmentSyncErrorsAndWarnings
