@@ -557,7 +557,7 @@ export function TanstackTable<RowDataModel>({
  * @param params
  * @param params.table - The table model
  * @param params.title - The title of the card
- * @param params.class - The class name to apply to the card
+ * @param params.className - The class name to apply to the card
  * @param params.style - The style to apply to the card
  * @param params.singularLabel - The singular label for a single row in the table, e.g. "student"
  * @param params.pluralLabel - The plural label for multiple rows in the table, e.g. "students"
