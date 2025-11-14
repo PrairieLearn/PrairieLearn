@@ -14,7 +14,7 @@ import { TanstackTableCard } from '@prairielearn/ui';
 <TanstackTableCard
   table={table}
   title="Students"
-  class="h-100"
+  className="h-100"
   singularLabel="student"
   pluralLabel="students"
   downloadButtonOptions={{

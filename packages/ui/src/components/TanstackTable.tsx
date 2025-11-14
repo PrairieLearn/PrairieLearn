@@ -95,17 +95,13 @@ function ResizeHandle<RowDataModel>({
 }
 
 const DefaultNoResultsState = (
-  <>
-    <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
-    <p class="mb-0">No results found matching your search criteria.</p>
-  </>
+  <TanstackTableEmptyState iconName="bi-search">
+    No results found matching your search criteria.
+  </TanstackTableEmptyState>
 );
 
 const DefaultEmptyState = (
-  <>
-    <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true" />
-    <p class="mb-0">No results found.</p>
-  </>
+  <TanstackTableEmptyState iconName="bi-eye-slash">No results found.</TanstackTableEmptyState>
 );
 
 interface TanstackTableProps<RowDataModel> {
@@ -557,7 +553,7 @@ export function TanstackTable<RowDataModel>({
  * @param params
  * @param params.table - The table model
  * @param params.title - The title of the card
- * @param params.class - The class name to apply to the card
+ * @param params.className - The class name to apply to the card
  * @param params.style - The style to apply to the card
  * @param params.singularLabel - The singular label for a single row in the table, e.g. "student"
  * @param params.pluralLabel - The plural label for multiple rows in the table, e.g. "students"
@@ -574,7 +570,6 @@ export function TanstackTable<RowDataModel>({
 export function TanstackTableCard<RowDataModel>({
   table,
   title,
-  class: className,
   singularLabel,
   pluralLabel,
   headerButtons,
@@ -583,6 +578,7 @@ export function TanstackTableCard<RowDataModel>({
   globalFilter,
   tableOptions,
   downloadButtonOptions,
+  className,
   ...divProps
 }: {
   table: Table<RowDataModel>;
@@ -602,7 +598,7 @@ export function TanstackTableCard<RowDataModel>({
     TanstackTableDownloadButtonProps<RowDataModel>,
     'table' | 'singularLabel' | 'pluralLabel'
   >;
-} & ComponentProps<'div'>) {
+} & Omit<ComponentProps<'div'>, 'class'>) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Focus the search input when Ctrl+F is pressed
