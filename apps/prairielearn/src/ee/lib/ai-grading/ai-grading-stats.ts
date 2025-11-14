@@ -83,7 +83,6 @@ export async function fillInstanceQuestionColumnEntries<
 
   for (const row of rows) {
     const base_instance_question = row.instance_question;
-    const { instance_question: _unused, ...other_info } = row;
 
     const instance_question: WithAIGradingStats<T['instance_question']> = {
       ...base_instance_question,
@@ -95,7 +94,7 @@ export async function fillInstanceQuestionColumnEntries<
       rubric_similarity: null,
     };
     results.push({
-      ...other_info,
+      ...row,
       instance_question,
     });
 
