@@ -11,7 +11,7 @@ import { getOrCreateUser } from '../tests/utils/auth.js';
 
 import { selectCourseInstanceById } from './course-instances.js';
 import {
-  ensureEnrollment,
+  ensureUncheckedEnrollment,
   selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUserId,
 } from './enrollment.js';
@@ -45,7 +45,7 @@ async function createEnrollmentWithStatus({
   );
 }
 
-describe('ensureEnrollment', () => {
+describe('ensureUncheckedEnrollment', () => {
   let courseInstance: CourseInstance;
 
   beforeEach(async function () {
@@ -84,7 +84,7 @@ describe('ensureEnrollment', () => {
     assert.isNull(initialEnrollment.first_joined_at);
     assert.isNull(initialEnrollment.user_id);
 
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance,
       userId: user.user_id,
       requestedRole: 'System',
@@ -139,7 +139,7 @@ describe('ensureEnrollment', () => {
     assert.isNotNull(initialEnrollment.first_joined_at);
 
     try {
-      await ensureEnrollment({
+      await ensureUncheckedEnrollment({
         courseInstance,
         userId: user.user_id,
         requestedRole: 'System',
@@ -179,7 +179,7 @@ describe('ensureEnrollment', () => {
     });
     assert.isNull(initialEnrollment);
 
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance,
       userId: user.user_id,
       requestedRole: 'System',
@@ -224,7 +224,7 @@ describe('ensureEnrollment', () => {
     assert.equal(initialEnrollment.status, 'joined');
     assert.equal(initialEnrollment.first_joined_at?.getTime(), originalJoinedAt.getTime());
 
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance,
       userId: user.user_id,
       requestedRole: 'System',

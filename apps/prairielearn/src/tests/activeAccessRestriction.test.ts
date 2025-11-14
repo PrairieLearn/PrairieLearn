@@ -9,7 +9,7 @@ import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
-import { ensureEnrollment } from '../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import { selectUserByUid } from '../models/user.js';
 
 import * as helperClient from './helperClient.js';
@@ -75,7 +75,7 @@ describe(
     test.sequential('enroll the test student user in the course', async () => {
       const user = await selectUserByUid('student@example.com');
       const courseInstance = await selectCourseInstanceById('1');
-      await ensureEnrollment({
+      await ensureUncheckedEnrollment({
         userId: user.user_id,
         courseInstance,
         requestedRole: 'System',

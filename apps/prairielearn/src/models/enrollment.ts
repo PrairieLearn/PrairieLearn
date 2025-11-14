@@ -137,14 +137,15 @@ async function _enrollUserInCourseInstance({
 
 /**
  * Ensures that the user is enrolled in the given course instance. If the
- * enrollment already exists, this is a no-op.
+ * enrollment already exists, this is a no-op. This function does not check
+ * enterprise enrollment eligibility, and should not be used directly outside of tests.
  *
  * If the user was in the 'removed', 'invited' or 'rejected' status, this will set the
  * enrollment status to 'joined'.
  *
  * If the user was 'blocked', this will throw an error.
  */
-export async function ensureEnrollment({
+export async function ensureUncheckedEnrollment({
   userId,
   authzData,
   courseInstance,
@@ -230,7 +231,7 @@ export async function ensureEnrollment({
  * instance enrollment limit to be exceeded.
  *
  */
-export async function ensureCheckedEnrollment({
+export async function ensureEnrollment({
   institution,
   course,
   courseInstance,
@@ -269,7 +270,7 @@ export async function ensureCheckedEnrollment({
     }
   }
 
-  await ensureEnrollment({
+  await ensureUncheckedEnrollment({
     courseInstance,
     userId: authzData.user.user_id,
     requestedRole,
@@ -341,7 +342,7 @@ export async function generateAndEnrollUsers({
     const courseInstance = await selectCourseInstanceById(course_instance_id);
     const users = await generateUsers(count);
     for (const user of users) {
-      await ensureEnrollment({
+      await ensureUncheckedEnrollment({
         courseInstance,
         userId: user.user_id,
         requestedRole: 'System',

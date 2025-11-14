@@ -9,7 +9,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { hasRole } from '../../lib/authz-data-lib.js';
 import { getCourseInstanceContext } from '../../lib/client/page-context.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
-import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
 import { EnrollmentCodeRequired } from './enrollmentCodeRequired.html.js';
 
@@ -92,7 +92,7 @@ router.get(
         await authzCourseOrInstance(req, res);
 
         // Enroll the user
-        await ensureCheckedEnrollment({
+        await ensureEnrollment({
           institution: res.locals.institution,
           course: res.locals.course,
           courseInstance: res.locals.course_instance,

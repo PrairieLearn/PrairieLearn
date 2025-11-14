@@ -18,7 +18,7 @@ import {
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 import { getOrCreateUser } from '../utils/auth.js';
@@ -106,7 +106,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     });
     studentId = student.user_id;
     courseInstance = await selectCourseInstanceById('1');
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       userId: studentId,
       courseInstance,
       requestedRole: 'System',
@@ -586,7 +586,7 @@ describe('effective user', { timeout: 60_000 }, function () {
         uin: 'student',
         email: 'student@example.com',
       });
-      await ensureEnrollment({
+      await ensureUncheckedEnrollment({
         courseInstance,
         userId: user.user_id,
         requestedRole: 'System',

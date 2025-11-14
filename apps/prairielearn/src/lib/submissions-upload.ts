@@ -10,7 +10,7 @@ import { truncate } from '@prairielearn/sanitize';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
-import { ensureEnrollment } from '../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
@@ -113,7 +113,7 @@ export async function uploadSubmissions(
 
   const ensureAndEnrollUser = memoize(async (uid: string) => {
     const user = await selectOrInsertUserByUid(uid);
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       userId: user.user_id,
       courseInstance: course_instance,
       actionDetail: 'implicit_joined',
