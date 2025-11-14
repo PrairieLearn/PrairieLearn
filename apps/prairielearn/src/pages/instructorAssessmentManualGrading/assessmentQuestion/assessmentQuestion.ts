@@ -177,12 +177,13 @@ router.post(
     // TODO: parse req.body with Zod
 
     if (req.body.__action === 'toggle_ai_grading_mode') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
       await toggleAiGradingMode(res.locals.assessment_question.id);
       res.sendStatus(204);
-      return;
-    }
-
-    if (req.body.__action === 'batch_action') {
+    } else if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
@@ -255,7 +256,6 @@ router.post(
           assigned_grader: action_data?.assigned_grader,
         });
         res.sendStatus(204);
-        return;
       }
     } else if (req.body.__action === 'edit_question_points') {
       const result = await manualGrading.updateInstanceQuestionScore(
@@ -378,7 +378,6 @@ router.post(
         res.locals.authn_user.user_id,
       );
       res.sendStatus(204);
-      return;
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

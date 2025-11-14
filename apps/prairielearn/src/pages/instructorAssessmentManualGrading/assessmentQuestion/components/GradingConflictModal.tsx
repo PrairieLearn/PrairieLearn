@@ -13,7 +13,7 @@ export function GradingConflictModal({
   onHide: () => void;
 }) {
   return (
-    <Modal show={modalState !== null} onHide={onHide}>
+    <Modal show={modalState != null} onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>Grading conflict detected</Modal.Title>
       </Modal.Header>

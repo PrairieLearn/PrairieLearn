@@ -84,9 +84,9 @@ export function GroupInfoModal({
     [modalState, closedSubmissionsOnly, numOpenInstances, mutation, onHide],
   );
 
-  if (!modalState) return null;
-
   const getTitle = () => {
+    if (modalState == null) return '';
+
     if (modalState.type === 'all') {
       return 'Group all submissions';
     } else if (modalState.type === 'ungrouped') {
@@ -97,7 +97,13 @@ export function GroupInfoModal({
   };
 
   return (
-    <Modal show={true} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
+    <Modal
+      show={modalState != null}
+      size="lg"
+      backdrop="static"
+      keyboard={false}
+      onHide={handleClose}
+    >
       <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>{getTitle()}</Modal.Title>

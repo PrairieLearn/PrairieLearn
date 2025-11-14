@@ -602,8 +602,6 @@ export function AssessmentQuestionTable({
       <TanstackTableCard
         table={table}
         title="Student instance questions"
-        // This seems to be a little weird for the empty state.
-        // It can move the scrollbar really far down the page.
         style={{ height: '90vh' }}
         columnManagerTopContent={
           <div class="px-2 py-1 d-flex align-items-center">

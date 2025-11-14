@@ -1,4 +1,3 @@
-import { html } from '@prairielearn/html';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
@@ -21,8 +20,8 @@ import type { AssessmentQuestion } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
-import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.js';
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
+import { AssessmentQuestionManualGrading } from './components/AssessmentQuestionManualGrading.js';
 
 export function AssessmentQuestion({
   resLocals,

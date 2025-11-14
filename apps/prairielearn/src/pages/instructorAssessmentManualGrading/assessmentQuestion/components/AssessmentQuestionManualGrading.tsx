@@ -2,26 +2,23 @@ import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
 import { Alert } from 'react-bootstrap';
 
-import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
-import { NuqsAdapter } from '../../../lib/client/nuqs.js';
-import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
+import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
+import { NuqsAdapter } from '../../../../lib/client/nuqs.js';
+import type { StaffCourseInstanceContext } from '../../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
   StaffUser,
-} from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { RubricData } from '../../../lib/manualGrading.types.js';
+} from '../../../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
+import type { RubricData } from '../../../../lib/manualGrading.types.js';
+import type { InstanceQuestionRowWithAIGradingStats } from '../assessmentQuestion.types.js';
+import { useManualGradingActions } from '../utils/useManualGradingActions.js';
 
-import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
-import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
-import {
-  type ConflictModalState,
-  GradingConflictModal,
-} from './components/GradingConflictModal.js';
-import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
-import { useManualGradingActions } from './utils/useManualGradingActions.js';
+import { AssessmentQuestionTable } from './AssessmentQuestionTable.js';
+import { type ConflictModalState, GradingConflictModal } from './GradingConflictModal.js';
+import { GroupInfoModal, type GroupInfoModalState } from './GroupInfoModal.js';
 
 const queryClient = new QueryClient();
 
