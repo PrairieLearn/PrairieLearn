@@ -748,12 +748,14 @@ export function AssessmentQuestionTable({
                       </Dropdown.Item>
                     ))}
                     <Dropdown.Item
+                      key="remove-grader-assignment"
                       onClick={() => handleBatchAction({ assigned_grader: null }, selectedIds)}
                     >
                       <i class="fas fa-user-slash" /> Remove grader assignment
                     </Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item
+                      key="tag-as-required-grading"
                       onClick={() =>
                         handleBatchAction({ requires_manual_grading: true }, selectedIds)
                       }
@@ -761,6 +763,7 @@ export function AssessmentQuestionTable({
                       <i class="fas fa-tag" /> Tag as required grading
                     </Dropdown.Item>
                     <Dropdown.Item
+                      key="tag-as-graded"
                       onClick={() =>
                         handleBatchAction({ requires_manual_grading: false }, selectedIds)
                       }
