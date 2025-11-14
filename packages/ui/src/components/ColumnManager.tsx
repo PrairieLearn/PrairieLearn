@@ -125,6 +125,9 @@ export function ColumnManager<RowDataModel>({
       }}
     >
       <Dropdown.Toggle
+        // We assume that this component will only appear once per page. If that changes,
+        // we'll need to do something to ensure ID uniqueness here.
+        id="column-manager"
         variant="tanstack-table"
         // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="tanstack-table-focusable-shadow"
@@ -185,7 +188,8 @@ export function ColumnManager<RowDataModel>({
               onClick={() => {
                 table.resetColumnVisibility();
                 table.resetColumnPinning();
-                setActiveElementId(id);
+                // Move focus to the column manager button after resetting.
+                setActiveElementId('column-manager');
               }}
             >
               <i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
