@@ -24,7 +24,11 @@ import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
-import { CategoricalColumnFilter, TanstackTableCard } from '@prairielearn/ui';
+import {
+  CategoricalColumnFilter,
+  TanstackTableCard,
+  TanstackTableEmptyState,
+} from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
@@ -425,25 +429,18 @@ function StudentsCard({
             ),
           },
           emptyState: (
-            <>
-              <i class="bi bi-person-exclamation display-4 mb-2" aria-hidden="true" />
-              {/* medium screen and larger, 75% width */}
-              <p class="col-md-9">
-                No students found. To enroll students in your course, you can provide them with a
-                link to enroll (recommended) or invite them. You can manage the self-enrollment
-                settings on the
-                <a class="mx-1" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
-                  course instance settings
-                </a>
-                page.
-              </p>
-            </>
+            <TanstackTableEmptyState iconName="bi-person-exclamation">
+              No students found. To enroll students in your course, you can provide them with a link
+              to enroll (recommended) or invite them. You can manage the self-enrollment settings on
+              the{' '}
+              <a href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>course instance settings</a>{' '}
+              page.
+            </TanstackTableEmptyState>
           ),
           noResultsState: (
-            <>
-              <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
-              <p class="mb-0">No students found matching your search criteria.</p>
-            </>
+            <TanstackTableEmptyState iconName="bi-search">
+              No students found matching your search criteria.
+            </TanstackTableEmptyState>
           ),
         }}
       />
