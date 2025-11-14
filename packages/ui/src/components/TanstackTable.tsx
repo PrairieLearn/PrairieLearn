@@ -2,6 +2,7 @@ import { flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import type { Header, Row, SortDirection, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
+import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
@@ -283,40 +284,6 @@ export function TanstackTable<RowDataModel>({
 
   return (
     <div style={{ position: 'relative' }} class="d-flex flex-column h-100">
-      {table.getVisibleLeafColumns().length === 0 ? (
-        <div>
-          <div
-            class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-            role="status"
-            aria-live="polite"
-          >
-            <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true" />
-            <p class="mb-0">No columns selected. Use the View menu to show columns.</p>
-          </div>
-        </div>
-      ) : displayedCount === 0 ? (
-        <div
-          class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
-          role="status"
-          aria-live="polite"
-        >
-          {totalCount > 0 ? noResultsState : emptyState}
-        </div>
-      ) : null}
       <div
         ref={parentRef}
         style={{
@@ -514,6 +481,44 @@ export function TanstackTable<RowDataModel>({
           </table>
         </div>
       </div>
+      {table.getVisibleLeafColumns().length === 0 || displayedCount === 0 ? (
+        <div>
+          <div
+            class="d-flex flex-column justify-content-center align-items-center p-4"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              // Allow pointer events (e.g. scrolling) to reach the underlying table.
+              pointerEvents: 'none',
+            }}
+            role="status"
+            aria-live="polite"
+          >
+            <div
+              class="col-lg-6"
+              style={{
+                // Allow selecting and interacting with the empty state content.
+                pointerEvents: 'auto',
+              }}
+            >
+              {table.getVisibleLeafColumns().length === 0 ? (
+                <TanstackTableEmptyState iconName="bi-eye-slash">
+                  No columns selected. Use the View menu to show columns.
+                </TanstackTableEmptyState>
+              ) : displayedCount === 0 ? (
+                totalCount > 0 ? (
+                  noResultsState
+                ) : (
+                  emptyState
+                )
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -633,6 +638,21 @@ export function TanstackTableCard<RowDataModel>({
       <div class="flex-grow-1">
         <TanstackTable table={table} title={title} {...tableOptions} />
       </div>
+    </div>
+  );
+}
+
+export function TanstackTableEmptyState({
+  iconName,
+  children,
+}: {
+  iconName: `bi-${string}`;
+  children: ComponentChildren;
+}) {
+  return (
+    <div class="d-flex flex-column justify-content-center align-items-center text-muted">
+      <i class={clsx('bi', iconName, 'display-4 mb-2')} aria-hidden="true" />
+      <div>{children}</div>
     </div>
   );
 }
