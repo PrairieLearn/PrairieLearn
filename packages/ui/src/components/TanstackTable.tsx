@@ -237,47 +237,6 @@ export function TanstackTable<RowDataModel>({
     document.body.classList.toggle('no-user-select', isTableResizing);
   }, [isTableResizing]);
 
-  // Dismiss popovers when their triggering element scrolls out of view
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollElement = parentRef.current;
-      if (!scrollElement) return;
-
-      // Find and check all open popovers
-      const popovers = document.querySelectorAll('.popover.show');
-      popovers.forEach((popover) => {
-        // Find the trigger element for this popover
-        const triggerElement = document.querySelector(`[aria-describedby="${popover.id}"]`);
-        if (!triggerElement) return;
-
-        // Check if the trigger element is still visible in the scroll container
-        const scrollRect = scrollElement.getBoundingClientRect();
-        const triggerRect = triggerElement.getBoundingClientRect();
-
-        // Check if trigger is outside the visible scroll area
-        const isOutOfView =
-          triggerRect.bottom < scrollRect.top ||
-          triggerRect.top > scrollRect.bottom ||
-          triggerRect.right < scrollRect.left ||
-          triggerRect.left > scrollRect.right;
-
-        if (isOutOfView) {
-          // Use Bootstrap's Popover API to properly hide it
-          const popoverInstance = (window as any).bootstrap?.Popover?.getInstance(triggerElement);
-          if (popoverInstance) {
-            popoverInstance.hide();
-          }
-        }
-      });
-    };
-
-    const scrollElement = parentRef.current;
-    if (scrollElement) {
-      scrollElement.addEventListener('scroll', handleScroll);
-      return () => scrollElement.removeEventListener('scroll', handleScroll);
-    }
-  }, []);
-
   // Helper function to get aria-sort value
   const getAriaSort = (sortDirection: false | SortDirection) => {
     switch (sortDirection) {
