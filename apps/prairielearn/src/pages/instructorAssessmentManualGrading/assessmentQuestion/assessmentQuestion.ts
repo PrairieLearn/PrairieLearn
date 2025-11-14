@@ -80,7 +80,7 @@ router.get(
         resLocals: res.locals,
         courseStaff,
         aiGradingEnabled,
-        aiGradingMode: res.locals.assessment_question.ai_grading_mode,
+        aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
         aiGradingStats:
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
