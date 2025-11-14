@@ -14,5 +14,6 @@ export {
   NumericInputColumnFilter,
   parseNumericFilter,
   numericColumnFilterFn,
+  numericColumnFilterFnWithEmpty,
 } from './components/NumericInputColumnFilter.js';
 export { useShiftClickCheckbox } from './components/useShiftClickCheckbox.js';

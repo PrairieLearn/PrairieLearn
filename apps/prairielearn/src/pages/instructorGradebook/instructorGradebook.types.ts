@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
+import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  EnrollmentSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../../lib/db-types.js';
@@ -17,14 +17,6 @@ export const CourseAssessmentRowSchema = z.object({
   label: z.string(),
 });
 export type CourseAssessmentRow = z.infer<typeof CourseAssessmentRowSchema>;
-
-export interface InstructorGradebookData {
-  urlPrefix: string;
-  csvFilename: string;
-  csrfToken: string;
-  hasCourseInstancePermissionEdit: boolean;
-  courseAssessments: CourseAssessmentRow[];
-}
 
 export const AssessmentInstanceScoreResultSchema = z.object({
   user_id: UserSchema.shape.user_id,
@@ -40,7 +32,7 @@ export const GradebookRowSchema = z.object({
   uin: UserSchema.shape.uin,
   user_name: UserSchema.shape.name,
   role: SprocUsersGetDisplayedRoleSchema,
-  enrollment_id: EnrollmentSchema.shape.id.nullable(),
+  enrollment: StaffEnrollmentSchema.nullable(),
   scores: z.record(
     AssessmentSchema.shape.id,
     z.object({
