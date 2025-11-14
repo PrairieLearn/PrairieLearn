@@ -1,16 +1,19 @@
 import { Button, Modal } from 'react-bootstrap';
 
+export type ConflictModalState = {
+  type: 'conflict';
+  conflictDetailsUrl: string;
+} | null;
+
 export function GradingConflictModal({
-  show,
-  conflictDetailsUrl,
+  modalState,
   onHide,
 }: {
-  show: boolean;
-  conflictDetailsUrl: string;
+  modalState: ConflictModalState;
   onHide: () => void;
 }) {
   return (
-    <Modal show={show} size="lg" onHide={onHide}>
+    <Modal show={modalState !== null} size="lg" onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>Grading conflict detected</Modal.Title>
       </Modal.Header>
@@ -23,7 +26,7 @@ export function GradingConflictModal({
         <Button variant="secondary" onClick={onHide}>
           Dismiss
         </Button>
-        <Button variant="primary" href={conflictDetailsUrl}>
+        <Button variant="primary" href={modalState?.conflictDetailsUrl}>
           See details
         </Button>
       </Modal.Footer>

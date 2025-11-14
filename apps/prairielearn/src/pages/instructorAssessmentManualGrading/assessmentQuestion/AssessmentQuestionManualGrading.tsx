@@ -16,7 +16,10 @@ import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
 import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
-import { GradingConflictModal } from './components/GradingConflictModal.js';
+import {
+  type ConflictModalState,
+  GradingConflictModal,
+} from './components/GradingConflictModal.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
@@ -71,13 +74,7 @@ function AssessmentQuestionManualGradingInner({
   questionNumber,
 }: AssessmentQuestionManualGradingInnerProps) {
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
-  const [showConflictModal, setShowConflictModal] = useState(false);
-  const [conflictDetailsUrl, setConflictDetailsUrl] = useState('/');
-
-  const handleShowConflictModal = (url: string) => {
-    setConflictDetailsUrl(url);
-    setShowConflictModal(true);
-  };
+  const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
 
@@ -153,7 +150,7 @@ function AssessmentQuestionManualGradingInner({
         aiGradingStats={aiGradingStats}
         mutations={mutations}
         onSetGroupInfoModalState={setGroupInfoModalState}
-        onShowConflictModal={handleShowConflictModal}
+        onSetConflictModalState={setConflictModalState}
       />
 
       <GroupInfoModal
@@ -164,9 +161,14 @@ function AssessmentQuestionManualGradingInner({
       />
 
       <GradingConflictModal
-        show={showConflictModal}
-        conflictDetailsUrl={conflictDetailsUrl}
-        onHide={() => setShowConflictModal(false)}
+        modalState={conflictModalState}
+        onHide={() => {
+          setConflictModalState(null);
+          // Refetch the table data to show the latest state.
+          void queryClient.invalidateQueries({
+            queryKey: ['instance-questions'],
+          });
+        }}
       />
     </>
   );

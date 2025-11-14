@@ -44,6 +44,7 @@ import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
+import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
 
@@ -71,7 +72,7 @@ export interface AssessmentQuestionTableProps {
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
-  onShowConflictModal: (conflictDetailsUrl: string) => void;
+  onSetConflictModalState: (modalState: ConflictModalState | null) => void;
   mutations: {
     batchActionMutation: ReturnType<typeof useManualGradingActions>['batchActionMutation'];
     handleBatchAction: ReturnType<typeof useManualGradingActions>['handleBatchAction'];
@@ -100,7 +101,7 @@ export function AssessmentQuestionTable({
   courseInstance,
   aiGradingStats,
   onSetGroupInfoModalState,
-  onShowConflictModal,
+  onSetConflictModalState,
   mutations,
 }: AssessmentQuestionTableProps) {
   // Query state management
@@ -304,7 +305,7 @@ export function AssessmentQuestionTable({
           });
         },
         onEditPointsConflict: (conflictDetailsUrl: string) => {
-          onShowConflictModal(conflictDetailsUrl);
+          onSetConflictModalState({ type: 'conflict', conflictDetailsUrl });
         },
       }),
     [
@@ -318,7 +319,7 @@ export function AssessmentQuestionTable({
       createCheckboxProps,
       scrollRef,
       queryClientInstance,
-      onShowConflictModal,
+      onSetConflictModalState,
     ],
   );
 

@@ -169,6 +169,7 @@ export function useEditQuestionPointsMutation({ csrfToken }: { csrfToken: string
         [params.field]: params.value,
       };
 
+      // TODO: This could probably be a proper URL once we use on multiple pages.
       const response = await fetch(window.location.pathname, {
         method: 'POST',
         headers: {
@@ -198,8 +199,8 @@ interface EditQuestionPointsScoreFormProps {
   assessmentQuestion: StaffAssessmentQuestion;
   urlPrefix: string;
   mutation: ReturnType<typeof useEditQuestionPointsMutation>;
-  onSuccess?: () => void;
-  onConflict?: (conflictDetailsUrl: string) => void;
+  onSuccess: () => void;
+  onConflict: (conflictDetailsUrl: string) => void;
   onCancel: () => void;
 }
 
@@ -268,9 +269,9 @@ function EditQuestionPointsScoreForm({
       });
 
       if (result) {
-        onConflict?.(result.conflict_details_url);
+        onConflict(result.conflict_details_url);
       } else {
-        onSuccess?.();
+        onSuccess();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update points');
@@ -334,8 +335,8 @@ interface EditQuestionPointsScoreButtonProps {
   assessmentQuestion: StaffAssessmentQuestion;
   csrfToken: string;
   urlPrefix: string;
-  onSuccess?: () => void;
-  onConflict?: (conflictDetailsUrl: string) => void;
+  onSuccess: () => void;
+  onConflict: (conflictDetailsUrl: string) => void;
   scrollRef?: React.RefObject<HTMLDivElement> | null;
 }
 
@@ -355,12 +356,12 @@ export function EditQuestionPointsScoreButton({
 
   const handleSuccess = () => {
     setShow(false);
-    onSuccess?.();
+    onSuccess();
   };
 
   const handleConflict = (conflictDetailsUrl: string) => {
     setShow(false);
-    onConflict?.(conflictDetailsUrl);
+    onConflict(conflictDetailsUrl);
   };
 
   const handleCancel = () => {
