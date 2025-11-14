@@ -129,8 +129,6 @@ export function ColumnManager<RowDataModel>({
         // we'll need to do something to ensure ID uniqueness here.
         id="column-manager"
         variant="tanstack-table"
-        // eslint-disable-next-line @eslint-react/no-forbidden-props
-        className="tanstack-table-focusable-shadow"
       >
         <i class="bi bi-view-list me-2" aria-hidden="true" /> View{' '}
       </Dropdown.Toggle>
