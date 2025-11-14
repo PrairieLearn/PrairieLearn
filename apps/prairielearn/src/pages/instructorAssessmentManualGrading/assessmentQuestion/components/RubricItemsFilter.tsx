@@ -65,7 +65,7 @@ export function RubricItemsFilter({
                 type="checkbox"
                 checked={rubricItemsFilter.includes(item.id)}
                 onChange={(e) => {
-                  const checked = (e.target as HTMLInputElement).checked;
+                  const checked = e.currentTarget.checked;
                   void setRubricItemsFilter((prev) => {
                     if (checked) {
                       return [...prev, item.id];

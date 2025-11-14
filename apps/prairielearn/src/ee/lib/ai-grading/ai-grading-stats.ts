@@ -59,7 +59,7 @@ export async function fillInstanceQuestionColumnEntries<
     };
   },
 >(
-  info_with_instance_questions: T[],
+  rows: T[],
   assessment_question: AssessmentQuestion,
 ): Promise<FillInstanceQuestionColumnEntriesResultType<T>[]> {
   const rubric_modify_time = await queryOptionalRow(
@@ -68,9 +68,7 @@ export async function fillInstanceQuestionColumnEntries<
     DateFromISOString,
   );
 
-  const gradingJobMapping = await selectGradingJobsInfo(
-    info_with_instance_questions.map((item) => item.instance_question),
-  );
+  const gradingJobMapping = await selectGradingJobsInfo(rows.map((row) => row.instance_question));
 
   const instanceQuestionIdToGroupName = (
     await selectInstanceQuestionGroups({
@@ -83,9 +81,9 @@ export async function fillInstanceQuestionColumnEntries<
 
   const results: FillInstanceQuestionColumnEntriesResultType<T>[] = [];
 
-  for (const item of info_with_instance_questions) {
-    const base_instance_question = item.instance_question;
-    const { instance_question: _unused, ...other_info } = item;
+  for (const row of rows) {
+    const base_instance_question = row.instance_question;
+    const { instance_question: _unused, ...other_info } = row;
 
     const instance_question: WithAIGradingStats<T['instance_question']> = {
       ...base_instance_question,

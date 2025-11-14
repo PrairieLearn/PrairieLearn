@@ -44,7 +44,7 @@ export function EditQuestionPointsScoreButtonHtml({
 
   return html`<button
     type="button"
-    class="btn btn-xs btn-ghost p-0 text-muted"
+    class="btn btn-xs btn-ghost text-muted"
     data-bs-toggle="popover"
     data-bs-container="body"
     data-bs-html="true"
@@ -158,7 +158,7 @@ type EditQuestionPointsMutationResponse = {
   conflict_details_url: string;
 } | null;
 
-export function useEditQuestionPointsMutation({ csrfToken }: { csrfToken: string }) {
+function useEditQuestionPointsMutation({ csrfToken }: { csrfToken: string }) {
   return useMutation<EditQuestionPointsMutationResponse, Error, EditQuestionPointsMutationParams>({
     mutationFn: async (params: EditQuestionPointsMutationParams) => {
       const requestBody: Record<string, any> = {
@@ -193,17 +193,6 @@ export function useEditQuestionPointsMutation({ csrfToken }: { csrfToken: string
   });
 }
 
-interface EditQuestionPointsScoreFormProps {
-  field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
-  instanceQuestion: StaffInstanceQuestion;
-  assessmentQuestion: StaffAssessmentQuestion;
-  urlPrefix: string;
-  mutation: ReturnType<typeof useEditQuestionPointsMutation>;
-  onSuccess: () => void;
-  onConflict: (conflictDetailsUrl: string) => void;
-  onCancel: () => void;
-}
-
 function EditQuestionPointsScoreForm({
   field,
   instanceQuestion,
@@ -213,7 +202,16 @@ function EditQuestionPointsScoreForm({
   onSuccess,
   onConflict,
   onCancel,
-}: EditQuestionPointsScoreFormProps) {
+}: {
+  field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
+  instanceQuestion: StaffInstanceQuestion;
+  assessmentQuestion: StaffAssessmentQuestion;
+  urlPrefix: string;
+  mutation: ReturnType<typeof useEditQuestionPointsMutation>;
+  onSuccess: () => void;
+  onConflict: (conflictDetailsUrl: string) => void;
+  onCancel: () => void;
+}) {
   const [pointsOrScore, maxPoints] = {
     points: [instanceQuestion.points, assessmentQuestion.max_points],
     manual_points: [instanceQuestion.manual_points, assessmentQuestion.max_manual_points],
@@ -330,17 +328,6 @@ function EditQuestionPointsScoreForm({
   );
 }
 
-interface EditQuestionPointsScoreButtonProps {
-  field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
-  instanceQuestion: StaffInstanceQuestion;
-  assessmentQuestion: StaffAssessmentQuestion;
-  csrfToken: string;
-  urlPrefix: string;
-  onSuccess: () => void;
-  onConflict: (conflictDetailsUrl: string) => void;
-  scrollRef?: React.RefObject<HTMLDivElement> | null;
-}
-
 export function EditQuestionPointsScoreButton({
   field,
   instanceQuestion,
@@ -350,7 +337,16 @@ export function EditQuestionPointsScoreButton({
   onSuccess,
   onConflict,
   scrollRef,
-}: EditQuestionPointsScoreButtonProps) {
+}: {
+  field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
+  instanceQuestion: StaffInstanceQuestion;
+  assessmentQuestion: StaffAssessmentQuestion;
+  csrfToken: string;
+  urlPrefix: string;
+  onSuccess: () => void;
+  onConflict: (conflictDetailsUrl: string) => void;
+  scrollRef?: React.RefObject<HTMLDivElement> | null;
+}) {
   const mutation = useEditQuestionPointsMutation({ csrfToken });
   const [show, setShow] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -403,7 +399,7 @@ export function EditQuestionPointsScoreButton({
   }, [show]);
 
   const popover = (
-    <Popover id={`edit-points-popover-${field}-${instanceQuestion.id}`}>
+    <Popover>
       <Popover.Body>
         <EditQuestionPointsScoreForm
           assessmentQuestion={assessmentQuestion}
@@ -431,7 +427,7 @@ export function EditQuestionPointsScoreButton({
       <button
         ref={buttonRef}
         type="button"
-        class="btn btn-xs btn-ghost p-0 text-muted"
+        class="btn btn-xs btn-ghost text-muted"
         aria-label={`Change question ${findLabel(field)}`}
         data-testid={`edit-question-points-score-button-${field}`}
       >
