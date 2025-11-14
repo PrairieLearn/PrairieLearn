@@ -427,6 +427,36 @@ export function AssessmentQuestionTable({
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = selectedRows.map((row) => row.original.instance_question.id);
 
+  // Calculate counts for AI grading dropdown
+  const aiGradingCounts = useMemo(() => {
+    const humanGradedCount = instanceQuestionsInfo.filter(
+      (row) => row.instance_question.last_human_grader != null,
+    ).length;
+    const selectedCount = selectedIds.length;
+    const allCount = instanceQuestionsInfo.length;
+
+    return {
+      humanGraded: humanGradedCount,
+      selected: selectedCount,
+      all: allCount,
+    };
+  }, [instanceQuestionsInfo, selectedIds]);
+
+  // Calculate counts for AI submission grouping dropdown
+  const aiGroupingCounts = useMemo(() => {
+    const selectedCount = selectedIds.length;
+    const allCount = instanceQuestionsInfo.length;
+    const ungroupedCount = instanceQuestionsInfo.filter(
+      (row) => row.instance_question.instance_question_group_name == null,
+    ).length;
+
+    return {
+      selected: selectedCount,
+      all: allCount,
+      ungrouped: ungroupedCount,
+    };
+  }, [instanceQuestionsInfo, selectedIds]);
+
   const {
     batchActionMutation,
     handleBatchAction,
@@ -585,7 +615,10 @@ export function AssessmentQuestionTable({
                         })
                       }
                     >
-                      Grade all human-graded
+                      <div class="d-flex justify-content-between align-items-center w-100">
+                        <span>Grade all human-graded</span>
+                        <span class="badge bg-secondary ms-2">{aiGradingCounts.humanGraded}</span>
+                      </div>
                     </Dropdown.Item>
                     <Dropdown.Item
                       disabled={selectedIds.length === 0}
@@ -596,7 +629,10 @@ export function AssessmentQuestionTable({
                         )
                       }
                     >
-                      Grade selected
+                      <div class="d-flex justify-content-between align-items-center w-100">
+                        <span>Grade selected</span>
+                        <span class="badge bg-secondary ms-2">{aiGradingCounts.selected}</span>
+                      </div>
                     </Dropdown.Item>
                     <Dropdown.Item
                       onClick={() =>
@@ -605,7 +641,10 @@ export function AssessmentQuestionTable({
                         })
                       }
                     >
-                      Grade all
+                      <div class="d-flex justify-content-between align-items-center w-100">
+                        <span>Grade all</span>
+                        <span class="badge bg-secondary ms-2">{aiGradingCounts.all}</span>
+                      </div>
                     </Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
@@ -624,13 +663,22 @@ export function AssessmentQuestionTable({
                         onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
                       }
                     >
-                      Group selected submissions
+                      <div class="d-flex justify-content-between align-items-center w-100">
+                        <span>Group selected submissions</span>
+                        <span class="badge bg-secondary ms-2">{aiGroupingCounts.selected}</span>
+                      </div>
                     </Dropdown.Item>
                     <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
-                      Group all submissions
+                      <div class="d-flex justify-content-between align-items-center w-100">
+                        <span>Group all submissions</span>
+                        <span class="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
+                      </div>
                     </Dropdown.Item>
                     <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}>
-                      Group ungrouped submissions
+                      <div class="d-flex justify-content-between align-items-center w-100">
+                        <span>Group ungrouped submissions</span>
+                        <span class="badge bg-secondary ms-2">{aiGroupingCounts.ungrouped}</span>
+                      </div>
                     </Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={() => setShowDeleteAiGroupingsModal(true)}>

@@ -93,7 +93,6 @@ export function createColumnFilters({
         columnId={header.column.id}
         columnLabel="Status"
         allColumnValues={GRADING_STATUS_VALUES}
-        renderValueLabel={({ value }) => <span>{value}</span>}
         columnValuesFilter={gradingStatusFilter}
         setColumnValuesFilter={setGradingStatusFilter}
       />
@@ -103,7 +102,6 @@ export function createColumnFilters({
         columnId={header.column.id}
         columnLabel="Assigned Grader"
         allColumnValues={[...allGraders, 'Unassigned']}
-        renderValueLabel={({ value }) => <span>{value}</span>}
         columnValuesFilter={assignedGraderFilter}
         setColumnValuesFilter={setAssignedGraderFilter}
       />
@@ -113,7 +111,6 @@ export function createColumnFilters({
         columnId={header.column.id}
         columnLabel="Graded By"
         allColumnValues={[...allGraders, 'Unassigned']}
-        renderValueLabel={({ value }) => <span>{value}</span>}
         columnValuesFilter={gradedByFilter}
         setColumnValuesFilter={setGradedByFilter}
       />
@@ -129,7 +126,6 @@ export function createColumnFilters({
               columnId={header.column.id}
               columnLabel="Submission Group"
               allColumnValues={[...allSubmissionGroups, 'No Group']}
-              renderValueLabel={({ value }) => <span>{value}</span>}
               columnValuesFilter={submissionGroupFilter}
               setColumnValuesFilter={setSubmissionGroupFilter}
             />
@@ -183,9 +179,6 @@ export function createColumnFilters({
               columnId={header.column.id}
               columnLabel="AI Disagreements"
               allColumnValues={allAiAgreementItems.map((item) => item.description)}
-              renderValueLabel={({ value }) => {
-                return <span>{value}</span>;
-              }}
               columnValuesFilter={aiAgreementFilter}
               setColumnValuesFilter={setAiAgreementFilter}
             />

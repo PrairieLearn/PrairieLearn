@@ -14,7 +14,7 @@ function computeSelected<T extends readonly any[]>(
 }
 
 function defaultRenderValueLabel<T>({ value }: { value: T }) {
-  return <span>{String(value)}</span>;
+  return <span class="text-nowrap">{String(value)}</span>;
 }
 /**
  * A component that allows the user to filter a categorical column. State is managed by the parent component.
