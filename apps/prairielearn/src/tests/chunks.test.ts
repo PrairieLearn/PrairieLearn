@@ -12,6 +12,7 @@ import { config } from '../lib/config.js';
 import { CourseSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
+import { selectCourseById } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
 import { makeInfoFile } from '../sync/infofile.js';
 import { syncDiskToSql } from '../sync/syncFromDisk.js';
@@ -757,7 +758,7 @@ describe('chunks', () => {
 
       // Get the new course instance.
       const courseInstance = await selectCourseInstanceByShortName({
-        course_id: courseId,
+        course: await selectCourseById(courseId),
         short_name: 'new',
       });
 
@@ -839,7 +840,7 @@ describe('chunks', () => {
 
       // Assert that we produced a course instance without sync errors/warnings.
       const newCourseInstance = await selectCourseInstanceByShortName({
-        course_id: courseId,
+        course: await selectCourseById(courseId),
         short_name: 'new',
       });
       assert.equal(newCourseInstance.id, courseInstance.id);
