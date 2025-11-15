@@ -105,9 +105,6 @@ router.get(
           page: 'instance_admin',
           subPage: 'publishing',
         },
-        options: {
-          fullWidth: true,
-        },
         content: (
           <>
             <CourseInstanceSyncErrorsAndWarnings
@@ -138,20 +135,15 @@ router.post(
       authz_data: { has_course_instance_permission_edit: hasCourseInstancePermissionEdit },
     } = getPageContext(res.locals);
 
+    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+
     if (!hasCourseInstancePermissionEdit) {
       throw new error.HttpStatusError(403, 'Access denied (must be course instance editor)');
     }
 
-    if (req.body.__action === 'update_access_control') {
-      // Validate that we're not mixing systems
-      const accessRules = await queryRows(
-        sql.course_instance_access_rules,
-        { course_instance_id: res.locals.course_instance.id },
-        CourseInstanceAccessRuleSchema,
-      );
-
-      if (accessRules.length > 0) {
-        flash('error', 'Cannot update access control when legacy allowAccess rules are present');
+    if (req.body.__action === 'update_publishing') {
+      if (!courseInstance.modern_publishing) {
+        flash('error', 'Cannot update publishing when legacy allowAccess rules are present');
         res.redirect(req.originalUrl);
         return;
       }
@@ -178,7 +170,6 @@ router.post(
         .object({
           start_date: z.string(),
           end_date: z.string(),
-          status: z.enum(['unpublished', 'publish_scheduled', 'published']),
         })
         .parse(req.body);
 
@@ -226,7 +217,7 @@ router.post(
         return;
       }
 
-      flash('success', 'Access control settings updated successfully');
+      flash('success', 'Publishing settings updated successfully');
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, 'Unknown action');

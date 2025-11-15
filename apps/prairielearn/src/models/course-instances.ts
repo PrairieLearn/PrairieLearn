@@ -15,9 +15,9 @@ import { idsEqual } from '../lib/id.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
-  /** The earliest date of an access rule. */
+  /** The earliest start date of an access rule. */
   start_date: DateFromISOString.nullable(),
-  /** The latest date of an access rule. */
+  /** The latest end date of an access rule. */
   end_date: DateFromISOString.nullable(),
   /** @deprecated Use start_date instead. */
   formatted_start_date: z.string(),

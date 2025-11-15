@@ -74,7 +74,6 @@ export function CourseInstancePublishingForm({
     register,
     watch,
     setValue,
-    trigger,
     formState: { errors, isDirty, isValid },
   } = useForm<PublishingFormValues>({
     mode: 'onChange',
@@ -225,10 +224,10 @@ export function CourseInstancePublishingForm({
     if (currentValue) {
       const currentDate = Temporal.PlainDateTime.from(currentValue);
       const newValue = currentDate.add({ weeks: 1 });
-      setValue(field, newValue.toString());
+      setValue(field, newValue.toString(), { shouldValidate: true });
       // setValue doesn't seem to trigger validation so we need to trigger it manually
-      await trigger('start_date');
-      await trigger('end_date');
+      // await trigger('start_date');
+      // await trigger('end_date');
     }
   };
 
@@ -271,22 +270,21 @@ export function CourseInstancePublishingForm({
 
         {!canEdit && origHash !== null && (
           <div class="alert alert-info" role="alert">
-            You do not have permission to edit access control settings.
+            You do not have permission to edit publishing settings.
           </div>
         )}
         {!canEdit && origHash === null && (
           <div class="alert alert-warning" role="alert">
-            You cannot edit access control settings because the <code>infoCourseInstance.json</code>{' '}
+            You cannot edit publishing settings because the <code>infoCourseInstance.json</code>{' '}
             file does not exist.
           </div>
         )}
 
         <form method="POST" onSubmit={onSubmit}>
           <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <input type="hidden" name="__action" value="update_access_control" />
+          <input type="hidden" name="__action" value="update_publishing" />
           <input type="hidden" name="orig_hash" value={origHash ?? ''} />
 
-          {/* Status Radio Buttons */}
           <div class="mb-4">
             {/* Unpublished */}
             <div class="mb-3">
@@ -300,8 +298,7 @@ export function CourseInstancePublishingForm({
                   checked={selectedStatus === 'unpublished'}
                   disabled={!canEdit}
                   onChange={(e) => {
-                    const target = e.target as HTMLInputElement;
-                    if (target.checked) {
+                    if (e.currentTarget.checked) {
                       handleStatusChange('unpublished');
                     }
                   }}
@@ -351,15 +348,13 @@ export function CourseInstancePublishingForm({
                   checked={selectedStatus === 'publish_scheduled'}
                   disabled={!canEdit}
                   onChange={(e) => {
-                    const target = e.target as HTMLInputElement;
-                    if (target.checked) {
+                    if (e.currentTarget.checked) {
                       handleStatusChange('publish_scheduled');
                     }
                   }}
                 />
                 <label class="form-check-label" for="status-publish-scheduled">
                   Scheduled to be published
-                  {/* Published at a scheduled future date */}
                 </label>
               </div>
 
@@ -470,8 +465,7 @@ export function CourseInstancePublishingForm({
                   checked={selectedStatus === 'published'}
                   disabled={!canEdit}
                   onChange={(e) => {
-                    const target = e.target as HTMLInputElement;
-                    if (target.checked) {
+                    if (e.currentTarget.checked) {
                       handleStatusChange('published');
                     }
                   }}
@@ -546,7 +540,6 @@ export function CourseInstancePublishingForm({
             </div>
           </div>
 
-          {/* Save and Cancel Buttons */}
           {canEdit && (
             <div class="d-flex gap-2">
               <button type="submit" class="btn btn-primary">

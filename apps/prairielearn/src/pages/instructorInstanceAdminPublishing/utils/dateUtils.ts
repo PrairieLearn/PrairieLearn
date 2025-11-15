@@ -1,7 +1,3 @@
-/**
- * Date utility functions for publishing configuration
- */
-
 import { Temporal } from '@js-temporal/polyfill';
 
 export function nowRoundedToSeconds(): Date {

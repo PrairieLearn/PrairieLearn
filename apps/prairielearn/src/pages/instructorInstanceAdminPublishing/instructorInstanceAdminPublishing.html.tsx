@@ -28,14 +28,7 @@ export function InstructorInstanceAdminPublishing({
 
   return (
     <>
-      {accessRules.length > 0 ? (
-        <LegacyAccessRuleCard
-          accessRules={accessRules}
-          showComments={showComments}
-          courseInstance={courseInstance}
-          hasCourseInstancePermissionView={hasCourseInstancePermissionView}
-        />
-      ) : (
+      {courseInstance.modern_publishing ? (
         <Hydrate>
           <CourseInstancePublishingForm
             courseInstance={courseInstance}
@@ -44,6 +37,13 @@ export function InstructorInstanceAdminPublishing({
             origHash={origHash}
           />
         </Hydrate>
+      ) : (
+        <LegacyAccessRuleCard
+          accessRules={accessRules}
+          showComments={showComments}
+          courseInstance={courseInstance}
+          hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+        />
       )}
     </>
   );

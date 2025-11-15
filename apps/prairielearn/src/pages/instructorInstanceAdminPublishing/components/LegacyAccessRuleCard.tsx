@@ -1,4 +1,5 @@
 import { formatDate } from '@prairielearn/formatter';
+import { run } from '@prairielearn/run';
 
 import { CommentPopover } from '../../../components/CommentPopover.js';
 import type { CourseInstance, CourseInstanceAccessRule } from '../../../lib/db-types.js';
@@ -15,45 +16,48 @@ export function LegacyAccessRuleCard({
   hasCourseInstancePermissionView: boolean;
 }) {
   return (
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-        <h1>Access rules</h1>
-      </div>
-      <div class="alert alert-warning" role="alert">
+    <>
+      {/* TODO: Once we merge publishing extensions, show this alert. */}
+      {/* <div class="alert alert-warning" role="alert">
         <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy
-        allowAccess system. To use the new access control system, you must first remove all
-        allowAccess rules from the course configuration.
-      </div>
+        <code>allowAccess</code> system. To use the new publishing system, you must first remove all
+        <code>allowAccess</code> rules from the course configuration.
+      </div> */}
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <h1>Access rules</h1>
+        </div>
 
-      <div class="table-responsive">
-        <table class="table table-sm table-hover" aria-label="Access rules">
-          <thead>
-            <tr>
-              {showComments && (
-                <th style="width: 1%">
-                  <span class="visually-hidden">Comments</span>
-                </th>
-              )}
-              <th>UIDs</th>
-              <th>Start date</th>
-              <th>End date</th>
-              <th>Institution</th>
-            </tr>
-          </thead>
-          <tbody>
-            {accessRules.map((accessRule) => (
-              <AccessRuleRow
-                key={accessRule.id}
-                accessRule={accessRule}
-                timeZone={courseInstance.display_timezone}
-                hasCourseInstancePermissionView={hasCourseInstancePermissionView}
-                showComments={showComments}
-              />
-            ))}
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover" aria-label="Access rules">
+            <thead>
+              <tr>
+                {showComments && (
+                  <th style="width: 1%">
+                    <span class="visually-hidden">Comments</span>
+                  </th>
+                )}
+                <th>UIDs</th>
+                <th>Start date</th>
+                <th>End date</th>
+                <th>Institution</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accessRules.map((accessRule) => (
+                <AccessRuleRow
+                  key={accessRule.id}
+                  accessRule={accessRule}
+                  timeZone={courseInstance.display_timezone}
+                  hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+                  showComments={showComments}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -68,6 +72,36 @@ function AccessRuleRow({
   hasCourseInstancePermissionView: boolean;
   showComments: boolean;
 }) {
+  const uidContent = run(() => {
+    if (accessRule.uids == null) {
+      return '—';
+    }
+
+    if (hasCourseInstancePermissionView) {
+      return accessRule.uids.join(', ');
+    }
+
+    // Only users with permission to view student data are allowed to
+    // see the list of uids associated with an access rule. Note,
+    // however, that any user with permission to view course code (or
+    // with access to the course git repository) will be able to see the
+    // list of uids, because these access rules are defined in course
+    // code. This should be changed in future, to protect student data.
+    return (
+      <button
+        type="button"
+        class="btn btn-xs btn-warning"
+        data-bs-toggle="popover"
+        data-bs-container="body"
+        data-bs-placement="auto"
+        data-bs-title="Hidden UIDs"
+        data-bs-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
+      >
+        Hidden
+      </button>
+    );
+  });
+
   return (
     <tr>
       {showComments && (
@@ -75,31 +109,7 @@ function AccessRuleRow({
           <CommentPopover comment={accessRule.json_comment} />
         </td>
       )}
-      <td>
-        {accessRule.uids == null ? (
-          '—'
-        ) : // Only users with permission to view student data are allowed to
-        // see the list of uids associated with an access rule. Note,
-        // however, that any user with permission to view course code (or
-        // with access to the course git repository) will be able to see the
-        // list of uids, because these access rules are defined in course
-        // code. This should be changed in future, to protect student data.
-        hasCourseInstancePermissionView ? (
-          accessRule.uids.join(', ')
-        ) : (
-          <button
-            type="button"
-            class="btn btn-xs btn-warning"
-            data-bs-toggle="popover"
-            data-bs-container="body"
-            data-bs-placement="auto"
-            data-bs-title="Hidden UIDs"
-            data-bs-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
-          >
-            Hidden
-          </button>
-        )}
-      </td>
+      <td>{uidContent}</td>
       <td>{accessRule.start_date == null ? '—' : formatDate(accessRule.start_date, timeZone)}</td>
       <td>{accessRule.end_date == null ? '—' : formatDate(accessRule.end_date, timeZone)}</td>
       <td>{accessRule.institution ?? '—'}</td>
