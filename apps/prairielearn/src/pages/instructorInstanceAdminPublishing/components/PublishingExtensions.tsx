@@ -62,7 +62,10 @@ export function PublishingExtensions({
     <>
       <div class="mb-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
-          <h5 class="mb-0">Extensions</h5>
+          <h5 key={`extensions-header-${extensionsQuery.isFetching}`} class="mb-0">
+            Extensions
+            {extensionsQuery.isFetching && <i class="bi bi-arrow-repeat ms-2 spin" />}
+          </h5>
           {canEdit && (
             <button
               type="button"
