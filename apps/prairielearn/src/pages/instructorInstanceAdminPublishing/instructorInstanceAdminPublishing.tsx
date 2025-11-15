@@ -166,12 +166,20 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
-      const parsedBody = z
+      const parsedResult = z
         .object({
           start_date: z.string(),
           end_date: z.string(),
         })
-        .parse(req.body);
+        .safeParse(req.body);
+
+      if (!parsedResult.success) {
+        flash('error', 'Invalid request body');
+        res.redirect(req.originalUrl);
+        return;
+      }
+
+      const parsedBody = parsedResult.data;
 
       // Update the publishing settings
       const resolvedPublishing = {
