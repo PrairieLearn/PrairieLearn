@@ -108,8 +108,8 @@ export function InstructorCourseAdminInstances({
                   </thead>
                   <tbody>
                     ${courseInstances.map((row) => {
-                      const isLegacyStartDate = row.publishing_start_date === null;
-                      const isLegacyEndDate = row.publishing_end_date === null;
+                      const isLegacyStartDate = row.start_date !== null;
+                      const isLegacyEndDate = row.end_date !== null;
                       const startDate = row.publishing_start_date
                         ? `${formatDate(row.publishing_start_date, row.display_timezone)}`
                         : row.start_date
