@@ -154,6 +154,10 @@ export function AssessmentQuestion({
               <input type="hidden" name="__action" value="ai_grade_assessment_all" />
               <input type="hidden" name="__csrf_token" value={__csrf_token} />
             </form>
+            <form method="POST" id="generate-rotation-estimates">
+              <input type="hidden" name="__action" value="generate_rotation_estimates" />
+              <input type="hidden" name="__csrf_token" value={__csrf_token} />
+            </form>
           </>
         )}
 
@@ -263,6 +267,14 @@ export function AssessmentQuestion({
                           data-bs-target="#group-confirmation-modal-ungrouped"
                         >
                           Group ungrouped submissions
+                        </button>
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                          onclick="$('#generate-rotation-estimates').submit();"
+                        >
+                          Generate rotation estimates
                         </button>
 
                         <hr class="dropdown-divider" />

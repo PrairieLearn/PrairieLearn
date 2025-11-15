@@ -95,3 +95,13 @@ SET
 WHERE
   iq.assessment_question_id = $assessment_question_id
   AND iq.id = ANY ($instance_question_ids::bigint[]);
+
+-- BLOCK select_instance_question_user_email
+SELECT
+  u.uid AS email
+FROM 
+  instance_questions AS iq
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+  JOIN users AS u ON (u.user_id = ai.user_id)
+WHERE
+  iq.id = $instance_question_id;

@@ -1,9 +1,11 @@
+import * as async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import {
@@ -12,6 +14,7 @@ import {
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
+  selectInstanceQuestionsForAssessmentQuestion,
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
@@ -21,6 +24,7 @@ import {
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
+import { aiCorrectRotation } from '../../../ee/lib/ai-rotation-correction/ai-rotation-correction.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -269,6 +273,47 @@ router.post(
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'generate_rotation_estimates') {
+      const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
+        assessment_question_id: res.locals.assessment_question.id
+      });
+
+      const correctedRotations = await async.mapLimit(
+        allInstanceQuestions,
+        20,
+        async (instanceQuestion) => {
+          const {finalImageBase64, finalOrientation, rotationHistory} = await aiCorrectRotation({
+            course: res.locals.course,
+            course_instance_id: res.locals.course_instance.id,
+            question: res.locals.question,
+            assessment_question: res.locals.assessment_question,
+            instance_question: instanceQuestion,
+            urlPrefix: res.locals.urlPrefix,
+          });
+
+          const instanceQuestionUserEmail = await queryRow(
+            sql.select_instance_question_user_email,
+            {
+              instance_question_id: instanceQuestion.id,
+            },
+            z.string()
+          );
+
+          return {
+            instance_question_id: instanceQuestion.id,
+            email: instanceQuestionUserEmail,
+            finalImageBase64,
+            finalOrientation,
+            rotationHistory 
+          };
+        }
+      );
+
+
+      // Export the results as JSON
+      res.setHeader('Content-Disposition', 'attachment; filename="rotation_estimates.json"');
+      res.setHeader('Content-Type', 'application/json');
+      res.send(JSON.stringify(correctedRotations, null, 2));
     } else if (req.body.__action === 'ai_instance_question_group_assessment_all') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');

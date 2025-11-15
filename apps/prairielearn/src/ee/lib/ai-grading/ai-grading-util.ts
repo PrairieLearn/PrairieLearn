@@ -305,7 +305,7 @@ export function generateSubmissionMessage({
             image: `data:image/jpeg;base64,${fileData.contents}`,
             providerOptions: {
               openai: {
-                imageDetail: 'auto',
+                imageDetail: 'high',
               },
             },
           });

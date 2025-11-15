@@ -78,7 +78,7 @@ export async function uploadInstanceGroups({
         job.verbose('----------------------------------------');
         job.verbose('Processing group updates...');
         const csvStream = streamifier.createReadStream(csvFile.buffer, {
-          encoding: 'utf8',
+          encoding: 'utf8'
         });
         const csvParser = createCsvParser(csvStream);
         let successCount = 0,
