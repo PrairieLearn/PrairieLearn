@@ -42,15 +42,6 @@ export function ExtensionModifyModal({
     { type: 'editing' } | { type: 'confirming'; unenrolledUids: string[] }
   >({ type: 'editing' });
 
-  const handleHide = () => {
-    setStage({ type: 'editing' });
-    onHide();
-  };
-
-  const handleContinueEditing = () => {
-    setStage({ type: 'editing' });
-  };
-
   const defaultValues = run(() => {
     if (modalState === null) return { end_date: '', name: '', uids: '' };
     if (modalState.type === 'add') return { end_date: modalState.endDate, name: '', uids: '' };
@@ -147,7 +138,10 @@ export function ExtensionModifyModal({
         throw new Error(body.message);
       }
     },
-    onSuccess,
+    onSuccess: () => {
+      setStage({ type: 'editing' });
+      onSuccess();
+    },
   });
 
   const onFormSubmit = async (data: ExtensionFormValues, event?: React.FormEvent) => {
@@ -157,7 +151,11 @@ export function ExtensionModifyModal({
 
   if (stage.type === 'confirming') {
     return (
-      <Modal show={modalState !== null} backdrop="static" onHide={handleHide}>
+      <Modal
+        show={modalState !== null}
+        backdrop="static"
+        onHide={() => setStage({ type: 'editing' })}
+      >
         <Modal.Header closeButton>
           <Modal.Title>Confirm Unenrolled Students</Modal.Title>
         </Modal.Header>
@@ -178,7 +176,7 @@ export function ExtensionModifyModal({
             type="button"
             class="btn btn-outline-secondary"
             disabled={saveMutation.isPending}
-            onClick={handleContinueEditing}
+            onClick={() => setStage({ type: 'editing' })}
           >
             Continue Editing
           </button>
@@ -199,7 +197,14 @@ export function ExtensionModifyModal({
   }
 
   return (
-    <Modal show={modalState !== null} backdrop="static" onHide={handleHide}>
+    <Modal
+      show={modalState !== null}
+      backdrop="static"
+      onHide={() => {
+        setStage({ type: 'editing' });
+        onHide();
+      }}
+    >
       <Modal.Header closeButton>
         <Modal.Title>{modalState?.type === 'add' ? 'Add Extension' : 'Edit Extension'}</Modal.Title>
       </Modal.Header>
@@ -276,7 +281,10 @@ export function ExtensionModifyModal({
             type="button"
             class="btn btn-outline-secondary"
             disabled={saveMutation.isPending}
-            onClick={handleHide}
+            onClick={() => {
+              setStage({ type: 'editing' });
+              onHide();
+            }}
           >
             Cancel
           </button>

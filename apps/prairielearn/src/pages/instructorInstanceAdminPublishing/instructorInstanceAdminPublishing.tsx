@@ -367,7 +367,7 @@ router.post(
         requestedRole: 'Student Data Editor',
       });
 
-      res.status(204);
+      res.sendStatus(204);
       return;
     } else if (req.body.__action === 'delete_extension') {
       const deleteExtensionBodyResult = z
@@ -394,7 +394,7 @@ router.post(
         requestedRole: 'Student Data Editor',
       });
 
-      res.status(204);
+      res.sendStatus(204);
       return;
     } else if (req.body.__action === 'edit_extension') {
       const EmailsSchema = z
@@ -510,7 +510,7 @@ router.post(
         }
       });
 
-      res.status(204);
+      res.sendStatus(204);
       return;
     } else {
       throw new error.HttpStatusError(400, 'Unknown action');
