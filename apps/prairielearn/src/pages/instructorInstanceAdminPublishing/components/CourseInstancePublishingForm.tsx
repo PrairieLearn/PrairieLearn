@@ -74,6 +74,7 @@ export function CourseInstancePublishingForm({
     register,
     watch,
     setValue,
+    trigger,
     formState: { errors, isDirty, isValid },
   } = useForm<PublishingFormValues>({
     mode: 'onChange',
@@ -220,15 +221,12 @@ export function CourseInstancePublishingForm({
   };
 
   const handleAddWeek = async (field: 'start_date' | 'end_date') => {
-    const currentValue = field === 'start_date' ? startDate : endDate;
-    if (currentValue) {
-      const currentDate = Temporal.PlainDateTime.from(currentValue);
-      const newValue = currentDate.add({ weeks: 1 });
-      setValue(field, newValue.toString(), { shouldValidate: true });
-      // setValue doesn't seem to trigger validation so we need to trigger it manually
-      // await trigger('start_date');
-      // await trigger('end_date');
-    }
+    const currentDate = Temporal.PlainDateTime.from(field === 'start_date' ? startDate : endDate);
+    const newValue = currentDate.add({ weeks: 1 });
+    setValue(field, newValue.toString());
+    // setValue with { shouldValidate: true } doesn't trigger dependent inputs to validate.
+    await trigger('start_date');
+    await trigger('end_date');
   };
 
   // Validation
@@ -246,14 +244,17 @@ export function CourseInstancePublishingForm({
     return true;
   };
 
-  const validateEndDate = (value: string) => {
+  const validateEndDate = (value: string, { start_date }: { start_date: string }) => {
     if (selectedStatus !== 'unpublished') {
       if (!value) {
         return 'End date is required';
       }
       // Check if end date is after start date
-      if (startDate && value) {
-        const startDateTime = plainDateTimeStringToDate(startDate, courseInstance.display_timezone);
+      if (start_date && value) {
+        const startDateTime = plainDateTimeStringToDate(
+          start_date,
+          courseInstance.display_timezone,
+        );
         const endDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
         if (endDateTime <= startDateTime) {
           return 'End date must be after start date';
