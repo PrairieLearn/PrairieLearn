@@ -38,7 +38,7 @@ import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
-import { selectQuestionById, selectQuestionByQid } from '../../models/question.js';
+import { selectQuestionById } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
@@ -49,7 +49,7 @@ const sql = loadSqlEquiv(import.meta.url);
 // We're still using `4o` for question generation as it seems to have better
 // cost/performance characteristics. We'll revisit moving to a newer model in
 // the future.
-export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-4o-2024-11-20' satisfies OpenAIModelId;
+export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-5-2025-08-07' satisfies OpenAIModelId;
 
 const NUM_TOTAL_ATTEMPTS = 2;
 
@@ -59,7 +59,7 @@ const NUM_TOTAL_ATTEMPTS = 2;
  * @param context Relevant example documents, formatted into one string.
  * @returns A string, the prompt preamble.
  */
-function promptPreamble(context: string): string {
+export function promptPreamble(context: string): string {
   return formatPrompt([
     '# Introduction',
     'You are an assistant that helps instructors write questions for PrairieLearn.',
@@ -108,7 +108,7 @@ function promptPreamble(context: string): string {
   ]);
 }
 
-async function checkRender(
+export async function checkRender(
   status: 'success' | 'error',
   errors: string[],
   courseId: string,
@@ -265,33 +265,9 @@ export async function getAiQuestionGenerationCache() {
 }
 
 /**
- * Approximate the cost of the prompt, in US dollars.
- * Accounts for the cost of prompt, system, and completion tokens.
- */
-export function approximatePromptCost({
-  model,
-  prompt,
-}: {
-  model: keyof (typeof config)['costPerMillionTokens'];
-  prompt: string;
-}) {
-  const modelPricing = config.costPerMillionTokens[model];
-
-  // There are approximately 4 characters per token (source: https://platform.openai.com/tokenizer),
-  // so we divide the length of the prompt by 4 to approximate the number of prompt tokens.
-  // Also, on average, we generate 3750 system tokens per prompt.
-  const approxInputTokenCost = ((prompt.length / 4 + 3750) * modelPricing.input) / 1e6;
-
-  // On average, we generate 1000 completion tokens per prompt. This includes reasoning tokens.
-  const approxOutputTokenCost = (1000 * modelPricing.output) / 1e6;
-
-  return approxInputTokenCost + approxOutputTokenCost;
-}
-
-/**
  * Retrieve the Redis key for a user's current AI question generation interval usage
  */
-function getIntervalUsageKey(userId: number) {
+function getIntervalUsageKey(userId: string) {
   const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
   return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
 }
@@ -302,7 +278,7 @@ const intervalLengthMs = 3600 * 1000;
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({ userId }: { userId: number }) {
+export async function getIntervalUsage({ userId }: { userId: string }) {
   const cache = await getAiQuestionGenerationCache();
   return (await cache.get<number>(getIntervalUsageKey(userId))) ?? 0;
 }
@@ -313,11 +289,9 @@ export async function getIntervalUsage({ userId }: { userId: number }) {
 export async function addCompletionCostToIntervalUsage({
   userId,
   usage,
-  intervalCost,
 }: {
-  userId: number;
+  userId: string;
   usage: LanguageModelUsage | undefined;
-  intervalCost: number;
 }) {
   const cache = await getAiQuestionGenerationCache();
 
@@ -325,6 +299,8 @@ export async function addCompletionCostToIntervalUsage({
     model: QUESTION_GENERATION_OPENAI_MODEL,
     usage,
   });
+
+  const intervalCost = await getIntervalUsage({ userId });
 
   // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
   const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
@@ -743,98 +719,4 @@ async function regenInternal({
   }
 
   return { usage };
-}
-
-/**
- * Revises a question using the LLM based on user input.
- *
- * @param params
- * @param params.model The language model to use.
- * @param params.embeddingModel The embedding model to use.
- * @param params.courseId The ID of the current course.
- * @param params.authnUserId The authenticated user's ID.
- * @param params.originalPrompt The prompt creating the original generation.
- * @param params.revisionPrompt A prompt with user instructions on how to revise the question.
- * @param params.originalHTML The question.html file to revise.
- * @param params.originalPython The server.py file to revise.
- * @param params.questionQid The qid of the question to edit.
- * @param params.userId The ID of the generating/saving user.
- * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privileges.
- * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
- */
-export async function regenerateQuestion({
-  model,
-  embeddingModel,
-  courseId,
-  authnUserId,
-  originalPrompt,
-  revisionPrompt,
-  originalHTML,
-  originalPython,
-  questionQid,
-  userId,
-  hasCoursePermissionEdit,
-}: {
-  model: LanguageModel;
-  embeddingModel: EmbeddingModel;
-  courseId: string;
-  authnUserId: string;
-  originalPrompt: string;
-  revisionPrompt: string;
-  originalHTML: string;
-  originalPython: string;
-  questionQid: string;
-  userId: string;
-  hasCoursePermissionEdit: boolean;
-}): Promise<{
-  jobSequenceId: string;
-  htmlResult: string | undefined;
-  pythonResult: string | undefined;
-  usage: LanguageModelUsage | undefined;
-}> {
-  const serverJob = await createServerJob({
-    courseId,
-    type: 'ai_question_regenerate',
-    description: 'Revise a question using the LLM',
-    authnUserId,
-  });
-
-  const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });
-
-  let usage = emptyUsage();
-
-  const jobData = await serverJob.execute(async (job) => {
-    job.data.questionQid = questionQid;
-    const { usage: newUsage } = await regenInternal({
-      job,
-      model,
-      embeddingModel,
-      authnUserId,
-      originalPrompt,
-      revisionPrompt,
-      originalHTML,
-      originalPython,
-      remainingAttempts: NUM_TOTAL_ATTEMPTS,
-      isAutomated: false,
-      questionId: question.id,
-      questionQid,
-      courseId,
-      userId,
-      hasCoursePermissionEdit,
-      jobSequenceId: serverJob.jobSequenceId,
-    });
-
-    usage = mergeUsage(usage, newUsage);
-
-    job.data.promptTokens = usage.inputTokens;
-    job.data.completionTokens = usage.outputTokens;
-    job.data.usage = usage;
-  });
-
-  return {
-    jobSequenceId: serverJob.jobSequenceId,
-    htmlResult: jobData.data.html,
-    pythonResult: jobData.data.python,
-    usage,
-  };
 }

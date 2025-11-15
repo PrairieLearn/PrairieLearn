@@ -58,6 +58,8 @@ export function PageLayout({
     enableEnhancedNav?: boolean;
     /** Whether or not the navbar should be shown. */
     enableNavbar?: boolean;
+    /** Whether or not to include padding around the content. */
+    contentPadding?: boolean;
     /**
      * Forces the side nav to be in a specific state when the page loads,
      * regardless of the user's previous preference.
@@ -85,6 +87,8 @@ export function PageLayout({
     enableNavbar: true,
     fullHeight: false,
     fullWidth: false,
+    contentPadding: true,
+    persistToggleState: true,
     ...options,
   };
 
@@ -223,12 +227,17 @@ export function PageLayout({
                 <main
                   id="content"
                   class="${clsx(
-                    resolvedOptions.fullWidth ? 'container-fluid' : 'container',
-                    resolvedOptions.paddingBottom && 'pb-4',
+                    resolvedOptions.contentPadding
+                      ? resolvedOptions.fullWidth
+                        ? 'container-fluid'
+                        : 'container'
+                      : null,
                     !resolvedOptions.paddingSides && 'px-0',
+                    // TODO: replace `paddingSides` with `contentPadding`?
+                    resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
                     resolvedOptions.fullHeight && 'h-100',
-                    'pt-3',
-                    sideNavEnabled && 'px-3',
+                    resolvedOptions.contentPadding && 'pt-3',
+                    resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
                   )}"
                 >
                   ${contentString}
@@ -274,9 +283,14 @@ export function PageLayout({
             id="content"
             class="
             ${clsx(
-              resolvedOptions.fullWidth ? 'container-fluid' : 'container',
-              resolvedOptions.paddingBottom && 'pb-4',
+              resolvedOptions.contentPadding
+                ? resolvedOptions.fullWidth
+                  ? 'container-fluid'
+                  : 'container'
+                : null,
               !resolvedOptions.paddingSides && 'px-0',
+              // TODO: replace `paddingSides` with `contentPadding`?
+              resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
               resolvedOptions.fullHeight && 'flex-grow-1',
             )}
           "
