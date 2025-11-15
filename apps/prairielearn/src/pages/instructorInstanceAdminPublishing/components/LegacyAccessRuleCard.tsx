@@ -17,12 +17,11 @@ export function LegacyAccessRuleCard({
 }) {
   return (
     <>
-      {/* TODO: Once we merge publishing extensions, show this alert. */}
-      {/* <div class="alert alert-warning" role="alert">
+      <div class="alert alert-warning" role="alert">
         <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy
         <code>allowAccess</code> system. To use the new publishing system, you must first remove all
         <code>allowAccess</code> rules from the course configuration.
-      </div> */}
+      </div>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h1>Access rules</h1>

@@ -1,0 +1,127 @@
+import { useState } from 'preact/compat';
+
+import { formatDateFriendly } from '@prairielearn/formatter';
+
+import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
+import type { CourseInstancePublishingExtensionWithUsers } from '../instructorInstanceAdminPublishing.types.js';
+
+export function ExtensionTableRow({
+  extension,
+  courseInstance,
+  canEdit,
+  onDelete,
+  onEdit,
+}: {
+  extension: CourseInstancePublishingExtensionWithUsers;
+  courseInstance: StaffCourseInstance;
+  canEdit: boolean;
+  onDelete: (extension: CourseInstancePublishingExtensionWithUsers) => void;
+  onEdit: (extension: CourseInstancePublishingExtensionWithUsers) => void;
+}) {
+  const [showAllStudents, setShowAllStudents] = useState(false);
+  // Check if extension end date is before the course instance end date
+  const isBeforeInstanceEndDate =
+    courseInstance.publishing_end_date && extension.end_date < courseInstance.publishing_end_date;
+
+  return (
+    <tr>
+      <td class="col-1">
+        {extension.name ? (
+          <strong>{extension.name}</strong>
+        ) : (
+          <span class="text-muted">Unnamed</span>
+        )}
+      </td>
+      <td class="col-1">
+        {isBeforeInstanceEndDate ? (
+          <span
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title="This date is before the course instance end date and will be ignored"
+          >
+            {formatDateFriendly(extension.end_date, courseInstance.display_timezone)}
+            <i class="fas fa-exclamation-triangle text-warning" aria-hidden="true" />
+          </span>
+        ) : (
+          <span>{formatDateFriendly(extension.end_date, courseInstance.display_timezone)}</span>
+        )}
+      </td>
+      <td class="col-3">
+        <div>
+          {(() => {
+            const studentsToShow = showAllStudents
+              ? extension.user_data
+              : extension.user_data.slice(0, 3);
+            const hasMoreStudents = extension.user_data.length > 3;
+
+            return (
+              <>
+                {extension.user_data.length > 0 && (
+                  <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    {studentsToShow.map(
+                      (user: { uid: string; name: string | null; enrollment_id: string }) => (
+                        <div key={user.uid} class="d-flex align-items-center gap-1">
+                          <a
+                            href={getStudentEnrollmentUrl(
+                              `/pl/course_instance/${courseInstance.id}/instructor`,
+                              user.enrollment_id,
+                            )}
+                            class="text-decoration-none"
+                          >
+                            {user.name || '—'}
+                          </a>
+                        </div>
+                      ),
+                    )}
+                    {hasMoreStudents && (
+                      <button
+                        key={`button-${showAllStudents ? 'show-less' : 'show-more'}`}
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        onClick={() => setShowAllStudents(!showAllStudents)}
+                      >
+                        {showAllStudents ? (
+                          <>
+                            <i class="fas fa-chevron-up" aria-hidden="true" /> Show Less
+                          </>
+                        ) : (
+                          <>
+                            <i class="fas fa-chevron-down" aria-hidden="true" /> +
+                            {extension.user_data.length - 3} More
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      </td>
+      <td class="col-1">
+        <div class="d-flex gap-1">
+          {canEdit && (
+            <>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                onClick={() => onEdit(extension)}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                onClick={() => onDelete(extension)}
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}

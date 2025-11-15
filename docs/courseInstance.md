@@ -82,19 +82,9 @@ By default, only students that belong to the course's institution can access the
 
 ### Controlling access by UID
 
-You can restrict access to particular students by listing their UIDs in the `uids` property. For instance, the following rule only allows `student1@example.com` and `student2@example.com` to access the course instance between the specified dates:
+You can restrict access to particular students by creating a publishing extension through the UI (Course Instance -> Settings -> Publishing -> Extensions).
 
-```json title="infoCourseInstance.json"
-{
-  "allowAccess": [
-    {
-      "startDate": "2015-01-19T00:00:01",
-      "endDate": "2015-05-13T23:59:59",
-      "uids": ["student1@example.com", "student2@example.com"]
-    }
-  ]
-}
-```
+Previously, you could restrict access to particular students by listing their UIDs in the `uids` property of `allowAccess` rules. This is now deprecated as we move away from storing student information in configuration files.
 
 ## Enrollment controls
 
