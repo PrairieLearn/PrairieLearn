@@ -36,6 +36,7 @@ import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.j
 
 import { InstructorInstanceAdminPublishing } from './instructorInstanceAdminPublishing.html.js';
 import { CourseInstancePublishingExtensionWithUsersSchema } from './instructorInstanceAdminPublishing.types.js';
+import { plainDateTimeStringToDate } from './utils/dateUtils.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -200,6 +201,7 @@ router.post(
     } = getPageContext(res.locals);
 
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { authz_data: authzData } = getPageContext(res.locals);
 
     if (!hasCourseInstancePermissionEdit) {
       throw new error.HttpStatusError(403, 'Access denied (must be course instance editor)');
@@ -290,6 +292,7 @@ router.post(
 
       flash('success', 'Publishing settings updated successfully');
       res.redirect(req.originalUrl);
+      return;
     }
 
     if (req.accepts('html')) {
@@ -332,9 +335,9 @@ router.post(
       const enrollments = (
         await selectUsersAndEnrollmentsByUidsInCourseInstance({
           uids: body.uids,
-          courseInstance: res.locals.course_instance,
+          courseInstance,
           requestedRole: 'Student Data Viewer',
-          authzData: res.locals.authz_data,
+          authzData,
         })
       ).map((record) => record.enrollment);
       if (enrollments.length === 0) {
@@ -345,8 +348,8 @@ router.post(
       if (body.name) {
         const existingExtension = await selectPublishingExtensionByName({
           name: body.name,
-          courseInstance: res.locals.course_instance,
-          authzData: res.locals.authz_data,
+          courseInstance,
+          authzData,
           requestedRole: 'Student Data Viewer',
         });
 
@@ -359,11 +362,11 @@ router.post(
       }
 
       await createPublishingExtensionWithEnrollments({
-        courseInstance: res.locals.course_instance,
+        courseInstance,
         name: body.name,
-        endDate: new Date(body.end_date),
+        endDate: plainDateTimeStringToDate(body.end_date, courseInstance.display_timezone),
         enrollments,
-        authzData: res.locals.authz_data,
+        authzData,
         requestedRole: 'Student Data Editor',
       });
 
@@ -382,15 +385,15 @@ router.post(
 
       const extension = await selectPublishingExtensionById({
         id: body.extension_id,
-        courseInstance: res.locals.course_instance,
+        courseInstance,
         requestedRole: 'Student Data Viewer',
-        authzData: res.locals.authz_data,
+        authzData,
       });
 
       await deletePublishingExtension({
         extension,
-        courseInstance: res.locals.course_instance,
-        authzData: res.locals.authz_data,
+        courseInstance,
+        authzData,
         requestedRole: 'Student Data Editor',
       });
 
@@ -437,8 +440,8 @@ router.post(
       if (body.name) {
         const existingExtension = await selectPublishingExtensionByName({
           name: body.name,
-          courseInstance: res.locals.course_instance,
-          authzData: res.locals.authz_data,
+          courseInstance,
+          authzData,
           requestedRole: 'Student Data Viewer',
         });
 
@@ -453,16 +456,16 @@ router.post(
       await runInTransactionAsync(async () => {
         const extension = await selectPublishingExtensionById({
           id: body.extension_id,
-          courseInstance: res.locals.course_instance,
+          courseInstance,
           requestedRole: 'Student Data Viewer',
-          authzData: res.locals.authz_data,
+          authzData,
         });
 
         const desiredEnrollments = (
           await selectUsersAndEnrollmentsByUidsInCourseInstance({
             uids: body.uids,
-            courseInstance: res.locals.course_instance,
-            authzData: res.locals.authz_data,
+            courseInstance,
+            authzData,
             requestedRole: 'Student Data Viewer',
           })
         ).map((record) => record.enrollment);
@@ -474,14 +477,16 @@ router.post(
         await updatePublishingExtension({
           extension,
           name: body.name,
-          endDate: body.end_date ? new Date(body.end_date) : null,
-          authzData: res.locals.authz_data,
+          endDate: body.end_date
+            ? plainDateTimeStringToDate(body.end_date, courseInstance.display_timezone)
+            : null,
+          authzData,
           requestedRole: 'Student Data Editor',
         });
 
         const currentEnrollments = await selectEnrollmentsForPublishingExtension({
           extension,
-          authzData: res.locals.authz_data,
+          authzData,
           requestedRole: 'Student Data Viewer',
         });
         const desiredEnrollmentsIds = new Set(desiredEnrollments.map((e) => e.id));
@@ -495,7 +500,7 @@ router.post(
           await removeStudentFromPublishingExtension({
             courseInstancePublishingExtension: extension,
             enrollment,
-            authzData: res.locals.authz_data,
+            authzData,
             requestedRole: 'Student Data Editor',
           });
         }
@@ -504,7 +509,7 @@ router.post(
           await addEnrollmentToPublishingExtension({
             courseInstancePublishingExtension: extension,
             enrollment,
-            authzData: res.locals.authz_data,
+            authzData,
             requestedRole: 'Student Data Editor',
           });
         }
