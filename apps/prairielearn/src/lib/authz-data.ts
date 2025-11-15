@@ -11,6 +11,7 @@ import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import {
   type ConstructedCourseOrInstanceContext,
   CourseOrInstanceContextDataSchema,
+  type PlainAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
   dangerousFullSystemAuthz,
@@ -22,6 +23,7 @@ import {
   EnumModeSchema,
   type User,
 } from './db-types.js';
+import { withBrand } from './types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -277,7 +279,7 @@ export async function constructCourseOrInstanceContext({
   }
 
   return {
-    authzData,
+    authzData: withBrand<PlainAuthzData>(authzData),
     course: rawAuthzData.course,
     institution: rawAuthzData.institution,
     courseInstance: rawAuthzData.course_instance,
