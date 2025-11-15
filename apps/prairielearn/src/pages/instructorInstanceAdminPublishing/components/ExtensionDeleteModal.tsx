@@ -25,43 +25,44 @@ export function ExtensionDeleteModal({
         __action: 'delete_extension',
         extension_id: extensionId,
       };
-      const response = await fetch(window.location.pathname, {
+      const resp = await fetch(window.location.pathname, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(requestBody),
       });
-      if (!response.ok) throw new Error('Failed to delete extension');
+      if (!resp.ok) {
+        const body = await resp.json();
+        throw new Error(body.message);
+      }
     },
     onSuccess,
   });
+
+  const ModalBody = () => {
+    if (!modalState) return null;
+    return (
+      <>
+        Are you sure you want to delete{' '}
+        {modalState.extensionName === null
+          ? 'this extension'
+          : `the extension "${modalState.extensionName}"`}{' '}
+        with students: "{modalState.userData.map((user) => user.uid).join(', ')}"?
+      </>
+    );
+  };
+
   return (
     <Modal backdrop="static" show={modalState !== null} onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>Delete Extension</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {modalState!.userData.length > 0 ? (
-          <>
-            Are you sure you want to delete{' '}
-            {modalState!.extensionName === null
-              ? 'this extension'
-              : `the extension "${modalState!.extensionName}"`}{' '}
-            with students: "{modalState!.userData.map((user) => user.uid).join(', ')}"?
-          </>
-        ) : (
-          <>
-            Are you sure you want to delete{' '}
-            {modalState!.extensionName === null
-              ? 'this extension'
-              : `the extension "${modalState!.extensionName}"`}
-            ?
-          </>
-        )}
         {deleteMutation.isError && (
           <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
             {deleteMutation.error.message}
           </Alert>
         )}
+        <ModalBody />
       </Modal.Body>
       <Modal.Footer>
         <button

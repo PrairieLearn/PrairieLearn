@@ -143,8 +143,8 @@ export function ExtensionModifyModal({
         body: JSON.stringify(body),
       });
       if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}));
-        throw new Error(data.message || 'Failed to save extension');
+        const body = await resp.json();
+        throw new Error(body.message);
       }
     },
     onSuccess,
