@@ -19,7 +19,7 @@ export function Lti13CourseNavigationInstructor({
   return PageLayout({
     resLocals,
     pageTitle: 'LTI 1.3 - Course',
-    navContext: { type: 'plain', page: 'lti13_course_navigation' },
+    navContext: { type: 'instructor', page: 'lti13_course_navigation' },
     options: {
       enableEnhancedNav: false,
     },
@@ -117,7 +117,7 @@ export function Lti13CourseNavigationNotReady({
   return PageLayout({
     resLocals,
     pageTitle: 'LTI 1.3 - Course',
-    navContext: { type: 'plain', page: 'lti13_course_navigation' },
+    navContext: { type: 'student', page: 'lti13_course_navigation' },
     options: {
       enableEnhancedNav: false,
     },
