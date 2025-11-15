@@ -134,8 +134,7 @@ export function InstructorCourseAdminInstances({
                                     output: row.sync_warnings,
                                   })
                                 : ''}
-                            <a
-                              href="${resLocals.plainUrlPrefix}/course_instance/${row.id}/instructor/instance_admin"
+                            <a href="/pl/course_instance/${row.id}/instructor/instance_admin"
                               >${row.long_name}</a
                             >
                           </td>

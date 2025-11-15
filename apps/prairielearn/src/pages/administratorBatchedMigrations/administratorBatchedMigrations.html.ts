@@ -20,7 +20,7 @@ export function AdministratorBatchedMigrations({
     resLocals,
     pageTitle: 'Batched migrations',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'batchedMigrations',
     },
