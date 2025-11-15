@@ -4439,7 +4439,7 @@ __metadata:
     lru-cache: "npm:^11.2.2"
     marked: "npm:^16.4.1"
     mathjax: "npm:^3.2.2"
-    mathlive: "npm:^0.108"
+    mathlive: "npm:^0.108.2"
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
     mime: "npm:^4.1.0"
@@ -13626,12 +13626,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mathlive@npm:^0.108":
-  version: 0.108.0
-  resolution: "mathlive@npm:0.108.0"
+"mathlive@npm:^0.108.2":
+  version: 0.108.2
+  resolution: "mathlive@npm:0.108.2"
   dependencies:
     "@cortex-js/compute-engine": "npm:0.30.2"
-  checksum: 10c0/964db596e10c1f9bd8030775bf1481b00c61350030030401247d18fbacbd71fa07c280e09ca89a2152b47b349857bfdbf1be0018d4cdae331559195b14afe8d9
+  checksum: 10c0/e5ae6c58f62bc50cd65b4462891ed1bc3fcccf0b4106e0d8be695196268f3a89e0619f43ade8f7ba7b4a5858875ee995694228af83b13d407ad8ace9ecd42287
   languageName: node
   linkType: hard
 
