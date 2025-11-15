@@ -80,10 +80,6 @@ By default, only students that belong to the course's institution can access the
 }
 ```
 
-??? note "`allowAccess` rules for course instances"
-
-    `allowAccess` rules for course instances are deprecated. The [ability to configure institutional access](https://github.com/PrairieLearn/PrairieLearn/issues/13043) is a planned feature of self-enrollment controls.
-
 ### Controlling access by UID
 
 You can restrict access to particular students by creating a publishing extension through the UI (Course Instance -> Settings -> Publishing -> Extensions).

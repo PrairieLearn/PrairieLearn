@@ -8,26 +8,14 @@ import {
   RawStudentCourseSchema,
   StudentEnrollmentSchema,
 } from '../../../lib/client/safe-db-types.js';
-import { CourseInstancePublishingExtensionSchema } from '../../../lib/db-types.js';
 
 export const StudentHomePageCourseSchema = z.object({
   course_instance: RawStudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
   enrollment: StudentEnrollmentSchema,
-  publishing_extensions: z.array(CourseInstancePublishingExtensionSchema).optional(), // Optional for legacy courses
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
-
-interface StudentCoursesCardProps {
-  studentCourses: StudentHomePageCourse[];
-  hasInstructorCourses: boolean;
-  canAddCourses: boolean;
-  csrfToken: string;
-  urlPrefix: string;
-  isDevMode: boolean;
-  enrollmentManagementEnabled: boolean;
-}
 
 export function StudentCoursesCard({
   studentCourses,
@@ -37,7 +25,15 @@ export function StudentCoursesCard({
   urlPrefix,
   isDevMode,
   enrollmentManagementEnabled,
-}: StudentCoursesCardProps) {
+}: {
+  studentCourses: StudentHomePageCourse[];
+  hasInstructorCourses: boolean;
+  canAddCourses: boolean;
+  csrfToken: string;
+  urlPrefix: string;
+  isDevMode: boolean;
+  enrollmentManagementEnabled: boolean;
+}) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
   const [rejectingCourseId, setRejectingCourseId] = useState<string | null>(null);
   const [removingCourseId, setRemovingCourseId] = useState<string | null>(null);
@@ -139,16 +135,6 @@ export function StudentCoursesCard({
                         {entry.course_short_name}: {entry.course_title},
                         {entry.course_instance.long_name}
                       </a>
-                      {entry.publishing_extensions && entry.publishing_extensions.length > 0 && (
-                        <span
-                          class="badge bg-info text-dark ms-2"
-                          title="Has publishing extensions"
-                        >
-                          <i class="fa fa-clock" aria-hidden="true" />
-                          {entry.publishing_extensions.length} extension
-                          {entry.publishing_extensions.length !== 1 ? 's' : ''}
-                        </span>
-                      )}
                       <button
                         type="button"
                         class="btn btn-danger btn-sm"

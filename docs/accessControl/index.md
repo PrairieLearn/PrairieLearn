@@ -23,7 +23,7 @@ For course instances, you can control access using the `publishing` configuratio
 }
 ```
 
-This can be edited on the **Publishing** page (Course Instance → Settings → Publishing).
+This can be edited on the **Publishing** page (Course Instance → Instance settings → Publishing).
 
 Both `startDate` and `endDate` must be specified together.
 

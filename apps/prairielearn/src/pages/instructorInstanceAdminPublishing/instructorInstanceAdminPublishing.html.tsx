@@ -4,8 +4,8 @@ import { type StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import type { CourseInstanceAccessRule } from '../../lib/db-types.js';
 
+import { CourseInstancePublishingForm } from './components/CourseInstancePublishingForm.js';
 import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
-import { PublishingForm } from './components/PublishingForm.js';
 import type { CourseInstancePublishingExtensionWithUsers } from './instructorInstanceAdminPublishing.types.js';
 
 export function InstructorInstanceAdminPublishing({
@@ -24,7 +24,7 @@ export function InstructorInstanceAdminPublishing({
   accessRules: CourseInstanceAccessRule[];
   publishingExtensions: CourseInstancePublishingExtensionWithUsers[];
   csrfToken: string;
-  origHash: string;
+  origHash: string | null;
   isDevMode: boolean;
 }) {
   const showComments = accessRules.some((access_rule) =>
@@ -33,18 +33,18 @@ export function InstructorInstanceAdminPublishing({
 
   return (
     <>
-      <Hydrate>
-        <PublishingForm
-          courseInstance={courseInstance}
-          hasAccessRules={accessRules.length > 0}
-          canEdit={hasCourseInstancePermissionEdit}
-          csrfToken={csrfToken}
-          origHash={origHash}
-          publishingExtensions={publishingExtensions}
-          isDevMode={isDevMode}
-        />
-      </Hydrate>
-      {accessRules.length > 0 && (
+      {courseInstance.modern_publishing ? (
+        <Hydrate>
+          <CourseInstancePublishingForm
+            courseInstance={courseInstance}
+            canEdit={hasCourseInstancePermissionEdit && origHash !== null}
+            csrfToken={csrfToken}
+            origHash={origHash}
+            publishingExtensions={publishingExtensions}
+            isDevMode={isDevMode}
+          />
+        </Hydrate>
+      ) : (
         <LegacyAccessRuleCard
           accessRules={accessRules}
           showComments={showComments}

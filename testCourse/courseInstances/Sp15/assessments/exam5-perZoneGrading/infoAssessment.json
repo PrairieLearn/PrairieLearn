@@ -8,7 +8,7 @@
     {
       "mode": "Exam",
       "credit": 100,
-      "startDate": "1920-07-07T23:59:59",
+      "startDate": "1900-07-07T23:59:59",
       "endDate": "2300-07-10T23:59:59",
       "timeLimitMin": 50
     }
