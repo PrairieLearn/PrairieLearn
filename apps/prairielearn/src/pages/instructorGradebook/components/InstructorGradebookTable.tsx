@@ -3,6 +3,7 @@ import {
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
+  type Header,
   type SortingState,
   createColumnHelper,
   getCoreRowModel,
@@ -10,6 +11,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import clsx from 'clsx';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useState } from 'preact/compat';
 import { ButtonGroup, Dropdown } from 'react-bootstrap';
@@ -39,10 +41,10 @@ import {
   GradebookRowSchema,
 } from '../instructorGradebook.types.js';
 
-import { EditScoreModal } from './EditScoreModal.js';
+import { EditScoreButton } from './EditScoreModal.js';
 
 const DEFAULT_SORT: SortingState = [{ id: 'role', desc: true }];
-const DEFAULT_PINNING: ColumnPinningState = { left: ['user_name'], right: [] };
+const DEFAULT_PINNING: ColumnPinningState = { left: ['uid'], right: [] };
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
 const DEFAULT_ROLE_FILTER: (typeof ROLE_VALUES)[number][] = [];
@@ -93,18 +95,6 @@ function GradebookTable({
     parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(DEFAULT_STATUS_FILTER),
   );
 
-  const [editScoreModal, setEditScoreModal] = useState<{
-    show: boolean;
-    assessmentInstanceId: string;
-    currentScore: number;
-    otherUsers: string[];
-  }>({
-    show: false,
-    assessmentInstanceId: '',
-    currentScore: 0,
-    otherUsers: [],
-  });
-
   // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters = useMemo<ColumnFiltersState>(() => {
     const filters: ColumnFiltersState = [];
@@ -149,34 +139,33 @@ function GradebookTable({
 
   const columns = useMemo(
     () => [
-      // Name column (pinned left by default)
+      columnHelper.accessor('uid', {
+        id: 'uid',
+        header: 'UID',
+        cell: (info) => {
+          const uid = info.getValue();
+          // Staff may not have an enrollment
+          const enrollmentId = info.row.original.enrollment?.id;
+          if (!uid) return '—';
+          if (!enrollmentId) return uid;
+          return <a href={getStudentEnrollmentUrl(urlPrefix, enrollmentId)}>{uid}</a>;
+        },
+      }),
+
       columnHelper.accessor('user_name', {
         id: 'user_name',
         header: 'Name',
         cell: (info) => {
-          const name = info.getValue();
-          const enrollmentId = info.row.original.enrollment?.id;
-          if (!name) return '—';
-          if (!enrollmentId) return name;
-          return <a href={getStudentEnrollmentUrl(urlPrefix, enrollmentId)}>{name}</a>;
+          return info.getValue() ?? '—';
         },
       }),
 
-      // UID column
-      columnHelper.accessor('uid', {
-        id: 'uid',
-        header: 'UID',
-        cell: (info) => info.getValue(),
-      }),
-
-      // UIN column
       columnHelper.accessor('uin', {
         id: 'uin',
         header: 'UIN',
-        cell: (info) => info.getValue() || '—',
+        cell: (info) => info.getValue() ?? '—',
       }),
 
-      // Role column
       columnHelper.accessor('role', {
         id: 'role',
         meta: {
@@ -215,8 +204,9 @@ function GradebookTable({
         },
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const current = row.getValue(columnId);
-          if (typeof current !== 'string') return false;
+          const current = row.getValue<EnumEnrollmentStatus | undefined>(columnId);
+          // If there is no enrollment status, it doesn't match if any filter is set.
+          if (!current) return false;
           return filterValues.includes(current);
         },
       }),
@@ -238,11 +228,8 @@ function GradebookTable({
               label: assessment.label,
             },
             header: () => (
-              <a
-                href={`${urlPrefix}/assessment/${assessment.assessment_id}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span class={`badge color-${assessment.color}`} title={assessment.label}>
+              <a href={`${urlPrefix}/assessment/${assessment.assessment_id}`}>
+                <span class={clsx('badge', `color-${assessment.color}`)} title={assessment.label}>
                   {assessment.label}
                 </span>
               </a>
@@ -257,24 +244,6 @@ function GradebookTable({
                 return '—';
               }
 
-              const editButton = (
-                <button
-                  type="button"
-                  class="btn btn-xs btn-ghost edit-score ms-1"
-                  aria-label="Edit score"
-                  onClick={() =>
-                    setEditScoreModal({
-                      show: true,
-                      assessmentInstanceId: assessmentData.assessment_instance_id!,
-                      currentScore: score,
-                      otherUsers: assessmentData.uid_other_users_group,
-                    })
-                  }
-                >
-                  <i class="bi-pencil-square" aria-hidden="true" />
-                </button>
-              );
-
               return (
                 <span class="text-nowrap">
                   <a
@@ -282,24 +251,33 @@ function GradebookTable({
                   >
                     {Math.floor(score)}%
                   </a>
-                  {editButton}
+                  <EditScoreButton
+                    assessmentInstanceId={assessmentData.assessment_instance_id}
+                    currentScore={score}
+                    otherUsers={assessmentData.uid_other_users_group}
+                    csrfToken={csrfToken}
+                  />
                 </span>
               );
             },
-            filterFn: numericColumnFilterFnWithEmpty,
+            filterFn: (row, columnId, filterValue) => {
+              const result = numericColumnFilterFnWithEmpty(row, columnId, filterValue);
+              console.log('result', result, row, columnId, filterValue);
+              return result;
+            },
           },
         ),
       ),
     ],
-    [courseAssessments, urlPrefix],
+    [courseAssessments, urlPrefix, csrfToken],
   );
 
-  const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
+  const allColumnIds = columns.map((col) => col.id!);
 
   // Set default visibility: hide UID, UIN, Role, and enrollment_status columns by default
   const defaultColumnVisibility = Object.fromEntries(
     allColumnIds.map((id) => {
-      if (id === 'uid' || id === 'uin' || id === 'role' || id === 'enrollment_status') {
+      if (['user_name', 'uin', 'role', 'enrollment_status'].includes(id)) {
         return [id, false];
       }
       return [id, true];
@@ -324,19 +302,21 @@ function GradebookTable({
 
   // Create filters for assessment columns
   const filters = useMemo(() => {
-    const assessmentFilters: Record<string, (props: { header: any }) => React.JSX.Element> = {};
+    const assessmentFilters: Record<
+      string,
+      (props: { header: Header<GradebookRow, unknown> }) => React.JSX.Element
+    > = {};
 
     courseAssessments.forEach((assessment) => {
       const columnId = `assessment_${assessment.assessment_id}`;
-      assessmentFilters[columnId] = ({ header }: { header: any }) => {
+      assessmentFilters[columnId] = ({ header }: { header: Header<GradebookRow, unknown> }) => {
         const filterValue = header.column.getFilterValue() as
           | string
           | { numeric: string; emptyOnly: boolean }
           | undefined;
         const numericValue =
           typeof filterValue === 'string' ? filterValue : filterValue?.numeric || '';
-        const emptyOnly =
-          typeof filterValue === 'object' && filterValue !== null ? filterValue.emptyOnly : false;
+        const emptyOnly = typeof filterValue === 'object' ? filterValue.emptyOnly : false;
 
         return (
           <NumericInputColumnFilter
@@ -349,6 +329,11 @@ function GradebookTable({
               // When typing in the input, always set as string (not object)
               // This allows the input to work normally
               // Set to undefined only if completely empty, otherwise keep the string even if incomplete
+
+              // TODO: This filter management needs to be fixed.
+              // In the short term, we should manage the filter state ourselves.
+              // In the long term, we should migrate to using tanstack for managing the filter state.
+              // https://tanstack.com/table/latest/docs/framework/react/examples/filters-faceted?panel=code
               header.column.setFilterValue(value === '' ? undefined : value);
             }}
             onEmptyFilterChange={(checked) => {
@@ -361,7 +346,7 @@ function GradebookTable({
     });
 
     return {
-      role: ({ header }: { header: any }) => (
+      role: ({ header }: { header: Header<GradebookRow, unknown> }) => (
         <CategoricalColumnFilter
           columnId={header.column.id}
           columnLabel="Role"
@@ -371,7 +356,7 @@ function GradebookTable({
           setColumnValuesFilter={setRoleFilter}
         />
       ),
-      enrollment_status: ({ header }: { header: any }) => (
+      enrollment_status: ({ header }: { header: Header<GradebookRow, unknown> }) => (
         <CategoricalColumnFilter
           columnId={header.column.id}
           columnLabel="Status"
@@ -425,7 +410,10 @@ function GradebookTable({
       <TanstackTableCard
         table={table}
         title="Gradebook"
+        singularLabel="student"
         pluralLabel="students"
+        // eslint-disable-next-line @eslint-react/no-forbidden-props
+        className="h-100"
         headerButtons={
           <button
             type="button"
@@ -493,14 +481,6 @@ function GradebookTable({
         tableOptions={{
           filters,
         }}
-      />
-      <EditScoreModal
-        show={editScoreModal.show}
-        assessmentInstanceId={editScoreModal.assessmentInstanceId}
-        currentScore={editScoreModal.currentScore}
-        otherUsers={editScoreModal.otherUsers}
-        csrfToken={csrfToken}
-        onHide={() => setEditScoreModal({ ...editScoreModal, show: false })}
       />
     </>
   );
