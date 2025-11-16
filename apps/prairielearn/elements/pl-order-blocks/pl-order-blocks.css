@@ -18,6 +18,12 @@ li.pl-order-blocks-code {
   padding: 0px !important;
 }
 
+li.pl-order-blocks-code .pl-order-block-handle {
+  flex: 0 0 16px;
+  width: 16px;
+  margin-left: 2px;
+}
+
 .pl-order-blocks-code > .pl-code,
 .pl-order-blocks-code > .pl-code div {
   /* override margins on code block to ensure code is centered properly */
@@ -152,4 +158,30 @@ div.pl-order-blocks-header {
 .pl-order-blocks-selected:focus {
   outline: 3px solid #ff6200;
   outline-offset: -3px;
+}
+
+.pl-order-block-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.pl-order-block-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -10px;
+  color: var(--bs-secondary);
+  touch-action: none;
+}
+
+.pl-order-block-content {
+  overflow-x: auto;
+  margin-top: 2px;
+  white-space: normal;
+  min-width: 0;
+  width: 100%;
+  padding: 0.25em 0 0.25em 0;
+  touch-action: pan-x pan-y;
 }
