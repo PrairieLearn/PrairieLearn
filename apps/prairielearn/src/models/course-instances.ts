@@ -7,6 +7,7 @@ import {
   type CourseInstance,
   type CourseInstancePermission,
   CourseInstanceSchema,
+  DateFromISOString,
   UserSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
@@ -14,7 +15,13 @@ import { idsEqual } from '../lib/id.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
+  /** The earliest start date of an access rule. */
+  start_date: DateFromISOString.nullable(),
+  /** The latest end date of an access rule. */
+  end_date: DateFromISOString.nullable(),
+  /** @deprecated Use start_date instead. */
   formatted_start_date: z.string(),
+  /** @deprecated Use end_date instead. */
   formatted_end_date: z.string(),
   has_course_instance_permission_view: z.boolean(),
   has_course_instance_permission_edit: z.boolean(),
