@@ -12,6 +12,7 @@ import { run } from '@prairielearn/run';
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
+import { updateAssessmentInstanceGrade } from './assessment-grading.js';
 import {
   type Assessment,
   type AssessmentQuestion,
@@ -19,7 +20,6 @@ import {
   IdSchema,
   RubricItemSchema,
   RubricSchema,
-  SprocAssessmentInstancesGradeSchema,
   type Submission,
 } from './db-types.js';
 import { idsEqual } from './id.js';
@@ -683,17 +683,12 @@ export async function updateInstanceQuestionScore(
         is_ai_graded,
       });
 
-      await sqldb.callRow(
-        'assessment_instances_grade',
-        [
-          current_submission.assessment_instance_id,
-          authn_user_id,
-          100, // credit
-          false, // only_log_if_score_updated
-          true, // allow_decrease
-        ],
-        SprocAssessmentInstancesGradeSchema,
-      );
+      await updateAssessmentInstanceGrade({
+        assessment_instance_id: current_submission.assessment_instance_id,
+        authn_user_id,
+        credit: 100,
+        allowDecrease: true,
+      });
 
       // TODO: this ends up running inside a transaction. This is not good.
       await ltiOutcomes.updateScore(current_submission.assessment_instance_id);
