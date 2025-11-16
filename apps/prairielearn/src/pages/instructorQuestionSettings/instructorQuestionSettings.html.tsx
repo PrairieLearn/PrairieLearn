@@ -16,6 +16,7 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AssessmentSchema,
   AssessmentSetSchema,
+  type Author,
   IdSchema,
   type Question,
   type Tag,
@@ -55,6 +56,7 @@ export function InstructorQuestionSettings({
   questionGHLink,
   questionTags,
   qids,
+  authors,
   assessmentsWithQuestion,
   sharingEnabled,
   sharingSetsIn,
@@ -71,6 +73,7 @@ export function InstructorQuestionSettings({
   questionGHLink: string | null;
   questionTags: Tag[];
   qids: string[];
+  authors: Author[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
   sharingSetsIn: SharingSetRow[];
@@ -85,6 +88,24 @@ export function InstructorQuestionSettings({
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const questionTagNames = new Set(questionTags.map((tag) => tag.name));
+  const authorsData = authors.map((author) => {
+    let parsedORCIDId = '';
+    if (author.orcid != null) {
+      for (let index = 0; index < author.orcid.length; index++) {
+        parsedORCIDId += author.orcid[index];
+        if ((index + 1) % 4 === 0 && index !== author.orcid.length - 1) {
+          parsedORCIDId += '-';
+        }
+      }
+    }
+    return {
+      author_name: author.author_name,
+      email: author.email,
+      id: author.id,
+      orcid: parsedORCIDId,
+      origin_course: author.origin_course,
+    };
+  });
 
   return PageLayout({
     resLocals,
@@ -250,6 +271,107 @@ export function InstructorQuestionSettings({
                       </tr>`
                     : ''}
                 </tbody>
+              </table>
+            </div>
+            <div class="mb-3">
+              <label id="authors-table-label" for="authors-table">Author Information</label>
+              <table
+                id="authors-table"
+                class="table table-sm table-hover tablesorter table-bordered"
+                aria-label="Author information"
+              >
+                <thead>
+                  <tr>
+                    <th class="text-center">Name</th>
+                    <th class="text-center">Email</th>
+                    <th class="text-center">ORCID identifier</th>
+                    <th class="text-center">Origin Course</th>
+                    ${canEdit ? html`<th class="text-center">Remove</th>` : null}
+                  </tr>
+                </thead>
+                <tbody id="author-table-body">
+                  ${authorsData.length === 0 && !canEdit
+                    ? html`<tr>
+                        <td><small class="text-center">No authors</small></td>
+                      </tr>`
+                    : null}
+                  ${authorsData.map((author, index) => {
+                    return html`
+                      <tr class="author-row" id="${'author_row_' + index}">
+                        <td class="text-center align-middle">
+                          ${canEdit
+                            ? html`<input
+                                type="text"
+                                class="form-control"
+                                id="${'author_name_' + index}"
+                                name="${'author_name_' + index}"
+                                value="${author.author_name}"
+                              />`
+                            : html` <small class="text-center">${author.author_name}</small> `}
+                        </td>
+                        <td class="text-center align-middle">
+                          ${canEdit
+                            ? html`<input
+                                type="email"
+                                class="form-control"
+                                id="${'author_email_' + index}"
+                                name="${'author_email_' + index}"
+                                value="${author.email}"
+                              />`
+                            : html`<small class="text-center">${author.email}</small>`}
+                        </td>
+                        <td class="text-center align-middle">
+                          ${canEdit
+                            ? html`<input
+                                type="text"
+                                pattern="^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$"
+                                class="form-control author_orcid"
+                                id="${'author_orcid_' + index}"
+                                name="${'author_orcid_' + index}"
+                                value="${author.orcid}"
+                              />`
+                            : html`<small class="text-center">${author.orcid}</small>`}
+                        </td>
+                        <td class="text-center align-middle">
+                          ${canEdit
+                            ? html`<input
+                                type="text"
+                                class="form-control"
+                                id="${'author_origin_course_' + index}"
+                                name="${'author_origin_course_' + index}"
+                                value="${author.origin_course}"
+                              />`
+                            : html`<small class="text-center">${author.origin_course}</small>`}
+                        </td>
+                        ${canEdit
+                          ? html`<td class="text-center align-middle align-items-center">
+                              <button
+                                id="${'remove_author_' + index}"
+                                class="align-middle btn btn-danger remove_author_button"
+                                type="button"
+                              >
+                                X
+                              </button>
+                            </td>`
+                          : null}
+                      </tr>
+                    `;
+                  })}
+                </tbody>
+                ${canEdit
+                  ? html`<tfoot>
+                      <tr>
+                        <td colspan="5">
+                          <button id="add-author-button" class="btn btn-primary mb-2" type="button">
+                            Add Author
+                          </button>
+                          <small
+                            >Each author must have one of email, orcid, and origin course</small
+                          >
+                        </td>
+                      </tr>
+                    </tfoot>`
+                  : null}
               </table>
             </div>
             <div class="mb-3">
