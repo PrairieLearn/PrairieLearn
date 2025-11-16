@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 1.2.1
+
+### Patch Changes
+
+- 9f5a05f: Improve UI of `TanstackTable` and `TanstackTableCard`
+
 ## 1.2.0
 
 ### Minor Changes
