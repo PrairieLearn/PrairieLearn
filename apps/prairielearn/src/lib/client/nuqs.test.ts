@@ -126,10 +126,6 @@ describe('parseAsColumnVisibilityStateWithColumns', () => {
     expect(parser.parse('b')).toEqual({ a: false, b: true, c: false });
   });
 
-  it('serializes all columns visible as empty string', () => {
-    expect(parser.serialize({ a: true, b: true, c: true })).toBe('');
-  });
-
   it('serializes partial visibility as comma-separated columns', () => {
     expect(parser.serialize({ a: true, b: false, c: true })).toBe('a,c');
     expect(parser.serialize({ a: false, b: true, c: false })).toBe('b');

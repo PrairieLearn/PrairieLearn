@@ -6,7 +6,6 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { formatQueryWithErrorPosition } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { config } from '../../lib/config.js';
 
 function formatJson(value: any): string {
   return jsonStringifySafe(value, null, '    ');
@@ -68,7 +67,7 @@ export function ErrorPage({
               <i class="fa fa-arrow-left" aria-hidden="true"></i>
               Back to previous page
             </a>
-            <a href="${config.urlPrefix}" class="btn btn-primary">
+            <a href="/pl" class="btn btn-primary">
               <i class="fa fa-home" aria-hidden="true"></i>
               PrairieLearn home
             </a>

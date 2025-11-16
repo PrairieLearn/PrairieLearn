@@ -8,19 +8,19 @@ Utilities for rendering and sanitizing Markdown content, with support for math r
 import { markdownToHtml } from '@prairielearn/markdown';
 
 // Basic usage with defaults (sanitization, math, and HTML enabled)
-const html = await markdownToHtml('# Hello **world**!');
+const html = markdownToHtml('# Hello **world**!');
 
 // Inline markdown (no wrapping <p> tags)
-const inlineHtml = await markdownToHtml('Some **bold** text', { inline: true });
+const inlineHtml = markdownToHtml('Some **bold** text', { inline: true });
 
 // Without sanitization
-const unsafeHtml = await markdownToHtml(markdown, { sanitize: false });
+const unsafeHtml = markdownToHtml(markdown, { sanitize: false });
 
 // Without math processing
-const noMath = await markdownToHtml(markdown, { interpretMath: false });
+const noMath = markdownToHtml(markdown, { interpretMath: false });
 
 // Strip HTML tags
-const noHtml = await markdownToHtml('Some text <em>with HTML</em>', { allowHtml: false });
+const noHtml = markdownToHtml('Some text <em>with HTML</em>', { allowHtml: false });
 ```
 
 ### Options
@@ -37,14 +37,14 @@ For advanced use cases requiring custom Marked extensions, you can create your o
 ```ts
 import { createMarkedInstance } from '@prairielearn/markdown';
 
-const marked = await createMarkedInstance({
+const marked = createMarkedInstance({
   sanitize: true,
   allowHtml: true,
   interpretMath: true,
   extensions: [myCustomExtension],
 });
 
-const html = await marked.parse('# Custom markdown');
+const html = marked.parse('# Custom markdown');
 ```
 
 Note that `createMarkedInstance` does not use caching, so callers that rely on extensions should perform their own caching if needed.

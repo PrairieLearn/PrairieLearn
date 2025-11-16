@@ -3,7 +3,7 @@ SELECT
   ci_extensions.*
 FROM
   course_instance_publishing_extensions AS ci_extensions
-  JOIN course_instance_publishing_enrollment_extensions AS ci_enrollment_extensions ON (
+  JOIN course_instance_publishing_extension_enrollments AS ci_enrollment_extensions ON (
     ci_enrollment_extensions.course_instance_publishing_extension_id = ci_extensions.id
   )
 WHERE

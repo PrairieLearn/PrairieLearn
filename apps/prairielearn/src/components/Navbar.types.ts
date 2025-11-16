@@ -3,7 +3,15 @@ import z from 'zod';
 import type { HtmlValue } from '@prairielearn/html';
 
 export const NavbarTypeSchema = z
-  .enum(['plain', 'student', 'instructor', 'administrator_institution', 'institution', 'public'])
+  .enum([
+    'plain',
+    'student',
+    'instructor',
+    'administrator_institution',
+    'administrator',
+    'institution',
+    'public',
+  ])
   .optional();
 
 export type NavbarType = z.infer<typeof NavbarTypeSchema>;

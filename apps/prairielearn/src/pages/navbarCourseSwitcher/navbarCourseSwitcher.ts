@@ -30,7 +30,6 @@ router.get(
       NavbarCourseSwitcher({
         courses,
         current_course_id: req.params.course_id,
-        plainUrlPrefix: res.locals.plainUrlPrefix,
       }),
     );
   }),

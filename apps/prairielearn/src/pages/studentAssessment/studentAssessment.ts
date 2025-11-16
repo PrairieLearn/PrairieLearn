@@ -87,7 +87,7 @@ router.get(
       res.locals.assessment.require_honor_code &&
       res.locals.assessment.honor_code
     ) {
-      customHonorCode = await markdownToHtml(
+      customHonorCode = markdownToHtml(
         mustache.render(res.locals.assessment.honor_code, {
           user_name: res.locals.user.name,
         }),

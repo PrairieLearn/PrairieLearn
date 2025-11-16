@@ -34,7 +34,7 @@ export function AdministratorInstitutions({
     resLocals,
     pageTitle: 'Institutions',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'institutions',
     },

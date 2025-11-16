@@ -138,7 +138,7 @@ router.get(
     let readmeHtml = '';
     if (questionReadmeExists) {
       const readme = await fs.readFile(questionReadmePath, 'utf8');
-      readmeHtml = await markdownToHtml(readme, { allowHtml: false });
+      readmeHtml = markdownToHtml(readme, { allowHtml: false });
     }
 
     res.send(
@@ -171,8 +171,6 @@ router.get(
       unsafe_variant_id: req.params.unsafe_variant_id,
       variant_course: res.locals.course,
       question_id: res.locals.question.id,
-      // TODO: The types are wrong for typedAsyncHandler. See https://github.com/PrairieLearn/PrairieLearn/pull/12620
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       course_instance_id: res.locals.course_instance?.id,
       authz_data: res.locals.authz_data,
       authn_user: res.locals.authn_user,

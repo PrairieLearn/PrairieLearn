@@ -1,43 +1,95 @@
 import { useCallback, useState } from 'preact/compat';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
-const defaultClosedOnly = true;
+import { assertNever } from '../../../../lib/types.js';
+import type { useManualGradingActions } from '../utils/useManualGradingActions.js';
+
+const defaultClosedSubmissionsOnly = true;
+
+export type GroupInfoModalState =
+  | { type: 'selected'; ids: string[] }
+  | { type: 'all' }
+  | { type: 'ungrouped' }
+  | null;
 
 export function GroupInfoModal({
-  modalFor,
+  modalState,
   numOpenInstances,
-  show,
+  mutation,
   onHide,
-  onSubmit,
 }: {
-  modalFor: 'all' | 'selected' | 'ungrouped';
+  modalState: GroupInfoModalState;
   numOpenInstances: number;
-  show: boolean;
+  mutation: ReturnType<typeof useManualGradingActions>['groupSubmissionMutation'];
   onHide: () => void;
-  onSubmit: (closedOnly: boolean) => void;
 }) {
-  const [closedOnly, setClosedOnly] = useState(defaultClosedOnly);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [closedSubmissionsOnly, setClosedSubmissionsOnly] = useState(true);
 
   const handleClose = useCallback(() => {
+    setClosedSubmissionsOnly(defaultClosedSubmissionsOnly);
+    mutation.reset();
     onHide();
-    setClosedOnly(defaultClosedOnly);
-    setIsSubmitting(false);
-  }, [onHide]);
+  }, [onHide, mutation]);
 
   const handleSubmit = useCallback(
     (e: Event) => {
       e.preventDefault();
-      setIsSubmitting(true);
-      onSubmit(closedOnly);
+      if (!modalState) return;
+
+      switch (modalState.type) {
+        case 'selected': {
+          mutation.mutate(
+            {
+              action: 'batch_action',
+              closedSubmissionsOnly,
+              numOpenInstances,
+              instanceQuestionIds: modalState.ids,
+            },
+            {
+              onSuccess: onHide,
+            },
+          );
+          break;
+        }
+        case 'all': {
+          mutation.mutate(
+            {
+              action: 'ai_instance_question_group_assessment_all',
+              closedSubmissionsOnly,
+              numOpenInstances,
+            },
+            {
+              onSuccess: onHide,
+            },
+          );
+          break;
+        }
+        case 'ungrouped': {
+          mutation.mutate(
+            {
+              action: 'ai_instance_question_group_assessment_ungrouped',
+              closedSubmissionsOnly,
+              numOpenInstances,
+            },
+            {
+              onSuccess: onHide,
+            },
+          );
+          break;
+        }
+        default:
+          assertNever(modalState);
+      }
     },
-    [onSubmit, closedOnly],
+    [modalState, closedSubmissionsOnly, numOpenInstances, mutation, onHide],
   );
 
   const getTitle = () => {
-    if (modalFor === 'all') {
+    if (modalState == null) return '';
+
+    if (modalState.type === 'all') {
       return 'Group all submissions';
-    } else if (modalFor === 'ungrouped') {
+    } else if (modalState.type === 'ungrouped') {
       return 'Group ungrouped submissions';
     } else {
       return 'Group selected submissions';
@@ -45,7 +97,13 @@ export function GroupInfoModal({
   };
 
   return (
-    <Modal show={show} size="lg" backdrop="static" keyboard={false} onHide={handleClose}>
+    <Modal
+      show={modalState != null}
+      size="lg"
+      backdrop="static"
+      keyboard={false}
+      onHide={handleClose}
+    >
       <form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>{getTitle()}</Modal.Title>
@@ -53,8 +111,8 @@ export function GroupInfoModal({
 
         <Modal.Body>
           <p>
-            Groups student submission answers based on whether they
-            <strong> match the correct answer exactly.</strong>
+            Groups student submission answers based on whether they{' '}
+            <strong>match the correct answer exactly.</strong>
           </p>
 
           <p>Answers that match go into one group, and those that don't are grouped separately.</p>
@@ -105,12 +163,15 @@ export function GroupInfoModal({
                   </p>
                 </div>
                 <div class="col-12 col-md-6 d-flex flex-column gap-2">
-                  <p class="my-0">Choose how to apply grouping:</p>
+                  <label for="grouping-application-select" class="my-0">
+                    Choose how to apply grouping:
+                  </label>
                   <select
+                    id="grouping-application-select"
                     class="form-select w-auto flex-shrink-0"
-                    value={closedOnly ? 'true' : 'false'}
+                    value={closedSubmissionsOnly ? 'true' : 'false'}
                     onChange={(e) =>
-                      setClosedOnly((e.target as HTMLSelectElement).value === 'true')
+                      setClosedSubmissionsOnly((e.target as HTMLSelectElement).value === 'true')
                     }
                   >
                     <option value="true">Only group closed submissions</option>
@@ -124,12 +185,17 @@ export function GroupInfoModal({
 
         <Modal.Footer>
           <div class="m-0 w-100">
+            {mutation.isError && (
+              <Alert variant="danger" class="mb-2" dismissible onClose={() => mutation.reset()}>
+                <strong>Error:</strong> {mutation.error.message}
+              </Alert>
+            )}
             <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
-              <Button variant="secondary" disabled={isSubmitting} onClick={handleClose}>
+              <Button variant="secondary" disabled={mutation.isPending} onClick={handleClose}>
                 Cancel
               </Button>
-              <Button variant="primary" disabled={isSubmitting} type="submit">
-                {isSubmitting ? 'Submitting...' : 'Group submissions'}
+              <Button variant="primary" disabled={mutation.isPending} type="submit">
+                {mutation.isPending ? 'Submitting...' : 'Group submissions'}
               </Button>
             </div>
             <small class="text-muted my-0 text-end d-block">

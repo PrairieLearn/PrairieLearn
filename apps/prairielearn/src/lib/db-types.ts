@@ -300,6 +300,7 @@ export const AssessmentSchema = z.object({
   json_grade_rate_minutes: z.number().nullable(),
   max_bonus_points: z.number().nullable(),
   max_points: z.number().nullable(),
+  modern_access_control: z.boolean(),
   multiple_instance: z.boolean().nullable(),
   number: z.string(),
   obj: z.any().nullable(),
@@ -733,7 +734,6 @@ export const ExamModeNetworkSchema = z.object({
 });
 export type ExamModeNetwork = z.infer<typeof ExamModeNetworkSchema>;
 
-export const ExamSchema = null;
 export const FeatureGrantSchema = null;
 
 export const FileSchema = z.object({
@@ -1257,7 +1257,6 @@ export const QuestionTagSchema = z.object({
   tag_id: IdSchema,
 });
 export type QuestionTag = z.infer<typeof QuestionTagSchema>;
-export const ReservationSchema = null;
 
 export const RubricSchema = z.object({
   created_at: DateFromISOString,
@@ -1586,13 +1585,11 @@ export const TableNames = [
   'course_instances',
   'course_permissions',
   'course_requests',
-  'courses',
   'cron_jobs',
   'current_pages',
   'draft_question_metadata',
   'enrollments',
   'exam_mode_networks',
-  'exams',
   'feature_grants',
   'file_edits',
   'file_transfers',
@@ -1634,7 +1631,6 @@ export const TableNames = [
   'question_score_logs',
   'question_tags',
   'questions',
-  'reservations',
   'rubric_grading_items',
   'rubric_gradings',
   'rubric_items',

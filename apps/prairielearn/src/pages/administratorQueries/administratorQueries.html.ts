@@ -19,7 +19,7 @@ export function AdministratorQueries({
     resLocals,
     pageTitle: 'Administrator Queries',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'queries',
     },

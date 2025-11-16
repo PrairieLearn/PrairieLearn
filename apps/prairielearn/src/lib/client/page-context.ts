@@ -8,11 +8,11 @@ import { PageAuthzDataSchema } from '../authz-data-lib.js';
 
 import {
   RawStaffAssessmentSchema,
-  RawStaffAssessmentSetSchema,
   RawStaffCourseInstanceSchema,
   RawStaffCourseSchema,
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
+  StaffAssessmentSetSchema,
   StaffInstitutionSchema,
   StaffUserSchema,
 } from './safe-db-types.js';
@@ -20,7 +20,6 @@ import {
 export const RawPageContextSchema = z.object({
   __csrf_token: z.string(),
   urlPrefix: z.string(),
-  plainUrlPrefix: z.string(),
 
   // authn data
   authn_user: StaffUserSchema,
@@ -151,9 +150,10 @@ export function getCourseInstanceContext(
 
 const RawStaffAssessmentContextSchema = z.object({
   assessment: RawStaffAssessmentSchema.extend({
+    // Other types are deprecated, so we can narrow down the options here.
     type: z.enum(['Exam', 'Homework']),
-  }),
-  assessment_set: RawStaffAssessmentSetSchema,
+  }).brand('StaffAssessment'),
+  assessment_set: StaffAssessmentSetSchema,
 });
 const StaffAssessmentContextSchema =
   RawStaffAssessmentContextSchema.brand<'StaffAssessmentContext'>();

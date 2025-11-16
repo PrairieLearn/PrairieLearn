@@ -6,6 +6,5 @@
     "types": ["node"],
     "jsx": "react-jsx",
     "jsxImportSource": "@prairielearn/preact-cjs"
-  },
-  "include": ["src/*"]
+  }
 }
