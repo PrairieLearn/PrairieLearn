@@ -1,18 +1,17 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import {
   calculateAiGradingStats,
-  fillInstanceQuestionColumns,
+  fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
-  toggleAiGradingMode,
+  setAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
@@ -21,10 +20,15 @@ import {
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
+import {
+  StaffInstanceQuestionGroupSchema,
+  StaffUserSchema,
+} from '../../../lib/client/safe-db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
@@ -41,17 +45,35 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
-    const courseStaff = await selectCourseInstanceGraderStaff({
-      course_instance: res.locals.course_instance,
-    });
+    const courseStaff = z.array(StaffUserSchema).parse(
+      await selectCourseInstanceGraderStaff({
+        course_instance: res.locals.course_instance,
+      }),
+    );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
     });
 
-    const instanceQuestionGroups = await selectInstanceQuestionGroups({
-      assessmentQuestionId: res.locals.assessment_question.id,
-    });
+    const instanceQuestionGroups = z.array(StaffInstanceQuestionGroupSchema).parse(
+      await selectInstanceQuestionGroups({
+        assessmentQuestionId: res.locals.assessment_question.id,
+      }),
+    );
+
+    const unfilledInstanceQuestionInfo = await queryRows(
+      sql.select_instance_questions_manual_grading,
+      {
+        assessment_id: res.locals.assessment.id,
+        assessment_question_id: res.locals.assessment_question.id,
+      },
+      InstanceQuestionRowSchema,
+    );
+
+    const instanceQuestionsInfo = await fillInstanceQuestionColumnEntries(
+      unfilledInstanceQuestionInfo,
+      res.locals.assessment_question,
+    );
 
     res.send(
       AssessmentQuestion({
@@ -65,6 +87,8 @@ router.get(
             : null,
         instanceQuestionGroups,
         rubric_data,
+        instanceQuestionsInfo,
+        search: getUrl(req).search,
       }),
     );
   }),
@@ -72,7 +96,11 @@ router.get(
 
 router.get(
   '/instances.json',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
+    if (req.accepts('html')) {
+      throw new error.HttpStatusError(406, 'Not Acceptable');
+    }
+
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
@@ -87,7 +115,7 @@ router.get(
     );
 
     res.send({
-      instance_questions: await fillInstanceQuestionColumns(
+      instance_questions: await fillInstanceQuestionColumnEntries(
         instance_questions,
         res.locals.assessment_question,
       ),
@@ -97,7 +125,7 @@ router.get(
 
 router.get(
   '/next_ungraded',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
@@ -138,13 +166,28 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
+    if (req.accepts('html')) {
+      throw new error.HttpStatusError(406, 'Not Acceptable');
+    }
+
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     // TODO: parse req.body with Zod
 
-    if (req.body.__action === 'batch_action') {
+    if (req.body.__action === 'set_ai_grading_mode') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      if (typeof req.body.value !== 'boolean') {
+        throw new error.HttpStatusError(400, 'value must be a boolean');
+      }
+
+      await setAiGradingMode(res.locals.assessment_question.id, req.body.value);
+      res.sendStatus(204);
+    } else if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
@@ -153,7 +196,7 @@ router.post(
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
-        const jobSequenceId = await aiGrade({
+        const job_sequence_id = await aiGrade({
           question: res.locals.question,
           course: res.locals.course,
           course_instance: res.locals.course_instance,
@@ -166,7 +209,8 @@ router.post(
           instance_question_ids,
         });
 
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+        res.send({ job_sequence_id });
+        return;
       } else if (req.body.batch_action === 'ai_instance_question_group_selected') {
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
@@ -176,7 +220,7 @@ router.post(
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
 
-        const jobSequenceId = await aiInstanceQuestionGrouping({
+        const job_sequence_id = await aiInstanceQuestionGrouping({
           question: res.locals.question,
           course: res.locals.course,
           course_instance_id: res.locals.course_instance.id,
@@ -185,15 +229,14 @@ router.post(
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
           instance_question_ids,
-          closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+          closed_instance_questions_only: req.body.closed_instance_questions_only,
           ungrouped_instance_questions_only: false,
         });
 
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+        res.send({ job_sequence_id });
+        return;
       } else {
-        const action_data = req.body.batch_action_data
-          ? JSON.parse(req.body.batch_action_data)
-          : {};
+        const action_data = req.body.batch_action_data ?? {};
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
@@ -216,7 +259,7 @@ router.post(
           update_assigned_grader: 'assigned_grader' in action_data,
           assigned_grader: action_data?.assigned_grader,
         });
-        res.send({});
+        res.sendStatus(204);
       }
     } else if (req.body.__action === 'edit_question_points') {
       const result = await manualGrading.updateInstanceQuestionScore(
@@ -238,11 +281,8 @@ router.post(
           conflict_details_url: `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.grading_job_id}`,
         });
       } else {
-        res.send({});
+        res.sendStatus(204);
       }
-    } else if (req.body.__action === 'toggle_ai_grading_mode') {
-      await toggleAiGradingMode(res.locals.assessment_question.id);
-      res.redirect(req.originalUrl);
     } else if (
       ['ai_grade_assessment', 'ai_grade_assessment_graded', 'ai_grade_assessment_all'].includes(
         req.body.__action,
@@ -252,7 +292,7 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const jobSequenceId = await aiGrade({
+      const job_sequence_id = await aiGrade({
         question: res.locals.question,
         course: res.locals.course,
         course_instance: res.locals.course_instance,
@@ -268,13 +308,13 @@ router.post(
         }),
       });
 
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+      res.json({ job_sequence_id });
     } else if (req.body.__action === 'ai_instance_question_group_assessment_all') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const jobSequenceId = await aiInstanceQuestionGrouping({
+      const job_sequence_id = await aiInstanceQuestionGrouping({
         question: res.locals.question,
         course: res.locals.course,
         course_instance_id: res.locals.course_instance.id,
@@ -282,17 +322,18 @@ router.post(
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
-        closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+        closed_instance_questions_only: req.body.closed_instance_questions_only,
         ungrouped_instance_questions_only: false,
       });
 
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+      res.json({ job_sequence_id });
+      return;
     } else if (req.body.__action === 'ai_instance_question_group_assessment_ungrouped') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const jobSequenceId = await aiInstanceQuestionGrouping({
+      const job_sequence_id = await aiInstanceQuestionGrouping({
         question: res.locals.question,
         course: res.locals.course,
         course_instance_id: res.locals.course_instance.id,
@@ -300,11 +341,11 @@ router.post(
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
-        closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+        closed_instance_questions_only: req.body.closed_instance_questions_only,
         ungrouped_instance_questions_only: true,
       });
 
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+      res.json({ job_sequence_id });
     } else if (req.body.__action === 'delete_ai_grading_jobs') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
@@ -315,42 +356,32 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
       });
 
-      flash(
-        'success',
-        `Deleted AI grading results for ${iqs.length} ${iqs.length === 1 ? 'question' : 'questions'}.`,
-      );
-
-      res.redirect(req.originalUrl);
+      res.json({ num_deleted: iqs.length });
     } else if (req.body.__action === 'delete_ai_instance_question_groupings') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const numDeleted = await deleteAiInstanceQuestionGroups({
+      const num_deleted = await deleteAiInstanceQuestionGroups({
         assessment_question_id: res.locals.assessment_question.id,
       });
 
-      flash('success', `Deleted AI submission grouping results for ${numDeleted} questions.`);
-
-      res.redirect(req.originalUrl);
+      res.json({ num_deleted });
+      return;
     } else if (req.body.__action === 'modify_rubric_settings') {
-      try {
-        await manualGrading.updateAssessmentQuestionRubric(
-          res.locals.assessment,
-          res.locals.assessment_question.id,
-          req.body.use_rubric,
-          req.body.replace_auto_points,
-          req.body.starting_points,
-          req.body.min_points,
-          req.body.max_extra_points,
-          req.body.rubric_items,
-          req.body.tag_for_manual_grading,
-          res.locals.authn_user.user_id,
-        );
-        res.redirect(req.originalUrl);
-      } catch (err) {
-        res.status(500).send({ err: String(err) });
-      }
+      await manualGrading.updateAssessmentQuestionRubric(
+        res.locals.assessment,
+        res.locals.assessment_question.id,
+        req.body.use_rubric,
+        req.body.replace_auto_points,
+        req.body.starting_points,
+        req.body.min_points,
+        req.body.max_extra_points,
+        req.body.rubric_items,
+        req.body.tag_for_manual_grading,
+        res.locals.authn_user.user_id,
+      );
+      res.sendStatus(204);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

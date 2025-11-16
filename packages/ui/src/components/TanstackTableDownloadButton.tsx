@@ -6,11 +6,13 @@ export interface TanstackTableDownloadButtonProps<RowDataModel> {
   table: Table<RowDataModel>;
   filenameBase: string;
   mapRowToData: (row: RowDataModel) => Record<string, string | number | null> | null;
+  singularLabel: string;
   pluralLabel: string;
 }
 /**
  * @param params
- * @param params.pluralLabel - What you are downloading, e.g. "students"
+ * @param params.singularLabel - The singular label for a single row in the table, e.g. "student"
+ * @param params.pluralLabel - The plural label for multiple rows in the table, e.g. "students"
  * @param params.table - The table model
  * @param params.filenameBase - The base filename for the downloads
  * @param params.mapRowToData - A function that maps a row to a record where the
@@ -22,6 +24,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
   table,
   filenameBase,
   mapRowToData,
+  singularLabel,
   pluralLabel,
 }: TanstackTableDownloadButtonProps<RowDataModel>) {
   const allRows = table.getCoreRowModel().rows.map((row) => row.original);
@@ -91,7 +94,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
             disabled={selectedRowsJSON.length === 0}
             onClick={() => downloadJSONAsCSV(selectedRowsJSON, `${filenameBase}_selected.csv`)}
           >
-            Selected {pluralLabel} as CSV
+            Selected {selectedRowsJSON.length === 1 ? singularLabel : pluralLabel} as CSV
           </button>
         </li>
         <li role="presentation">
@@ -103,7 +106,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
             disabled={selectedRowsJSON.length === 0}
             onClick={() => downloadAsJSON(selectedRowsJSON, `${filenameBase}_selected.json`)}
           >
-            Selected {pluralLabel} as JSON
+            Selected {selectedRowsJSON.length === 1 ? singularLabel : pluralLabel} as JSON
           </button>
         </li>
         <li role="presentation">
@@ -115,7 +118,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
             disabled={filteredRowsJSON.length === 0}
             onClick={() => downloadJSONAsCSV(filteredRowsJSON, `${filenameBase}_filtered.csv`)}
           >
-            Filtered {pluralLabel} as CSV
+            Filtered {filteredRowsJSON.length === 1 ? singularLabel : pluralLabel} as CSV
           </button>
         </li>
         <li role="presentation">
@@ -127,7 +130,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
             disabled={filteredRowsJSON.length === 0}
             onClick={() => downloadAsJSON(filteredRowsJSON, `${filenameBase}_filtered.json`)}
           >
-            Filtered {pluralLabel} as JSON
+            Filtered {filteredRowsJSON.length === 1 ? singularLabel : pluralLabel} as JSON
           </button>
         </li>
       </ul>

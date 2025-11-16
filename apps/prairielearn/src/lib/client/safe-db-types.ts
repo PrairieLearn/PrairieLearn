@@ -13,6 +13,8 @@ import {
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
+  InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
+  InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
   QuestionSchema as RawQuestionSchema,
   TagSchema as RawTagSchema,
@@ -114,9 +116,9 @@ export const StudentAssessmentSetSchema =
 export type StudentAssessmentSet = z.infer<typeof StudentAssessmentSetSchema>;
 
 /** Assessment Questions */
-
+export const RawStaffAssessmentQuestionSchema = RawAssessmentQuestionSchema;
 export const StaffAssessmentQuestionSchema =
-  RawAssessmentQuestionSchema.brand<'StaffAssessmentQuestion'>();
+  RawStaffAssessmentQuestionSchema.brand<'StaffAssessmentQuestion'>();
 export type StaffAssessmentQuestion = z.infer<typeof StaffAssessmentQuestionSchema>;
 
 /** Audit Events */
@@ -221,6 +223,18 @@ export const RawStudentEnrollmentSchema = RawStaffEnrollmentSchema.pick({
 });
 export const StudentEnrollmentSchema = RawStudentEnrollmentSchema.brand<'StudentEnrollment'>();
 export type StudentEnrollment = z.infer<typeof StudentEnrollmentSchema>;
+
+/** Instance Question Groups */
+export const RawStaffInstanceQuestionGroupSchema = RawInstanceQuestionGroupSchema;
+export const StaffInstanceQuestionGroupSchema =
+  RawStaffInstanceQuestionGroupSchema.brand<'StaffInstanceQuestionGroup'>();
+export type StaffInstanceQuestionGroup = z.infer<typeof StaffInstanceQuestionGroupSchema>;
+
+/** Instance Questions */
+export const RawStaffInstanceQuestionSchema = RawInstanceQuestionSchema;
+export const StaffInstanceQuestionSchema =
+  RawStaffInstanceQuestionSchema.brand<'StaffInstanceQuestion'>();
+export type StaffInstanceQuestion = z.infer<typeof StaffInstanceQuestionSchema>;
 
 /** Institutions */
 export const RawAdminInstitutionSchema = RawInstitutionSchema.pick({

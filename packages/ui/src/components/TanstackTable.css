@@ -48,6 +48,6 @@ body.no-user-select {
   --bs-btn-disabled-border-color: var(--bs-border-color);
 }
 
-.tanstack-table-focusable-shadow:not(:focus-visible) {
+:is(.btn.btn-tanstack-table, .tanstack-table-focusable-shadow):not(:focus-visible) {
   box-shadow: var(--bs-box-shadow-sm);
 }

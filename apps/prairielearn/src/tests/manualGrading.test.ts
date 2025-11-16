@@ -12,6 +12,7 @@ import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
+import type { InstanceQuestionRowWithAIGradingStats } from '../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 
 import {
   type User,
@@ -171,22 +172,24 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
 
   test.sequential('manual grading page for assessment question lists updated values', async () => {
     setUser(defaultUser);
-    const manualGradingAQData = await (
-      await fetch(manualGradingAssessmentQuestionUrl + '/instances.json')
-    ).text();
-    const instanceList = JSON.parse(manualGradingAQData)?.instance_questions;
+    const manualGradingAQData = (await (
+      await fetch(manualGradingAssessmentQuestionUrl + '/instances.json', {
+        headers: { Accept: 'application/json' },
+      })
+    ).json()) as { instance_questions: InstanceQuestionRowWithAIGradingStats[] };
+    const instanceList = manualGradingAQData.instance_questions;
     assert(instanceList);
     assert.lengthOf(instanceList, 1);
-    assert.equal(instanceList[0].id, iqId);
-    assert.isNotOk(instanceList[0].requires_manual_grading);
-    assert.equal(instanceList[0].assigned_grader, assigned_grader.user_id);
+    assert.equal(instanceList[0].instance_question.id, iqId);
+    assert.isNotOk(instanceList[0].instance_question.requires_manual_grading);
+    assert.equal(instanceList[0].instance_question.assigned_grader, assigned_grader.user_id);
     assert.equal(instanceList[0].assigned_grader_name, assigned_grader.authName);
-    assert.equal(instanceList[0].last_grader, grader.user_id);
+    assert.equal(instanceList[0].instance_question.last_grader, grader.user_id);
     assert.equal(instanceList[0].last_grader_name, grader.authName);
-    assert.closeTo(instanceList[0].score_perc, score_percent, 0.01);
-    assert.closeTo(instanceList[0].points, score_points, 0.01);
-    assert.closeTo(instanceList[0].manual_points, score_points, 0.01);
-    assert.closeTo(instanceList[0].auto_points, 0, 0.01);
+    assert.closeTo(instanceList[0].instance_question.score_perc!, score_percent, 0.01);
+    assert.closeTo(instanceList[0].instance_question.points!, score_points, 0.01);
+    assert.closeTo(instanceList[0].instance_question.manual_points!, score_points, 0.01);
+    assert.closeTo(instanceList[0].instance_question.auto_points!, 0, 0.01);
   });
 
   test.sequential(
@@ -499,9 +502,14 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         assert.equal(count, '1/1');
         const nextButton = row.find('.btn:contains("next submission")');
         assert.equal(nextButton.length, 1);
-        manualGradingAssessmentQuestionUrl =
-          siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
-        manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
+
+        // Extract URLs from the HTML to verify they're correct
+        const questionLink = row.find('td:first-child a').attr('href');
+        assert(questionLink);
+        manualGradingAssessmentQuestionUrl = siteUrl + questionLink;
+        const nextUngradedLink = nextButton.attr('href');
+        assert(nextUngradedLink);
+        manualGradingNextUngradedUrl = siteUrl + nextUngradedLink;
       });
 
       test.sequential(
@@ -520,17 +528,19 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         'manual grading page for assessment question should list one instance',
         async () => {
           setUser(defaultUser);
-          const manualGradingAQData = await (
-            await fetch(manualGradingAssessmentQuestionUrl + '/instances.json')
-          ).text();
-          const instanceList = JSON.parse(manualGradingAQData)?.instance_questions;
+          const manualGradingAQData = (await (
+            await fetch(manualGradingAssessmentQuestionUrl + '/instances.json', {
+              headers: { Accept: 'application/json' },
+            })
+          ).json()) as { instance_questions: InstanceQuestionRowWithAIGradingStats[] };
+          const instanceList = manualGradingAQData.instance_questions;
           assert(instanceList);
           assert.lengthOf(instanceList, 1);
-          assert.equal(instanceList[0].id, iqId);
-          assert.isOk(instanceList[0].requires_manual_grading);
-          assert.isNotOk(instanceList[0].assigned_grader);
+          assert.equal(instanceList[0].instance_question.id, iqId);
+          assert.isOk(instanceList[0].instance_question.requires_manual_grading);
+          assert.isNotOk(instanceList[0].instance_question.assigned_grader);
           assert.isNotOk(instanceList[0].assigned_grader_name);
-          assert.isNotOk(instanceList[0].last_grader);
+          assert.isNotOk(instanceList[0].instance_question.last_grader);
           assert.isNotOk(instanceList[0].last_grader_name);
         },
       );
@@ -616,20 +626,17 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         setUser(defaultUser);
         const manualGradingAQPage = await (await fetch(manualGradingAssessmentQuestionUrl)).text();
         const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
-        const token =
-          $manualGradingAQPage('form[name=grading-form]')
-            .find('input[name=__csrf_token]')
-            .attr('value') || '';
+        const token = $manualGradingAQPage('#test_csrf_token').text() || '';
 
         await fetch(manualGradingAssessmentQuestionUrl, {
           method: 'POST',
-          headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
             __action: 'batch_action',
             __csrf_token: token,
-            batch_action_data: JSON.stringify({ assigned_grader: mockStaff[0].user_id }),
+            batch_action_data: { assigned_grader: mockStaff[0].user_id },
             instance_question_id: iqId.toString(),
-          }).toString(),
+          }),
         });
       });
 
@@ -637,17 +644,21 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         'manual grading page for assessment question should list tagged grader',
         async () => {
           setUser(defaultUser);
-          const manualGradingAQData = await (
-            await fetch(manualGradingAssessmentQuestionUrl + '/instances.json')
-          ).text();
-          const instanceList = JSON.parse(manualGradingAQData)?.instance_questions;
+          const manualGradingAQData = (await (
+            await fetch(manualGradingAssessmentQuestionUrl + '/instances.json', {
+              headers: { Accept: 'application/json' },
+            })
+          ).json()) as {
+            instance_questions: InstanceQuestionRowWithAIGradingStats[];
+          };
+          const instanceList = manualGradingAQData.instance_questions;
           assert(instanceList);
           assert.lengthOf(instanceList, 1);
-          assert.equal(instanceList[0].id, iqId);
-          assert.isOk(instanceList[0].requires_manual_grading);
-          assert.equal(instanceList[0].assigned_grader, mockStaff[0].user_id);
+          assert.equal(instanceList[0].instance_question.id, iqId);
+          assert.isOk(instanceList[0].instance_question.requires_manual_grading);
+          assert.equal(instanceList[0].instance_question.assigned_grader, mockStaff[0].user_id);
           assert.equal(instanceList[0].assigned_grader_name, mockStaff[0].authName);
-          assert.isNotOk(instanceList[0].last_grader);
+          assert.isNotOk(instanceList[0].instance_question.last_grader);
           assert.isNotOk(instanceList[0].last_grader_name);
         },
       );
@@ -803,7 +814,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
             body: JSON.stringify(
               buildRubricSettingsPayload({
                 manualGradingIQPage,
@@ -844,7 +855,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
             body: JSON.stringify(
               buildRubricSettingsPayload({
                 manualGradingIQPage,
@@ -883,7 +894,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
             body: JSON.stringify(
               buildRubricSettingsPayload({
                 manualGradingIQPage,
@@ -951,7 +962,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
             body: JSON.stringify(
               buildRubricSettingsPayload({
                 manualGradingIQPage,
@@ -1026,7 +1037,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
             body: JSON.stringify(
               buildRubricSettingsPayload({
                 manualGradingIQPage,
@@ -1139,8 +1150,18 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         assert.equal(row.length, 1);
         const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
         assert.equal(count, '1/1');
-        manualGradingAssessmentQuestionUrl =
-          siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
+
+        // Extract URLs from the HTML to verify they're correct
+        const questionLink = row.find('td:first-child a').attr('href');
+        assert(questionLink);
+        manualGradingAssessmentQuestionUrl = siteUrl + questionLink;
+
+        // The "next submission" button only shows if the current user has questions assigned to them
+        // or if there are unassigned questions. The current user, "defaultUser",
+        // does not have any questions assigned to them,
+        // because it was assigned to "mockStaff[0]" in the previous test.
+        const nextButton = row.find('.btn:contains("next submission")');
+        assert.equal(nextButton.length, 0);
         manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
       });
 
@@ -1160,14 +1181,16 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         'manual grading page for assessment question should list one instance',
         async () => {
           setUser(defaultUser);
-          const manualGradingAQData = await (
-            await fetch(manualGradingAssessmentQuestionUrl + '/instances.json')
-          ).text();
-          const instanceList = JSON.parse(manualGradingAQData)?.instance_questions;
+          const manualGradingAQData = (await (
+            await fetch(manualGradingAssessmentQuestionUrl + '/instances.json', {
+              headers: { Accept: 'application/json' },
+            })
+          ).json()) as { instance_questions: InstanceQuestionRowWithAIGradingStats[] };
+          const instanceList = manualGradingAQData.instance_questions;
           assert(instanceList);
           assert.lengthOf(instanceList, 1);
-          assert.equal(instanceList[0].id, iqId);
-          assert.isOk(instanceList[0].requires_manual_grading);
+          assert.equal(instanceList[0].instance_question.id, iqId);
+          assert.isOk(instanceList[0].instance_question.requires_manual_grading);
         },
       );
 
