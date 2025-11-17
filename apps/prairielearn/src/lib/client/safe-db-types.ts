@@ -5,6 +5,7 @@ import { type z } from 'zod';
 import {
   AlternativeGroupSchema as RawAlternativeGroupSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
+  AssessmentModuleSchema as RawAssessmentModuleSchema,
   AssessmentQuestionSchema as RawAssessmentQuestionSchema,
   AssessmentSchema as RawAssessmentSchema,
   AssessmentSetSchema as RawAssessmentSetSchema,
@@ -58,6 +59,15 @@ export const RawStudentAssessmentSchema = RawStaffAssessmentSchema.pick({
 export const StudentAssessmentSchema = RawStudentAssessmentSchema.brand<'StudentAssessment'>();
 export type StudentAssessment = z.infer<typeof StudentAssessmentSchema>;
 
+export const RawPublicAssessmentSchema = RawStudentAssessmentSchema.pick({
+  id: true,
+  tid: true,
+  title: true,
+  type: true,
+});
+export const PublicAssessmentSchema = RawPublicAssessmentSchema.brand<'PublicAssessment'>();
+export type PublicAssessment = z.infer<typeof PublicAssessmentSchema>;
+
 /** Assessment Instances */
 
 export const RawStaffAssessmentInstanceSchema = RawAssessmentInstanceSchema;
@@ -93,6 +103,23 @@ export type StudentAssessmentInstance__UNSAFE = z.infer<
   typeof StudentAssessmentInstanceSchema__UNSAFE
 >;
 
+/** Assessment Modules */
+
+export const RawStaffAssessmentModuleSchema = RawAssessmentModuleSchema;
+export const StaffAssessmentModuleSchema =
+  RawStaffAssessmentModuleSchema.brand<'StaffAssessmentModule'>();
+export type StaffAssessmentModule = z.infer<typeof StaffAssessmentModuleSchema>;
+
+export const RawPublicAssessmentModuleSchema = RawStaffAssessmentModuleSchema.pick({
+  heading: true,
+  id: true,
+  implicit: true,
+  name: true,
+});
+export const PublicAssessmentModuleSchema =
+  RawPublicAssessmentModuleSchema.brand<'PublicAssessmentModule'>();
+export type PublicAssessmentModule = z.infer<typeof PublicAssessmentModuleSchema>;
+
 /** Assessment Sets */
 
 export const RawStaffAssessmentSetSchema = RawAssessmentSetSchema;
@@ -112,6 +139,11 @@ export const RawStudentAssessmentSetSchema = RawStaffAssessmentSetSchema.pick({
 export const StudentAssessmentSetSchema =
   RawStudentAssessmentSetSchema.brand<'StudentAssessmentSet'>();
 export type StudentAssessmentSet = z.infer<typeof StudentAssessmentSetSchema>;
+
+export const RawPublicAssessmentSetSchema = RawStudentAssessmentSetSchema;
+export const PublicAssessmentSetSchema =
+  RawPublicAssessmentSetSchema.brand<'PublicAssessmentSet'>();
+export type PublicAssessmentSet = z.infer<typeof PublicAssessmentSetSchema>;
 
 /** Assessment Questions */
 
@@ -153,6 +185,14 @@ export const RawStaffCourseSchema = RawCourseSchema.pick({
 export const StaffCourseSchema = RawStaffCourseSchema.brand<'StaffCourse'>();
 export type StaffCourse = z.infer<typeof StaffCourseSchema>;
 
+export const RawPublicCourseSchema = RawStaffCourseSchema.pick({
+  id: true,
+  short_name: true,
+  title: true,
+});
+export const PublicCourseSchema = RawPublicCourseSchema.brand<'PublicCourse'>();
+export type PublicCourse = z.infer<typeof PublicCourseSchema>;
+
 export const RawStudentCourseSchema = RawStaffCourseSchema.pick({
   created_at: true,
   deleted_at: true,
@@ -190,6 +230,16 @@ export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.pick(
 export const StudentCourseInstanceSchema =
   RawStudentCourseInstanceSchema.brand<'StudentCourseInstance'>();
 export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
+
+export const RawPublicCourseInstanceSchema = RawStudentCourseInstanceSchema.pick({
+  assessments_group_by: true,
+  id: true,
+  long_name: true,
+  short_name: true,
+});
+export const PublicCourseInstanceSchema =
+  RawPublicCourseInstanceSchema.brand<'PublicCourseInstance'>();
+export type PublicCourseInstance = z.infer<typeof PublicCourseInstanceSchema>;
 
 /** Enrollments */
 export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
@@ -253,8 +303,18 @@ export const StaffAuthnProviderSchema = RawStaffAuthnProviderSchema.brand<'Staff
 export type StaffAuthnProvider = z.infer<typeof StaffAuthnProviderSchema>;
 
 /** Questions */
-export const StaffQuestionSchema = RawQuestionSchema.brand<'StaffQuestion'>();
+export const RawStaffQuestionSchema = RawQuestionSchema;
+export const StaffQuestionSchema = RawStaffQuestionSchema.brand<'StaffQuestion'>();
 export type StaffQuestion = z.infer<typeof StaffQuestionSchema>;
+
+export const RawPublicQuestionSchema = RawStaffQuestionSchema.pick({
+  id: true,
+  qid: true,
+  share_source_publicly: true,
+  title: true,
+});
+export const PublicQuestionSchema = RawPublicQuestionSchema.brand<'PublicQuestion'>();
+export type PublicQuestion = z.infer<typeof PublicQuestionSchema>;
 
 /** Topics */
 export const StaffTopicSchema = RawTopicSchema.brand<'StaffTopic'>();

@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
-import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { StaffCourseInstanceSchema, StaffCourseSchema } from '../../lib/client/safe-db-types.js';
+import { PublicCourseInstanceSchema, PublicCourseSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseInstanceCopyTargets } from '../../lib/copy-content.js';
 import { UserSchema } from '../../lib/db-types.js';
 import { selectAssessments } from '../../models/assessment.js';
@@ -13,8 +13,11 @@ import { selectOptionalCourseInstanceById } from '../../models/course-instances.
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../../models/question.js';
 
-import { CopyCourseInstanceModal } from './components/CopyCourseInstanceModal.js';
-import { PublicAssessments } from './publicAssessments.html.js';
+import {
+  CopyTargetSchema,
+  SafeQuestionForCopySchema,
+} from './components/CopyCourseInstanceModal.js';
+import { PublicAssessments, SafeAssessmentRowSchema } from './publicAssessments.html.js';
 
 const router = Router({ mergeParams: true });
 
@@ -47,8 +50,13 @@ router.get(
     const questionsForCopy = await selectQuestionsForCourseInstanceCopy(courseInstance.id);
 
     // Parse to safe types for client-side use
-    const safeCourse = StaffCourseSchema.parse(course);
-    const safeCourseInstance = StaffCourseInstanceSchema.parse(courseInstance);
+    const safeCourse = PublicCourseSchema.parse(course);
+    const safeCourseInstance = PublicCourseInstanceSchema.parse(courseInstance);
+    const safeQuestionsForCopy = z.array(SafeQuestionForCopySchema).parse(questionsForCopy);
+    const safeCourseInstanceCopyTargets = z
+      .array(CopyTargetSchema)
+      .parse(courseInstanceCopyTargets);
+    const safeRows = z.array(SafeAssessmentRowSchema).parse(rows);
 
     res.send(
       PageLayout({
@@ -62,25 +70,13 @@ router.get(
           fullWidth: false,
         },
         content: (
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h1>Assessments</h1>
-              <div class="ms-auto d-flex flex-row gap-1">
-                <div class="btn-group">
-                  <Hydrate>
-                    <CopyCourseInstanceModal
-                      course={safeCourse}
-                      courseInstance={safeCourseInstance}
-                      courseInstanceCopyTargets={courseInstanceCopyTargets}
-                      questionsForCopy={questionsForCopy}
-                    />
-                  </Hydrate>
-                </div>
-              </div>
-            </div>
-
-            <PublicAssessments rows={rows} courseInstance={safeCourseInstance} />
-          </div>
+          <PublicAssessments
+            rows={safeRows}
+            courseInstance={safeCourseInstance}
+            course={safeCourse}
+            courseInstanceCopyTargets={safeCourseInstanceCopyTargets}
+            questionsForCopy={safeQuestionsForCopy}
+          />
         ),
       }),
     );

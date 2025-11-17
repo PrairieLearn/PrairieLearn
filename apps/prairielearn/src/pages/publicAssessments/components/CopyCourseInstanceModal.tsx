@@ -1,44 +1,55 @@
 import { useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
+import z from 'zod';
 
-import type { StaffCourse, StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import {
+  type PublicCourse,
+  type PublicCourseInstance,
+  RawPublicQuestionSchema,
+} from '../../../lib/client/safe-db-types.js';
 
-export interface CopyTarget {
-  id: string;
-  short_name: string | null;
-  copy_url: string;
-  __csrf_token: string;
-}
+export const CopyTargetSchema = z.object({
+  id: z.string(),
+  short_name: z.string().nullable(),
+  copy_url: z.string(),
+  __csrf_token: z.string(),
+});
+export type SafeCopyTarget = z.infer<typeof CopyTargetSchema>;
+
+export const SafeQuestionForCopySchema = RawPublicQuestionSchema.extend({
+  should_copy: z.boolean().optional(),
+});
+export type SafeQuestionForCopy = z.infer<typeof SafeQuestionForCopySchema>;
 
 export function CopyCourseInstanceModal({
   course,
   courseInstance,
   courseInstanceCopyTargets,
   questionsForCopy,
-  canEdit,
 }: {
-  course: StaffCourse;
-  courseInstance: StaffCourseInstance;
-  courseInstanceCopyTargets: CopyTarget[];
-  questionsForCopy: { should_copy: boolean }[];
-  canEdit: boolean;
+  course: PublicCourse;
+  courseInstance: PublicCourseInstance;
+  courseInstanceCopyTargets: SafeCopyTarget[] | null;
+  questionsForCopy: SafeQuestionForCopy[];
 }) {
   const [show, setShow] = useState(false);
-  const [selectedCourseId, setSelectedCourseId] = useState(courseInstanceCopyTargets[0]?.id ?? '');
+  const [selectedCourseId, setSelectedCourseId] = useState(
+    courseInstanceCopyTargets?.[0]?.id ?? '',
+  );
 
   // Calculate question stats
   const questionsToCopy = questionsForCopy.filter((q) => q.should_copy).length;
   const questionsToLink = questionsForCopy.filter((q) => !q.should_copy).length;
 
   // Find the selected course data
-  const selectedCourse = courseInstanceCopyTargets.find((c) => c.id === selectedCourseId);
+  const selectedCourse = courseInstanceCopyTargets?.find((c) => c.id === selectedCourseId);
 
   // Don't render anything if copy targets is null
-  const canCopy = courseInstanceCopyTargets.length > 0;
-
-  if (!canCopy) {
+  if (!courseInstanceCopyTargets) {
     return null;
   }
+
+  const canCopy = courseInstanceCopyTargets.length > 0;
 
   return (
     <>
@@ -56,7 +67,7 @@ export function CopyCourseInstanceModal({
         <Modal.Header closeButton>
           <Modal.Title>Copy course instance</Modal.Title>
         </Modal.Header>
-        {canEdit ? (
+        {canCopy ? (
           <form
             method="POST"
             action={selectedCourse?.copy_url}
