@@ -93,7 +93,7 @@ export function createColumnFilters({
     assigned_grader_name: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
       <CategoricalColumnFilter
         columnId={header.column.id}
-        columnLabel="Assigned Grader"
+        columnLabel="Assigned grader"
         allColumnValues={[...allGraders, 'Unassigned']}
         columnValuesFilter={assignedGraderFilter}
         setColumnValuesFilter={setAssignedGraderFilter}
@@ -102,7 +102,7 @@ export function createColumnFilters({
     last_grader_name: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
       <CategoricalColumnFilter
         columnId={header.column.id}
-        columnLabel="Graded By"
+        columnLabel="Graded by"
         allColumnValues={[...allGraders, 'Unassigned']}
         columnValuesFilter={gradedByFilter}
         setColumnValuesFilter={setGradedByFilter}
@@ -115,8 +115,8 @@ export function createColumnFilters({
     }) => (
       <CategoricalColumnFilter
         columnId={header.column.id}
-        columnLabel="Submission Group"
-        allColumnValues={[...allSubmissionGroups, 'No Group']}
+        columnLabel="Submission group"
+        allColumnValues={[...allSubmissionGroups, 'No group']}
         columnValuesFilter={submissionGroupFilter}
         setColumnValuesFilter={setSubmissionGroupFilter}
       />
@@ -124,7 +124,7 @@ export function createColumnFilters({
     manual_points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
       <NumericInputColumnFilter
         columnId={header.column.id}
-        columnLabel="Manual Points"
+        columnLabel="Manual points"
         value={manualPointsFilter}
         onChange={setManualPointsFilter}
       />
@@ -132,7 +132,7 @@ export function createColumnFilters({
     auto_points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
       <NumericInputColumnFilter
         columnId={header.column.id}
-        columnLabel="Auto Points"
+        columnLabel="Auto points"
         value={autoPointsFilter}
         onChange={setAutoPointsFilter}
       />
@@ -140,7 +140,7 @@ export function createColumnFilters({
     points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
       <NumericInputColumnFilter
         columnId={header.column.id}
-        columnLabel="Total Points"
+        columnLabel="Total points"
         value={totalPointsFilter}
         onChange={setTotalPointsFilter}
       />
@@ -156,7 +156,7 @@ export function createColumnFilters({
     rubric_difference: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
       <MultiSelectColumnFilter
         columnId={header.column.id}
-        columnLabel="AI Disagreements"
+        columnLabel="AI disagreements"
         allColumnValues={allAiAgreementItems.map((item) => item.description)}
         columnValuesFilter={aiAgreementFilter}
         setColumnValuesFilter={setAiAgreementFilter}
