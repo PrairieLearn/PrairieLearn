@@ -135,6 +135,8 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
         <div
           class="list-group list-group-flush"
           style={{
+            // This is needed to prevent the last item's background from covering
+            // the dropdown's border radius.
             '--bs-list-group-bg': 'transparent',
           }}
         >
