@@ -626,8 +626,9 @@ export function AssessmentQuestionTable({
             {aiGradingMode ? (
               <>
                 <Dropdown>
-                  <Dropdown.Toggle variant="light" size="sm">
-                    <i class="bi bi-stars" aria-hidden="true" /> AI grading
+                  <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
+                    <i class="bi bi-stars" aria-hidden="true" />
+                    <span>AI grading</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
@@ -676,7 +677,8 @@ export function AssessmentQuestionTable({
                 </Dropdown>
                 <Dropdown>
                   <Dropdown.Toggle variant="light" size="sm">
-                    <i class="bi bi-stars" aria-hidden="true" /> AI submission grouping
+                    <i class="bi bi-stars" aria-hidden="true" />
+                    <span class="d-none d-sm-inline">AI submission grouping</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
