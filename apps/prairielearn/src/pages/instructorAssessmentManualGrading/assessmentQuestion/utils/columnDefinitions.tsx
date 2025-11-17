@@ -110,8 +110,8 @@ export function createColumns({
             ) : null}
             {row.assessment_open ? (
               <OverlayTrigger overlay={<Tooltip>Assessment instance is still open</Tooltip>}>
-                <button type="button" class="btn btn-link p-0">
-                  <i class="fas fa-exclamation-triangle text-warning ms-2" />
+                <button type="button" class="btn btn-xs btn-ghost ms-2">
+                  <i class="fas fa-exclamation-triangle text-warning" />
                 </button>
               </OverlayTrigger>
             ) : null}
