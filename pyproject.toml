@@ -13,6 +13,11 @@ dependencies = [
   "Faker==37.12.0",
   "jinja2==3.1.6",
   "lxml==6.0.2",
+  # NOTE: Once we upgrade to `3.11.0` or later, we may be able to remove `texlive-latex-extra`
+  # from our image, as we'll no longer need `type1cm` for matplotlib LaTeX labels:
+  # https://github.com/matplotlib/matplotlib/pull/30100
+  #
+  # We'll need to confirm that LaTeX rendering in matplotlib still works as expected.
   "matplotlib==3.10.7",
   "networkx==3.4.2",
   "nltk==3.9.2",
