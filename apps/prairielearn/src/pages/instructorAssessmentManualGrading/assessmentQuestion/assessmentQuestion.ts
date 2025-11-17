@@ -219,6 +219,10 @@ router.post(
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
 
+        if (typeof req.body.closed_instance_questions_only !== 'boolean') {
+          throw new error.HttpStatusError(400, 'closed_instance_questions_only must be a boolean');
+        }
+
         const job_sequence_id = await aiInstanceQuestionGrouping({
           question: res.locals.question,
           course: res.locals.course,

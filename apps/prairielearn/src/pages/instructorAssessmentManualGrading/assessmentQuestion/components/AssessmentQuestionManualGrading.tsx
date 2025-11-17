@@ -42,7 +42,7 @@ export interface AssessmentQuestionManualGradingProps {
   search: string;
   isDevMode: boolean;
   questionTitle: string;
-  questionNumber: number | null;
+  questionNumber: number;
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -100,7 +100,7 @@ function AssessmentQuestionManualGradingInner({
               <a href={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}>Manual grading</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
-              Question {questionNumber != null ? questionNumber : ''}. {questionTitle}
+              Question {questionNumber}. {questionTitle}
             </li>
           </ol>
         </nav>

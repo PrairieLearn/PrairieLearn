@@ -291,13 +291,14 @@ export function createColumns({
       filterFn: (row, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
         const current = row.getValue<InstanceQuestionRow['last_grader_name']>(columnId);
-        if (!current) return filterValues.includes('Unassigned');
         const rowData = row.original;
 
         if (rowData.instance_question.ai_grading_status !== 'None') {
           const aiGraderName = generateAiGraderName(rowData.instance_question.ai_grading_status);
           if (filterValues.includes(aiGraderName)) return true;
         }
+
+        if (!current) return filterValues.includes('Unassigned');
 
         return filterValues.includes(current);
       },
