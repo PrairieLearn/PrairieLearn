@@ -18,13 +18,12 @@ As an instructor, it might be possible to prevent timeouts by "guiding" SymPy's 
 
 The optimal simplification order for a specific question is dependent on the complexity and domain of the question (e.g., whether it uses trigonometric functions). If a question experiences non-convergence issues, we therefore recommend some experimentation with simplifications that relate to the correct answer. The table below lists the possible simplifications that can be provided to the attribute `additional-simplifications`, and are applied in the same order they are listed:
 
-| Simplification | Description                             | Example                           |
-| -------------- | --------------------------------------- | --------------------------------- |
-| `expand`       | Expanding polynomials                   | `(x + 1)**2` => `x**2 + 2*x + 1`  |
-| `collect`      | Collecting common powers in polynomials | `x*z**2 + y*z**2` => `(x+y)*z**2` |
-| `power`        | Power simplifications                   | `x**a*x**b` => `x**(a + b)`       |
-| `trig`         | Trigonometric simplifications           | `sin(x)/cos(x)` => `tan(x)`       |
-| `log`          | Logarithmic simplifications             | `log(x*y)` => `log(x) + log(y)`   |
+| Simplification | Description                   | Example                          |
+| -------------- | ----------------------------- | -------------------------------- |
+| `expand`       | Expanding polynomials         | `(x + 1)**2` => `x**2 + 2*x + 1` |
+| `power`        | Power simplifications         | `x**a*x**b` => `x**(a + b)`      |
+| `trig`         | Trigonometric simplifications | `sin(x)/cos(x)` => `tan(x)`      |
+| `log`          | Logarithmic simplifications   | `log(x*y)` => `log(x) + log(y)`  |
 
 Note that all of the simplifications above are already considered in SymPy's built-in heuristical simplification, so listing them in `additional-simplifications` does not affect the grading results _except_ in cases where a timeout occurs. Also note that simplifications are always applied to both the correct and the submitted answer, because the goal is to increase their similarity (e.g., both are fully expanded) rather than aiming for a specific form (e.g., expanding vs. factoring).
 
