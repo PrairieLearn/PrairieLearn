@@ -167,14 +167,13 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
-    if (req.accepts('html')) {
-      throw new error.HttpStatusError(406, 'Not Acceptable');
-    }
-
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     // TODO: parse req.body with Zod
+    if (req.accepts('html') && req.body.__action !== 'modify_rubric_settings') {
+      throw new error.HttpStatusError(406, 'Not Acceptable');
+    }
 
     if (req.body.__action === 'set_ai_grading_mode') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
@@ -369,19 +368,23 @@ router.post(
       res.json({ num_deleted });
       return;
     } else if (req.body.__action === 'modify_rubric_settings') {
-      await manualGrading.updateAssessmentQuestionRubric(
-        res.locals.assessment,
-        res.locals.assessment_question.id,
-        req.body.use_rubric,
-        req.body.replace_auto_points,
-        req.body.starting_points,
-        req.body.min_points,
-        req.body.max_extra_points,
-        req.body.rubric_items,
-        req.body.tag_for_manual_grading,
-        res.locals.authn_user.user_id,
-      );
-      res.sendStatus(204);
+      try {
+        await manualGrading.updateAssessmentQuestionRubric(
+          res.locals.assessment,
+          res.locals.assessment_question.id,
+          req.body.use_rubric,
+          req.body.replace_auto_points,
+          req.body.starting_points,
+          req.body.min_points,
+          req.body.max_extra_points,
+          req.body.rubric_items,
+          req.body.tag_for_manual_grading,
+          res.locals.authn_user.user_id,
+        );
+        res.redirect(req.originalUrl);
+      } catch (err) {
+        res.status(500).send({ err: String(err) });
+      }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

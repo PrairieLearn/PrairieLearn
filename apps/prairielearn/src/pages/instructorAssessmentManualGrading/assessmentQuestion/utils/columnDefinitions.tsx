@@ -1,6 +1,7 @@
 import { type Row, type Table, createColumnHelper } from '@tanstack/react-table';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import { numericColumnFilterFn } from '@prairielearn/ui';
 
 import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
@@ -69,6 +70,8 @@ export function createColumns({
           type="checkbox"
           checked={table.getIsAllRowsSelected()}
           indeterminate={table.getIsSomeRowsSelected()}
+          // Prevent browser from autocompleting the checkbox value when you return to the page.
+          autocomplete="off"
           onChange={table.getToggleAllRowsSelectedHandler()}
         />
       ),
@@ -298,6 +301,25 @@ export function createColumns({
 
         return filterValues.includes(current);
       },
+      sortingFn: (rowA, rowB) => {
+        const aAiGradingStatus = rowA.original.instance_question.ai_grading_status;
+        const bAiGradingStatus = rowB.original.instance_question.ai_grading_status;
+
+        const aiGradingStatusOrder = {
+          None: 0,
+          Graded: 1,
+          LatestRubric: 2,
+          OutdatedRubric: 3,
+        };
+
+        if (aAiGradingStatus !== bAiGradingStatus) {
+          return aiGradingStatusOrder[aAiGradingStatus] - aiGradingStatusOrder[bAiGradingStatus];
+        }
+
+        const aLastHumanGrader = rowA.original.instance_question.last_human_grader ?? '';
+        const bLastHumanGrader = rowB.original.instance_question.last_human_grader ?? '';
+        return aLastHumanGrader.localeCompare(bLastHumanGrader);
+      },
     }),
 
     // AI agreement column
@@ -367,21 +389,16 @@ export function createColumns({
         );
       },
       sortingFn: (rowA, rowB) => {
-        const aDiff = rowA.original.instance_question.point_difference;
-        const bDiff = rowB.original.instance_question.point_difference;
+        const aDiff = run(() => {
+          if (rowA.original.instance_question.rubric_difference == null) return -1;
+          return rowA.original.instance_question.rubric_difference.length;
+        });
+        const bDiff = run(() => {
+          if (rowB.original.instance_question.rubric_difference == null) return -1;
+          return rowB.original.instance_question.rubric_difference.length;
+        });
 
-        if (aDiff === null && bDiff === null) return 0;
-        if (aDiff === null) return 1;
-        if (bDiff === null) return -1;
-
-        const aRubricDiff = rowA.original.instance_question.rubric_difference?.length ?? 0;
-        const bRubricDiff = rowB.original.instance_question.rubric_difference?.length ?? 0;
-
-        if (aRubricDiff !== bRubricDiff) {
-          return aRubricDiff - bRubricDiff;
-        }
-
-        return Math.abs(aDiff) - Math.abs(bDiff);
+        return aDiff - bDiff;
       },
       enableHiding: aiGradingMode,
     }),
