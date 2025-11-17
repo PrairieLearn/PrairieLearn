@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'preact/compat';
 import { Alert, Button, OverlayTrigger, Popover } from 'react-bootstrap';
 
+import { focusFirstFocusableChild } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import {
@@ -347,6 +348,7 @@ export function EditQuestionPointsScoreButton({
   onConflict: (conflictDetailsUrl: string) => void;
   scrollRef?: React.RefObject<HTMLDivElement> | null;
 }) {
+  const popoverBodyRef = useRef<HTMLDivElement>(null);
   const mutation = useEditQuestionPointsMutation({ csrfToken });
   const [show, setShow] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -400,7 +402,7 @@ export function EditQuestionPointsScoreButton({
 
   const popover = (
     <Popover>
-      <Popover.Body>
+      <Popover.Body ref={popoverBodyRef}>
         <EditQuestionPointsScoreForm
           assessmentQuestion={assessmentQuestion}
           field={field}
@@ -422,7 +424,15 @@ export function EditQuestionPointsScoreButton({
       rootClose={true}
       show={show}
       trigger="click"
-      onToggle={setShow}
+      onToggle={(nextShow) => {
+        setShow(nextShow);
+        if (nextShow) {
+          if (!popoverBodyRef.current) {
+            throw new Error('popoverBodyRef.current is null');
+          }
+          focusFirstFocusableChild(popoverBodyRef.current);
+        }
+      }}
     >
       <button
         ref={buttonRef}
