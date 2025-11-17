@@ -87,41 +87,49 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
               <div class="fw-semibold">{columnLabel}</div>
               <button
                 type="button"
-                class="btn btn-link btn-sm text-decoration-none"
-                style={{
-                  visibility: selected.size > 0 ? 'visible' : 'hidden',
-                }}
-                onClick={() => apply(mode, new Set())}
+                class={clsx('btn btn-link btn-sm text-decoration-none', {
+                  // Hide the clear button if no filters are applied.
+                  // Use `visibility` instead of conditional rendering to avoid layout shift.
+                  invisible: selected.size === 0 && mode === 'include',
+                })}
+                onClick={() => apply('include', new Set())}
               >
                 Clear
               </button>
             </div>
 
-            <div
-              class="btn-group btn-group-sm w-100 mb-2"
-              role="group"
-              aria-label="Include or exclude values"
-            >
-              <button
-                type="button"
-                class={clsx('btn', mode === 'include' ? 'btn-primary' : 'btn-outline-primary')}
-                onClick={() => apply('include', selected)}
-              >
+            <div class="btn-group btn-group-sm w-100 mb-2">
+              <input
+                type="radio"
+                class="btn-check"
+                name={`filter-${columnId}-options`}
+                id={`filter-${columnId}-include`}
+                autocomplete="off"
+                checked={mode === 'include'}
+                onChange={() => apply('include', selected)}
+              />
+              <label class="btn btn-outline-primary" for={`filter-${columnId}-include`}>
                 <span class="text-nowrap">
                   {mode === 'include' && <i class="bi bi-check-lg me-1" aria-hidden="true" />}
                   Include
                 </span>
-              </button>
-              <button
-                type="button"
-                class={clsx('btn', mode === 'exclude' ? 'btn-primary' : 'btn-outline-primary')}
-                onClick={() => apply('exclude', selected)}
-              >
+              </label>
+
+              <input
+                type="radio"
+                class="btn-check"
+                name={`filter-${columnId}-options`}
+                id={`filter-${columnId}-exclude`}
+                autocomplete="off"
+                checked={mode === 'exclude'}
+                onChange={() => apply('exclude', selected)}
+              />
+              <label class="btn btn-outline-primary" for={`filter-${columnId}-exclude`}>
                 <span class="text-nowrap">
                   {mode === 'exclude' && <i class="bi bi-check-lg me-1" aria-hidden="true" />}
                   Exclude
                 </span>
-              </button>
+              </label>
             </div>
           </div>
 
