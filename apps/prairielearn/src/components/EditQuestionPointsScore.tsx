@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'preact/compat';
 import { Alert, Button, OverlayTrigger, Popover } from 'react-bootstrap';
 
-import { focusFirstFocusableChild } from '@prairielearn/browser-utils';
+import { type FocusTrap, focusFirstFocusableChild, trapFocus } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import {
@@ -352,6 +352,7 @@ export function EditQuestionPointsScoreButton({
   const mutation = useEditQuestionPointsMutation({ csrfToken });
   const [show, setShow] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const focusTrapRef = useRef<FocusTrap | null>(null);
 
   const handleSuccess = () => {
     setShow(false);
@@ -424,14 +425,20 @@ export function EditQuestionPointsScoreButton({
       rootClose={true}
       show={show}
       trigger="click"
-      onToggle={(nextShow) => {
-        setShow(nextShow);
-        if (nextShow) {
-          if (!popoverBodyRef.current) {
-            throw new Error('popoverBodyRef.current is null');
-          }
+      onToggle={setShow}
+      onEntered={() => {
+        if (popoverBodyRef.current) {
           focusFirstFocusableChild(popoverBodyRef.current);
+          focusTrapRef.current = trapFocus(popoverBodyRef.current);
         }
+      }}
+      onExit={() => {
+        focusTrapRef.current?.deactivate();
+        focusTrapRef.current = null;
+
+        // Move focus back to the button that opened the popover so that focus
+        // isn't left somewhere random at the end of the document.
+        buttonRef.current?.focus();
       }}
     >
       <button
