@@ -103,7 +103,7 @@ export function parseAsColumnVisibilityStateWithColumns(
       }
       return result;
     },
-    serialize(value) {
+    serialize(value): string {
       // We can't use `eq` to compare with the current default values from the
       // ref. `eq` appears to be used as part of an optimization to avoid rerenders
       // if the column set hasn't changed, so if it return `true`, we wouldn't be
@@ -112,6 +112,7 @@ export function parseAsColumnVisibilityStateWithColumns(
       //
       // Instead, we rely on the (undocumented) ability of `serialize` to return
       // `null` to indicate that the value should be omitted from the URL.
+      // @ts-expect-error - `null` is not assignable to type `string`.
       if (parser.eq(value, defaultValueRef?.current ?? {})) return null;
 
       // Only output columns that are visible
