@@ -51,9 +51,9 @@ export function NumericInputColumnFilter({
           aria-hidden="true"
         />
       </Dropdown.Toggle>
-      <Dropdown.Menu>
+      <Dropdown.Menu class="p-0">
         <div class="p-3" style={{ minWidth: '240px' }}>
-          <label class="form-label small fw-semibold mb-2">{columnLabel}</label>
+          <label class="form-label fw-semibold mb-2">{columnLabel}</label>
           <input
             type="text"
             class={clsx('form-control form-control-sm', isInvalid && 'is-invalid')}
