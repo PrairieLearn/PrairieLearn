@@ -54,3 +54,30 @@ export function assertNever(value: never): never {
 }
 
 export type Result<T, E = Error> = { success: true; value: T } | { success: false; error: E };
+
+declare const __brand: unique symbol;
+export type Brand<K, T> = K & { [__brand]: T };
+
+/**
+ * Applies a brand to a value. This is a type-safe identity function that
+ * allows you to create branded types from their underlying values.
+ *
+ * ```ts
+ * type UserId = Brand<string, 'UserId'>;
+ * const userId = withBrand<UserId>('123'); // userId has type UserId
+ * ```
+ */
+export function withBrand<B extends Brand<any, any>>(
+  value: B extends Brand<infer K, any> ? Omit<K, typeof __brand> : never,
+): B {
+  return value as B;
+}
+
+/**
+ * The Prettify helper is a utility type that takes an object type and makes the hover overlay more readable.
+ *
+ * https://www.totaltypescript.com/concepts/the-prettify-helper
+ */
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+} & {};

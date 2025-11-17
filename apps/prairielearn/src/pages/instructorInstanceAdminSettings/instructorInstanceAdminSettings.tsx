@@ -52,7 +52,6 @@ router.get(
       has_enhanced_navigation,
     } = getCourseInstanceContext(res.locals, 'instructor');
     const pageContext = getPageContext(res.locals);
-    const { plainUrlPrefix } = pageContext;
 
     const shortNames = await sqldb.queryRows(sql.short_names, { course_id: course.id }, z.string());
     const enrollmentCount = await sqldb.queryRow(
@@ -61,12 +60,9 @@ router.get(
       z.number(),
     );
     const host = getCanonicalHost(req);
-    const studentLink = new URL(`${plainUrlPrefix}/course_instance/${courseInstance.id}`, host)
+    const studentLink = new URL(`/pl/course_instance/${courseInstance.id}`, host).href;
+    const publicLink = new URL(`/pl/public/course_instance/${courseInstance.id}/assessments`, host)
       .href;
-    const publicLink = new URL(
-      `${plainUrlPrefix}/public/course_instance/${courseInstance.id}/assessments`,
-      host,
-    ).href;
 
     const selfEnrollLink = new URL(
       getSelfEnrollmentLinkUrl({
@@ -189,10 +185,7 @@ router.post(
         'Course instance copied successfully. You are new viewing your copy of the course instance.',
       );
       res.redirect(
-        res.locals.plainUrlPrefix +
-          '/course_instance/' +
-          courseInstance.id +
-          '/instructor/instance_admin/settings',
+        '/pl/course_instance/' + courseInstance.id + '/instructor/instance_admin/settings',
       );
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
@@ -202,9 +195,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-        res.redirect(
-          `${res.locals.plainUrlPrefix}/course/${res.locals.course.id}/course_admin/instances`,
-        );
+        res.redirect(`/pl/course/${res.locals.course.id}/course_admin/instances`);
       } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }

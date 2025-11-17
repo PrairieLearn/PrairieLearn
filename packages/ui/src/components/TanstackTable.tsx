@@ -2,8 +2,11 @@ import { flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import type { Header, Row, SortDirection, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
+import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import { ColumnManager } from './ColumnManager.js';
 import {
@@ -301,7 +304,7 @@ export function TanstackTable<RowDataModel>({
           }}
         >
           <table
-            class="table table-hover mb-0 border border-top-0"
+            class="table table-hover mb-0"
             style={{ tableLayout: 'fixed' }}
             aria-label={title}
             role="grid"
@@ -478,44 +481,44 @@ export function TanstackTable<RowDataModel>({
           </table>
         </div>
       </div>
-
-      {table.getVisibleLeafColumns().length === 0 && (
+      {table.getVisibleLeafColumns().length === 0 || displayedCount === 0 ? (
         <div>
           <div
-            class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
+            class="d-flex flex-column justify-content-center align-items-center p-4"
             style={{
               position: 'absolute',
               top: 0,
               left: 0,
               right: 0,
               bottom: 0,
-              background: 'var(--bs-body-bg)',
+              // Allow pointer events (e.g. scrolling) to reach the underlying table.
+              pointerEvents: 'none',
             }}
             role="status"
             aria-live="polite"
           >
-            <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true" />
-            <p class="mb-0">No columns selected. Use the View menu to show columns.</p>
+            <div
+              class="col-lg-6"
+              style={{
+                // Allow selecting and interacting with the empty state content.
+                pointerEvents: 'auto',
+              }}
+            >
+              {table.getVisibleLeafColumns().length === 0 ? (
+                <TanstackTableEmptyState iconName="bi-eye-slash">
+                  No columns selected. Use the View menu to show columns.
+                </TanstackTableEmptyState>
+              ) : displayedCount === 0 ? (
+                totalCount > 0 ? (
+                  noResultsState
+                ) : (
+                  emptyState
+                )
+              ) : null}
+            </div>
           </div>
         </div>
-      )}
-      {displayedCount === 0 && (
-        <div
-          class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'var(--bs-body-bg)',
-          }}
-          role="status"
-          aria-live="polite"
-        >
-          {totalCount > 0 ? noResultsState : emptyState}
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -557,22 +560,6 @@ export function TanstackTableCard<RowDataModel>({
 }) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Track screen size for aria-hidden
-  const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)') : null;
-  const [isMediumOrLarger, setIsMediumOrLarger] = useState(false);
-
-  useEffect(() => {
-    // TODO: This is a workaround to avoid a hydration mismatch.
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-    setIsMediumOrLarger(mediaQuery?.matches ?? true);
-  }, [mediaQuery]);
-
-  useEffect(() => {
-    const handler = (e: MediaQueryListEvent) => setIsMediumOrLarger(e.matches);
-    mediaQuery?.addEventListener('change', handler);
-    return () => mediaQuery?.removeEventListener('change', handler);
-  }, [mediaQuery]);
-
   // Focus the search input when Ctrl+F is pressed
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -604,60 +591,68 @@ export function TanstackTableCard<RowDataModel>({
           </div>
         </div>
       </div>
-      <div class="card-body d-flex flex-column">
-        <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
-          <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
-            <div class="input-group">
-              <input
-                ref={searchInputRef}
-                type="text"
-                class="form-control"
-                aria-label={globalFilter.placeholder}
-                placeholder={globalFilter.placeholder}
-                value={globalFilter.value}
-                onInput={(e) => {
-                  if (!(e.target instanceof HTMLInputElement)) return;
-                  globalFilter.setValue(e.target.value);
-                }}
-              />
-              <button
-                type="button"
-                class="btn btn-outline-secondary"
-                aria-label="Clear search"
-                title="Clear search"
-                data-bs-toggle="tooltip"
-                onClick={() => globalFilter.setValue('')}
-              >
-                <i class="bi bi-x-circle" aria-hidden="true" />
-              </button>
-            </div>
-            {/* We do this instead of CSS properties for the accessibility checker.
-              We can't have two elements with the same id of 'column-manager-button'. */}
-            {isMediumOrLarger && (
-              <>
-                <ColumnManager table={table} />
-                {columnManagerButtons}
-              </>
+      <div class="card-body d-flex flex-row flex-wrap flex-grow-0 align-items-center gap-2">
+        <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
+          <div class="position-relative flex-grow-1">
+            <input
+              ref={searchInputRef}
+              type="text"
+              class="form-control tanstack-table-search-input tanstack-table-focusable-shadow"
+              aria-label={globalFilter.placeholder}
+              placeholder={globalFilter.placeholder}
+              value={globalFilter.value}
+              autoComplete="off"
+              onInput={(e) => {
+                if (!(e.target instanceof HTMLInputElement)) return;
+                globalFilter.setValue(e.target.value);
+              }}
+            />
+            {globalFilter.value && (
+              <OverlayTrigger overlay={<Tooltip>Clear search</Tooltip>}>
+                <button
+                  type="button"
+                  class="btn btn-link tanstack-table-clear-search"
+                  aria-label="Clear search"
+                  onClick={() => globalFilter.setValue('')}
+                >
+                  <i class="bi bi-x-circle-fill" aria-hidden="true" />
+                </button>
+              </OverlayTrigger>
             )}
           </div>
-          {/* We do this instead of CSS properties for the accessibility checker.
-            We can't have two elements with the same id of 'column-manager-button'. */}
-          {!isMediumOrLarger && (
-            <>
-              <ColumnManager table={table} />
-              {columnManagerButtons}
-            </>
-          )}
-          <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
-            <div class="text-muted text-nowrap">
-              Showing {displayedCount} of {totalCount} {title.toLowerCase()}
-            </div>
+          <div class="d-none d-md-block">
+            <ColumnManager table={table} id="column-manager-button-wide" />
+            {columnManagerButtons}
           </div>
         </div>
-        <div class="flex-grow-1">
-          <TanstackTable table={table} title={title} {...tableOptions} />
+        <div class="d-block d-md-none">
+          <ColumnManager table={table} id="column-manager-button-narrow" />
+          {columnManagerButtons}
+        </div>
+        <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
+          <div class="text-muted text-nowrap">
+            Showing {displayedCount} of {totalCount} {title.toLowerCase()}
+          </div>
         </div>
       </div>
+      <div class="flex-grow-1">
+        <TanstackTable table={table} title={title} {...tableOptions} />
+      </div>
+    </div>
+  );
+}
+
+export function TanstackTableEmptyState({
+  iconName,
+  children,
+}: {
+  iconName: `bi-${string}`;
+  children: ComponentChildren;
+}) {
+  return (
+    <div class="d-flex flex-column justify-content-center align-items-center text-muted">
+      <i class={clsx('bi', iconName, 'display-4 mb-2')} aria-hidden="true" />
+      <div>{children}</div>
     </div>
   );
 }

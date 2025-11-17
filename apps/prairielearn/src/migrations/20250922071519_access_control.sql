@@ -81,6 +81,6 @@ CREATE TABLE IF NOT EXISTS access_control_late_deadline (
 CREATE TABLE IF NOT EXISTS access_control_prairietest_exam (
   id BIGSERIAL PRIMARY KEY,
   access_control_id BIGINT NOT NULL REFERENCES access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  exam_id BIGINT NOT NULL REFERENCES exams (exam_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  uuid uuid NOT NULL,
   read_only boolean
 );

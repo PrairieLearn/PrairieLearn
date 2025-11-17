@@ -20,7 +20,6 @@ import {
 export const RawPageContextSchema = z.object({
   __csrf_token: z.string(),
   urlPrefix: z.string(),
-  plainUrlPrefix: z.string(),
 
   // authn data
   authn_user: StaffUserSchema,

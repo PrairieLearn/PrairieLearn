@@ -25,6 +25,7 @@ columns
     json_grade_rate_minutes: double precision
     max_bonus_points: double precision
     max_points: double precision
+    modern_access_control: boolean not null default false
     multiple_instance: boolean
     number: text not null default '0'::text
     obj: jsonb

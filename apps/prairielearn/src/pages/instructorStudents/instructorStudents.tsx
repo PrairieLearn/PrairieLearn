@@ -46,6 +46,10 @@ router.get(
 router.get(
   '/enrollment.json',
   asyncHandler(async (req, res) => {
+    if (req.accepts('html')) {
+      throw new HttpStatusError(406, 'Not Acceptable');
+    }
+
     const pageContext = getPageContext(res.locals);
     if (!pageContext.authz_data.has_course_instance_permission_view) {
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
@@ -69,10 +73,13 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    if (req.accepts('html')) {
+      throw new HttpStatusError(406, 'Not Acceptable');
+    }
+
     const pageContext = getPageContext(res.locals);
     if (!pageContext.authz_data.has_course_instance_permission_edit) {
-      res.status(403).json({ error: 'Access denied (must be an instructor)' });
-      return;
+      throw new HttpStatusError(403, 'Access denied (must be an instructor)');
     }
 
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
@@ -86,8 +93,7 @@ router.post(
     const user = await selectOptionalUserByUid(body.uid);
 
     if (user == null) {
-      res.status(400).json({ error: 'User not found' });
-      return;
+      throw new HttpStatusError(400, 'User not found');
     }
 
     const isInstructor = await callRow(
@@ -97,8 +103,7 @@ router.post(
     );
 
     if (isInstructor) {
-      res.status(400).json({ error: 'The user is an instructor' });
-      return;
+      throw new HttpStatusError(400, 'The user is an instructor');
     }
 
     // Try to find an existing enrollment so we can error gracefully.
@@ -111,13 +116,11 @@ router.post(
 
     if (existingEnrollment) {
       if (existingEnrollment.status === 'joined') {
-        res.status(400).json({ error: 'The user is already enrolled' });
-        return;
+        throw new HttpStatusError(400, 'The user is already enrolled');
       }
 
       if (existingEnrollment.status === 'invited') {
-        res.status(400).json({ error: 'The user has an existing invitation' });
-        return;
+        throw new HttpStatusError(400, 'The user has an existing invitation');
       }
     }
 
@@ -130,7 +133,7 @@ router.post(
 
     const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
 
-    res.json({ ok: true, data: staffEnrollment });
+    res.json({ data: staffEnrollment });
   }),
 );
 

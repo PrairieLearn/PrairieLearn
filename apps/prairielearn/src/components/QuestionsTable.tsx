@@ -37,7 +37,6 @@ export function QuestionsTable({
   course_instances = [],
   qidPrefix,
   urlPrefix,
-  plainUrlPrefix,
   __csrf_token,
 }: {
   questions: QuestionsPageData[];
@@ -52,7 +51,6 @@ export function QuestionsTable({
   course_instances?: CourseInstance[];
   qidPrefix?: string;
   urlPrefix: string;
-  plainUrlPrefix: string;
   __csrf_token: string;
 }): HtmlSafeString {
   const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
@@ -65,7 +63,6 @@ export function QuestionsTable({
         showAiGenerateQuestionButton,
         qidPrefix,
         urlPrefix,
-        plainUrlPrefix,
       },
       'questions-table-data',
     )}

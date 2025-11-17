@@ -20,7 +20,7 @@ export function AdministratorCourseRequests({
     resLocals,
     pageTitle: 'Course Requests',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'courses',
     },

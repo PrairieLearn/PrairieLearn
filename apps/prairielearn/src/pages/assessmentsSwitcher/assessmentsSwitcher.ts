@@ -33,7 +33,7 @@ router.get(
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
         currentAssessmentId: req.params.assessment_id,
         courseInstanceId: res.locals.course_instance.id,
-        plainUrlPrefix: res.locals.plainUrlPrefix,
+
         targetSubPage,
       }),
     );

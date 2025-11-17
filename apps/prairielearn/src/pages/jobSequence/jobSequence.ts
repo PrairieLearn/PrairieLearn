@@ -40,7 +40,7 @@ router.get(
           // a course instance through a course page route. Redirect to the course
           // instance page route so we get authz_data for the course instance.
           res.redirect(
-            `${res.locals.plainUrlPrefix}/course_instance/${job_sequence.course_instance_id}/instructor/jobSequence/${job_sequence.id}`,
+            `/pl/course_instance/${job_sequence.course_instance_id}/instructor/jobSequence/${job_sequence.id}`,
           );
         }
 

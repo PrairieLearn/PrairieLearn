@@ -308,7 +308,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       // Render
       const locals = {
         urlPrefix: '/prefix1',
-        plainUrlPrefix: config.urlPrefix,
+        plainUrlPrefix: '/pl',
         questionRenderContext: undefined,
         ...buildQuestionUrls(
           '/prefix2',

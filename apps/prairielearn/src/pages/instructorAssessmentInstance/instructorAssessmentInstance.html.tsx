@@ -169,7 +169,7 @@ export function InstructorAssessmentInstance({
                 <th>Instance</th>
                 <td colspan="2">
                   ${resLocals.assessment_instance.number} (<a
-                    href="${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance
+                    href="/pl/course_instance/${resLocals.course_instance
                       .id}/assessment_instance/${resLocals.assessment_instance.id}"
                     >student view</a
                   >)
@@ -357,8 +357,8 @@ export function InstructorAssessmentInstance({
                   <tr>
                     <td>
                       S-${instance_question.question_number}. (<a
-                        href="${resLocals.plainUrlPrefix}/course_instance/${resLocals
-                          .course_instance.id}/instance_question/${instance_question.id}/"
+                        href="/pl/course_instance/${resLocals.course_instance
+                          .id}/instance_question/${instance_question.id}/"
                         >student view</a
                       >)
                     </td>
@@ -645,8 +645,7 @@ export function InstructorAssessmentInstance({
                         ? row.variant_id
                           ? html`
                               <a
-                                href="${resLocals.plainUrlPrefix}/course_instance/${resLocals
-                                  .course_instance
+                                href="/pl/course_instance/${resLocals.course_instance
                                   .id}/instance_question/${row.instance_question_id}/?variant_id=${row.variant_id}"
                               >
                                 S-${row.student_question_number}#${row.variant_number}
