@@ -40,6 +40,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.submitted_file_name = options.submitted_file_name;
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
+      this.screenshot_capture_enabled = options.screenshot_capture_enabled;
 
       /** Flag representing the current state of the capture before entering crop/zoom */
       this.previousCaptureChangedFlag = false;
@@ -74,6 +75,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
       if (this.mobile_capture_enabled) {
         this.listenForExternalImageCapture();
+      }
+
+      if (this.screenshot_capture_enabled) {
+        this.createScreenshotUploadListener();
       }
 
       this.createCropRotateListeners();
@@ -128,6 +133,41 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
     }
 
+    createScreenshotUploadListener() {
+      const screenshotUploadButtons = this.getScreenshotUploadButtons();
+      const screenshotUploadInput = this.imageCaptureDiv.querySelector('.js-screenshot-upload-input');
+
+      this.ensureElementsExist({
+        screenshotUploadInput
+      });
+      
+      for (const screenshotButton of screenshotUploadButtons) {
+        this.ensureElementsExist({
+          screenshotButton
+        });
+
+        screenshotButton.addEventListener('click', () => {
+          screenshotUploadInput.click();
+        });
+      }
+
+      screenshotUploadInput.addEventListener('change', (event) => {
+        const target = event.target;
+        const file = target.files && target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          this.loadCapturePreviewFromDataUrl({
+            dataUrl: reader.result,
+          });
+        };
+
+        reader.readAsDataURL(file);
+      });
+    }
+
     createLocalCameraCaptureListeners() {
       const localCaptureButtons = this.getUseLocalCaptureButtons();
 
@@ -177,6 +217,14 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
 
       return this.imageCaptureDiv.querySelectorAll('.js-capture-with-mobile-device-button');
+    }
+
+    getScreenshotUploadButtons() {
+      if (!this.screenshot_capture_enabled) {
+        throw new Error('Screenshot upload is not enabled, cannot get screenshot upload buttons');
+      }
+
+      return this.imageCaptureDiv.querySelectorAll('.js-screenshot-upload-button');
     }
 
     createCropRotateListeners() {

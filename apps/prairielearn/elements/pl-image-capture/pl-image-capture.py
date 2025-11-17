@@ -16,6 +16,7 @@ import prairielearn as pl
 from PIL import Image
 
 MOBILE_CAPTURE_ENABLED_DEFAULT = True
+SCREENSHOT_UPLOAD_ENABLED_DEFAULT = False
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -24,7 +25,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(
         element,
         required_attribs=["file-name"],
-        optional_attribs=["mobile-capture-enabled"],
+        optional_attribs=["mobile-capture-enabled", "screenshot-capture-enabled"],
     )
 
     file_name = pl.get_string_attrib(element, "file-name")
@@ -46,6 +47,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     mobile_capture_enabled = pl.get_boolean_attrib(
         element, "mobile-capture-enabled", MOBILE_CAPTURE_ENABLED_DEFAULT
+    )
+
+    screenshot_capture_enabled = pl.get_boolean_attrib(
+        element, "screenshot-capture-enabled", SCREENSHOT_UPLOAD_ENABLED_DEFAULT
     )
 
     submitted_files = data["submitted_answers"].get("_files", [])
@@ -83,6 +88,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "file_name": file_name,
         "editable": data["editable"] and data["panel"] == "question",
         "mobile_capture_enabled": mobile_capture_enabled,
+        "screenshot_capture_enabled": screenshot_capture_enabled,
+        "retake_menu_enabled": mobile_capture_enabled or screenshot_capture_enabled,
     }
 
     image_capture_options = {
@@ -91,6 +98,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "submitted_file_name": submitted_file_name,
         "submission_files_url": data["options"].get("submission_files_url"),
         "mobile_capture_enabled": mobile_capture_enabled,
+        "screenshot_capture_enabled": screenshot_capture_enabled,
         "editable": html_params["editable"],
         "external_image_capture_url": external_image_capture_url,
         "external_image_capture_available": external_image_capture_url is not None,
