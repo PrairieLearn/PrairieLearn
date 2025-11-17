@@ -198,3 +198,75 @@ export const parseAsNumericFilter = createParser<string>({
     return a === b;
   },
 });
+
+/**
+ * Parses and serializes assessment numeric filter values to/from URL-friendly format.
+ * Values can be plain comparison strings (e.g. `>=5`) or objects that track
+ * whether the \"empty only\" checkbox is selected.
+ */
+const EMPTY_FILTER_PREFIX = 'empty';
+
+export type AssessmentFilterValue =
+  | string
+  | {
+      numeric: string;
+      emptyOnly: boolean;
+    };
+
+function isAssessmentFilterObject(
+  value: AssessmentFilterValue,
+): value is { numeric: string; emptyOnly: boolean } {
+  return typeof value === 'object';
+}
+
+export const parseAsAssessmentFilter = createParser<AssessmentFilterValue>({
+  parse(queryValue) {
+    if (!queryValue) {
+      return '';
+    }
+
+    if (queryValue === EMPTY_FILTER_PREFIX) {
+      return { numeric: '', emptyOnly: true };
+    }
+
+    if (queryValue.startsWith(`${EMPTY_FILTER_PREFIX}_`)) {
+      const encoded = queryValue.slice(`${EMPTY_FILTER_PREFIX}_`.length);
+      const numeric = parseAsNumericFilter.parse(encoded) ?? '';
+      return { numeric, emptyOnly: true };
+    }
+
+    const numeric = parseAsNumericFilter.parse(queryValue);
+    return numeric ?? '';
+  },
+  serialize(value) {
+    if (!value) {
+      return '';
+    }
+
+    if (typeof value === 'string') {
+      return parseAsNumericFilter.serialize(value);
+    }
+
+    if (!value.emptyOnly) {
+      return parseAsNumericFilter.serialize(value.numeric);
+    }
+
+    const encodedNumeric = parseAsNumericFilter.serialize(value.numeric);
+    if (encodedNumeric) {
+      return `${EMPTY_FILTER_PREFIX}_${encodedNumeric}`;
+    }
+
+    return EMPTY_FILTER_PREFIX;
+  },
+  eq(a, b) {
+    if (a === b) {
+      return true;
+    }
+
+    if (isAssessmentFilterObject(a) && isAssessmentFilterObject(b)) {
+      return a.numeric === b.numeric && a.emptyOnly === b.emptyOnly;
+    }
+
+    return false;
+  },
+});
