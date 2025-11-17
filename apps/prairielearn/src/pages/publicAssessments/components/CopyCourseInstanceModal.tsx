@@ -8,13 +8,13 @@ import {
   RawPublicQuestionSchema,
 } from '../../../lib/client/safe-db-types.js';
 
-export const CopyTargetSchema = z.object({
+export const SafeCopyTargetSchema = z.object({
   id: z.string(),
   short_name: z.string().nullable(),
   copy_url: z.string(),
   __csrf_token: z.string(),
 });
-export type SafeCopyTarget = z.infer<typeof CopyTargetSchema>;
+export type SafeCopyTarget = z.infer<typeof SafeCopyTargetSchema>;
 
 export const SafeQuestionForCopySchema = RawPublicQuestionSchema.extend({
   should_copy: z.boolean().optional(),

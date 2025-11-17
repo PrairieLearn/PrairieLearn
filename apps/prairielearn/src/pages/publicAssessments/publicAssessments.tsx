@@ -14,7 +14,7 @@ import { selectCourseById } from '../../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../../models/question.js';
 
 import {
-  CopyTargetSchema,
+  SafeCopyTargetSchema,
   SafeQuestionForCopySchema,
 } from './components/CopyCourseInstanceModal.js';
 import { PublicAssessments, SafeAssessmentRowSchema } from './publicAssessments.html.js';
@@ -49,12 +49,11 @@ router.get(
     });
     const questionsForCopy = await selectQuestionsForCourseInstanceCopy(courseInstance.id);
 
-    // Parse to safe types for client-side use
     const safeCourse = PublicCourseSchema.parse(course);
     const safeCourseInstance = PublicCourseInstanceSchema.parse(courseInstance);
     const safeQuestionsForCopy = z.array(SafeQuestionForCopySchema).parse(questionsForCopy);
     const safeCourseInstanceCopyTargets = z
-      .array(CopyTargetSchema)
+      .array(SafeCopyTargetSchema)
       .parse(courseInstanceCopyTargets);
     const safeRows = z.array(SafeAssessmentRowSchema).parse(rows);
 
