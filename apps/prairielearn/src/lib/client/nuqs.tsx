@@ -91,7 +91,7 @@ export function parseAsColumnVisibilityStateWithColumns(
   allColumns: string[],
   defaultValueRef?: React.RefObject<VisibilityState>,
 ) {
-  return createParser<VisibilityState>({
+  const parser = createParser<VisibilityState>({
     parse(queryValue: string) {
       const shown =
         queryValue.length > 0
@@ -104,20 +104,31 @@ export function parseAsColumnVisibilityStateWithColumns(
       return result;
     },
     serialize(value) {
+      // We can't use `eq` to compare with the current default values from the
+      // ref. `eq` appears to be used as part of an optimization to avoid rerenders
+      // if the column set hasn't changed, so if it return `true`, we wouldn't be
+      // able to update the actual visible columns after changing the defaults if
+      // the new column set is equal to the default set of columns.
+      //
+      // Instead, we rely on the (undocumented) ability of `serialize` to return
+      // `null` to indicate that the value should be omitted from the URL.
+      if (parser.eq(value, defaultValueRef?.current ?? {})) return null;
+
       // Only output columns that are visible
       const visible = Object.keys(value).filter((col) => value[col]);
       return visible.join(',');
     },
     eq(value, defaultValue) {
-      const currentDefault = defaultValueRef?.current ?? defaultValue;
       const valueKeys = Object.keys(value);
-      const defaultValueKeys = Object.keys(currentDefault);
+      const defaultValueKeys = Object.keys(defaultValue);
       const result =
         valueKeys.length === defaultValueKeys.length &&
-        valueKeys.every((col) => value[col] === currentDefault[col]);
+        valueKeys.every((col) => value[col] === defaultValue[col]);
       return result;
     },
   });
+
+  return parser;
 }
 
 /**

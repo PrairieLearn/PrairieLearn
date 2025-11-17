@@ -349,7 +349,12 @@ export function AssessmentQuestionTable({
 
   // Use a ref to store the current default so the parser always uses the latest value
   // This is pretty hacky, but @reteps couldn't figure out a better way to do this.
+  //
+  // We update the ref during rendering because we need it to be up to date before we
+  // run the `useEffect()` hook that updates column visibility in response to the
+  // AI grading mode changing.
   const defaultColumnVisibilityRef = useRef(defaultColumnVisibility);
+  defaultColumnVisibilityRef.current = defaultColumnVisibility;
 
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
@@ -357,11 +362,6 @@ export function AssessmentQuestionTable({
       defaultColumnVisibility,
     ),
   );
-
-  // useEffect(() => {
-  //   defaultColumnVisibilityRef.current = defaultColumnVisibility;
-  //   // Super hacky, we need to update the ref when the column visibility changes for some reason.
-  // }, [defaultColumnVisibility, columnVisibility]);
 
   // Update column visibility when AI grading mode changes
   useEffect(() => {
@@ -372,17 +372,10 @@ export function AssessmentQuestionTable({
       assigned_grader_name: !aiGradingMode,
       score_perc: !aiGradingMode,
       // Show these columns in AI grading mode
-      instance_question_group_name: aiGradingMode,
+      instance_question_group_name: aiGradingMode && instanceQuestionGroups.length > 0,
       rubric_difference: aiGradingMode,
     }));
-  }, [aiGradingMode, setColumnVisibility]);
-
-  console.log(
-    'columnVisibility',
-    Object.entries(columnVisibility)
-      .filter(([_, value]) => value)
-      .map(([key]) => key),
-  );
+  }, [aiGradingMode, instanceQuestionGroups, setColumnVisibility]);
 
   const table = useReactTable({
     data: instanceQuestionsInfo,
