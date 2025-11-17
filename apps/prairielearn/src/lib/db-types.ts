@@ -373,8 +373,8 @@ export const AssessmentInstanceSchema = z.object({
   number: z.number().nullable(),
   open: z.boolean().nullable(),
   points: z.number().nullable(),
-  score_pending_perc: z.number().nullable().optional(),
   score_perc: z.number().nullable(),
+  score_perc_pending: z.number().nullable(),
   user_id: IdSchema.nullable(),
 });
 export type AssessmentInstance = z.infer<typeof AssessmentInstanceSchema>;
