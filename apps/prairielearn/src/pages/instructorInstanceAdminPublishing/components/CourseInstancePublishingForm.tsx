@@ -320,7 +320,8 @@ export function CourseInstancePublishingForm({
                         {plainDateTimeStringToDate(
                           endDate,
                           courseInstance.display_timezone,
-                        ).getTime() === originalEndDate?.getTime()
+                        ).getTime() === originalEndDate?.getTime() &&
+                        originalStatus === 'unpublished'
                           ? 'was'
                           : 'will be'}{' '}
                         unpublished at{' '}
@@ -484,7 +485,7 @@ export function CourseInstancePublishingForm({
                       {plainDateTimeStringToDate(
                         startDate,
                         courseInstance.display_timezone,
-                      ).getTime() === originalStartDate?.getTime()
+                      ).getTime() === originalStartDate?.getTime() && originalStatus === 'published'
                         ? 'was'
                         : 'will be'}{' '}
                       published at{' '}
