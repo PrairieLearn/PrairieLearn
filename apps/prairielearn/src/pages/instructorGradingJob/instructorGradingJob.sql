@@ -6,16 +6,7 @@ SELECT
   u.uid AS user_uid,
   v.id AS variant_id,
   v.instance_question_id,
-  to_jsonb(a.*) AS assessment,
-  to_jsonb(ai.*) AS assessment_instance,
-  (
-    SELECT
-      jsonb_agg(to_jsonb(gu.*))
-    FROM
-      group_users AS gu
-    WHERE
-      gu.group_id = ai.group_id
-  ) AS assessment_instance_group_users
+  v.course_instance_id
 FROM
   grading_jobs AS gj
   JOIN submissions AS s ON (s.id = gj.submission_id)
