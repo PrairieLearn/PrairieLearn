@@ -294,9 +294,9 @@ export const AccessControlLateDeadlineSchema = z.object({
 
 export const AccessControlPrairietestExamSchema = z.object({
   access_control_id: IdSchema,
-  exam_id: IdSchema,
   id: IdSchema,
   read_only: z.boolean(),
+  uuid: z.string(),
 });
 
 export const AccessControlTargetSchema = z.object({
