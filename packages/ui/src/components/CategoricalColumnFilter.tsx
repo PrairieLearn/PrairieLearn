@@ -81,87 +81,85 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
         />
       </Dropdown.Toggle>
       <Dropdown.Menu class="p-0">
-        <div>
-          <div class="p-3 pb-0">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <div class="fw-semibold">{columnLabel}</div>
-              <button
-                type="button"
-                class={clsx('btn btn-link btn-sm text-decoration-none', {
-                  // Hide the clear button if no filters are applied.
-                  // Use `visibility` instead of conditional rendering to avoid layout shift.
-                  invisible: selected.size === 0 && mode === 'include',
-                })}
-                onClick={() => apply('include', new Set())}
-              >
-                Clear
-              </button>
-            </div>
-
-            <div class="btn-group btn-group-sm w-100 mb-2">
-              <input
-                type="radio"
-                class="btn-check"
-                name={`filter-${columnId}-options`}
-                id={`filter-${columnId}-include`}
-                autocomplete="off"
-                checked={mode === 'include'}
-                onChange={() => apply('include', selected)}
-              />
-              <label class="btn btn-outline-primary" for={`filter-${columnId}-include`}>
-                <span class="text-nowrap">
-                  {mode === 'include' && <i class="bi bi-check-lg me-1" aria-hidden="true" />}
-                  Include
-                </span>
-              </label>
-
-              <input
-                type="radio"
-                class="btn-check"
-                name={`filter-${columnId}-options`}
-                id={`filter-${columnId}-exclude`}
-                autocomplete="off"
-                checked={mode === 'exclude'}
-                onChange={() => apply('exclude', selected)}
-              />
-              <label class="btn btn-outline-primary" for={`filter-${columnId}-exclude`}>
-                <span class="text-nowrap">
-                  {mode === 'exclude' && <i class="bi bi-check-lg me-1" aria-hidden="true" />}
-                  Exclude
-                </span>
-              </label>
-            </div>
+        <div class="p-3 pb-0">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="fw-semibold">{columnLabel}</div>
+            <button
+              type="button"
+              class={clsx('btn btn-link btn-sm text-decoration-none', {
+                // Hide the clear button if no filters are applied.
+                // Use `visibility` instead of conditional rendering to avoid layout shift.
+                invisible: selected.size === 0 && mode === 'include',
+              })}
+              onClick={() => apply('include', new Set())}
+            >
+              Clear
+            </button>
           </div>
 
-          <div
-            class="list-group list-group-flush"
-            style={{
-              '--bs-list-group-bg': 'transparent',
-            }}
-          >
-            {allColumnValues.map((value) => {
-              const isSelected = selected.has(value);
-              return (
-                <div key={value} class="list-group-item d-flex align-items-center gap-3">
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      checked={isSelected}
-                      id={`${columnId}-${value}`}
-                      onChange={() => toggleSelected(value)}
-                    />
-                    <label class="form-check-label" for={`${columnId}-${value}`}>
-                      {renderValueLabel({
-                        value,
-                        isSelected,
-                      })}
-                    </label>
-                  </div>
+          <div class="btn-group btn-group-sm w-100 mb-2">
+            <input
+              type="radio"
+              class="btn-check"
+              name={`filter-${columnId}-options`}
+              id={`filter-${columnId}-include`}
+              autocomplete="off"
+              checked={mode === 'include'}
+              onChange={() => apply('include', selected)}
+            />
+            <label class="btn btn-outline-primary" for={`filter-${columnId}-include`}>
+              <span class="text-nowrap">
+                {mode === 'include' && <i class="bi bi-check-lg me-1" aria-hidden="true" />}
+                Include
+              </span>
+            </label>
+
+            <input
+              type="radio"
+              class="btn-check"
+              name={`filter-${columnId}-options`}
+              id={`filter-${columnId}-exclude`}
+              autocomplete="off"
+              checked={mode === 'exclude'}
+              onChange={() => apply('exclude', selected)}
+            />
+            <label class="btn btn-outline-primary" for={`filter-${columnId}-exclude`}>
+              <span class="text-nowrap">
+                {mode === 'exclude' && <i class="bi bi-check-lg me-1" aria-hidden="true" />}
+                Exclude
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div
+          class="list-group list-group-flush"
+          style={{
+            '--bs-list-group-bg': 'transparent',
+          }}
+        >
+          {allColumnValues.map((value) => {
+            const isSelected = selected.has(value);
+            return (
+              <div key={value} class="list-group-item d-flex align-items-center gap-3">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    checked={isSelected}
+                    id={`${columnId}-${value}`}
+                    onChange={() => toggleSelected(value)}
+                  />
+                  <label class="form-check-label" for={`${columnId}-${value}`}>
+                    {renderValueLabel({
+                      value,
+                      isSelected,
+                    })}
+                  </label>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </Dropdown.Menu>
     </Dropdown>
