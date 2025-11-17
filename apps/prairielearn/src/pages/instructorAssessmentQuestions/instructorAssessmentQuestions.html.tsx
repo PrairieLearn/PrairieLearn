@@ -54,9 +54,7 @@ export function InstructorAssessmentQuestions({
             questionRows={questionRows}
             urlPrefix={urlPrefix}
             assessment={assessment}
-            assessmentType={assessment.type}
             assessmentSetName={assessment_set.name}
-            assessmentNumber={assessment.number}
             hasCoursePermissionPreview={resLocals.authz_data.has_course_permission_preview}
             hasCourseInstancePermissionEdit={
               resLocals.authz_data.has_course_instance_permission_edit

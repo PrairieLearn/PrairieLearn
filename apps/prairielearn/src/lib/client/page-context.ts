@@ -178,8 +178,8 @@ export function getCourseInstanceContext(
 const RawStaffAssessmentContextSchema = z.object({
   assessment: RawStaffAssessmentSchema.extend({
     type: z.enum(['Exam', 'Homework']),
-  }),
-  assessment_set: RawStaffAssessmentSetSchema,
+  }).brand('StaffAssessment'),
+  assessment_set: RawStaffAssessmentSetSchema.brand('StaffAssessmentSet'),
 });
 const StaffAssessmentContextSchema =
   RawStaffAssessmentContextSchema.brand<'StaffAssessmentContext'>();

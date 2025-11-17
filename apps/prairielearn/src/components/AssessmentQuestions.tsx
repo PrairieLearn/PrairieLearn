@@ -1,9 +1,4 @@
 import type { StaffAssessmentQuestionRow } from '../lib/assessment-question.js';
-import type {
-  StaffAlternativeGroup,
-  StaffAssessmentQuestion,
-} from '../lib/client/safe-db-types.js';
-import type { AlternativeGroup, AssessmentQuestion } from '../lib/db-types.js';
 import type { ZoneAssessmentJson, ZoneQuestionJson } from '../schemas/infoAssessment.js';
 
 export function AssessmentQuestionHeaders({
@@ -102,19 +97,19 @@ export function AlternativeGroupHeader({
 }
 
 export function AssessmentQuestionNumber({
-  alternativeGroup,
   alternativeGroupSize,
-  assessmentQuestion,
+  alternativeGroupNumber,
+  numberInAlternativeGroup,
 }: {
-  alternativeGroup: AlternativeGroup | StaffAlternativeGroup;
   alternativeGroupSize: number;
-  assessmentQuestion: AssessmentQuestion | StaffAssessmentQuestion;
+  alternativeGroupNumber: number;
+  numberInAlternativeGroup: number | null;
 }) {
   return alternativeGroupSize === 1 ? (
-    `${alternativeGroup.number}. `
+    `${alternativeGroupNumber}. `
   ) : (
     <span class="ms-3">
-      {alternativeGroup.number}.{assessmentQuestion.number_in_alternative_group}.{' '}
+      {alternativeGroupNumber}.{numberInAlternativeGroup}.{' '}
     </span>
   );
 }

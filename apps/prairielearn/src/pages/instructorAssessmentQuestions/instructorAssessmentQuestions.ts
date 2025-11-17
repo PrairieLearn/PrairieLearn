@@ -18,7 +18,7 @@ import {
   StaffTagSchema,
   StaffTopicSchema,
 } from '../../lib/client/safe-db-types.js';
-import { FileModifyEditor, MultiEditor, propertyValueWithDefault } from '../../lib/editors.js';
+import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -30,21 +30,228 @@ import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.h
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+const SaveQuestionsZonesSchema = z
+  .string()
+  .transform((str) => {
+    try {
+      return JSON.parse(str);
+    } catch {
+      throw new Error('Invalid JSON in zones field');
+    }
+  })
+  .pipe(z.array(ZoneAssessmentJsonSchema));
+type SaveQuestionsZones = z.infer<typeof SaveQuestionsZonesSchema>;
+
 const SaveQuestionsSchema = z.object({
   __action: z.literal('save_questions'),
-  __csrf_token: z.string(),
   orig_hash: z.string(),
-  zones: z
-    .string()
-    .transform((str) => {
-      try {
-        return JSON.parse(str);
-      } catch {
-        throw new Error('Invalid JSON in zones field');
-      }
-    })
-    .pipe(z.array(ZoneAssessmentJsonSchema)),
+  zones: SaveQuestionsZonesSchema,
 });
+
+function filterZones(zones: SaveQuestionsZones, assessmentInfo) {
+  return zones.map((zone, i) => {
+    // Start with a shallow copy of the existing zone to preserve unknown fields
+    const existingZone = assessmentInfo.zones?.[i];
+    const filteredZone: any = existingZone ? { ...existingZone } : {};
+
+    // Overwrite known fields with filtered values
+    filteredZone.title = propertyValueWithDefault(existingZone?.title, zone.title, null);
+    filteredZone.maxPoints = propertyValueWithDefault(
+      existingZone?.maxPoints,
+      zone.maxPoints,
+      null,
+    );
+    filteredZone.numberChoose = propertyValueWithDefault(
+      existingZone?.numberChoose,
+      zone.numberChoose,
+      null,
+    );
+    filteredZone.bestQuestions = propertyValueWithDefault(
+      existingZone?.bestQuestions,
+      zone.bestQuestions,
+      null,
+    );
+    filteredZone.advanceScorePerc = propertyValueWithDefault(
+      existingZone?.advanceScorePerc,
+      zone.advanceScorePerc,
+      null,
+    );
+    filteredZone.gradeRateMinutes = propertyValueWithDefault(
+      existingZone?.gradeRateMinutes,
+      zone.gradeRateMinutes,
+      null,
+    );
+    filteredZone.comment = propertyValueWithDefault(existingZone?.comment, zone.comment, null);
+    filteredZone.allowRealTimeGrading = propertyValueWithDefault(
+      existingZone?.allowRealTimeGrading,
+      zone.allowRealTimeGrading,
+      null,
+    );
+    filteredZone.canSubmit = propertyValueWithDefault(
+      existingZone?.canSubmit,
+      zone.canSubmit,
+      (v) => !v || v.length === 0,
+    );
+    filteredZone.canView = propertyValueWithDefault(
+      existingZone?.canView,
+      zone.canView,
+      (v) => !v || v.length === 0,
+    );
+
+    // Filter questions/alternative groups
+    filteredZone.questions = zone.questions.map((question, j) => {
+      // Start with a shallow copy of the existing question to preserve unknown fields
+      const existingQuestion = existingZone?.questions?.[j];
+      const filteredQuestion: any = existingQuestion ? { ...existingQuestion } : {};
+
+      // Check if this is a single question or an alternative group
+      if ('alternatives' in question) {
+        // This is an alternative group
+        filteredQuestion.numberChoose = propertyValueWithDefault(
+          existingQuestion?.numberChoose,
+          question.numberChoose,
+          1,
+        );
+
+        // Filter alternatives
+        filteredQuestion.alternatives = question.alternatives?.map((alternative, k) => {
+          // Start with a shallow copy of the existing alternative to preserve unknown fields
+          const existingAlternative = existingQuestion?.alternatives?.[k];
+          const filteredAlternative: any = existingAlternative ? { ...existingAlternative } : {};
+
+          // Overwrite known fields
+          filteredAlternative.id = alternative.id;
+          filteredAlternative.points = propertyValueWithDefault(
+            existingAlternative?.points,
+            alternative.points,
+            0,
+          );
+          filteredAlternative.autoPoints = propertyValueWithDefault(
+            existingAlternative?.autoPoints,
+            alternative.autoPoints,
+            0,
+          );
+          filteredAlternative.maxPoints = propertyValueWithDefault(
+            existingAlternative?.maxPoints,
+            alternative.maxPoints,
+            0,
+          );
+          filteredAlternative.maxAutoPoints = propertyValueWithDefault(
+            existingAlternative?.maxAutoPoints,
+            alternative.maxAutoPoints,
+            0,
+          );
+          filteredAlternative.manualPoints = propertyValueWithDefault(
+            existingAlternative?.manualPoints,
+            alternative.manualPoints,
+            0,
+          );
+          filteredAlternative.triesPerVariant = propertyValueWithDefault(
+            existingAlternative?.triesPerVariant,
+            alternative.triesPerVariant,
+            1,
+          );
+          filteredAlternative.advanceScorePerc = propertyValueWithDefault(
+            existingAlternative?.advanceScorePerc,
+            alternative.advanceScorePerc,
+            null,
+          );
+          filteredAlternative.gradeRateMinutes = propertyValueWithDefault(
+            existingAlternative?.gradeRateMinutes,
+            alternative.gradeRateMinutes,
+            null,
+          );
+          filteredAlternative.allowRealTimeGrading = propertyValueWithDefault(
+            existingAlternative?.allowRealTimeGrading,
+            alternative.allowRealTimeGrading,
+            null,
+          );
+          filteredAlternative.forceMaxPoints = propertyValueWithDefault(
+            existingAlternative?.forceMaxPoints,
+            alternative.forceMaxPoints,
+            null,
+          );
+
+          return filteredAlternative;
+        });
+      } else {
+        // This is a single question
+        filteredQuestion.id = question.id;
+      }
+
+      // Overwrite known question fields
+      filteredQuestion.comment = propertyValueWithDefault(
+        existingQuestion?.comment,
+        question.comment,
+        null,
+      );
+      filteredQuestion.allowRealTimeGrading = propertyValueWithDefault(
+        existingQuestion?.allowRealTimeGrading,
+        question.allowRealTimeGrading,
+        null,
+      );
+      filteredQuestion.forceMaxPoints = propertyValueWithDefault(
+        existingQuestion?.forceMaxPoints,
+        question.forceMaxPoints,
+        null,
+      );
+      filteredQuestion.canSubmit = propertyValueWithDefault(
+        existingQuestion?.canSubmit,
+        question.canSubmit,
+        (v) => !v || v.length === 0,
+      );
+      filteredQuestion.canView = propertyValueWithDefault(
+        existingQuestion?.canView,
+        question.canView,
+        (v) => !v || v.length === 0,
+      );
+      filteredQuestion.points = propertyValueWithDefault(
+        existingQuestion?.points,
+        question.points,
+        0,
+      );
+      filteredQuestion.autoPoints = propertyValueWithDefault(
+        existingQuestion?.autoPoints,
+        question.autoPoints,
+        0,
+      );
+      filteredQuestion.maxPoints = propertyValueWithDefault(
+        existingQuestion?.maxPoints,
+        question.maxPoints,
+        null,
+      );
+      filteredQuestion.maxAutoPoints = propertyValueWithDefault(
+        existingQuestion?.maxAutoPoints,
+        question.maxAutoPoints,
+        0,
+      );
+      filteredQuestion.manualPoints = propertyValueWithDefault(
+        existingQuestion?.manualPoints,
+        question.manualPoints,
+        0,
+      );
+      filteredQuestion.triesPerVariant = propertyValueWithDefault(
+        existingQuestion?.triesPerVariant,
+        question.triesPerVariant,
+        1,
+      );
+      filteredQuestion.advanceScorePerc = propertyValueWithDefault(
+        existingQuestion?.advanceScorePerc,
+        question.advanceScorePerc,
+        null,
+      );
+      filteredQuestion.gradeRateMinutes = propertyValueWithDefault(
+        existingQuestion?.gradeRateMinutes,
+        question.gradeRateMinutes,
+        null,
+      );
+
+      return filteredQuestion;
+    });
+
+    return filteredZone;
+  });
+}
 
 router.get(
   '/',
@@ -86,12 +293,12 @@ router.get(
 );
 
 router.get(
-  '/:qid.json',
+  '/question.json',
   asyncHandler(async (req, res) => {
     const assessmentQuestion = await sqldb.queryOptionalRow(
       sql.select_assessment_question,
       {
-        qid: req.params.qid,
+        qid: req.query.qid,
         course_id: res.locals.course.id,
       },
       z.object({
@@ -148,234 +355,23 @@ router.post(
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentPath, 'utf8'));
 
       // Filter out default values from zones data
-      const filteredZones = body.zones.map((zone, i) => {
-        // Start with a shallow copy of the existing zone to preserve unknown fields
-        const existingZone = assessmentInfo.zones?.[i];
-        const filteredZone: any = existingZone ? { ...existingZone } : {};
-
-        // Overwrite known fields with filtered values
-        filteredZone.title = propertyValueWithDefault(existingZone?.title, zone.title, null);
-        filteredZone.maxPoints = propertyValueWithDefault(
-          existingZone?.maxPoints,
-          zone.maxPoints,
-          null,
-        );
-        filteredZone.numberChoose = propertyValueWithDefault(
-          existingZone?.numberChoose,
-          zone.numberChoose,
-          null,
-        );
-        filteredZone.bestQuestions = propertyValueWithDefault(
-          existingZone?.bestQuestions,
-          zone.bestQuestions,
-          null,
-        );
-        filteredZone.advanceScorePerc = propertyValueWithDefault(
-          existingZone?.advanceScorePerc,
-          zone.advanceScorePerc,
-          null,
-        );
-        filteredZone.gradeRateMinutes = propertyValueWithDefault(
-          existingZone?.gradeRateMinutes,
-          zone.gradeRateMinutes,
-          null,
-        );
-        filteredZone.comment = propertyValueWithDefault(existingZone?.comment, zone.comment, null);
-        filteredZone.allowRealTimeGrading = propertyValueWithDefault(
-          existingZone?.allowRealTimeGrading,
-          zone.allowRealTimeGrading,
-          null,
-        );
-        filteredZone.canSubmit = propertyValueWithDefault(
-          existingZone?.canSubmit,
-          zone.canSubmit,
-          (v) => !v || v.length === 0,
-        );
-        filteredZone.canView = propertyValueWithDefault(
-          existingZone?.canView,
-          zone.canView,
-          (v) => !v || v.length === 0,
-        );
-
-        // Filter questions/alternative groups
-        filteredZone.questions = zone.questions.map((question, j) => {
-          // Start with a shallow copy of the existing question to preserve unknown fields
-          const existingQuestion = existingZone?.questions?.[j];
-          const filteredQuestion: any = existingQuestion ? { ...existingQuestion } : {};
-
-          // Check if this is a single question or an alternative group
-          if ('alternatives' in question) {
-            // This is an alternative group
-            filteredQuestion.numberChoose = propertyValueWithDefault(
-              existingQuestion?.numberChoose,
-              question.numberChoose,
-              1,
-            );
-
-            // Filter alternatives
-            filteredQuestion.alternatives = question.alternatives?.map((alternative, k) => {
-              // Start with a shallow copy of the existing alternative to preserve unknown fields
-              const existingAlternative = existingQuestion?.alternatives?.[k];
-              const filteredAlternative: any = existingAlternative
-                ? { ...existingAlternative }
-                : {};
-
-              // Overwrite known fields
-              filteredAlternative.id = alternative.id;
-              filteredAlternative.points = propertyValueWithDefault(
-                existingAlternative?.points,
-                alternative.points,
-                0,
-              );
-              filteredAlternative.autoPoints = propertyValueWithDefault(
-                existingAlternative?.autoPoints,
-                alternative.autoPoints,
-                0,
-              );
-              filteredAlternative.maxPoints = propertyValueWithDefault(
-                existingAlternative?.maxPoints,
-                alternative.maxPoints,
-                0,
-              );
-              filteredAlternative.maxAutoPoints = propertyValueWithDefault(
-                existingAlternative?.maxAutoPoints,
-                alternative.maxAutoPoints,
-                0,
-              );
-              filteredAlternative.manualPoints = propertyValueWithDefault(
-                existingAlternative?.manualPoints,
-                alternative.manualPoints,
-                0,
-              );
-              filteredAlternative.triesPerVariant = propertyValueWithDefault(
-                existingAlternative?.triesPerVariant,
-                alternative.triesPerVariant,
-                1,
-              );
-              filteredAlternative.advanceScorePerc = propertyValueWithDefault(
-                existingAlternative?.advanceScorePerc,
-                alternative.advanceScorePerc,
-                null,
-              );
-              filteredAlternative.gradeRateMinutes = propertyValueWithDefault(
-                existingAlternative?.gradeRateMinutes,
-                alternative.gradeRateMinutes,
-                null,
-              );
-              filteredAlternative.allowRealTimeGrading = propertyValueWithDefault(
-                existingAlternative?.allowRealTimeGrading,
-                alternative.allowRealTimeGrading,
-                null,
-              );
-              filteredAlternative.forceMaxPoints = propertyValueWithDefault(
-                existingAlternative?.forceMaxPoints,
-                alternative.forceMaxPoints,
-                null,
-              );
-
-              return filteredAlternative;
-            });
-          } else {
-            // This is a single question
-            filteredQuestion.id = question.id;
-          }
-
-          // Overwrite known question fields
-          filteredQuestion.comment = propertyValueWithDefault(
-            existingQuestion?.comment,
-            question.comment,
-            null,
-          );
-          filteredQuestion.allowRealTimeGrading = propertyValueWithDefault(
-            existingQuestion?.allowRealTimeGrading,
-            question.allowRealTimeGrading,
-            null,
-          );
-          filteredQuestion.forceMaxPoints = propertyValueWithDefault(
-            existingQuestion?.forceMaxPoints,
-            question.forceMaxPoints,
-            null,
-          );
-          filteredQuestion.canSubmit = propertyValueWithDefault(
-            existingQuestion?.canSubmit,
-            question.canSubmit,
-            (v) => !v || v.length === 0,
-          );
-          filteredQuestion.canView = propertyValueWithDefault(
-            existingQuestion?.canView,
-            question.canView,
-            (v) => !v || v.length === 0,
-          );
-          filteredQuestion.points = propertyValueWithDefault(
-            existingQuestion?.points,
-            question.points,
-            0,
-          );
-          filteredQuestion.autoPoints = propertyValueWithDefault(
-            existingQuestion?.autoPoints,
-            question.autoPoints,
-            0,
-          );
-          filteredQuestion.maxPoints = propertyValueWithDefault(
-            existingQuestion?.maxPoints,
-            question.maxPoints,
-            null,
-          );
-          filteredQuestion.maxAutoPoints = propertyValueWithDefault(
-            existingQuestion?.maxAutoPoints,
-            question.maxAutoPoints,
-            0,
-          );
-          filteredQuestion.manualPoints = propertyValueWithDefault(
-            existingQuestion?.manualPoints,
-            question.manualPoints,
-            0,
-          );
-          filteredQuestion.triesPerVariant = propertyValueWithDefault(
-            existingQuestion?.triesPerVariant,
-            question.triesPerVariant,
-            1,
-          );
-          filteredQuestion.advanceScorePerc = propertyValueWithDefault(
-            existingQuestion?.advanceScorePerc,
-            question.advanceScorePerc,
-            null,
-          );
-          filteredQuestion.gradeRateMinutes = propertyValueWithDefault(
-            existingQuestion?.gradeRateMinutes,
-            question.gradeRateMinutes,
-            null,
-          );
-
-          return filteredQuestion;
-        });
-
-        return filteredZone;
-      });
+      const filteredZones = filterZones(body.zones, assessmentInfo);
 
       // Update the zones with the filtered data
       assessmentInfo.zones = filteredZones;
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
-      const editor = new MultiEditor(
-        {
-          locals: res.locals as any,
-          description: `Update assessment questions for ${res.locals.assessment.tid}`,
+      const editor = new FileModifyEditor({
+        locals: res.locals as any,
+        container: {
+          rootPath: paths.rootPath,
+          invalidRootPaths: paths.invalidRootPaths,
         },
-        [
-          new FileModifyEditor({
-            locals: res.locals as any,
-            container: {
-              rootPath: paths.rootPath,
-              invalidRootPaths: paths.invalidRootPaths,
-            },
-            filePath: assessmentPath,
-            editContents: b64EncodeUnicode(formattedJson),
-            origHash: body.orig_hash,
-          }),
-        ],
-      );
+        filePath: assessmentPath,
+        editContents: b64EncodeUnicode(formattedJson),
+        origHash: body.orig_hash,
+      });
 
       const serverJob = await editor.prepareServerJob();
       try {
