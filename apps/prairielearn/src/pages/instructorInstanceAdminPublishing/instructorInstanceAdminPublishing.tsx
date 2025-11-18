@@ -236,7 +236,7 @@ router.post(
       flash('success', 'Publishing settings updated successfully');
       res.redirect(req.originalUrl);
     } else {
-      throw new error.HttpStatusError(400, 'Unknown action');
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
