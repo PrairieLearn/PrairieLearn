@@ -15,7 +15,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
@@ -69,7 +69,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const {
       authz_data: { has_course_instance_permission_view: hasCourseInstancePermissionView },
-    } = getPageContext(res.locals);
+    } = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
 
     if (!hasCourseInstancePermissionView) {
       throw new error.HttpStatusError(403, 'Access denied (must be a course instance viewer)');
@@ -91,7 +94,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const {
       authz_data: { has_course_instance_permission_edit: hasCourseInstancePermissionEdit },
-    } = getPageContext(res.locals);
+    } = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
 
     if (!hasCourseInstancePermissionEdit) {
       throw new error.HttpStatusError(403, 'Access denied (must be course instance editor)');
@@ -132,11 +138,14 @@ router.get(
         has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
         has_course_instance_permission_view: hasCourseInstancePermissionView,
       },
-    } = getPageContext(res.locals);
+      course_instance: courseInstance,
+    } = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
 
     assert(hasCourseInstancePermissionEdit !== undefined);
     assert(hasCourseInstancePermissionView !== undefined);
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
 
     // Calculate orig_hash for the infoCourseInstance.json file
     const infoCourseInstancePath = path.join(
@@ -196,12 +205,15 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const {
-      authz_data: { has_course_instance_permission_edit: hasCourseInstancePermissionEdit },
-    } = getPageContext(res.locals);
+    const { authz_data: authzData, course_instance: courseInstance } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'courseInstance',
+        accessType: 'instructor',
+      },
+    );
 
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
-    const { authz_data: authzData } = getPageContext(res.locals);
+    const { has_course_instance_permission_edit: hasCourseInstancePermissionEdit } = authzData;
 
     if (!hasCourseInstancePermissionEdit) {
       throw new error.HttpStatusError(403, 'Access denied (must be course instance editor)');
