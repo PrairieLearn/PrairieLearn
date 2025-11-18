@@ -371,7 +371,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/lookup',
 ];
 
-function shouldSkipPath(path) {
+function shouldSkipPath(path: string) {
   return SKIP_ROUTES.some((r) => {
     if (typeof r === 'string') {
       return r === path;

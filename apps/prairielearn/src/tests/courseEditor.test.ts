@@ -314,7 +314,7 @@ const testEditData: EditData[] = [
   },
 ];
 
-function getPostInfoFromCopyOption(form) {
+function getPostInfoFromCopyOption(form: cheerio.Cheerio<any>) {
   const option = form.find('select[name="to_course_id"] option[value="1"]');
   return { csrfToken: option.attr('data-csrf-token'), url: option.attr('data-copy-url') };
 }

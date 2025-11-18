@@ -99,7 +99,7 @@ describe('Zone grading exam assessment', { timeout: 60_000 }, function () {
         questionsArray.forEach(function (question) {
           for (const prop in question) {
             if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
-              delete question[prop];
+              delete question[prop as keyof TestQuestion];
             }
           }
           question.points = 0;
@@ -271,7 +271,7 @@ describe('Zone grading exam assessment', { timeout: 60_000 }, function () {
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };
-              locals.getSubmittedAnswer = function (_variant) {
+              locals.getSubmittedAnswer = function (_variant: any) {
                 return {
                   s: String(questionTest.score),
                 };
