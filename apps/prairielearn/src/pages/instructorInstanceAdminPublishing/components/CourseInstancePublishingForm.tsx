@@ -109,8 +109,6 @@ export function CourseInstancePublishingForm({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
-  let now = nowRoundedToSeconds();
-
   const onSubmit = (e: SubmitEvent) => {
     if (!isValid) {
       e.preventDefault();
@@ -122,7 +120,7 @@ export function CourseInstancePublishingForm({
   const handleStatusChange = (newStatus: PublishingStatus) => {
     setSelectedStatus(newStatus);
 
-    now = nowRoundedToSeconds();
+    const now = nowRoundedToSeconds();
     const nowTemporal = dateToPlainDateTime(now, courseInstance.display_timezone);
 
     const oneWeekLater = nowTemporal.add({ weeks: 1 });
@@ -330,7 +328,11 @@ export function CourseInstancePublishingForm({
                       <>
                         <br />
                         The course{' '}
-                        {plainDateTimeStringToDate(endDate, courseInstance.display_timezone) < now
+                        {plainDateTimeStringToDate(
+                          endDate,
+                          courseInstance.display_timezone,
+                        ).getTime() === originalEndDate?.getTime() &&
+                        originalStatus === 'unpublished'
                           ? 'was'
                           : 'will be'}{' '}
                         unpublished at{' '}
@@ -491,7 +493,10 @@ export function CourseInstancePublishingForm({
                   {startDate && endDate && (
                     <div class="ms-4 mt-1 small text-muted">
                       The course{' '}
-                      {plainDateTimeStringToDate(startDate, courseInstance.display_timezone) < now
+                      {plainDateTimeStringToDate(
+                        startDate,
+                        courseInstance.display_timezone,
+                      ).getTime() === originalStartDate?.getTime() && originalStatus === 'published'
                         ? 'was'
                         : 'will be'}{' '}
                       published at{' '}
