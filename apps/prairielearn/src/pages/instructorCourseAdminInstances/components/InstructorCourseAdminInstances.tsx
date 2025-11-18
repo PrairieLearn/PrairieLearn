@@ -1,31 +1,12 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { useRef, useState } from 'preact/compat';
 import { Button, Modal, OverlayTrigger, Popover } from 'react-bootstrap';
 
+import { formatDateYMDHM } from '@prairielearn/formatter';
+
 import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
+import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type { InstructorCourseAdminInstanceRow } from '../instructorCourseAdminInstances.shared.js';
-
-interface InstructorCourseAdminInstancesPageProps {
-  courseInstances: InstructorCourseAdminInstanceRow[];
-  courseShortName: string;
-  courseExample: boolean;
-  canEditCourse: boolean;
-  needToSync: boolean;
-  csrfToken: string;
-  urlPrefix: string;
-  timezone: string;
-  initialStartDateFormatted: string;
-  initialEndDateFormatted: string;
-}
-
-interface CreateCourseInstanceModalProps {
-  show: boolean;
-  onHide: () => void;
-  courseShortName: string;
-  csrfToken: string;
-  timezone: string;
-  initialStartDateFormatted: string;
-  initialEndDateFormatted: string;
-}
 
 function CreateCourseInstanceModal({
   show,
@@ -35,7 +16,15 @@ function CreateCourseInstanceModal({
   timezone,
   initialStartDateFormatted,
   initialEndDateFormatted,
-}: CreateCourseInstanceModalProps) {
+}: {
+  show: boolean;
+  onHide: () => void;
+  courseShortName: string;
+  csrfToken: string;
+  timezone: string;
+  initialStartDateFormatted: string;
+  initialEndDateFormatted: string;
+}) {
   const [accessDatesEnabled, setAccessDatesEnabled] = useState(false);
 
   const startAccessDateRef = useRef<HTMLInputElement | null>(null);
@@ -243,27 +232,48 @@ function EmptyState({
 
 export function InstructorCourseAdminInstancesPage({
   courseInstances,
-  courseShortName,
-  courseExample,
+  course,
   canEditCourse,
   needToSync,
   csrfToken,
   urlPrefix,
-  timezone,
-  initialStartDateFormatted,
-  initialEndDateFormatted,
-}: InstructorCourseAdminInstancesPageProps) {
+}: {
+  courseInstances: InstructorCourseAdminInstanceRow[];
+  course: StaffCourse;
+  canEditCourse: boolean;
+  needToSync: boolean;
+  csrfToken: string;
+  urlPrefix: string;
+}) {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const canCreateInstances = canEditCourse && !courseExample && !needToSync;
+  const canCreateInstances = canEditCourse && !course.example_course && !needToSync;
+  const initialStartDate = Temporal.Now.zonedDateTimeISO(course.display_timezone).with({
+    hour: 0,
+    minute: 1,
+    second: 0,
+  });
+  const initialStartDateFormatted = formatDateYMDHM(
+    new Date(initialStartDate.epochMilliseconds),
+    course.display_timezone,
+  );
 
+  const initialEndDate = initialStartDate.add({ months: 4 }).with({
+    hour: 23,
+    minute: 59,
+    second: 0,
+  });
+  const initialEndDateFormatted = formatDateYMDHM(
+    new Date(initialEndDate.epochMilliseconds),
+    course.display_timezone,
+  );
   return (
     <>
       <CreateCourseInstanceModal
         show={showCreateModal}
-        courseShortName={courseShortName}
+        courseShortName={course.short_name!}
         csrfToken={csrfToken}
-        timezone={timezone}
+        timezone={course.display_timezone}
         initialStartDateFormatted={initialStartDateFormatted}
         initialEndDateFormatted={initialEndDateFormatted}
         onHide={() => setShowCreateModal(false)}
@@ -401,7 +411,7 @@ export function InstructorCourseAdminInstancesPage({
           </div>
         ) : (
           <EmptyState
-            courseExample={courseExample}
+            courseExample={course.example_course}
             canEditCourse={canEditCourse}
             needToSync={needToSync}
             urlPrefix={urlPrefix}

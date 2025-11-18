@@ -7,7 +7,11 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
@@ -16,10 +20,8 @@ import {
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
 
-import {
-  type CourseInstanceAuthzRow,
-  InstructorCourseAdminInstances,
-} from './instructorCourseAdminInstances.html.js';
+import { InstructorCourseAdminInstancesPage } from './components/InstructorCourseAdminInstances.js';
+import { InstructorCourseAdminInstanceRowSchema } from './instructorCourseAdminInstances.shared.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -27,17 +29,18 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    let needToSync = false;
     try {
       await fs.access(res.locals.course.path);
     } catch (err) {
       if (err.code === 'ENOENT') {
-        res.locals.needToSync = true;
+        needToSync = true;
       } else {
         throw new Error('Invalid course path', { cause: err });
       }
     }
 
-    const courseInstances: CourseInstanceAuthzRow[] = await selectCourseInstancesWithStaffAccess({
+    const courseInstances = await selectCourseInstancesWithStaffAccess({
       course: res.locals.course,
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
@@ -51,12 +54,53 @@ router.get(
       z.object({ course_instance_id: CourseInstanceSchema.shape.id, enrollment_count: z.number() }),
     );
 
-    courseInstances.forEach((ci) => {
-      const row = enrollmentCounts.find((row) => idsEqual(row.course_instance_id, ci.id));
-      ci.enrollment_count = row?.enrollment_count || 0;
-    });
+    const safeCourseInstancesWithEnrollmentCounts = z
+      .array(InstructorCourseAdminInstanceRowSchema)
+      .parse(
+        courseInstances.map((ci) => ({
+          ...ci,
+          enrollment_count:
+            enrollmentCounts.find((row) => idsEqual(row.course_instance_id, ci.id))
+              ?.enrollment_count || 0,
+        })),
+      );
 
-    res.send(InstructorCourseAdminInstances({ resLocals: res.locals, courseInstances }));
+    const { course } = getCourseInstanceContext(res.locals, 'instructor');
+    const { __csrf_token, authz_data, urlPrefix } = getPageContext(res.locals);
+
+    res.send(
+      PageLayout({
+        resLocals: res.locals,
+        pageTitle: 'Course Instances',
+        navContext: {
+          type: 'instructor',
+          page: 'course_admin',
+          subPage: 'instances',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: (
+          <>
+            <CourseSyncErrorsAndWarnings
+              authzData={res.locals.authz_data}
+              course={course}
+              urlPrefix={urlPrefix}
+            />
+            <Hydrate>
+              <InstructorCourseAdminInstancesPage
+                courseInstances={safeCourseInstancesWithEnrollmentCounts}
+                course={course}
+                canEditCourse={authz_data.has_course_permission_edit}
+                needToSync={needToSync}
+                csrfToken={__csrf_token}
+                urlPrefix={urlPrefix}
+              />
+            </Hydrate>
+          </>
+        ),
+      }),
+    );
   }),
 );
 
