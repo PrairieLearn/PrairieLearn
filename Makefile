@@ -32,8 +32,11 @@ python-deps: venv-setup
 		.venv/bin/python3 -m pip install . --group docs --group dev
 	@rm -rf build
 
+# This is a separate target since we can't currently install the necessary
+# browsers in the development Docker image.
 e2e-deps:
 	@yarn playwright install chromium --with-deps
+
 deps:
 	@yarn
 	@$(MAKE) python-deps build
