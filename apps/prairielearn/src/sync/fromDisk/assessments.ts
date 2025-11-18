@@ -14,7 +14,7 @@ import {
   type ZoneQuestionJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
-import { isAccessRuleAccessibleInFuture } from '../dates.js';
+import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -360,6 +360,8 @@ function getParamsForAssessment(
     has_roles: assessment.groupRoles.length > 0,
     json_can_view: assessment.canView,
     json_can_submit: assessment.canSubmit,
+    // TODO: This will be conditional based on the access control settings in the future.
+    modern_access_control: false,
     allowAccess,
     zones,
     alternativeGroups,
@@ -402,10 +404,17 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   // not accessible.
   if (!courseInstance) return false;
 
-  // If there are no access rules, the course instance is not accessible.
-  if (courseInstance.allowAccess.length === 0) return false;
+  if (courseInstance.allowAccess != null) {
+    // If there are no access rules, the course instance is not accessible.
+    if (courseInstance.allowAccess.length === 0) return false;
+    return courseInstance.allowAccess.some((rule) => isDateInFuture(rule.endDate));
+  }
 
-  return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
+  if (courseInstance.publishing?.endDate == null) {
+    return false;
+  }
+
+  return isDateInFuture(courseInstance.publishing.endDate);
 }
 
 export async function sync(

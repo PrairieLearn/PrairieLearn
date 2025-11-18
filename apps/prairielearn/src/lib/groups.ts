@@ -13,6 +13,7 @@ import type { AuthzData } from './authz-data-lib.js';
 import {
   type Assessment,
   type CourseInstance,
+  type Group,
   type GroupConfig,
   GroupConfigSchema,
   GroupRoleSchema,
@@ -281,6 +282,7 @@ export async function addUserToGroup({
     // issue once we have a unique constraint for group membership.
     const existingGroupId = await getGroupId(assessment.id, user.user_id);
     if (existingGroupId != null) {
+      // Otherwise, the user is in a different group, which is an error
       if (idsEqual(user.user_id, authn_user_id)) {
         throw new GroupOperationError('You are already in another group.');
       } else {
@@ -378,7 +380,7 @@ export async function createGroup({
   uids: string[];
   authn_user_id: string;
   authzData: AuthzData;
-}): Promise<void> {
+}): Promise<Group> {
   if (group_name) {
     if (group_name.length > 30) {
       throw new GroupOperationError(
@@ -409,34 +411,35 @@ export async function createGroup({
   }
 
   try {
-    await sqldb.runInTransactionAsync(async () => {
-      let group_id;
-      try {
-        group_id = await sqldb.queryRow(
+    return await sqldb.runInTransactionAsync(async () => {
+      const group = await sqldb
+        .queryRow(
           sql.create_group,
           { assessment_id: assessment.id, authn_user_id, group_name },
-          IdSchema,
-        );
-      } catch (err) {
-        // 23505 is the Postgres error code for unique constraint violation
-        // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
-        if (err.code === '23505' && err.constraint === 'unique_group_name') {
-          throw new GroupOperationError('Group name is already taken.');
-        }
-        // Any other error is unexpected and should be handled by the main processes
-        throw err;
-      }
+          GroupSchema,
+        )
+        .catch((err) => {
+          // 23505 is the Postgres error code for unique constraint violation
+          // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
+          if (err.code === '23505' && err.constraint === 'unique_group_name') {
+            throw new GroupOperationError('Group name is already taken.');
+          }
+          // Any other error is unexpected and should be handled by the main processes
+          throw err;
+        });
+
       for (const uid of uids) {
         await addUserToGroup({
           course_instance,
           assessment,
-          group_id,
+          group_id: group.id,
           uid,
           authn_user_id,
           enforceGroupSize: false,
           authzData,
         });
       }
+      return group;
     });
   } catch (err) {
     if (err instanceof GroupOperationError) {
@@ -466,15 +469,15 @@ export async function createOrAddToGroup({
   uids: string[];
   authn_user_id: string;
   authzData: AuthzData;
-}): Promise<void> {
-  await sqldb.runInTransactionAsync(async () => {
-    const group = await sqldb.queryOptionalRow(
+}): Promise<Group> {
+  return await sqldb.runInTransactionAsync(async () => {
+    const existingGroup = await sqldb.queryOptionalRow(
       sql.select_and_lock_group_by_name,
       { group_name, assessment_id: assessment.id },
       GroupSchema,
     );
-    if (group == null) {
-      await createGroup({
+    if (existingGroup == null) {
+      return await createGroup({
         course_instance,
         assessment,
         group_name,
@@ -487,13 +490,14 @@ export async function createOrAddToGroup({
         await addUserToGroup({
           course_instance,
           assessment,
-          group_id: group.id,
+          group_id: existingGroup.id,
           uid,
           authn_user_id,
           enforceGroupSize: false,
           authzData,
         });
       }
+      return existingGroup;
     }
   });
 }

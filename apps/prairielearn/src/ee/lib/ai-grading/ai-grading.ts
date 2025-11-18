@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import { type OpenAIChatLanguageModelOptions, createOpenAI } from '@ai-sdk/openai';
+import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
@@ -268,7 +268,7 @@ export async function aiGrade({
         return parts.join(' ');
       });
 
-      const openaiProviderOptions: OpenAIChatLanguageModelOptions = {
+      const openaiProviderOptions: OpenAIResponsesProviderOptions = {
         strictJsonSchema: true,
         metadata: {
           course_id: course.id,

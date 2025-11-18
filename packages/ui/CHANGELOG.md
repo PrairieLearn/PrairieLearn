@@ -1,5 +1,25 @@
 # @prairielearn/ui
 
+## 1.3.0
+
+### Minor Changes
+
+- 3b54dda: Refine styling of `<CategoricalColumnFilter>`
+
+### Patch Changes
+
+- 9f5a05f: Improve UI of `TanstackTable` and `TanstackTableCard`
+
+## 1.2.0
+
+### Minor Changes
+
+- 50dbe96: - Add optional header labels / max height for column manager
+  - Add new option for buttons in next to the View column manager button
+  - add MultiSelectColumnFilter
+  - NumericInputColumnFilter
+  - add useShiftClickCheckbox hook + update table/buttons to support row selection
+
 ## 1.1.2
 
 ### Patch Changes
