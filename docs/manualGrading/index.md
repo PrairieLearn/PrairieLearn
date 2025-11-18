@@ -29,7 +29,7 @@ It is recommended to also mark manually-graded questions as `"singleVariant": tr
 }
 ```
 
-Any [elements](../elements.md) can be used in the [`question.html`](../question/index.md#html-questionhtml) to write manually graded questions. All student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
+Any [elements](../elements/index.md) can be used in the [`question.html`](../question/index.md#html-questionhtml) to write manually graded questions. All student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
 
 ## Manual grading using file uploads
 

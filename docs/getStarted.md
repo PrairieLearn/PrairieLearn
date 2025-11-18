@@ -290,4 +290,4 @@ Learn more:
 
 - [Different ways to set up an assessment](assessment/index.md)
 
-- [Detailed list of PrairieLearn elements](elements.md)
+- [Detailed list of PrairieLearn elements](./elements/index.md)

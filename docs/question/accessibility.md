@@ -48,7 +48,7 @@ Many elements support an `aria-label` attribute to provide a label that is not v
 </pl-multiple-choice>
 ```
 
-Consult [the documentation for each specific PrairieLearn element](../elements.md) to understand its accessibility features and best practices.
+Consult [the documentation for each specific PrairieLearn element](../elements/index.md) to understand its accessibility features and best practices.
 
 ## Perceivable content
 

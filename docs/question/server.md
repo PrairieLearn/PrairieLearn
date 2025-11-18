@@ -138,7 +138,7 @@ Although questions with custom grading may not rely on the full grading function
     Data stored under the `"submitted_answers"` key in the data dictionary may be of varying type. Specifically, the `pl-integer-input`
     element sometimes stores very large integers as strings instead of the Python `int` type used in most cases. The best practice for custom grader
     code in this case is to always cast the data to the desired type, for example `int(data["submitted_answers"][name])`. See the
-    [PrairieLearn elements documentation](../elements.md) for more detailed discussion related to specific elements.
+    [PrairieLearn elements documentation](../elements/index.md) for more detailed discussion related to specific elements.
 
 The `parse()` function can also be used to create custom files to be sent to an external grader. This can be done with the `pl.add_submitted_file()` function, as in the example below:
 

@@ -150,7 +150,7 @@ While it is recommended that all questions contain random parameters, sometimes 
 
 By default, all questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct, the student will be awarded 50% of the available points.
 
-To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](../elements.md) also provide more fine-grained control over partial credit.
+To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](../elements/index.md) also provide more fine-grained control over partial credit.
 
 In general, it is _strongly_ recommended to leave partial credit enabled for all questions.
 
@@ -185,7 +185,7 @@ The `question.html` is a template used to render the question to the student. A 
 The `question.html` is regular HTML, with a few special features:
 
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values using [Mustache](https://mustache.github.io/mustache.5.html). These parameters are typically defined by a [question's `server.py`](#custom-generation-and-grading-serverpy).
-2. Special HTML elements (like [`<pl-number-input>`](../elements/pl-number-input.md)) enable input and formatted output. A student's submission is composed of the answers they provide to the question elements. See the [list of PrairieLearn elements](../elements.md).
+2. Special HTML elements (like [`<pl-number-input>`](../elements/pl-number-input.md)) enable input and formatted output. A student's submission is composed of the answers they provide to the question elements. See the [list of PrairieLearn elements](../elements/index.md).
 
    :warning: **All submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
 
