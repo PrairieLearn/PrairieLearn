@@ -1,14 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { type z } from 'zod';
 
 import type { PageAuthzData } from '../authz-data-lib.js';
 
-import {
-  type RawStaffPlainPageContextWithAuthzDataSchema,
-  type StaffCourseInstanceContextSchema,
-  type StudentCourseInstanceContextSchema,
-  extractPageContext,
-} from './page-context.js';
+import { extractPageContext } from './page-context.js';
 import type { StaffInstitution, StaffUser } from './safe-db-types.js';
 
 // Reusable test data
@@ -131,13 +125,13 @@ const STUDENT_COURSE = {
   title: 'Example Student Course',
 };
 
-const mockStudentData: z.input<typeof StudentCourseInstanceContextSchema> = {
+const mockStudentData = {
   course_instance: STUDENT_COURSE_INSTANCE,
   course: STUDENT_COURSE,
   has_enhanced_navigation: false,
 };
 
-const mockInstructorData: z.input<typeof StaffCourseInstanceContextSchema> = {
+const mockInstructorData = {
   course_instance: {
     ...STUDENT_COURSE_INSTANCE,
     enrollment_code: 'AAABBBDDDD',
@@ -389,7 +383,7 @@ describe('extractPageContext', () => {
       anotherExtraField: 123,
     };
 
-    const expected: z.infer<typeof RawStaffPlainPageContextWithAuthzDataSchema> = {
+    const expected = {
       authz_data: createInstructorAuthzData({
         authn_user: TEST_USER as StaffUser,
         user: TEST_USER as StaffUser,
