@@ -75,6 +75,8 @@ Run the test suite (Docker must be installed and running):
 
 ```sh
 make test
+# Includes Playwright tests as well (run `make e2e-deps` first)
+make test-all
 ```
 
 Or, to run tests for just a specific language:
@@ -82,6 +84,7 @@ Or, to run tests for just a specific language:
 ```sh
 make test-js     # Javascript only
 make test-python # Python only
+make test-e2e    # E2E tests only (run `make e2e-deps` first)
 ```
 
 ### JavaScript tests
