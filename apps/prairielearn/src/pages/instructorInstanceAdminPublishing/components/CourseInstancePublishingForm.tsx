@@ -150,7 +150,7 @@ export function CourseInstancePublishingForm({
         break;
       }
       case 'publish_scheduled': {
-        // If the original dates from the form put the course instance in a publish scheduled state,
+        // If the original dates from the form put the course instance in a scheduled publish state,
         // use those dates.
         if (originalStartDate && originalEndDate && now <= originalStartDate) {
           updatedStartDate = dateToPlainDateTime(
