@@ -1,15 +1,22 @@
 import { Temporal } from '@js-temporal/polyfill';
+import { QueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { useForm } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
+import type { CourseInstancePublishingExtensionWithUsers } from '../instructorInstanceAdminPublishing.types.js';
 import {
   dateToPlainDateTime,
   nowRoundedToSeconds,
   plainDateTimeStringToDate,
 } from '../utils/dateUtils.js';
+
+import { PublishingExtensions } from './PublishingExtensions.js';
+
+const queryClient = new QueryClient();
 
 type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
 
@@ -45,11 +52,15 @@ export function CourseInstancePublishingForm({
   canEdit,
   csrfToken,
   origHash,
+  publishingExtensions,
+  isDevMode,
 }: {
   courseInstance: StaffCourseInstance;
   canEdit: boolean;
   csrfToken: string;
   origHash: string | null;
+  publishingExtensions: CourseInstancePublishingExtensionWithUsers[];
+  isDevMode: boolean;
 }) {
   const originalStartDate = courseInstance.publishing_start_date;
   const originalEndDate = courseInstance.publishing_end_date;
@@ -572,6 +583,20 @@ export function CourseInstancePublishingForm({
             </div>
           )}
         </form>
+
+        {startDate && (
+          <>
+            <hr class="my-4" />
+            <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+              <PublishingExtensions
+                courseInstance={courseInstance}
+                initialExtensions={publishingExtensions}
+                canEdit={canEdit}
+                csrfToken={csrfToken}
+              />
+            </QueryClientProviderDebug>
+          </>
+        )}
       </div>
     </>
   );
