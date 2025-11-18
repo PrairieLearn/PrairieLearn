@@ -402,7 +402,7 @@ export function EditQuestionPointsScoreButton({
   }, [show]);
 
   const popover = (
-    <Popover id={`edit-question-points-score-popover-${field}-${instanceQuestion.id}`}>
+    <Popover>
       <Popover.Body ref={popoverBodyRef}>
         <EditQuestionPointsScoreForm
           assessmentQuestion={assessmentQuestion}

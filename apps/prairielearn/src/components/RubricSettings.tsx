@@ -765,7 +765,7 @@ export function RubricSettings({
               {copyPopoverTarget && (
                 <Overlay target={copyPopoverTarget} placement="right" show>
                   {(props) => (
-                    <Popover id="copy-mustache-pattern-popover" {...props}>
+                    <Popover {...props}>
                       <Popover.Body>Copied!</Popover.Body>
                     </Popover>
                   )}

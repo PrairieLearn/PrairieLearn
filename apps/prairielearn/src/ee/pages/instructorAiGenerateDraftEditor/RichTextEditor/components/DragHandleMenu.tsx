@@ -54,7 +54,7 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
         trigger="click"
         show={showMenu}
         overlay={
-          <Popover id="drag-handle-menu-popover">
+          <Popover>
             <Popover.Header as="h3">Visibility</Popover.Header>
             <Popover.Body>
               {/* TODO: Potentially improve the styling of this. */}
