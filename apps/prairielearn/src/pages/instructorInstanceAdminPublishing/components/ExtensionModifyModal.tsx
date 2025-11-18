@@ -135,7 +135,7 @@ export function ExtensionModifyModal({
       });
       if (!resp.ok) {
         const body = await resp.json();
-        throw new Error(body.message);
+        throw new Error(body.error);
       }
     },
     onSuccess: () => {
@@ -217,37 +217,37 @@ export function ExtensionModifyModal({
             <input id="ext-name" type="text" class="form-control" {...register('name')} />
           </div>
           <div class="mb-3">
-            <label class="form-label" for="ext-date">
-              End date
-            </label>
-            <div class="input-group">
-              <input
-                id="ext-date"
-                type="datetime-local"
-                step="1"
-                class="form-control"
-                {...register('end_date', {
-                  required: 'End date is required',
-                  validate: (value) => {
-                    if (!courseInstanceEndDate) return true;
-                    const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
-                    // edit mode has no validation on the end date
-                    return (
-                      modalState?.type === 'edit' ||
-                      enteredDate > courseInstanceEndDate ||
-                      'End date must be after the course end date'
-                    );
-                  },
-                })}
-              />
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label" for="ext-date">
+                End date
+              </label>
               <button
                 type="button"
-                class={clsx('btn btn-outline-secondary', !currentEndDate && 'disabled')}
+                class={clsx('btn btn-outline btn-sm', !currentEndDate && 'disabled')}
                 onClick={handleAddWeek}
               >
                 +1 week
               </button>
             </div>
+            <input
+              id="ext-date"
+              type="datetime-local"
+              step="1"
+              class="form-control"
+              {...register('end_date', {
+                required: 'End date is required',
+                validate: (value) => {
+                  if (!courseInstanceEndDate) return true;
+                  const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
+                  // edit mode has no validation on the end date
+                  return (
+                    modalState?.type === 'edit' ||
+                    enteredDate > courseInstanceEndDate ||
+                    'End date must be after the course end date'
+                  );
+                },
+              })}
+            />
             {errors.end_date && (
               <div class="text-danger small">{String(errors.end_date.message)}</div>
             )}
