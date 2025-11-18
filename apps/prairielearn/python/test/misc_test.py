@@ -413,6 +413,128 @@ def test_grade_answer_parametrized_key_error_blank(
     assert question_data["partial_scores"][question_name]["score"] == 0.0
 
 
+def test_grade_answer_parametrized_timeout_default_message(
+    question_data: pl.QuestionData,
+) -> None:
+    """Test that timeout sets a default format error when no custom message is provided."""
+    question_name = "timeout_test"
+
+    question_data["submitted_answers"] = {question_name: "test_input"}
+
+    def slow_grading_function(_: str) -> tuple[bool, str | None]:
+        import time
+
+        time.sleep(2)  # This will timeout
+        return (True, None)
+
+    # Use a short timeout and no custom message
+    pl.grade_answer_parameterized(
+        question_data, question_name, slow_grading_function, timeout=0.1
+    )
+
+    # Should have a format error with default message
+    assert question_name in question_data["format_errors"]
+    assert "Grading timed out" in question_data["format_errors"][question_name]
+    # Should not have scored the answer
+    assert question_data["partial_scores"][question_name]["score"] == 0.0
+
+
+def test_grade_answer_parametrized_timeout_custom_message(
+    question_data: pl.QuestionData,
+) -> None:
+    """Test that timeout sets a custom format error when provided."""
+    question_name = "timeout_test"
+    custom_message = "Your answer did not converge, try a simpler expression."
+
+    question_data["submitted_answers"] = {question_name: "test_input"}
+
+    def slow_grading_function(_: str) -> tuple[bool, str | None]:
+        import time
+
+        time.sleep(2)  # This will timeout
+        return (True, None)
+
+    # Use a short timeout with custom message
+    pl.grade_answer_parameterized(
+        question_data,
+        question_name,
+        slow_grading_function,
+        timeout=0.1,
+        timeout_format_error=custom_message,
+    )
+
+    # Should have the custom format error
+    assert question_name in question_data["format_errors"]
+    assert question_data["format_errors"][question_name] == custom_message
+    # Should not have scored the answer
+    assert question_data["partial_scores"][question_name]["score"] == 0.0
+
+
+def test_grade_answer_parametrized_no_timeout_when_fast(
+    question_data: pl.QuestionData,
+) -> None:
+    """Test that grading works normally when execution completes before timeout."""
+    question_name = "fast_test"
+
+    question_data["submitted_answers"] = {question_name: "correct"}
+
+    def fast_grading_function(ans: str) -> tuple[bool, str | None]:
+        if ans == "correct":
+            return (True, "Well done!")
+        return (False, "Try again")
+
+    # Use a timeout but the function should complete quickly
+    pl.grade_answer_parameterized(
+        question_data,
+        question_name,
+        fast_grading_function,
+        timeout=5.0,
+        timeout_format_error="Should not see this",
+    )
+
+    # Should have graded normally, no format error
+    assert question_name not in question_data["format_errors"]
+    assert question_data["partial_scores"][question_name]["score"] == 1.0
+    assert question_data["partial_scores"][question_name]["feedback"] == "Well done!"
+
+
+def test_grade_answer_parametrized_timeout_with_sympy(
+    question_data: pl.QuestionData,
+) -> None:
+    """Test timeout with a sympy expression that takes a long time to evaluate."""
+    from sympy import exp, simplify, sin, symbols
+
+    question_name = "sympy_timeout_test"
+
+    question_data["submitted_answers"] = {question_name: "test"}
+
+    def sympy_grading_function(_: str) -> tuple[bool, str | None]:
+        # This is a complex sympy comparison that may take a while
+        x = symbols("x")
+        expr1 = exp(sin(x)) * (1 + sin(x) ** 10) ** 5
+        expr2 = exp(sin(x)) * (1 + sin(x) ** 2) ** 125
+        # This comparison will timeout
+        result = simplify(expr1 - expr2)
+        return (result == 0, None)  # type: ignore
+
+    # Use a very short timeout to ensure it times out
+    pl.grade_answer_parameterized(
+        question_data,
+        question_name,
+        sympy_grading_function,
+        timeout=0.5,
+        timeout_format_error="Your answer did not converge.",
+    )
+
+    # Should have a format error
+    assert question_name in question_data["format_errors"]
+    assert (
+        question_data["format_errors"][question_name] == "Your answer did not converge."
+    )
+    # Should not have scored the answer
+    assert question_data["partial_scores"][question_name]["score"] == 0.0
+
+
 @pytest.mark.repeat(100)
 def test_get_uuid() -> None:
     """Test basic properties of the pl.get_uuid() function."""

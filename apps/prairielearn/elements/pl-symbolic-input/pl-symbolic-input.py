@@ -8,7 +8,6 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
-from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
 from typing_extensions import assert_never
 
 
@@ -709,13 +708,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         return a_tru_sympy.equals(a_sub_sympy) is True, None
 
     try:
-        with ThreadingTimeout(SYMPY_TIMEOUT) as ctx:
-            pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
-        if ctx.state == TimeoutState.TIMED_OUT:
-            # If sympy times out, it's because the comparison couldn't converge, so we return an error.
-            data["format_errors"][name] = (
-                "Your answer did not converge, try a simpler expression."
-            )
+        pl.grade_answer_parameterized(
+            data,
+            name,
+            grade_function,
+            weight=weight,
+            timeout=SYMPY_TIMEOUT,
+            timeout_format_error="Your answer did not converge, try a simpler expression.",
+        )
     except ValueError as e:
         # We only want to catch the integer string conversion limit ValueError.
         # Others might be outside of the student's control and should error like normal.

@@ -15,6 +15,7 @@ from numpy.typing import ArrayLike
 from typing_extensions import assert_never
 
 from prairielearn.question_utils import QuestionData
+from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
@@ -170,6 +171,8 @@ def grade_answer_parameterized(
     name: str,
     grade_function: Callable[[Any], tuple[bool | float, str | None]],
     weight: int = 1,
+    timeout: float | None = None,
+    timeout_format_error: str | None = None,
 ) -> None:
     """
     Grade the answer for the input `name` using the provided `grade_function`.
@@ -188,6 +191,16 @@ def grade_answer_parameterized(
     - a string containing feedback
     - `None`, if there is no feedback (usually this should only occur if the answer is correct)
 
+    Args:
+        data: The question data dictionary.
+        name: The name of the answer input field.
+        grade_function: A function that takes the submitted answer and returns a 2-tuple of (score, feedback).
+        weight: The weight of this answer in the overall question score.
+        timeout: Optional timeout in seconds for executing the grade_function. If the function times out,
+            a format error will be set instead of grading the answer.
+        timeout_format_error: Optional custom error message to display when a timeout occurs. If not provided
+            and timeout is set, a default message will be used.
+
     Examples:
         >>> def grading_function(submitted_answer):
         ...     if submitted_answer == "foo":
@@ -199,10 +212,29 @@ def grade_answer_parameterized(
         ...     "submitted_answers": {"my_string_input": "bar"},
         ...     "partial_scores": {},
         ...     "answers_names": {},
+        ...     "format_errors": {},
         ... }
         >>> grade_answer_parameterized(data, "my_string_input", grading_function, weight=2)
         >>> data["partial_scores"]
         {"my_string_input": {"score": 0.5, "weight": 2, "feedback": "Almost there!"}}
+
+        >>> # Example with timeout
+        >>> def slow_grading_function(submitted_answer):
+        ...     import time
+        ...     time.sleep(10)  # This will timeout
+        ...     return True, None
+        >>> data = {
+        ...     "submitted_answers": {"my_input": "test"},
+        ...     "partial_scores": {},
+        ...     "answers_names": {},
+        ...     "format_errors": {},
+        ... }
+        >>> grade_answer_parameterized(
+        ...     data, "my_input", slow_grading_function, timeout=1.0,
+        ...     timeout_format_error="Your answer took too long to grade."
+        ... )
+        >>> data["format_errors"]["my_input"]
+        "Your answer took too long to grade."
     """
     # Create the data dictionary at first
     data["partial_scores"][name] = {"score": 0.0, "weight": weight}
@@ -214,22 +246,42 @@ def grade_answer_parameterized(
 
     submitted_answer = data["submitted_answers"][name]
 
-    # Run passed-in grading function
-    result, feedback_content = grade_function(submitted_answer)
+    # Execute the grading function, with optional timeout
+    timed_out = False
+
+    if timeout is not None:
+        with ThreadingTimeout(timeout) as ctx:
+            result, feedback_content = grade_function(submitted_answer)
+        timed_out = ctx.state == TimeoutState.TIMED_OUT
+    else:
+        result, feedback_content = grade_function(submitted_answer)
+
+    # Check if timeout occurred
+    if timed_out:
+        # Set format error instead of grading
+        error_message = (
+            timeout_format_error
+            if timeout_format_error is not None
+            else "Grading timed out - your answer may be too complex."
+        )
+        data["format_errors"][name] = error_message
+        return
 
     # Try converting partial score
-    if isinstance(result, bool):
+    # Note: result and feedback_content are always assigned in both branches above,
+    # but the type checker doesn't understand this flow
+    if isinstance(result, bool):  # type: ignore[possibly-unbound]
         partial_score = 1.0 if result else 0.0
-    elif isinstance(result, float | int):
+    elif isinstance(result, float | int):  # type: ignore[possibly-unbound]
         assert 0.0 <= result <= 1.0
         partial_score = result
     else:
-        assert_never(result)
+        assert_never(result)  # type: ignore[possibly-unbound]
 
     # Set corresponding partial score and feedback
     data["partial_scores"][name]["score"] = partial_score
 
-    if feedback_content:
+    if feedback_content:  # type: ignore[possibly-unbound]
         data["partial_scores"][name]["feedback"] = feedback_content
 
 
