@@ -45,7 +45,7 @@ export function CreateCourseInstanceModal({
   };
 
   return (
-    <Modal show={show} backdrop="static" centered onHide={onHide}>
+    <Modal show={show} backdrop="static" size="lg" onHide={onHide}>
       <form method="POST">
         <Modal.Header closeButton>
           <Modal.Title>Create course instance</Modal.Title>
