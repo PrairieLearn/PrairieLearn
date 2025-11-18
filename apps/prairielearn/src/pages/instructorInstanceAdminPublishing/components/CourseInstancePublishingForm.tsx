@@ -248,7 +248,7 @@ export function CourseInstancePublishingForm({
         return 'End date is required';
       }
       // Check if end date is after start date
-      if (start_date && value) {
+      if (start_date) {
         const startDateTime = plainDateTimeStringToDate(
           start_date,
           courseInstance.display_timezone,

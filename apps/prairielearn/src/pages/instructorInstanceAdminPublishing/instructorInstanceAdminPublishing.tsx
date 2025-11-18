@@ -22,7 +22,10 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
-import { InstructorInstanceAdminPublishing } from './instructorInstanceAdminPublishing.html.js';
+import { Hydrate } from '@prairielearn/preact/server';
+import { CourseInstancePublishingForm } from './components/CourseInstancePublishingForm.js';
+import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
+import { isRenderableComment } from '../../lib/comments.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -72,6 +75,7 @@ router.get(
         has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
         has_course_instance_permission_view: hasCourseInstancePermissionView,
       },
+      __csrf_token: csrfToken,
       course_instance: courseInstance,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
@@ -102,6 +106,10 @@ router.get(
       CourseInstanceAccessRuleSchema,
     );
 
+    const showComments = accessRules.some((access_rule) =>
+      isRenderableComment(access_rule.json_comment),
+    );
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -119,14 +127,24 @@ router.get(
               course={res.locals.course}
               urlPrefix={res.locals.urlPrefix}
             />
-            <InstructorInstanceAdminPublishing
-              courseInstance={courseInstance}
-              hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-              hasCourseInstancePermissionView={hasCourseInstancePermissionView}
-              accessRules={accessRules}
-              csrfToken={res.locals.__csrf_token}
-              origHash={origHash}
-            />
+
+            {courseInstance.modern_publishing ? (
+              <Hydrate>
+                <CourseInstancePublishingForm
+                  courseInstance={courseInstance}
+                  canEdit={hasCourseInstancePermissionEdit && origHash !== null}
+                  csrfToken={csrfToken}
+                  origHash={origHash}
+                />
+              </Hydrate>
+            ) : (
+              <LegacyAccessRuleCard
+                accessRules={accessRules}
+                showComments={showComments}
+                courseInstance={courseInstance}
+                hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+              />
+            )}
           </>
         ),
       }),
@@ -174,20 +192,12 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
-      const parsedResult = z
+      const parsedBody = z
         .object({
           start_date: z.string(),
           end_date: z.string(),
         })
-        .safeParse(req.body);
-
-      if (!parsedResult.success) {
-        flash('error', 'Invalid request body');
-        res.redirect(req.originalUrl);
-        return;
-      }
-
-      const parsedBody = parsedResult.data;
+        .parse(req.body);
 
       // Update the publishing settings
       const resolvedPublishing = {
