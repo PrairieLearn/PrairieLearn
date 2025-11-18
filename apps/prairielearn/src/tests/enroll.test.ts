@@ -579,7 +579,7 @@ describe('Self-enrollment institution restriction transitions', () => {
 
     // Update the course to belong to institution 2 (different from default institution 1)
     await execute(
-      'UPDATE pl_courses SET institution_id = $institution_id WHERE id = (SELECT course_id FROM course_instances WHERE id = $course_instance_id)',
+      'UPDATE courses SET institution_id = $institution_id WHERE id = (SELECT course_id FROM course_instances WHERE id = $course_instance_id)',
       {
         institution_id: '2',
         course_instance_id: '1',

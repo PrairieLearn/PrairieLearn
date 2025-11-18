@@ -28,7 +28,7 @@ Queries may also refer to a SQL file with the same name but extension `.sql`, wi
 
 To render columns as links, return column pairs like:
 
-- `course_id`/`course` - If these are both present, the `course_id` is not displayed but is used to link the `course`. The `course` column should be `pl_courses.short_name AS course`.
+- `course_id`/`course` - If these are both present, the `course_id` is not displayed but is used to link the `course`. The `course` column should be `courses.short_name AS course`.
 - `course_instance_id`/`course_instance` - The `course_instance` should be `course_instances.short_name AS course_instance`.
 - `assessment_id`/`assessment` - The `assessment` should be `aset.abbreviation || a.number || ': ' || a.title AS assessment` or just `aset.abbreviation || a.number AS assessment`.
 
