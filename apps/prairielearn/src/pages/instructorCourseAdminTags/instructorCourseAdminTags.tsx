@@ -1,7 +1,7 @@
-import { z } from 'zod';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';

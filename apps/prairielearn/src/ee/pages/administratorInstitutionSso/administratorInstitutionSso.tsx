@@ -2,9 +2,9 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
 import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
+import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../../lib/authn-providers.js';
