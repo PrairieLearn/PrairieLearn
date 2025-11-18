@@ -15,6 +15,8 @@ import {
   EnrollmentSchema as RawEnrollmentSchema,
   InstitutionSchema as RawInstitutionSchema,
   QuestionSchema as RawQuestionSchema,
+  RubricItemSchema as RawRubricItemSchema,
+  RubricSchema as RawRubricSchema,
   TagSchema as RawTagSchema,
   TopicSchema as RawTopicSchema,
   UserSchema as RawUserSchema,
@@ -289,3 +291,9 @@ export type StudentUser = z.infer<typeof StudentUserSchema>;
 /** Zones */
 export const StaffZoneSchema = RawZoneSchema.brand<'StaffZone'>();
 export type StaffZone = z.infer<typeof StaffZoneSchema>;
+
+export const StaffRubricSchema = RawRubricSchema.brand<'StaffRubric'>();
+export type StaffRubric = z.infer<typeof StaffRubricSchema>;
+
+export const StaffRubricItemSchema = RawRubricItemSchema.brand<'StaffRubricItem'>();
+export type StaffRubricItem = z.infer<typeof StaffRubricItemSchema>;
