@@ -17,21 +17,6 @@ interface InstructorCourseAdminInstancesPageProps {
   initialEndDateFormatted: string;
 }
 
-interface CreateInstanceButtonProps {
-  variant: 'primary' | 'light';
-  size?: 'sm';
-  onClick: () => void;
-}
-
-function CreateInstanceButton({ variant, size, onClick }: CreateInstanceButtonProps) {
-  return (
-    <Button variant={variant} size={size} type="button" onClick={onClick}>
-      <i class="fa fa-plus" aria-hidden="true" />
-      <span class="d-none d-sm-inline">Add course instance</span>
-    </Button>
-  );
-}
-
 interface CreateCourseInstanceModalProps {
   show: boolean;
   onHide: () => void;
@@ -206,21 +191,19 @@ function CreateCourseInstanceModal({
   );
 }
 
-interface EmptyStateProps {
-  courseExample: boolean;
-  canEditCourse: boolean;
-  needToSync: boolean;
-  urlPrefix: string;
-  onCreateClick: () => void;
-}
-
 function EmptyState({
   courseExample,
   canEditCourse,
   needToSync,
   urlPrefix,
   onCreateClick,
-}: EmptyStateProps) {
+}: {
+  courseExample: boolean;
+  canEditCourse: boolean;
+  needToSync: boolean;
+  urlPrefix: string;
+  onCreateClick: () => void;
+}) {
   return (
     <div class="my-4 card-body text-center" style="text-wrap: balance;">
       <p class="fw-bold">No course instances found.</p>
@@ -249,7 +232,10 @@ function EmptyState({
           a new course instance.
         </p>
       ) : (
-        <CreateInstanceButton variant="primary" size="sm" onClick={onCreateClick} />
+        <Button variant="primary" size="sm" type="button" onClick={onCreateClick}>
+          <i class="fa fa-plus" aria-hidden="true" />
+          <span class="d-none d-sm-inline">Add course instance</span>
+        </Button>
       )}
     </div>
   );
@@ -287,11 +273,15 @@ export function InstructorCourseAdminInstancesPage({
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h1>Course instances</h1>
           {courseInstances.length > 0 && canCreateInstances && (
-            <CreateInstanceButton
+            <Button
               variant="light"
               size="sm"
+              type="button"
               onClick={() => setShowCreateModal(true)}
-            />
+            >
+              <i class="fa fa-plus" aria-hidden="true" />
+              <span class="d-none d-sm-inline">Add course instance</span>
+            </Button>
           )}
         </div>
         {courseInstances.length > 0 ? (
