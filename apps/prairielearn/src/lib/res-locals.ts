@@ -24,6 +24,8 @@ import type {
 } from './question-render.types.js';
 import type { Prettify } from './types.js';
 
+export type UntypedResLocals = Record<string, any>;
+
 export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig {
   __csrf_token: string;
 }
@@ -72,7 +74,7 @@ export interface ResLocalsForPage {
 export type PageType = keyof ResLocalsForPage;
 
 export function getResLocalsForPage<T extends PageType>(
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): ResLocalsForPage[T] {
   return locals as ResLocalsForPage[T];
 }

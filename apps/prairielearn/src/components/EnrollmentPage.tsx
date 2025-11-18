@@ -1,7 +1,9 @@
+import type { UntypedResLocals } from '../lib/res-locals.js';
+
 import { PageLayout } from './PageLayout.js';
 
 interface EnrollmentPageProps {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   type:
     | 'blocked'
     | 'self-enrollment-disabled'

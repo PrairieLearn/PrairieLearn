@@ -1826,7 +1826,7 @@ export async function initExpress(): Promise<Express> {
     },
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'public_question';
       next();
     },

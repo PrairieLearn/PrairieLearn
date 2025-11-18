@@ -24,6 +24,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import type { UntypedResLocals } from '../lib/res-locals.js';
 import { assertNever } from '../lib/types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
@@ -64,7 +65,10 @@ interface QuestionProcessingContext {
   course_element_extensions: ElementExtensionNameDirMap;
 }
 
-type ElementExtensionNameDirMap = Record<string, Record<string, ElementExtensionJsonExtension>>;
+export type ElementExtensionNameDirMap = Record<
+  string,
+  Record<string, ElementExtensionJsonExtension>
+>;
 type ElementNameMap = Record<
   string,
   ((ElementCoreJson & { type: 'core' }) | (ElementCourseJson & { type: 'course' })) & {
@@ -880,7 +884,7 @@ async function renderPanel(
   variant: Variant,
   submission: Submission | null,
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
   context: QuestionProcessingContext,
 ): Promise<RenderPanelResult> {
   debug(`renderPanel(${panel})`);
@@ -1025,7 +1029,7 @@ async function renderPanelInstrumented(
   variant: Variant,
   question: Question,
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
   context: QuestionProcessingContext,
 ): Promise<RenderPanelResult> {
   return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
@@ -1056,7 +1060,7 @@ export async function render(
   submission: Submission | null,
   submissions: Submission[],
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
@@ -1093,26 +1097,29 @@ export async function render(
       }
 
       if (renderSelection.submissions) {
-        htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
-          const {
-            courseIssues: newCourseIssues,
-            html,
-            renderedElementNames,
-          } = await renderPanelInstrumented(
-            'submission',
-            codeCaller,
-            submission,
-            variant,
-            question,
-            course,
-            locals,
-            context,
-          );
+        htmls.submissionHtmls = await async.mapSeries(
+          submissions,
+          async (submission: Submission) => {
+            const {
+              courseIssues: newCourseIssues,
+              html,
+              renderedElementNames,
+            } = await renderPanelInstrumented(
+              'submission',
+              codeCaller,
+              submission,
+              variant,
+              question,
+              course,
+              locals,
+              context,
+            );
 
-          courseIssues.push(...newCourseIssues);
-          allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-          return html;
-        });
+            courseIssues.push(...newCourseIssues);
+            allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+            return html;
+          },
+        );
       }
 
       if (renderSelection.answer) {

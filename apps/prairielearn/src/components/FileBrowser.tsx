@@ -16,6 +16,7 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
 import * as editorUtil from '../lib/editorUtil.js';
 import type { InstructorFilePaths } from '../lib/instructorFiles.js';
+import type { UntypedResLocals } from '../lib/res-locals.js';
 import { encodePath } from '../lib/uri-util.js';
 
 import { PageLayout } from './PageLayout.js';
@@ -236,7 +237,7 @@ export async function createFileBrowser({
   paths,
   isReadOnly,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   paths: InstructorFilePaths;
   isReadOnly: boolean;
 }) {
@@ -271,7 +272,7 @@ export function FileBrowser({
   fileInfo,
   directoryListings,
   isReadOnly,
-}: { resLocals: Record<string, any>; paths: InstructorFilePaths; isReadOnly: boolean } & (
+}: { resLocals: UntypedResLocals; paths: InstructorFilePaths; isReadOnly: boolean } & (
   | { isFile: true; fileInfo: FileInfo; directoryListings?: undefined }
   | { isFile: false; directoryListings: DirectoryListings; fileInfo?: undefined }
 )) {

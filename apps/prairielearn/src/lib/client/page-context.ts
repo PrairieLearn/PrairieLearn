@@ -5,6 +5,7 @@ import { run } from '@prairielearn/run';
 import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 import { SelectUserSchema } from '../authn.types.js';
 import { PageAuthzDataSchema } from '../authz-data-lib.js';
+import type { UntypedResLocals } from '../res-locals.js';
 
 import {
   RawStaffAssessmentSchema,
@@ -52,21 +53,21 @@ export type PageContextWithAuthzData = z.infer<typeof PageContextWithAuthzDataSc
  * New options will be withAuthzData, pageType, and requestedRole.
  */
 export function getPageContext(
-  resLocals: Record<string, any>,
+  resLocals: UntypedResLocals,
   options?: {
     withAuthzData?: true;
   },
 ): PageContextWithAuthzData;
 
 export function getPageContext(
-  resLocals: Record<string, any>,
+  resLocals: UntypedResLocals,
   options: {
     withAuthzData: false;
   },
 ): PageContext;
 
 export function getPageContext(
-  resLocals: Record<string, any>,
+  resLocals: UntypedResLocals,
   {
     withAuthzData = true,
   }: {
@@ -126,17 +127,17 @@ export const StaffCourseInstanceContextSchema =
 export type StaffCourseInstanceContext = z.infer<typeof StaffCourseInstanceContextSchema>;
 
 export function getCourseInstanceContext(
-  resLocals: Record<string, any>,
+  resLocals: UntypedResLocals,
   pageType: 'student',
 ): StudentCourseInstanceContext;
 
 export function getCourseInstanceContext(
-  resLocals: Record<string, any>,
+  resLocals: UntypedResLocals,
   pageType: 'instructor',
 ): StaffCourseInstanceContext;
 
 export function getCourseInstanceContext(
-  resLocals: Record<string, any>,
+  resLocals: UntypedResLocals,
   pageType: 'student' | 'instructor',
 ): StudentCourseInstanceContext | StaffCourseInstanceContext {
   const schema = run(() => {
@@ -159,7 +160,7 @@ const StaffAssessmentContextSchema =
 
 export type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema>;
 
-export function getAssessmentContext(resLocals: Record<string, any>): StaffAssessmentContext {
+export function getAssessmentContext(resLocals: UntypedResLocals): StaffAssessmentContext {
   const schema = StaffAssessmentContextSchema;
   return schema.parse(resLocals);
 }

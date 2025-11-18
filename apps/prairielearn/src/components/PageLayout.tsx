@@ -6,6 +6,7 @@ import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
+import type { UntypedResLocals } from '../lib/res-locals.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
@@ -34,7 +35,7 @@ export function PageLayout({
   postContent,
 }: {
   /** The locals object from the Express response. */
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   /** The title of the page in the browser. */
   pageTitle: string;
   /** The information used to configure the navbar. */

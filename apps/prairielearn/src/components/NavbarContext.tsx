@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
+import type { UntypedResLocals } from '../lib/res-locals.js';
 
 import { type NavPage, type NavSubPage, type TabInfo } from './Navbar.types.js';
 
@@ -9,7 +10,7 @@ export function ContextNavigation({
   navPage,
   navSubPage,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navSubPage: NavSubPage;
 }) {
@@ -45,7 +46,7 @@ function NavbarTab({
   tabInfo,
 }: {
   navSubPage: NavSubPage;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   tabInfo: TabInfo;
 }) {
   const { urlPrefix } = resLocals;
