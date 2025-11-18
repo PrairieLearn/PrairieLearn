@@ -80,10 +80,10 @@ make test-all
 Or, to run just a specific subset of tests:
 
 ```sh
-make test-js            # Javascript tests (both packages and applications)
-make test-prairielearn  # PrairieLearn application tests
-make test-python        # Python tests
-make test-e2e           # E2E tests (run `make e2e-deps` first)
+make test-js           # Javascript tests (both packages and applications)
+make test-prairielearn # PrairieLearn application tests
+make test-python       # Python tests
+make test-e2e          # E2E tests (run `make e2e-deps` first)
 ```
 
 ### JavaScript tests
