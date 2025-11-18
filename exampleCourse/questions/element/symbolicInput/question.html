@@ -35,7 +35,7 @@
 
 <pl-card header="An example that uses the formula editor input">
     <pl-question-panel>
-        <p>Submit $\displaystyle {\rm test}(\sqrt{\frac{e^x}{x^2}})$</p>
+        <p>Submit $\displaystyle {\rm test}\left(\sqrt{\frac{e^x}{x^2}}\right)$</p>
     </pl-question-panel>
     <pl-symbolic-input label="$y = $" aria-label="Function expression" formula-editor="true" answers-name="formula_editor" variables="x" show-score="false" custom-functions="test"></pl-symbolic-input>
 </pl-card>
@@ -116,4 +116,13 @@
         <p>Note: This tests the symbolic input's ability to handle complex nested absolute value expressions with multiple terms.</p>
     </pl-question-panel>
     <pl-symbolic-input aria-label="Nested absolute value expression" answers-name="nested_abs" variables="x" label="$y =$"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example that times-out.">
+    <pl-question-panel>
+        <p>This demonstrates a submission for which sympy takes an indeterminate amount of time to solve, when the answer is wrong.</p>
+        <p>Submit below $\exp(sin(n)) \cdot (1+ sin(n)^2)^{125}$. The actual answer is $\exp(\sin(n))*(1 + \sin(n)^{10})^{5}$, but the submission will timeout. </p>
+    </pl-question-panel>
+    <pl-symbolic-input aria-label="Timeout example" answers-name="timeout" variables="n" correct-answer="exp(sin(n))*(1 + sin(n)**10)**5"></pl-symbolic-input>
+    <br><br>
 </pl-card>
