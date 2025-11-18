@@ -13,6 +13,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffTopicSchema } from '../../lib/client/safe-db-types.js';
 import { TopicSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
@@ -27,22 +28,27 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const topics = await selectTopicsByCourseId(res.locals.course.id);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    const topics = await selectTopicsByCourseId(pageContext.course.id);
 
     const courseInfoExists = await fs.pathExists(
-      path.join(res.locals.course.path, 'infoCourse.json'),
+      path.join(pageContext.course.path, 'infoCourse.json'),
     );
     let origHash: string | null = null;
     if (courseInfoExists) {
       origHash = sha256(
         b64EncodeUnicode(
-          await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
+          await fs.readFile(path.join(pageContext.course.path, 'infoCourse.json'), 'utf8'),
         ),
       ).toString();
     }
 
     const allowEdit =
-      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
+      pageContext.authz_data.has_course_permission_edit && !pageContext.course.example_course;
 
     res.send(
       PageLayout({
@@ -60,14 +66,14 @@ router.get(
           <>
             <CourseSyncErrorsAndWarnings
               authzData={res.locals.authz_data}
-              course={res.locals.course}
-              urlPrefix={res.locals.urlPrefix}
+              course={pageContext.course}
+              urlPrefix={pageContext.urlPrefix}
             />
             <Hydrate>
               <InstructorCourseAdminTopicsTable
                 topics={z.array(StaffTopicSchema).parse(topics)}
                 allowEdit={allowEdit}
-                csrfToken={res.locals.__csrf_token}
+                csrfToken={pageContext.__csrf_token}
                 origHash={origHash}
               />
             </Hydrate>

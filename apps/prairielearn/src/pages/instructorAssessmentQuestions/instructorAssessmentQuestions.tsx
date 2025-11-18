@@ -22,11 +22,10 @@ router.get(
       assessment_id: res.locals.assessment.id,
     });
 
-    const { authz_data, urlPrefix, course_instance, course, assessment, assessment_set } =
-      extractPageContext(res.locals, {
-        pageType: 'assessment',
-        accessType: 'instructor',
-      });
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
 
     res.send(
       PageLayout({
@@ -44,23 +43,25 @@ router.get(
         content: (
           <>
             <AssessmentSyncErrorsAndWarnings
-              authzData={authz_data}
-              assessment={assessment}
-              courseInstance={course_instance}
-              course={course}
-              urlPrefix={urlPrefix}
+              authzData={pageContext.authz_data}
+              assessment={pageContext.assessment}
+              courseInstance={pageContext.course_instance}
+              course={pageContext.course}
+              urlPrefix={pageContext.urlPrefix}
             />
             <Hydrate>
               <InstructorAssessmentQuestionsTable
-                course={course}
+                course={pageContext.course}
                 questionRows={questionRows}
-                urlPrefix={urlPrefix}
-                assessmentType={assessment.type}
-                assessmentSetName={assessment_set.name}
-                assessmentNumber={assessment.number}
-                hasCoursePermissionPreview={res.locals.authz_data.has_course_permission_preview}
+                urlPrefix={pageContext.urlPrefix}
+                assessmentType={pageContext.assessment.type}
+                assessmentSetName={pageContext.assessment_set.name}
+                assessmentNumber={pageContext.assessment.number}
+                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
                 hasCourseInstancePermissionEdit={
-                  res.locals.authz_data.has_course_instance_permission_edit
+                  // TODO: This should never be undefined on this page. Ideally we fix
+                  // this up in the `extractPageContext` function types.
+                  pageContext.authz_data.has_course_instance_permission_edit ?? false
                 }
                 csrfToken={res.locals.__csrf_token}
               />

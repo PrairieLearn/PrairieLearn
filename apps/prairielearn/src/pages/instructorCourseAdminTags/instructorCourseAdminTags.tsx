@@ -6,6 +6,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffTagSchema } from '../../lib/client/safe-db-types.js';
 import { selectTagsByCourseId } from '../../models/tags.js';
 
@@ -16,7 +17,11 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const tags = await selectTagsByCourseId(res.locals.course.id);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+    const tags = await selectTagsByCourseId(pageContext.course.id);
 
     res.send(
       PageLayout({
@@ -34,8 +39,8 @@ router.get(
           <>
             <CourseSyncErrorsAndWarnings
               authzData={res.locals.authz_data}
-              course={res.locals.course}
-              urlPrefix={res.locals.urlPrefix}
+              course={pageContext.course}
+              urlPrefix={pageContext.urlPrefix}
             />
             <Hydrate>
               <InstructorCourseAdminTagsTable tags={z.array(StaffTagSchema).parse(tags)} />
