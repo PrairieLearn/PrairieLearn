@@ -152,7 +152,7 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
                     id={`${columnId}-${value}`}
                     onChange={() => toggleSelected(value)}
                   />
-                  <label class="form-check-label" for={`${columnId}-${value}`}>
+                  <label class="form-check-label fw-normal" for={`${columnId}-${value}`}>
                     {renderValueLabel({
                       value,
                       isSelected,
