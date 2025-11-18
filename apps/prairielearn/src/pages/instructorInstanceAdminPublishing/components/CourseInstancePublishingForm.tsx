@@ -124,7 +124,7 @@ export function CourseInstancePublishingForm({
 
     switch (newStatus) {
       case 'unpublished': {
-        // If the original dates from the form put the course instance in a unpublished state,
+        // If the original dates from the form put the course instance in an unpublished state,
         // use those dates.
         if (originalStartDate && originalEndDate && now >= originalEndDate) {
           updatedStartDate = dateToPlainDateTime(
