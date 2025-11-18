@@ -496,7 +496,7 @@ def test_grade_answer_parametrized_timeout(
     grading_function: Callable[[str], tuple[bool, str | None]],
     timeout: float,
     timeout_format_error: str | None,
-    should_timeout: bool,
+    should_timeout: bool,  # noqa: FBT001
     expected_score: float,
     expected_feedback: str | None,
     expected_error_substring: str | None,
