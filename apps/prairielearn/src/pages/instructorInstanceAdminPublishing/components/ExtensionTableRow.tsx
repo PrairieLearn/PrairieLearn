@@ -60,9 +60,9 @@ export function ExtensionTableRow({
             return (
               <>
                 {extension.user_data.length > 0 && (
-                  <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                  <div class="d-flex flex-wrap align-items-center gap-2">
                     {studentsToShow.map((user, index) => (
-                      <div key={user.uid} class="d-flex align-items-center">
+                      <div key={user.uid}>
                         <a
                           href={getStudentEnrollmentUrl(
                             `/pl/course_instance/${courseInstance.id}/instructor`,
