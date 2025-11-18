@@ -32,8 +32,14 @@ import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
-import { AssessmentQuestion } from './assessmentQuestion.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
+import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
+import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
+import { Hydrate } from '@prairielearn/preact/server';
+import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
+import { PageLayout } from '../../../components/PageLayout.js';
+import { extractPageContext } from '../../../lib/client/page-context.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -75,7 +81,80 @@ router.get(
       res.locals.assessment_question,
     );
 
+    const {
+      authz_data,
+      urlPrefix,
+      __csrf_token,
+      course_instance,
+      course,
+      question,
+      assessment_question,
+      num_open_instances,
+      number_in_alternative_group,
+    } = extractPageContext(resLocals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
+
     res.send(
+      PageLayout({
+        resLocals: res.locals,
+        pageTitle: 'Manual Grading',
+        navContext: {
+          type: 'instructor',
+          page: 'assessment',
+          subPage: 'manual_grading',
+        },
+        options: {
+          fullWidth: true,
+          pageNote: `Question ${number_in_alternative_group}`,
+        },
+        headContent: compiledStylesheetTag('tanstackTable.css'),
+        content: (
+          <>
+            <AssessmentSyncErrorsAndWarnings
+              authzData={authz_data}
+              assessment={assessment}
+              courseInstance={course_instance}
+              course={course}
+              urlPrefix={urlPrefix}
+            />
+            <AssessmentOpenInstancesAlert
+              numOpenInstances={num_open_instances}
+              assessmentId={assessment.id}
+              urlPrefix={urlPrefix}
+            />
+    
+            <Hydrate fullHeight>
+              <AssessmentQuestionManualGrading
+                hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+                search={search}
+                instanceQuestionsInfo={instanceQuestionsInfo}
+                course={course}
+                courseInstance={course_instance}
+                urlPrefix={urlPrefix}
+                csrfToken={__csrf_token}
+                assessment={assessment}
+                assessmentQuestion={assessment_question}
+                questionQid={question.qid}
+                aiGradingEnabled={aiGradingEnabled}
+                initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
+                rubricData={rubric_data}
+                instanceQuestionGroups={instanceQuestionGroups}
+                courseStaff={courseStaff}
+                aiGradingStats={aiGradingEnabled && assessment_question.ai_grading_mode
+                  ? await calculateAiGradingStats(assessment_question)
+                  : null}
+                numOpenInstances={num_open_instances}
+                isDevMode={process.env.NODE_ENV === 'development'}
+                questionTitle={question.title ?? ''}
+                questionNumber={Number(number_in_alternative_group)}
+              />
+            </Hydrate>
+          </>
+        ),
+
       AssessmentQuestion({
         resLocals: res.locals,
         courseStaff,
