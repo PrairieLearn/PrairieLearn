@@ -1,5 +1,5 @@
 import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
 
-import { InstructorCourseAdminInstances } from '../../../../src/pages/InstructorCourseAdminInstances/instructorCourseAdminInstances.html.js';
+import { InstructorCourseAdminInstances } from '../../../../src/pages/instructorCourseAdminInstances/InstructorCourseAdminInstances.html.tsx';
 
 registerHydratedComponent(InstructorCourseAdminInstances);
