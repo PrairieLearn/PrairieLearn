@@ -36,7 +36,7 @@ def generate(data):
 | `placeholder`             | string                  | —               | Hint displayed inside the input box describing the expected type of input.                                                                                                |
 | `size`                    | integer                 | 35              | Width of the input box.                                                                                                                                                   |
 | `show-help-text`          | boolean                 | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                      |
-| `multiline`               | boolean                 | false           | Whether or not not to allow for multiline input using a `textarea` display.                                                                                               |
+| `multiline`               | boolean                 | false           | Whether or not to allow for multiline input using a `textarea` display.                                                                                                   |
 
 ## Using multiline inputs
 

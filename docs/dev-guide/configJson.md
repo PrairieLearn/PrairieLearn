@@ -38,7 +38,7 @@ Then, the path will be accessible at `/myCourse` (note the beginning slash).
 
 ## Setting up external image capture locally
 
-The [`pl-image-capture`](../elements/pl-number-input.md) element lets users capture images of submitted work through an external device, such as a mobile device or tablet, or a local camera.
+The [`pl-image-capture`](../elements/pl-image-capture.md) element lets users capture images of submitted work through an external device, such as a mobile device or tablet, or a local camera.
 
 To use external capture locally, you must set `serverCanonicalHost` in `config.json` to your local IPv4 address.
 

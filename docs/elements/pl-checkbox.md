@@ -77,7 +77,7 @@ The `min-select` and `max-select` attributes determine the minimum and maximum n
 To compute `max-select`, we use a similar algorithm (note the different default value in step 3):
 
 1. If the `max-select` attribute is explicitly set, then we use the specified value of `max-select`.
-2. If `max-select` is not specified, but `max-correct` is specified along with `detailed-help-text="true"`, then we use the specified value of `min-correct`.
+2. If `max-select` is not specified, but `min-correct` is specified along with `detailed-help-text="true"`, then we use the specified value of `min-correct`.
 3. If steps 1 and 2 do not apply, then `max-select` defaults to the number of displayed checkbox options (i.e. students can select all displayed options by default).
 
 ## Example implementations

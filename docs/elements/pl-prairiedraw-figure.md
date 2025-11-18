@@ -28,7 +28,7 @@ Create and display a prairiedraw image.
 
 ## Details
 
-The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
+The provided `script-name` corresponds to a file located within the directory for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
 
 ## Example implementations
 

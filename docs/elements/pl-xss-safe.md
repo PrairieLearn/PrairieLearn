@@ -32,7 +32,5 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 
 - [`pl-file-editor` to provide an in-browser code environment](pl-file-editor.md)
 
-## Conditional Elements
-
 [demo/markdowneditorlivepreview]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/markdownEditorLivePreview
 [element/xsssafe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/xssSafe
