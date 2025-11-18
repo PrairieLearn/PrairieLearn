@@ -655,7 +655,12 @@ export function resetConfig() {
   loader.reset();
 }
 
-export function setLocalsFromConfig(locals: Record<string, any>) {
+export interface ResLocalsConfig {
+  urlPrefix: string;
+  navbarType: 'plain' | 'student' | 'instructor' | 'public';
+}
+
+export function setLocalsFromConfig(locals: Partial<ResLocalsConfig>) {
   locals.urlPrefix = '/pl';
   locals.navbarType = 'plain';
 }

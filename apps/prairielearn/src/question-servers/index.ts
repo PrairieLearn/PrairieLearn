@@ -1,11 +1,10 @@
 import type { Question } from '../lib/db-types.js';
 
-import { type QuestionServer } from './types.js';
+import type { EffectiveQuestionType, QuestionServer } from './types.js';
 
 export * from './types.js';
 
 type QuestionType = Question['type'];
-export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
 const questionModules = {
   Calculation: await import('./calculation-subprocess.js'),
