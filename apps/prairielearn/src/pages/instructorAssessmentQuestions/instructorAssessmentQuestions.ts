@@ -48,7 +48,7 @@ const SaveQuestionsSchema = z.object({
   zones: SaveQuestionsZonesSchema,
 });
 
-function filterZones(zones: SaveQuestionsZones, assessmentInfo) {
+export function filterZones(zones: SaveQuestionsZones, assessmentInfo) {
   return zones.map((zone, i) => {
     // Start with a shallow copy of the existing zone to preserve unknown fields
     const existingZone = assessmentInfo.zones?.[i];

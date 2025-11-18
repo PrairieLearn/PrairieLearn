@@ -64,7 +64,7 @@ export function EditQuestionModal({
 }: {
   editQuestionModalState: EditQuestionModalState;
   onHide: () => void;
-  handleUpdateQuestion: (updatedQuestion) => void;
+  handleUpdateQuestion: (updatedQuestion: ZoneQuestionJson | QuestionAlternativeJson) => void;
   assessmentType: 'Homework' | 'Exam';
   qidValidationError?: string;
 }) {
