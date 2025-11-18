@@ -86,11 +86,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
+
+    a_true = None
     if pl.has_attrib(element, "correct-answer"):
         if name in data["correct_answers"]:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
-
         a_true = pl.get_string_attrib(element, "correct-answer")
+    elif isinstance(data["correct_answers"][name], str):
+        a_true = str(data["correct_answers"][name])
+
+    # String case
+    if a_true is not None:
         variables = psu.get_items_list(
             pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
         )
@@ -127,15 +133,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
 
         data["correct_answers"][name] = a_true
+    # JSON (native SymPy) case
     else:
-        # Try to compare the correct answer to an arbitrary value.
-        # If the correct answer times out here, it will also time out for most student submissions.
-        a_true = psu.json_to_sympy(
+        a_true_sympy = psu.json_to_sympy(
             data["correct_answers"][name],
             allow_complex=allow_complex,
             allow_trig_functions=allow_trig,
         )
-        check_answer_gradability(a_true, name)
+        check_answer_gradability(a_true_sympy, name)
 
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
@@ -162,7 +167,7 @@ def check_answer_gradability(a_true: sympy.Expr, name: str) -> None:
     """
     Check whether a SymPy expression can be graded using SymPy's built-in "equals" function.
     This is only a basic sanity check that compares the expression to 0. Expressions that time out
-    or raise errors for this comparison will most likely cause similar issues for most student submissions.
+    or raise errors for this comparison will most likely cause similar issues for student submissions.
 
     Args:
         a_true: SymPy expression to be tested for gradability
@@ -776,6 +781,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             simp_f = SYMPY_ADDITIONAL_SIMPLIFICATIONS[simplification]
             a_sub_sympy = simp_f(a_sub_sympy)
             a_tru_sympy = simp_f(a_tru_sympy)
+            # Make the type checker happy
+            assert isinstance(a_sub_sympy, sympy.Expr)
+            assert isinstance(a_tru_sympy, sympy.Expr)
 
         return a_tru_sympy.equals(a_sub_sympy) is True, None
 
