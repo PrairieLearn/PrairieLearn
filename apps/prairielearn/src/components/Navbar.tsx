@@ -180,8 +180,9 @@ function NavbarByType({
       });
     } else {
       switch (navbarType) {
-        case 'plain':
         case undefined:
+        case 'plain':
+        case 'administrator':
           return NavbarPlain({ resLocals, navPage });
         case 'instructor':
           return NavbarInstructor({ resLocals, navPage, navSubPage });
