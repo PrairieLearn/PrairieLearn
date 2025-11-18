@@ -59,7 +59,7 @@ export function Workspace({
             {
               serverRemainingMS: resLocals.assessment_instance_remaining_ms,
               serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
-              serverUpdateURL: `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance.id}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
+              serverUpdateURL: `/pl/course_instance/${resLocals.course_instance.id}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
               canTriggerFinish: false,
               showsTimeoutWarning: true,
               reloadOnFail: false,

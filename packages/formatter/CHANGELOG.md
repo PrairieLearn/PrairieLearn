@@ -1,5 +1,11 @@
 # @prairielearn/formatter
 
+## 1.5.0
+
+### Minor Changes
+
+- 77f7620: Allow passing `Temporal.PlainDateTime` to `formatDate` and `formatDateFriendly`
+
 ## 1.4.8
 
 ### Patch Changes

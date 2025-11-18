@@ -140,7 +140,7 @@ export async function loadUser(
   }
 
   if (options.redirect) {
-    let redirUrl = config.homeUrl;
+    let redirUrl = '/';
     if ('pl2_pre_auth_url' in req.cookies) {
       redirUrl = req.cookies.pl2_pre_auth_url;
       clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);

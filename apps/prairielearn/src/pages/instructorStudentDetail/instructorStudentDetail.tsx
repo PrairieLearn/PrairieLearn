@@ -7,7 +7,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffAuditEventSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
@@ -34,13 +34,12 @@ router.get(
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     const { urlPrefix } = pageContext;
-    const {
-      course_instance: courseInstance,
-      course,
-      institution,
-    } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance, course, institution } = pageContext;
     const courseInstanceUrl = getCourseInstanceUrl(courseInstance.id);
 
     const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
@@ -123,14 +122,15 @@ router.get(
 router.post(
   '/:enrollment_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     if (!pageContext.authz_data.has_course_instance_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
-    const { authz_data: authzData } = getPageContext(res.locals);
-
-    const { course_instance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { authz_data: authzData, course_instance: courseInstance } = pageContext;
 
     const action = req.body.__action;
     const enrollment_id = req.params.enrollment_id;
@@ -138,7 +138,7 @@ router.post(
     // assert that the enrollment belongs to the course instance
     const enrollment = await selectEnrollmentById({
       id: enrollment_id,
-      courseInstance: course_instance,
+      courseInstance,
       requestedRole: 'Student Data Editor',
       authzData,
     });
@@ -180,9 +180,7 @@ router.post(
           authzData,
           requestedRole: 'Student Data Editor',
         });
-        res.redirect(
-          `/pl/course_instance/${course_instance.id}/instructor/instance_admin/students`,
-        );
+        res.redirect(`/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`);
         break;
       }
       case 'invite_student': {

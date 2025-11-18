@@ -8,6 +8,7 @@ import {
   type StaffInstitution,
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
+import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
 
 import { EmptyStateCards } from './components/EmptyStateCards.js';
 import { StudentCoursesCard } from './components/StudentCoursesCard.js';
@@ -28,13 +29,19 @@ export const InstructorHomePageCourseSchema = z.object({
 export type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
 
 export const StudentHomePageCourseSchema = z.object({
-  id: RawStudentCourseInstanceSchema.shape.id,
+  course_instance: RawStudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
-  long_name: RawStudentCourseInstanceSchema.shape.long_name,
   enrollment: StudentEnrollmentSchema,
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+
+export const StudentHomePageCourseWithExtensionSchema = StudentHomePageCourseSchema.extend({
+  latest_publishing_extension: CourseInstancePublishingExtensionSchema.nullable(),
+});
+export type StudentHomePageCourseWithExtension = z.infer<
+  typeof StudentHomePageCourseWithExtensionSchema
+>;
 
 export function Home({
   canAddCourses,

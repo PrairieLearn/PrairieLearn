@@ -14,7 +14,7 @@ export function AdministratorAdmins({
     resLocals,
     pageTitle: 'Administrators',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'administrators',
     },

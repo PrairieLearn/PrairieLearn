@@ -44,7 +44,6 @@ onDocumentReady(() => {
     showAiGenerateQuestionButton,
     qidPrefix,
     urlPrefix,
-    plainUrlPrefix,
   } = decodeData<QuestionsTableData>('questions-table-data');
 
   window.topicList = function () {
@@ -176,7 +175,6 @@ onDocumentReady(() => {
       )
       .map((assessment) =>
         AssessmentBadgeHtml({
-          plainUrlPrefix,
           courseInstanceId: course_instance_id,
           assessment,
         }).toString(),
