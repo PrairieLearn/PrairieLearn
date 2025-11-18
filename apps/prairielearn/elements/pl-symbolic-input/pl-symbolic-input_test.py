@@ -1,8 +1,11 @@
 import importlib
 
 import pytest
+import sympy
+from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
 
 symbolic_input = importlib.import_module("pl-symbolic-input")
+x = sympy.symbols("x")
 
 
 @pytest.mark.parametrize(
@@ -65,3 +68,31 @@ def test_format_formula_editor_submission_for_sympy(
         sub, allow_trig, variables, custom_functions
     )
     assert out == expected
+
+
+@pytest.mark.parametrize(
+    ("ans", "expect_exception"),
+    [
+        # Examples that were reported or found during testing
+        (7 ** (x + 8) * sympy.log(7), True),
+        (5000000 * x * sympy.log(5), True),
+        (2 ** (65000 * x), True),
+        (30000 * x * sympy.log(5), False),
+        # A complex example that can be problematic for certain student answers, but is not generally causing exceptions
+        (
+            (-8 * x * sympy.tan(8 * x) + sympy.log(sympy.cos(8 * x)))
+            * sympy.cos(8 * x) ** x,
+            False,
+        ),
+    ],
+)
+def test_check_answer_gradability(ans: sympy.Expr, expect_exception: bool) -> None:
+    # Precaution to make sure we fail the test rather than keep running indefinitely if the check doesn't work as expected
+    with ThreadingTimeout(symbolic_input.SYMPY_TIMEOUT) as ctx:
+        if expect_exception:
+            with pytest.raises(ValueError):  # noqa: PT011
+                symbolic_input.check_answer_gradability(ans, "test")
+        else:
+            symbolic_input.check_answer_gradability(ans, "test")
+    if ctx.state == TimeoutState.TIMED_OUT:
+        raise AssertionError(f'Unexpected timeout for expression "{ans}".')

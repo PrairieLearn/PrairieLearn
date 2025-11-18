@@ -80,6 +80,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
+    allow_complex = pl.get_boolean_attrib(
+        element, "allow-complex", ALLOW_COMPLEX_DEFAULT
+    )
+    allow_trig = pl.get_boolean_attrib(
+        element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
     if pl.has_attrib(element, "correct-answer"):
         if name in data["correct_answers"]:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
@@ -91,34 +97,28 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         custom_functions = psu.get_items_list(
             pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
         )
-        allow_complex = pl.get_boolean_attrib(
-            element, "allow-complex", ALLOW_COMPLEX_DEFAULT
-        )
-        allow_trig = pl.get_boolean_attrib(
-            element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
-        )
+
         allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
         blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
-        simplify_expression = pl.get_boolean_attrib(
-            element,
-            "display-simplified-expression",
-            DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
-        )
         # Validate that the answer can be parsed before storing
         if a_true.strip() != "":
             try:
-                psu.convert_string_to_sympy(
+                a_true_sympy = psu.convert_string_to_sympy(
                     a_true,
                     variables,
                     allow_complex=allow_complex,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
-                    simplify_expression=simplify_expression,
                 )
+
             except psu.BaseSympyError as exc:
                 raise ValueError(
                     f'Parsing correct answer "{a_true}" for "{name}" failed.'
                 ) from exc
+
+            # Try to compare the correct answer to an arbitrary value.
+            # If the correct answer times out here, it will also time out for most student submissions.
+            check_answer_gradability(a_true_sympy, name)
         elif allow_blank and blank_value == "":
             a_true = ""
         else:
@@ -127,6 +127,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
 
         data["correct_answers"][name] = a_true
+    else:
+        # Try to compare the correct answer to an arbitrary value.
+        # If the correct answer times out here, it will also time out for most student submissions.
+        a_true = psu.json_to_sympy(
+            data["correct_answers"][name],
+            allow_complex=allow_complex,
+            allow_trig_functions=allow_trig,
+        )
+        check_answer_gradability(a_true, name)
 
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
@@ -147,6 +156,35 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         raise ValueError(
             "The 'additional-simplifications' contain one of more unsupported simplification(s). Please see the documentation for a full list of supported simplifications."
         )
+
+
+def check_answer_gradability(a_true: sympy.Expr, name: str) -> None:
+    """
+    Check whether a SymPy expression can be graded using SymPy's built-in "equals" function.
+    This is only a basic sanity check that compares the expression to 0. Expressions that time out
+    or raise errors for this comparison will most likely cause similar issues for most student submissions.
+
+    Args:
+        a_true: SymPy expression to be tested for gradability
+        name: Element name to be displayed in error messages
+
+    Raises:
+        ValueError: ss
+    """
+    try:
+        with ThreadingTimeout(SYMPY_TIMEOUT) as ctx:
+            a_true.equals(0)
+        if ctx.state == TimeoutState.TIMED_OUT:
+            raise ValueError(
+                f'Parsing correct answer "{a_true}" for "{name}" failed as it does not converge under comparison. See the element documentation for more details on how to resolve this.'
+            )
+    # Also check for integer expansion issues (and provide a better error message than Python's default).
+    except ValueError as e:
+        if "integer string conversion" in str(e):
+            raise ValueError(
+                f'Parsing correct answer "{a_true}" for "{name}" failed as it expands integers longer than {get_int_max_str_digits()}.'
+            ) from e
+        raise
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
