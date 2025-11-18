@@ -7,7 +7,7 @@ import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../../lib/authn-providers.js';
-import { getPageContext } from '../../../lib/client/page-context.js';
+import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   StaffAuthnProviderSchema,
   StaffInstitutionSchema,
@@ -64,7 +64,11 @@ router.get(
       req.params.institution_id,
     );
 
-    const pageContext = getPageContext(res.locals, { withAuthzData: false });
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+      withAuthzData: false,
+    });
 
     res.send(
       PageLayout({

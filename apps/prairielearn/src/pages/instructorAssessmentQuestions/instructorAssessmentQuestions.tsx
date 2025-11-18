@@ -8,11 +8,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  getAssessmentContext,
-  getCourseInstanceContext,
-  getPageContext,
-} from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
@@ -26,9 +22,11 @@ router.get(
       assessment_id: res.locals.assessment.id,
     });
 
-    const { authz_data, urlPrefix } = getPageContext(res.locals);
-    const { course_instance, course } = getCourseInstanceContext(res.locals, 'instructor');
-    const { assessment, assessment_set } = getAssessmentContext(res.locals);
+    const { authz_data, urlPrefix, course_instance, course, assessment, assessment_set } =
+      extractPageContext(res.locals, {
+        pageType: 'assessment',
+        accessType: 'instructor',
+      });
 
     res.send(
       PageLayout({

@@ -10,7 +10,7 @@ import { ArrayFromCheckboxSchema, IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
-import { getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { AuthnProviderSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -40,7 +40,11 @@ router.get(
       (provider) => provider.name === 'Google' || provider.name === 'Azure',
     );
 
-    const pageContext = getPageContext(res.locals, { withAuthzData: false });
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+      withAuthzData: false,
+    });
 
     res.send(
       PageLayout({

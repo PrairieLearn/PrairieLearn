@@ -10,7 +10,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
@@ -29,11 +29,14 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/data.json',
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     if (!pageContext.authz_data.has_course_instance_permission_view) {
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance } = pageContext;
     const students = await queryRows(
       sql.select_users_and_enrollments_for_course_instance,
       { course_instance_id: courseInstance.id },
@@ -50,11 +53,14 @@ router.get(
       throw new HttpStatusError(406, 'Not Acceptable');
     }
 
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     if (!pageContext.authz_data.has_course_instance_permission_view) {
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance } = pageContext;
     const { uid } = req.query;
     if (typeof uid !== 'string') {
       throw new HttpStatusError(400, 'UID must be a string');
@@ -77,12 +83,15 @@ router.post(
       throw new HttpStatusError(406, 'Not Acceptable');
     }
 
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     if (!pageContext.authz_data.has_course_instance_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be an instructor)');
     }
 
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance } = pageContext;
 
     const BodySchema = z.object({
       uid: z.string().min(1),
@@ -144,13 +153,12 @@ router.get(
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     const { authz_data, urlPrefix, __csrf_token: csrfToken } = pageContext;
-    const {
-      course_instance: courseInstance,
-      course,
-      institution,
-    } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance, course, institution } = pageContext;
 
     const search = getUrl(req).search;
 

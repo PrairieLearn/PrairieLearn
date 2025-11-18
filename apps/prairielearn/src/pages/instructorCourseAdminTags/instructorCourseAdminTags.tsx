@@ -1,4 +1,3 @@
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
