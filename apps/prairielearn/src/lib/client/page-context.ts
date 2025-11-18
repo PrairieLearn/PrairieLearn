@@ -110,6 +110,7 @@ const RawStaffCourseInstanceContextSchema = z.object({
       ...RawStaffCourseInstanceSchema.shape,
       short_name: z.string(),
     })
+    .nullable()
     .brand('StaffCourseInstance'),
   course: z
     .object({

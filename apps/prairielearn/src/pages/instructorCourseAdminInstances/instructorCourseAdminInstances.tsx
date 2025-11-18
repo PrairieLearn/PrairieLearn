@@ -20,7 +20,7 @@ import {
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
 
-import { InstructorCourseAdminInstancesPage } from './components/InstructorCourseAdminInstances.js';
+import { InstructorCourseAdminInstances } from './instructorCourseAdminInstances.html.js';
 import { InstructorCourseAdminInstanceRowSchema } from './instructorCourseAdminInstances.shared.js';
 
 const router = Router();
@@ -65,6 +65,7 @@ router.get(
         })),
       );
 
+    // TODO: We need to land the refactor so I can add the course context as an option.
     const { course } = getCourseInstanceContext(res.locals, 'instructor');
     const { __csrf_token, authz_data, urlPrefix } = getPageContext(res.locals);
 
@@ -88,7 +89,7 @@ router.get(
               urlPrefix={urlPrefix}
             />
             <Hydrate>
-              <InstructorCourseAdminInstancesPage
+              <InstructorCourseAdminInstances
                 courseInstances={safeCourseInstancesWithEnrollmentCounts}
                 course={course}
                 canEditCourse={authz_data.has_course_permission_edit}

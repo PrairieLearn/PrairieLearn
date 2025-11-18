@@ -56,3 +56,7 @@ export function getSelfEnrollmentLookupUrl(
   }
   return `/pl/course_instance/lookup?${params.toString()}`;
 }
+
+export function getCourseInstanceSyncUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/syncs`;
+}
