@@ -6,17 +6,14 @@ import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
-
 import { config } from '../lib/config.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
+import { updateCourseRepo } from '../models/update-course-repo.js';
 
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
-
-const sql = loadSqlEquiv(import.meta.url);
 
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 const baseDir = tmp.dirSync().name;
@@ -53,7 +50,7 @@ describe('Editing course settings', () => {
     await helperServer.before(courseLiveDir)();
 
     // update db with course repo info
-    await execute(sql.update_course_repo, { repo: courseOriginDir });
+    await updateCourseRepo(courseOriginDir);
   });
   afterAll(helperServer.after);
 
