@@ -320,11 +320,12 @@ function getPostInfoFromCopyOption(form) {
   return { csrfToken: option.attr('data-csrf-token'), url: option.attr('data-copy-url') };
 }
 
-function getCourseInstanceCopyPostInfo(form) {
-  const csrfToken = form.find('span#test_csrf_token').text();
+function getCourseInstanceCopyPostInfo(page: cheerio.Cheerio<any>) {
+  const csrfToken = page.find('span#test_csrf_token').text();
+  console.log(csrfToken);
   return {
     csrfToken,
-    url: '/pl/course/2/copy_public_course_instance',
+    url: '/pl/course/1/copy_public_course_instance',
   };
 }
 
@@ -547,6 +548,7 @@ function testEdit(params: EditData) {
         body: new URLSearchParams(urlParams),
       });
       if (!res.ok) {
+        console.log(await res.text());
         console.log(url);
       }
       assert.isOk(res.ok);

@@ -1,0 +1,7 @@
+{
+  "uuid": "dc2a23b5-862c-421f-8837-f9a65373770f",
+  "longName": "Public (copy 1)",
+  "allowAccess": [
+    { "institution": "Any", "startDate": "1900-01-01T00:00:01", "endDate": "2400-05-13T23:59:59" }
+  ]
+}
