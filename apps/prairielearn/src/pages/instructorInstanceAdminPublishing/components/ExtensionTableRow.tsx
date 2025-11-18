@@ -61,8 +61,8 @@ export function ExtensionTableRow({
               <>
                 {extension.user_data.length > 0 && (
                   <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                    {studentsToShow.map((user) => (
-                      <div key={user.uid} class="d-flex align-items-center gap-1">
+                    {studentsToShow.map((user, index) => (
+                      <div key={user.uid} class="d-flex align-items-center">
                         <a
                           href={getStudentEnrollmentUrl(
                             `/pl/course_instance/${courseInstance.id}/instructor`,
@@ -72,6 +72,7 @@ export function ExtensionTableRow({
                         >
                           {user.name || '—'}
                         </a>
+                        {index < studentsToShow.length - 1 && ', '}
                       </div>
                     ))}
                     {hasMoreStudents && (
