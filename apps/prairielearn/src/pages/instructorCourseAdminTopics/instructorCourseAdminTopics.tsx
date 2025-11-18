@@ -8,16 +8,20 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { renderHtml } from '@prairielearn/preact';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { StaffTopicSchema } from '../../lib/client/safe-db-types.js';
 import { TopicSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
 
-import { InstructorCourseAdminTopics } from './instructorCourseAdminTopics.html.js';
+import { InstructorCourseAdminTopicsTable } from './components/InstructorCourseAdminTopicsTable.js';
 
 const router = Router();
 
@@ -38,6 +42,10 @@ router.get(
       ).toString();
     }
 
+    const allowEdit =
+      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
+    const StaffTopics = z.array(StaffTopicSchema).parse(topics);
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -50,7 +58,23 @@ router.get(
         options: {
           fullWidth: true,
         },
-        content: InstructorCourseAdminTopics({ resLocals: res.locals, topics, origHash }),
+        content: renderHtml(
+          <>
+            <CourseSyncErrorsAndWarnings
+              authzData={res.locals.authz_data}
+              course={res.locals.course}
+              urlPrefix={res.locals.urlPrefix}
+            />
+            <Hydrate>
+              <InstructorCourseAdminTopicsTable
+                topics={StaffTopics}
+                allowEdit={allowEdit}
+                csrfToken={res.locals.__csrf_token}
+                origHash={origHash}
+              />
+            </Hydrate>
+          </>,
+        ),
       }),
     );
   }),

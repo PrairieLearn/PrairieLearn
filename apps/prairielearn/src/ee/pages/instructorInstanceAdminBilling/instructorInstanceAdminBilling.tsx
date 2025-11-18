@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { renderHtml } from '@prairielearn/preact';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
@@ -13,11 +15,12 @@ import {
   updateRequiredPlansForCourseInstance,
 } from '../../lib/billing/plans.js';
 
-import { instructorInstanceAdminBillingState } from './components/InstructorInstanceAdminBillingForm.js';
 import {
-  type EnrollmentLimitSource,
-  InstructorCourseInstanceBilling,
-} from './instructorInstanceAdminBilling.html.js';
+  InstructorInstanceAdminBillingForm,
+  instructorInstanceAdminBillingState,
+} from './components/InstructorInstanceAdminBillingForm.js';
+
+type EnrollmentLimitSource = 'course_instance' | 'institution';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
@@ -80,6 +83,9 @@ router.get(
       }),
     );
 
+    // Only course owners can manage billing.
+    const editable = res.locals.authz_data.has_course_permission_own;
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -89,19 +95,35 @@ router.get(
           page: 'instance_admin',
           subPage: 'billing',
         },
-        content: InstructorCourseInstanceBilling({
-          requiredPlans,
-          institutionPlanGrants,
-          courseInstancePlanGrants,
-          enrollmentCount,
-          enrollmentLimit,
-          enrollmentLimitSource,
-          externalGradingQuestionCount: external_grading_question_count,
-          workspaceQuestionCount: workspace_question_count,
-          // Only course owners can manage billing.
-          editable: res.locals.authz_data.has_course_permission_own,
-          resLocals: res.locals,
-        }),
+        content: renderHtml(
+          <>
+            {!editable && (
+              <div class="alert alert-warning">
+                Only course owners can change billing settings.
+              </div>
+            )}
+            <div class="card mb-4">
+              <div class="card-header bg-primary text-white d-flex">Billing</div>
+              <div class="card-body">
+                <Hydrate>
+                  <InstructorInstanceAdminBillingForm
+                    initialRequiredPlans={requiredPlans}
+                    desiredRequiredPlans={requiredPlans}
+                    institutionPlanGrants={institutionPlanGrants}
+                    courseInstancePlanGrants={courseInstancePlanGrants}
+                    enrollmentCount={enrollmentCount}
+                    enrollmentLimit={enrollmentLimit}
+                    enrollmentLimitSource={enrollmentLimitSource}
+                    externalGradingQuestionCount={external_grading_question_count}
+                    workspaceQuestionCount={workspace_question_count}
+                    editable={editable}
+                    csrfToken={res.locals.__csrf_token}
+                  />
+                </Hydrate>
+              </div>
+            </div>
+          </>,
+        ),
       }),
     );
   }),

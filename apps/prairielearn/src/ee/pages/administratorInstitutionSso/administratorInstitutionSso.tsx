@@ -3,9 +3,16 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
+import { renderHtml } from '@prairielearn/preact';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../../lib/authn-providers.js';
+import { getPageContext } from '../../../lib/client/page-context.js';
+import {
+  StaffAuthnProviderSchema,
+  StaffInstitutionSchema,
+} from '../../../lib/client/safe-db-types.js';
 import { updateInstitutionAuthnProviders } from '../../../models/institution-authn-provider.js';
 import {
   getInstitution,
@@ -13,7 +20,7 @@ import {
   getInstitutionSamlProvider,
 } from '../../lib/institution.js';
 
-import { AdministratorInstitutionSso } from './administratorInstitutionSso.html.js';
+import { AdministratorInstitutionSsoForm } from './components/AdministratorInstitutionSsoForm.js';
 
 const router = Router({ mergeParams: true });
 
@@ -58,6 +65,8 @@ router.get(
       req.params.institution_id,
     );
 
+    const pageContext = getPageContext(res.locals, { withAuthzData: false });
+
     res.send(
       PageLayout({
         resLocals: { ...res.locals, institution },
@@ -67,13 +76,22 @@ router.get(
           page: 'administrator_institution',
           subPage: 'sso',
         },
-        content: AdministratorInstitutionSso({
-          supportedAuthenticationProviders,
-          institution,
-          institutionSamlProvider,
-          institutionAuthenticationProviders,
-          resLocals: res.locals,
-        }),
+        content: renderHtml(
+          <Hydrate>
+            <AdministratorInstitutionSsoForm
+              institution={StaffInstitutionSchema.parse(institution)}
+              hasSamlProvider={!!institutionSamlProvider}
+              supportedAuthenticationProviders={StaffAuthnProviderSchema.array().parse(
+                supportedAuthenticationProviders,
+              )}
+              institutionAuthenticationProviders={StaffAuthnProviderSchema.array().parse(
+                institutionAuthenticationProviders,
+              )}
+              urlPrefix={pageContext.urlPrefix}
+              csrfToken={pageContext.__csrf_token}
+            />
+          </Hydrate>,
+        ),
       }),
     );
   }),

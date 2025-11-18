@@ -5,17 +5,25 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
+import { renderHtml } from '@prairielearn/preact';
+import { Hydrate } from '@prairielearn/preact/server';
 import { ArrayFromCheckboxSchema, IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
+import { getPageContext } from '../../lib/client/page-context.js';
+import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
+import { AuthnProviderSchema } from '../../lib/db-types.js';
+import { isEnterprise } from '../../lib/license.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { updateInstitutionAuthnProviders } from '../../models/institution-authn-provider.js';
 
-import {
-  AdministratorInstitutions,
-  InstitutionRowSchema,
-} from './administratorInstitutions.html.js';
+import { AdministratorInstitutionsTable } from './components/AdministratorInstitutionsTable.js';
+
+export const InstitutionRowSchema = z.object({
+  institution: AdminInstitutionSchema,
+  authn_providers: z.array(AuthnProviderSchema.shape.name),
+});
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -33,6 +41,8 @@ router.get(
       (provider) => provider.name === 'Google' || provider.name === 'Azure',
     );
 
+    const pageContext = getPageContext(res.locals, { withAuthzData: false });
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -45,12 +55,17 @@ router.get(
         options: {
           fullWidth: true,
         },
-        content: AdministratorInstitutions({
-          institutions,
-          availableTimezones,
-          supportedAuthenticationProviders,
-          resLocals: res.locals,
-        }),
+        content: renderHtml(
+          <Hydrate>
+            <AdministratorInstitutionsTable
+              institutions={institutions}
+              availableTimezones={availableTimezones}
+              supportedAuthenticationProviders={supportedAuthenticationProviders}
+              csrfToken={pageContext.__csrf_token}
+              isEnterprise={isEnterprise()}
+            />
+          </Hydrate>,
+        ),
       }),
     );
   }),
