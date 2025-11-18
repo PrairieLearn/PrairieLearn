@@ -316,7 +316,16 @@ const testEditData: EditData[] = [
 
 function getPostInfoFromCopyOption(form) {
   const option = form.find('select[name="to_course_id"] option[value="1"]');
+  console.log(option);
   return { csrfToken: option.attr('data-csrf-token'), url: option.attr('data-copy-url') };
+}
+
+function getCourseInstanceCopyPostInfo(form) {
+  const csrfToken = form.find('span#test_csrf_token').text();
+  return {
+    csrfToken,
+    url: '/pl/course/2/copy_public_course_instance',
+  };
 }
 
 const publicCopyTestData: EditData[] = [
@@ -343,8 +352,8 @@ const publicCopyTestData: EditData[] = [
   },
   {
     url: `${baseUrl}/public/course_instance/2/assessments`,
-    formSelector: 'form.js-copy-course-instance-form',
-    dynamicPostInfo: getPostInfoFromCopyOption,
+    formSelector: 'body',
+    dynamicPostInfo: getCourseInstanceCopyPostInfo,
     action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
@@ -367,8 +376,8 @@ const publicCopyTestData: EditData[] = [
   },
   {
     url: `${baseUrl}/public/course_instance/2/assessments`,
-    formSelector: 'form.js-copy-course-instance-form',
-    dynamicPostInfo: getPostInfoFromCopyOption,
+    formSelector: 'body',
+    dynamicPostInfo: getCourseInstanceCopyPostInfo,
     action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
@@ -537,6 +546,9 @@ function testEdit(params: EditData) {
         method: 'POST',
         body: new URLSearchParams(urlParams),
       });
+      if (!res.ok) {
+        console.log(url);
+      }
       assert.isOk(res.ok);
       currentUrl = res.url;
       currentPage$ = cheerio.load(await res.text());
