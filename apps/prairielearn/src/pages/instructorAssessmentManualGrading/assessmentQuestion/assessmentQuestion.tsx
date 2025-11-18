@@ -1,10 +1,15 @@
 import { Router } from 'express';
 import z from 'zod';
 
+import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
+import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
+import { PageLayout } from '../../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
@@ -20,6 +25,7 @@ import {
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
+import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
@@ -32,14 +38,8 @@ import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
-import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
-import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
-import { Hydrate } from '@prairielearn/preact/server';
-import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
-import { PageLayout } from '../../../components/PageLayout.js';
-import { extractPageContext } from '../../../lib/client/page-context.js';
+import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -89,13 +89,15 @@ router.get(
       course,
       question,
       assessment_question,
+      assessment,
       num_open_instances,
       number_in_alternative_group,
-    } = extractPageContext(resLocals, {
+    } = extractPageContext(res.locals, {
       pageType: 'assessmentQuestion',
       accessType: 'instructor',
     });
     const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
+    const search = getUrl(req).search;
 
     res.send(
       PageLayout({
@@ -125,7 +127,7 @@ router.get(
               assessmentId={assessment.id}
               urlPrefix={urlPrefix}
             />
-    
+
             <Hydrate fullHeight>
               <AssessmentQuestionManualGrading
                 hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
@@ -137,15 +139,17 @@ router.get(
                 csrfToken={__csrf_token}
                 assessment={assessment}
                 assessmentQuestion={assessment_question}
-                questionQid={question.qid}
+                questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
                 initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
                 courseStaff={courseStaff}
-                aiGradingStats={aiGradingEnabled && assessment_question.ai_grading_mode
-                  ? await calculateAiGradingStats(assessment_question)
-                  : null}
+                aiGradingStats={
+                  aiGradingEnabled && assessment_question.ai_grading_mode
+                    ? await calculateAiGradingStats(assessment_question)
+                    : null
+                }
                 numOpenInstances={num_open_instances}
                 isDevMode={process.env.NODE_ENV === 'development'}
                 questionTitle={question.title ?? ''}
@@ -154,20 +158,6 @@ router.get(
             </Hydrate>
           </>
         ),
-
-      AssessmentQuestion({
-        resLocals: res.locals,
-        courseStaff,
-        aiGradingEnabled,
-        aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
-        aiGradingStats:
-          aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
-            ? await calculateAiGradingStats(res.locals.assessment_question)
-            : null,
-        instanceQuestionGroups,
-        rubric_data,
-        instanceQuestionsInfo,
-        search: getUrl(req).search,
       }),
     );
   }),

@@ -24,7 +24,7 @@ import {
   parseAsNumericFilter,
   parseAsSortingState,
 } from '../../../../lib/client/nuqs.js';
-import type { StaffCourseInstanceContext } from '../../../../lib/client/page-context.js';
+import type { PageContext } from '../../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
   StaffAssessmentQuestion,
@@ -58,8 +58,8 @@ const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 
 export interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
-  course: StaffCourseInstanceContext['course'];
-  courseInstance: StaffCourseInstanceContext['course_instance'];
+  course: PageContext<'assessmentQuestion', 'instructor'>['course'];
+  courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
