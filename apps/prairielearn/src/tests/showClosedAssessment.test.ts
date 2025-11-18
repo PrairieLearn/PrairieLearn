@@ -16,8 +16,7 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_000 }, function () {
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 

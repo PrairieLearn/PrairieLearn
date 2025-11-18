@@ -33,7 +33,7 @@ router.get(
       if (err.code === 'ENOENT') {
         res.locals.needToSync = true;
       } else {
-        throw new Error('Invalid course path');
+        throw new Error('Invalid course path', { cause: err });
       }
     }
 
@@ -120,10 +120,7 @@ router.post(
       flash('success', 'Course instance created successfully.');
 
       res.redirect(
-        res.locals.plainUrlPrefix +
-          '/course_instance/' +
-          courseInstance.id +
-          '/instructor/instance_admin/assessments',
+        '/pl/course_instance/' + courseInstance.id + '/instructor/instance_admin/assessments',
       );
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

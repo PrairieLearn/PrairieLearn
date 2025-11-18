@@ -37,6 +37,13 @@ export function escapeRegExp(str: string) {
   return str.replaceAll(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');
 }
 
+export function truncate(str: string, maxLength: number): string {
+  if (str.length <= maxLength) {
+    return str;
+  }
+  return str.slice(0, maxLength) + '...[truncated]';
+}
+
 /**
  * Recursively truncates all strings in a value to a maximum length.
  */
@@ -44,10 +51,7 @@ export function recursivelyTruncateStrings<T>(value: T, maxLength: number): T {
   if (value === null) {
     return null as T;
   } else if (typeof value === 'string') {
-    if (value.length <= maxLength) {
-      return value;
-    }
-    return (value.slice(0, maxLength) + '...[truncated]') as T;
+    return truncate(value, maxLength) as T;
   } else if (Array.isArray(value)) {
     return value.map((value) => recursivelyTruncateStrings(value, maxLength)) as T;
   } else if (typeof value === 'object') {

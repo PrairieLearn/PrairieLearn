@@ -1,5 +1,23 @@
 # @prairielearn/ui
 
+## 1.2.0
+
+### Minor Changes
+
+- 50dbe96: - Add optional header labels / max height for column manager
+  - Add new option for buttons in next to the View column manager button
+  - add MultiSelectColumnFilter
+  - NumericInputColumnFilter
+  - add useShiftClickCheckbox hook + update table/buttons to support row selection
+
+## 1.1.2
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+- Updated dependencies [0425922]
+  - @prairielearn/preact-cjs@1.1.6
+
 ## 1.1.1
 
 ### Patch Changes

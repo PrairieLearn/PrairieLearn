@@ -70,6 +70,19 @@
       "properties": {},
       "deprecated": true
     },
+    "publishing": {
+      "type": "object",
+      "properties": {
+        "startDate": {
+          "description": "When the course instance is published. If specified, endDate must also be specified.",
+          "type": "string"
+        },
+        "endDate": {
+          "description": "When the course instance is unpublished. If specified, startDate must also be specified.",
+          "type": "string"
+        }
+      }
+    },
     "allowAccess": {
       "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied.",
       "type": "array",
@@ -108,8 +121,7 @@
             "type": "string"
           }
         }
-      },
-      "default": []
+      }
     },
     "groupAssessmentsBy": {
       "description": "Determines which assessment category will be used to group assessments on the student assessments page.",

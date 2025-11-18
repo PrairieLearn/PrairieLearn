@@ -64,6 +64,7 @@ describe('Instructor Students - Invite by UID', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
@@ -102,6 +103,7 @@ describe('Instructor Students - Invite by UID', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
@@ -144,6 +146,7 @@ describe('Instructor Students - Invite by UID', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
@@ -155,7 +158,6 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isTrue(data.ok);
     assert.isObject(data.data);
     assert.equal(data.data.status, 'invited');
   });
@@ -171,6 +173,7 @@ describe('Instructor Students - Invite by UID', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
@@ -182,7 +185,6 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isTrue(data.ok);
     assert.isObject(data.data);
     assert.equal(data.data.status, 'invited');
     assert.equal(data.data.pending_uid, 'new_student@example.com');
@@ -216,6 +218,7 @@ describe('Instructor Students - Invite by UID', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
@@ -259,6 +262,7 @@ describe('Instructor Students - Invite by UID', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({

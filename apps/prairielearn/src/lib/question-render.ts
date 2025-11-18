@@ -42,7 +42,6 @@ import {
   GroupConfigSchema,
   IdSchema,
   type InstanceQuestion,
-  IssueSchema,
   type Question,
   type Submission,
   SubmissionSchema,
@@ -58,19 +57,16 @@ import {
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { selectRubricData } from './manualGrading.js';
-import type { RubricData } from './manualGrading.types.js';
-import type { SubmissionPanels } from './question-render.types.js';
+import {
+  IssueRenderDataSchema,
+  type QuestionUrls,
+  type ResLocalsInstanceQuestionRenderAdded,
+  type ResLocalsQuestionRenderAdded,
+  type SubmissionPanels,
+} from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const IssueRenderDataSchema = IssueSchema.extend({
-  formatted_date: z.string().nullable(),
-  user_uid: z.string().nullable(),
-  user_name: z.string().nullable(),
-  user_email: z.string().nullable(),
-});
-type IssueRenderData = z.infer<typeof IssueRenderDataSchema>;
 
 type InstanceQuestionWithAllowGrade = InstanceQuestion & {
   allow_grade_left_ms: number;
@@ -154,21 +150,6 @@ async function render(
     courseData,
   );
   return data;
-}
-
-interface QuestionUrls {
-  questionUrl: string;
-  newVariantUrl: string;
-  tryAgainUrl: string;
-  reloadUrl: string;
-  clientFilesQuestionUrl: string;
-  calculationQuestionFileUrl: string;
-  calculationQuestionGeneratedFileUrl: string;
-  clientFilesCourseUrl: string;
-  clientFilesQuestionGeneratedFileUrl: string;
-  baseUrl: string;
-  externalImageCaptureUrl: string | null;
-  workspaceUrl?: string;
 }
 
 /**
@@ -363,7 +344,7 @@ function buildLocals({
     locals.showGradeButton = false;
     locals.showSaveButton = false;
     locals.allowAnswerEditing = false;
-    if (assessment && assessment.type === 'Homework') {
+    if (assessment?.type === 'Homework') {
       locals.showTryAgainButton = true;
       locals.showTrueAnswer = true;
     }
@@ -408,31 +389,6 @@ function buildLocals({
 
   return locals;
 }
-
-// All properties that are added to the locals by `getAndRenderVariant`.
-interface ResLocalsQuestionRenderAdded {
-  question_is_shared: boolean;
-  variant: Variant;
-  urls: QuestionUrls;
-  showTrueAnswer: boolean;
-  submission: SubmissionForRender | null;
-  submissions: SubmissionForRender[];
-  effectiveQuestionType: questionServers.EffectiveQuestionType;
-  extraHeadersHtml: string;
-  questionHtml: string;
-  submissionHtmls: string[];
-  answerHtml: string;
-  issues: IssueRenderData[];
-  questionJsonBase64: string | undefined;
-}
-
-interface ResLocalsInstanceQuestionRenderAdded {
-  rubric_data: RubricData | null;
-}
-
-export type ResLocalsQuestionRender = ResLocalsBuildLocals & ResLocalsQuestionRenderAdded;
-export type ResLocalsInstanceQuestionRender = ResLocalsQuestionRender &
-  ResLocalsInstanceQuestionRenderAdded;
 
 /**
  * Render all information needed for a question.
@@ -760,7 +716,6 @@ export async function renderPanelsForSubmission({
 
   const locals = {
     urlPrefix,
-    plainUrlPrefix: config.urlPrefix,
     questionRenderContext,
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     ...buildLocals({

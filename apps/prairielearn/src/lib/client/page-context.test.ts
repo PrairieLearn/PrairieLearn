@@ -60,7 +60,6 @@ describe('getPageContext', () => {
         },
       },
       __csrf_token: '123',
-      plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',
       authn_institution: {
         id: '1',
@@ -134,7 +133,6 @@ describe('getPageContext', () => {
         } as StaffUser,
       } as PageAuthzData,
       __csrf_token: '123',
-      plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',
       authn_institution: {
         id: '1',
@@ -190,6 +188,8 @@ describe('getCourseInstanceContext', () => {
       id: '1',
       long_name: 'Example Student Course Instance',
       short_name: 'Example Student Course',
+      publishing_end_date: null,
+      publishing_start_date: null,
     },
     course: {
       deleted_at: null,
@@ -215,6 +215,9 @@ describe('getCourseInstanceContext', () => {
       self_enrollment_use_enrollment_code: false,
       self_enrollment_restrict_to_institution: true,
       self_enrollment_enabled_before_date: null,
+      modern_publishing: false,
+      publishing_end_date: null,
+      publishing_start_date: null,
       sync_errors: null,
       sync_job_sequence_id: null,
       sync_warnings: null,

@@ -17,48 +17,56 @@ import type {
 import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
+import type { ResLocalsConfig } from './config.js';
 import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
-} from './question-render.js';
+} from './question-render.types.js';
+import type { Prettify } from './types.js';
 
-export interface ResLocals extends ResLocalsAuthnUser {
+export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig {
   __csrf_token: string;
-  urlPrefix: string;
-  navbarType: 'student' | 'instructor' | 'public';
 }
 
 export interface ResLocalsForPage {
-  course: ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount;
-  'course-instance': ResLocals & ResLocalsCourseInstance;
-  'instructor-instance-question': ResLocals &
-    ResLocalsCourseInstance &
-    ResLocalsInstructorQuestionWithCourseInstance &
-    ResLocalsInstanceQuestion &
-    ResLocalsInstanceQuestionRender &
-    ResLocalsQuestionRender & {
-      questionRenderContext: 'manual_grading' | 'ai_grading';
-      navbarType: 'instructor';
-    };
-  'instructor-question': ResLocals &
-    ResLocalsCourseInstance &
-    ResLocalsInstructorQuestion &
-    ResLocalsQuestionRender;
-  'instructor-assessment-question': ResLocals &
-    ResLocalsCourseInstance &
-    ResLocalsInstructorQuestion &
-    ResLocalsQuestionRender &
-    ResLocalsAssessmentQuestion;
-  'instance-question': ResLocals &
-    ResLocalsCourseInstance &
-    ResLocalsInstanceQuestion &
-    ResLocalsInstanceQuestionRender;
-  'assessment-question': ResLocals &
-    ResLocalsAssessment &
-    ResLocalsAssessmentQuestion &
-    ResLocalsInstanceQuestionRender;
-  'assessment-instance': ResLocals & ResLocalsAssessment & ResLocalsAssessmentInstance;
-  assessment: ResLocals & ResLocalsAssessment;
+  course: Prettify<ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount>;
+  'course-instance': Prettify<ResLocals & ResLocalsCourseInstance>;
+  'instructor-instance-question': Prettify<
+    ResLocals &
+      ResLocalsCourseInstance &
+      ResLocalsInstructorQuestionWithCourseInstance &
+      ResLocalsInstanceQuestion &
+      ResLocalsInstanceQuestionRender &
+      ResLocalsQuestionRender & {
+        questionRenderContext: 'manual_grading' | 'ai_grading';
+        navbarType: 'instructor';
+      }
+  >;
+  'instructor-question': Prettify<
+    ResLocals &
+      ResLocalsCourse &
+      Partial<ResLocalsCourseInstance> &
+      ResLocalsInstructorQuestion &
+      ResLocalsQuestionRender
+  >;
+  'instructor-assessment-question': Prettify<
+    ResLocals &
+      ResLocalsCourseInstance &
+      ResLocalsInstructorQuestion &
+      ResLocalsQuestionRender &
+      ResLocalsAssessmentQuestion
+  >;
+  'instance-question': Prettify<
+    ResLocals &
+      ResLocalsCourseInstance &
+      ResLocalsInstanceQuestion &
+      ResLocalsInstanceQuestionRender
+  >;
+  'assessment-question': Prettify<
+    ResLocals & ResLocalsAssessment & ResLocalsAssessmentQuestion & ResLocalsInstanceQuestionRender
+  >;
+  'assessment-instance': Prettify<ResLocals & ResLocalsAssessment & ResLocalsAssessmentInstance>;
+  assessment: Prettify<ResLocals & ResLocalsCourseInstance & ResLocalsAssessment>;
 }
 
 export type PageType = keyof ResLocalsForPage;
@@ -69,6 +77,32 @@ export function getResLocalsForPage<T extends PageType>(
   return locals as ResLocalsForPage[T];
 }
 
+/**
+ * A wrapper around {@link asyncHandler} that ensures that the locals
+ * are typed correctly for the given page type.
+ *
+ * @example
+ * ```ts
+ * router.get('/', typedAsyncHandler<'course'>(async (req, res) => {
+ *   res.send(`Hello, ${res.locals.course.short_name}`);
+ * }));
+ * ```
+ *
+ * The page types include:
+ *
+ * - `course`: A course page.
+ * - `course-instance`: A course instance page.
+ * - `instructor-instance-question`: An instructor instance question page.
+ * - `instructor-question`: An instructor question page.
+ * - `instructor-assessment-question`: An instructor assessment question page.
+ * - `instance-question`: An instance question page.
+ * - `assessment-question`: An assessment question page.
+ * - `assessment-instance`: An assessment instance page.
+ * - `assessment`: An assessment page.
+ *
+ * @param handler - The handler function to wrap.
+ * @returns A wrapped handler function.
+ */
 export const typedAsyncHandler = <T extends keyof ResLocalsForPage, ExtraLocals = object>(
   handler: (
     ...args: Parameters<
