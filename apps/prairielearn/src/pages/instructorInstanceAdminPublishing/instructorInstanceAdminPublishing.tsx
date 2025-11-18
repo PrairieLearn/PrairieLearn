@@ -10,11 +10,13 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { isRenderableComment } from '../../lib/comments.js';
 import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -22,10 +24,8 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
-import { Hydrate } from '@prairielearn/preact/server';
 import { CourseInstancePublishingForm } from './components/CourseInstancePublishingForm.js';
 import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
-import { isRenderableComment } from '../../lib/comments.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
