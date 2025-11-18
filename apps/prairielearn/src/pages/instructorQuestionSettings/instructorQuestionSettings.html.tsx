@@ -298,6 +298,9 @@ export function InstructorQuestionSettings({
                           ${canEdit
                             ? html`<input
                                 type="text"
+                                data-bs-toggle="popover"
+                                data-bs-trigger="focus"
+                                data-bs-content="Name must either be empty, or be between 3 and 255 characters."
                                 class="form-control"
                                 id="${'author_name_' + index}"
                                 name="${'author_name_' + index}"
@@ -309,6 +312,9 @@ export function InstructorQuestionSettings({
                           ${canEdit
                             ? html`<input
                                 type="email"
+                                data-bs-toggle="popover"
+                                data-bs-trigger="focus"
+                                data-bs-content="Email must either be empty or a valid email."
                                 class="form-control"
                                 id="${'author_email_' + index}"
                                 name="${'author_email_' + index}"
@@ -320,6 +326,9 @@ export function InstructorQuestionSettings({
                           ${canEdit
                             ? html`<input
                                 type="text"
+                                data-bs-toggle="popover"
+                                data-bs-trigger="focus"
+                                data-bs-content="ORCID must either be empty or a valid ORCID."
                                 pattern="^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$"
                                 class="form-control author_orcid"
                                 id="${'author_orcid_' + index}"
@@ -332,6 +341,9 @@ export function InstructorQuestionSettings({
                           ${canEdit
                             ? html`<input
                                 type="text"
+                                data-bs-toggle="popover"
+                                data-bs-trigger="focus"
+                                data-bs-content="Origin course must either be empty or a valid course sharing name."
                                 class="form-control"
                                 id="${'author_origin_course_' + index}"
                                 name="${'author_origin_course_' + index}"

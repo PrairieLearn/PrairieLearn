@@ -21,15 +21,16 @@ export function isValidOrcid(orcid: string): boolean {
   return digits[15] === checkDigit;
 }
 
-
 export function isValidEmail(emailValue: string): boolean {
-    // Empty strings are fine.
+  // Empty strings are fine.
   if (emailValue === '') {
     return true;
   }
-  return String(emailValue)
-        .toLowerCase()
-        .match(/^([A-Z0-9_+-]+\.?)*[A-Z0-9_+-]@([A-Z0-9][A-Z0-9-]*\.)+[A-Z]{2,}$/i) != null;
+  return (
+    String(emailValue)
+      .toLowerCase()
+      .match(/^([A-Z0-9_+-]+\.?)*[A-Z0-9_+-]@([A-Z0-9][A-Z0-9-]*\.)+[A-Z]{2,}$/i) != null
+  );
 }
 
 export function isValidAuthorName(nameValue: string): boolean {
