@@ -5,7 +5,6 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
-import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
 import { ArrayFromCheckboxSchema, IdSchema } from '@prairielearn/zod';
 
@@ -20,7 +19,7 @@ import { updateInstitutionAuthnProviders } from '../../models/institution-authn-
 
 import { AdministratorInstitutionsTable } from './components/AdministratorInstitutionsTable.js';
 
-export const InstitutionRowSchema = z.object({
+const InstitutionRowSchema = z.object({
   institution: AdminInstitutionSchema,
   authn_providers: z.array(AuthnProviderSchema.shape.name),
 });
@@ -55,7 +54,7 @@ router.get(
         options: {
           fullWidth: true,
         },
-        content: renderHtml(
+        content: (
           <Hydrate>
             <AdministratorInstitutionsTable
               institutions={institutions}
@@ -64,7 +63,7 @@ router.get(
               csrfToken={pageContext.__csrf_token}
               isEnterprise={isEnterprise()}
             />
-          </Hydrate>,
+          </Hydrate>
         ),
       }),
     );

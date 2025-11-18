@@ -4,7 +4,6 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
-import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -19,8 +18,6 @@ import {
   InstructorInstanceAdminBillingForm,
   instructorInstanceAdminBillingState,
 } from './components/InstructorInstanceAdminBillingForm.js';
-
-type EnrollmentLimitSource = 'course_instance' | 'institution';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
@@ -43,9 +40,9 @@ async function loadPageData(res: Response) {
   const enrollmentLimit =
     res.locals.course_instance.enrollment_limit ??
     res.locals.institution.course_instance_enrollment_limit;
-  const enrollmentLimitSource: EnrollmentLimitSource = res.locals.course_instance.enrollment_limit
-    ? 'course_instance'
-    : 'institution';
+  const enrollmentLimitSource = res.locals.course_instance.enrollment_limit
+    ? ('course_instance' as const)
+    : ('institution' as const);
 
   return {
     requiredPlans,
@@ -95,7 +92,7 @@ router.get(
           page: 'instance_admin',
           subPage: 'billing',
         },
-        content: renderHtml(
+        content: (
           <>
             {!editable && (
               <div class="alert alert-warning">
@@ -122,7 +119,7 @@ router.get(
                 </Hydrate>
               </div>
             </div>
-          </>,
+          </>
         ),
       }),
     );

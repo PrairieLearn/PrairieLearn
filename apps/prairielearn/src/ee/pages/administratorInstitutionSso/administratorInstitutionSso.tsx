@@ -2,7 +2,6 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
 import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
 
@@ -76,7 +75,7 @@ router.get(
           page: 'administrator_institution',
           subPage: 'sso',
         },
-        content: renderHtml(
+        content: (
           <Hydrate>
             <AdministratorInstitutionSsoForm
               institution={StaffInstitutionSchema.parse(institution)}
@@ -90,7 +89,7 @@ router.get(
               urlPrefix={pageContext.urlPrefix}
               csrfToken={pageContext.__csrf_token}
             />
-          </Hydrate>,
+          </Hydrate>
         ),
       }),
     );

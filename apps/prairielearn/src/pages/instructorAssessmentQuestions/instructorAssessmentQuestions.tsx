@@ -2,7 +2,6 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -44,7 +43,7 @@ router.get(
         options: {
           fullWidth: true,
         },
-        content: renderHtml(
+        content: (
           <>
             <AssessmentSyncErrorsAndWarnings
               authzData={authz_data}
@@ -68,7 +67,7 @@ router.get(
                 csrfToken={res.locals.__csrf_token}
               />
             </Hydrate>
-          </>,
+          </>
         ),
       }),
     );

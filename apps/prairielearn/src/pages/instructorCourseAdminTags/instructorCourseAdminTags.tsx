@@ -3,7 +3,6 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -32,7 +31,7 @@ router.get(
         options: {
           fullWidth: true,
         },
-        content: renderHtml(
+        content: (
           <>
             <CourseSyncErrorsAndWarnings
               authzData={res.locals.authz_data}
@@ -42,7 +41,7 @@ router.get(
             <Hydrate>
               <InstructorCourseAdminTagsTable tags={z.array(StaffTagSchema).parse(tags)} />
             </Hydrate>
-          </>,
+          </>
         ),
       }),
     );

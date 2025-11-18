@@ -8,7 +8,6 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -44,7 +43,6 @@ router.get(
 
     const allowEdit =
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
-    const StaffTopics = z.array(StaffTopicSchema).parse(topics);
 
     res.send(
       PageLayout({
@@ -58,7 +56,7 @@ router.get(
         options: {
           fullWidth: true,
         },
-        content: renderHtml(
+        content: (
           <>
             <CourseSyncErrorsAndWarnings
               authzData={res.locals.authz_data}
@@ -67,13 +65,13 @@ router.get(
             />
             <Hydrate>
               <InstructorCourseAdminTopicsTable
-                topics={StaffTopics}
+                topics={z.array(StaffTopicSchema).parse(topics)}
                 allowEdit={allowEdit}
                 csrfToken={res.locals.__csrf_token}
                 origHash={origHash}
               />
             </Hydrate>
-          </>,
+          </>
         ),
       }),
     );
