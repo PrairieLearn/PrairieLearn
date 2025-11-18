@@ -1,8 +1,8 @@
-### `pl-matching` element
+# `pl-matching` element
 
 Given a list of statements, select a matching option for each entry from a dropdown list.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-matching element](pl-matching.png)
 
@@ -16,7 +16,7 @@ Given a list of statements, select a matching option for each entry from a dropd
 </pl-matching>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute             | Type                                                           | Default         | Description                                                                                                                                                                                                              |
 | --------------------- | -------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -78,7 +78,7 @@ A `pl-option` must be specified with these attributes:
 | --------- | ------ | --------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `name`    | string | See description | A key used to match this option as the correct response to a `pl-statement`. Defaults to the inner HTML of the `pl-option`. |
 
-#### Example implementations
+## Example implementations
 
 - [element/matching]
 

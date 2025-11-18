@@ -1,19 +1,19 @@
-### `pl-file-preview` element
+# `pl-file-preview` element
 
 Provides an in-browser list of all files submitted by a student through submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`, or through [workspaces](../workspaces/index.md). A preview of each file's content is also displayed for text-only files (including source code), images, PDF files and Jupyter Notebooks. It is commonly used in the submission panel in conjunction with the `pl-external-grader-results` element, though it can also be used when manual or internal grading is used to grade files.
 
-#### Sample element
+## Sample element
 
 ```html
 <pl-file-preview></pl-file-preview>
 ```
 
-#### Example implementations
+## Example implementations
 
 - [element/fileEditor]
 - [demo/autograder/codeEditor]
 
-#### See also
+## See also
 
 - [`pl-file-editor` to provide an in-browser code environment](pl-file-editor.md)
 - [`pl-file-upload` to receive files as a submission](pl-file-upload.md)

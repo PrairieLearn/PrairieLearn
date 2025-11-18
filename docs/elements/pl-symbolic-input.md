@@ -1,8 +1,8 @@
-### `pl-symbolic-input` element
+# `pl-symbolic-input` element
 
 Fill in the blank field that allows for mathematical symbol input.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-symbolic-input element](pl-symbolic-input.png)
 
@@ -26,7 +26,7 @@ def generate(data):
     data["correct_answers"]["symbolic_math"] = pl.to_json(z)
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute                       | Type                    | Default                 | Description                                                                                                                                                                                                                                                                                                                                     |
 | ------------------------------- | ----------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -52,7 +52,7 @@ def generate(data):
 | `show-score`                    | boolean                 | true                    | Whether to show the score badge next to this element.                                                                                                                                                                                                                                                                                           |
 | `suffix`                        | string                  | —                       | A suffix to display after the input box (e.g., `suffix="$\rm m/s^2$"`).                                                                                                                                                                                                                                                                         |
 
-#### Details
+## Details
 
 Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json`. It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
 
@@ -63,11 +63,11 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`, 
 Note that variables created with additional assumptions in a correct answer will have those assumptions respected when evaluating student answers.
 See example question for details.
 
-#### Example implementations
+## Example implementations
 
 - [element/symbolicInput]
 
-#### See also
+## See also
 
 - [`pl-number-input` for numeric input](pl-number-input.md)
 - [`pl-integer-input` for integer input](pl-integer-input.md)

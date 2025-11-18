@@ -1,9 +1,9 @@
-### `pl-variable-output` element
+# `pl-variable-output` element
 
 Displays a list of variables that are formatted for import into the
 supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-variable-output element](pl-variable-output.png)
 
@@ -32,7 +32,7 @@ def generate(data):
     data["params"]["matrixD"] = pl.to_json(matrixD)
 ```
 
-#### Customizations
+## Customizations
 
 Attributes for `<pl-variable-output>`:
 
@@ -54,7 +54,7 @@ Attributes for `<pl-variable>` (one of these for each variable to display):
 | `comment`     | string  | —       | Comment to add after the displayed variable.                    |
 | `digits`      | integer | —       | Number of digits to display after the decimal for the variable. |
 
-#### Details
+## Details
 
 This element displays a list of variables inside `<pl-code>` tags that are formatted for import into
 either MATLAB, Mathematica, Python, or R (the user can switch between them). Each variable must be
@@ -91,13 +91,13 @@ A = matrix(c(1.23, 4.56, 8.90, 1.23), nrow = 2, ncol = 2, byrow = TRUE) # matrix
 
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data["params"][params-name] = pl.to_json(v)`.
 
-#### Example implementations
+## Example implementations
 
 - [element/variableOutput]
 - [element/matrixComponentInput]
 - [demo/matrixComplexAlgebra]
 
-#### See also
+## See also
 
 - [`pl-matrix-latex` for displaying the matrix using LaTeX commands.](pl-matrix-latex.md)
 - [`pl-matrix-component-input` for individual input boxes for each element in the matrix](pl-matrix-component-input.md)

@@ -1,8 +1,8 @@
-### `pl-string-input` element
+# `pl-string-input` element
 
 Fill in the blank field that allows for **string** value input.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-string-input element](pl-string-input.png)
 
@@ -17,7 +17,7 @@ def generate(data):
     data["correct_answers"]["string_value"] = "Learn"
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute                 | Type                    | Default         | Description                                                                                                                                                               |
 | ------------------------- | ----------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -38,17 +38,17 @@ def generate(data):
 | `show-help-text`          | boolean                 | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                      |
 | `multiline`               | boolean                 | false           | Whether or not not to allow for multiline input using a `textarea` display.                                                                                               |
 
-#### Using multiline inputs
+## Using multiline inputs
 
 Note that, in multiline inputs, it can be hard to distinguish between inputs with or without a terminating line break (i.e., an additional "Enter" at the end of the input). Because of that, you are strongly encouraged to leave the default setting of `remove-leading-trailing="true"` unchanged when using multiline inputs.
 
 Additionally, multiline inputs will have any CR LF (`"\r\n"` in Python) line breaks normalized to a single LF (a single `"\n"` in Python). Note that this is different from the behavior of a standard `textarea` HTML element.
 
-#### Example implementations
+## Example implementations
 
 - [element/stringInput]
 
-#### See also
+## See also
 
 - [`pl-symbolic-input` for mathematical expression input](pl-symbolic-input.md)
 - [`pl-integer-input` for integer input](pl-integer-input.md)

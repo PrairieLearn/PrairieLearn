@@ -1,4 +1,4 @@
-### `pl-prairiedraw-figure` element
+# `pl-prairiedraw-figure` element
 
 Create and display a prairiedraw image.
 
@@ -6,7 +6,7 @@ Create and display a prairiedraw image.
 
     This element is **deprecated** and should not be used in new questions.
 
-#### Sample element
+## Sample element
 
 ```html title="question.html"
 <pl-prairiedraw-figure
@@ -17,7 +17,7 @@ Create and display a prairiedraw image.
 ></pl-prairiedraw-figure>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute     | Type    | Default | Description                                                          |
 | ------------- | ------- | ------- | -------------------------------------------------------------------- |
@@ -26,15 +26,15 @@ Create and display a prairiedraw image.
 | `width`       | integer | 500     | Width of the drawing element.                                        |
 | `height`      | integer | 300     | Height of the drawing element.                                       |
 
-#### Details
+## Details
 
 The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
 
-#### Example implementations
+## Example implementations
 
 - [element/prairieDrawFigure]
 
-#### See also
+## See also
 
 - [PrairieDraw graphics documentation](../PrairieDraw.md)
 

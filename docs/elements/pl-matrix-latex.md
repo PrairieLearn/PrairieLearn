@@ -1,8 +1,8 @@
-### `pl-matrix-latex` element
+# `pl-matrix-latex` element
 
 Displays a scalar or 2D numpy array of numbers in LaTeX using mathjax.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-matrix-latex element](pl-matrix-latex.png)
 
@@ -23,7 +23,7 @@ def generate(data):
     data["params"]["matrixC"] = pl.to_json(mat)
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute           | Type    | Default | Description                                                                                                                                                                                                                        |
 | ------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +31,7 @@ def generate(data):
 | `presentation-type` | string  | `"f"`   | Number display format. If `presentation-type` is `"sigfig"`, each number is formatted using the `to_precision` module to `digits` significant figures. Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`. |
 | `digits`            | integer | 2       | Number of digits to display according to the choice of `presentation-type`                                                                                                                                                         |
 
-#### Details
+## Details
 
 Depending on whether `data["params"]` contains either a scalar or 2D numpy array of numbers,
 one of the following will be returned.
@@ -61,12 +61,12 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 + <pl-matrix-latex params-name="c" digits="1"></pl-matrix-latex>$
 ```
 
-#### Example implementations
+## Example implementations
 
 - [element/matrixLatex]
 - [demo/randomCheckbox]
 
-#### See also
+## See also
 
 - [`pl-variable-output` for displaying the matrix in a supported programming language.](pl-variable-output.md)
 - [`pl-matrix-component-input` for individual input boxes for each element in the matrix](pl-matrix-component-input.md)

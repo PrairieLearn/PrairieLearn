@@ -1,15 +1,15 @@
-### `pl-answer-panel` element
+# `pl-answer-panel` element
 
 Provide information regarding the question answer after the student is unable
 to submit further answers for grading.
 
-#### Sample element
+## Sample element
 
 ```html
 <pl-answer-panel>This content is only shown in the answer panel.</pl-answer-panel>
 ```
 
-#### Details
+## Details
 
 Generally, the contents of `question.html` will appear in
 the question panel, submission panel, and answer panel. To prevent
@@ -23,11 +23,11 @@ Common reasons that trigger the display of the answer panel are:
 - There are no more submission attempts.
 - The time limit for the assessment has expired.
 
-#### Example implementations
+## Example implementations
 
 - [demo/custom/gradeFunction]
 
-#### See also
+## See also
 
 - [`pl-question-panel` for displaying the question prompt.](pl-question-panel.md)
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](pl-submission-panel.md)

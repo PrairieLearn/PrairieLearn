@@ -1,8 +1,8 @@
-### `pl-card` element
+# `pl-card` element
 
 Displays question content within a card-styled component. Optionally displays a header, footer, and/or image via tag attributes.
 
-#### Sample element
+## Sample element
 
 ```html title="question.html"
 <pl-card
@@ -15,7 +15,7 @@ Displays question content within a card-styled component. Optionally displays a 
 </pl-card>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute        | Type                                   | Default  | Description                            |
 | ---------------- | -------------------------------------- | -------- | -------------------------------------- |
@@ -30,11 +30,11 @@ Displays question content within a card-styled component. Optionally displays a 
 | `img-bottom-alt` | string                                 | —        | Alternative text for the bottom image. |
 | `width`          | `"25%"`, `"50%"`, `"75%"`, or `"auto"` | `"auto"` | Width of the card.                     |
 
-#### Details
+## Details
 
 The `pl-card` attributes mirror the options of [Bootstrap cards](https://getbootstrap.com/docs/5.3/components/card/). The `header` and `footer` tag attributes can include HTML tags alongside plaintext to allow for styling of their content.
 
-#### Example implementations
+## Example implementations
 
 - [element/card]
 

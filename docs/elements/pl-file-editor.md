@@ -1,9 +1,9 @@
-### `pl-file-editor` element
+# `pl-file-editor` element
 
 Provides an in-browser file editor that's compatible with the other file elements
 and external grading system.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-file-editor element](pl-file-editor.png)
 
@@ -19,7 +19,7 @@ def fib(n):
 </pl-file-editor>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute            | Type    | Default              | description                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | -------------------- | ------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -37,7 +37,7 @@ def fib(n):
 | `normalize-to-ascii` | boolean | false                | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading.                                                                                                                                                                                                                                                                                 |
 | `allow-blank`        | boolean | false                | Whether an empty submission is allowed.                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
-#### Details
+## Details
 
 When using `auto-resize`, consider specifying a custom `min-lines` or pre-populating the code editor window with a code sample.
 This will initialize the editor area with a sufficient number of lines to display all the code simultaneously without the need for scrolling.
@@ -48,12 +48,12 @@ This element supports additional preview options through [element extensions](..
 
 The contents of the file editor are only displayed by default in the question panel. If the contents are expected to be listed in the submission panel, they should be explicitly added using other elements such as [`pl-file-preview`](pl-file-preview.md) or [`pl-xss-safe`](pl-xss-safe.md).
 
-#### Example implementations
+## Example implementations
 
 - [element/fileEditor]
 - [demo/autograder/codeEditor]
 
-#### See also
+## See also
 
 - [`pl-file-upload` to receive files as a submission](pl-file-upload.md)
 - [`pl-file-preview` to display previously submitted files](pl-file-preview.md)

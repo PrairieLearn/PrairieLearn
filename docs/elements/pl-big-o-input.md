@@ -1,4 +1,4 @@
-### `pl-big-o-input` element
+# `pl-big-o-input` element
 
 Fill in the blank field that allows for asymptotic mathematical input (i.e. big O, big Theta, etc.).
 Gives automated feedback in the case of improper asymptotic input.
@@ -7,7 +7,7 @@ Gives automated feedback in the case of improper asymptotic input.
 <pl-big-o-input answers-name="ans" variable="n" correct-answer="n**2" size="10"></pl-big-o-input>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute        | Type                                                               | Default                   | Description                                                                                                                                                                       |
 | ---------------- | ------------------------------------------------------------------ | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -24,16 +24,16 @@ Gives automated feedback in the case of improper asymptotic input.
 | `allow-blank`    | boolean                                                            | false                     | Whether an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                         |
 | `blank-value`    | string                                                             | 1 (one)                   | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must be `""` (empty string) or follow the same format as an expected user input. |
 
-#### Details
+## Details
 
 Correct answers must be specified as strings with Python syntax (e.g., `n**2`, `2**n`, `n * log(n)`), with
 the same syntax as [`pl-symbolic-input`](pl-symbolic-input.md). Only one variable is supported.
 
-#### Example implementations
+## Example implementations
 
 - [element/bigOInput]
 
-#### See also
+## See also
 
 - [`pl-number-input` for numeric input](pl-number-input.md)
 - [`pl-integer-input` for integer input](pl-integer-input.md)

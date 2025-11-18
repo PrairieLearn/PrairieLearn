@@ -1,14 +1,14 @@
-### `pl-units-input` element
+# `pl-units-input` element
 
 Fill in the blank field that allows for **numeric** input and accompanying **units**.
 
-#### Sample element
+## Sample element
 
 ```html title="question.html"
 <pl-units-input answers-name="c_1" correct-answer="1m" atol="1cm"></pl-units-input>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute                  | Type                                               | Default         | Description                                                                                                                                                                                                                                                                                                                   |
 | -------------------------- | -------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -34,11 +34,11 @@ Fill in the blank field that allows for **numeric** input and accompanying **uni
 | `custom-format`            | string                                             | —               | Custom format specifier to use when formatting the submitted and correct answer after processing. By default, uses standard string conversion. A full description of the format can be found [on the Pint documentation page](https://pint.readthedocs.io/en/stable/getting/tutorial.html?highlight=print#string-formatting). |
 | `show-score`               | boolean                                            | true            | Whether to show the score badge next to this element.                                                                                                                                                                                                                                                                         |
 
-#### Details
+## Details
 
 This element uses [Pint](https://pint.readthedocs.io/en/stable/index.html) to parse and represent units. Any units allowed by Pint are supported by this element. To obtain a `Pint` unit registry, question code can use `pl.get_unit_registry()` to construct a default unit registry. This is recommended over constructing a registry using the constructor provided by `Pint` (as this does not use caching and is slower).
 
-#### Example implementations
+## Example implementations
 
 - [element/unitsInput]
 

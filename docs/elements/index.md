@@ -64,6 +64,7 @@ When writing questions, there exists a core pool of elements that provides commo
 - [`pl-variable-score`](pl-variable-score.md): Displays a partial score for a submitted element.
   - **Deprecated** as submission elements in `v3` all have score display options.
 
+<!-- markdownlint-disable-next-line MD033 -->
 <script>
 (() => {
   const redirects = {

@@ -1,8 +1,8 @@
-### `pl-graph` element
+# `pl-graph` element
 
 Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz DOT visualizations.
 
-#### Sample elements
+## Sample elements
 
 ![Screenshot of the pl-graph element using graphviz syntax](pl-graph1.png)
 
@@ -48,7 +48,7 @@ def generate(data):
     data["params"]["random-graph"] = pl.to_json(random_graph)
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute                   | Type    | Default              | Description                                                                                                                                                                                                                                                                   |
 | --------------------------- | ------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -65,17 +65,17 @@ def generate(data):
 | `directory`                 | string  | `"."`                | Directory where the source file is located. Can be `"."` (question directory), `"clientFilesCourse"`, or `"serverFilesCourse"`.                                                                                                                                               |
 | `log-warnings`              | boolean | true                 | Whether to log warnings that occur during Graphviz rendering.                                                                                                                                                                                                                 |
 
-#### Details
+## Details
 
 Note that using networkx for rendering, attributes from the input networkx graph are retained when creating a Graphviz DOT visualization. As a result, it is possible to set node and edge properties such as color, line weight, as part of the input graph and have these reflected in the rendering. These include global properties of the graph, such as the `rankdir` used in rendering. See the [Graphviz documentation on attributes](https://graphviz.org/doc/info/attrs.html) for more information on what attributes are supported. The currently used Graphviz version is 2.44.0.
 
 The `source-file-name` attribute is particularly useful when working with static graphs that contain special characters like angle brackets (`<>`), which are used in [record-based nodes](https://graphviz.org/doc/info/shapes.html#record) but can interfere with HTML parsing. By placing the graph content in an external file, you can avoid the need to escape these characters.
 
-#### Example implementations
+## Example implementations
 
 - [element/graph]
 
-#### Extension API
+## Extension API
 
 Custom values for `params-type` can be added with [element extensions](../elementExtensions.md). Each custom type is defined as a function that takes as input the `element` and `data` values and returns processed DOT syntax as output.
 
@@ -98,7 +98,7 @@ This will automatically get picked up when the extension gets imported. If your 
 
 For a full implementation, check out the `edge-inc-matrix` extension in the exampleCourse.
 
-#### See also
+## See also
 
 - [External: the DOT language reference](https://graphviz.org/doc/info/lang.html)
 - [`pl-figure` for displaying static or dynamically generated graphics.](pl-figure.md)

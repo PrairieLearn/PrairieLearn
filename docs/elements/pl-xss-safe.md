@@ -1,8 +1,8 @@
-### `pl-xss-safe` element
+# `pl-xss-safe` element
 
 Removes potentially dangerous scripts from HTML. This is recommended when parsing and displaying student-provided content. The element will remove some elements like scripts and triggers that may have been maliciously inserted by the student. Note that any code parsed by this element must be supported directly by the browser, i.e., it cannot include PrairieLearn elements or special tags.
 
-#### Sample element
+## Sample element
 
 ```html title="question.html"
 <!-- Content coming from a submitted file (e.g., pl-file-editor, pl-file-upload) -->
@@ -12,7 +12,7 @@ Removes potentially dangerous scripts from HTML. This is recommended when parsin
 <pl-xss-safe contents="{{submitted_answers.answer}}"></pl-xss-safe>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute             | Type   | Default | Description                                                                                                                                                   |
 | --------------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -23,12 +23,12 @@ Removes potentially dangerous scripts from HTML. This is recommended when parsin
 
 Note that only one of the attributes `source-file-name`, `submitted-file-name` or `contents` may be provided in the same element.
 
-#### Example implementations
+## Example implementations
 
 - [demo/markdownEditorLivePreview]
 - [element/xssSafe]
 
-#### See also
+## See also
 
 - [`pl-file-editor` to provide an in-browser code environment](pl-file-editor.md)
 

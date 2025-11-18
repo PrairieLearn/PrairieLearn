@@ -1,4 +1,4 @@
-### `pl-multiple-choice` element
+# `pl-multiple-choice` element
 
 A `pl-multiple-choice` element selects **one** correct answer and zero or more
 incorrect answers and displays them in a random order as radio buttons.
@@ -6,7 +6,7 @@ Duplicate answer choices (string equivalents) are not permitted in the
 `pl-multiple-choice` element, and an exception will be raised upon question
 generation if two (or more) choices are identical.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-multiple-choice element](pl-multiple-choice.png)
 
@@ -18,7 +18,7 @@ generation if two (or more) choices are identical.
 </pl-multiple-choice>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute                    | Type                                                 | Default                     | Description                                                                                                                                                                                |
 | ---------------------------- | ---------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -44,7 +44,7 @@ The attributes `none-of-the-above` and `all-of-the-above` can be set to one of t
 - `"correct"`: the corresponding choice will always be shown and will always be the correct answer.
 - `"incorrect"`: the corresponding choice will always be shown and will always be an incorrect answer (i.e., a distractor).
 
-##### :pencil: Notes
+### :pencil: Notes
 
 - "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
 - Defining answer choices with external JSON files via the `external-json` attribute is now deprecated.
@@ -58,12 +58,12 @@ a `pl-answer` that has attributes:
 | `feedback` | string  | —               | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
 | `score`    | float   | See description | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
 
-#### Example implementations
+## Example implementations
 
 - [element/multipleChoice]
 - [demo/randomMultipleChoice]
 
-#### See also
+## See also
 
 - [`pl-checkbox` for allowing **one or more** choices](pl-checkbox.md)
 

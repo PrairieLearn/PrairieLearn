@@ -1,4 +1,4 @@
-### `pl-excalidraw` element
+# `pl-excalidraw` element
 
 Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidraw). Only manual grading is supported.
 
@@ -17,7 +17,7 @@ Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidra
 ></pl-excalidraw>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute          | Type                                                                                                 | Default   | Description                                                                                                             |
 | ------------------ | ---------------------------------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------- |

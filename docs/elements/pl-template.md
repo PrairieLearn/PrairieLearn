@@ -1,8 +1,8 @@
-### `pl-template` element
+# `pl-template` element
 
 Displays boilerplate HTML from mustache templates in a reusable way.
 
-#### Sample element
+## Sample element
 
 ```html title="question.html"
 <pl-template file-name="templates/outer_template.mustache">
@@ -41,7 +41,7 @@ Along with the sample usage of the element, we include a sample template file. T
     The sample element did not define the `uuid` variable, as each `pl-template` element
     has a unique one defined internally.
 
-#### Customizations
+## Customizations
 
 | Attribute               | Type                                                                                                      | Default               | Description                                                                                                  |
 | ----------------------- | --------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------ |
@@ -59,7 +59,7 @@ Inside the `pl-template` element, variables for use in rendering the template ma
 | `directory`       | `"question"`, `"clientFilesQuestion"`, `"clientFilesCourse"`, `"serverFilesCourse"`, `"courseExtensions"` | `"serverFilesCourse"` | Parent directory to locate `file-name`.                       |
 | `trim-whitespace` | boolean                                                                                                   | true                  | Whether to trim whitespace of data specified by this tag.     |
 
-#### Details
+## Details
 
 Because of the way that elements are rendered in PrairieLearn, templates should only contain other decorative elements. In particular, **elements that accept and/or grade student input used within this element will not work correctly.** When rendering a template, all entries from `data["params"]` are included as available variables and may be used when the template is rendered. Each instance of the `pl-template` element also has a unique `uuid` variable available for rendering. Templates may also be used within other templates.
 
@@ -67,7 +67,7 @@ Because of the way that elements are rendered in PrairieLearn, templates should 
 
     The id `#` CSS selector does _not_ work for ids that start with a number, so uuids should be prefixed (as these may start with a number).
 
-#### Example implementations
+## Example implementations
 
 - [element/template]
 

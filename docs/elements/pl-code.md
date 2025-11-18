@@ -1,9 +1,9 @@
-### `pl-code` element
+# `pl-code` element
 
 Display an embedded or file-based block of code with syntax highlighting and
 line callouts.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-code input](pl-code.png)
 
@@ -15,7 +15,7 @@ def square(x):
 </pl-code>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute               | Type    | Default         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ----------------------- | ------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -30,19 +30,19 @@ def square(x):
 | `show-line-numbers`     | boolean | false           | Whether to show line numbers in code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                                           |
 | `normalize-whitespace`  | boolean | false           | Whether to strip trailing whitespace and remove extra indentation of the contents. Recommended for cases where the code is inline in the question file.                                                                                                                                                                                                                                                                                                   |
 
-#### Details
+## Details
 
 The `pl-code` element uses the _Pygments_ library for syntax highlighting. It supports the any of the built-in supported languages, be found in the [Pygments documentation](https://pygments.org/languages/), as well as the custom [`ansi-color` custom language](https://github.com/chriskuehl/pygments-ansi-color) that can be used to display terminal output. If the language is not provided, no syntax highlighting is done.
 
-##### Common Pitfalls
+### Common Pitfalls
 
 The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters with inline code may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more with [this escaping tool](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute.
 
-#### Example implementations
+## Example implementations
 
 - [element/code]
 
-#### See also
+## See also
 
 - [`pl-file-editor` to provide an in-browser code environment](pl-file-editor.md)
 

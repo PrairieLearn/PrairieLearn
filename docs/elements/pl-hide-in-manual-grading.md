@@ -1,8 +1,8 @@
-### `pl-hide-in-manual-grading` element
+# `pl-hide-in-manual-grading` element
 
 Hide the contents so that it is **not** displayed to graders in the manual grading page.
 
-#### Sample element
+## Sample element
 
 ```html
 <pl-hide-in-manual-grading>
@@ -10,15 +10,15 @@ Hide the contents so that it is **not** displayed to graders in the manual gradi
 </pl-hide-in-manual-grading>
 ```
 
-#### Details
+## Details
 
 This element is typically used to abbreviate the question description and allow graders to focus on the actual answers during grading. It is the reverse of [the `pl-manual-grading-only` element](pl-manual-grading-only.md), which explicitly shows content only during grading.
 
-#### Example implementations
+## Example implementations
 
 - [demo/manualGrade/codeUpload]
 
-#### See also
+## See also
 
 - [`pl-manual-grading-only` to show content only during manual grading.](pl-manual-grading-only.md)
 - [`pl-question-panel` for displaying the question prompt.](pl-question-panel.md)

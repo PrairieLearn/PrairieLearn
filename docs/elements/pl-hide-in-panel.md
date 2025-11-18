@@ -1,8 +1,8 @@
-### `pl-hide-in-panel` element
+# `pl-hide-in-panel` element
 
 Hide the contents so that it is **not** displayed in specific panels ("question", "submission", or "answer").
 
-#### Sample element
+## Sample element
 
 ```html title="question.html"
 <pl-hide-in-panel submission="true" answer="true">
@@ -10,7 +10,7 @@ Hide the contents so that it is **not** displayed in specific panels ("question"
 </pl-hide-in-panel>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute    | Type    | Default | Description                                                   |
 | ------------ | ------- | ------- | ------------------------------------------------------------- |
@@ -18,7 +18,7 @@ Hide the contents so that it is **not** displayed in specific panels ("question"
 | `submission` | boolean | false   | Whether to hide the element contents in the submission panel. |
 | `answer`     | boolean | false   | Whether to hide the element contents in the answer panel.     |
 
-#### Details
+## Details
 
 Hide the element contents in those panels for which the corresponding
 attribute is `true`. This is the reverse of
@@ -27,11 +27,11 @@ attribute is `true`. This is the reverse of
 [`pl-answer-panel`](pl-answer-panel.md), all of which explicitly show the
 element contents only in a specific panel.
 
-#### Example implementations
+## Example implementations
 
 - [element/panels]
 
-#### See also
+## See also
 
 - [`pl-question-panel` for displaying the question prompt.](pl-question-panel.md)
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](pl-submission-panel.md)

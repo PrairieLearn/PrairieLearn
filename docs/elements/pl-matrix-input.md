@@ -1,10 +1,10 @@
-### `pl-matrix-input` element
+# `pl-matrix-input` element
 
 A `pl-matrix-input` element displays an input field that accepts a matrix
 (i.e., a 2-D array) expressed in a supported programming language
 format (either MATLAB or Python's numpy).
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-matrix-input element](pl-matrix-input.png)
 
@@ -24,7 +24,7 @@ def generate(data):
     data["correct_answers"]["matrixB"] = pl.to_json(matrixB)
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute        | Type                                  | Default    | Description                                                                                                                                                          |
 | ---------------- | ------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -39,7 +39,7 @@ def generate(data):
 | `allow-complex`  | boolean                               | false      | Whether to allow complex numbers as answers.                                                                                                                         |
 | `show-help-text` | boolean                               | true       | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
 
-#### Details
+## Details
 
 `pl-matrix-input` parses a matrix entered in `MATLAB` or `Python` format.
 The following are valid input format options:
@@ -62,11 +62,11 @@ In the answer panel, a `pl-matrix-input` element displays the correct answer, al
 
 In the submission panel, a `pl-matrix-input` element displays either the submitted answer (in the same format that it was submitted, either MATLAB or Python), or a note that the submitted answer was invalid (with an explanation of why).
 
-#### Example implementations
+## Example implementations
 
 - [demo/matrixComplexAlgebra]
 
-#### See also
+## See also
 
 - [`pl-matrix-component-input` for individual input boxes for each element in the matrix](pl-matrix-component-input.md)
 - [`pl-number-input` for a single numeric input](pl-number-input.md)

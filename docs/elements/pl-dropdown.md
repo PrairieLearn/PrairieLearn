@@ -1,4 +1,4 @@
-### `pl-dropdown` element
+# `pl-dropdown` element
 
 !!! warning
 
@@ -6,7 +6,7 @@
 
 Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a `<pl-answer></pl-answer>` element (e.g. `<pl-answer>Possible Answer 1</pl-answer>`).
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-dropdown element](pl-dropdown.png)
 
@@ -43,7 +43,7 @@ def generate(data):
     ]
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute      | Type    | Default | Description                                                                                                                                                          |
 | -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -54,7 +54,7 @@ def generate(data):
 | `allow-blank`  | boolean | false   | Whether an empty submission is allowed. By default, empty dropdowns will not be graded (invalid format).                                                             |
 | `aria-label`   | string  | None    | An accessible label for the element.                                                                                                                                 |
 
-#### Example implementation
+## Example implementation
 
 - [demo/overlayDropdown]
 - [element/dropdown]

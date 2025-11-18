@@ -1,4 +1,4 @@
-### `pl-external-grader-variables` element
+# `pl-external-grader-variables` element
 
 Displays variables that are given to the student, or expected for the student to define in externally-graded Python questions.
 
@@ -20,7 +20,7 @@ data["params"]["names_from_user"] = [
 ]
 ```
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-external-grader-variables element](pl-external-grader-variables.png)
 
@@ -45,7 +45,7 @@ def generate(data):
     ]
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute     | Type    | Default | Description                                                                                                                                 |
 | ------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -59,7 +59,7 @@ The HTML inside the inner `pl-variable` tag is used as the description. If the t
 | `name`    | string | —       | Name of the given variable. Required for all variables. |
 | `type`    | string | —       | Type of the given variable. Required for all variables. |
 
-#### Example implementations
+## Example implementations
 
 - [demo/autograder/codeEditor]
 - [demo/autograder/codeUpload]

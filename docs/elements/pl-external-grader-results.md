@@ -1,23 +1,23 @@
-### `pl-external-grader-results` element
+# `pl-external-grader-results` element
 
 Displays results from externally-graded questions.
 
-#### Sample element
+## Sample element
 
 ```html
 <pl-external-grader-results></pl-external-grader-results>
 ```
 
-#### Details
+## Details
 
 It expects results to follow [the reference schema for external grading results](../externalGrading.md#grading-results).
 
-#### Example Implementations
+## Example Implementations
 
 - [demo/autograder/codeUpload]
 - [demo/autograder/codeEditor]
 
-#### See also
+## See also
 
 - [External Grading Reference Schema](../externalGrading.md#grading-results)
 

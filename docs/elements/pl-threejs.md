@@ -1,4 +1,4 @@
-### `pl-threejs` element
+# `pl-threejs` element
 
 This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
 
@@ -6,7 +6,7 @@ This element displays a 3D scene with objects that the student can (optionally) 
 
     This element is **deprecated** and should not be used in new questions.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-threejs element](pl-threejs.png)
 
@@ -24,7 +24,7 @@ This element displays a 3D scene with objects that the student can (optionally) 
 </pl-threejs>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute                       | Type    | Default         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ------------------------------- | ------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -69,11 +69,11 @@ A `pl-threejs-txt` element inside a `pl-threejs` element allows you to add whate
 | `orientation` | list   | See description | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.                                                                                                                                                                                                         |
 | `format`      | string | `"rpy"`         | Determines how `orientation` is interpreted. If `"rpy"` then `[roll, pitch, yaw]`. If `"matrix"` then 3x3 rotation matrix `[[...], [...], [...]]`. If `"quaternion"` then `[x, y, z, w]`. If `"axisangle"` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle. |
 
-#### Details
+## Details
 
 Note that a 3D scene is also created to show each submitted answer. This means
 that if there are many submitted answers, the page will load slowly.
 
-#### See also
+## See also
 
 - [External: `three.js` JavaScript library](https://threejs.org/)

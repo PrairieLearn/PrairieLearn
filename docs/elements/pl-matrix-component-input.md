@@ -1,10 +1,10 @@
-### `pl-matrix-component-input` element
+# `pl-matrix-component-input` element
 
 A `pl-matrix-component-input` element displays a grid of input fields with
 the same shape of the variable stored in `answers-name`
 (only 2D arrays of real numbers can be stored in `answers-name`).
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-matrix-component-input element](pl-matrix-component-input.png)
 
@@ -25,7 +25,7 @@ def generate(data):
     data["correct_answers"]["matrixA"] = pl.to_json(mat)
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute              | Type                                  | Default                  | Description                                                                                                                                                                                                                    |
 | ---------------------- | ------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -43,15 +43,15 @@ def generate(data):
 | `allow-blank`          | boolean                               | false                    | Whether empty input boxes are allowed. By default, matrices with at least one empty input box will not be graded (invalid format).                                                                                             |
 | `blank-value`          | string                                | 0 (zero)                 | Value to be used as an answer for each individual component if the component is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, etc.). |
 
-#### Details
+## Details
 
 The question will only be graded when all matrix components are entered, unless the `allow-blank` attribute is enabled.
 
-#### Example implementations
+## Example implementations
 
 - [element/matrixComponentInput]
 
-#### See also
+## See also
 
 - [`pl-matrix-input` for a matrix formatted in an implemented programming language](pl-matrix-input.md)
 - [`pl-number-input` for a single numeric input](pl-number-input.md)

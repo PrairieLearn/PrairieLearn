@@ -1,9 +1,9 @@
-### `pl-number-input` element
+# `pl-number-input` element
 
 Fill in the blank field that allows for **numeric** value input within specific
 tolerances.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-number-input element with relative tolerance](pl-number-input-rtol.png)
 
@@ -44,7 +44,7 @@ def generate(data):
     data["correct_answers"]["ans_sig"] = round(x, 2)
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute             | Type                                  | Default         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | --------------------- | ------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -70,12 +70,12 @@ def generate(data):
 | `allow-fractions`     | boolean                               | true            | Whether to allow answers expressed as a rational number of the format `a/b`.                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `custom-format`       | string                                | See description | Custom format to use when formatting the submitted or correct answer. By default, submitted answers are shown with the format `".12g"`, while the correct answer uses `".12g"` if the comparison method is `"relabs"`, or a custom format based on the number of digits if the comparison method is `"sigfig"` or `"decdig"`. A full description of the format can be found [on the Python documentation page](https://docs.python.org/3/library/string.html#format-specification-mini-language). |
 
-#### Example implementations
+## Example implementations
 
 - [element/numberInput]
 - [demo/calculation]
 
-#### See also
+## See also
 
 - [`pl-integer-input` for integer input](pl-integer-input.md)
 - [`pl-symbolic-input` for mathematical expression input](pl-symbolic-input.md)

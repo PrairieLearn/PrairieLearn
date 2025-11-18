@@ -1,4 +1,4 @@
-### `pl-variable-score` element
+# `pl-variable-score` element
 
 Display the partial score for a specific answer variable.
 
@@ -6,13 +6,13 @@ Display the partial score for a specific answer variable.
 
     This element is **deprecated** and should not be used in new questions.
 
-#### Sample element
+## Sample element
 
 ```html title="question.html"
 <pl-variable-score answers-name="v_avg"></pl-variable-score>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute      | Type   | Default | Description                         |
 | -------------- | ------ | ------- | ----------------------------------- |

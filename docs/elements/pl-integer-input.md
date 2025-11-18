@@ -1,8 +1,8 @@
-### `pl-integer-input` element
+# `pl-integer-input` element
 
 Fill in the blank field that requires an **integer** input.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-integer-input element](pl-integer-input.png)
 
@@ -22,7 +22,7 @@ def generate(data):
     data["correct_answers"]["int_value"] = x
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute        | Type                    | Default         | Description                                                                                                                                                          |
 | ---------------- | ----------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -41,7 +41,7 @@ def generate(data):
 | `placeholder`    | string                  | See description | Custom placeholder text. If not set, defaults to `"integer"` if `base` is 10, otherwise `"integer in base <base>"`.                                                  |
 | `show-score`     | boolean                 | true            | Whether to show the score badge next to this element.                                                                                                                |
 
-#### Specifying a non-trivial base
+## Specifying a non-trivial base
 
 By default, the values are interpreted in base 10. The `base` argument may also be used, with a value between 2 and 36, to indicate a different base to interpret the student input, as well as to print the final result.
 
@@ -51,17 +51,17 @@ The `base` argument can also accept a special value of 0. In this case, the valu
 - The prefixes `0b` and `0B` can be used for base-2 values (e.g., `0b1101`);
 - The prefixes `0o` and `0O` can be used for base-8 values (e.g., `0o777`).
 
-#### Integer range
+## Integer range
 
 pl-integer-input can accept integers of unbounded size, however the correct answer will only be stored as the Python `int` if it is between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). Otherwise, the correct answer will be stored as a string. This distinction is important in `server.py` scripts for `parse()` and `grade()`, as well as downloaded assessment results.
 
 Note that answers can include underscores which are ignored (i.e., `1_000` will be parsed as `1000`).
 
-#### Example implementations
+## Example implementations
 
 - [element/integerInput]
 
-#### See also
+## See also
 
 - [`pl-number-input` for numeric input](pl-number-input.md)
 - [`pl-symbolic-input` for mathematical expression input](pl-symbolic-input.md)

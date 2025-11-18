@@ -1,8 +1,8 @@
-### `pl-order-blocks` element
+# `pl-order-blocks` element
 
 Element to arrange given blocks of code or text that are displayed initially in the _source area_. The blocks can be moved to the _solution area_ to construct the solution of the problem. In the example below, the source area is denoted by the header "Drag from here" and the solution area is denoted with the header "Construct your solution here".
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-order-blocks element](pl-order-blocks.png)
 
@@ -16,7 +16,7 @@ Element to arrange given blocks of code or text that are displayed initially in 
 </pl-order-blocks>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute             | Type                                                           | Default                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | --------------------- | -------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -57,7 +57,7 @@ Within the `pl-order-blocks` element, each element must either be a `pl-answer` 
 
     Above attributes indicated with a \* can be applied to `pl-block-group` as well.
 
-#### Details
+## Details
 
 Different grading options are defined via the attribute `grading-method`:
 
@@ -74,7 +74,7 @@ Different ordering of the blocks in the source area defined via the attribute `s
 - `ordered`: the blocks appear in the source area in the same order they appear in the HTML file.
 - `alphabetized`: the blocks are alphabetized according to their HTML contents. Take care when including HTML in blocks. For instance, `<b>cat</b>` will appear before `<i>bat</i>`.
 
-#### Optional Blocks
+## Optional Blocks
 
 This feature allows users to write `pl-order-blocks` questions using the `dag` grading method to have multiple correct orderings that must include the same final block. This can extend existing questions utilizing the `dag` grading method to include blocks that can be either included or excluded in the final solution while still being correct. You can denote an "or" relationship between dependencies in the `depends` attribute by using the `|` operator, e.g., `depends="A|B"`.
 
@@ -83,7 +83,7 @@ This feature allows users to write `pl-order-blocks` questions using the `dag` g
     When using optional blocks, the question must contain one block that serves as the final block in every ordering. The `pl-answer` tag that declares this block must have the attribute `final` set to `true`.
     A question cannot include block groups with optional blocks.
 
-#### Optional Blocks Example
+## Optional Blocks Example
 
 ![Screenshot of the pl-order-blocks element with optional lines](pl-order-blocks-optional.png)
 
@@ -105,7 +105,7 @@ This feature allows users to write `pl-order-blocks` questions using the `dag` g
 </pl-order-blocks>
 ```
 
-#### Example implementations
+## Example implementations
 
 - [element/orderBlocks]
 - [element/orderBlocksOptional]

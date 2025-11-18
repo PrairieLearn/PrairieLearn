@@ -1,14 +1,14 @@
-### `pl-submission-panel` element
+# `pl-submission-panel` element
 
 Customizes how information entered by a user is displayed before grading.
 
-#### Sample element
+## Sample element
 
 ```html title="question.html"
 <pl-submission-panel>This content is only shown in the submission panel.</pl-submission-panel>
 ```
 
-#### Details
+## Details
 
 Generally, the contents of `question.html` will appear in
 the question panel, submission panel, and answer panel. To prevent
@@ -19,13 +19,13 @@ with the `<pl-submission-panel>` tags.
 The submission panel is only shown after the student has submitted an
 answer. This answer may be correct, incorrect, or invalid.
 
-#### Example implementations
+## Example implementations
 
 - [demo/custom/gradeFunction]
 - [demo/autograder/codeUpload]
 - [demo/autograder/codeEditor]
 
-#### See also
+## See also
 
 - [`pl-question-panel` for displaying the question prompt.](pl-question-panel.md)
 - [`pl-answer-panel` for displaying the question's solution.](pl-answer-panel.md)

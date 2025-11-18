@@ -1,8 +1,8 @@
-### `pl-rich-text-editor` element
+# `pl-rich-text-editor` element
 
 Provides an in-browser rich text editor, aimed mostly at manual grading essay-type questions. This editor is based on the [Quill rich text editor](https://quilljs.com/).
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-rich-text-editor element](pl-rich-text-editor.png)
 
@@ -10,7 +10,7 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 <pl-rich-text-editor file-name="answer.html"> </pl-rich-text-editor>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute            | Type                                | Default              | description                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | -------------------- | ----------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -25,15 +25,15 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 | `allow-blank`        | boolean                             | false                | Whether an empty input box is allowed. By default, empty submissions will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                                 |
 | `clipboard-enabled`  | boolean                             | true                 | Whether the element supports cutting, copying and pasting the contents of the editor from the user interface. Note that the editor content is still available in the browser's developer tools, which would allow students to copy the content anyway. Also note that preventing operations like copying or pasting text may be detrimental to the student's experience, and as such should be avoided unless absolutely necessary.                       |
 
-#### Using more than one element in a question
+## Using more than one element in a question
 
 The `pl-rich-text-editor` element creates a file submission corresponding to the HTML content of the student answer. If the file name is not provided, the name `answer.html` is used. If more than one `pl-rich-text-editor` is included in a question, they must each contain a different file name; in that case, the file name must be explicitly provided, as the default name would clash between elements.
 
-#### Example implementations
+## Example implementations
 
 - [element/richTextEditor]
 
-#### See also
+## See also
 
 - [`pl-file-editor` to edit unformatted text, such as code](pl-file-editor.md)
 - [`pl-file-upload` to receive files as a submission](pl-file-upload.md)

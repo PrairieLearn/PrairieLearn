@@ -1,8 +1,8 @@
-### `pl-python-variable` element
+# `pl-python-variable` element
 
 Displays the value of a Python variable. It uses options similar to the [pprint](https://docs.python.org/3/library/pprint.html) module to format output data, and can recursively print nested data structures. As such, some descriptions below are taken directly from this documentation.
 
-#### Sample elements
+## Sample elements
 
 ![Screenshot of the pl-python-variable element](pl-python-variable.png)
 
@@ -18,7 +18,7 @@ def generate(data):
     data["params"]["variable"] = pl.to_json(data_dictionary)
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute           | Type    | Default | Description                                                                                                                                                                                                                                                                                      |
 | ------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -36,17 +36,17 @@ def generate(data):
 | `copy-code-button`  | boolean | false   | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                                          |
 | `show-line-numbers` | boolean | false   | Whether to show line numbers in code displayed by this element.                                                                                                                                                                                                                                  |
 
-#### Details
+## Details
 
 The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in `pprint` library. **Objects to be displayed must be serializable to JSON.** For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](../question/server.md#question-data-storage). To display objects that cannot be easily JSON serialized, please refer to the `pl-code` example question [element/code].
 
 Printing Pandas DataFrames with this element is deprecated. Please use the new [`pl-dataframe`](pl-dataframe.md) element for this purpose.
 
-#### Example implementations
+## Example implementations
 
 - [element/pythonVariable]
 
-#### See also
+## See also
 
 - [`pl-code` to display blocks of code with syntax highlighting](pl-code.md)
 - [`pl-variable-output` for displaying a matrix or element in code form.](pl-variable-output.md)

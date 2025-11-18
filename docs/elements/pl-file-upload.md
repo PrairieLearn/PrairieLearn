@@ -1,4 +1,4 @@
-### `pl-file-upload` element
+# `pl-file-upload` element
 
 Provides a way to accept file uploads as part of an answer. They will be stored
 in the format expected by externally graded questions.
@@ -11,7 +11,7 @@ in the format expected by externally graded questions.
     potentially misleading error messages for large file uploads, we recommend not using more than one
     `pl-file-upload` element per question.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-file-upload element](pl-file-upload.png)
 
@@ -19,7 +19,7 @@ in the format expected by externally graded questions.
 <pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute                | Type     | Default | description                                                                                                                                                                                                                                                   |
 | ------------------------ | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -28,7 +28,7 @@ in the format expected by externally graded questions.
 | `file-patterns`          | CSV list | ""      | List of file name patterns (see below) that must be submitted. For each pattern, exactly one matching file must be uploaded. Commas and special pattern character should be escaped with a backslash, and filenames cannot contain quotes.                    |
 | `optional-file-patterns` | CSV list | ""      | List of file name patterns (see below) that can be submitted, but are optional. For each pattern, any number of matching files can be uploaded. Commas and special pattern character should be escaped with a backslash, and filenames cannot contain quotes. |
 
-#### Supported wildcard patterns
+## Supported wildcard patterns
 
 The `file-patterns` and `optional-file-patterns` attributes support a number of wildcards to allow a range of file names:
 
@@ -64,16 +64,16 @@ Required files (`file-names` or `file-patterns`) and optional files (`optional-f
 
     The same required pattern in `file-patterns` can be repeated, for example `*.py,*.py` means that exactly two Python files must be uploaded. However, different required patterns should not overlap (e.g. `*.py,solution.*`) because files are assigned to a matching pattern arbitrarily, and this can lead to unintended behavior.
 
-#### Details
+## Details
 
 The `pl-file-upload` element and the contents of the uploaded file(s) are only displayed by default in the question panel. If the contents are expected to be listed in the submission panel, they should be explicitly added using other elements such as [`pl-file-preview`](pl-file-preview.md) or [`pl-xss-safe`](pl-xss-safe.md).
 
-#### Example implementations
+## Example implementations
 
 - [demo/autograder/codeUpload]
 - [demo/manualGrade/codeUpload]
 
-#### See also
+## See also
 
 - [`pl-file-editor` to provide an in-browser code environment](pl-file-editor.md)
 - [`pl-external-grader-results` to include output from autograded code](pl-external-grader-results.md)

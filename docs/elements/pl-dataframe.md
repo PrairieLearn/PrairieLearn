@@ -1,8 +1,8 @@
-### `pl-dataframe` element
+# `pl-dataframe` element
 
 Displays a formatted display of Pandas DataFrames, with various options for displaying types of columns and code for reproducing the DataFrame.
 
-#### Sample elements
+## Sample elements
 
 ```html title="question.html"
 <pl-dataframe params-name="df" show-index="false" show-dimensions="false" digits="4"></pl-dataframe>
@@ -17,7 +17,7 @@ def generate(data):
     data["params"]["df"] = pl.to_json(df.head(15))
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute               | Type                 | Default    | Description                                                                                                                                                                                                                                                                                                                                                        |
 | ----------------------- | -------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -33,18 +33,18 @@ def generate(data):
 | `width`                 | integer              | 500        | Max characters per line for displaying Python code.                                                                                                                                                                                                                                                                                                                |
 | `presentation-type`     | string               | `"g"`      | Floating point number display format. If `digits` is specified, formatted using `'{:.{digits}{presentation-type}}'`, otherwise `'{:{presentation-type}}'`. See [the Python documentation](https://docs.python.org/3/library/string.html#format-specification-mini-language) for more information on allowable presentation types for `float` and `Decimal` values. |
 
-#### Details
+## Details
 
 When setting a parameter, use PrairieLearn's built in `pl.to_json()` on the DataFrame to display. Note that there are multiple serialization options for Pandas DataFrames. Encoding a DataFrame `df` by setting `pl.to_json(df, df_encoding_version=2)` allows for missing and date time values whereas `pl.to_json(df, df_encoding_version=1)` (default) does not. However, `df_encoding_version=1` has support for complex numbers, while `df_encoding_version=2` does not.
 
 Note that some Python types may not be serialized correctly in the code provided to reconstruct the DataFrame.
 
-#### Example implementations
+## Example implementations
 
 - [element/dataframe]
 - [demo/randomDataFrame]
 
-#### See also
+## See also
 
 - [`pl-code` to display blocks of code with syntax highlighting](pl-code.md)
 - [`pl-variable-output` for displaying a matrix or element in code form.](pl-variable-output.md)

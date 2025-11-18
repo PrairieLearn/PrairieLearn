@@ -1,9 +1,9 @@
-### `pl-checkbox` element
+# `pl-checkbox` element
 
 A `pl-checkbox` element displays a subset of the answers in a random order
 as checkboxes.
 
-#### Sample element
+## Sample element
 
 ![Screenshot of the pl-checkbox element](pl-checkbox.png)
 
@@ -18,7 +18,7 @@ as checkboxes.
 </pl-checkbox>
 ```
 
-#### Customizations
+## Customizations
 
 | Attribute               | Type    | Default         | Description                                                                                                                                                                                                                          |
 | ----------------------- | ------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -48,7 +48,7 @@ a `pl-answer` that has attributes:
 | `correct`  | boolean | false   | Is this a correct answer to the question?                                                                                                      |
 | `feedback` | string  | —       | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
 
-#### Partial credit grading
+## Partial credit grading
 
 Three grading methods are available when using `partial-credit="true"`:
 
@@ -60,13 +60,13 @@ Three grading methods are available when using `partial-credit="true"`:
 
 - `"PC"` (Percent Correct): in this method, 1 point is added for each correct answer that is marked as correct and 1 point is subtracted for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.
 
-#### Using the `detailed-help-text` attribute
+## Using the `detailed-help-text` attribute
 
 The `detailed-help-text` attribute can be used with `min-correct` and/or `max-correct` to help students select the correct options. If `min-select` is not specified, then setting `detailed-help-text="true"` ensures that the number of selected options in a valid submission is at least the value of `min-correct`. Similarly, if `max-select` is not specified, then setting `detailed-help-text="true"` ensures that the number of selected options in a valid submission is at most the value of `max-correct`. For example, if a checkbox question does not specify `min-select` or `max-select`, and specifies `min-correct="2"`, `max-correct="4"`, and `detailed-help-text="true"`, then all valid submissions must select between 2 and 4 options. Thus, we help students by preventing them from selecting, say, five options. Indeed, if five options are selected, then at least one selected option is incorrect since there are at most four correct options.
 
 Note that explicitly specifying `min-select` overrides the minimum number of options that must be selected, and similarly, explicitly specifying `max-select` overrides the maximum number of options that can be selected.
 
-#### Restricting the number of options that can be selected
+## Restricting the number of options that can be selected
 
 The `min-select` and `max-select` attributes determine the minimum and maximum number of options that can be selected in a valid submission. The value of `min-select` is computed using the following steps:
 
@@ -80,12 +80,12 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 2. If `max-select` is not specified, but `max-correct` is specified along with `detailed-help-text="true"`, then we use the specified value of `min-correct`.
 3. If steps 1 and 2 do not apply, then `max-select` defaults to the number of displayed checkbox options (i.e. students can select all displayed options by default).
 
-#### Example implementations
+## Example implementations
 
 - [element/checkbox]
 - [demo/randomCheckbox]
 
-#### See also
+## See also
 
 - [`pl-multiple-choice` for allowing only **one** correct choice](pl-multiple-choice.md)
 

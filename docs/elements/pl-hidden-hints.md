@@ -1,4 +1,4 @@
-### `pl-hidden-hints` element
+# `pl-hidden-hints` element
 
 Display progressive hints that become accessible as the number of student submissions increases for the current variant.
 Hints are only open on page load when they are first revealed (when first reaching the desired submission count).
@@ -8,7 +8,7 @@ generated. Note that **this element does not reveal new hints across variants.**
 Best used in situations where there is a penalty for more submissions to a given variant. This prevents students from
 spamming incorrect submissions to reveal all hints right away.
 
-#### Sample element
+## Sample element
 
 ```html title="question.html"
 <pl-hidden-hints>
@@ -25,7 +25,7 @@ spamming incorrect submissions to reveal all hints right away.
 </pl-hidden-hints>
 ```
 
-#### Customizations
+## Customizations
 
 For the inner `pl-hint` tag:
 
@@ -34,17 +34,17 @@ For the inner `pl-hint` tag:
 | `show-after-submission` | int    | —       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
 | `hint-name`             | string | —       | Custom heading to display for the given hint. If not set, then displays a default heading including the hint number.                                                                                        |
 
-#### Details
+## Details
 
 Add hints to a variant that are revealed with more submissions using the `show-after-submission` attribute. By default, hints without
 `show-after-submission` set are always shown. Hints with the same `show-after-submission` appear in the order they're written in the
 question HTML.
 
-#### Example implementations
+## Example implementations
 
 - [element/hiddenHints]
 
-#### See also
+## See also
 
 - [`pl-question-panel` for displaying the question prompt.](pl-question-panel.md)
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](pl-submission-panel.md)
