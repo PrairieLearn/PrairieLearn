@@ -6,37 +6,40 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.js';
 import { Navbar } from '../../components/Navbar.js';
 import { GradingJobSchema, QuestionSchema, UserSchema, VariantSchema } from '../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const GradingJobRowSchema = z.object({
-  // This object will have other columns, but we only care about this one
-  aai: z.object({ authorized: z.boolean() }).nullable(),
   grading_job: GradingJobSchema,
   question_id: QuestionSchema.shape.id,
   question_qid: QuestionSchema.shape.qid,
   user_uid: UserSchema.shape.uid,
   variant_id: VariantSchema.shape.id,
   instance_question_id: VariantSchema.shape.instance_question_id,
+  course_instance_id: VariantSchema.shape.course_instance_id,
 });
-type GradingJobRow = z.infer<typeof GradingJobRowSchema>;
+export type GradingJobRow = z.infer<typeof GradingJobRowSchema>;
 
 export function InstructorGradingJob({
   resLocals,
   gradingJobRow,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage['course'] | ResLocalsForPage['course-instance'];
   gradingJobRow: GradingJobRow;
 }) {
   const formatGradingJobDate = (date: Date | null) =>
     date
       ? formatDate(
           date,
-          resLocals.course_instance?.display_timezone || resLocals.course.display_timezone,
+          'course_instance' in resLocals
+            ? resLocals.course_instance.display_timezone
+            : resLocals.course.display_timezone,
           { includeMs: true },
         )
       : html`&mdash;`;
+
   const variantLink =
-    gradingJobRow.instance_question_id != null
-      ? `/pl/course_instance/${resLocals.course_instance.id}/instance_question/${gradingJobRow.instance_question_id}?variant_id=${gradingJobRow.variant_id}`
+    gradingJobRow.instance_question_id != null && gradingJobRow.course_instance_id
+      ? `/pl/course_instance/${gradingJobRow.course_instance_id}/instance_question/${gradingJobRow.instance_question_id}?variant_id=${gradingJobRow.variant_id}`
       : `${resLocals.urlPrefix}/question/${gradingJobRow.question_id}/preview?variant_id=${gradingJobRow.variant_id}`;
 
   return html`

@@ -46,7 +46,7 @@ export function AdministratorQuery({
     resLocals,
     pageTitle: queryFilename,
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'queries',
     },
