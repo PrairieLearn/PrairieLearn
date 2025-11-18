@@ -225,7 +225,7 @@ nav:
           - '<span class="muted">pl-</span>checkbox': 'elements/pl-checkbox.md'
           - '<span class="muted">pl-</span>code': 'elements/pl-code.md'
           - '<span class="muted">pl-</span>dataframe': 'elements/pl-dataframe.md'
-          - '<span class="muted">pl-</span>drawing': 'elements/pl-drawing.md'
+          - '<span class="muted">pl-</span>drawing': 'pl-drawing/index.md'
           - '<span class="muted">pl-</span>excalidraw': 'elements/pl-excalidraw.md'
           - '<span class="muted">pl-</span>external-grader-results': 'elements/pl-external-grader-results.md'
           - '<span class="muted">pl-</span>external-grader-variables': 'elements/pl-external-grader-variables.md'

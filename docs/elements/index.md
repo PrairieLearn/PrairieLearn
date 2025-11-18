@@ -27,7 +27,7 @@ When writing questions, there exists a core pool of elements that provides commo
 - [`pl-card`](pl-card.md): Display content within a card-styled component.
 - [`pl-code`](pl-code.md): Display code rendered with the appropriate syntax highlighting.
 - [`pl-dataframe`](pl-dataframe.md): Display DataFrames with various options.
-- [`pl-drawing`](pl-drawing.md): Create an image from pre-defined collection of graphic objects.
+- [`pl-drawing`](../pl-drawing/index.md): Create an image from pre-defined collection of graphic objects.
 - [`pl-external-grader-variables`](pl-external-grader-variables.md): Display expected and given variables for externally graded questions.
 - [`pl-figure`](pl-figure.md): Embed an image file in the question.
 - [`pl-file-download`](pl-file-download.md): Enable file downloads for data-centric questions.
@@ -58,7 +58,7 @@ When writing questions, there exists a core pool of elements that provides commo
 - [`pl-dropdown`](pl-dropdown.md): Select an answer from answers in a drop-down box.
   - **Deprecated**: use [`pl-multiple-choice`](pl-multiple-choice.md) with `display="dropdown"` for individual elements, or [`pl-matching`](pl-matching.md) for multiple dropdowns with the same set of options.
 - [`pl-prairiedraw-figure`](pl-prairiedraw-figure.md): Show a PrairieDraw figure.
-  - **Deprecated**: use [`pl-drawing`](pl-drawing.md) instead.
+  - **Deprecated**: use [`pl-drawing`](../pl-drawing/index.md) instead.
 - [`pl-threejs`](pl-threejs.md): Enables 3D scene display and problem submission.
   - **Deprecated**: the features of required libraries are no longer maintained.
 - [`pl-variable-score`](pl-variable-score.md): Displays a partial score for a submitted element.
