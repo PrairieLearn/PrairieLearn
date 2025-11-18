@@ -51,7 +51,7 @@ See the [reference for `infoCourseInstance.json`](./schemas/infoCourseInstance.m
 
 ## Publishing controls
 
-The course instance `publishing` configuration determines when the course instance is available to students. Course staff always have access regardless of publishing settings. The simple example below makes the course instance available to students between the start (Jan 19th) and end (May 13th) of the semester:
+The course instance `publishing` configuration determines when the course instance is available to students. Course staff always have access regardless of publishing settings. The example below makes the course instance available to students between the start (Jan 19th) and end (May 13th) of the semester:
 
 ```json title="infoCourseInstance.json"
 {

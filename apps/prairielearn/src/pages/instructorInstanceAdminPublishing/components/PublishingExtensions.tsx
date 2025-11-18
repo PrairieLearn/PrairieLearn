@@ -64,7 +64,11 @@ export function PublishingExtensions({
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h5 key={`extensions-header-${extensionsQuery.isFetching}`} class="mb-0">
             Extensions
-            {extensionsQuery.isFetching && <i class="bi bi-arrow-repeat ms-2 spin" />}
+            {extensionsQuery.isFetching && (
+              <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Loading extensions...</span>
+              </div>
+            )}
           </h5>
           {canEdit && (
             <button

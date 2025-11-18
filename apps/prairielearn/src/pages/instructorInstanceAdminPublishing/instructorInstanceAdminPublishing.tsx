@@ -10,12 +10,14 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
@@ -34,7 +36,8 @@ import {
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
-import { InstructorInstanceAdminPublishing } from './instructorInstanceAdminPublishing.html.js';
+import { CourseInstancePublishingForm } from './components/CourseInstancePublishingForm.js';
+import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
 import { CourseInstancePublishingExtensionWithUsersSchema } from './instructorInstanceAdminPublishing.types.js';
 import { plainDateTimeStringToDate } from './utils/dateUtils.js';
 
@@ -138,6 +141,7 @@ router.get(
         has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
         has_course_instance_permission_view: hasCourseInstancePermissionView,
       },
+      __csrf_token: csrfToken,
       course_instance: courseInstance,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
@@ -168,6 +172,10 @@ router.get(
       CourseInstanceAccessRuleSchema,
     );
 
+    const showComments = accessRules.some((access_rule) =>
+      isRenderableComment(access_rule.json_comment),
+    );
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -185,16 +193,26 @@ router.get(
               course={res.locals.course}
               urlPrefix={res.locals.urlPrefix}
             />
-            <InstructorInstanceAdminPublishing
-              publishingExtensions={publishingExtensions}
-              courseInstance={courseInstance}
-              hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-              hasCourseInstancePermissionView={hasCourseInstancePermissionView}
-              accessRules={accessRules}
-              csrfToken={res.locals.__csrf_token}
-              origHash={origHash}
-              isDevMode={config.devMode}
-            />
+
+            {courseInstance.modern_publishing ? (
+              <Hydrate>
+                <CourseInstancePublishingForm
+                  courseInstance={courseInstance}
+                  canEdit={hasCourseInstancePermissionEdit && origHash !== null}
+                  csrfToken={csrfToken}
+                  origHash={origHash}
+                  publishingExtensions={publishingExtensions}
+                  isDevMode={config.devMode}
+                />
+              </Hydrate>
+            ) : (
+              <LegacyAccessRuleCard
+                accessRules={accessRules}
+                showComments={showComments}
+                courseInstance={courseInstance}
+                hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+              />
+            )}
           </>
         ),
       }),
@@ -243,20 +261,12 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
-      const parsedResult = z
+      const parsedBody = z
         .object({
           start_date: z.string(),
           end_date: z.string(),
         })
-        .safeParse(req.body);
-
-      if (!parsedResult.success) {
-        flash('error', 'Invalid request body');
-        res.redirect(req.originalUrl);
-        return;
-      }
-
-      const parsedBody = parsedResult.data;
+        .parse(req.body);
 
       // Update the publishing settings
       const resolvedPublishing = {
@@ -530,7 +540,7 @@ router.post(
       res.sendStatus(204);
       return;
     } else {
-      throw new error.HttpStatusError(400, 'Unknown action');
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
