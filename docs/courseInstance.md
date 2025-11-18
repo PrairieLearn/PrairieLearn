@@ -40,33 +40,29 @@ This file specifies basic information about the course instance:
 {
   "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
   "longName": "Spring 2015",
-  "allowAccess": [
-    {
-      "startDate": "2015-01-19T00:00:01",
-      "endDate": "2015-05-13T23:59:59"
-    }
-  ]
+  "publishing": {
+    "startDate": "2015-01-19T00:00:01",
+    "endDate": "2015-05-13T23:59:59"
+  }
 }
 ```
 
 See the [reference for `infoCourseInstance.json`](./schemas/infoCourseInstance.md) for more information about what can be added to this file.
 
-## Access controls
+## Publishing controls
 
-The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Course staff always have access. The simple example below gives students access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
+The course instance `publishing` configuration determines when the course instance is available to students. Course staff always have access regardless of publishing settings. The example below makes the course instance available to students between the start (Jan 19th) and end (May 13th) of the semester:
 
 ```json title="infoCourseInstance.json"
 {
-  "allowAccess": [
-    {
-      "startDate": "2015-01-19T00:00:01",
-      "endDate": "2015-05-13T23:59:59"
-    }
-  ]
+  "publishing": {
+    "startDate": "2015-01-19T00:00:01",
+    "endDate": "2015-05-13T23:59:59"
+  }
 }
 ```
 
-See the [access control documentation](accessControl/index.md) for more details on `allowAccess` rules.
+Both `startDate` and `endDate` must be specified together.
 
 ### Controlling access by institution
 
