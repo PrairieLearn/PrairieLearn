@@ -38,7 +38,7 @@ def generate(data):
 
 These values can be used in the `question.html` file with Mustache syntax. For example, you can use `data["params"]["x"]` with `{{params.x}}`.
 
-The snippet below uses the [`<pl-question-panel>`](../elements.md#pl-question-panel-element) element so that it is only shown within the context of the [question panel](./template.md#question-panel).
+The snippet below uses the [`<pl-question-panel>`](../elements/pl-question-panel.md) element so that it is only shown within the context of the [question panel](./template.md#question-panel).
 
 <!-- prettier-ignore -->
 ```html title="question.html"
@@ -418,7 +418,7 @@ def file(data):
 
 Requests for files to this URL will be routed to the `file()` function in `server.py` since the `type` of `pl-figure` is set to `"dynamic"`. The filename requested is stored in `data["filename"]`, and the file contents should be returned from the `file()` function.
 
-We recommend using the [`pl-figure`](../elements.md#pl-figure-element) and [`pl-file-download`](../elements.md#pl-file-download-element) elements to display or download files. Specifically, you should use `pl-file-download` for files that should be downloaded or shown in a separate tab (e.g. PDFs, source code, etc.), and `pl-figure` for images that should be displayed.
+We recommend using the [`pl-figure`](../elements/pl-figure.md) and [`pl-file-download`](../elements/pl-file-download.md) elements to display or download files. Specifically, you should use `pl-file-download` for files that should be downloaded or shown in a separate tab (e.g. PDFs, source code, etc.), and `pl-figure` for images that should be displayed.
 
 ??? info "Advanced dynamic file usage"
 

@@ -185,7 +185,7 @@ The `question.html` is a template used to render the question to the student. A 
 The `question.html` is regular HTML, with a few special features:
 
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values using [Mustache](https://mustache.github.io/mustache.5.html). These parameters are typically defined by a [question's `server.py`](#custom-generation-and-grading-serverpy).
-2. Special HTML elements (like [`<pl-number-input>`](../elements.md#pl-number-input-element)) enable input and formatted output. A student's submission is composed of the answers they provide to the question elements. See the [list of PrairieLearn elements](../elements.md).
+2. Special HTML elements (like [`<pl-number-input>`](../elements/pl-number-input.md)) enable input and formatted output. A student's submission is composed of the answers they provide to the question elements. See the [list of PrairieLearn elements](../elements.md).
 
    :warning: **All submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
 
@@ -219,7 +219,7 @@ def generate(data):
 
 ## Grading student answers
 
-Elements like [`pl-multiple-choice`](../elements.md#pl-multiple-choice-element) or [`pl-checkbox`](../elements.md#pl-checkbox-element), which aren't freeform answers, are automatically graded based on the element parameters. For other elements, like [`pl-number-input`](../elements.md#pl-number-input-element) and [`pl-string-input`](../elements.md#pl-string-input-element), which have students input an answer of their choosing, there are four different methods of auto-grading the student answer:
+Elements like [`pl-multiple-choice`](../elements/pl-multiple-choice.md) or [`pl-checkbox`](../elements/pl-checkbox.md), which aren't freeform answers, are automatically graded based on the element parameters. For other elements, like [`pl-number-input`](../elements/pl-number-input.md) and [`pl-string-input`](../elements/pl-string-input.md), which have students input an answer of their choosing, there are four different methods of auto-grading the student answer:
 
 1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. This option is typically used for answers with a hard-coded value (i.e. if `"singleVariant": true` in `info.json`), and is not expected to be used in most randomized questions.
 
