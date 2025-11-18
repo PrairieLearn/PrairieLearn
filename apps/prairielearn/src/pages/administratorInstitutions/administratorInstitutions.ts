@@ -7,6 +7,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { ArrayFromCheckboxSchema, IdSchema } from '@prairielearn/zod';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { updateInstitutionAuthnProviders } from '../../models/institution-authn-provider.js';
@@ -33,11 +34,23 @@ router.get(
     );
 
     res.send(
-      AdministratorInstitutions({
-        institutions,
-        availableTimezones,
-        supportedAuthenticationProviders,
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'Institutions',
+        navContext: {
+          type: 'administrator',
+          page: 'admin',
+          subPage: 'institutions',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: AdministratorInstitutions({
+          institutions,
+          availableTimezones,
+          supportedAuthenticationProviders,
+          resLocals: res.locals,
+        }),
       }),
     );
   }),

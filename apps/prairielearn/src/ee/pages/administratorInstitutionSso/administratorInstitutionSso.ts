@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
 
+import { PageLayout } from '../../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../../lib/authn-providers.js';
 import { updateInstitutionAuthnProviders } from '../../../models/institution-authn-provider.js';
 import {
@@ -58,12 +59,21 @@ router.get(
     );
 
     res.send(
-      AdministratorInstitutionSso({
-        supportedAuthenticationProviders,
-        institution,
-        institutionSamlProvider,
-        institutionAuthenticationProviders,
-        resLocals: res.locals,
+      PageLayout({
+        resLocals: { ...res.locals, institution },
+        pageTitle: 'SSO - Institution Admin',
+        navContext: {
+          type: 'administrator_institution',
+          page: 'administrator_institution',
+          subPage: 'sso',
+        },
+        content: AdministratorInstitutionSso({
+          supportedAuthenticationProviders,
+          institution,
+          institutionSamlProvider,
+          institutionAuthenticationProviders,
+          resLocals: res.locals,
+        }),
       }),
     );
   }),

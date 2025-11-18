@@ -1,6 +1,5 @@
 import { hydrateHtml } from '@prairielearn/preact/server';
 
-import { PageLayout } from '../../../components/PageLayout.js';
 import { getPageContext } from '../../../lib/client/page-context.js';
 import {
   StaffAuthnProviderSchema,
@@ -25,27 +24,18 @@ export function AdministratorInstitutionSso({
 }) {
   const pageContext = getPageContext(resLocals, { withAuthzData: false });
 
-  return PageLayout({
-    resLocals: { ...resLocals, institution },
-    pageTitle: 'SSO - Institution Admin',
-    navContext: {
-      type: 'administrator_institution',
-      page: 'administrator_institution',
-      subPage: 'sso',
-    },
-    content: hydrateHtml(
-      <AdministratorInstitutionSsoForm
-        institution={StaffInstitutionSchema.parse(institution)}
-        hasSamlProvider={!!institutionSamlProvider}
-        supportedAuthenticationProviders={StaffAuthnProviderSchema.array().parse(
-          supportedAuthenticationProviders,
-        )}
-        institutionAuthenticationProviders={StaffAuthnProviderSchema.array().parse(
-          institutionAuthenticationProviders,
-        )}
-        urlPrefix={pageContext.urlPrefix}
-        csrfToken={pageContext.__csrf_token}
-      />,
-    ),
-  });
+  return hydrateHtml(
+    <AdministratorInstitutionSsoForm
+      institution={StaffInstitutionSchema.parse(institution)}
+      hasSamlProvider={!!institutionSamlProvider}
+      supportedAuthenticationProviders={StaffAuthnProviderSchema.array().parse(
+        supportedAuthenticationProviders,
+      )}
+      institutionAuthenticationProviders={StaffAuthnProviderSchema.array().parse(
+        institutionAuthenticationProviders,
+      )}
+      urlPrefix={pageContext.urlPrefix}
+      csrfToken={pageContext.__csrf_token}
+    />,
+  );
 }

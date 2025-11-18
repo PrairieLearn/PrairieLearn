@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 import { Hydrate } from '@prairielearn/preact/server';
 
-import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { StaffTagSchema } from '../../lib/client/safe-db-types.js';
 import { type Tag } from '../../lib/db-types.js';
@@ -16,28 +15,16 @@ export function InstructorCourseAdminTags({
   resLocals: Record<string, any>;
   tags: Tag[];
 }) {
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Tags',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'tags',
-    },
-    options: {
-      fullWidth: true,
-    },
-    content: (
-      <>
-        <CourseSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />
-        <Hydrate>
-          <InstructorCourseAdminTagsTable tags={z.array(StaffTagSchema).parse(tags)} />
-        </Hydrate>
-      </>
-    ),
-  });
+  return (
+    <>
+      <CourseSyncErrorsAndWarnings
+        authzData={resLocals.authz_data}
+        course={resLocals.course}
+        urlPrefix={resLocals.urlPrefix}
+      />
+      <Hydrate>
+        <InstructorCourseAdminTagsTable tags={z.array(StaffTagSchema).parse(tags)} />
+      </Hydrate>
+    </>
+  );
 }

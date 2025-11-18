@@ -3,7 +3,9 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
@@ -16,7 +18,22 @@ router.get(
     const questionRows = await selectAssessmentQuestions({
       assessment_id: res.locals.assessment.id,
     });
-    res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questionRows }));
+    res.send(
+      PageLayout({
+        resLocals: res.locals,
+        pageTitle: 'Questions',
+        headContent: compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
+        navContext: {
+          type: 'instructor',
+          page: 'assessment',
+          subPage: 'questions',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: InstructorAssessmentQuestions({ resLocals: res.locals, questionRows }),
+      }),
+    );
   }),
 );
 

@@ -9,6 +9,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { TopicSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
@@ -37,7 +38,21 @@ router.get(
       ).toString();
     }
 
-    res.send(InstructorCourseAdminTopics({ resLocals: res.locals, topics, origHash }));
+    res.send(
+      PageLayout({
+        resLocals: res.locals,
+        pageTitle: 'Topics',
+        navContext: {
+          type: 'instructor',
+          page: 'course_admin',
+          subPage: 'topics',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: InstructorCourseAdminTopics({ resLocals: res.locals, topics, origHash }),
+      }),
+    );
   }),
 );
 

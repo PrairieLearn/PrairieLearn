@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 import { Hydrate } from '@prairielearn/preact/server';
 
-import { PageLayout } from '../../components/PageLayout.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { type AuthnProvider, AuthnProviderSchema } from '../../lib/db-types.js';
@@ -30,27 +29,15 @@ export function AdministratorInstitutions({
 }) {
   const pageContext = getPageContext(resLocals, { withAuthzData: false });
 
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Institutions',
-    navContext: {
-      type: 'administrator',
-      page: 'admin',
-      subPage: 'institutions',
-    },
-    options: {
-      fullWidth: true,
-    },
-    content: (
-      <Hydrate>
-        <AdministratorInstitutionsTable
-          institutions={institutions}
-          availableTimezones={availableTimezones}
-          supportedAuthenticationProviders={supportedAuthenticationProviders}
-          csrfToken={pageContext.__csrf_token}
-          isEnterprise={isEnterprise()}
-        />
-      </Hydrate>
-    ),
-  });
+  return (
+    <Hydrate>
+      <AdministratorInstitutionsTable
+        institutions={institutions}
+        availableTimezones={availableTimezones}
+        supportedAuthenticationProviders={supportedAuthenticationProviders}
+        csrfToken={pageContext.__csrf_token}
+        isEnterprise={isEnterprise()}
+      />
+    </Hydrate>
+  );
 }

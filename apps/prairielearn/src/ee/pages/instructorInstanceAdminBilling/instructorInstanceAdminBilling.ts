@@ -5,6 +5,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 import {
   getPlanGrantsForContext,
@@ -80,18 +81,27 @@ router.get(
     );
 
     res.send(
-      InstructorCourseInstanceBilling({
-        requiredPlans,
-        institutionPlanGrants,
-        courseInstancePlanGrants,
-        enrollmentCount,
-        enrollmentLimit,
-        enrollmentLimitSource,
-        externalGradingQuestionCount: external_grading_question_count,
-        workspaceQuestionCount: workspace_question_count,
-        // Only course owners can manage billing.
-        editable: res.locals.authz_data.has_course_permission_own,
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'Billing',
+        navContext: {
+          type: 'instructor',
+          page: 'instance_admin',
+          subPage: 'billing',
+        },
+        content: InstructorCourseInstanceBilling({
+          requiredPlans,
+          institutionPlanGrants,
+          courseInstancePlanGrants,
+          enrollmentCount,
+          enrollmentLimit,
+          enrollmentLimitSource,
+          externalGradingQuestionCount: external_grading_question_count,
+          workspaceQuestionCount: workspace_question_count,
+          // Only course owners can manage billing.
+          editable: res.locals.authz_data.has_course_permission_own,
+          resLocals: res.locals,
+        }),
       }),
     );
   }),
