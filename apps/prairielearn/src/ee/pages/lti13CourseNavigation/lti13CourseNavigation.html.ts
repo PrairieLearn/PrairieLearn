@@ -3,7 +3,6 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../../components/HeadContents.js';
 import { Modal } from '../../../components/Modal.js';
 import { Navbar } from '../../../components/Navbar.js';
-import { config } from '../../../lib/config.js';
 import { type Course } from '../../../lib/db-types.js';
 import { STUDENT_ROLE } from '../../lib/lti13.js';
 
@@ -133,7 +132,7 @@ export function Lti13CourseNavigationNotReady({
           <p>An instructor has not yet configured ${courseName} in PrairieLearn.</p>
           <p>Please come back later.</p>
           <p>
-            <a href="${config.urlPrefix}" class="btn btn-primary">
+            <a href="/pl" class="btn btn-primary">
               <i class="fa fa-home" aria-hidden="true"></i>
               PrairieLearn home
             </a>

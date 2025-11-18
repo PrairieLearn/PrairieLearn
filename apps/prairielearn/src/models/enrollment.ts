@@ -25,10 +25,7 @@ import {
   hasRole,
   isDangerousFullSystemAuthz,
 } from '../lib/authz-data-lib.js';
-import {
-  type StaffCourseInstanceContext,
-  type StudentCourseInstanceContext,
-} from '../lib/client/page-context.js';
+import type { PageContext } from '../lib/client/page-context.js';
 import {
   type Course,
   type CourseInstance,
@@ -51,8 +48,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 type CourseInstanceContext =
   | CourseInstance
-  | StudentCourseInstanceContext['course_instance']
-  | StaffCourseInstanceContext['course_instance'];
+  | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
 
 function assertEnrollmentStatus(
   enrollment: Enrollment,
