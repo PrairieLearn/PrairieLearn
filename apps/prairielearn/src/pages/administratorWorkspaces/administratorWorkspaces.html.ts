@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { IdSchema, WorkspaceHostSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 const WorkspaceWithContextSchema = z.object({
   id: IdSchema,
@@ -14,6 +15,9 @@ const WorkspaceWithContextSchema = z.object({
   course_name: z.string(),
   institution_name: z.string(),
 });
+
+type WorkspaceState = z.infer<typeof WorkspaceWithContextSchema.shape.state>;
+type WorkspaceHostState = z.infer<typeof WorkspaceHostSchema.shape.state>;
 
 export const WorkspaceHostRowSchema = z.object({
   workspace_host: WorkspaceHostSchema,
@@ -29,7 +33,7 @@ export function AdministratorWorkspaces({
 }: {
   workspaceHostRows: WorkspaceHostRow[];
   workspaceLoadHostCapacity: number;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,
@@ -86,7 +90,7 @@ export function AdministratorWorkspaces({
                     ${instanceId
                       ? html`<span class="text-muted me-2">(${instanceId})</span>`
                       : null}
-                    ${WorkspaceHostState({ state: workspaceHost.state })}
+                    ${WorkspaceHostStateBadge({ state: workspaceHost.state })}
                     <span class="badge text-bg-secondary">
                       ${workspaceHostRow.workspace_host_time_in_state}
                     </span>
@@ -117,7 +121,7 @@ export function AdministratorWorkspaces({
                                   <span class="me-2" style="font-variant-numeric: tabular-nums;">
                                     ${workspace.id}
                                   </span>
-                                  ${WorkspaceState({ state: workspace.state })}
+                                  ${WorkspaceStateBadge({ state: workspace.state })}
                                   <span class="badge text-bg-secondary">
                                     ${workspace.time_in_state}
                                   </span>
@@ -168,12 +172,12 @@ function Capacity({ total, current }: { total: number; current: number }) {
   `;
 }
 
-function WorkspaceState({ state }) {
+function WorkspaceStateBadge({ state }: { state: WorkspaceState }) {
   const color = state === 'running' ? 'success' : 'secondary';
   return html`<span class="badge text-bg-${color} me-2">${state}</span>`;
 }
 
-function WorkspaceHostState({ state }) {
+function WorkspaceHostStateBadge({ state }: { state: WorkspaceHostState }) {
   let color = 'secondary';
   switch (state) {
     case 'ready':

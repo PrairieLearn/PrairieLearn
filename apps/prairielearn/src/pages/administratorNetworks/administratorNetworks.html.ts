@@ -1,8 +1,11 @@
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
-export function AdministratorNetworks({ resLocals }) {
+import type { AdministratorNetworksRow } from './administratorNetworks.js';
+
+export function AdministratorNetworks({ resLocals }: { resLocals: UntypedResLocals }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Exam-mode networks',
@@ -33,7 +36,7 @@ export function AdministratorNetworks({ resLocals }) {
 
             <tbody>
               ${resLocals.networks.map(
-                (network) => html`
+                (network: AdministratorNetworksRow) => html`
                   <tr>
                     <td>${network.network}</td>
                     <td>${network.start_date}</td>
