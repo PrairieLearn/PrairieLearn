@@ -3,6 +3,7 @@ import itertools as it
 import json
 import math
 import string
+import time
 from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
@@ -15,6 +16,7 @@ import pandas as pd
 import prairielearn as pl
 import pytest
 from numpy.typing import ArrayLike
+from sympy import exp, simplify, sin, symbols
 
 
 def city_dataframe() -> pd.DataFrame:
@@ -415,8 +417,6 @@ def test_grade_answer_parametrized_key_error_blank(
 
 # Helper functions for timeout tests
 def _slow_grading_function(_: str) -> tuple[bool, str | None]:
-    import time
-
     time.sleep(2)
     return (True, None)
 
@@ -428,14 +428,12 @@ def _fast_grading_function(ans: str) -> tuple[bool, str | None]:
 
 
 def _sympy_timeout_grading_function(_: str) -> tuple[bool, str | None]:
-    from sympy import exp, simplify, sin, symbols
-
     # This is a complex sympy comparison that will take a long time
     x = symbols("x")
     expr1 = exp(sin(x)) * (1 + sin(x) ** 10) ** 5
     expr2 = exp(sin(x)) * (1 + sin(x) ** 2) ** 125
     result = simplify(expr1 - expr2)
-    return (result == 0, None)  # type: ignore
+    return (result == 0, None)
 
 
 @pytest.mark.parametrize(
