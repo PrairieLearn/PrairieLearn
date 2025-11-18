@@ -5,12 +5,13 @@ import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type AssessmentSet } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export function InstructorCourseAdminSets({
   resLocals,
   assessmentSets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   assessmentSets: AssessmentSet[];
 }) {
   return PageLayout({

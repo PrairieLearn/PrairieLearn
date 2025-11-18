@@ -4,6 +4,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { assetPath, compiledScriptTag } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export function Workspace({
   pageTitle,
@@ -24,7 +25,7 @@ export function Workspace({
   heartbeatIntervalSec: number;
   visibilityTimeoutSec: number;
   socketToken: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const { workspace_id, urlPrefix, __csrf_token } = resLocals;
 

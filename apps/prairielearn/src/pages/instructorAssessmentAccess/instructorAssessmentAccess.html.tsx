@@ -9,6 +9,7 @@ import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndW
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -32,7 +33,7 @@ export function InstructorAssessmentAccess({
   resLocals,
   accessRules,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   accessRules: AssessmentAccessRules[];
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));

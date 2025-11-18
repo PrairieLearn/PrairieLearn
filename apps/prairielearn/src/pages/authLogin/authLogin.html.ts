@@ -8,6 +8,7 @@ import { assetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import type { AuthnProvider } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export interface InstitutionAuthnProvider {
   name: string;
@@ -26,7 +27,7 @@ function LoginPageContainer({
 }: {
   children: HtmlValue;
   service: string | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return html`
     <!doctype html>
@@ -199,7 +200,7 @@ function MicrosoftLoginButton() {
   `;
 }
 
-function SamlLoginButton({ institutionId }) {
+function SamlLoginButton({ institutionId }: { institutionId: string }) {
   return html`
     <a class="btn btn-primary d-block" href="${`/pl/auth/institution/${institutionId}/saml/login`}">
       <span class="fw-bold">Sign in with institution single sign-on</span>
@@ -214,7 +215,7 @@ export function AuthLogin({
 }: {
   institutionAuthnProviders: InstitutionAuthnProvider[] | null;
   service: string | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return LoginPageContainer({
     service,
@@ -266,7 +267,7 @@ export function AuthLoginInstitution({
   supportedProviders: InstitutionSupportedProvider[];
   institutionId: string;
   service: string | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   // We need to filter `supportedProviders` to reflect which ones are actually
   // enabled in the application configuration.

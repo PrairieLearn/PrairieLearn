@@ -3,13 +3,14 @@ import { html } from '@prairielearn/html';
 import { JobSequenceResults } from '../../components/JobSequenceResults.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function JobSequence({
   resLocals,
   job_sequence,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   job_sequence: JobSequenceWithTokens;
 }) {
   return PageLayout({

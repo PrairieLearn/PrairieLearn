@@ -5,6 +5,7 @@ import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.
 import { PageLayout } from '../../components/PageLayout.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
 import { type GroupInfo } from '../../lib/groups.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export function StudentAssessment({
   resLocals,
@@ -13,7 +14,7 @@ export function StudentAssessment({
   userCanAssignRoles,
   customHonorCode,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   groupConfig?: GroupConfig;
   groupInfo?: GroupInfo | null;
   userCanAssignRoles?: boolean;
@@ -167,7 +168,7 @@ function StudentGroupControls({
   userCanAssignRoles = false,
   resLocals,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   groupConfig?: GroupConfig;
   groupInfo?: GroupInfo | null;
   userCanAssignRoles?: boolean;

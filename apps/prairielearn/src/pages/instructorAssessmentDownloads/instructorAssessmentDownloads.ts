@@ -1,7 +1,7 @@
 import { pipeline } from 'node:stream/promises';
 
 import archiver from 'archiver';
-import { type Response, Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
@@ -26,6 +26,7 @@ import {
   VariantSchema,
 } from '../../lib/db-types.js';
 import { getGroupConfig } from '../../lib/groups.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {
@@ -111,7 +112,7 @@ const ManualGradingSubmissionRowSchema = z.object({
 
 type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
 
-function getFilenames(locals: Record<string, any>) {
+function getFilenames(locals: UntypedResLocals) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
@@ -293,7 +294,12 @@ function stringifyWithColumns(columns: Columns, transform?: (record: any) => any
   });
 }
 
-async function sendInstancesCsv(res, req, columns, options) {
+async function sendInstancesCsv(
+  res: Response,
+  req: Request,
+  columns: Columns,
+  options: { only_highest: boolean; group_work?: true },
+) {
   const result = await sqldb.queryCursor(
     sql.select_assessment_instances,
     {

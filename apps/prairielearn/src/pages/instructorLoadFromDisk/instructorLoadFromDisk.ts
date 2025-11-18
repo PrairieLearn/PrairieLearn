@@ -12,13 +12,14 @@ import { logChunkChangesToJob, updateChunksForCourse } from '../../lib/chunks.js
 import { config } from '../../lib/config.js';
 import { CourseSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
-async function update(locals: Record<string, any>) {
+async function update(locals: UntypedResLocals) {
   const serverJob = await createServerJob({
     courseId: locals.course ? locals.course.id : null,
     type: 'loadFromDisk',

@@ -3,6 +3,7 @@ import { html } from '@prairielearn/html';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.js';
 
 export function AdministratorInstitutionSaml({
   institution,
@@ -15,7 +16,7 @@ export function AdministratorInstitutionSaml({
   samlProvider: SamlProvider | null;
   institutionAuthenticationProviders: AuthnProvider[];
   host: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const hasSamlProvider = !!samlProvider;
   const hasEnabledSaml = institutionAuthenticationProviders.some((p) => p.name === 'SAML');

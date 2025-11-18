@@ -33,6 +33,7 @@ import {
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
@@ -81,7 +82,7 @@ export function StudentAssessmentInstance({
   instance_question_rows: InstanceQuestionRow[];
   showTimeLimitExpiredModal: boolean;
   userCanDeleteAssessmentInstance: boolean;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 } & (
   | {
       groupConfig: GroupConfig;
@@ -698,7 +699,7 @@ function InstanceQuestionTableHeader({
   resLocals,
   someQuestionsAllowRealTimeGrading,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   someQuestionsAllowRealTimeGrading: boolean;
 }) {
   const trailingColumns =

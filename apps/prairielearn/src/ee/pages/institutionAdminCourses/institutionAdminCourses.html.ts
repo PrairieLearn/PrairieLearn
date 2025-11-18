@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course, type Institution } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.js';
 
 export function InstitutionAdminCourses({
   institution,
@@ -10,7 +11,7 @@ export function InstitutionAdminCourses({
 }: {
   institution: Institution;
   courses: Course[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals: {

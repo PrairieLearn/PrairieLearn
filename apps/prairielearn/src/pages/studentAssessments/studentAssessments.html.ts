@@ -14,6 +14,7 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export const StudentAssessmentsRowSchema = z.object({
   multiple_instance_header: z.boolean(),
@@ -40,7 +41,7 @@ export function StudentAssessments({
   resLocals,
   rows,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   rows: StudentAssessmentsRow[];
 }) {
   const { urlPrefix, authz_data } = resLocals;

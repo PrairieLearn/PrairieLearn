@@ -7,6 +7,7 @@ import {
   StaffInstitutionSchema,
 } from '../../../lib/client/safe-db-types.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.js';
 
 import { AdministratorInstitutionSsoForm } from './components/AdministratorInstitutionSsoForm.js';
 
@@ -21,7 +22,7 @@ export function AdministratorInstitutionSso({
   supportedAuthenticationProviders: AuthnProvider[];
   institutionSamlProvider: SamlProvider | null;
   institutionAuthenticationProviders: AuthnProvider[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const pageContext = getPageContext(resLocals, { withAuthzData: false });
 

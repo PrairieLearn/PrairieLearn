@@ -9,6 +9,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { config } from '../../lib/config.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export const UploadJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -21,7 +22,7 @@ export function InstructorAssessmentUploads({
   resLocals,
   uploadJobSequences,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   uploadJobSequences: UploadJobSequence[];
 }) {
   return PageLayout({

@@ -16,6 +16,7 @@ import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/as
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { User } from '../../lib/db-types.js';
 import { getRoleNamesForUser } from '../../lib/groups.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export function StudentInstanceQuestion({
   resLocals,
@@ -24,7 +25,7 @@ export function StudentInstanceQuestion({
   lastGrader,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   userCanDeleteAssessmentInstance: boolean;
   assignedGrader?: User | null;
   lastGrader?: User | null;

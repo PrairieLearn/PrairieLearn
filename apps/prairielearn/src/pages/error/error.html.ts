@@ -6,6 +6,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { formatQueryWithErrorPosition } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 function formatJson(value: any): string {
   return jsonStringifySafe(value, null, '    ');
@@ -27,7 +28,7 @@ export function ErrorPage({
   errorInfo?: string;
   errorId: string;
   referrer: string | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const {
     outputStderr,

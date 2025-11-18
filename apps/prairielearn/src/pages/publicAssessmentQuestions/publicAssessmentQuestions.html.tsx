@@ -11,6 +11,7 @@ import { TagBadgeList } from '../../components/TagBadge.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
 import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export function PublicAssessmentQuestions({
   resLocals,
@@ -20,7 +21,7 @@ export function PublicAssessmentQuestions({
   course_instance_id,
   questions,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   assessment: Assessment;
   assessment_set: AssessmentSet;
   course: Course;

@@ -5,6 +5,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { NewsItemSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export const NewsItemRowSchema = NewsItemSchema.extend({
   unread: z.boolean(),
@@ -16,7 +17,7 @@ export function NewsItems({
   newsItems,
   userIsInstructor,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   newsItems: NewsItemRow[];
   userIsInstructor: boolean;
 }) {

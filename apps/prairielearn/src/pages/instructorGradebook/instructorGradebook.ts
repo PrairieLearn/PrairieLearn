@@ -13,6 +13,7 @@ import {
   checkAssessmentInstanceBelongsToCourseInstance,
   getCourseOwners,
 } from '../../lib/course.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
@@ -27,7 +28,7 @@ import {
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-function buildCsvFilename(locals: Record<string, any>) {
+function buildCsvFilename(locals: UntypedResLocals) {
   return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
 }
 

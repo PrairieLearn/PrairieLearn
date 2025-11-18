@@ -8,6 +8,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
@@ -28,7 +29,7 @@ export function InstructorAssessmentGroups({
   groupConfigInfo?: GroupConfig;
   groups?: GroupUsersRow[];
   notAssigned?: string[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,

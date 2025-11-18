@@ -14,6 +14,7 @@ import {
   QuestionSchema,
   UserSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export const ImageRowSchema = z.object({
   image: z.string(),
@@ -37,7 +38,7 @@ export function CourseSyncs({
   images,
   jobSequences,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   images: ImageRow[];
   jobSequences: JobSequenceRow[];
 }) {

@@ -7,6 +7,7 @@ import { getPageContext } from '../../lib/client/page-context.js';
 import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { type AuthnProvider, AuthnProviderSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import { type Timezone } from '../../lib/timezone.shared.js';
 
 import { AdministratorInstitutionsTable } from './components/AdministratorInstitutionsTable.js';
@@ -26,7 +27,7 @@ export function AdministratorInstitutions({
   institutions: InstitutionRow[];
   availableTimezones: Timezone[];
   supportedAuthenticationProviders: AuthnProvider[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const pageContext = getPageContext(resLocals, { withAuthzData: false });
 

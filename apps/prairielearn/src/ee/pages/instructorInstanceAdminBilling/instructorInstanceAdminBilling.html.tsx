@@ -1,6 +1,7 @@
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 
 import { InstructorInstanceAdminBillingForm } from './components/InstructorInstanceAdminBillingForm.js';
@@ -28,7 +29,7 @@ export function InstructorCourseInstanceBilling({
   externalGradingQuestionCount: number;
   workspaceQuestionCount: number;
   editable: boolean;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,

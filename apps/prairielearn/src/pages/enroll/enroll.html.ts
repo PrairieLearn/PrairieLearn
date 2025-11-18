@@ -8,6 +8,7 @@ import { Modal } from '../../components/Modal.js';
 import { Navbar } from '../../components/Navbar.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { EnrollmentSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),
@@ -23,7 +24,7 @@ export function Enroll({
   resLocals,
 }: {
   courseInstances: CourseInstance[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,
@@ -87,7 +88,7 @@ export function EnrollLtiMessage({
   resLocals,
 }: {
   ltiInfo: any;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return html`
     <!doctype html>
@@ -129,7 +130,7 @@ export function EnrollLtiMessage({
   `.toString();
 }
 
-export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Record<string, any> }) {
+export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: UntypedResLocals }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Enrollment - Courses',

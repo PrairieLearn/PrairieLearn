@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course, CourseInstanceSchema, type Institution } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.js';
 
 export const CourseInstanceRowSchema = z.object({
   course_instance: CourseInstanceSchema,
@@ -20,7 +21,7 @@ export function AdministratorInstitutionCourse({
   institution: Institution;
   course: Course;
   rows: CourseInstanceRow[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals: { ...resLocals, institution },

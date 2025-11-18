@@ -6,6 +6,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { StaffTopicSchema } from '../../lib/client/safe-db-types.js';
 import { type Topic } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 import { InstructorCourseAdminTopicsTable } from './components/InstructorCourseAdminTopicsTable.js';
 
@@ -14,7 +15,7 @@ export function InstructorCourseAdminTopics({
   topics,
   origHash,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   topics: Topic[];
   origHash: string | null;
 }) {

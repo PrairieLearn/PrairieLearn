@@ -18,6 +18,7 @@ import {
   TopicSchema,
 } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
@@ -43,7 +44,7 @@ export function InstructorQuestionStatistics({
 }: {
   questionStatsCsvFilename: string;
   rows: AssessmentQuestionStatsRow[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const histminiOptions = { width: 60, height: 20, ymax: 1 };
 

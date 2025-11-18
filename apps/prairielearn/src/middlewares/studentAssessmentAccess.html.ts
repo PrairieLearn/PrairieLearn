@@ -9,6 +9,7 @@ import { ScorebarHtml } from '../components/Scorebar.js';
 import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.js';
 import type { Assessment, AssessmentInstance, AssessmentSet } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
+import type { UntypedResLocals } from '../lib/res-locals.js';
 
 export function StudentAssessmentAccess({
   resLocals,
@@ -16,7 +17,7 @@ export function StudentAssessmentAccess({
   showTimeLimitExpiredModal = false,
   userCanDeleteAssessmentInstance = false,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   showClosedScore?: boolean;
   showTimeLimitExpiredModal?: boolean;
   userCanDeleteAssessmentInstance?: boolean;

@@ -9,6 +9,7 @@ import {
   getCourseInstanceContext,
   getPageContext,
 } from '../../lib/client/page-context.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
 
@@ -16,7 +17,7 @@ export function InstructorAssessmentQuestions({
   resLocals,
   questionRows,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionRows: StaffAssessmentQuestionRow[];
 }) {
   const { authz_data, urlPrefix } = getPageContext(resLocals);

@@ -2,13 +2,14 @@ import { escapeHtml, html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { type User } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export function AdministratorAdmins({
   admins,
   resLocals,
 }: {
   admins: User[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,

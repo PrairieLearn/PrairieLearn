@@ -1,33 +1,34 @@
 import { type ErrorRequestHandler, type NextFunction, type Request, type Response } from 'express';
 
 import { idsEqual } from '../lib/id.js';
+import type { UntypedResLocals } from '../lib/res-locals.js';
 
 const redirects = [
   {
     // try to redirect to the instructor course instance
-    canRedirect: (resLocals: Record<string, any>) => {
+    canRedirect: (resLocals: UntypedResLocals) => {
       return (
         resLocals.course_instance?.id &&
         (resLocals.authz_data?.has_course_instance_permission_view ||
           resLocals.authz_data?.has_course_permission_preview)
       );
     },
-    buildRedirect: (resLocals: Record<string, any>) =>
+    buildRedirect: (resLocals: UntypedResLocals) =>
       `/pl/course_instance/${resLocals.course_instance.id}/instructor`,
   },
   {
     // try to redirect to the instructor course
-    canRedirect: (resLocals: Record<string, any>) => {
+    canRedirect: (resLocals: UntypedResLocals) => {
       return resLocals.course?.id && resLocals.authz_data?.has_course_permission_preview;
     },
-    buildRedirect: (resLocals: Record<string, any>) => `/pl/course/${resLocals.course.id}`,
+    buildRedirect: (resLocals: UntypedResLocals) => `/pl/course/${resLocals.course.id}`,
   },
   {
     // try to redirect to the student course instance
-    canRedirect: (resLocals: Record<string, any>) => {
+    canRedirect: (resLocals: UntypedResLocals) => {
       return resLocals.course_instance?.id && resLocals.authz_data?.has_student_access;
     },
-    buildRedirect: (resLocals: Record<string, any>) =>
+    buildRedirect: (resLocals: UntypedResLocals) =>
       `/pl/course_instance/${resLocals.course_instance.id}`,
   },
 ];

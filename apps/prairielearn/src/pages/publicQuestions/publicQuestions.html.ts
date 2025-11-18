@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
@@ -11,7 +12,7 @@ export const QuestionsPage = ({
 }: {
   questions: QuestionsPageData[];
   showAddQuestionButton: boolean;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) => {
   // Example course questions can be publicly shared, but we don't allow them to
   // be imported into courses, so we won't show the sharing name in the QID.

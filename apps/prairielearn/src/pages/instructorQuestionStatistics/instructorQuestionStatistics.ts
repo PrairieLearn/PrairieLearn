@@ -7,6 +7,7 @@ import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import { questionFilenamePrefix } from '../../lib/sanitize-name.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
@@ -19,7 +20,7 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function makeStatsCsvFilename(locals) {
+function makeStatsCsvFilename(locals: UntypedResLocals) {
   const prefix = questionFilenamePrefix(locals.question, locals.course);
   return prefix + 'stats.csv';
 }

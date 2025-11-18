@@ -7,6 +7,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { type CourseRequestRow } from '../../lib/course-request.js';
 import { CourseSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export const CourseWithInstitutionSchema = CourseSchema.extend({
   institution: InstitutionSchema,
@@ -24,7 +25,7 @@ export function AdministratorCourses({
   institutions: Institution[];
   courses: CourseWithInstitution[];
   coursesRoot: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,

@@ -17,6 +17,7 @@ import {
 } from '../../../lib/assets.js';
 import type { InstanceQuestionGroup, User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
 
@@ -29,7 +30,7 @@ export function AssessmentQuestion({
   instanceQuestionGroups,
   rubric_data,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   courseStaff: User[];
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;

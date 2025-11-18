@@ -10,6 +10,7 @@ import {
   InstitutionAdministratorSchema,
   UserSchema,
 } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.js';
 
 export const InstitutionAdminAdminsRowSchema = z.object({
   user: UserSchema,
@@ -26,7 +27,7 @@ export function InstitutionAdminAdmins({
   institution: Institution;
   rows: InstitutionAdminAdminsRow[];
   uidsLimit: number;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals: {

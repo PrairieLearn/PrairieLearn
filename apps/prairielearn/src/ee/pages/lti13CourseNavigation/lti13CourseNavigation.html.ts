@@ -4,6 +4,7 @@ import { HeadContents } from '../../../components/HeadContents.js';
 import { Modal } from '../../../components/Modal.js';
 import { Navbar } from '../../../components/Navbar.js';
 import { type Course } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.js';
 import { STUDENT_ROLE } from '../../lib/lti13.js';
 
 export function Lti13CourseNavigationInstructor({
@@ -13,7 +14,7 @@ export function Lti13CourseNavigationInstructor({
   lti13_instance_id,
 }: {
   courseName: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   courses: Course[];
   lti13_instance_id: string;
 }): string {
@@ -114,7 +115,7 @@ export function Lti13CourseNavigationNotReady({
   ltiRoles,
 }: {
   courseName: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   ltiRoles: string[];
 }): string {
   return html`
@@ -165,7 +166,7 @@ export function Lti13CourseNavigationDone({
   resLocals,
   lti13_instance_id,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   lti13_instance_id: string;
 }): string {
   return html`

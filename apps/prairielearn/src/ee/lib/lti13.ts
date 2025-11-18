@@ -29,6 +29,7 @@ import {
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
@@ -374,9 +375,7 @@ export class Lti13Claim {
   }
 }
 
-export async function validateLti13CourseInstance(
-  resLocals: Record<string, any>,
-): Promise<boolean> {
+export async function validateLti13CourseInstance(resLocals: UntypedResLocals): Promise<boolean> {
   const hasLti13CourseInstance = await queryRow(
     sql.select_ci_validation,
     { course_instance_id: resLocals.course_instance.id },

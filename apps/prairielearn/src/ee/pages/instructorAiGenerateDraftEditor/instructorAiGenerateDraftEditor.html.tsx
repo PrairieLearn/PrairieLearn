@@ -16,6 +16,7 @@ import {
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.js';
 
 import RichTextEditor from './RichTextEditor/index.js';
 
@@ -26,7 +27,7 @@ export function InstructorAiGenerateDraftEditor({
   richTextEditorEnabled,
   variantId,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   prompts: AiQuestionGenerationPrompt[];
   question: Question;
   richTextEditorEnabled: boolean;
@@ -297,7 +298,7 @@ function QuestionAndFilePreview({
   resLocals,
 }: {
   prompts: AiQuestionGenerationPrompt[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return html`
     <div class="tab-content" style="height: 100%">

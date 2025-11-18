@@ -21,6 +21,7 @@ import {
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -72,7 +73,7 @@ export function InstructorAssessmentInstance({
   instance_questions,
   assessmentInstanceLog,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   logCsvFilename: string;
   assessment_instance_stats: AssessmentInstanceStats[];
   assessment_instance_date_formatted: string;
@@ -729,7 +730,7 @@ function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint })
   `;
 }
 
-function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) {
+function EditTotalPointsForm({ resLocals }: { resLocals: UntypedResLocals }) {
   return html`
     <form name="edit-total-points-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_points" />
@@ -764,7 +765,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
   `;
 }
 
-function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> }) {
+function EditTotalScorePercForm({ resLocals }: { resLocals: UntypedResLocals }) {
   return html`
     <form name="edit-total-score-perc-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_score_perc" />

@@ -10,6 +10,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import { type CourseInstanceAuthz } from '../../models/course-instances.js';
 
 export type CourseInstanceAuthzRow = CourseInstanceAuthz & { enrollment_count?: number };
@@ -18,7 +19,7 @@ export function InstructorCourseAdminInstances({
   resLocals,
   courseInstances,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   courseInstances: CourseInstanceAuthzRow[];
 }) {
   const initialStartDate = Temporal.Now.zonedDateTimeISO(resLocals.course.timeZone).with({

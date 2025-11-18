@@ -10,6 +10,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 import {
   type CourseAssessmentRow,
@@ -21,7 +22,7 @@ export function InstructorGradebook({
   csvFilename,
   courseAssessments,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   csvFilename: string;
   courseAssessments: CourseAssessmentRow[];
 }) {

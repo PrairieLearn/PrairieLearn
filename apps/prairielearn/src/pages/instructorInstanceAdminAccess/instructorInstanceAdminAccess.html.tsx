@@ -7,12 +7,13 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 
 export function InstructorInstanceAdminAccess({
   resLocals,
   accessRules,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   accessRules: CourseInstanceAccessRule[];
 }) {
   const { authz_data, course_instance } = resLocals;

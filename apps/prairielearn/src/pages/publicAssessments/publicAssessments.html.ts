@@ -7,6 +7,7 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
 import type { Course, CourseInstance } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.js';
 import { type AssessmentRow } from '../../models/assessment.js';
 import type { QuestionForCopy } from '../../models/question.js';
 
@@ -113,7 +114,7 @@ export function PublicAssessments({
   courseInstanceCopyTargets,
   questionsForCopy,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   rows: AssessmentRow[];
   course: Course;
   courseInstance: CourseInstance;
