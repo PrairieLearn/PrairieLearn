@@ -20,7 +20,7 @@ import {
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
 
-import { InstructorCourseAdminInstances } from './instructorCourseAdminInstances.html.js';
+import { InstructorCourseAdminInstances } from './InstructorCourseAdminInstances.html.js';
 import { InstructorCourseAdminInstanceRowSchema } from './instructorCourseAdminInstances.shared.js';
 
 const router = Router();
