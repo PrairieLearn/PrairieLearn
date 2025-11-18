@@ -26,28 +26,30 @@ export function ExtensionTableRow({
 
   return (
     <tr>
-      <td class="col-1">
+      <td class="col-1 align-middle">
         {extension.name ? (
           <strong>{extension.name}</strong>
         ) : (
           <span class="text-muted">Unnamed</span>
         )}
       </td>
-      <td class="col-1">
+      <td class="col-1 align-middle">
         {isBeforeInstanceEndDate ? (
           <span
             data-bs-toggle="tooltip"
             data-bs-placement="top"
             title="This date is before the course instance end date and will be ignored"
           >
-            {formatDateFriendly(extension.end_date, courseInstance.display_timezone)}
-            <i class="fas fa-exclamation-triangle text-warning" aria-hidden="true" />
+            <div class="d-flex align-items-center gap-1">
+              {formatDateFriendly(extension.end_date, courseInstance.display_timezone)}
+              <i class="fas fa-exclamation-triangle text-warning" aria-hidden="true" />
+            </div>
           </span>
         ) : (
           <span>{formatDateFriendly(extension.end_date, courseInstance.display_timezone)}</span>
         )}
       </td>
-      <td class="col-3">
+      <td class="col-3 align-middle">
         <div>
           {(() => {
             const studentsToShow = showAllStudents
@@ -59,21 +61,19 @@ export function ExtensionTableRow({
               <>
                 {extension.user_data.length > 0 && (
                   <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                    {studentsToShow.map(
-                      (user: { uid: string; name: string | null; enrollment_id: string }) => (
-                        <div key={user.uid} class="d-flex align-items-center gap-1">
-                          <a
-                            href={getStudentEnrollmentUrl(
-                              `/pl/course_instance/${courseInstance.id}/instructor`,
-                              user.enrollment_id,
-                            )}
-                            class="text-decoration-none"
-                          >
-                            {user.name || '—'}
-                          </a>
-                        </div>
-                      ),
-                    )}
+                    {studentsToShow.map((user) => (
+                      <div key={user.uid} class="d-flex align-items-center gap-1">
+                        <a
+                          href={getStudentEnrollmentUrl(
+                            `/pl/course_instance/${courseInstance.id}/instructor`,
+                            user.enrollment_id,
+                          )}
+                          class="text-decoration-none"
+                        >
+                          {user.name || '—'}
+                        </a>
+                      </div>
+                    ))}
                     {hasMoreStudents && (
                       <button
                         key={`button-${showAllStudents ? 'show-less' : 'show-more'}`}
@@ -100,7 +100,7 @@ export function ExtensionTableRow({
           })()}
         </div>
       </td>
-      <td class="col-1">
+      <td class="col-1 align-middle">
         <div class="d-flex gap-1">
           {canEdit && (
             <>

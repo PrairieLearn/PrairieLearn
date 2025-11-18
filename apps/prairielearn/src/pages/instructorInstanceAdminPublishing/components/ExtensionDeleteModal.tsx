@@ -42,11 +42,24 @@ export function ExtensionDeleteModal({
     if (!modalState) return null;
     return (
       <>
-        Are you sure you want to delete{' '}
-        {modalState.extensionName === null
-          ? 'this extension'
-          : `the extension "${modalState.extensionName}"`}{' '}
-        with students: "{modalState.userData.map((user) => user.uid).join(', ')}"?
+        <div class="mb-3">
+          Are you sure you want to delete{' '}
+          {modalState.extensionName === null
+            ? 'this extension'
+            : `the extension "${modalState.extensionName}"`}
+          ?
+        </div>
+        <label class="form-label" for="ext-uids">
+          UIDs
+        </label>
+        <textarea
+          id="ext-uids"
+          class="form-control"
+          rows={5}
+          placeholder="One UID per line, or comma/space separated"
+          value={modalState.userData.map((user) => user.uid).join('\n')}
+          readOnly
+        />
       </>
     );
   };

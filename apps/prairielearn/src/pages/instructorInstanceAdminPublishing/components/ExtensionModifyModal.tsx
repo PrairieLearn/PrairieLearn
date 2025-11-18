@@ -167,8 +167,8 @@ export function ExtensionModifyModal({
             ))}
           </div>
           <p>
-            Do you want to continue editing to remove these UIDs, or save the extension anyway?
-            Extensions for unenrolled students will not take effect until they enroll.
+            Do you want to continue editing, or save the extension anyway? Extensions for unenrolled
+            students will be ignored.
           </p>
         </Modal.Body>
         <Modal.Footer>
@@ -202,6 +202,7 @@ export function ExtensionModifyModal({
       backdrop="static"
       onHide={() => {
         setStage({ type: 'editing' });
+        saveMutation.reset();
         onHide();
       }}
     >
@@ -223,7 +224,7 @@ export function ExtensionModifyModal({
               </label>
               <button
                 type="button"
-                class={clsx('btn btn-outline btn-sm', !currentEndDate && 'disabled')}
+                class={clsx('btn btn-outline-primary btn-sm', !currentEndDate && 'disabled')}
                 onClick={handleAddWeek}
               >
                 +1 week
@@ -283,6 +284,7 @@ export function ExtensionModifyModal({
             disabled={saveMutation.isPending}
             onClick={() => {
               setStage({ type: 'editing' });
+              saveMutation.reset();
               onHide();
             }}
           >
