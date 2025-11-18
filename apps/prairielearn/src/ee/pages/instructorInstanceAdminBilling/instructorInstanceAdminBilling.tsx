@@ -95,9 +95,7 @@ router.get(
         content: (
           <>
             {!editable && (
-              <div class="alert alert-warning">
-                Only course owners can change billing settings.
-              </div>
+              <div class="alert alert-warning">Only course owners can change billing settings.</div>
             )}
             <div class="card mb-4">
               <div class="card-header bg-primary text-white d-flex">Billing</div>
