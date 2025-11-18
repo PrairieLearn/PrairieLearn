@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import clsx from 'clsx';
-import { useEffect, useState } from 'preact/compat';
+import { useState } from 'preact/compat';
 import { useForm } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
@@ -83,20 +83,6 @@ export function CourseInstancePublishingForm({
 
   const startDate = watch('start_date');
   const endDate = watch('end_date');
-
-  // Add browser prompt when navigating away with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
-        e.preventDefault();
-        // Chrome requires returnValue to be set
-        e.returnValue = '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isDirty]);
 
   const onSubmit = (e: SubmitEvent) => {
     if (!isValid) {
@@ -214,14 +200,14 @@ export function CourseInstancePublishingForm({
         break;
       }
     }
-    setValue('start_date', updatedStartDate?.toString() ?? '');
-    setValue('end_date', updatedEndDate?.toString() ?? '');
+    setValue('start_date', updatedStartDate?.toString() ?? '', { shouldDirty: true });
+    setValue('end_date', updatedEndDate?.toString() ?? '', { shouldDirty: true });
   };
 
   const handleAddWeek = async (field: 'start_date' | 'end_date') => {
     const currentDate = Temporal.PlainDateTime.from(field === 'start_date' ? startDate : endDate);
     const newValue = currentDate.add({ weeks: 1 });
-    setValue(field, newValue.toString());
+    setValue(field, newValue.toString(), { shouldDirty: true });
     // setValue with { shouldValidate: true } doesn't trigger dependent inputs to validate.
     await trigger('start_date');
     await trigger('end_date');
@@ -548,14 +534,37 @@ export function CourseInstancePublishingForm({
 
           {canEdit && (
             <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary">
+              <button type="submit" class="btn btn-primary" disabled={!isDirty}>
                 Save
               </button>
               <button
                 type="button"
                 class="btn btn-secondary"
+                disabled={!isDirty}
                 onClick={() => {
-                  window.location.reload();
+                  setSelectedStatus(originalStatus);
+                  setValue(
+                    'start_date',
+                    originalStartDate
+                      ? dateToPlainDateTime(
+                          originalStartDate,
+                          courseInstance.display_timezone,
+                        ).toString()
+                      : '',
+                    {
+                      shouldDirty: true,
+                    },
+                  );
+                  setValue(
+                    'end_date',
+                    originalEndDate
+                      ? dateToPlainDateTime(
+                          originalEndDate,
+                          courseInstance.display_timezone,
+                        ).toString()
+                      : '',
+                    { shouldDirty: true },
+                  );
                 }}
               >
                 Cancel
