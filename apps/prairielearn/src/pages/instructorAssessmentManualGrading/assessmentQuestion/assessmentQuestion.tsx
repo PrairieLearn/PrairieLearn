@@ -128,7 +128,7 @@ router.get(
               urlPrefix={urlPrefix}
             />
 
-            <Hydrate fullHeight>
+            <Hydrate>
               <AssessmentQuestionManualGrading
                 hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
                 search={search}
