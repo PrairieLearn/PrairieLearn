@@ -285,8 +285,7 @@ function StudentsCard({
         cell: (info) => <EnrollmentStatusIcon type="text" status={info.getValue()} />,
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const current = row.getValue(columnId);
-          if (typeof current !== 'string') return false;
+          const current = row.getValue<StudentRow['enrollment']['status']>(columnId);
           return filterValues.includes(current);
         },
       }),
@@ -371,9 +370,12 @@ function StudentsCard({
       <TanstackTableCard
         table={table}
         title="Students"
+        // eslint-disable-next-line @eslint-react/no-forbidden-props
+        className="h-100"
+        singularLabel="student"
+        pluralLabel="students"
         downloadButtonOptions={{
           filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
-          pluralLabel: 'students',
           mapRowToData: (row) => {
             return {
               uid: row.user?.uid ?? row.enrollment.pending_uid,
