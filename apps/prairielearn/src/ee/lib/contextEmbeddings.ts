@@ -11,7 +11,10 @@ import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js'
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
-import { type DocumentChunk, buildContextForElementDocs } from './context-parsers/documentation.js';
+import {
+  type DocumentChunk,
+  buildContextForSingleElementDoc,
+} from './context-parsers/documentation.js';
 import { buildContextForQuestion } from './context-parsers/template-questions.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -137,23 +140,38 @@ export async function syncContextDocuments(embeddingModel: EmbeddingModel, authn
       }
     }
 
-    const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
-    allowedFilepaths.push(path.relative(REPOSITORY_ROOT_PATH, elementDocsPath));
-    const fileText = await fs.readFile(elementDocsPath, { encoding: 'utf-8' });
-    const files = buildContextForElementDocs(fileText);
-    for (const doc of files) {
-      await insertDocumentChunk(
-        embeddingModel,
-        path.relative(REPOSITORY_ROOT_PATH, elementDocsPath),
-        doc,
-        job,
-        openAiUserFromAuthn(authnUserId),
-      );
+    const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements');
+    const elementChunkIds: string[] = [];
+    for await (const file of klaw(elementDocsPath)) {
+      if (file.stats.isDirectory()) continue;
+
+      const filename = path.basename(file.path);
+      // Skip index.md and non-markdown files
+      if (filename === 'index.md' || !filename.endsWith('.md')) continue;
+
+      // Extract element name from filename (e.g., "pl-multiple-choice.md" -> "pl-multiple-choice")
+      const elementName = path.basename(file.path, '.md');
+
+      const fileText = await fs.readFile(file.path, { encoding: 'utf-8' });
+      const doc = buildContextForSingleElementDoc(fileText, elementName);
+
+      if (doc) {
+        const relativePath = path.relative(REPOSITORY_ROOT_PATH, file.path);
+        await insertDocumentChunk(
+          embeddingModel,
+          relativePath,
+          doc,
+          job,
+          openAiUserFromAuthn(authnUserId),
+        );
+        allowedFilepaths.push(relativePath);
+        elementChunkIds.push(doc.chunkId);
+      }
     }
 
     await execute(sql.delete_unused_doc_chunks, {
       doc_paths: allowedFilepaths,
-      chunk_ids: files.map((doc) => doc.chunkId).concat(['']),
+      chunk_ids: elementChunkIds.concat(['']),
     });
   });
   return serverJob.jobSequenceId;
