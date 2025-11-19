@@ -8,6 +8,10 @@ ARG CACHEBUST=2025-11-15-14-13-19
 # installed, as a separate step below.
 SHELL ["/bin/bash", "-lc"]
 
+# - Ensure that all `uv` commands compile Python source files to bytecode.
+# - Ensure that all `uv` commands do not use any caching.
+ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
+
 USER root
 
 RUN apt-get update \

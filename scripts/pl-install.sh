@@ -78,7 +78,6 @@ export UV_PYTHON_INSTALL_DIR=/usr/share/uv/python
 export UV_PYTHON_BIN_DIR=/usr/local/bin
 export UV_PYTHON_DOWNLOADS=manual
 export UV_PYTHON_PREFERENCE=only-managed
-export UV_COMPILE_BYTECODE=1
 
 # We do manual platform detection so that we can use the "v3" variant on
 # x86_64 Linux, which provides better performance on modern CPUs.
