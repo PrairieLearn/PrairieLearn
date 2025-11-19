@@ -67,7 +67,10 @@ export function TagsTopicsTable({
     if (modalState.type === 'create') {
       setEntitiesState((prevData) => [...prevData, entity] as StaffTopic[] | StaffTag[]);
     } else if (modalState.type === 'edit') {
-      setEntitiesState((prevData) => prevData.map((d) => (d.id === entity.id ? entity : d)));
+      setEntitiesState(
+        (prevData) =>
+          prevData.map((d) => (d.id === entity.id ? entity : d)) as StaffTopic[] | StaffTag[],
+      );
     }
     setModalState({ type: 'closed' });
   };
