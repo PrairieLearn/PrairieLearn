@@ -80,6 +80,8 @@ export UV_PYTHON_DOWNLOADS=manual
 export UV_PYTHON_PREFERENCE=only-managed
 export UV_COMPILE_BYTECODE=1
 
+# We do manual platform detection so that we can use the "v3" variant on
+# x86_64 Linux, which provides better performance on modern CPUs.
 if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]]; then
     # https://gregoryszorc.com/docs/python-build-standalone/main/running.html
     # v3: 64-bit Intel/AMD CPUs approximately newer than Haswell (released in 2013) and Excavator (released in 2015)
