@@ -90,6 +90,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     preview = pl.get_string_attrib(element, "preview", PREVIEW_DEFAULT)
     focus = pl.get_boolean_attrib(element, "focus", FOCUS_DEFAULT)
 
+    ace_mode_path = None
+    if os.path.exists(
+        os.path.join(data["options"]["client_files_course_path"], f"mode-{ace_mode}.js")
+    ):
+        ace_mode_path = data["options"]["client_files_course_url"]
+
     # stringify boolean attributes (needed when written to html_params)
     auto_resize = "true" if auto_resize else "false"
     focus = "true" if focus else "false"
@@ -105,6 +111,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "name": answer_name,
         "file_name": file_name,
         "ace_mode": ace_mode,
+        "ace_mode_path": ace_mode_path,
         "ace_theme": ace_theme,
         "font_size": font_size,
         "editor_config_function": editor_config_function,

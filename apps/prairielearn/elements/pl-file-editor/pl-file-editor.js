@@ -27,6 +27,9 @@ window.PLFileEditor = function (uuid, options) {
   this.editor.setReadOnly(options.readOnly);
   this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
 
+  if (options.aceModePath) {
+    ace.config.set('modePath', options.aceModePath);
+  }
   if (options.aceMode) {
     this.editor.getSession().setMode(options.aceMode);
   }
