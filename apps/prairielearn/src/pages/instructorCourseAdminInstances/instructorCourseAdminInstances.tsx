@@ -11,7 +11,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
@@ -66,8 +66,10 @@ router.get(
       );
 
     // TODO: We need to land the refactor so I can add the course context as an option.
-    const { course } = getCourseInstanceContext(res.locals, 'instructor');
-    const { __csrf_token, authz_data, urlPrefix } = getPageContext(res.locals);
+    const { course, __csrf_token, authz_data, urlPrefix } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
 
     res.send(
       PageLayout({

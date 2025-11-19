@@ -60,3 +60,10 @@ export function getSelfEnrollmentLookupUrl(
 export function getCourseInstanceSyncUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/syncs`;
 }
+
+export function getCourseInstanceJobSequenceUrl(
+  courseInstanceId: string,
+  jobSequenceId: string,
+): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/jobSequence/${jobSequenceId}`;
+}
