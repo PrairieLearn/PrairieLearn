@@ -62,7 +62,7 @@ export function MultiSelectColumnFilter<T extends readonly any[]>({
         />
       </Dropdown.Toggle>
       <Dropdown.Menu class="p-0">
-        <div class="p-3" style={{ minWidth: '250px' }}>
+        <div class="p-3 pb-0" style={{ minWidth: '250px' }}>
           <div class="d-flex align-items-center justify-content-between mb-2">
             <div class="fw-semibold">{columnLabel}</div>
             <button
@@ -73,12 +73,21 @@ export function MultiSelectColumnFilter<T extends readonly any[]>({
               Clear
             </button>
           </div>
+        </div>
 
-          <div class="list-group list-group-flush">
-            {allColumnValues.map((value) => {
-              const isSelected = selected.has(value);
-              return (
-                <div key={value} class="list-group-item d-flex align-items-center gap-3 px-0">
+        <div
+          class="list-group list-group-flush"
+          style={{
+            // This is needed to prevent the last item's background from covering
+            // the dropdown's border radius.
+            '--bs-list-group-bg': 'transparent',
+          }}
+        >
+          {allColumnValues.map((value) => {
+            const isSelected = selected.has(value);
+            return (
+              <div key={value} class="list-group-item d-flex align-items-center gap-3">
+                <div class="form-check">
                   <input
                     class="form-check-input"
                     type="checkbox"
@@ -93,9 +102,9 @@ export function MultiSelectColumnFilter<T extends readonly any[]>({
                     })}
                   </label>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </Dropdown.Menu>
     </Dropdown>
