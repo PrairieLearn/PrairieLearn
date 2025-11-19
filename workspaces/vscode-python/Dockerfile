@@ -30,10 +30,10 @@ COPY requirements.txt /
 RUN curl -LO https://astral.sh/uv/install.sh \
     && sh install.sh && rm install.sh \
     && source "$HOME/.local/bin/env" \
-    && uv python install --default --preview 3.10 \
+    && uv python install --default 3.12 \
     && uv venv \
     && echo "source $HOME/.venv/bin/activate" >> ~/.bashrc && source "$HOME/.venv/bin/activate" \
-    && uv pip install --no-cache-dir -r /requirements.txt && uv cache clean
+    && uv pip install --no-cache-dir -r /requirements.txt
 
 # After installing Python we install some VS Code extensions.
 USER coder
