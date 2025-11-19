@@ -11,9 +11,9 @@ import { CreateCourseInstanceModal } from './components/CreateCourseInstanceModa
 import { EmptyState } from './components/EmptyState.js';
 import type { InstructorCourseAdminInstanceRow } from './instructorCourseAdminInstances.shared.js';
 
-function PopoverStartDate() {
+function PopoverStartDate({ courseInstanceId }: { courseInstanceId: string }) {
   return (
-    <Popover>
+    <Popover id={`popover-start-date-${courseInstanceId}`}>
       <Popover.Header as="h3">Earliest Access Date</Popover.Header>
       <Popover.Body>
         <p>
@@ -37,9 +37,9 @@ function PopoverStartDate() {
   );
 }
 
-function PopoverEndDate() {
+function PopoverEndDate({ courseInstanceId }: { courseInstanceId: string }) {
   return (
-    <Popover>
+    <Popover id={`popover-end-date-${courseInstanceId}`}>
       <Popover.Header as="h3">Latest Access Date</Popover.Header>
       <Popover.Body>
         <p>
@@ -170,28 +170,36 @@ export function InstructorCourseAdminInstances({
                       <td class="align-left">
                         {startDate}
                         {isLegacyStartDate ? (
-                          <OverlayTrigger placement="bottom" overlay={<PopoverStartDate />}>
-                            <button
-                              type="button"
-                              class="btn btn-xs btn-light"
+                          <OverlayTrigger
+                            placement="bottom"
+                            trigger="click"
+                            overlay={<PopoverStartDate courseInstanceId={row.id} />}
+                          >
+                            <Button
+                              variant="light"
+                              class="btn-xs"
                               aria-label="Information about Earliest Access Date"
                             >
                               <i class="far fa-question-circle" aria-hidden="true" />
-                            </button>
+                            </Button>
                           </OverlayTrigger>
                         ) : null}
                       </td>
                       <td class="align-left">
                         {endDate}
                         {isLegacyEndDate ? (
-                          <OverlayTrigger placement="bottom" overlay={<PopoverEndDate />}>
-                            <button
-                              type="button"
-                              class="btn btn-xs btn-light"
+                          <OverlayTrigger
+                            placement="bottom"
+                            trigger="click"
+                            overlay={<PopoverEndDate courseInstanceId={row.id} />}
+                          >
+                            <Button
+                              variant="light"
+                              class="btn-xs"
                               aria-label="Information about Latest Access Date"
                             >
                               <i class="far fa-question-circle" aria-hidden="true" />
-                            </button>
+                            </Button>
                           </OverlayTrigger>
                         ) : null}
                       </td>
