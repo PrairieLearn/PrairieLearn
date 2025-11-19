@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
-import { type Tag, type Topic } from '../lib/db-types.js';
+import { type StaffTag, type StaffTopic } from '../lib/client/safe-db-types.js';
 import { ColorJsonSchema } from '../schemas/infoCourse.js';
 
 import { TagBadge } from './TagBadge.js';
@@ -10,54 +10,53 @@ import { TopicBadge } from './TopicBadge.js';
 
 export type EditTagsTopicsModalState =
   | { type: 'closed' }
-  | { type: 'create'; dataType: 'topic' | 'tag'; data: Topic | Tag }
-  | { type: 'edit'; dataType: 'topic' | 'tag'; data: Topic | Tag };
+  | { type: 'create'; entityType: 'topic' | 'tag'; entity: StaffTopic | StaffTag }
+  | { type: 'edit'; entityType: 'topic' | 'tag'; entity: StaffTopic | StaffTag };
 
 interface EditTagsTopicsModalProps {
   state: EditTagsTopicsModalState;
   onClose: () => void;
-  onSave: (topic: Topic) => void;
+  onSave: (entity: StaffTopic | StaffTag) => void;
 }
 
 export function EditTagsTopicsModal({ state, onClose, onSave }: EditTagsTopicsModalProps) {
   // Extract the topic to edit/create, or null if closed
-  const dataToEdit =
-    state.type === 'create' ? state.data : state.type === 'edit' ? state.data : null;
+  const entityToEdit =
+    state.type === 'create' ? state.entity : state.type === 'edit' ? state.entity : null;
 
-  const [formData, setFormData] = useState<Topic | null>(dataToEdit);
+  const [entity, setEntity] = useState<StaffTopic | StaffTag | null>(entityToEdit);
   const [invalidName, setInvalidName] = useState(false);
   const [invalidColor, setInvalidColor] = useState(false);
 
   function handleModalEntering() {
-    if (!dataToEdit) return;
-    setFormData(dataToEdit);
+    if (!entityToEdit) return;
+    setEntity(entityToEdit);
     setInvalidName(false);
     setInvalidColor(false);
   }
 
   function handleModalExited() {
-    setFormData(null);
+    setEntity(null);
     setInvalidName(false);
     setInvalidColor(false);
   }
 
   function handleSubmit() {
-    if (!formData) return;
+    if (!entity) return;
 
-    const isNameValid = !!formData.name;
-    const isColorValid = !!formData.color;
+    const isNameValid = !!entity.name;
+    const isColorValid = !!entity.color;
 
     setInvalidName(!isNameValid);
     setInvalidColor(!isColorValid);
 
     if (isNameValid && isColorValid) {
-      onSave(formData);
+      onSave(entity);
     }
   }
 
   const isOpen = state.type !== 'closed';
   const isCreateMode = state.type === 'create';
-  const dataTypeLabel = state.type !== 'closed' ? state.dataType.toUpperCase() : '';
 
   return (
     <Modal
@@ -70,21 +69,21 @@ export function EditTagsTopicsModal({ state, onClose, onSave }: EditTagsTopicsMo
         <Modal.Title>{isCreateMode ? 'Add topic' : 'Edit topic'}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {formData ? (
+        {entity ? (
           <>
             <div class="d-flex flex-column align-items-center mb-4">
-              {state.type !== 'closed' && state.dataType === 'topic' ? (
+              {state.type !== 'closed' && state.entityType === 'topic' ? (
                 <TopicBadge
                   topic={{
-                    name: formData.name || 'Topic preview',
-                    color: formData.color,
+                    name: entity.name || 'Topic preview',
+                    color: entity.color,
                   }}
                 />
               ) : (
                 <TagBadge
                   tag={{
-                    name: formData.name || 'Tag preview',
-                    color: formData.color,
+                    name: entity.name || 'Tag preview',
+                    color: entity.color,
                   }}
                 />
               )}
@@ -97,15 +96,20 @@ export function EditTagsTopicsModal({ state, onClose, onSave }: EditTagsTopicsMo
                 type="text"
                 class={clsx('form-control', invalidName && 'is-invalid')}
                 id="name"
-                value={formData.name}
+                value={entity.name}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
+                  setEntity({
+                    ...entity,
                     name: (e.target as HTMLInputElement).value,
                   })
                 }
               />
-              {invalidName && <div class="invalid-feedback">{dataTypeLabel} name is required</div>}
+              {invalidName && (
+                <div class="invalid-feedback">
+                  {state.type !== 'closed' && state.entityType === 'topic' ? 'Topic' : 'Tag'} name
+                  is required
+                </div>
+              )}
             </div>
             <div class="mb-3">
               <label class="form-label" for="color">
@@ -115,10 +119,10 @@ export function EditTagsTopicsModal({ state, onClose, onSave }: EditTagsTopicsMo
                 <select
                   class={clsx('form-select', invalidColor && 'is-invalid')}
                   id="color"
-                  value={formData.color}
+                  value={entity.color}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
+                    setEntity({
+                      ...entity,
                       color: (e.target as HTMLSelectElement).value,
                     })
                   }
@@ -142,7 +146,7 @@ export function EditTagsTopicsModal({ state, onClose, onSave }: EditTagsTopicsMo
                     width="32"
                     height="32"
                     style={{
-                      fill: `var(--color-${formData.color})`,
+                      fill: `var(--color-${entity.color})`,
                       rx: 'var(--bs-border-radius)',
                       ry: 'var(--bs-border-radius)',
                     }}
@@ -150,7 +154,10 @@ export function EditTagsTopicsModal({ state, onClose, onSave }: EditTagsTopicsMo
                 </svg>
               </div>
               {invalidColor && (
-                <div class="invalid-feedback">{dataTypeLabel} color is required</div>
+                <div class="invalid-feedback">
+                  {state.type !== 'closed' && state.entityType === 'topic' ? 'Topic' : 'Tag'} color
+                  is required
+                </div>
               )}
             </div>
             <div class="mb-3">
@@ -161,10 +168,10 @@ export function EditTagsTopicsModal({ state, onClose, onSave }: EditTagsTopicsMo
                 type="text"
                 class="form-control"
                 id="description"
-                value={formData.description}
+                value={entity.description}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
+                  setEntity({
+                    ...entity,
                     description: (e.target as HTMLInputElement).value,
                   })
                 }

@@ -1,7 +1,6 @@
 import { useState } from 'preact/compat';
 
 import { type StaffTag, type StaffTopic } from '../lib/client/safe-db-types.js';
-import { type Topic } from '../lib/db-types.js';
 import { ColorJsonSchema } from '../schemas/infoCourse.js';
 
 import { EditTagsTopicsModal, type EditTagsTopicsModalState } from './EditTagsTopicsModal.js';
@@ -10,7 +9,7 @@ import { TagDescription } from './TagDescription.js';
 import { TopicBadge } from './TopicBadge.js';
 import { TopicDescription } from './TopicDescription.js';
 
-const emptySet = {
+const emptyEntity = {
   color: '',
   course_id: '',
   description: '',
@@ -22,28 +21,28 @@ const emptySet = {
 };
 
 export function TagsTopicsTable({
-  data,
-  dataType,
+  entities,
+  entityType,
   allowEdit,
   origHash,
   csrfToken,
 }: {
-  data: StaffTopic[] | StaffTag[];
-  dataType: 'topic' | 'tag';
+  entities: StaffTopic[] | StaffTag[];
+  entityType: 'topic' | 'tag';
   allowEdit: boolean;
   origHash: string | null;
   csrfToken: string;
 }) {
   const [editMode, setEditMode] = useState(false);
-  const [dataState, setDataState] = useState<Topic[] | StaffTag[]>(data);
+  const [entitiesState, setEntitiesState] = useState<StaffTopic[] | StaffTag[]>(entities);
   const [modalState, setModalState] = useState<EditTagsTopicsModalState>({ type: 'closed' });
 
   const handleCreate = () => {
     setModalState({
       type: 'create',
-      dataType: 'topic',
-      data: {
-        ...emptySet,
+      entityType,
+      entity: {
+        ...(emptyEntity as StaffTopic | StaffTag),
         // This ID won't be used on the server; it's just a temporary unique identifier.
         id: crypto.randomUUID(),
         // Pick a random initial color.
@@ -55,33 +54,35 @@ export function TagsTopicsTable({
   const handleEdit = (index: number) => {
     setModalState({
       type: 'edit',
-      dataType,
-      data: {
-        ...dataState[index],
+      entityType,
+      entity: {
+        ...entitiesState[index],
         // Once a tag/topic is edited, it is no longer implicit.
         implicit: false,
       },
     });
   };
 
-  const handleSave = (data: Topic | StaffTag) => {
+  const handleSave = (entity: StaffTopic | StaffTag) => {
     if (modalState.type === 'create') {
-      setDataState((prevData) => [...prevData, data]);
+      setEntitiesState((prevData) => [...prevData, entity] as StaffTopic[] | StaffTag[]);
     } else if (modalState.type === 'edit') {
-      setDataState((prevData) => prevData.map((d) => (d.id === data.id ? data : d)));
+      setEntitiesState((prevData) => prevData.map((d) => (d.id === entity.id ? entity : d)));
     }
     setModalState({ type: 'closed' });
   };
 
   const handleDelete = (deleteId: string) => {
-    setDataState((prevData) => prevData.filter((d) => d.id !== deleteId));
+    setEntitiesState(
+      (prevData) => prevData.filter((d) => d.id !== deleteId) as StaffTopic[] | StaffTag[],
+    );
   };
 
   return (
     <>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h1>{dataType === 'topic' ? 'Topics' : 'Tags'}</h1>
+          <h1>{entityType === 'topic' ? 'Topics' : 'Tags'}</h1>
           <div class="ms-auto">
             {allowEdit && origHash ? (
               !editMode ? (
@@ -90,14 +91,14 @@ export function TagsTopicsTable({
                   type="button"
                   onClick={() => setEditMode(true)}
                 >
-                  <i class="fa fa-edit" aria-hidden="true" /> Edit {dataType}s
+                  <i class="fa fa-edit" aria-hidden="true" /> Edit {entityType}s
                 </button>
               ) : (
                 <form method="POST">
                   <input type="hidden" name="__action" value="save_data" />
                   <input type="hidden" name="__csrf_token" value={csrfToken} />
                   <input type="hidden" name="orig_hash" value={origHash} />
-                  <input type="hidden" name="data" value={JSON.stringify(dataState)} />
+                  <input type="hidden" name="data" value={JSON.stringify(entitiesState)} />
                   <span class="js-edit-mode-buttons">
                     <button class="btn btn-sm btn-light mx-1" type="submit">
                       <i class="fa fa-save" aria-hidden="true" /> Save and sync
@@ -118,7 +119,10 @@ export function TagsTopicsTable({
           </div>
         </div>
         <div class="table-responsive">
-          <table class="table table-sm table-hover table-striped" aria-label={dataType}>
+          <table
+            class="table table-sm table-hover table-striped"
+            aria-label={entityType === 'topic' ? 'Topics' : 'Tags'}
+          >
             <thead>
               <tr>
                 {editMode && allowEdit && (
@@ -133,7 +137,7 @@ export function TagsTopicsTable({
               </tr>
             </thead>
             <tbody>
-              {dataState.map((row, index) => {
+              {entitiesState.map((row, index) => {
                 return (
                   <tr key={row.name}>
                     {editMode && allowEdit && (
@@ -142,7 +146,7 @@ export function TagsTopicsTable({
                           <button
                             class="btn btn-sm btn-ghost"
                             type="button"
-                            aria-label={`Edit ${dataType} ${row.name}`}
+                            aria-label={`Edit ${entityType} ${row.name}`}
                             onClick={() => handleEdit(index)}
                           >
                             <i class="fa fa-edit" aria-hidden="true" />
@@ -150,7 +154,7 @@ export function TagsTopicsTable({
                           <button
                             class="btn btn-sm btn-ghost"
                             type="button"
-                            aria-label={`Delete ${dataType} ${row.name}`}
+                            aria-label={`Delete ${entityType} ${row.name}`}
                             onClick={() => handleDelete(row.id)}
                           >
                             <i class="fa fa-trash text-danger" aria-hidden="true" />
@@ -160,11 +164,11 @@ export function TagsTopicsTable({
                     )}
                     <td class="align-middle">{index + 1}</td>
                     <td class="align-middle">
-                      {dataType === 'topic' ? <TopicBadge topic={row} /> : <TagBadge tag={row} />}
+                      {entityType === 'topic' ? <TopicBadge topic={row} /> : <TagBadge tag={row} />}
                     </td>
                     <td class="align-middle">{row.color}</td>
                     <td class="align-middle">
-                      {dataType === 'topic' ? (
+                      {entityType === 'topic' ? (
                         <TopicDescription topic={row} />
                       ) : (
                         <TagDescription tag={row} />
@@ -177,7 +181,7 @@ export function TagsTopicsTable({
                 <tr>
                   <td colSpan={5}>
                     <button class="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
-                      <i class="fa fa-plus" aria-hidden="true" /> New {dataType}
+                      <i class="fa fa-plus" aria-hidden="true" /> New {entityType}
                     </button>
                   </td>
                 </tr>

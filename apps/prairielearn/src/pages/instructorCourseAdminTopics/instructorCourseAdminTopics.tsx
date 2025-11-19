@@ -70,8 +70,8 @@ router.get(
             />
             <Hydrate>
               <TagsTopicsTable
-                data={z.array(StaffTopicSchema).parse(topics)}
-                dataType="topic"
+                entities={z.array(StaffTopicSchema).parse(topics)}
+                entityType="topic"
                 allowEdit={allowEdit}
                 origHash={origHash}
                 csrfToken={pageContext.__csrf_token}
@@ -163,7 +163,7 @@ router.post(
       } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
-      flash('success', 'Topic configuration updated successfully');
+      flash('success', 'Topics updated successfully');
       return res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
