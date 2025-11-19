@@ -66,7 +66,15 @@ export function EditTagsTopicsModal({ state, onClose, onSave }: EditTagsTopicsMo
       onExited={handleModalExited}
     >
       <Modal.Header closeButton>
-        <Modal.Title>{isCreateMode ? 'Add topic' : 'Edit topic'}</Modal.Title>
+        <Modal.Title>
+          {isCreateMode
+            ? state.entityType === 'topic'
+              ? 'Add topic'
+              : 'Add tag'
+            : state.type === 'edit' && state.entityType === 'topic'
+              ? 'Edit topic'
+              : 'Edit tag'}
+        </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {entity ? (
@@ -182,7 +190,13 @@ export function EditTagsTopicsModal({ state, onClose, onSave }: EditTagsTopicsMo
       </Modal.Body>
       <Modal.Footer>
         <button type="button" class="btn btn-primary me-2" onClick={handleSubmit}>
-          {isCreateMode ? 'Add topic' : 'Update topic'}
+          {isCreateMode
+            ? state.entityType === 'topic'
+              ? 'Add topic'
+              : 'Add tag'
+            : state.type === 'edit' && state.entityType === 'topic'
+              ? 'Update topic'
+              : 'Update tag'}
         </button>
         <button type="button" class="btn btn-secondary" onClick={onClose}>
           Close
