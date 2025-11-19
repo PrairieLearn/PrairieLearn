@@ -317,7 +317,6 @@ const testEditData: EditData[] = [
 
 function getPostInfoFromCopyOption(form) {
   const option = form.find('select[name="to_course_id"] option[value="1"]');
-  console.log(option);
   return { csrfToken: option.attr('data-csrf-token'), url: option.attr('data-copy-url') };
 }
 
@@ -553,10 +552,7 @@ function testEdit(params: EditData) {
         method: 'POST',
         body: new URLSearchParams(urlParams),
       });
-      if (!res.ok) {
-        console.log(await res.text());
-        console.log(url);
-      }
+
       assert.isOk(res.ok);
       currentUrl = res.url;
       currentPage$ = cheerio.load(await res.text());
