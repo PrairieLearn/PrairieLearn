@@ -1,6 +1,6 @@
 # PrairieLearn Elements for use in `question.html`
 
-When writing questions, there exists a core pool of elements that provides common structures associated with assessment items. These elements can be split into three distinct groups: **submission**, **decorative**, and **conditional**. Within this document, all of PrairieLearn's elements are displayed alongside links to sample elements within the example course. To build your own PrairieLearn element, please see [Question Element Writing](devElements.md) documentation.
+When writing questions, there exists a core pool of elements that provides common structures associated with assessment items. These elements can be split into three distinct groups: **submission**, **decorative**, and **conditional**. Within this document, all of PrairieLearn's elements are displayed alongside links to sample elements within the example course. To build your own PrairieLearn element, please see [Question Element Writing](../devElements.md) documentation.
 
 **Submission** elements act as a way to receive a response or input from the student. These elements are traditionally referred to as form input fields. PrairieLearn presently provides the following templated **input field** elements:
 
@@ -117,7 +117,7 @@ as checkboxes.
 
 #### Sample element
 
-![Screenshot of the pl-checkbox element](elements/pl-checkbox.png)
+![Screenshot of the pl-checkbox element](../elements/pl-checkbox.png)
 
 ```html title="question.html"
 <pl-checkbox answers-name="vpos" weight="1">
@@ -207,7 +207,7 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 
 Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidraw). Only manual grading is supported.
 
-![Screenshot of the pl-excalidraw element](elements/pl-excalidraw.png)
+![Screenshot of the pl-excalidraw element](../elements/pl-excalidraw.png)
 
 ```html title="question.html"
 <p>Draw something else, with a starter diagram</p>
@@ -248,7 +248,7 @@ and external grading system.
 
 #### Sample element
 
-![Screenshot of the pl-file-editor element](elements/pl-file-editor.png)
+![Screenshot of the pl-file-editor element](../elements/pl-file-editor.png)
 
 <!-- prettier-ignore -->
 ```html title="question.html"
@@ -287,7 +287,7 @@ This will initialize the editor area with a sufficient number of lines to displa
 
 The `focus` attribute defaults to `false`. Setting this to true will cause the file editor element to automatically capture the cursor focus when the question page is loaded, which may also cause the page to scroll down so that the file editor is in view, bypassing any written introduction. This may have negative implications for accessibility with screen readers, so use caution. If you have multiple file editors on the same question page, only one element should have `focus` set to true, or else the behavior may be unpredictable.
 
-This element supports additional preview options through [element extensions](elementExtensions.md). To provide this functionality, the extension must assign, to `window.PLFileEditor.prototype.preview.PREVIEW_TYPE` (where `PREVIEW_TYPE` is the value of the `preview` attribute), a function that converts a string representing the editor's content into suitable HTML content.
+This element supports additional preview options through [element extensions](../elementExtensions.md). To provide this functionality, the extension must assign, to `window.PLFileEditor.prototype.preview.PREVIEW_TYPE` (where `PREVIEW_TYPE` is the value of the `preview` attribute), a function that converts a string representing the editor's content into suitable HTML content.
 
 The contents of the file editor are only displayed by default in the question panel. If the contents are expected to be listed in the submission panel, they should be explicitly added using other elements such as [`pl-file-preview`](#pl-file-preview-element) or [`pl-xss-safe`](#pl-xss-safe-element).
 
@@ -321,7 +321,7 @@ in the format expected by externally graded questions.
 
 #### Sample element
 
-![Screenshot of the pl-file-upload element](elements/pl-file-upload.png)
+![Screenshot of the pl-file-upload element](../elements/pl-file-upload.png)
 
 ```html title="question.html"
 <pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
@@ -396,7 +396,7 @@ Provides a way for students to capture and submit an image as part of their answ
 
 #### Sample element
 
-![Screenshot of the pl-image-capture element](elements/pl-image-capture.png)
+![Screenshot of the pl-image-capture element](../elements/pl-image-capture.png)
 
 ```html title="question.html"
 <pl-image-capture file-name="solution.jpeg" mobile-capture-enabled="true"></pl-image-capture>
@@ -421,7 +421,7 @@ In manual grading mode, staff can view submitted images in the submission panel 
 
 By default, the `mobile-capture-enabled` setting is `true`. We strongly recommend keeping mobile capture enabled for most questions to allow students to capture high-quality images easily.
 
-Using mobile device capture in a local development environment requires additional setup. To use this feature locally, see the [Setting up external image capture locally](./dev-guide/configJson.md#setting-up-external-image-capture-locally) section of the server configuration guide.
+Using mobile device capture in a local development environment requires additional setup. To use this feature locally, see the [Setting up external image capture locally](../dev-guide/configJson.md#setting-up-external-image-capture-locally) section of the server configuration guide.
 
 #### Example implementations
 
@@ -439,7 +439,7 @@ Fill in the blank field that requires an **integer** input.
 
 #### Sample element
 
-![Screenshot of the pl-integer-input element](elements/pl-integer-input.png)
+![Screenshot of the pl-integer-input element](../elements/pl-integer-input.png)
 
 ```html title="question.html"
 <pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
@@ -510,7 +510,7 @@ Given a list of statements, select a matching option for each entry from a dropd
 
 #### Sample element
 
-![Screenshot of the pl-matching element](elements/pl-matching.png)
+![Screenshot of the pl-matching element](../elements/pl-matching.png)
 
 ```html title="question.html"
 <pl-matching answers-name="string_value">
@@ -598,7 +598,7 @@ the same shape of the variable stored in `answers-name`
 
 #### Sample element
 
-![Screenshot of the pl-matrix-component-input element](elements/pl-matrix-component-input.png)
+![Screenshot of the pl-matrix-component-input element](../elements/pl-matrix-component-input.png)
 
 ```html title="question.html"
 <pl-matrix-component-input answers-name="matrixA" label="$A=$"></pl-matrix-component-input>
@@ -659,7 +659,7 @@ format (either MATLAB or Python's numpy).
 
 #### Sample element
 
-![Screenshot of the pl-matrix-input element](elements/pl-matrix-input.png)
+![Screenshot of the pl-matrix-input element](../elements/pl-matrix-input.png)
 
 ```html title="question.html"
 <pl-matrix-input answers-name="matrixB" label="$B=$"></pl-matrix-input>
@@ -737,7 +737,7 @@ generation if two (or more) choices are identical.
 
 #### Sample element
 
-![Screenshot of the pl-multiple-choice element](elements/pl-multiple-choice.png)
+![Screenshot of the pl-multiple-choice element](../elements/pl-multiple-choice.png)
 
 ```html title="question.html"
 <pl-multiple-choice answers-name="acc" weight="1">
@@ -803,7 +803,7 @@ tolerances.
 
 #### Sample element
 
-![Screenshot of the pl-number-input element with relative tolerance](elements/pl-number-input-rtol.png)
+![Screenshot of the pl-number-input element with relative tolerance](../elements/pl-number-input-rtol.png)
 
 ```html title="question.html"
 <pl-number-input answers-name="ans_rtol" label="$x =$"> </pl-number-input>
@@ -823,7 +823,7 @@ def generate(data):
 
 ---
 
-![Screenshot of the pl-number-input element with sigfigs](elements/pl-number-input-sigfig.png)
+![Screenshot of the pl-number-input element with sigfigs](../elements/pl-number-input-sigfig.png)
 
 ```html title="question.html"
 <pl-number-input answers-name="ans_sig" comparison="sigfig" digits="2" label="$x =$">
@@ -887,7 +887,7 @@ Element to arrange given blocks of code or text that are displayed initially in 
 
 #### Sample element
 
-![Screenshot of the pl-order-blocks element](elements/pl-order-blocks.png)
+![Screenshot of the pl-order-blocks element](../elements/pl-order-blocks.png)
 
 ```html title="question.html"
 <p>List all the even numbers in order:</p>
@@ -968,7 +968,7 @@ This feature allows users to write `pl-order-blocks` questions using the `dag` g
 
 #### Optional Blocks Example
 
-![Screenshot of the pl-order-blocks element with optional lines](elements/pl-order-blocks-optional.png)
+![Screenshot of the pl-order-blocks element with optional lines](../elements/pl-order-blocks-optional.png)
 
 ```html title="question.html"
 <p>Construct a python function that computes the sum of two numbers.</p>
@@ -1004,7 +1004,7 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 
 #### Sample element
 
-![Screenshot of the pl-rich-text-editor element](elements/pl-rich-text-editor.png)
+![Screenshot of the pl-rich-text-editor element](../elements/pl-rich-text-editor.png)
 
 ```html title="question.html"
 <pl-rich-text-editor file-name="answer.html"> </pl-rich-text-editor>
@@ -1047,7 +1047,7 @@ Fill in the blank field that allows for **string** value input.
 
 #### Sample element
 
-![Screenshot of the pl-string-input element](elements/pl-string-input.png)
+![Screenshot of the pl-string-input element](../elements/pl-string-input.png)
 
 ```html title="question.html"
 <pl-string-input answers-name="string_value" label="Prairie"></pl-string-input>
@@ -1105,7 +1105,7 @@ Fill in the blank field that allows for mathematical symbol input.
 
 #### Sample element
 
-![Screenshot of the pl-symbolic-input element](elements/pl-symbolic-input.png)
+![Screenshot of the pl-symbolic-input element](../elements/pl-symbolic-input.png)
 
 ```html title="question.html"
 <pl-symbolic-input answers-name="symbolic_math" variables="x, y" label="$z =$"></pl-symbolic-input>
@@ -1275,7 +1275,7 @@ line callouts.
 
 #### Sample element
 
-![Screenshot of the pl-code input](elements/pl-code.png)
+![Screenshot of the pl-code input](../elements/pl-code.png)
 
 <!-- prettier-ignore -->
 ```html title="question.html"
@@ -1375,7 +1375,7 @@ Note that some Python types may not be serialized correctly in the code provided
 Creates a canvas (drawing space) that can display images from a collection of pre-defined drawing objects.
 Users can also add drawing objects to the canvas for grading.
 
-See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
+See the [`pl-drawing` documentation](../pl-drawing/index.md) for details.
 
 ---
 
@@ -1403,7 +1403,7 @@ data["params"]["names_from_user"] = [
 
 #### Sample element
 
-![Screenshot of the pl-external-grader-variables element](elements/pl-external-grader-variables.png)
+![Screenshot of the pl-external-grader-variables element](../elements/pl-external-grader-variables.png)
 
 ```html title="question.html"
 <p>The setup code gives the following variables:</p>
@@ -1460,7 +1460,7 @@ Display a statically or dynamically generated image. Supports many image file fo
 
 #### Sample element
 
-![Screenshot of the pl-figure element](elements/pl-figure.png)
+![Screenshot of the pl-figure element](../elements/pl-figure.png)
 
 ```html title="question.html"
 <!-- show a figure from an existing file -->
@@ -1472,14 +1472,14 @@ Display a statically or dynamically generated image. Supports many image file fo
 
 #### Customizations
 
-| Attribute   | Type                      | Default                 | Description                                                                                                                                                                                             |
-| ----------- | ------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-name` | string                    | —                       | Name of image file.                                                                                                                                                                                     |
-| `type`      | `"static"` or `"dynamic"` | `"static"`              | Type of file, either 'static' (an existing file) or 'dynamic' (a file generated by element or server code).                                                                                             |
-| `directory` | string                    | `"clientFilesQuestion"` | The directory that contains the file, either `"clientFilesQuestion"` or `clientFilesCourse` (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `type="dynamic"`. |
-| `width`     | number                    | —                       | Width of the image in pixels, e.g. `250`.                                                                                                                                                               |
-| `inline`    | boolean                   | false                   | Display figure inline with text (true) or on a separate line (false).                                                                                                                                   |
-| `alt`       | string                    | ""                      | Provide alt (alternative) text to improve accessibility of figures by describing the image or the purpose of the image. Default is an empty string.                                                     |
+| Attribute   | Type                      | Default                 | Description                                                                                                                                                                                                |
+| ----------- | ------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-name` | string                    | —                       | Name of image file.                                                                                                                                                                                        |
+| `type`      | `"static"` or `"dynamic"` | `"static"`              | Type of file, either 'static' (an existing file) or 'dynamic' (a file generated by element or server code).                                                                                                |
+| `directory` | string                    | `"clientFilesQuestion"` | The directory that contains the file, either `"clientFilesQuestion"` or `clientFilesCourse` (see [client and server files](../clientServerFiles.md)). A directory cannot be specified if `type="dynamic"`. |
+| `width`     | number                    | —                       | Width of the image in pixels, e.g. `250`.                                                                                                                                                                  |
+| `inline`    | boolean                   | false                   | Display figure inline with text (true) or on a separate line (false).                                                                                                                                      |
+| `alt`       | string                    | ""                      | Provide alt (alternative) text to improve accessibility of figures by describing the image or the purpose of the image. Default is an empty string.                                                        |
 
 #### Dynamically generated figures
 
@@ -1515,7 +1515,7 @@ Provide a download link to a static or dynamically generated file.
 
 #### Sample element
 
-![Screenshot of the pl-file-download element](elements/pl-file-download.png)
+![Screenshot of the pl-file-download element](../elements/pl-file-download.png)
 
 ```html title="question.html"
 <!-- allow students to download an existing file -->
@@ -1534,13 +1534,13 @@ Provide a download link to a static or dynamically generated file.
 
 #### Customizations
 
-| Attribute        | Type                      | Default                 | Description                                                                                                                                                                                             |
-| ---------------- | ------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-name`      | string                    | —                       | Name of file to download.                                                                                                                                                                               |
-| `label`          | string                    | See description         | Displayed label on the download link. Defaults to the name of the file specified in `file-name`.                                                                                                        |
-| `type`           | `"static"` or `"dynamic"` | `"static"`              | Type of file, either `"static"` (an existing file) or `"dynamic"` (a file generated by element or server code).                                                                                         |
-| `directory`      | string                    | `"clientFilesQuestion"` | The directory that contains the file, either `"clientFilesQuestion"` or `clientFilesCourse` (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `type="dynamic"`. |
-| `force-download` | boolean                   | true                    | Force a file download. Otherwise, allow the browser to open the file in a new tab.                                                                                                                      |
+| Attribute        | Type                      | Default                 | Description                                                                                                                                                                                                |
+| ---------------- | ------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-name`      | string                    | —                       | Name of file to download.                                                                                                                                                                                  |
+| `label`          | string                    | See description         | Displayed label on the download link. Defaults to the name of the file specified in `file-name`.                                                                                                           |
+| `type`           | `"static"` or `"dynamic"` | `"static"`              | Type of file, either `"static"` (an existing file) or `"dynamic"` (a file generated by element or server code).                                                                                            |
+| `directory`      | string                    | `"clientFilesQuestion"` | The directory that contains the file, either `"clientFilesQuestion"` or `clientFilesCourse` (see [client and server files](../clientServerFiles.md)). A directory cannot be specified if `type="dynamic"`. |
+| `force-download` | boolean                   | true                    | Force a file download. Otherwise, allow the browser to open the file in a new tab.                                                                                                                         |
 
 #### Details
 
@@ -1567,7 +1567,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 ### `pl-file-preview` element
 
-Provides an in-browser list of all files submitted by a student through submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`, or through [workspaces](workspaces/index.md). A preview of each file's content is also displayed for text-only files (including source code), images, PDF files and Jupyter Notebooks. It is commonly used in the submission panel in conjunction with the `pl-external-grader-results` element, though it can also be used when manual or internal grading is used to grade files.
+Provides an in-browser list of all files submitted by a student through submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`, or through [workspaces](../workspaces/index.md). A preview of each file's content is also displayed for text-only files (including source code), images, PDF files and Jupyter Notebooks. It is commonly used in the submission panel in conjunction with the `pl-external-grader-results` element, though it can also be used when manual or internal grading is used to grade files.
 
 #### Sample element
 
@@ -1596,7 +1596,7 @@ Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz D
 
 #### Sample elements
 
-![Screenshot of the pl-graph element using graphviz syntax](elements/pl-graph1.png)
+![Screenshot of the pl-graph element using graphviz syntax](../elements/pl-graph1.png)
 
 ```html title="question.html"
 <pl-graph> digraph G { A -> B } </pl-graph>
@@ -1604,7 +1604,7 @@ Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz D
 
 ---
 
-![Screenshot of the pl-graph element using a matrix](elements/pl-graph2.png)
+![Screenshot of the pl-graph element using a matrix](../elements/pl-graph2.png)
 
 ```html title="question.html"
 <pl-graph params-name="matrix" params-name-labels="labels"></pl-graph>
@@ -1669,7 +1669,7 @@ The `source-file-name` attribute is particularly useful when working with static
 
 #### Extension API
 
-Custom values for `params-type` can be added with [element extensions](elementExtensions.md). Each custom type is defined as a function that takes as input the `element` and `data` values and returns processed DOT syntax as output.
+Custom values for `params-type` can be added with [element extensions](../elementExtensions.md). Each custom type is defined as a function that takes as input the `element` and `data` values and returns processed DOT syntax as output.
 
 A minimal type function can look something like:
 
@@ -1704,7 +1704,7 @@ Displays a scalar or 2D numpy array of numbers in LaTeX using mathjax.
 
 #### Sample element
 
-![Screenshot of the pl-matrix-latex element](elements/pl-matrix-latex.png)
+![Screenshot of the pl-matrix-latex element](../elements/pl-matrix-latex.png)
 
 ```html title="question.html"
 $$C = <pl-matrix-latex params-name="matrixC"></pl-matrix-latex>$$
@@ -1780,7 +1780,7 @@ The overlay element allows existing PrairieLearn and HTML elements to be layered
 
 #### Sample element
 
-![Screenshot of the pl-overlay element](elements/pl-overlay.png)
+![Screenshot of the pl-overlay element](../elements/pl-overlay.png)
 
 ```html title="question.html"
 <pl-overlay width="400" height="400" clip="false">
@@ -1847,7 +1847,7 @@ Displays the value of a Python variable. It uses options similar to the [pprint]
 
 #### Sample elements
 
-![Screenshot of the pl-python-variable element](elements/pl-python-variable.png)
+![Screenshot of the pl-python-variable element](../elements/pl-python-variable.png)
 
 ```html title="question.html"
 <pl-python-variable params-name="variable"></pl-python-variable>
@@ -1881,7 +1881,7 @@ def generate(data):
 
 #### Details
 
-The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in `pprint` library. **Objects to be displayed must be serializable to JSON.** For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](question/server.md#question-data-storage). To display objects that cannot be easily JSON serialized, please refer to the `pl-code` example question [element/code].
+The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in `pprint` library. **Objects to be displayed must be serializable to JSON.** For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](../question/server.md#question-data-storage). To display objects that cannot be easily JSON serialized, please refer to the `pl-code` example question [element/code].
 
 Printing Pandas DataFrames with this element is deprecated. Please use the new [`pl-dataframe`](#pl-dataframe-element) element for this purpose.
 
@@ -1977,7 +1977,7 @@ supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
 
 #### Sample element
 
-![Screenshot of the pl-variable-output element](elements/pl-variable-output.png)
+![Screenshot of the pl-variable-output element](../elements/pl-variable-output.png)
 
 ```html title="question.html"
 <pl-variable-output digits="3">
@@ -2164,7 +2164,7 @@ Displays results from externally-graded questions.
 
 #### Details
 
-It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-results).
+It expects results to follow [the reference schema for external grading results](../externalGrading.md#grading-results).
 
 #### Example Implementations
 
@@ -2173,7 +2173,7 @@ It expects results to follow [the reference schema for external grading results]
 
 #### See also
 
-- [External Grading Reference Schema](externalGrading.md#grading-results)
+- [External Grading Reference Schema](../externalGrading.md#grading-results)
 
 ---
 
@@ -2415,7 +2415,7 @@ Select the correct answer from a drop-down **select** menu list of potential ans
 
 #### Sample element
 
-![Screenshot of the pl-dropdown element](elements/pl-dropdown.png)
+![Screenshot of the pl-dropdown element](../elements/pl-dropdown.png)
 
 ```html title="question.html"
 <p>Select the correct word in the following quotes:</p>
@@ -2506,7 +2506,7 @@ The provided `script-name` corresponds to a file located within the director for
 
 #### See also
 
-- [PrairieDraw graphics documentation](PrairieDraw.md)
+- [PrairieDraw graphics documentation](../PrairieDraw.md)
 
 ### `pl-threejs` element
 
@@ -2518,7 +2518,7 @@ This element displays a 3D scene with objects that the student can (optionally) 
 
 #### Sample element
 
-![Screenshot of the pl-threejs element](elements/pl-threejs.png)
+![Screenshot of the pl-threejs element](../elements/pl-threejs.png)
 
 ```html title="question.html"
 <pl-threejs answer-name="a">
