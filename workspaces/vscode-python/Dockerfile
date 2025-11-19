@@ -19,14 +19,13 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python and required packages via uv.
 # This is a prerequisite for the VS Code extensions in the following steps.
 USER coder
 WORKDIR "/home/coder"
 
-COPY requirements.txt /
-
+# Install Python and required packages via uv.
 # /home/coder/.venv/bin/python3 -> /home/coder/.local/bin/python3 -> /home/coder/.local/share/uv/python/*/bin/python3.10
+COPY requirements.txt /
 RUN curl -LO https://astral.sh/uv/install.sh \
     && sh install.sh && rm install.sh \
     && source "$HOME/.local/bin/env" \
