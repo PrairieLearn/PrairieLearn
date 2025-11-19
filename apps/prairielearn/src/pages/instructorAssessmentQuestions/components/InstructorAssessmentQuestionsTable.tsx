@@ -372,7 +372,7 @@ export function InstructorAssessmentQuestionsTable({
         alternativeGroup.alternatives?.splice(numberInAlternativeGroup, 1);
 
         // If only one alternative remains, convert it back to a regular question
-        if (alternativeGroup.alternatives && alternativeGroup.alternatives.length === 1) {
+        if (alternativeGroup.alternatives?.length === 1) {
           const remainingAlternative = alternativeGroup.alternatives[0];
           // Merge the remaining alternative's properties into the question
           zone.questions[alternativeGroupNumber - 1] = {

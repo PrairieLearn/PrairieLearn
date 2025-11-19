@@ -11,15 +11,15 @@ import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { formatJsonWithPrettier } from '../lib/prettier.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import * as courseDB from '../sync/course-db.js';
 import { updateCourseRepo } from '../models/update-course-repo.js';
-
 import { filterZones } from '../pages/instructorAssessmentQuestions/instructorAssessmentQuestions.js';
+import * as courseDB from '../sync/course-db.js';
+
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
-import { formatJsonWithPrettier } from '../lib/prettier.js';
 
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 const baseDir = tmp.dirSync().name;
@@ -111,7 +111,7 @@ describe('Editing assessment questions', () => {
     assert.equal(questionsPageResponse.status, 200);
   });
 
-  test.sequential('test filterZones function with all example course assessments', async () => {
+  test.sequential('verify filterZones function with all example course assessments', async () => {
     const courseData = await courseDB.loadFullCourse(null, EXAMPLE_COURSE_PATH);
 
     for (const courseInstanceData of Object.values(courseData.courseInstances)) {
@@ -120,7 +120,7 @@ describe('Editing assessment questions', () => {
         if (!assessment) {
           continue;
         }
-        const zones = assessment.zones || [];
+        const zones = assessment.zones;
 
         const filteredZones = filterZones(zones, assessment);
         const formattedZones = await formatJsonWithPrettier(JSON.stringify(filteredZones));
