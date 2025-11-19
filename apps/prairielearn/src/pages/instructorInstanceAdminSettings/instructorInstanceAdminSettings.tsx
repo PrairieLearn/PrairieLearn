@@ -16,7 +16,7 @@ import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstance
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import {
   CourseInstanceCopyEditor,
@@ -50,9 +50,14 @@ router.get(
       course,
       institution,
       has_enhanced_navigation,
-    } = getCourseInstanceContext(res.locals, 'instructor');
-    const pageContext = getPageContext(res.locals);
-    const { plainUrlPrefix } = pageContext;
+      authz_data,
+      urlPrefix,
+      navPage,
+      __csrf_token,
+    } = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
 
     const shortNames = await sqldb.queryRows(sql.short_names, { course_id: course.id }, z.string());
     const enrollmentCount = await sqldb.queryRow(
@@ -61,12 +66,9 @@ router.get(
       z.number(),
     );
     const host = getCanonicalHost(req);
-    const studentLink = new URL(`${plainUrlPrefix}/course_instance/${courseInstance.id}`, host)
+    const studentLink = new URL(`/pl/course_instance/${courseInstance.id}`, host).href;
+    const publicLink = new URL(`/pl/public/course_instance/${courseInstance.id}/assessments`, host)
       .href;
-    const publicLink = new URL(
-      `${plainUrlPrefix}/public/course_instance/${courseInstance.id}/assessments`,
-      host,
-    ).href;
 
     const selfEnrollLink = new URL(
       getSelfEnrollmentLinkUrl({
@@ -96,7 +98,6 @@ router.get(
       `courseInstances/${courseInstance.short_name}`,
     );
 
-    const { authz_data } = pageContext;
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
 
     const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
@@ -119,17 +120,17 @@ router.get(
             <CourseInstanceSyncErrorsAndWarnings
               authzData={{
                 has_course_instance_permission_edit:
-                  pageContext.authz_data.has_course_instance_permission_edit ?? false,
+                  authz_data.has_course_instance_permission_edit ?? false,
               }}
               courseInstance={courseInstance}
               course={course}
-              urlPrefix={pageContext.urlPrefix}
+              urlPrefix={urlPrefix}
             />
             <Hydrate>
               <InstructorInstanceAdminSettings
-                csrfToken={pageContext.__csrf_token}
-                urlPrefix={pageContext.urlPrefix}
-                navPage={pageContext.navPage}
+                csrfToken={__csrf_token}
+                urlPrefix={urlPrefix}
+                navPage={navPage}
                 hasEnhancedNavigation={has_enhanced_navigation}
                 canEdit={canEdit}
                 courseInstance={courseInstance}
@@ -149,7 +150,7 @@ router.get(
               <DeleteCourseInstanceModal
                 shortName={courseInstance.short_name}
                 enrolledCount={enrollmentCount}
-                csrfToken={pageContext.__csrf_token}
+                csrfToken={__csrf_token}
               />
             </Hydrate>
           </>
@@ -189,10 +190,7 @@ router.post(
         'Course instance copied successfully. You are new viewing your copy of the course instance.',
       );
       res.redirect(
-        res.locals.plainUrlPrefix +
-          '/course_instance/' +
-          courseInstance.id +
-          '/instructor/instance_admin/settings',
+        '/pl/course_instance/' + courseInstance.id + '/instructor/instance_admin/settings',
       );
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
@@ -202,15 +200,18 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-        res.redirect(
-          `${res.locals.plainUrlPrefix}/course/${res.locals.course.id}/course_admin/instances`,
-        );
+        res.redirect(`/pl/course/${res.locals.course.id}/course_admin/instances`);
       } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'update_configuration') {
-      const { course_instance: courseInstanceContext, course: courseContext } =
-        getCourseInstanceContext(res.locals, 'instructor');
+      const { course_instance: courseInstanceContext, course: courseContext } = extractPageContext(
+        res.locals,
+        {
+          pageType: 'courseInstance',
+          accessType: 'instructor',
+        },
+      );
       const infoCourseInstancePath = path.join(
         courseContext.path,
         'courseInstances',
@@ -298,7 +299,10 @@ router.post(
         course_instance: courseInstance,
         course,
         institution,
-      } = getCourseInstanceContext(res.locals, 'instructor');
+      } = extractPageContext(res.locals, {
+        pageType: 'courseInstance',
+        accessType: 'instructor',
+      });
       const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
         institution_id: institution.id,
         course_id: course.id,

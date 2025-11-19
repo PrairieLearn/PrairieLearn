@@ -19,8 +19,7 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const locals: Record<string, any> = {};
-locals.siteUrl = 'http://localhost:' + config.serverPort;
+const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';

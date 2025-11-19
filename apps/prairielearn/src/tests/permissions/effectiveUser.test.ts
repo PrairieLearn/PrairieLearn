@@ -28,8 +28,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 describe('effective user', { timeout: 60_000 }, function () {
   let courseInstance: CourseInstance;
 
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.pageUrlTestCourse = `${context.baseUrl}/course/1`;
   context.pageUrlExampleCourse = `${context.baseUrl}/course/2`;
@@ -218,7 +217,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_date=1900-01-19T00:00:01; pl2_requested_uid=student@example.com',
+          'pl_test_user=test_instructor; pl2_requested_date=1950-01-19T00:00:01; pl2_requested_uid=student@example.com',
       };
       const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
       assert.equal(res.status, 200);
@@ -230,7 +229,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_date=1700-01-19T00:00:01; pl2_requested_uid=student@example.com',
+          'pl_test_user=test_instructor; pl2_requested_date=1890-01-19T00:00:01; pl2_requested_uid=student@example.com',
       };
       const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
       assert.equal(res.status, 403);

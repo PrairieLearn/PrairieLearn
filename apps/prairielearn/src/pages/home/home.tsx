@@ -5,25 +5,30 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
-import { buildAuthzData } from '../../lib/authz-data.js';
-import { getPageContext } from '../../lib/client/page-context.js';
+import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { assertNever } from '../../lib/types.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByUid,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
 
-import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
+import {
+  Home,
+  InstructorHomePageCourseSchema,
+  StudentHomePageCourseSchema,
+  StudentHomePageCourseWithExtensionSchema,
+} from './home.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -51,23 +56,61 @@ router.get(
       InstructorHomePageCourseSchema,
     );
 
-    const studentCourses = await queryRows(
-      sql.select_student_courses,
-      {
-        // Use the authenticated user, not the authorized user.
-        user_id: res.locals.authn_user.user_id,
-        pending_uid: res.locals.authn_user.uid,
-        req_date: res.locals.req_date,
-        // This is a somewhat ugly escape hatch specifically for load testing. In
-        // general, we don't want to clutter the home page with example course
-        // enrollments, but for load testing we want to enroll a large number of
-        // users in the example course and then have them find the example course
-        // on the home page. So, you'd make a request like this:
-        // `/pl?include_example_course_enrollments=true`
-        include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
-      },
-      StudentHomePageCourseSchema,
-    );
+    // Query parameters for student courses
+    const studentCourseParams = {
+      // Use the authenticated user, not the authorized user.
+      user_id: res.locals.authn_user.user_id,
+      pending_uid: res.locals.authn_user.uid,
+      // This is a somewhat ugly escape hatch specifically for load testing. In
+      // general, we don't want to clutter the home page with example course
+      // enrollments, but for load testing we want to enroll a large number of
+      // users in the example course and then have them find the example course
+      // on the home page. So, you'd make a request like this:
+      // `/pl?include_example_course_enrollments=true`
+      include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
+    };
+
+    // Run both legacy and modern publishing queries
+    const [legacyStudentCourses, allModernStudentCourses] = await Promise.all([
+      queryRows(
+        sql.select_student_courses_legacy_access,
+        { ...studentCourseParams, req_date: res.locals.req_date },
+        StudentHomePageCourseSchema,
+      ),
+      queryRows(
+        sql.select_student_courses_modern_publishing,
+        studentCourseParams,
+        StudentHomePageCourseWithExtensionSchema,
+      ),
+    ]);
+
+    const modernStudentCourses = allModernStudentCourses.filter((entry) => {
+      const startDate = entry.course_instance.publishing_start_date;
+      const endDate = run(() => {
+        if (entry.course_instance.publishing_end_date == null) {
+          return null;
+        }
+
+        if (
+          entry.latest_publishing_extension == null ||
+          entry.course_instance.publishing_end_date > entry.latest_publishing_extension.end_date
+        ) {
+          return entry.course_instance.publishing_end_date;
+        }
+
+        return entry.latest_publishing_extension.end_date;
+      });
+
+      return (
+        startDate !== null &&
+        endDate !== null &&
+        startDate < res.locals.req_date &&
+        res.locals.req_date < endDate
+      );
+    });
+
+    // Modern publishing courses show above legacy courses in the list
+    const studentCourses = [...modernStudentCourses, ...legacyStudentCourses];
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
@@ -75,7 +118,9 @@ router.get(
       StaffInstitutionSchema,
     );
 
-    const { authn_provider_name, __csrf_token, urlPrefix } = getPageContext(res.locals, {
+    const { authn_provider_name, __csrf_token, urlPrefix } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'student',
       withAuthzData: false,
     });
 
@@ -134,21 +179,22 @@ router.post(
 
     const {
       authn_user: { uid, user_id: userId },
-    } = getPageContext(res.locals, { withAuthzData: false });
-
-    // TODO: Authenticate this access better (model functions for course instances)
-    const courseInstance = await selectCourseInstanceById(body.course_instance_id);
-
-    const { authzData } = await buildAuthzData({
-      authn_user: res.locals.authn_user,
-      course_id: courseInstance.course_id,
-      course_instance_id: courseInstance.id,
-      is_administrator: res.locals.is_administrator,
-      ip: req.ip ?? null,
-      req_date: res.locals.req_date,
+    } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'student',
+      withAuthzData: false,
     });
 
-    if (authzData === null) {
+    const { authzData, courseInstance } = await constructCourseOrInstanceContext({
+      user: res.locals.authn_user,
+      course_id: null,
+      course_instance_id: body.course_instance_id,
+      ip: req.ip ?? null,
+      req_date: res.locals.req_date,
+      is_administrator: res.locals.is_administrator,
+    });
+
+    if (authzData === null || courseInstance === null) {
       throw new HttpStatusError(403, 'Access denied');
     }
 

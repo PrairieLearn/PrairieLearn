@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/ui",
-  "version": "1.1.1",
+  "version": "1.3.0",
   "type": "module",
   "repository": {
     "type": "git",
@@ -13,7 +13,8 @@
   },
   "scripts": {
     "build": "tsc && tscp",
-    "dev": "tsc --watch --preserveWatchOutput & tscp --watch"
+    "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "@prairielearn/browser-utils": "workspace:^",
@@ -26,8 +27,9 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.18.8",
+    "@types/node": "^22.19.0",
     "typescript": "^5.9.3",
-    "typescript-cp": "^0.1.9"
+    "typescript-cp": "^0.1.9",
+    "vitest": "^4.0.7"
   }
 }

@@ -7,6 +7,8 @@ import { type StaffTopic } from '../../../lib/client/safe-db-types.js';
 import { type Topic } from '../../../lib/db-types.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
 
+import { type EditTopicModalState, EditTopicsModal } from './EditTopicModal.js';
+
 const emptyTopic: Topic = {
   color: '',
   course_id: '',
@@ -30,43 +32,44 @@ export function InstructorCourseAdminTopicsTable({
   csrfToken: string;
 }) {
   const [editMode, setEditMode] = useState(false);
-  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(emptyTopic);
   const [topicsState, setTopicsState] = useState<Topic[]>(topics);
-  const [addTopic, setAddTopic] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [modalState, setModalState] = useState<EditTopicModalState>({ type: 'closed' });
 
-  const handleOpenEditModal = (topicIndex: number) => {
-    setAddTopic(false);
-    setSelectedTopic({ ...topicsState[topicIndex], implicit: false });
-    setShowModal(true);
+  const handleCreateTopic = () => {
+    setModalState({
+      type: 'create',
+      topic: {
+        ...emptyTopic,
+        // This ID won't be used on the server; it's just a temporary unique identifier.
+        id: crypto.randomUUID(),
+        // Pick a random initial color.
+        color: ColorJsonSchema.options[Math.floor(Math.random() * ColorJsonSchema.options.length)],
+      },
+    });
   };
 
-  const handleModalUpdate = () => {
-    if (addTopic) {
-      setTopicsState((prevTopics) => [...prevTopics, selectedTopic!]);
-    } else {
-      setTopicsState((prevTopics) =>
-        prevTopics.map((topic) =>
-          topic.id === selectedTopic?.id ? { ...topic, ...selectedTopic } : topic,
-        ),
-      );
+  const handleEditTopic = (topicIndex: number) => {
+    setModalState({
+      type: 'edit',
+      topic: {
+        ...topicsState[topicIndex],
+        // Once a topic is edited, it is no longer implicit.
+        implicit: false,
+      },
+    });
+  };
+
+  const handleSaveTopic = (topic: Topic) => {
+    if (modalState.type === 'create') {
+      setTopicsState((prevTopics) => [...prevTopics, topic]);
+    } else if (modalState.type === 'edit') {
+      setTopicsState((prevTopics) => prevTopics.map((t) => (t.id === topic.id ? topic : t)));
     }
-    setShowModal(false);
+    setModalState({ type: 'closed' });
   };
 
   const handleDeleteTopic = (deleteTopicId: string) => {
     setTopicsState((prevTopics) => prevTopics.filter((topic) => topic.id !== deleteTopicId));
-  };
-
-  const handleNewTopic = () => {
-    setAddTopic(true);
-    setSelectedTopic({
-      ...emptyTopic,
-      id: crypto.randomUUID(),
-      // Pick a random initial color.
-      color: ColorJsonSchema.options[Math.floor(Math.random() * ColorJsonSchema.options.length)],
-    });
-    setShowModal(true);
   };
 
   return (
@@ -135,7 +138,7 @@ export function InstructorCourseAdminTopicsTable({
                             class="btn btn-sm btn-ghost"
                             type="button"
                             aria-label={`Edit topic ${topic.name}`}
-                            onClick={() => handleOpenEditModal(index)}
+                            onClick={() => handleEditTopic(index)}
                           >
                             <i class="fa fa-edit" aria-hidden="true" />
                           </button>
@@ -164,7 +167,7 @@ export function InstructorCourseAdminTopicsTable({
               {editMode ? (
                 <tr>
                   <td colSpan={5}>
-                    <button class="btn btn-sm btn-ghost" type="button" onClick={handleNewTopic}>
+                    <button class="btn btn-sm btn-ghost" type="button" onClick={handleCreateTopic}>
                       <i class="fa fa-plus" aria-hidden="true" /> New Topic
                     </button>
                   </td>
@@ -177,13 +180,9 @@ export function InstructorCourseAdminTopicsTable({
         </div>
       </div>
       <EditTagsTopicsModal
-        show={showModal}
-        selectedData={selectedTopic}
-        setSelectedData={setSelectedTopic}
-        dataType="topic"
-        setShowModal={setShowModal}
-        handleModalUpdate={handleModalUpdate}
-        add={addTopic}
+        state={modalState}
+        onClose={() => setModalState({ type: 'closed' })}
+        onSave={handleSaveTopic}
       />
     </>
   );

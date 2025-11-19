@@ -1,13 +1,16 @@
 import asyncHandler from 'express-async-handler';
 
-import { getCourseInstanceContext } from '../lib/client/page-context.js';
+import { extractPageContext } from '../lib/client/page-context.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
   // The user will already be denied access if they are impersonating another user that is not enrolled in the course instance.
 
   // Check if the user needs an enrollment code to access the course instance.
-  const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+  const { course_instance: courseInstance } = extractPageContext(res.locals, {
+    pageType: 'courseInstance',
+    accessType: 'instructor',
+  });
 
   // Skip if user already has student access with enrollment
   if (res.locals.authz_data.authn_has_student_access_with_enrollment) {
@@ -71,7 +74,7 @@ export default asyncHandler(async (req, res, next) => {
   }
 
   // If user is blocked, don't redirect them to enrollment code page
-  if (existingEnrollment && existingEnrollment.status === 'blocked') {
+  if (existingEnrollment?.status === 'blocked') {
     // TODO: Show nice error page
     next();
     return;

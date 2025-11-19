@@ -10,8 +10,9 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { getUrl } from '../../lib/url.js';
@@ -29,11 +30,14 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/data.json',
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     if (!pageContext.authz_data.has_course_instance_permission_view) {
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance } = pageContext;
     const students = await queryRows(
       sql.select_users_and_enrollments_for_course_instance,
       { course_instance_id: courseInstance.id },
@@ -46,11 +50,18 @@ router.get(
 router.get(
   '/enrollment.json',
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
+    if (req.accepts('html')) {
+      throw new HttpStatusError(406, 'Not Acceptable');
+    }
+
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     if (!pageContext.authz_data.has_course_instance_permission_view) {
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance } = pageContext;
     const { uid } = req.query;
     if (typeof uid !== 'string') {
       throw new HttpStatusError(400, 'UID must be a string');
@@ -69,13 +80,19 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
-    if (!pageContext.authz_data.has_course_instance_permission_edit) {
-      res.status(403).json({ error: 'Access denied (must be an instructor)' });
-      return;
+    if (req.accepts('html')) {
+      throw new HttpStatusError(406, 'Not Acceptable');
     }
 
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
+    if (!pageContext.authz_data.has_course_instance_permission_edit) {
+      throw new HttpStatusError(403, 'Access denied (must be an instructor)');
+    }
+
+    const { course_instance: courseInstance } = pageContext;
 
     const BodySchema = z.object({
       uid: z.string().min(1),
@@ -86,8 +103,7 @@ router.post(
     const user = await selectOptionalUserByUid(body.uid);
 
     if (user == null) {
-      res.status(400).json({ error: 'User not found' });
-      return;
+      throw new HttpStatusError(400, 'User not found');
     }
 
     const isInstructor = await callRow(
@@ -97,8 +113,7 @@ router.post(
     );
 
     if (isInstructor) {
-      res.status(400).json({ error: 'The user is an instructor' });
-      return;
+      throw new HttpStatusError(400, 'The user is an instructor');
     }
 
     // Try to find an existing enrollment so we can error gracefully.
@@ -111,13 +126,11 @@ router.post(
 
     if (existingEnrollment) {
       if (existingEnrollment.status === 'joined') {
-        res.status(400).json({ error: 'The user is already enrolled' });
-        return;
+        throw new HttpStatusError(400, 'The user is already enrolled');
       }
 
       if (existingEnrollment.status === 'invited') {
-        res.status(400).json({ error: 'The user has an existing invitation' });
-        return;
+        throw new HttpStatusError(400, 'The user has an existing invitation');
       }
     }
 
@@ -130,7 +143,7 @@ router.post(
 
     const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
 
-    res.json({ ok: true, data: staffEnrollment });
+    res.json({ data: staffEnrollment });
   }),
 );
 
@@ -141,13 +154,12 @@ router.get(
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     const { authz_data, urlPrefix, __csrf_token: csrfToken } = pageContext;
-    const {
-      course_instance: courseInstance,
-      course,
-      institution,
-    } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance, course, institution } = pageContext;
 
     const search = getUrl(req).search;
 
@@ -211,7 +223,7 @@ router.get(
             <Hydrate fullHeight>
               <InstructorStudents
                 enrollmentManagementEnabled={enrollmentManagementEnabled}
-                isDevMode={process.env.NODE_ENV === 'development'}
+                isDevMode={config.devMode}
                 authzData={authz_data}
                 students={students}
                 search={search}

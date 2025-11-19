@@ -1,5 +1,11 @@
 # @prairielearn/utils
 
+## 2.0.3
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
 ## 2.0.2
 
 ### Patch Changes

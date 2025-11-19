@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 
-import { formatDateYMDHM } from '@prairielearn/formatter';
+import { formatDate, formatDateYMDHM } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
@@ -101,43 +101,25 @@ export function InstructorCourseAdminInstances({
                     <tr>
                       <th>Long Name</th>
                       <th>CIID</th>
-                      <th id="earliest-access-date">
-                        Earliest Access Date
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-light"
-                          aria-label="Information about Earliest Access Date"
-                          data-bs-toggle="popover"
-                          data-bs-container="body"
-                          data-bs-placement="bottom"
-                          data-bs-html="true"
-                          data-bs-title="Earliest Access Date"
-                          data-bs-content="${PopoverStartDate()}"
-                        >
-                          <i class="far fa-question-circle" aria-hidden="true"></i>
-                        </button>
-                      </th>
-                      <th id="latest-access-date">
-                        Latest Access Date
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-light"
-                          aria-label="Information about Latest Access Date"
-                          data-bs-toggle="popover"
-                          data-bs-container="body"
-                          data-bs-placement="bottom"
-                          data-bs-html="true"
-                          data-bs-title="Latest Access Date"
-                          data-bs-content="${PopoverEndDate()}"
-                        >
-                          <i class="far fa-question-circle" aria-hidden="true"></i>
-                        </button>
-                      </th>
+                      <th>Start date</th>
+                      <th>End date</th>
                       <th>Students</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${courseInstances.map((row) => {
+                      const isLegacyStartDate = row.start_date !== null;
+                      const isLegacyEndDate = row.end_date !== null;
+                      const startDate = row.publishing_start_date
+                        ? `${formatDate(row.publishing_start_date, row.display_timezone)}`
+                        : row.start_date
+                          ? `${formatDate(row.start_date, row.display_timezone)}`
+                          : '—';
+                      const endDate = row.publishing_end_date
+                        ? `${formatDate(row.publishing_end_date, row.display_timezone)}`
+                        : row.end_date
+                          ? `${formatDate(row.end_date, row.display_timezone)}`
+                          : '—';
                       return html`
                         <tr>
                           <td class="align-left">
@@ -152,14 +134,51 @@ export function InstructorCourseAdminInstances({
                                     output: row.sync_warnings,
                                   })
                                 : ''}
-                            <a
-                              href="${resLocals.plainUrlPrefix}/course_instance/${row.id}/instructor/instance_admin"
+                            <a href="/pl/course_instance/${row.id}/instructor/instance_admin"
                               >${row.long_name}</a
                             >
                           </td>
                           <td class="align-left">${row.short_name}</td>
-                          <td class="align-left">${row.formatted_start_date}</td>
-                          <td class="align-left">${row.formatted_end_date}</td>
+                          <td class="align-left">
+                            ${startDate}
+                            ${isLegacyStartDate
+                              ? html`
+                                  <button
+                                    type="button"
+                                    class="btn btn-xs btn-ghost"
+                                    aria-label="Information about Start date"
+                                    data-bs-toggle="popover"
+                                    data-bs-container="body"
+                                    data-bs-placement="bottom"
+                                    data-bs-html="true"
+                                    data-bs-title="Earliest Access Date"
+                                    data-bs-content="${PopoverStartDate()}"
+                                  >
+                                    <i class="far fa-question-circle" aria-hidden="true"></i>
+                                  </button>
+                                `
+                              : ''}
+                          </td>
+                          <td class="align-left">
+                            ${endDate}
+                            ${isLegacyEndDate
+                              ? html`
+                                  <button
+                                    type="button"
+                                    class="btn btn-xs btn-ghost"
+                                    aria-label="Information about End date"
+                                    data-bs-toggle="popover"
+                                    data-bs-container="body"
+                                    data-bs-placement="bottom"
+                                    data-bs-html="true"
+                                    data-bs-title="Latest Access Date"
+                                    data-bs-content="${PopoverEndDate()}"
+                                  >
+                                    <i class="far fa-question-circle" aria-hidden="true"></i>
+                                  </button>
+                                `
+                              : ''}
+                          </td>
                           <td class="align-middle">${row.enrollment_count}</td>
                         </tr>
                       `;
