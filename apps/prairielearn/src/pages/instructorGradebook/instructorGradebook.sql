@@ -3,7 +3,9 @@ SELECT
   a.id AS assessment_id,
   a.number AS assessment_number,
   aset.number AS assessment_set_number,
+  aset.id AS assessment_set_id,
   aset.color,
+  aset.heading AS assessment_set_heading,
   (aset.abbreviation || a.number) AS label
 FROM
   assessments AS a

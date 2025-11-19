@@ -13,6 +13,8 @@ export const CourseAssessmentRowSchema = z.object({
   assessment_id: AssessmentSchema.shape.id,
   assessment_number: AssessmentSchema.shape.number,
   assessment_set_number: AssessmentSetSchema.shape.number,
+  assessment_set_id: AssessmentSetSchema.shape.id,
+  assessment_set_heading: z.string(),
   color: AssessmentSetSchema.shape.color,
   label: z.string(),
 });

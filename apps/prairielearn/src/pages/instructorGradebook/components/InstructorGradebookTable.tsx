@@ -161,6 +161,19 @@ function GradebookTable({
     initialData: initialGradebookRows,
   });
 
+  const assessmentsBySet = useMemo(() => {
+    const groups = new Map<string, CourseAssessmentRow[]>();
+    const headingById = new Map<string, string>();
+    courseAssessments.forEach((assessment) => {
+      const id = assessment.assessment_set_id.toString();
+      const list = groups.get(id) ?? [];
+      list.push(assessment);
+      groups.set(id, list);
+      headingById.set(id, assessment.assessment_set_heading);
+    });
+    return { groups, headingById };
+  }, [courseAssessments]);
+
   const columns = useMemo(
     () => [
       columnHelper.accessor('uid', {
@@ -236,60 +249,69 @@ function GradebookTable({
       }),
 
       // Dynamic assessment columns
-      ...courseAssessments.map((assessment) =>
-        columnHelper.accessor(
-          (row) => {
-            const data = row.scores[assessment.assessment_id];
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-            return data ? data.score_perc : null;
-          },
-          {
-            id: `assessment_${assessment.assessment_id}`,
-            size: 100,
-            minSize: 100,
-            maxSize: 120,
-            meta: {
-              label: assessment.label,
-            },
-            header: () => (
-              <a href={`${urlPrefix}/assessment/${assessment.assessment_id}`}>
-                <span class={clsx('badge', `color-${assessment.color}`)} title={assessment.label}>
-                  {assessment.label}
-                </span>
-              </a>
-            ),
-            cell: (info) => {
-              const score = info.getValue();
-              const row = info.row.original;
-              const assessmentData = row.scores[assessment.assessment_id];
-
-              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-              if (score == null || !assessmentData?.assessment_instance_id) {
-                return '—';
-              }
-
-              return (
-                <span class="text-nowrap">
-                  <a
-                    href={`${urlPrefix}/assessment_instance/${assessmentData.assessment_instance_id}`}
-                  >
-                    {Math.floor(score)}%
+      ...Array.from(assessmentsBySet.groups.entries()).map(([setId, assessments]) =>
+        columnHelper.group({
+          id: `group_${setId}`,
+          header: assessmentsBySet.headingById.get(setId) ?? 'Unknown',
+          columns: assessments.map((assessment) =>
+            columnHelper.accessor(
+              (row) => {
+                const data = row.scores[assessment.assessment_id];
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                return data ? data.score_perc : null;
+              },
+              {
+                id: `assessment_${assessment.assessment_id}`,
+                size: 100,
+                minSize: 100,
+                maxSize: 120,
+                meta: {
+                  label: assessment.label,
+                },
+                header: () => (
+                  <a href={`${urlPrefix}/assessment/${assessment.assessment_id}`}>
+                    <span
+                      class={clsx('badge', `color-${assessment.color}`)}
+                      title={assessment.label}
+                    >
+                      {assessment.label}
+                    </span>
                   </a>
-                  <EditScoreButton
-                    assessmentInstanceId={assessmentData.assessment_instance_id}
-                    currentScore={score}
-                    otherUsers={assessmentData.uid_other_users_group}
-                    csrfToken={csrfToken}
-                  />
-                </span>
-              );
-            },
-            filterFn: numericColumnFilterFn,
-          },
-        ),
+                ),
+                cell: (info) => {
+                  const score = info.getValue();
+                  const row = info.row.original;
+                  const assessmentData = row.scores[assessment.assessment_id];
+
+                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                  if (score == null || !assessmentData?.assessment_instance_id) {
+                    return '—';
+                  }
+
+                  return (
+                    <span class="text-nowrap">
+                      <a
+                        href={`${urlPrefix}/assessment_instance/${assessmentData.assessment_instance_id}`}
+                      >
+                        {Math.floor(score)}%
+                      </a>
+                      <EditScoreButton
+                        assessmentInstanceId={assessmentData.assessment_instance_id}
+                        currentScore={score}
+                        otherUsers={assessmentData.uid_other_users_group}
+                        csrfToken={csrfToken}
+                      />
+                    </span>
+                  );
+                },
+                filterFn: numericColumnFilterFn,
+              },
+            ),
+          ),
+        }),
       ),
     ],
-    [courseAssessments, urlPrefix, csrfToken],
+    [assessmentsBySet, urlPrefix, csrfToken],
   );
 
   const allColumnIds = columns.map((col) => col.id!);
