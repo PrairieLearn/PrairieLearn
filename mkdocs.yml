@@ -340,7 +340,6 @@ not_in_nav: |
   elements/pl-dropdown.md
   elements/pl-threejs.md
   elements/pl-variable-score.md
-  elements/llm-context.md
 
 validation:
   omitted_files: warn
