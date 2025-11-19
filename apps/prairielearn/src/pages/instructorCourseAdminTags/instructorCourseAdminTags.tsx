@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -13,16 +12,15 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { TagsTopicsTable } from '../../components/TagsTopicsTable.js';
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffTagSchema } from '../../lib/client/safe-db-types.js';
-import { selectTagsByCourseId } from '../../models/tags.js';
-import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { TagSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-
-import { InstructorCourseAdminTagsTable } from './components/InstructorCourseAdminTagsTable.js';
+import { selectTagsByCourseId } from '../../models/tags.js';
 
 const router = Router();
 
@@ -36,20 +34,19 @@ router.get(
     const tags = await selectTagsByCourseId(pageContext.course.id);
 
     const courseInfoExists = await fs.pathExists(
-      path.join(res.locals.course.path, 'infoCourse.json'),
+      path.join(pageContext.course.path, 'infoCourse.json'),
     );
     let origHash: string | null = null;
     if (courseInfoExists) {
       origHash = sha256(
         b64EncodeUnicode(
-          await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
+          await fs.readFile(path.join(pageContext.course.path, 'infoCourse.json'), 'utf8'),
         ),
       ).toString();
     }
 
     const allowEdit =
-      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
-    const StaffTags = z.array(StaffTagSchema).parse(tags);
+      pageContext.authz_data.has_course_permission_edit && !pageContext.course.example_course;
 
     res.send(
       PageLayout({
@@ -71,7 +68,13 @@ router.get(
               urlPrefix={pageContext.urlPrefix}
             />
             <Hydrate>
-              <InstructorCourseAdminTagsTable tags={z.array(StaffTagSchema).parse(tags)} />
+              <TagsTopicsTable
+                data={z.array(StaffTagSchema).parse(tags)}
+                dataType="tag"
+                allowEdit={allowEdit}
+                origHash={origHash}
+                csrfToken={pageContext.__csrf_token}
+              />
             </Hydrate>
           </>
         ),
@@ -91,7 +94,7 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied. Cannot make changes to example course.');
     }
 
-    if (req.body.__action === 'save_tags') {
+    if (req.body.__action === 'save_data') {
       if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
@@ -104,7 +107,7 @@ router.post(
       const body = z
         .object({
           orig_hash: z.string(),
-          tags: z.string().transform((s) =>
+          data: z.string().transform((s) =>
             z
               .array(
                 TagSchema.pick({
@@ -121,7 +124,7 @@ router.post(
         .parse(req.body);
 
       const origHash = body.orig_hash;
-      const resolveTags = body.tags
+      const resolveTags = body.data
         .map((tag) => {
           if (tag.implicit) {
             return;

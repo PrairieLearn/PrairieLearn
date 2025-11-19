@@ -8,29 +8,29 @@ import { ColorJsonSchema } from '../schemas/infoCourse.js';
 import { TagBadge } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
-export type EditTopicModalState =
+export type EditTagsTopicsModalState =
   | { type: 'closed' }
-  | { type: 'create'; topic: Topic }
-  | { type: 'edit'; topic: Topic };
+  | { type: 'create'; dataType: 'topic' | 'tag'; data: Topic | Tag }
+  | { type: 'edit'; dataType: 'topic' | 'tag'; data: Topic | Tag };
 
-interface EditTopicModalProps {
-  state: EditTopicModalState;
+interface EditTagsTopicsModalProps {
+  state: EditTagsTopicsModalState;
   onClose: () => void;
   onSave: (topic: Topic) => void;
 }
 
-export function EditTopicsModal({ state, onClose, onSave }: EditTopicModalProps) {
+export function EditTagsTopicsModal({ state, onClose, onSave }: EditTagsTopicsModalProps) {
   // Extract the topic to edit/create, or null if closed
-  const topicToEdit =
-    state.type === 'create' ? state.topic : state.type === 'edit' ? state.topic : null;
+  const dataToEdit =
+    state.type === 'create' ? state.data : state.type === 'edit' ? state.data : null;
 
-  const [formData, setFormData] = useState<Topic | null>(topicToEdit);
+  const [formData, setFormData] = useState<Topic | null>(dataToEdit);
   const [invalidName, setInvalidName] = useState(false);
   const [invalidColor, setInvalidColor] = useState(false);
 
   function handleModalEntering() {
-    if (!topicToEdit) return;
-    setFormData(topicToEdit);
+    if (!dataToEdit) return;
+    setFormData(dataToEdit);
     setInvalidName(false);
     setInvalidColor(false);
   }
@@ -57,6 +57,7 @@ export function EditTopicsModal({ state, onClose, onSave }: EditTopicModalProps)
 
   const isOpen = state.type !== 'closed';
   const isCreateMode = state.type === 'create';
+  const dataTypeLabel = state.type !== 'closed' ? state.dataType.toUpperCase() : '';
 
   return (
     <Modal
@@ -72,12 +73,21 @@ export function EditTopicsModal({ state, onClose, onSave }: EditTopicModalProps)
         {formData ? (
           <>
             <div class="d-flex flex-column align-items-center mb-4">
-              <TopicBadge
-                topic={{
-                  name: formData.name || 'Topic preview',
-                  color: formData.color,
-                }}
-              />
+              {state.type !== 'closed' && state.dataType === 'topic' ? (
+                <TopicBadge
+                  topic={{
+                    name: formData.name || 'Topic preview',
+                    color: formData.color,
+                  }}
+                />
+              ) : (
+                <TagBadge
+                  tag={{
+                    name: formData.name || 'Tag preview',
+                    color: formData.color,
+                  }}
+                />
+              )}
             </div>
             <div class="mb-3">
               <label class="form-label" for="name">
@@ -86,7 +96,7 @@ export function EditTopicsModal({ state, onClose, onSave }: EditTopicModalProps)
               <input
                 type="text"
                 class={clsx('form-control', invalidName && 'is-invalid')}
-                id="topicName"
+                id="name"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({
@@ -104,7 +114,7 @@ export function EditTopicsModal({ state, onClose, onSave }: EditTopicModalProps)
               <div class="d-flex gap-2 align-items-center">
                 <select
                   class={clsx('form-select', invalidColor && 'is-invalid')}
-                  id="topicColor"
+                  id="color"
                   value={formData.color}
                   onChange={(e) =>
                     setFormData({
@@ -150,7 +160,7 @@ export function EditTopicsModal({ state, onClose, onSave }: EditTopicModalProps)
               <input
                 type="text"
                 class="form-control"
-                id="topicDescription"
+                id="description"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({
