@@ -10,7 +10,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'preact/compat';
+import { useMemo, useRef, useState } from 'preact/compat';
 import {
   Alert,
   Button,
@@ -32,12 +32,7 @@ import {
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
-import {
-  NuqsAdapter,
-  parseAsColumnPinningState,
-  parseAsColumnVisibilityStateWithColumns,
-  parseAsSortingState,
-} from '../../lib/client/nuqs.js';
+import { NuqsAdapter, parseAsSortingState, parseAsTableState } from '../../lib/client/nuqs.js';
 import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
@@ -173,10 +168,6 @@ function StudentsCard({
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
     parseAsSortingState.withDefault(DEFAULT_SORT),
-  );
-  const [columnPinning, setColumnPinning] = useQueryState(
-    'frozen',
-    parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
   const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryState(
     'status',
@@ -320,10 +311,51 @@ function StudentsCard({
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
   const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
-  const [columnVisibility, setColumnVisibility] = useQueryState(
-    'columns',
-    parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
+
+  const defaultTableState = useMemo(
+    () => ({
+      visibility: defaultColumnVisibility,
+      pinning: DEFAULT_PINNING,
+      order: allColumnIds,
+    }),
+    [allColumnIds, defaultColumnVisibility],
   );
+
+  const defaultTableStateRef = useRef(defaultTableState);
+  defaultTableStateRef.current = defaultTableState;
+
+  const [tableState, setTableState] = useQueryState(
+    'columns',
+    parseAsTableState(allColumnIds, defaultTableStateRef).withDefault(defaultTableState),
+  );
+
+  const columnVisibility = tableState.visibility;
+  const columnPinning = tableState.pinning;
+  const columnOrder = tableState.order;
+
+  const setColumnVisibility = (updaterOrValue: any) => {
+    void setTableState((prev) => {
+      const newVisibility =
+        typeof updaterOrValue === 'function' ? updaterOrValue(prev.visibility) : updaterOrValue;
+      return { ...prev, visibility: newVisibility };
+    });
+  };
+
+  const setColumnPinning = (updaterOrValue: any) => {
+    void setTableState((prev) => {
+      const newPinning =
+        typeof updaterOrValue === 'function' ? updaterOrValue(prev.pinning) : updaterOrValue;
+      return { ...prev, pinning: newPinning };
+    });
+  };
+
+  const setColumnOrder = (updaterOrValue: any) => {
+    void setTableState((prev) => {
+      const newOrder =
+        typeof updaterOrValue === 'function' ? updaterOrValue(prev.order) : updaterOrValue;
+      return { ...prev, order: newOrder };
+    });
+  };
 
   const table = useReactTable({
     data: students,
@@ -337,6 +369,7 @@ function StudentsCard({
       columnSizing,
       columnVisibility,
       columnPinning,
+      columnOrder,
     },
     initialState: {
       columnPinning: DEFAULT_PINNING,
@@ -347,6 +380,7 @@ function StudentsCard({
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
+    onColumnOrderChange: setColumnOrder,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

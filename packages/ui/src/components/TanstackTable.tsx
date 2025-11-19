@@ -2,7 +2,8 @@ import {
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -11,6 +12,7 @@ import {
   SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -104,16 +106,18 @@ function ResizeHandle<RowDataModel>({
           e.stopPropagation();
           header.getResizeHandler()(e);
         }}
-        onMouseUp={(e) => {
+        onPointerDown={(e) => {
+          // Prevent dnd-kit from starting a drag
           e.stopPropagation();
+        }}
+        onMouseUp={() => {
           if (onResizeEnd) onResizeEnd();
         }}
         onTouchStart={(e) => {
           e.stopPropagation();
           header.getResizeHandler()(e);
         }}
-        onTouchEnd={(e) => {
-          e.stopPropagation();
+        onTouchEnd={() => {
           if (onResizeEnd) onResizeEnd();
         }}
         onKeyDown={(e) => {
@@ -200,6 +204,7 @@ function SortableTableHeader<RowDataModel>({
     transition,
     opacity: isDragging ? 0.5 : 1,
     cursor: 'default', // Default cursor, resize handle and sort button will override
+    touchAction: 'none',
   };
 
   return (
@@ -234,6 +239,12 @@ function SortableTableHeader<RowDataModel>({
               : undefined
           }
           onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+          onPointerDown={(e) => {
+            // If we are dragging, we don't want to trigger the sort
+            if (isDragging) {
+              e.preventDefault();
+            }
+          }}
           onKeyDown={
             canSort
               ? (e) => {
@@ -412,12 +423,20 @@ export function TanstackTable<RowDataModel>({
   const totalCount = table.getCoreRowModel().rows.length;
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 5,
       },
     }),
-    useSensor(KeyboardSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
