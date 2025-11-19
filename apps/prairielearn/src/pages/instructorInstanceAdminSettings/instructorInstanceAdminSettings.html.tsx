@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import type { NavPage } from '../../components/Navbar.types.js';
-import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
+import type { PageContext } from '../../lib/client/page-context.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
@@ -36,8 +36,8 @@ export function InstructorInstanceAdminSettings({
   navPage: NavPage;
   hasEnhancedNavigation: boolean;
   canEdit: boolean;
-  courseInstance: StaffCourseInstanceContext['course_instance'];
-  institution: StaffCourseInstanceContext['institution'];
+  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
+  institution: PageContext<'courseInstance', 'instructor'>['institution'];
   shortNames: string[];
   availableTimezones: Timezone[];
   origHash: string;

@@ -24,7 +24,7 @@ import {
   parseAsNumericFilter,
   parseAsSortingState,
 } from '../../../../lib/client/nuqs.js';
-import type { StaffCourseInstanceContext } from '../../../../lib/client/page-context.js';
+import type { PageContext } from '../../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
   StaffAssessmentQuestion,
@@ -58,8 +58,8 @@ const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 
 export interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
-  course: StaffCourseInstanceContext['course'];
-  courseInstance: StaffCourseInstanceContext['course_instance'];
+  course: PageContext<'assessmentQuestion', 'instructor'>['course'];
+  courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
@@ -349,7 +349,12 @@ export function AssessmentQuestionTable({
 
   // Use a ref to store the current default so the parser always uses the latest value
   // This is pretty hacky, but @reteps couldn't figure out a better way to do this.
+  //
+  // We update the ref during rendering because we need it to be up to date before we
+  // run the `useEffect()` hook that updates column visibility in response to the
+  // AI grading mode changing.
   const defaultColumnVisibilityRef = useRef(defaultColumnVisibility);
+  defaultColumnVisibilityRef.current = defaultColumnVisibility;
 
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
@@ -357,11 +362,6 @@ export function AssessmentQuestionTable({
       defaultColumnVisibility,
     ),
   );
-
-  // useEffect(() => {
-  //   defaultColumnVisibilityRef.current = defaultColumnVisibility;
-  //   // Super hacky, we need to update the ref when the column visibility changes for some reason.
-  // }, [defaultColumnVisibility, columnVisibility]);
 
   // Update column visibility when AI grading mode changes
   useEffect(() => {
@@ -372,17 +372,10 @@ export function AssessmentQuestionTable({
       assigned_grader_name: !aiGradingMode,
       score_perc: !aiGradingMode,
       // Show these columns in AI grading mode
-      instance_question_group_name: aiGradingMode,
+      instance_question_group_name: aiGradingMode && instanceQuestionGroups.length > 0,
       rubric_difference: aiGradingMode,
     }));
-  }, [aiGradingMode, setColumnVisibility]);
-
-  console.log(
-    'columnVisibility',
-    Object.entries(columnVisibility)
-      .filter(([_, value]) => value)
-      .map(([key]) => key),
-  );
+  }, [aiGradingMode, instanceQuestionGroups, setColumnVisibility]);
 
   const table = useReactTable({
     data: instanceQuestionsInfo,
@@ -633,8 +626,9 @@ export function AssessmentQuestionTable({
             {aiGradingMode ? (
               <>
                 <Dropdown>
-                  <Dropdown.Toggle variant="light" size="sm">
-                    <i class="bi bi-stars" aria-hidden="true" /> AI grading
+                  <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
+                    <i class="bi bi-stars" aria-hidden="true" />
+                    <span>AI grading</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
@@ -683,7 +677,8 @@ export function AssessmentQuestionTable({
                 </Dropdown>
                 <Dropdown>
                   <Dropdown.Toggle variant="light" size="sm">
-                    <i class="bi bi-stars" aria-hidden="true" /> AI submission grouping
+                    <i class="bi bi-stars" aria-hidden="true" />
+                    <span class="d-none d-sm-inline">AI submission grouping</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
                     <Dropdown.Item

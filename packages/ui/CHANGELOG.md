@@ -1,5 +1,15 @@
 # @prairielearn/ui
 
+## 1.3.0
+
+### Minor Changes
+
+- 3b54dda: Refine styling of `<CategoricalColumnFilter>`
+
+### Patch Changes
+
+- 9f5a05f: Improve UI of `TanstackTable` and `TanstackTableCard`
+
 ## 1.2.0
 
 ### Minor Changes

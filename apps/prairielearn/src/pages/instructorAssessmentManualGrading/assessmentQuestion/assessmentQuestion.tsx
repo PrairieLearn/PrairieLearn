@@ -1,10 +1,15 @@
 import { Router } from 'express';
 import z from 'zod';
 
+import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
+import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
+import { PageLayout } from '../../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
@@ -20,6 +25,7 @@ import {
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
+import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
@@ -32,7 +38,7 @@ import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
-import { AssessmentQuestion } from './assessmentQuestion.html.js';
+import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
 
 const router = Router();
@@ -75,20 +81,83 @@ router.get(
       res.locals.assessment_question,
     );
 
+    const {
+      authz_data,
+      urlPrefix,
+      __csrf_token,
+      course_instance,
+      course,
+      question,
+      assessment_question,
+      assessment,
+      num_open_instances,
+      number_in_alternative_group,
+    } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+    const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
+    const search = getUrl(req).search;
+
     res.send(
-      AssessmentQuestion({
+      PageLayout({
         resLocals: res.locals,
-        courseStaff,
-        aiGradingEnabled,
-        aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
-        aiGradingStats:
-          aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
-            ? await calculateAiGradingStats(res.locals.assessment_question)
-            : null,
-        instanceQuestionGroups,
-        rubric_data,
-        instanceQuestionsInfo,
-        search: getUrl(req).search,
+        pageTitle: 'Manual Grading',
+        navContext: {
+          type: 'instructor',
+          page: 'assessment',
+          subPage: 'manual_grading',
+        },
+        options: {
+          fullWidth: true,
+          pageNote: `Question ${number_in_alternative_group}`,
+        },
+        headContent: compiledStylesheetTag('tanstackTable.css'),
+        content: (
+          <>
+            <AssessmentSyncErrorsAndWarnings
+              authzData={authz_data}
+              assessment={assessment}
+              courseInstance={course_instance}
+              course={course}
+              urlPrefix={urlPrefix}
+            />
+            <AssessmentOpenInstancesAlert
+              numOpenInstances={num_open_instances}
+              assessmentId={assessment.id}
+              urlPrefix={urlPrefix}
+            />
+
+            <Hydrate>
+              <AssessmentQuestionManualGrading
+                hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+                search={search}
+                instanceQuestionsInfo={instanceQuestionsInfo}
+                course={course}
+                courseInstance={course_instance}
+                urlPrefix={urlPrefix}
+                csrfToken={__csrf_token}
+                assessment={assessment}
+                assessmentQuestion={assessment_question}
+                questionQid={question.qid!}
+                aiGradingEnabled={aiGradingEnabled}
+                initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
+                rubricData={rubric_data}
+                instanceQuestionGroups={instanceQuestionGroups}
+                courseStaff={courseStaff}
+                aiGradingStats={
+                  aiGradingEnabled && assessment_question.ai_grading_mode
+                    ? await calculateAiGradingStats(assessment_question)
+                    : null
+                }
+                numOpenInstances={num_open_instances}
+                isDevMode={process.env.NODE_ENV === 'development'}
+                questionTitle={question.title ?? ''}
+                questionNumber={Number(number_in_alternative_group)}
+              />
+            </Hydrate>
+          </>
+        ),
       }),
     );
   }),
@@ -167,14 +236,13 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
-    if (req.accepts('html')) {
-      throw new error.HttpStatusError(406, 'Not Acceptable');
-    }
-
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     // TODO: parse req.body with Zod
+    if (req.accepts('html') && req.body.__action !== 'modify_rubric_settings') {
+      throw new error.HttpStatusError(406, 'Not Acceptable');
+    }
 
     if (req.body.__action === 'set_ai_grading_mode') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
@@ -219,6 +287,10 @@ router.post(
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
+
+        if (typeof req.body.closed_instance_questions_only !== 'boolean') {
+          throw new error.HttpStatusError(400, 'closed_instance_questions_only must be a boolean');
+        }
 
         const job_sequence_id = await aiInstanceQuestionGrouping({
           question: res.locals.question,

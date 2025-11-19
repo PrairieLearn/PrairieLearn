@@ -1,6 +1,7 @@
 import { type Row, type Table, createColumnHelper } from '@tanstack/react-table';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import { numericColumnFilterFn } from '@prairielearn/ui';
 
 import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
@@ -69,6 +70,8 @@ export function createColumns({
           type="checkbox"
           checked={table.getIsAllRowsSelected()}
           indeterminate={table.getIsSomeRowsSelected()}
+          // Prevent browser from autocompleting the checkbox value when you return to the page.
+          autocomplete="off"
           onChange={table.getToggleAllRowsSelectedHandler()}
         />
       ),
@@ -90,7 +93,7 @@ export function createColumns({
       cell: (info) => {
         const row = info.row.original;
         return (
-          <div>
+          <div class="d-flex align-items-center gap-2">
             <a
               href={`${urlPrefix}/assessment/${assessment.id}/manual_grading/instance_question/${row.instance_question.id}`}
             >
@@ -99,18 +102,32 @@ export function createColumns({
             {row.open_issue_count ? (
               <OverlayTrigger
                 overlay={
-                  <Tooltip>
+                  <Tooltip id={`open-issues-${row.instance_question.id}`}>
                     Instance question has {row.open_issue_count} open{' '}
                     {row.open_issue_count > 1 ? 'issues' : 'issue'}
                   </Tooltip>
                 }
               >
-                <span class="badge rounded-pill text-bg-danger ms-2">{row.open_issue_count}</span>
+                <button class="btn btn-danger badge rounded-pill">{row.open_issue_count}</button>
               </OverlayTrigger>
             ) : null}
             {row.assessment_open ? (
               <OverlayTrigger overlay={<Tooltip>Assessment instance is still open</Tooltip>}>
-                <i class="fas fa-exclamation-triangle text-warning ms-2" />
+                <button
+                  // This is a tricky case: we need an interactive element to trigger the tooltip
+                  // for keyboard users, but we don't want it to be announced as a button by screen
+                  // readers. So we give it role="status" to indicate that it's just a status indicator.
+                  // It's possible there are better ways to handle this?
+                  // eslint-disable-next-line jsx-a11y-x/no-interactive-element-to-noninteractive-role
+                  role="status"
+                  class="btn btn-xs btn-ghost"
+                  aria-label="Assessment instance is still open"
+                >
+                  <i
+                    class="fas fa-exclamation-triangle fa-width-auto text-warning"
+                    aria-hidden="true"
+                  />
+                </button>
               </OverlayTrigger>
             ) : null}
           </div>
@@ -123,6 +140,7 @@ export function createColumns({
       id: 'instance_question_group_name',
       header: 'Submission group',
       cell: (info) => {
+        const row = info.row.original;
         const value = info.getValue();
         if (!value) {
           return <span class="text-secondary">No Group</span>;
@@ -133,11 +151,15 @@ export function createColumns({
             {value}
             {group && (
               <OverlayTrigger
-                overlay={<Tooltip>{group.instance_question_group_description}</Tooltip>}
+                overlay={
+                  <Tooltip id={`group-description-${row.instance_question.id}`}>
+                    {group.instance_question_group_description}
+                  </Tooltip>
+                }
               >
-                <span>
-                  <i class="fas fa-circle-info text-secondary" />
-                </span>
+                <button class="btn btn-xs btn-ghost" aria-label="Group description">
+                  <i class="fas fa-circle-info fa-width-auto text-secondary" aria-hidden="true" />
+                </button>
               </OverlayTrigger>
             )}
           </span>
@@ -286,7 +308,6 @@ export function createColumns({
       filterFn: (row, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
         const current = row.getValue<InstanceQuestionRow['last_grader_name']>(columnId);
-        if (!current) return filterValues.includes('Unassigned');
         const rowData = row.original;
 
         if (rowData.instance_question.ai_grading_status !== 'None') {
@@ -294,7 +315,28 @@ export function createColumns({
           if (filterValues.includes(aiGraderName)) return true;
         }
 
+        if (!current) return filterValues.includes('Unassigned');
+
         return filterValues.includes(current);
+      },
+      sortingFn: (rowA, rowB) => {
+        const aAiGradingStatus = rowA.original.instance_question.ai_grading_status;
+        const bAiGradingStatus = rowB.original.instance_question.ai_grading_status;
+
+        const aiGradingStatusOrder = {
+          None: 0,
+          Graded: 1,
+          LatestRubric: 2,
+          OutdatedRubric: 3,
+        };
+
+        if (aAiGradingStatus !== bAiGradingStatus) {
+          return aiGradingStatusOrder[aAiGradingStatus] - aiGradingStatusOrder[bAiGradingStatus];
+        }
+
+        const aLastHumanGrader = rowA.original.instance_question.last_human_grader ?? '';
+        const bLastHumanGrader = rowB.original.instance_question.last_human_grader ?? '';
+        return aLastHumanGrader.localeCompare(bLastHumanGrader);
       },
     }),
 
@@ -365,21 +407,16 @@ export function createColumns({
         );
       },
       sortingFn: (rowA, rowB) => {
-        const aDiff = rowA.original.instance_question.point_difference;
-        const bDiff = rowB.original.instance_question.point_difference;
+        const aDiff = run(() => {
+          if (rowA.original.instance_question.rubric_difference == null) return -1;
+          return rowA.original.instance_question.rubric_difference.length;
+        });
+        const bDiff = run(() => {
+          if (rowB.original.instance_question.rubric_difference == null) return -1;
+          return rowB.original.instance_question.rubric_difference.length;
+        });
 
-        if (aDiff === null && bDiff === null) return 0;
-        if (aDiff === null) return 1;
-        if (bDiff === null) return -1;
-
-        const aRubricDiff = rowA.original.instance_question.rubric_difference?.length ?? 0;
-        const bRubricDiff = rowB.original.instance_question.rubric_difference?.length ?? 0;
-
-        if (aRubricDiff !== bRubricDiff) {
-          return aRubricDiff - bRubricDiff;
-        }
-
-        return Math.abs(aDiff) - Math.abs(bDiff);
+        return aDiff - bDiff;
       },
       enableHiding: aiGradingMode,
     }),

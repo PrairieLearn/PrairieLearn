@@ -91,75 +91,35 @@ export function NumericInputColumnFilter({
           aria-hidden="true"
         />
       </Dropdown.Toggle>
-      <Dropdown.Menu>
+      <Dropdown.Menu
+        // eslint-disable-next-line @eslint-react/no-forbidden-props
+        className="p-0"
+      >
         <div class="p-3" style={{ minWidth: '240px' }}>
-          <label class="form-label small fw-semibold mb-2">{columnLabel}</label>
-
-          {allowEmptyFilter && (
-            <div class="form-check mb-3">
-              <input
-                type="checkbox"
-                class="form-check-input"
-                id={`${columnId}-empty-filter`}
-                checked={emptyFilterChecked}
-                onChange={(e) => {
-                  if (e.target instanceof HTMLInputElement) {
-                    handleEmptyFilterChange(e.target.checked);
-                  }
-                }}
-                onClick={(e) => e.stopPropagation()}
-              />
-              <label class="form-check-label small" for={`${columnId}-empty-filter`}>
-                Only empty
-              </label>
-            </div>
-          )}
-
-          <InputGroup size="sm" onClick={(e) => e.stopPropagation()}>
-            <input
-              type="text"
-              class={clsx('form-control form-control-sm', isInvalid && 'is-invalid')}
-              placeholder="e.g., >0, <5, =10"
-              value={localValue}
-              disabled={emptyFilterChecked}
-              onInput={(e) => {
-                if (e.target instanceof HTMLInputElement) {
-                  handleInputChange(e.target.value);
-                }
-              }}
-            />
-            {!emptyFilterChecked && (
-              <OverlayTrigger
-                placement="top"
-                overlay={
-                  <Tooltip>
-                    <div class="text-start">
-                      <strong>Use operators:</strong>
-                      <br />
-                      <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>,{' '}
-                      <code>=</code>
-                      <br />
-                      <strong>Examples:</strong>
-                      <br />
-                      <code>&gt;5</code> or <code>&lt;=10</code>
-                    </div>
-                  </Tooltip>
-                }
-              >
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary"
-                  aria-label="Filter help"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <i class="bi bi-question-circle" aria-hidden="true" />
-                </button>
-              </OverlayTrigger>
-            )}
-          </InputGroup>
+          <label class="form-label fw-semibold mb-2">{columnLabel}</label>
+          <input
+            type="text"
+            class={clsx('form-control form-control-sm', isInvalid && 'is-invalid')}
+            placeholder="e.g., >0, <5, =10"
+            value={value}
+            onInput={(e) => {
+              if (e.target instanceof HTMLInputElement) {
+                onChange(e.target.value);
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
           {isInvalid && (
             <div class="invalid-feedback d-block">
               Invalid filter format. Use operators like <code>&gt;5</code> or <code>&lt;=10</code>
+            </div>
+          )}
+          {!isInvalid && (
+            <div class="form-text small">
+              Use operators: <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>,{' '}
+              <code>&gt;=</code>, <code>=</code>
+              <br />
+              Example: <code>&gt;5</code> or <code>&lt;=10</code>
             </div>
           )}
           {hasActiveFilter && (

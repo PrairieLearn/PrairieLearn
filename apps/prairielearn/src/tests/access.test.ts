@@ -10,7 +10,7 @@ import { config } from '../lib/config.js';
 import { InstanceQuestionSchema, UserSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
-import { ensureEnrollment } from '../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
 
@@ -117,7 +117,7 @@ describe('Access control', { timeout: 20000 }, function () {
   describe('3. Enroll student user into testCourse', function () {
     it('should succeed', async () => {
       const courseInstance = await selectCourseInstanceById('1');
-      await ensureEnrollment({
+      await ensureUncheckedEnrollment({
         userId: user.user_id,
         courseInstance,
         requestedRole: 'System',

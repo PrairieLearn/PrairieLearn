@@ -82,7 +82,7 @@ export function RubricItemsFilter({
               <small class="text-muted text-nowrap">
                 {item.points > 0 ? `+${item.points}` : item.points} pts
               </small>
-              <span class="badge bg-secondary">{rubricItemUsage.get(item.id) ?? 0}</span>
+              <span class="ms-auto badge bg-secondary">{rubricItemUsage.get(item.id) ?? 0}</span>
             </div>
           </Dropdown.Item>
         ))}
