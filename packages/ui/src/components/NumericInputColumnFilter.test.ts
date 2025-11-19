@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  numericColumnFilterFn,
-  numericColumnFilterFnWithEmpty,
-  parseNumericFilter,
-} from './NumericInputColumnFilter.js';
+import { numericColumnFilterFn, parseNumericFilter } from './NumericInputColumnFilter.js';
 
 describe('parseNumericFilter', () => {
   it('should parse equals operator', () => {
@@ -62,79 +58,93 @@ describe('numericColumnFilterFn', () => {
   });
 
   it('should filter with equals operator', () => {
-    expect(numericColumnFilterFn(createMockRow(5), 'col', '5')).toBe(true);
-    expect(numericColumnFilterFn(createMockRow(5), 'col', '=5')).toBe(true);
-    expect(numericColumnFilterFn(createMockRow(5), 'col', '4')).toBe(false);
+    expect(
+      numericColumnFilterFn(createMockRow(5), 'col', { filterValue: '5', emptyOnly: false }),
+    ).toBe(true);
+    expect(
+      numericColumnFilterFn(createMockRow(5), 'col', { filterValue: '=5', emptyOnly: false }),
+    ).toBe(true);
+    expect(
+      numericColumnFilterFn(createMockRow(5), 'col', { filterValue: '4', emptyOnly: false }),
+    ).toBe(false);
   });
 
   it('should filter with less than operator', () => {
-    expect(numericColumnFilterFn(createMockRow(3), 'col', '<5')).toBe(true);
-    expect(numericColumnFilterFn(createMockRow(5), 'col', '<5')).toBe(false);
-    expect(numericColumnFilterFn(createMockRow(7), 'col', '<5')).toBe(false);
+    expect(
+      numericColumnFilterFn(createMockRow(3), 'col', { filterValue: '<5', emptyOnly: false }),
+    ).toBe(true);
+    expect(
+      numericColumnFilterFn(createMockRow(5), 'col', { filterValue: '<5', emptyOnly: false }),
+    ).toBe(false);
+    expect(
+      numericColumnFilterFn(createMockRow(7), 'col', { filterValue: '<5', emptyOnly: false }),
+    ).toBe(false);
   });
 
   it('should filter with greater than operator', () => {
-    expect(numericColumnFilterFn(createMockRow(7), 'col', '>5')).toBe(true);
-    expect(numericColumnFilterFn(createMockRow(5), 'col', '>5')).toBe(false);
-    expect(numericColumnFilterFn(createMockRow(3), 'col', '>5')).toBe(false);
+    expect(
+      numericColumnFilterFn(createMockRow(7), 'col', { filterValue: '>5', emptyOnly: false }),
+    ).toBe(true);
+    expect(
+      numericColumnFilterFn(createMockRow(5), 'col', { filterValue: '>5', emptyOnly: false }),
+    ).toBe(false);
+    expect(
+      numericColumnFilterFn(createMockRow(3), 'col', { filterValue: '>5', emptyOnly: false }),
+    ).toBe(false);
   });
 
   it('should filter with less than or equal operator', () => {
-    expect(numericColumnFilterFn(createMockRow(3), 'col', '<=5')).toBe(true);
-    expect(numericColumnFilterFn(createMockRow(5), 'col', '<=5')).toBe(true);
-    expect(numericColumnFilterFn(createMockRow(7), 'col', '<=5')).toBe(false);
+    expect(
+      numericColumnFilterFn(createMockRow(3), 'col', { filterValue: '<=5', emptyOnly: false }),
+    ).toBe(true);
+    expect(
+      numericColumnFilterFn(createMockRow(5), 'col', { filterValue: '<=5', emptyOnly: false }),
+    ).toBe(true);
+    expect(
+      numericColumnFilterFn(createMockRow(7), 'col', { filterValue: '<=5', emptyOnly: false }),
+    ).toBe(false);
   });
 
   it('should filter with greater than or equal operator', () => {
-    expect(numericColumnFilterFn(createMockRow(7), 'col', '>=5')).toBe(true);
-    expect(numericColumnFilterFn(createMockRow(5), 'col', '>=5')).toBe(true);
-    expect(numericColumnFilterFn(createMockRow(3), 'col', '>=5')).toBe(false);
+    expect(
+      numericColumnFilterFn(createMockRow(7), 'col', { filterValue: '>=5', emptyOnly: false }),
+    ).toBe(true);
+    expect(
+      numericColumnFilterFn(createMockRow(5), 'col', { filterValue: '>=5', emptyOnly: false }),
+    ).toBe(true);
+    expect(
+      numericColumnFilterFn(createMockRow(3), 'col', { filterValue: '>=5', emptyOnly: false }),
+    ).toBe(false);
   });
 
   it('should return true for invalid or empty filter', () => {
-    expect(numericColumnFilterFn(createMockRow(5), 'col', '')).toBe(true);
-    expect(numericColumnFilterFn(createMockRow(5), 'col', 'invalid')).toBe(true);
+    expect(
+      numericColumnFilterFn(createMockRow(5), 'col', { filterValue: '', emptyOnly: false }),
+    ).toBe(true);
+    expect(
+      numericColumnFilterFn(createMockRow(5), 'col', { filterValue: 'invalid', emptyOnly: false }),
+    ).toBe(true);
   });
 
   it('should return false for null values when filter is active', () => {
-    expect(numericColumnFilterFn(createMockRow(null), 'col', '>5')).toBe(false);
+    expect(
+      numericColumnFilterFn(createMockRow(null), 'col', { filterValue: '>5', emptyOnly: false }),
+    ).toBe(false);
   });
 
   it('should return true for null values when filter is empty', () => {
-    expect(numericColumnFilterFn(createMockRow(null), 'col', '')).toBe(true);
-  });
-});
-
-describe('numericColumnFilterFnWithEmpty', () => {
-  const createMockRow = (value: number | null) => ({
-    getValue: () => value,
-  });
-
-  it('should filter with numeric filter as string', () => {
-    expect(numericColumnFilterFnWithEmpty(createMockRow(7), 'col', '>5')).toBe(true);
-    expect(numericColumnFilterFnWithEmpty(createMockRow(3), 'col', '>5')).toBe(false);
-  });
-
-  it('should filter with numeric filter as object', () => {
     expect(
-      numericColumnFilterFnWithEmpty(createMockRow(7), 'col', { numeric: '>5', emptyOnly: false }),
+      numericColumnFilterFn(createMockRow(null), 'col', { filterValue: '', emptyOnly: false }),
     ).toBe(true);
-    expect(
-      numericColumnFilterFnWithEmpty(createMockRow(3), 'col', { numeric: '>5', emptyOnly: false }),
-    ).toBe(false);
   });
-
-  it('should show only empty values when emptyOnly is true', () => {
+  it('should return true for null values when emptyOnly is true', () => {
     expect(
-      numericColumnFilterFnWithEmpty(createMockRow(null), 'col', { numeric: '', emptyOnly: true }),
+      numericColumnFilterFn(createMockRow(null), 'col', { filterValue: '', emptyOnly: true }),
     ).toBe(true);
-    expect(
-      numericColumnFilterFnWithEmpty(createMockRow(5), 'col', { numeric: '', emptyOnly: true }),
-    ).toBe(false);
   });
-
-  it('should return true for all when no filter is applied', () => {
-    expect(numericColumnFilterFnWithEmpty(createMockRow(5), 'col', '')).toBe(true);
-    expect(numericColumnFilterFnWithEmpty(createMockRow(null), 'col', '')).toBe(true);
+  it('should return false for set values when emptyOnly is true', () => {
+    expect(
+      numericColumnFilterFn(createMockRow(5), 'col', { filterValue: '', emptyOnly: true }),
+    ).toBe(false);
   });
 });

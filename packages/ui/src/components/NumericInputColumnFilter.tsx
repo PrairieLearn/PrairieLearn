@@ -1,9 +1,6 @@
 import clsx from 'clsx';
-import { useEffect, useState } from 'preact/compat';
+import { useState } from 'preact/compat';
 import Dropdown from 'react-bootstrap/Dropdown';
-import InputGroup from 'react-bootstrap/InputGroup';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
 
 interface NumericInputColumnFilterProps {
   columnId: string;
@@ -25,47 +22,19 @@ interface NumericInputColumnFilterProps {
  * @param params.columnLabel - The label of the column, e.g. "Manual Points"
  * @param params.value - The current filter value (e.g., ">5" or "10")
  * @param params.onChange - Callback when the filter value changes
- * @param params.allowEmptyFilter - If true, shows a checkbox to filter for only null/empty values
- * @param params.emptyFilterChecked - Whether the "Only empty" checkbox is checked
- * @param params.onEmptyFilterChange - Callback when the "Only empty" checkbox changes
  */
 export function NumericInputColumnFilter({
   columnId,
   columnLabel,
   value,
   onChange,
-  allowEmptyFilter = false,
-  emptyFilterChecked = false,
-  onEmptyFilterChange,
 }: NumericInputColumnFilterProps) {
   // Use local state for smooth typing experience
   const [localValue, setLocalValue] = useState(value);
-
-  // Sync local state with prop when prop changes (e.g., when filter is cleared externally)
-  // This is a valid pattern for inputs that need responsive UX while staying in sync with external state
-  // eslint-disable-next-line react-you-might-not-need-an-effect/no-unnecessary-use-effect
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
+  const [emptyFilterChecked, setEmptyFilterChecked] = useState(false);
 
   const hasActiveFilter = localValue.trim().length > 0 || emptyFilterChecked;
   const isInvalid = localValue.trim().length > 0 && parseNumericFilter(localValue) === null;
-
-  const handleInputChange = (newValue: string) => {
-    setLocalValue(newValue);
-    onChange(newValue);
-  };
-
-  const handleEmptyFilterChange = (checked: boolean) => {
-    if (onEmptyFilterChange) {
-      onEmptyFilterChange(checked);
-    }
-    // Clear numeric filter when "Only empty" is checked
-    if (checked && localValue.trim().length > 0) {
-      setLocalValue('');
-      onChange('');
-    }
-  };
 
   return (
     <Dropdown align="end">
@@ -129,9 +98,7 @@ export function NumericInputColumnFilter({
               onClick={() => {
                 setLocalValue('');
                 onChange('');
-                if (emptyFilterChecked && onEmptyFilterChange) {
-                  onEmptyFilterChange(false);
-                }
+                setEmptyFilterChecked(false);
               }}
             >
               Clear filter
@@ -178,61 +145,24 @@ export function parseNumericFilter(filterValue: string): {
  *   filterFn: numericColumnFilterFn,
  * }
  */
-export function numericColumnFilterFn(row: any, columnId: string, filterValue: string): boolean {
-  const parsed = parseNumericFilter(filterValue);
-  if (!parsed) return true; // Invalid or empty filter = show all
-
-  const cellValue = row.getValue(columnId) as number | null;
-  if (cellValue === null || cellValue === undefined) return false;
-
-  switch (parsed.operator) {
-    case '<':
-      return cellValue < parsed.value;
-    case '>':
-      return cellValue > parsed.value;
-    case '<=':
-      return cellValue <= parsed.value;
-    case '>=':
-      return cellValue >= parsed.value;
-    case '=':
-      return cellValue === parsed.value;
-    default:
-      return true;
-  }
-}
-
-/**
- * Enhanced filter function that supports both numeric filtering and empty/null filtering.
- * The filterValue can be either a string (for numeric comparison) or an object with
- * numeric and emptyOnly properties.
- *
- * @example
- * {
- *   id: 'score_perc',
- *   accessorKey: 'score_perc',
- *   filterFn: numericColumnFilterFnWithEmpty,
- * }
- */
-export function numericColumnFilterFnWithEmpty(
+export function numericColumnFilterFn(
   row: any,
   columnId: string,
-  filterValue: string | { numeric: string; emptyOnly: boolean },
+  {
+    filterValue,
+    emptyOnly,
+  }: { filterValue: string; emptyOnly: false } | { filterValue: ''; emptyOnly: true },
 ): boolean {
   // Handle object-based filter value
-  const numericFilter = typeof filterValue === 'string' ? filterValue : filterValue?.numeric || '';
-  const emptyOnly =
-    typeof filterValue === 'object' && filterValue !== null ? filterValue.emptyOnly : false;
-
   const cellValue = row.getValue(columnId) as number | null;
-  const isEmpty = cellValue === null || cellValue === undefined;
+  const isEmpty = cellValue == null;
 
-  // If "Only empty" is checked, show only rows with null/undefined values
   if (emptyOnly) {
     return isEmpty;
   }
 
   // If there's no numeric filter, show all rows
-  const parsed = parseNumericFilter(numericFilter);
+  const parsed = parseNumericFilter(filterValue);
   if (!parsed) return true;
 
   // If cell is empty and we're doing numeric filtering, don't show it
