@@ -40,7 +40,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.submitted_file_name = options.submitted_file_name;
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
-      this.screenshot_capture_enabled = options.screenshot_capture_enabled;
+      this.manual_upload_enabled = options.manual_upload_enabled;
 
       /** Flag representing the current state of the capture before entering crop/zoom */
       this.previousCaptureChangedFlag = false;
@@ -77,8 +77,8 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         this.listenForExternalImageCapture();
       }
 
-      if (this.screenshot_capture_enabled) {
-        this.createScreenshotUploadListener();
+      if (this.manual_upload_enabled) {
+        this.createManualUploadListener();
       }
 
       this.createCropRotateListeners();
@@ -133,25 +133,25 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
     }
 
-    createScreenshotUploadListener() {
-      const screenshotUploadButtons = this.getScreenshotUploadButtons();
-      const screenshotUploadInput = this.imageCaptureDiv.querySelector('.js-screenshot-upload-input');
+    createManualUploadListener() {
+      const manualUploadButtons = this.getManualUploadButtons();
+      const manualUploadInput = this.imageCaptureDiv.querySelector('.js-manual-upload-input');
 
       this.ensureElementsExist({
-        screenshotUploadInput
+        manualUploadInput,
       });
-      
-      for (const screenshotButton of screenshotUploadButtons) {
+
+      for (const manualUploadButton of manualUploadButtons) {
         this.ensureElementsExist({
-          screenshotButton
+          manualUploadButton,
         });
 
-        screenshotButton.addEventListener('click', () => {
-          screenshotUploadInput.click();
+        manualUploadButton.addEventListener('click', () => {
+          manualUploadInput.click();
         });
       }
 
-      screenshotUploadInput.addEventListener('change', (event) => {
+      manualUploadInput.addEventListener('change', (event) => {
         const target = event.target;
         const file = target.files && target.files[0];
         if (!file) return;
@@ -219,12 +219,13 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       return this.imageCaptureDiv.querySelectorAll('.js-capture-with-mobile-device-button');
     }
 
-    getScreenshotUploadButtons() {
-      if (!this.screenshot_capture_enabled) {
-        throw new Error('Screenshot upload is not enabled, cannot get screenshot upload buttons');
+    /** Retrieve the manual upload button elements for the horizontal and dropdown layouts. */
+    getManualUploadButtons() {
+      if (!this.manual_upload_enabled) {
+        throw new Error('Manual upload is not enabled, cannot get manual upload buttons');
       }
 
-      return this.imageCaptureDiv.querySelectorAll('.js-screenshot-upload-button');
+      return this.imageCaptureDiv.querySelectorAll('.js-manual-upload-button');
     }
 
     createCropRotateListeners() {

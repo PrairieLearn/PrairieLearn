@@ -40,7 +40,7 @@ $(function() {
     <input 
       type="file" 
       accept="image/jpeg" 
-      class="js-screenshot-upload-input"
+      class="js-manual-upload-input"
       style="display: none;"
     />
     {{/editable}}
@@ -125,15 +125,15 @@ $(function() {
           <span>Use phone</span>
         </button>
         {{/mobile_capture_enabled}}
-        {{#screenshot_capture_enabled}}
+        {{#manual_upload_enabled}}
         <button 
           type="button" 
-          class="js-screenshot-upload-button btn btn-info btn-sm"
+          class="js-manual-upload-button btn btn-info btn-sm"
         >
           <i class="bi bi-upload me-1"></i>
           <span>Upload image</span>
         </button>
-        {{/screenshot_capture_enabled}}
+        {{/manual_upload_enabled}}
       </div>
       {{#retake_menu_enabled}}
         <div class="js-capture-buttons-dropdown dropdown d-none">
@@ -168,17 +168,17 @@ $(function() {
                 </button>
               </li>
             {{/mobile_capture_enabled}}
-            {{#screenshot_capture_enabled}}
+            {{#manual_upload_enabled}}
               <li>
                 <button 
                   type="button" 
-                  class="js-screenshot-upload-button dropdown-item btn btn-sm"
+                  class="js-manual-upload-button dropdown-item btn btn-sm"
                 >
                   <i class="bi bi-upload me-1"></i>
                   <span>Upload image</span>
                 </button>
               </li>
-            {{/screenshot_capture_enabled}}
+            {{/manual_upload_enabled}}
           </ul>
         </div>
       {{/retake_menu_enabled}}

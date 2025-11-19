@@ -404,10 +404,11 @@ Provides a way for students to capture and submit an image as part of their answ
 
 #### Customizations
 
-| Attribute                | Type    | Default | description                                                                                                                                                                                                               |
-| ------------------------ | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-name`              | string  | —       | The name under which the captured image will be saved. This must end with `.jpeg` or `.jpg`, and be unique within a single question.                                                                                      |
-| `mobile-capture-enabled` | boolean | true    | When `true`, students can click "Capture with mobile device" to scan a QR code on a phone or tablet to a page where they can capture an image of their work. In most cases, this `mobile-capture-enabled` should be true. |
+| Attribute                | Type    | Default | description                                                                                                                                                                                                                                                                                            |
+| ------------------------ | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `file-name`              | string  | —       | The name under which the captured image will be saved. This must end with `.jpeg` or `.jpg`, and be unique within a single question.                                                                                                                                                                   |
+| `mobile-capture-enabled` | boolean | true    | When `true`, students can click "Capture with mobile device" to scan a QR code on a phone or tablet to a page where they can capture an image of their work. In most cases, this `mobile-capture-enabled` should be true.                                                                              |
+| `manual-upload-enabled`  | boolean | false   | When `true`, students can click "Upload image" to upload JPEG images already stored on their device. This is especially useful for students who write on a tablet and export their work as an image. In most cases, `manual-upload-enabled` should be `false` to ensure students submit original work. |
 
 #### Details
 
