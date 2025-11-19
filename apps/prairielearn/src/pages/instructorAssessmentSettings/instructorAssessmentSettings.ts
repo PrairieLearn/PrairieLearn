@@ -52,11 +52,11 @@ router.get(
     );
     const host = getCanonicalHost(req);
     const studentLink = new URL(
-      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
+      `/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
       host,
     ).href;
     const publicLink = new URL(
-      `${res.locals.plainUrlPrefix}/public/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}/questions`,
+      `/pl/public/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}/questions`,
       host,
     ).href;
     const infoAssessmentPath = encodePath(
@@ -172,7 +172,7 @@ router.post(
       if (assessmentInfo.module != null || req.body.module !== 'Default') {
         assessmentInfo.module = req.body.module;
       }
-      const normalizedText = req.body.text?.replace(/\r\n/g, '\n');
+      const normalizedText = req.body.text?.replaceAll('\r\n', '\n');
       assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, normalizedText, '');
       assessmentInfo.allowIssueReporting = propertyValueWithDefault(
         assessmentInfo.allowIssueReporting,
@@ -202,7 +202,7 @@ router.post(
         );
         assessmentInfo.honorCode = propertyValueWithDefault(
           assessmentInfo.honorCode,
-          req.body.honor_code?.replace(/\r\n/g, '\n').trim(),
+          req.body.honor_code?.replaceAll('\r\n', '\n').trim(),
           '',
         );
       }

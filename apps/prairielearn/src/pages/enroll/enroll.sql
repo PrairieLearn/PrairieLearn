@@ -1,9 +1,9 @@
--- BLOCK select_course_instances
+-- BLOCK select_course_instances_legacy_access
 SELECT
   c.short_name || ': ' || c.title || ', ' || ci.long_name AS label,
   c.short_name || ', ' || ci.long_name AS short_label,
   ci.id AS course_instance_id,
-  (e.id IS NOT NULL) AS enrolled,
+  to_jsonb(e) AS enrollment,
   users_is_instructor_in_course (u.user_id, c.id) AS instructor_access
 FROM
   users AS u
@@ -30,6 +30,8 @@ WHERE
   AND c.deleted_at IS NULL
   AND c.example_course IS FALSE
   AND check_course_instance_access (ci.id, u.uid, u.institution_id, $req_date)
+  -- The enroll page is going away. We only consider legacy courses here.
+  AND ci.modern_publishing IS FALSE
   AND (
     NOT ci.hide_in_enroll_page
     OR e.id IS NOT NULL

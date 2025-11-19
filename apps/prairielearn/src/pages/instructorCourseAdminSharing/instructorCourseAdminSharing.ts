@@ -46,10 +46,8 @@ router.get(
     );
 
     const host = getCanonicalHost(req);
-    const publicSharingLink = new URL(
-      `${res.locals.plainUrlPrefix}/public/course/${res.locals.course.id}/questions`,
-      host,
-    ).href;
+    const publicSharingLink = new URL(`/pl/public/course/${res.locals.course.id}/questions`, host)
+      .href;
 
     const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
 

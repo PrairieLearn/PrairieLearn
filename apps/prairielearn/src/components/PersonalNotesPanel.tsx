@@ -39,7 +39,7 @@ export function PersonalNotesPanel({
                   <li class="list-group-item d-flex align-items-center">
                     <a
                       class="text-break me-2"
-                      href="${config.urlPrefix}/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}"
+                      href="/pl/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}"
                       data-testid="attached-file"
                     >
                       ${file.display_filename}

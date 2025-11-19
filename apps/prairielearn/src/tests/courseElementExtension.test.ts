@@ -78,8 +78,7 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
 
     afterAll(helperServer.after);
 
-    const locals: Record<string, any> = {};
-    locals.siteUrl = 'http://localhost:' + config.serverPort;
+    const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
     locals.baseUrl = locals.siteUrl + '/pl';
     locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
     locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';

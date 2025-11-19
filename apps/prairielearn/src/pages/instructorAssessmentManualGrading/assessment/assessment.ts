@@ -44,7 +44,7 @@ router.get(
     );
     const num_open_instances = questions[0]?.num_open_instances || 0;
     const courseStaff = await selectCourseInstanceGraderStaff({
-      course_instance_id: res.locals.course_instance.id,
+      course_instance: res.locals.course_instance,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     res.send(
@@ -77,7 +77,7 @@ router.post(
       const allowedGraderIds = new Set(
         (
           await selectCourseInstanceGraderStaff({
-            course_instance_id: res.locals.course_instance.id,
+            course_instance: res.locals.course_instance,
           })
         ).map((user) => user.user_id),
       );
@@ -147,7 +147,8 @@ router.post(
         await aiGrade({
           question: row.question,
           course: res.locals.course,
-          course_instance_id: assessment.course_instance_id,
+          course_instance: res.locals.course_instance,
+          assessment,
           assessment_question: row.assessment_question,
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,

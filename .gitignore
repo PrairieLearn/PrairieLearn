@@ -1,3 +1,6 @@
+# Ignore test course draft questions to make local testing of AI question generation easier.
+/testCourse/questions/__drafts__
+
 # Development
 
 ## Custom scripts
@@ -106,6 +109,10 @@ coverage.xml
 
 ## Vitest
 .vitest-reports
+
+## Playwright
+apps/prairielearn/test-results/
+apps/prairielearn/playwright/.cache/
 
 ## TypeScript cache
 *.tsbuildinfo

@@ -68,13 +68,13 @@ export default asyncHandler(async (req, res, next) => {
 
     if (enrollment) {
       await insertAuditEvent({
-        table_name: 'enrollments',
+        tableName: 'enrollments',
         action: 'insert',
-        action_detail: 'implicit_joined',
-        row_id: enrollment.id,
-        new_row: enrollment,
-        agent_user_id: null,
-        agent_authn_user_id: null,
+        actionDetail: 'implicit_joined',
+        rowId: enrollment.id,
+        newRow: enrollment,
+        agentUserId: res.locals.user.user_id,
+        agentAuthnUserId: res.locals.authn_user.user_id,
       });
     }
 

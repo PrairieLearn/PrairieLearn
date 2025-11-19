@@ -116,18 +116,18 @@ export enum PotentialEnterpriseEnrollmentStatus {
 export async function checkPotentialEnterpriseEnrollment({
   institution,
   course,
-  course_instance,
-  authz_data,
+  courseInstance,
+  authzData,
 }: {
   institution: Institution;
   course: Course;
-  course_instance: CourseInstance;
-  authz_data: any;
+  courseInstance: CourseInstance;
+  authzData: any;
 }): Promise<PotentialEnterpriseEnrollmentStatus> {
   const hasPlanGrants = await checkPlanGrants({
     institution,
-    course_instance,
-    authz_data,
+    courseInstance,
+    authzData,
   });
 
   if (!hasPlanGrants) {
@@ -145,8 +145,8 @@ export async function checkPotentialEnterpriseEnrollment({
   // user, we would have blocked the enrollment.
   const planGrants = await getPlanGrantsForContext({
     institution_id: institution.id,
-    course_instance_id: course_instance.id,
-    user_id: authz_data.user.user_id,
+    course_instance_id: courseInstance.id,
+    user_id: authzData.user.user_id,
   });
   const planNames = getPlanNamesFromPlanGrants(planGrants);
   if (planGrantsMatchPlanFeatures(planNames, ['basic'])) {
@@ -165,11 +165,11 @@ export async function checkPotentialEnterpriseEnrollment({
     created_since: '1 year',
   });
   const courseEnrollmentCounts = await getEnrollmentCountsForCourse({
-    course_id: course_instance.course_id,
+    course_id: courseInstance.course_id,
     created_since: '1 year',
   });
   const courseInstanceEnrollmentCounts = await getEnrollmentCountsForCourseInstance(
-    course_instance.id,
+    courseInstance.id,
   );
 
   const freeInstitutionEnrollmentCount = institutionEnrollmentCounts.free;
@@ -189,7 +189,7 @@ export async function checkPotentialEnterpriseEnrollment({
   const courseYearlyEnrollmentLimit =
     course.yearly_enrollment_limit ?? institutionYearlyEnrollmentLimit;
   const courseInstanceEnrollmentLimit =
-    course_instance.enrollment_limit ??
+    courseInstance.enrollment_limit ??
     course.course_instance_enrollment_limit ??
     institution.course_instance_enrollment_limit;
 

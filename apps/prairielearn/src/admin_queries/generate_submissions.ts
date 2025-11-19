@@ -92,7 +92,7 @@ export default async function ({
         instance_question.id,
         user.user_id, // user_id
         user.user_id, // authn_user_id
-        assessment.course_instance_id,
+        courseInstance,
         assessmentCourse,
         question_course,
         { variant_seed: null },

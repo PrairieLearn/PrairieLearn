@@ -244,7 +244,7 @@ router.post(
         ),
         environment: propertyValueWithDefault(
           questionInfo.workspaceOptions?.environment,
-          JSON.parse(body.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
+          JSON.parse(body.workspace_environment?.replaceAll('\r\n', '\n') || '{}'),
           (val) => !val || Object.keys(val).length === 0,
         ),
       };
@@ -379,7 +379,7 @@ router.post(
         const editor = new QuestionCopyEditor({
           locals: res.locals as any,
           from_qid: res.locals.question.qid,
-          from_course_short_name: res.locals.course.short_name,
+          from_course: res.locals.course,
           from_path: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
           is_transfer: false,
         });

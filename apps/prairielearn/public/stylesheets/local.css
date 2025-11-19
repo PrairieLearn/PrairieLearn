@@ -335,6 +335,22 @@ a.badge {
   font-weight: 400;
 }
 
+/** override bootstrap's code styles with a github-like style */
+code {
+  color: var(--bs-body-color);
+  background: var(--bs-secondary-bg);
+  padding: 0.2em 0.4em;
+  border-radius: 6px;
+}
+
+/** However, don't use those styles for code tags in pre tags. */
+pre code {
+  color: inherit;
+  background: inherit;
+  padding: 0;
+  border-radius: 0;
+}
+
 .user-output,
 .user-output-invalid {
   display: inline;

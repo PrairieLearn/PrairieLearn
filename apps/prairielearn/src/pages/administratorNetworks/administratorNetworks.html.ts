@@ -7,7 +7,7 @@ export function AdministratorNetworks({ resLocals }) {
     resLocals,
     pageTitle: 'Exam-mode networks',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'networks',
     },

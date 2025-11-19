@@ -1,7 +1,6 @@
 import { formatDate, formatInterval } from '@prairielearn/formatter';
 import { type HtmlValue, html } from '@prairielearn/html';
 
-import { config } from '../lib/config.js';
 import {
   type Assessment,
   type AssessmentInstance,
@@ -161,12 +160,12 @@ function QuestionInfo({
 }) {
   if (question == null || variant == null) return '';
 
-  const questionPreviewUrl = `${config.urlPrefix}/${
+  const questionPreviewUrl = `/pl/${
     course_instance != null
       ? `course_instance/${course_instance.id}/instructor`
       : `course/${course.id}`
   }/question/${question.id}?variant_seed=${variant.variant_seed}`;
-  const publicPreviewUrl = `${config.urlPrefix}/public/course/${question.course_id}/question/${question.id}/preview`;
+  const publicPreviewUrl = `/pl/public/course/${question.course_id}/question/${question.id}/preview`;
 
   // We don't show the sharing name in the QID if the question is not shared
   // publicly for importing, such as if only `share_source_publicly` is set.
@@ -267,7 +266,7 @@ function AssessmentInstanceInfo({
 }) {
   if (assessment == null || assessment_instance == null) return '';
 
-  const instructorUrlPrefix = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor`;
+  const instructorUrlPrefix = `/pl/course_instance/${assessment.course_instance_id}/instructor`;
 
   // Some legacy queries still return the duration and date as a string, so parse them before formatting
   const duration =
@@ -325,7 +324,7 @@ function ManualGradingInfo({
     return '';
   }
 
-  const manualGradingUrl = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`;
+  const manualGradingUrl = `/pl/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`;
 
   return html`
     <h3 class="card-title h5">Manual grading</h3>

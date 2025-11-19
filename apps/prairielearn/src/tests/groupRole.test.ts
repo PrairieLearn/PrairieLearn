@@ -29,8 +29,7 @@ import { syncCourseData } from './sync/util.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let elemList;
-const locals: Record<string, any> = {};
-locals.siteUrl = 'http://localhost:' + config.serverPort;
+const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';

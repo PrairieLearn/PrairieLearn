@@ -52,7 +52,7 @@ router.get(
   }),
   asyncHandler(async (req, res) => {
     const courseInstances = await selectCourseInstancesWithStaffAccess({
-      course_id: res.locals.course.id,
+      course: res.locals.course,
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.is_administrator,
@@ -109,7 +109,7 @@ router.post(
       // Verify the course instance id associated with the requested course instance
       // role is valid (should such a role have been requested)
       const course_instances = await selectCourseInstancesWithStaffAccess({
-        course_id: res.locals.course.id,
+        course: res.locals.course,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,
@@ -339,7 +339,7 @@ ${given_cp_and_cip.join(',\n')}
       // reason as above (see handler for course_permissions_update_role).
 
       const course_instances = await selectCourseInstancesWithStaffAccess({
-        course_id: res.locals.course.id,
+        course: res.locals.course,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,
@@ -385,7 +385,7 @@ ${given_cp_and_cip.join(',\n')}
       // reason as above (see handler for course_permissions_update_role).
 
       const course_instances = await selectCourseInstancesWithStaffAccess({
-        course_id: res.locals.course.id,
+        course: res.locals.course,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,

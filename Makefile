@@ -34,6 +34,7 @@ python-deps: venv-setup
 
 deps:
 	@yarn
+	@yarn playwright install chromium --with-deps
 	@$(MAKE) python-deps build
 
 migrate:
@@ -77,7 +78,7 @@ start-redis:
 start-s3rver:
 	@scripts/start_s3rver.sh
 
-test: test-js test-python
+test: test-js test-python test-e2e
 test-js: start-support
 	@yarn test
 test-prairielearn-docker-smoke-tests: start-support
@@ -89,6 +90,8 @@ test-python: python-deps
 	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
+test-e2e: start-support
+	@yarn workspace @prairielearn/prairielearn run test:e2e
 
 check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
@@ -161,7 +164,7 @@ typecheck-js:
 typecheck-python: python-deps
 	@yarn pyright
 typecheck-sql:
-	@yarn postgrestools check .
+	@yarn postgres-language-server check .
 
 changeset:
 	@yarn changeset

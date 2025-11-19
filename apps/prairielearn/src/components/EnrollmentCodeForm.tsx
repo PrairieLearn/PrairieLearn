@@ -204,7 +204,11 @@ export function EnrollmentCodeForm({
     const fullCode = `${data.code1}${data.code2}${data.code3}`;
     let response: Response | null = null;
     try {
-      response = await fetch(getSelfEnrollmentLookupUrl(fullCode, courseInstanceId));
+      response = await fetch(getSelfEnrollmentLookupUrl(fullCode, courseInstanceId), {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
     } catch {
       setError('root.serverError', {
         message: 'An error occurred while looking up the code. Please try again.',

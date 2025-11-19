@@ -38,7 +38,7 @@ export async function sync(
   const questionSharingSets: { question_id: string; sharing_set_id: string }[] = [];
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
-    const dedupedQuestionSharingSetNames = new Set(question.data?.sharingSets ?? []);
+    const dedupedQuestionSharingSetNames = new Set(question.data?.sharingSets);
     const questionSharingSetIds = [...dedupedQuestionSharingSetNames].map(
       (sharingSet) => sharingSetIdsByName[sharingSet],
     );

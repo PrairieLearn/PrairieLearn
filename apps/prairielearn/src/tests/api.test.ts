@@ -120,6 +120,7 @@ describe('API', { timeout: 60_000 }, function () {
     test.sequential('GET to API for assessments fails without token', async function () {
       locals.apiUrl = locals.baseUrl + '/api/v1';
       locals.apiCourseInstanceUrl = locals.apiUrl + '/course_instances/1';
+      locals.apiPublicCourseInstanceUrl = locals.apiUrl + '/course_instances/2';
       locals.apiAssessmentsUrl = locals.apiCourseInstanceUrl + '/assessments';
       const res = await fetch(locals.apiAssessmentsUrl);
       assert.equal(res.status, 401);
@@ -347,7 +348,7 @@ describe('API', { timeout: 60_000 }, function () {
 
     test.sequential('GET to API for course instance access rules succeeds', async function () {
       locals.apiCourseInstanceAccessRulesUrl =
-        locals.apiCourseInstanceUrl + '/course_instance_access_rules';
+        locals.apiPublicCourseInstanceUrl + '/course_instance_access_rules';
       const res = await fetch(locals.apiCourseInstanceAccessRulesUrl, {
         headers: {
           'Private-Token': locals.api_token,

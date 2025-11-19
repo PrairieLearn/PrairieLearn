@@ -2,7 +2,6 @@ import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../components/HeadContents.js';
 import { Navbar } from '../components/Navbar.js';
-import { config } from '../lib/config.js';
 
 export function AccessDenied({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
@@ -26,7 +25,7 @@ export function AccessDenied({ resLocals }: { resLocals: Record<string, any> }) 
                 >
                   Go to assessments
                 </a>
-                <a href="${config.urlPrefix}" class="btn btn-primary">
+                <a href="/pl" class="btn btn-primary">
                   <i class="fa fa-home" aria-hidden="true"></i>
                   PrairieLearn home
                 </a>

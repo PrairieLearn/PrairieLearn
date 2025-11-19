@@ -8,6 +8,7 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
+import { selectCourseById } from '../../models/course.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
@@ -130,6 +131,166 @@ describe('Course instance syncing', () => {
     assert.equal(remainingRule.end_date?.getTime(), new Date('2024-02-28T06:00:00.000Z').getTime());
     assert.isNull(remainingRule.uids);
     assert.equal(remainingRule.institution, 'Any');
+  });
+
+  describe('syncs publishing settings correctly', () => {
+    const timezone = 'America/New_York';
+
+    // We pick an arbitrary date to use.
+    const date = new Date('2025-09-05T20:52:49.000Z');
+
+    // In JSON, the date must be formatted like `2025-01-01T00:00:00` and will
+    // be interpreted in the course instance's timezone.
+    const jsonDate = Temporal.Instant.from(date.toISOString())
+      .toZonedDateTimeISO(timezone)
+      .toPlainDateTime()
+      .toString();
+
+    const schemaMappings: {
+      json: {
+        publishing?: CourseInstanceJsonInput['publishing'];
+        allowAccess?: CourseInstanceJsonInput['allowAccess'];
+      };
+      db: {
+        publishing_start_date: Date | null;
+        publishing_end_date: Date | null;
+        modern_publishing: boolean;
+      } | null;
+      errors: string[];
+      warnings: string[];
+    }[] = [
+      {
+        json: { publishing: undefined, allowAccess: [] },
+        db: {
+          modern_publishing: false,
+          publishing_start_date: null,
+          publishing_end_date: null,
+        },
+        warnings: [],
+        errors: [],
+      },
+      {
+        json: { publishing: {} },
+        db: {
+          modern_publishing: true,
+          publishing_start_date: null,
+          publishing_end_date: null,
+        },
+        warnings: [],
+        errors: [],
+      },
+      {
+        json: {
+          publishing: {
+            endDate: jsonDate,
+          },
+        },
+        db: null,
+        warnings: [],
+        errors: ['"publishing.startDate" is required if "publishing.endDate" is specified.'],
+      },
+      {
+        json: {
+          publishing: {
+            startDate: jsonDate,
+            endDate: jsonDate,
+          },
+        },
+        db: {
+          modern_publishing: true,
+          publishing_start_date: date,
+          publishing_end_date: date,
+        },
+        warnings: [],
+        errors: [],
+      },
+      {
+        json: {
+          publishing: {
+            startDate: jsonDate,
+          },
+        },
+        db: null,
+        warnings: [],
+        errors: ['"publishing.endDate" is required if "publishing.startDate" is specified.'],
+      },
+      {
+        json: {
+          publishing: {
+            startDate: 'not a date',
+            endDate: jsonDate,
+          },
+        },
+        db: null,
+        warnings: [],
+        errors: ['"publishing.startDate" is not a valid date.'],
+      },
+      {
+        json: {
+          publishing: {
+            endDate: 'not a date',
+          },
+        },
+        db: null,
+        warnings: [],
+        errors: [
+          '"publishing.startDate" is required if "publishing.endDate" is specified.',
+          '"publishing.endDate" is not a valid date.',
+        ],
+      },
+      {
+        json: {
+          publishing: {
+            startDate: '2025-12-01T00:00:00',
+            endDate: '2025-06-01T00:00:00',
+          },
+        },
+        db: null,
+        warnings: [],
+        errors: ['"publishing.startDate" must be before "publishing.endDate".'],
+      },
+    ];
+
+    let i = 0;
+    for (const { json, db, errors, warnings } of schemaMappings) {
+      it(`access control configuration #${i++}`, async () => {
+        const courseData = util.getCourseData();
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.publishing =
+          json.publishing;
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess =
+          json.allowAccess;
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
+
+        const courseDir = await util.writeCourseToTempDirectory(courseData);
+        const results = await util.syncCourseData(courseDir);
+        assert.isOk(results.status === 'complete');
+        const courseInstance = results.courseData.courseInstances[util.COURSE_INSTANCE_ID];
+        const courseInstanceErrors = courseInstance.courseInstance.errors;
+        const courseInstanceWarnings = courseInstance.courseInstance.warnings;
+        const courseInstanceUUID = courseInstance.courseInstance.uuid;
+        assert.equal(JSON.stringify(courseInstanceErrors), JSON.stringify(errors));
+        assert.equal(JSON.stringify(courseInstanceWarnings), JSON.stringify(warnings));
+        assert.isDefined(courseInstanceUUID);
+
+        const syncedCourseInstance = await selectCourseInstanceByUuid({
+          course: await selectCourseById(results.courseId),
+          uuid: courseInstanceUUID,
+        });
+        assert.isOk(syncedCourseInstance);
+
+        if (courseInstanceErrors.length > 0) {
+          return;
+        }
+
+        const result = {
+          publishing_start_date: syncedCourseInstance.publishing_start_date,
+          publishing_end_date: syncedCourseInstance.publishing_end_date,
+          modern_publishing: syncedCourseInstance.modern_publishing,
+        };
+
+        assert.deepEqual(result, db);
+      });
+    }
   });
 
   it('soft-deletes and restores course instances', async () => {
@@ -542,11 +703,8 @@ describe('Course instance syncing', () => {
   describe('syncs self-enrollment settings correctly', async () => {
     const timezone = 'America/New_York';
 
-    // We pick an arbitrary date to use.
     const date = new Date('2025-09-05T20:52:49.000Z');
 
-    // In JSON, the date must be formatted like `2025-01-01T00:00:00` and will
-    // interpreted in the course instance's timezone.
     const jsonDate = Temporal.Instant.from(date.toISOString())
       .toZonedDateTimeISO(timezone)
       .toPlainDateTime()
@@ -655,12 +813,12 @@ describe('Course instance syncing', () => {
         assert.equal(JSON.stringify(courseInstanceErrors), JSON.stringify(errors));
         assert.isDefined(courseInstanceUUID);
 
-        if (db == null) {
+        if (courseInstanceErrors.length > 0) {
           return;
         }
 
         const syncedCourseInstance = await selectCourseInstanceByUuid({
-          course_id: results.courseId,
+          course: await selectCourseById(results.courseId),
           uuid: courseInstanceUUID,
         });
         assert.isOk(syncedCourseInstance);

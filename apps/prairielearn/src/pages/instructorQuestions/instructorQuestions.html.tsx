@@ -51,7 +51,6 @@ export const QuestionsPage = ({
         showSharingSets: resLocals.question_sharing_enabled,
         current_course_instance: resLocals.course_instance,
         urlPrefix: resLocals.urlPrefix,
-        plainUrlPrefix: resLocals.plainUrlPrefix,
         __csrf_token: resLocals.__csrf_token,
       })}
     `,

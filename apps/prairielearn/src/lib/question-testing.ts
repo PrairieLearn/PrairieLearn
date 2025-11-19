@@ -295,7 +295,6 @@ async function testQuestion(
 
   const question_course = await getQuestionCourse(question, variant_course);
   const instance_question_id = null;
-  const course_instance_id = course_instance?.id || null;
   const options = {};
   const require_open = true;
   const client_fingerprint_id = null;
@@ -306,7 +305,7 @@ async function testQuestion(
       instance_question_id,
       authn_user_id,
       authn_user_id,
-      course_instance_id,
+      course_instance,
       variant_course,
       question_course,
       options,

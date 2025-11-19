@@ -1,60 +1,44 @@
 import { type Column, type Table } from '@tanstack/react-table';
-import { useEffect, useRef, useState } from 'preact/compat';
+import { type JSX, useEffect, useRef, useState } from 'preact/compat';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
 
 interface ColumnMenuItemProps<RowDataModel> {
   column: Column<RowDataModel>;
   hidePinButton: boolean;
   onTogglePin: (columnId: string) => void;
-  onClearElementFocus: () => void;
 }
 
 function ColumnMenuItem<RowDataModel>({
   column,
   hidePinButton = false,
   onTogglePin,
-  onClearElementFocus,
 }: ColumnMenuItemProps<RowDataModel>) {
-  const pinButtonRef = useRef<HTMLButtonElement>(null);
+  if (!column.getCanHide()) return null;
 
-  if (!column.getCanHide() && !column.getCanPin()) return null;
-
-  const header = typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id;
+  // Use meta.label if available, otherwise fall back to header or column.id
+  const header =
+    column.columnDef.meta?.label ??
+    (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
 
   return (
-    <Dropdown.Item
-      key={column.id}
-      as="div"
-      class="px-2 py-1 d-flex align-items-center justify-content-between"
-      onKeyDown={onClearElementFocus}
-    >
+    <div key={column.id} class="px-2 py-1 d-flex align-items-center justify-content-between">
       <label class="form-check me-auto text-nowrap d-flex align-items-stretch">
-        <OverlayTrigger
-          placement="top"
-          overlay={<Tooltip>{column.getIsVisible() ? 'Hide column' : 'Show column'}</Tooltip>}
-        >
-          <input
-            type="checkbox"
-            class="form-check-input"
-            checked={column.getIsVisible()}
-            disabled={!column.getCanHide()}
-            aria-label={
-              column.getIsVisible() ? `Hide '${header}' column` : `Show '${header}' column`
-            }
-            aria-describedby={`${column.id}-label`}
-            onChange={column.getToggleVisibilityHandler()}
-          />
-        </OverlayTrigger>
+        <input
+          type="checkbox"
+          class="form-check-input"
+          checked={column.getIsVisible()}
+          disabled={!column.getCanHide()}
+          aria-label={column.getIsVisible() ? `Hide '${header}' column` : `Show '${header}' column`}
+          aria-describedby={`${column.id}-label`}
+          onChange={column.getToggleVisibilityHandler()}
+        />
         <span class="form-check-label ms-2" id={`${column.id}-label`}>
           {header}
         </span>
       </label>
       {column.getCanPin() && !hidePinButton && (
         <button
-          ref={pinButtonRef}
           type="button"
           // Since the HTML changes, but we want to refocus the pin button, we track
           // the active pin button and refocuses it when the column manager is rerendered.
@@ -65,33 +49,24 @@ function ColumnMenuItem<RowDataModel>({
           }
           title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           data-bs-toggle="tooltip"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (!pinButtonRef.current) {
-              throw new Error('pinButtonRef.current is null');
-            }
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onTogglePin(column.id);
-              return;
-            }
-          }}
-          // Instead, use the arrow keys to move between interactive elements in each menu item.
-          onClick={() => {
-            if (!pinButtonRef.current) {
-              throw new Error('pinButtonRef.current is null');
-            }
-            onTogglePin(column.id);
-          }}
+          onClick={() => onTogglePin(column.id)}
         >
           <i class={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} aria-hidden="true" />
         </button>
       )}
-    </Dropdown.Item>
+    </div>
   );
 }
 
-export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataModel> }) {
+interface ColumnManagerProps<RowDataModel> {
+  table: Table<RowDataModel>;
+  topContent?: JSX.Element;
+}
+
+export function ColumnManager<RowDataModel>({
+  table,
+  topContent,
+}: ColumnManagerProps<RowDataModel>) {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -149,11 +124,21 @@ export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataMod
         }
       }}
     >
-      <Dropdown.Toggle variant="outline-secondary" id="column-manager-button">
-        <i class="bi bi-view-list me-2" aria-hidden="true" />
-        View
+      <Dropdown.Toggle
+        // We assume that this component will only appear once per page. If that changes,
+        // we'll need to do something to ensure ID uniqueness here.
+        id="column-manager"
+        variant="tanstack-table"
+      >
+        <i class="bi bi-view-list me-2" aria-hidden="true" /> View{' '}
       </Dropdown.Toggle>
-      <Dropdown.Menu>
+      <Dropdown.Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+        {topContent && (
+          <>
+            {topContent}
+            <Dropdown.Divider />
+          </>
+        )}
         {pinnedColumns.length > 0 && (
           <>
             <div class="px-2 py-1 text-muted small" role="presentation">
@@ -167,7 +152,6 @@ export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataMod
                     column={column}
                     hidePinButton={index !== pinnedColumns.length - 1}
                     onTogglePin={handleTogglePin}
-                    onClearElementFocus={() => setActiveElementId(null)}
                   />
                 );
               })}
@@ -185,7 +169,6 @@ export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataMod
                     column={column}
                     hidePinButton={index !== 0}
                     onTogglePin={handleTogglePin}
-                    onClearElementFocus={() => setActiveElementId(null)}
                   />
                 );
               })}
@@ -203,7 +186,8 @@ export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataMod
               onClick={() => {
                 table.resetColumnVisibility();
                 table.resetColumnPinning();
-                setActiveElementId('column-manager-button');
+                // Move focus to the column manager button after resetting.
+                setActiveElementId('column-manager');
               }}
             >
               <i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />

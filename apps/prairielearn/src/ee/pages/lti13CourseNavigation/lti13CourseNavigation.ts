@@ -5,9 +5,13 @@ import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString, html, joinHtml } from '@prairielearn/html';
 import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { CourseInstanceSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
+import {
+  type Course,
+  CourseInstanceSchema,
+  Lti13CourseInstanceSchema,
+} from '../../../lib/db-types.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
-import { selectCoursesWithEditAccess } from '../../../models/course.js';
+import { selectCourseById, selectCoursesWithEditAccess } from '../../../models/course.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
 import {
@@ -34,20 +38,20 @@ function prettyCourseName(ltiClaim) {
 }
 
 async function courseInstancesAllowedToLink({
-  course_id,
+  course,
   user_id,
   authn_user_id,
   is_administrator,
   authn_is_administrator,
 }: {
-  course_id: string;
+  course: Course;
   user_id: string;
   authn_user_id: string;
   is_administrator: boolean;
   authn_is_administrator: boolean;
 }) {
   const course_instances = await selectCourseInstancesWithStaffAccess({
-    course_id,
+    course,
     user_id,
     authn_user_id,
     is_administrator,
@@ -80,13 +84,18 @@ router.get(
       is_administrator: res.locals.is_administrator,
     });
 
-    const course = courses.find((c) => c.id === req.query.unsafe_course_id);
+    const unsafe_course_id = req.query.unsafe_course_id?.toString();
+    if (!unsafe_course_id) {
+      throw new HttpStatusError(400, 'Missing required parameter: unsafe_course_id');
+    }
+
+    const course = courses.find((c) => c.id === unsafe_course_id);
     if (!course) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
     const course_instances = await courseInstancesAllowedToLink({
-      course_id: course.id,
+      course,
       user_id: res.locals.authn_user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.is_administrator,
@@ -217,7 +226,7 @@ router.post(
     }
 
     const courseInstancesAllowed = await courseInstancesAllowedToLink({
-      course_id: course_instance.course_id,
+      course: await selectCourseById(course_instance.course_id),
       user_id: res.locals.authn_user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.is_administrator,

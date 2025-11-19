@@ -1,5 +1,24 @@
 # @prairielearn/cache
 
+## 2.1.3
+
+### Patch Changes
+
+- c205eb9: Upgrade `ioredis`
+- 0425922: Upgrade all JavaScript dependencies
+- Updated dependencies [0425922]
+  - @prairielearn/logger@2.0.23
+  - @prairielearn/sentry@4.0.7
+
+## 2.1.2
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/logger@2.0.22
+  - @prairielearn/sentry@4.0.6
+
 ## 2.1.1
 
 ### Patch Changes

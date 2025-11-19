@@ -13,21 +13,19 @@ export function AssessmentSwitcher({
   assessmentsGroupBy,
   currentAssessmentId,
   courseInstanceId,
-  plainUrlPrefix,
   targetSubPage,
 }: {
   assessmentRows: AssessmentRow[];
   assessmentsGroupBy: 'Set' | 'Module';
   currentAssessmentId: string;
   courseInstanceId: string;
-  plainUrlPrefix: string;
   /** The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
 }) {
   return html`
     <div id="assessment-switcher-container" class="d-flex flex-column">
       ${assessmentRows.map((row, index) => {
-        const assessmentUrl = `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ?? ''}`;
+        const assessmentUrl = `/pl/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ?? ''}`;
 
         const isActive = idsEqual(currentAssessmentId, row.id);
 
@@ -74,7 +72,7 @@ export function AssessmentSwitcher({
               </a>
               ${IssueBadgeHtml({
                 count: row.open_issue_count,
-                urlPrefix: `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor`,
+                urlPrefix: `/pl/course_instance/${courseInstanceId}/instructor`,
                 issueAid: row.tid,
               })}
             </div>

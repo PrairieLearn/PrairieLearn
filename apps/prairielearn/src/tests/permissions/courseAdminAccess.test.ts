@@ -595,8 +595,7 @@ function runTest(context) {
 }
 
 describe('course admin access page through course route', { timeout: 60_000 }, function () {
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl/course/1`;
 
   runTest(context);
@@ -606,8 +605,7 @@ describe(
   'course admin access page through course instance route',
   { timeout: 60_000 },
   function () {
-    const context: Record<string, any> = {};
-    context.siteUrl = `http://localhost:${config.serverPort}`;
+    const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
     context.baseUrl = `${context.siteUrl}/pl/course_instance/1/instructor`;
 
     runTest(context);

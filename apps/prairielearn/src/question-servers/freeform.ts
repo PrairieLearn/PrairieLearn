@@ -138,7 +138,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   try {
     files = await fs.readdir(sourceDir);
   } catch (err) {
-    if (err && err.code === 'ENOENT') {
+    if (err?.code === 'ENOENT') {
       // Directory doesn't exist, most likely a course with no elements.
       // Proceed with an empty object.
       return {};
@@ -161,7 +161,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     try {
       rawInfo = await fs.readJSON(elementInfoPath);
     } catch (err) {
-      if (err && err.code === 'ENOENT') {
+      if (err?.code === 'ENOENT') {
         // This must not be an element directory, skip it
         return;
       }
