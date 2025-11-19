@@ -4,4 +4,3 @@ ignored:
   - DL3008 # pin versions in apt get install
   - DL4006 # TODO: SHELL option -o pipefail before RUN with a pipe in it
   - DL3041 # Specify version with `dnf install -y <package>-<version>`
-  - SC1091 # Hadolint doesn't know about files that will exist in the image
