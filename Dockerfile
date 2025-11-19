@@ -16,7 +16,7 @@ ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:$PATH"
 # We copy `pyproject.toml` and the `Makefile` since we need to install Python dependencies.
 COPY --parents pyproject.toml Makefile /PrairieLearn/
 
-RUN PIP_NO_CACHE_DIR=1 make python-deps-core
+RUN UV_COMPILE_BYTECODE=1 make python-deps-core && uv cache clean
 
 # This copies in all the `package.json` files in `apps` and `packages`, which
 # Yarn needs to correctly install all dependencies in our workspaces.
