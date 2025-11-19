@@ -124,26 +124,14 @@ function GradebookTable({
   const assessmentFilterConfig = useMemo(() => {
     return Object.fromEntries(
       courseAssessments.map((assessment) => {
-        const columnId = `assessment_${assessment.assessment_id}`;
+        const columnId = `a${assessment.assessment_id}`;
         return [columnId, parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false })];
       }),
     );
   }, [courseAssessments]);
 
-  const assessmentFilterUrlKeys = useMemo(() => {
-    return Object.fromEntries(
-      courseAssessments.map((assessment) => {
-        const columnId = `assessment_${assessment.assessment_id}`;
-        const urlKey = `a${assessment.assessment_id}`;
-        return [columnId, urlKey];
-      }),
-    );
-  }, [courseAssessments]);
-
-  const [assessmentFilterValues, setAssessmentFilterValues] = useQueryStates(
-    assessmentFilterConfig,
-    { urlKeys: assessmentFilterUrlKeys },
-  );
+  const [assessmentFilterValues, setAssessmentFilterValues] =
+    useQueryStates(assessmentFilterConfig);
 
   // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters = useMemo<ColumnFiltersState>(() => {
@@ -291,7 +279,7 @@ function GradebookTable({
                 return data ? data.score_perc : null;
               },
               {
-                id: `assessment_${assessment.assessment_id}`,
+                id: `a${assessment.assessment_id}`,
                 size: 100,
                 minSize: 100,
                 maxSize: 120,
@@ -381,7 +369,7 @@ function GradebookTable({
     > = {};
 
     courseAssessments.forEach((assessment) => {
-      const columnId = `assessment_${assessment.assessment_id}`;
+      const columnId = `a${assessment.assessment_id}`;
       assessmentFilters[columnId] = ({ header }: { header: Header<GradebookRow, unknown> }) => {
         const filterValue = assessmentFilterValues[columnId];
 
