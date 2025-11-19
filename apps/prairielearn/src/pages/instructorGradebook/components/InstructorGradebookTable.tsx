@@ -65,6 +65,24 @@ const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 const columnHelper = createColumnHelper<GradebookRow>();
 const queryClient = new QueryClient();
 
+/**
+ * Recursively extracts leaf column IDs from column definitions.
+ * Group columns are skipped, only actual data columns are included.
+ */
+function extractLeafColumnIds(columns: { id?: string | null; columns?: unknown[] }[]): string[] {
+  const leafIds: string[] = [];
+  for (const col of columns) {
+    if (col.columns && Array.isArray(col.columns) && col.columns.length > 0) {
+      // This is a group column, recurse into its children
+      leafIds.push(...extractLeafColumnIds(col.columns as typeof columns));
+    } else if (col.id) {
+      // This is a leaf column
+      leafIds.push(col.id);
+    }
+  }
+  return leafIds;
+}
+
 interface GradebookTableProps {
   authzData: PageContextWithAuthzData['authz_data'];
   csrfToken: string;
@@ -112,8 +130,20 @@ function GradebookTable({
     );
   }, [courseAssessments]);
 
-  const [assessmentFilterValues, setAssessmentFilterValues] =
-    useQueryStates(assessmentFilterConfig);
+  const assessmentFilterUrlKeys = useMemo(() => {
+    return Object.fromEntries(
+      courseAssessments.map((assessment) => {
+        const columnId = `assessment_${assessment.assessment_id}`;
+        const urlKey = `a${assessment.assessment_id}`;
+        return [columnId, urlKey];
+      }),
+    );
+  }, [courseAssessments]);
+
+  const [assessmentFilterValues, setAssessmentFilterValues] = useQueryStates(
+    assessmentFilterConfig,
+    { urlKeys: assessmentFilterUrlKeys },
+  );
 
   // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters = useMemo<ColumnFiltersState>(() => {
@@ -314,7 +344,8 @@ function GradebookTable({
     [assessmentsBySet, urlPrefix, csrfToken],
   );
 
-  const allColumnIds = columns.map((col) => col.id!);
+  // Extract only leaf column IDs (exclude group columns)
+  const allColumnIds = extractLeafColumnIds(columns);
 
   // Set default visibility: hide UID, UIN, Role, and enrollment_status columns by default
   const defaultColumnVisibility = Object.fromEntries(

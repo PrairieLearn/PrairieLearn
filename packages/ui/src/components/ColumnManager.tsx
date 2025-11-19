@@ -67,9 +67,11 @@ function ColumnMenuItem<RowDataModel>({
 function ColumnGroupItem<RowDataModel>({
   column,
   onTogglePin,
+  getHidePinButton,
 }: {
   column: Column<RowDataModel>;
   onTogglePin: (columnId: string) => void;
+  getHidePinButton: (columnId: string) => boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const checkboxRef = useRef<HTMLInputElement>(null);
@@ -139,7 +141,8 @@ function ColumnGroupItem<RowDataModel>({
             <ColumnHierarchyItem
               key={childCol.id}
               column={childCol}
-              hidePinButton={false}
+              hidePinButton={getHidePinButton(childCol.id)}
+              getHidePinButton={getHidePinButton}
               onTogglePin={onTogglePin}
             />
           ))}
@@ -153,13 +156,21 @@ function ColumnHierarchyItem<RowDataModel>({
   column,
   onTogglePin,
   hidePinButton,
+  getHidePinButton,
 }: {
   column: Column<RowDataModel>;
   onTogglePin: (columnId: string) => void;
   hidePinButton: boolean;
+  getHidePinButton: (columnId: string) => boolean;
 }) {
   if (column.columns.length > 0) {
-    return <ColumnGroupItem column={column} onTogglePin={onTogglePin} />;
+    return (
+      <ColumnGroupItem
+        column={column}
+        getHidePinButton={getHidePinButton}
+        onTogglePin={onTogglePin}
+      />
+    );
   }
   return <ColumnMenuItem column={column} hidePinButton={hidePinButton} onTogglePin={onTogglePin} />;
 }
@@ -204,9 +215,42 @@ export function ColumnManager<RowDataModel>({
     initialPinning.some((id) => !currentPinning.includes(id));
   const showResetButton = isVisibilityChanged || isPinningChanged;
 
-  const pinnedColumns = table.getAllLeafColumns().filter((c) => c.getIsPinned() === 'left');
-  // Use getHeaderGroups to access the column hierarchy as defined in the table
-  const rootColumns = table.getAllColumns().filter((c) => c.depth === 0);
+  const allLeafColumns = table.getAllLeafColumns();
+  const pinnedColumns = allLeafColumns.filter((c) => c.getIsPinned() === 'left');
+  const unpinnedColumns = allLeafColumns.filter((c) => c.getIsPinned() !== 'left');
+
+  // Calculate which columns should have their pin buttons hidden based on sequential pinning logic:
+  // - Columns that are part of a group (have a parent) cannot be pinned
+  // - For pinned columns: only the last one can be unpinned
+  // - For unpinned columns: only the first one can be pinned
+  const getHidePinButton = (columnId: string) => {
+    const column = allLeafColumns.find((c) => c.id === columnId);
+    if (!column) return true;
+
+    // If the column is part of a group (has a parent), it cannot be pinned
+    if (column.parent) {
+      return true;
+    }
+
+    if (column.getIsPinned() === 'left') {
+      // Only the last pinned column can be unpinned
+      const pinnedIndex = pinnedColumns.findIndex((c) => c.id === columnId);
+      return pinnedIndex !== pinnedColumns.length - 1;
+    } else {
+      // Only the first unpinned column can be pinned
+      const unpinnedIndex = unpinnedColumns.findIndex((c) => c.id === columnId);
+      return unpinnedIndex !== 0;
+    }
+  };
+
+  // Get root columns (for showing hierarchy), but filter to only show unpinned ones
+  // We'll show pinned columns separately in the "Frozen columns" section
+  const unpinnedRootColumns = table.getAllColumns().filter((c) => {
+    if (c.depth !== 0) return false;
+    // A root column is considered unpinned if all its leaf columns are unpinned
+    const leafCols = c.getLeafColumns();
+    return leafCols.length > 0 && leafCols.every((leaf) => leaf.getIsPinned() !== 'left');
+  });
 
   useEffect(() => {
     // When we use the pin or reset button, we want to refocus to another element.
@@ -252,12 +296,12 @@ export function ColumnManager<RowDataModel>({
               Frozen columns
             </div>
             <div role="group">
-              {pinnedColumns.map((column) => {
+              {pinnedColumns.map((column, index) => {
                 return (
                   <ColumnMenuItem
                     key={column.id}
                     column={column}
-                    hidePinButton={false}
+                    hidePinButton={index !== pinnedColumns.length - 1}
                     onTogglePin={handleTogglePin}
                   />
                 );
@@ -266,45 +310,46 @@ export function ColumnManager<RowDataModel>({
             <Dropdown.Divider />
           </>
         )}
-
-        <div role="group">
-          {rootColumns.map((column) => {
-            // If a root column is pinned, we don't hide it here because it might be a group
-            // or we want to show it in context. For leaf columns that are pinned,
-            // they are duplicated in "Frozen columns", but showing them here maintains structure.
-            // We can optionally pass hidePinButton=true if it's pinned, but keeping it enabled allows unpinning from here too.
-            return (
-              <ColumnHierarchyItem
-                key={column.id}
-                column={column}
-                hidePinButton={false}
-                onTogglePin={handleTogglePin}
-              />
-            );
-          })}
-        </div>
-
-        {showResetButton && (
+        {unpinnedRootColumns.length > 0 && (
           <>
-            <Dropdown.Divider />
-            <div class="px-2 py-1">
-              <Button
-                variant="secondary"
-                size="sm"
-                class="w-100"
-                aria-label="Reset all columns to default visibility and pinning"
-                onClick={() => {
-                  table.resetColumnVisibility();
-                  table.resetColumnPinning();
-                  // Move focus to the column manager button after resetting.
-                  setActiveElementId('column-manager');
-                }}
-              >
-                <i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
-                Reset view
-              </Button>
+            <div role="group">
+              {unpinnedRootColumns.map((column) => {
+                // For root columns, only pass hidePinButton if it's a leaf column
+                // Group columns don't have pin buttons, so hidePinButton doesn't apply
+                const hidePinButton =
+                  column.columns.length === 0 ? getHidePinButton(column.id) : true;
+                return (
+                  <ColumnHierarchyItem
+                    key={column.id}
+                    column={column}
+                    hidePinButton={hidePinButton}
+                    getHidePinButton={getHidePinButton}
+                    onTogglePin={handleTogglePin}
+                  />
+                );
+              })}
             </div>
+            {showResetButton && <Dropdown.Divider />}
           </>
+        )}
+        {showResetButton && (
+          <div class="px-2 py-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              class="w-100"
+              aria-label="Reset all columns to default visibility and pinning"
+              onClick={() => {
+                table.resetColumnVisibility();
+                table.resetColumnPinning();
+                // Move focus to the column manager button after resetting.
+                setActiveElementId('column-manager');
+              }}
+            >
+              <i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
+              Reset view
+            </Button>
+          </div>
         )}
       </Dropdown.Menu>
     </Dropdown>

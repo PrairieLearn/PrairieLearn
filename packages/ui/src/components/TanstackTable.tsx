@@ -223,7 +223,18 @@ export function TanstackTable<RowDataModel>({
           rowVirtualizer.getTotalSize() - notUndefined(virtualRows.at(-1)).end,
         ]
       : [0, 0];
-  const headerGroups = table.getHeaderGroups();
+  const allHeaderGroups = table.getHeaderGroups();
+  // Skip the first header group if it contains any group columns (top-level group headers)
+  const headerGroups = allHeaderGroups.filter((headerGroup, index) => {
+    if (index === 0) {
+      // Skip the first header group if it contains any group columns (headers with child columns)
+      const hasGroupColumns = headerGroup.headers.some(
+        (header) => header.column.columns.length > 0,
+      );
+      return !hasGroupColumns;
+    }
+    return true;
+  });
   const isTableResizing = headerGroups.some((headerGroup) =>
     headerGroup.headers.some((header) => header.column.getIsResizing()),
   );
@@ -232,7 +243,6 @@ export function TanstackTable<RowDataModel>({
   const tableRect = tableRef.current?.getBoundingClientRect();
 
   // We toggle this here instead of in the parent since this component logically manages all UI for the table.
-  // eslint-disable-next-line react-you-might-not-need-an-effect/no-manage-parent
   useEffect(() => {
     document.body.classList.toggle('no-user-select', isTableResizing);
   }, [isTableResizing]);
@@ -399,7 +409,14 @@ export function TanstackTable<RowDataModel>({
             <tbody>
               {before > 0 && (
                 <tr tabIndex={-1}>
-                  <td colSpan={headerGroups[0].headers.length} style={{ height: before }} />
+                  <td
+                    colSpan={
+                      headerGroups.length > 0
+                        ? headerGroups[headerGroups.length - 1].headers.length
+                        : table.getVisibleLeafColumns().length
+                    }
+                    style={{ height: before }}
+                  />
                 </tr>
               )}
               {virtualRows.map((virtualRow) => {
@@ -452,7 +469,14 @@ export function TanstackTable<RowDataModel>({
               })}
               {after > 0 && (
                 <tr tabIndex={-1}>
-                  <td colSpan={headerGroups[0].headers.length} style={{ height: after }} />
+                  <td
+                    colSpan={
+                      headerGroups.length > 0
+                        ? headerGroups[headerGroups.length - 1].headers.length
+                        : table.getVisibleLeafColumns().length
+                    }
+                    style={{ height: after }}
+                  />
                 </tr>
               )}
             </tbody>
