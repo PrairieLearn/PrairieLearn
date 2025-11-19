@@ -74,7 +74,7 @@ When writing questions, there exists a core pool of elements that provides commo
     'pl-checkbox-element': 'pl-checkbox/',
     'pl-code-element': 'pl-code/',
     'pl-dataframe-element': 'pl-dataframe/',
-    'pl-drawing-element': 'pl-drawing/',
+    'pl-drawing-element': '../pl-drawing/',
     'pl-dropdown-element': 'pl-dropdown/',
     'pl-excalidraw-element': 'pl-excalidraw/',
     'pl-external-grader-results-element': 'pl-external-grader-results/',
