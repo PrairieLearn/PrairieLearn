@@ -3,6 +3,8 @@ import z from 'zod';
 
 import { Hydrate } from '@prairielearn/preact/server';
 
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
 import {
   PublicAssessmentModuleSchema,
   PublicAssessmentSetSchema,
@@ -11,7 +13,6 @@ import {
   RawPublicAssessmentSchema,
   RawPublicAssessmentSetSchema,
 } from '../../lib/client/safe-db-types.js';
-import type { AssessmentModule, AssessmentSet } from '../../lib/db-types.js';
 
 import {
   CopyCourseInstanceModal,
@@ -32,48 +33,6 @@ export const SafeAssessmentRowSchema = SafeAssessmentStatsRowSchema.extend({
   open_issue_count: z.coerce.number(),
 });
 export type SafeAssessmentRow = z.infer<typeof SafeAssessmentRowSchema>;
-
-function AssessmentSetHeading({
-  assessmentSet,
-}: {
-  assessmentSet: Pick<AssessmentSet, 'heading' | 'implicit' | 'name'>;
-}) {
-  if (!assessmentSet.implicit) {
-    return <>{assessmentSet.heading}</>;
-  }
-
-  return (
-    <>
-      {assessmentSet.name}
-      <span class="text-muted">
-        {' '}
-        (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json
-        file to customize)
-      </span>
-    </>
-  );
-}
-
-function AssessmentModuleHeading({
-  assessmentModule,
-}: {
-  assessmentModule: Pick<AssessmentModule, 'heading' | 'implicit' | 'name'>;
-}) {
-  if (!assessmentModule.implicit || assessmentModule.heading === 'Default module') {
-    return <>{assessmentModule.heading}</>;
-  }
-
-  return (
-    <>
-      {assessmentModule.name}
-      <span class="text-muted">
-        {' '}
-        (Auto-generated from use in an assessment; add this assessment module to your
-        infoCourse.json file to customize)
-      </span>
-    </>
-  );
-}
 
 export function PublicAssessments({
   rows,
