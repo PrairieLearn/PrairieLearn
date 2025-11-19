@@ -132,6 +132,108 @@ export function parseAsColumnVisibilityStateWithColumns(
   return parser;
 }
 
+export interface TableState {
+  visibility: VisibilityState;
+  pinning: ColumnPinningState;
+  order: string[];
+}
+
+export function parseAsTableState(
+  allColumns: string[],
+  defaultTableStateRef?: React.RefObject<TableState>,
+) {
+  const parser = createParser<TableState>({
+    parse(queryValue) {
+      if (!queryValue) {
+        return (
+          defaultTableStateRef?.current ?? {
+            visibility: Object.fromEntries(allColumns.map((col) => [col, true])),
+            pinning: { left: [], right: [] },
+            order: allColumns,
+          }
+        );
+      }
+
+      const parts = queryValue.split(';');
+      let pinned: string[] = [];
+      let unpinned: string[] = [];
+
+      if (parts.length === 1) {
+        if (parts[0] === '') {
+          // Special case: empty string (handled by !queryValue check usually, but just in case)
+          unpinned = [];
+        } else {
+          unpinned = parts[0].split(',').filter(Boolean);
+        }
+      } else {
+        pinned = parts[0].split(',').filter(Boolean);
+        unpinned = parts[1].split(',').filter(Boolean);
+      }
+
+      const visibleColumns = new Set([...pinned, ...unpinned]);
+      const visibility: VisibilityState = {};
+
+      // The order is the pinned columns, then the unpinned columns, then the hidden columns (in their original relative order)
+      const order: string[] = [...pinned, ...unpinned];
+
+      const remainingColumns = allColumns.filter((col) => !visibleColumns.has(col));
+      order.push(...remainingColumns);
+
+      for (const col of allColumns) {
+        visibility[col] = visibleColumns.has(col);
+      }
+
+      return {
+        visibility,
+        pinning: { left: pinned, right: [] },
+        order,
+      };
+    },
+    serialize(value) {
+      if (defaultTableStateRef?.current && parser.eq(value, defaultTableStateRef.current)) {
+        return null as unknown as string;
+      }
+
+      const visibleCols = value.order.filter((col) => value.visibility[col]);
+      const pinnedSet = new Set(value.pinning.left || []);
+
+      // We assume pinned columns are always at the start of the order if they are pinned.
+      // But we filter by visibility first.
+      const visiblePinned = visibleCols.filter((col) => pinnedSet.has(col));
+      const visibleUnpinned = visibleCols.filter((col) => !pinnedSet.has(col));
+
+      const resultPinned = visiblePinned.join(',');
+      const resultUnpinned = visibleUnpinned.join(',');
+
+      if (resultPinned.length > 0) {
+        return `${resultPinned};${resultUnpinned}`;
+      } else {
+        return resultUnpinned;
+      }
+    },
+    eq(a, b) {
+      // Compare visibility
+      const aVisKeys = Object.keys(a.visibility);
+      const bVisKeys = Object.keys(b.visibility);
+      if (aVisKeys.length !== bVisKeys.length) return false;
+      if (!aVisKeys.every((key) => a.visibility[key] === b.visibility[key])) return false;
+
+      // Compare pinning
+      const aPinned = a.pinning.left ?? [];
+      const bPinned = b.pinning.left ?? [];
+      if (aPinned.length !== bPinned.length) return false;
+      if (!aPinned.every((val, idx) => val === bPinned[idx])) return false;
+
+      // Compare order
+      if (a.order.length !== b.order.length) return false;
+      if (!a.order.every((val, idx) => val === b.order[idx])) return false;
+
+      return true;
+    },
+  });
+  return parser;
+}
+
 /**
  * Parses and serializes TanStack Table ColumnPinningState to/from a URL query string.
  * Used for reflecting pinned columns in the URL.

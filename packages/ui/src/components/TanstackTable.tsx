@@ -1,8 +1,24 @@
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import type { Header, Row, SortDirection, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
-import type { ComponentChildren } from 'preact';
+import type { AriaRole, ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
@@ -84,11 +100,26 @@ function ResizeHandle<RowDataModel>({
           cursor: 'col-resize',
           transition: 'background-color 0.2s',
         }}
-        onMouseDown={header.getResizeHandler()}
-        onMouseUp={onResizeEnd}
-        onTouchStart={header.getResizeHandler()}
-        onTouchEnd={onResizeEnd}
-        onKeyDown={handleKeyDown}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          header.getResizeHandler()(e);
+        }}
+        onMouseUp={(e) => {
+          e.stopPropagation();
+          if (onResizeEnd) onResizeEnd();
+        }}
+        onTouchStart={(e) => {
+          e.stopPropagation();
+          header.getResizeHandler()(e);
+        }}
+        onTouchEnd={(e) => {
+          e.stopPropagation();
+          if (onResizeEnd) onResizeEnd();
+        }}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          handleKeyDown(e);
+        }}
       />
     </div>
   );
@@ -115,6 +146,146 @@ interface TanstackTableProps<RowDataModel> {
 }
 
 const DEFAULT_FILTER_MAP = {};
+
+// Helper function to get aria-sort value
+const getAriaSort = (sortDirection: false | SortDirection) => {
+  switch (sortDirection) {
+    case 'asc':
+      return 'ascending';
+    case 'desc':
+      return 'descending';
+    default:
+      return 'none';
+  }
+};
+
+function SortableTableHeader<RowDataModel>({
+  header,
+  table,
+  filters,
+  lastColumnId,
+  tableRect,
+  handleResizeEnd,
+}: {
+  header: Header<RowDataModel, unknown>;
+  table: Table<RowDataModel>;
+  filters: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
+  lastColumnId: string;
+  tableRect?: DOMRect;
+  handleResizeEnd?: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: header.column.id,
+  });
+
+  const isPinned = header.column.getIsPinned();
+  const sortDirection = header.column.getIsSorted();
+  const canSort = header.column.getCanSort();
+  const canFilter = header.column.getCanFilter();
+  const columnName =
+    typeof header.column.columnDef.header === 'string'
+      ? header.column.columnDef.header
+      : header.column.id;
+
+  const style: JSX.CSSProperties = {
+    width:
+      header.column.id === lastColumnId ? `max(100%, ${header.getSize()}px)` : header.getSize(),
+    position: isPinned === 'left' ? 'sticky' : 'relative',
+    top: 0,
+    zIndex: isDragging ? 3 : isPinned === 'left' ? 2 : 1,
+    left: isPinned === 'left' ? header.getStart() : undefined,
+    boxShadow:
+      'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    cursor: 'default', // Default cursor, resize handle and sort button will override
+  };
+
+  return (
+    <th
+      ref={setNodeRef}
+      class={clsx(isPinned === 'left' && 'bg-light')}
+      style={style}
+      aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
+      {...attributes}
+      role={attributes.role as AriaRole}
+      {...listeners}
+    >
+      <div
+        class={clsx(
+          'd-flex align-items-center',
+          canSort || canFilter ? 'justify-content-between' : 'justify-content-center',
+        )}
+      >
+        <button
+          class={clsx('text-nowrap text-start', canSort || canFilter ? 'flex-grow-1' : '')}
+          style={{
+            cursor: canSort ? 'pointer' : 'grab',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            background: 'transparent',
+            border: 'none',
+          }}
+          type="button"
+          aria-label={
+            canSort
+              ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
+              : undefined
+          }
+          onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+          onKeyDown={
+            canSort
+              ? (e) => {
+                  const handleSort = header.column.getToggleSortingHandler();
+                  if (e.key === 'Enter' && handleSort) {
+                    e.preventDefault();
+                    handleSort(e);
+                  }
+                }
+              : undefined
+          }
+        >
+          {header.isPlaceholder
+            ? null
+            : flexRender(header.column.columnDef.header, header.getContext())}
+          {canSort && (
+            <span class="visually-hidden">, {getAriaSort(sortDirection)}, click to sort</span>
+          )}
+        </button>
+
+        {(canSort || canFilter) && (
+          <div class="d-flex align-items-center">
+            {canSort && (
+              <button
+                type="button"
+                class="btn btn-link text-muted p-0"
+                aria-label={`Sort ${columnName.toLowerCase()}`}
+                title={`Sort ${columnName.toLowerCase()}`}
+                onClick={header.column.getToggleSortingHandler()}
+                onPointerDown={(e) => e.stopPropagation()} // Prevent drag start on sort icon
+              >
+                <SortIcon sortMethod={sortDirection || false} />
+              </button>
+            )}
+            {canFilter && filters[header.column.id]?.({ header })}
+          </div>
+        )}
+      </div>
+      {tableRect?.width &&
+      tableRect.width > table.getTotalSize() &&
+      header.column.id === lastColumnId // Check ID instead of index for reliability with reordering
+        ? null
+        : header.column.getCanResize() && (
+            <ResizeHandle
+              header={header}
+              setColumnSizing={table.setColumnSizing}
+              onResizeEnd={handleResizeEnd}
+            />
+          )}
+    </th>
+  );
+}
 
 /**
  * A generic component that renders a full-width, resizeable Tanstack Table.
@@ -237,20 +408,41 @@ export function TanstackTable<RowDataModel>({
     document.body.classList.toggle('no-user-select', isTableResizing);
   }, [isTableResizing]);
 
-  // Helper function to get aria-sort value
-  const getAriaSort = (sortDirection: false | SortDirection) => {
-    switch (sortDirection) {
-      case 'asc':
-        return 'ascending';
-      case 'desc':
-        return 'descending';
-      default:
-        return 'none';
-    }
-  };
-
   const displayedCount = table.getRowModel().rows.length;
   const totalCount = table.getCoreRowModel().rows.length;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const columnOrder = table.getState().columnOrder;
+    const oldIndex = columnOrder.indexOf(active.id as string);
+    const newIndex = columnOrder.indexOf(over.id as string);
+
+    // Handle pinning logic
+    const activeCol = table.getColumn(active.id as string);
+    const overCol = table.getColumn(over.id as string);
+
+    const activePinned = activeCol?.getIsPinned() === 'left';
+    const overPinned = overCol?.getIsPinned() === 'left';
+
+    // If we drag across the boundary, update pinning of the ACTIVE column to match the OVER column
+    if (activePinned !== overPinned) {
+      activeCol?.pin(overPinned ? 'left' : false);
+    }
+
+    const newOrder = arrayMove(columnOrder, oldIndex, newIndex);
+    table.setColumnOrder(newOrder);
+  };
 
   return (
     <div style={{ position: 'relative' }} class="d-flex flex-column h-100">
@@ -273,190 +465,102 @@ export function TanstackTable<RowDataModel>({
             width: `max(${table.getTotalSize()}px, 100%)`,
           }}
         >
-          <table
-            class="table table-hover mb-0"
-            style={{ tableLayout: 'fixed' }}
-            aria-label={title}
-            role="grid"
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            <thead>
-              {headerGroups.map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header, index) => {
-                    const isPinned = header.column.getIsPinned();
-                    const sortDirection = header.column.getIsSorted();
-                    const canSort = header.column.getCanSort();
-                    const canFilter = header.column.getCanFilter();
-                    const columnName =
-                      typeof header.column.columnDef.header === 'string'
-                        ? header.column.columnDef.header
-                        : header.column.id;
-
-                    const style: JSX.CSSProperties = {
-                      width:
-                        header.column.id === lastColumnId
-                          ? `max(100%, ${header.getSize()}px)`
-                          : header.getSize(),
-                      position: 'sticky',
-                      top: 0,
-                      zIndex: isPinned === 'left' ? 2 : 1,
-                      left: isPinned === 'left' ? header.getStart() : undefined,
-                      boxShadow:
-                        'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
-                    };
-
-                    return (
-                      <th
-                        key={header.id}
-                        class={clsx(isPinned === 'left' && 'bg-light')}
-                        style={style}
-                        aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
-                        role="columnheader"
-                      >
-                        <div
-                          class={clsx(
-                            'd-flex align-items-center',
-                            canSort || canFilter
-                              ? 'justify-content-between'
-                              : 'justify-content-center',
-                          )}
-                        >
-                          <button
-                            class={clsx(
-                              'text-nowrap text-start',
-                              canSort || canFilter ? 'flex-grow-1' : '',
-                            )}
-                            style={{
-                              cursor: canSort ? 'pointer' : 'default',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              background: 'transparent',
-                              border: 'none',
-                            }}
-                            type="button"
-                            aria-label={
-                              canSort
-                                ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
-                                : undefined
-                            }
-                            onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                            onKeyDown={
-                              canSort
-                                ? (e) => {
-                                    const handleSort = header.column.getToggleSortingHandler();
-                                    if (e.key === 'Enter' && handleSort) {
-                                      e.preventDefault();
-                                      handleSort(e);
-                                    }
-                                  }
-                                : undefined
-                            }
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(header.column.columnDef.header, header.getContext())}
-                            {canSort && (
-                              <span class="visually-hidden">
-                                , {getAriaSort(sortDirection)}, click to sort
-                              </span>
-                            )}
-                          </button>
-
-                          {(canSort || canFilter) && (
-                            <div class="d-flex align-items-center">
-                              {canSort && (
-                                <button
-                                  type="button"
-                                  class="btn btn-link text-muted p-0"
-                                  aria-label={`Sort ${columnName.toLowerCase()}`}
-                                  title={`Sort ${columnName.toLowerCase()}`}
-                                  onClick={header.column.getToggleSortingHandler()}
-                                >
-                                  <SortIcon sortMethod={sortDirection || false} />
-                                </button>
-                              )}
-                              {canFilter && filters[header.column.id]?.({ header })}
-                            </div>
-                          )}
-                        </div>
-                        {tableRect?.width &&
-                        tableRect.width > table.getTotalSize() &&
-                        index === headerGroup.headers.length - 1
-                          ? null
-                          : header.column.getCanResize() && (
-                              <ResizeHandle
-                                header={header}
-                                setColumnSizing={table.setColumnSizing}
-                                onResizeEnd={handleResizeEnd}
-                              />
-                            )}
-                      </th>
-                    );
-                  })}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {before > 0 && (
-                <tr tabIndex={-1}>
-                  <td colSpan={headerGroups[0].headers.length} style={{ height: before }} />
-                </tr>
-              )}
-              {virtualRows.map((virtualRow) => {
-                const row = rows[virtualRow.index];
-                const visibleCells = getVisibleCells(row);
-                const rowIdx = virtualRow.index;
-
-                return (
-                  <tr
-                    key={row.id}
-                    ref={(node) => rowVirtualizer.measureElement(node)}
-                    data-index={virtualRow.index}
+            <table
+              class="table table-hover mb-0"
+              style={{ tableLayout: 'fixed' }}
+              aria-label={title}
+              role="grid"
+            >
+              <thead>
+                {headerGroups.map((headerGroup) => (
+                  <SortableContext
+                    key={headerGroup.id}
+                    items={headerGroup.headers.map((h) => h.column.id)}
+                    strategy={horizontalListSortingStrategy}
                   >
-                    {visibleCells.map((cell, colIdx) => {
-                      const canSort = cell.column.getCanSort();
-                      const canFilter = cell.column.getCanFilter();
-
-                      const wrapText = cell.column.columnDef.meta?.wrapText ?? false;
-
-                      return (
-                        <td
-                          key={cell.id}
-                          tabIndex={0}
-                          data-grid-cell-row={rowIdx}
-                          data-grid-cell-col={colIdx}
-                          class={clsx(!canSort && !canFilter && 'text-center')}
-                          style={{
-                            width:
-                              cell.column.id === lastColumnId
-                                ? `max(100%, ${cell.column.getSize()}px)`
-                                : cell.column.getSize(),
-                            position: cell.column.getIsPinned() === 'left' ? 'sticky' : undefined,
-                            left:
-                              cell.column.getIsPinned() === 'left'
-                                ? cell.column.getStart()
-                                : undefined,
-                            whiteSpace: wrapText ? 'normal' : 'nowrap',
-                            overflow: wrapText ? 'visible' : 'hidden',
-                            textOverflow: wrapText ? undefined : 'ellipsis',
-                            verticalAlign: 'middle',
-                          }}
-                          onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      );
-                    })}
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <SortableTableHeader
+                          key={header.id}
+                          header={header}
+                          table={table}
+                          filters={filters}
+                          lastColumnId={lastColumnId}
+                          tableRect={tableRect}
+                          handleResizeEnd={handleResizeEnd}
+                        />
+                      ))}
+                    </tr>
+                  </SortableContext>
+                ))}
+              </thead>
+              <tbody>
+                {before > 0 && (
+                  <tr tabIndex={-1}>
+                    <td colSpan={headerGroups[0].headers.length} style={{ height: before }} />
                   </tr>
-                );
-              })}
-              {after > 0 && (
-                <tr tabIndex={-1}>
-                  <td colSpan={headerGroups[0].headers.length} style={{ height: after }} />
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+                {virtualRows.map((virtualRow) => {
+                  const row = rows[virtualRow.index];
+                  const visibleCells = getVisibleCells(row);
+                  const rowIdx = virtualRow.index;
+
+                  return (
+                    <tr
+                      key={row.id}
+                      ref={(node) => rowVirtualizer.measureElement(node)}
+                      data-index={virtualRow.index}
+                    >
+                      {visibleCells.map((cell, colIdx) => {
+                        const canSort = cell.column.getCanSort();
+                        const canFilter = cell.column.getCanFilter();
+
+                        const wrapText = cell.column.columnDef.meta?.wrapText ?? false;
+
+                        return (
+                          <td
+                            key={cell.id}
+                            tabIndex={0}
+                            data-grid-cell-row={rowIdx}
+                            data-grid-cell-col={colIdx}
+                            class={clsx(!canSort && !canFilter && 'text-center')}
+                            style={{
+                              width:
+                                cell.column.id === lastColumnId
+                                  ? `max(100%, ${cell.column.getSize()}px)`
+                                  : cell.column.getSize(),
+                              position: cell.column.getIsPinned() === 'left' ? 'sticky' : undefined,
+                              left:
+                                cell.column.getIsPinned() === 'left'
+                                  ? cell.column.getStart()
+                                  : undefined,
+                              whiteSpace: wrapText ? 'normal' : 'nowrap',
+                              overflow: wrapText ? 'visible' : 'hidden',
+                              textOverflow: wrapText ? undefined : 'ellipsis',
+                              verticalAlign: 'middle',
+                            }}
+                            onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+                {after > 0 && (
+                  <tr tabIndex={-1}>
+                    <td colSpan={headerGroups[0].headers.length} style={{ height: after }} />
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </DndContext>
         </div>
       </div>
       {table.getVisibleLeafColumns().length === 0 || displayedCount === 0 ? (

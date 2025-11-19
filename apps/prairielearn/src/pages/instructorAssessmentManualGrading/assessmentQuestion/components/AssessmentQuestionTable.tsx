@@ -19,10 +19,9 @@ import { TanstackTableCard, useShiftClickCheckbox } from '@prairielearn/ui';
 import { RubricSettings } from '../../../../components/RubricSettings.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import {
-  parseAsColumnPinningState,
-  parseAsColumnVisibilityStateWithColumns,
   parseAsNumericFilter,
   parseAsSortingState,
+  parseAsTableState,
 } from '../../../../lib/client/nuqs.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
 import type {
@@ -109,10 +108,6 @@ export function AssessmentQuestionTable({
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
     parseAsSortingState.withDefault(DEFAULT_SORT),
-  );
-  const [columnPinning, setColumnPinning] = useQueryState(
-    'frozen',
-    parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
 
   const [gradingStatusFilter, setGradingStatusFilter] = useQueryState(
@@ -347,35 +342,67 @@ export function AssessmentQuestionTable({
     );
   }, [columns, aiGradingMode]);
 
-  // Use a ref to store the current default so the parser always uses the latest value
-  // This is pretty hacky, but @reteps couldn't figure out a better way to do this.
-  //
-  // We update the ref during rendering because we need it to be up to date before we
-  // run the `useEffect()` hook that updates column visibility in response to the
-  // AI grading mode changing.
-  const defaultColumnVisibilityRef = useRef(defaultColumnVisibility);
-  defaultColumnVisibilityRef.current = defaultColumnVisibility;
-
-  const [columnVisibility, setColumnVisibility] = useQueryState(
-    'columns',
-    parseAsColumnVisibilityStateWithColumns(allColumnIds, defaultColumnVisibilityRef).withDefault(
-      defaultColumnVisibility,
-    ),
+  const defaultTableState = useMemo(
+    () => ({
+      visibility: defaultColumnVisibility,
+      pinning: DEFAULT_PINNING,
+      order: allColumnIds,
+    }),
+    [defaultColumnVisibility, allColumnIds],
   );
+
+  const defaultTableStateRef = useRef(defaultTableState);
+  defaultTableStateRef.current = defaultTableState;
+
+  const [tableState, setTableState] = useQueryState(
+    'columns',
+    parseAsTableState(allColumnIds, defaultTableStateRef).withDefault(defaultTableState),
+  );
+
+  const columnVisibility = tableState.visibility;
+  const columnPinning = tableState.pinning;
+  const columnOrder = tableState.order;
+
+  const setColumnVisibility = (updaterOrValue: any) => {
+    setTableState((prev) => {
+      const newVisibility =
+        typeof updaterOrValue === 'function' ? updaterOrValue(prev.visibility) : updaterOrValue;
+      return { ...prev, visibility: newVisibility };
+    });
+  };
+
+  const setColumnPinning = (updaterOrValue: any) => {
+    setTableState((prev) => {
+      const newPinning =
+        typeof updaterOrValue === 'function' ? updaterOrValue(prev.pinning) : updaterOrValue;
+      return { ...prev, pinning: newPinning };
+    });
+  };
+
+  const setColumnOrder = (updaterOrValue: any) => {
+    setTableState((prev) => {
+      const newOrder =
+        typeof updaterOrValue === 'function' ? updaterOrValue(prev.order) : updaterOrValue;
+      return { ...prev, order: newOrder };
+    });
+  };
 
   // Update column visibility when AI grading mode changes
   useEffect(() => {
-    void setColumnVisibility((prev) => ({
+    void setTableState((prev) => ({
       ...prev,
-      // Hide these columns in AI grading mode
-      requires_manual_grading: !aiGradingMode,
-      assigned_grader_name: !aiGradingMode,
-      score_perc: !aiGradingMode,
-      // Show these columns in AI grading mode
-      instance_question_group_name: aiGradingMode && instanceQuestionGroups.length > 0,
-      rubric_difference: aiGradingMode,
+      visibility: {
+        ...prev.visibility,
+        // Hide these columns in AI grading mode
+        requires_manual_grading: !aiGradingMode,
+        assigned_grader_name: !aiGradingMode,
+        score_perc: !aiGradingMode,
+        // Show these columns in AI grading mode
+        instance_question_group_name: aiGradingMode && instanceQuestionGroups.length > 0,
+        rubric_difference: aiGradingMode,
+      },
     }));
-  }, [aiGradingMode, instanceQuestionGroups, setColumnVisibility]);
+  }, [aiGradingMode, instanceQuestionGroups, setTableState]);
 
   const table = useReactTable({
     data: instanceQuestionsInfo,
@@ -389,6 +416,7 @@ export function AssessmentQuestionTable({
       columnSizing,
       columnVisibility,
       columnPinning,
+      columnOrder,
       rowSelection,
     },
     initialState: {
@@ -400,6 +428,7 @@ export function AssessmentQuestionTable({
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
+    onColumnOrderChange: setColumnOrder,
     onRowSelectionChange: setRowSelection,
     enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
