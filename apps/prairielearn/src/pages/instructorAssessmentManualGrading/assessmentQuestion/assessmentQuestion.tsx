@@ -441,19 +441,23 @@ router.post(
       res.json({ num_deleted });
       return;
     } else if (req.body.__action === 'modify_rubric_settings') {
-      await manualGrading.updateAssessmentQuestionRubric(
-        res.locals.assessment,
-        res.locals.assessment_question.id,
-        req.body.use_rubric,
-        req.body.replace_auto_points,
-        req.body.starting_points,
-        req.body.min_points,
-        req.body.max_extra_points,
-        req.body.rubric_items,
-        req.body.tag_for_manual_grading,
-        res.locals.authn_user.user_id,
-      );
-      res.sendStatus(204);
+      try {
+        await manualGrading.updateAssessmentQuestionRubric(
+          res.locals.assessment,
+          res.locals.assessment_question.id,
+          req.body.use_rubric,
+          req.body.replace_auto_points,
+          req.body.starting_points,
+          req.body.min_points,
+          req.body.max_extra_points,
+          req.body.rubric_items,
+          req.body.tag_for_manual_grading,
+          res.locals.authn_user.user_id,
+        );
+        res.redirect(req.originalUrl);
+      } catch (err) {
+        res.status(500).send({ err: String(err) });
+      }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
