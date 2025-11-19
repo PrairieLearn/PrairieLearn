@@ -169,7 +169,8 @@ export async function makeContext(
       ? await queryRows(
           sql.select_documents_by_chunk_id,
           {
-            doc_path: 'docs/elements.md',
+            // TODO: Handle multiple element docs.
+            doc_path: 'docs/llm-context.md',
             chunk_ids: mandatoryElementNames,
           },
           QuestionGenerationContextEmbeddingSchema,
@@ -190,7 +191,8 @@ export async function makeContext(
     sql.select_nearby_documents_from_file,
     {
       embedding: vectorToString(embedding),
-      doc_path: 'docs/elements.md',
+      // TODO: Handle multiple element docs.
+      doc_path: 'docs/llm-context.md',
       limit: 1,
     },
     QuestionGenerationContextEmbeddingSchema,

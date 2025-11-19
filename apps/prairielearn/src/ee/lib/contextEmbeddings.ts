@@ -137,6 +137,7 @@ export async function syncContextDocuments(embeddingModel: EmbeddingModel, authn
       }
     }
 
+    // TODO: Handle multiple element docs.
     const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
     allowedFilepaths.push(path.relative(REPOSITORY_ROOT_PATH, elementDocsPath));
     const fileText = await fs.readFile(elementDocsPath, { encoding: 'utf-8' });
