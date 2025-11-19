@@ -264,7 +264,6 @@ nav:
       - 'clientFiles and serverFiles': 'clientServerFiles.md'
       - 'UUIDs in JSON files': 'uuid.md'
       - 'Regrading assessments': 'regrading.md'
-      - 'Element for drawing': 'pl-drawing/index.md'
       - 'Docker images': 'dockerImages.md'
       - 'External grading': 'externalGrading.md'
       - 'Python autograder':
