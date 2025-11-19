@@ -2,12 +2,16 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
-import { getPageContext } from '../../lib/client/page-context.js';
+import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
@@ -15,12 +19,16 @@ import { isEnterprise } from '../../lib/license.js';
 import { assertNever } from '../../lib/types.js';
 import {
   ensureEnrollment,
-  selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUid,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
 
-import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
+import {
+  Home,
+  InstructorHomePageCourseSchema,
+  StudentHomePageCourseSchema,
+  StudentHomePageCourseWithExtensionSchema,
+} from './home.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -48,23 +56,61 @@ router.get(
       InstructorHomePageCourseSchema,
     );
 
-    const studentCourses = await queryRows(
-      sql.select_student_courses,
-      {
-        // Use the authenticated user, not the authorized user.
-        user_id: res.locals.authn_user.user_id,
-        pending_uid: res.locals.authn_user.uid,
-        req_date: res.locals.req_date,
-        // This is a somewhat ugly escape hatch specifically for load testing. In
-        // general, we don't want to clutter the home page with example course
-        // enrollments, but for load testing we want to enroll a large number of
-        // users in the example course and then have them find the example course
-        // on the home page. So, you'd make a request like this:
-        // `/pl?include_example_course_enrollments=true`
-        include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
-      },
-      StudentHomePageCourseSchema,
-    );
+    // Query parameters for student courses
+    const studentCourseParams = {
+      // Use the authenticated user, not the authorized user.
+      user_id: res.locals.authn_user.user_id,
+      pending_uid: res.locals.authn_user.uid,
+      // This is a somewhat ugly escape hatch specifically for load testing. In
+      // general, we don't want to clutter the home page with example course
+      // enrollments, but for load testing we want to enroll a large number of
+      // users in the example course and then have them find the example course
+      // on the home page. So, you'd make a request like this:
+      // `/pl?include_example_course_enrollments=true`
+      include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
+    };
+
+    // Run both legacy and modern publishing queries
+    const [legacyStudentCourses, allModernStudentCourses] = await Promise.all([
+      queryRows(
+        sql.select_student_courses_legacy_access,
+        { ...studentCourseParams, req_date: res.locals.req_date },
+        StudentHomePageCourseSchema,
+      ),
+      queryRows(
+        sql.select_student_courses_modern_publishing,
+        studentCourseParams,
+        StudentHomePageCourseWithExtensionSchema,
+      ),
+    ]);
+
+    const modernStudentCourses = allModernStudentCourses.filter((entry) => {
+      const startDate = entry.course_instance.publishing_start_date;
+      const endDate = run(() => {
+        if (entry.course_instance.publishing_end_date == null) {
+          return null;
+        }
+
+        if (
+          entry.latest_publishing_extension == null ||
+          entry.course_instance.publishing_end_date > entry.latest_publishing_extension.end_date
+        ) {
+          return entry.course_instance.publishing_end_date;
+        }
+
+        return entry.latest_publishing_extension.end_date;
+      });
+
+      return (
+        startDate !== null &&
+        endDate !== null &&
+        startDate < res.locals.req_date &&
+        res.locals.req_date < endDate
+      );
+    });
+
+    // Modern publishing courses show above legacy courses in the list
+    const studentCourses = [...modernStudentCourses, ...legacyStudentCourses];
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
@@ -72,7 +118,9 @@ router.get(
       StaffInstitutionSchema,
     );
 
-    const { authn_provider_name, __csrf_token, urlPrefix } = getPageContext(res.locals, {
+    const { authn_provider_name, __csrf_token, urlPrefix } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'student',
       withAuthzData: false,
     });
 
@@ -130,59 +178,92 @@ router.post(
     const body = BodySchema.parse(req.body);
 
     const {
-      authn_user: { uid, user_id },
-    } = getPageContext(res.locals, { withAuthzData: false });
+      authn_user: { uid },
+    } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'student',
+      withAuthzData: false,
+    });
+
+    const { authzData, courseInstance, institution, course } =
+      await constructCourseOrInstanceContext({
+        user: res.locals.authn_user,
+        course_id: null,
+        course_instance_id: body.course_instance_id,
+        ip: req.ip ?? null,
+        req_date: res.locals.req_date,
+        is_administrator: res.locals.is_administrator,
+      });
+
+    if (authzData === null || courseInstance === null) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
 
     switch (body.__action) {
       case 'accept_invitation': {
+        const enrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requestedRole: 'Student',
+          authzData,
+        });
+        if (
+          !enrollment ||
+          !['removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
+        ) {
+          flash('error', 'Failed to accept invitation');
+          break;
+        }
+
         await ensureEnrollment({
-          course_instance_id: body.course_instance_id,
-          user_id,
-          agent_user_id: user_id,
-          agent_authn_user_id: user_id,
-          action_detail: 'invitation_accepted',
+          institution,
+          course,
+          courseInstance,
+          authzData,
+          requestedRole: 'Student',
+          actionDetail: 'invitation_accepted',
         });
         break;
       }
       case 'reject_invitation': {
-        const enrollment = await selectOptionalEnrollmentByPendingUid({
-          course_instance_id: body.course_instance_id,
-          pending_uid: uid,
+        const enrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requestedRole: 'Student',
+          authzData,
         });
 
-        if (!enrollment) {
-          throw new Error('Could not find enrollment to reject');
-        }
-
-        if (enrollment.status !== 'invited') {
-          throw new Error('User does not have access to the course instance');
+        if (!enrollment || !['invited', 'rejected'].includes(enrollment.status)) {
+          flash('error', 'Failed to reject invitation');
+          break;
         }
 
         await setEnrollmentStatus({
-          enrollment_id: enrollment.id,
+          enrollment,
           status: 'rejected',
-          agent_user_id: user_id,
-          agent_authn_user_id: user_id,
-          required_status: 'invited',
+          authzData,
+          requestedRole: 'Student',
         });
         break;
       }
       case 'unenroll': {
         const enrollment = await selectOptionalEnrollmentByUid({
-          course_instance_id: body.course_instance_id,
+          courseInstance,
           uid,
+          requestedRole: 'Student',
+          authzData,
         });
 
-        if (!enrollment) {
-          throw new Error('Could not find enrollment to unenroll');
+        if (!enrollment || !['joined', 'removed'].includes(enrollment.status)) {
+          flash('error', 'Failed to unenroll');
+          break;
         }
 
         await setEnrollmentStatus({
-          enrollment_id: enrollment.id,
+          enrollment,
           status: 'removed',
-          agent_user_id: user_id,
-          agent_authn_user_id: user_id,
-          required_status: 'joined',
+          authzData,
+          requestedRole: 'Student',
         });
         break;
       }

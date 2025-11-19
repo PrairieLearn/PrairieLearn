@@ -1,8 +1,10 @@
 import fetch from 'node-fetch';
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
+import { dangerousFullSystemAuthz } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
-import { ensureEnrollment } from '../../../models/enrollment.js';
+import { selectCourseInstanceById } from '../../../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../../../models/enrollment.js';
 import * as helperServer from '../../../tests/helperServer.js';
 import {
   type AuthUser,
@@ -29,7 +31,6 @@ const studentUser: AuthUser = {
 
 describe('studentCourseInstanceUpgrade', () => {
   enableEnterpriseEdition();
-
   beforeEach(helperServer.before());
   afterEach(helperServer.after);
 
@@ -80,12 +81,13 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    await ensureEnrollment({
-      user_id: user.user_id,
-      course_instance_id: '1',
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+    const courseInstance = await selectCourseInstanceById('1');
+    await ensureUncheckedEnrollment({
+      userId: user.user_id,
+      courseInstance,
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
     });
 
     // Simulates the dev user (an instructor) using "Student view" for themselves.
@@ -102,12 +104,13 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    await ensureEnrollment({
-      user_id: user.user_id,
-      course_instance_id: '1',
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+    const courseInstance = await selectCourseInstanceById('1');
+    await ensureUncheckedEnrollment({
+      userId: user.user_id,
+      courseInstance,
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
     });
 
     // Simulates the dev user (an instructor) using "Student view" for an

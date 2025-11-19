@@ -26,6 +26,16 @@ export const EnumChunkTypeSchema = z.enum([
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
 
+export const EnumCourseRoleSchema = z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']);
+export type EnumCourseRole = z.infer<typeof EnumCourseRoleSchema>;
+
+export const EnumCourseInstanceRoleSchema = z.enum([
+  'None',
+  'Student Data Viewer',
+  'Student Data Editor',
+]);
+export type EnumCourseInstanceRole = z.infer<typeof EnumCourseInstanceRoleSchema>;
+
 export const EnumEnrollmentStatusSchema = z.enum([
   'invited',
   'joined',
@@ -148,11 +158,7 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
 
 // Result of authz_course sproc
 export const SprocAuthzCourseSchema = z.object({
-  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
-  has_course_permission_edit: z.boolean(),
-  has_course_permission_own: z.boolean(),
-  has_course_permission_preview: z.boolean(),
-  has_course_permission_view: z.boolean(),
+  course_role: EnumCourseRoleSchema,
 });
 export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
 
@@ -196,10 +202,10 @@ export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullabl
 
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
-  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor', 'Student']),
-  has_course_instance_permission_edit: z.boolean(),
-  has_course_instance_permission_view: z.boolean(),
+  course_instance_role: EnumCourseInstanceRoleSchema,
+  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
   has_student_access: z.boolean(),
+  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
   has_student_access_with_enrollment: z.boolean(),
 });
 export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
@@ -294,6 +300,7 @@ export const AssessmentSchema = z.object({
   json_grade_rate_minutes: z.number().nullable(),
   max_bonus_points: z.number().nullable(),
   max_points: z.number().nullable(),
+  modern_access_control: z.boolean(),
   multiple_instance: z.boolean().nullable(),
   number: z.string(),
   obj: z.any().nullable(),
@@ -479,6 +486,7 @@ export const AuditEventSchema = z.object({
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString,
+  enrollment_id: IdSchema.nullable(),
   group_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
@@ -592,6 +600,9 @@ export const CourseInstanceSchema = z.object({
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
+  modern_publishing: z.boolean(),
+  publishing_end_date: DateFromISOString.nullable(),
+  publishing_start_date: DateFromISOString.nullable(),
   self_enrollment_enabled: z.boolean(),
   self_enrollment_enabled_before_date: DateFromISOString.nullable(),
   self_enrollment_restrict_to_institution: z.boolean(),
@@ -617,9 +628,28 @@ export const CourseInstanceAccessRuleSchema = z.object({
 });
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
 
+export const CourseInstancePublishingExtensionSchema = z.object({
+  course_instance_id: IdSchema,
+  end_date: DateFromISOString,
+  id: IdSchema,
+  name: z.string().nullable(),
+});
+export type CourseInstancePublishingExtension = z.infer<
+  typeof CourseInstancePublishingExtensionSchema
+>;
+
+export const CourseInstancePublishingExtensionEnrollmentSchema = z.object({
+  course_instance_publishing_extension_id: IdSchema,
+  enrollment_id: IdSchema,
+  id: IdSchema,
+});
+export type CourseInstancePublishingExtensionEnrollment = z.infer<
+  typeof CourseInstancePublishingExtensionEnrollmentSchema
+>;
+
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
-  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor']).nullable(),
+  course_instance_role: EnumCourseInstanceRoleSchema.nullable(),
   course_permission_id: IdSchema,
   id: IdSchema,
 });
@@ -636,7 +666,7 @@ export const CourseInstanceUsageSchema = null;
 
 export const CoursePermissionSchema = z.object({
   course_id: IdSchema,
-  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']).nullable(),
+  course_role: EnumCourseRoleSchema.nullable(),
   id: IdSchema,
   user_id: IdSchema,
 });
@@ -704,7 +734,6 @@ export const ExamModeNetworkSchema = z.object({
 });
 export type ExamModeNetwork = z.infer<typeof ExamModeNetworkSchema>;
 
-export const ExamSchema = null;
 export const FeatureGrantSchema = null;
 
 export const FileSchema = z.object({
@@ -1228,7 +1257,6 @@ export const QuestionTagSchema = z.object({
   tag_id: IdSchema,
 });
 export type QuestionTag = z.infer<typeof QuestionTagSchema>;
-export const ReservationSchema = null;
 
 export const RubricSchema = z.object({
   created_at: DateFromISOString,
@@ -1550,18 +1578,18 @@ export const TableNames = [
   'client_fingerprints',
   'course_instance_access_rules',
   'course_instance_permissions',
+  'course_instance_publishing_extension_enrollments',
+  'course_instance_publishing_extensions',
   'course_instance_required_plans',
   'course_instance_usages',
   'course_instances',
   'course_permissions',
   'course_requests',
-  'courses',
   'cron_jobs',
   'current_pages',
   'draft_question_metadata',
   'enrollments',
   'exam_mode_networks',
-  'exams',
   'feature_grants',
   'file_edits',
   'file_transfers',
@@ -1603,7 +1631,6 @@ export const TableNames = [
   'question_score_logs',
   'question_tags',
   'questions',
-  'reservations',
   'rubric_grading_items',
   'rubric_gradings',
   'rubric_items',

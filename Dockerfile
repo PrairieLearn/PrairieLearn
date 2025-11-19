@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile-upstream:master-labs
 FROM amazonlinux:2023
-ARG CACHEBUST=2025-10-15-14-17-30
+ARG CACHEBUST=2025-11-15-14-13-19
 
 ENV PATH="/.venv/bin:$PATH"
 

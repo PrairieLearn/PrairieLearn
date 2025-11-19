@@ -111,12 +111,12 @@ describe('Database Schema Sync Test', () => {
     const remainingSchemaNames = _.difference(TableNames, nonPtTables);
     if (remainingTableNames.length > 0) {
       throw new Error(
-        `table definitions missing from TableNameSchema: ${remainingTableNames.join(', ')}`,
+        `table definitions missing from TableNames: ${remainingTableNames.join(', ')}`,
       );
     }
     if (remainingSchemaNames.length > 0) {
       throw new Error(
-        `tables listed in TableNameSchema but not in database: ${remainingSchemaNames.join(', ')}`,
+        `tables listed in TableNames but not in database: ${remainingSchemaNames.join(', ')}`,
       );
     }
   });
