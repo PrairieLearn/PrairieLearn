@@ -19,6 +19,7 @@ import { updateCourseSharingName } from '../models/course.js';
 
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
+import { generateCsrfToken } from './utils/csrf.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -320,9 +321,14 @@ function getPostInfoFromCopyOption(form) {
   return { csrfToken: option.attr('data-csrf-token'), url: option.attr('data-copy-url') };
 }
 
-function getCourseInstanceCopyPostInfo(page: cheerio.Cheerio<any>) {
-  const csrfToken = page.find('span#test_csrf_token').text();
-  console.log(csrfToken);
+function getCourseInstanceCopyPostInfo(_: cheerio.Cheerio<any>) {
+  const authnUserId = '1';
+  // This is a workaround since we have no other way to get the CSRF token
+  // for the copy course instance form. This is
+  const csrfToken = generateCsrfToken({
+    url: '/pl/course/1/copy_public_course_instance',
+    authnUserId,
+  });
   return {
     csrfToken,
     url: '/pl/course/1/copy_public_course_instance',
