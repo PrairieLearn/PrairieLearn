@@ -9,6 +9,10 @@ import { type z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  // AccessControlEarlyDeadlineSchema,
+  // AccessControlLateDeadlineSchema,
+  // AccessControlSchema,
+  // AccessControlTargetSchema,
   AlternativeGroupSchema,
   AssessmentAccessRuleSchema,
   AssessmentQuestionSchema,
@@ -25,6 +29,7 @@ import {
   ZoneSchema,
 } from '../../lib/db-types.js';
 import type {
+  AccessControlJsonInput,
   AssessmentJsonInput,
   CourseInstanceJsonInput,
   CourseJsonInput,
@@ -37,12 +42,37 @@ import * as syncFromDisk from '../../sync/syncFromDisk.js';
 export interface CourseInstanceData {
   assessments: Record<string, AssessmentJsonInput>;
   courseInstance: CourseInstanceJsonInput;
+  assessmentAccessControl?: Record<string, AccessControlJsonInput[]>;
 }
 
 export interface CourseData {
   course: CourseJsonInput;
   questions: Record<string, QuestionJsonInput>;
   courseInstances: Record<string, CourseInstanceData>;
+}
+
+// Add this helper function (place it near the other helper functions):
+/**
+ * Helper to set access control rules on a course instance.
+ * Handles initialization and wrapping in InfoFile.
+ *
+ * @param courseData - The course data to modify
+ * @param assessmentId - The assessment ID (e.g., 'test')
+ * @param rules - The access control rules to set
+ */
+export function setAccessControlRules(
+  courseData: CourseData,
+  assessmentId: string,
+  rules: AccessControlJsonInput[],
+) {
+  const courseInstance = courseData.courseInstances[COURSE_INSTANCE_ID];
+
+  if (!courseInstance.assessmentAccessControl) {
+    courseInstance.assessmentAccessControl = {};
+  }
+
+  // Store the raw JSON input - the sync will handle InfoFile wrapping
+  courseInstance.assessmentAccessControl[assessmentId] = rules;
 }
 
 /**
@@ -101,12 +131,19 @@ export async function writeCourseToDirectory(courseData: CourseData, coursePath:
     const assessmentsPath = path.join(courseInstancePath, 'assessments');
     await fs.ensureDir(assessmentsPath);
     for (const assessmentName of Object.keys(courseInstance.assessments)) {
-      // Handle nested assessments - split on '/' and use components to construct
-      // the nested directory structure.
       const assessmentPath = path.join(assessmentsPath, ...assessmentName.split('/'));
       await fs.ensureDir(assessmentPath);
       const assessmentInfoPath = path.join(assessmentPath, 'infoAssessment.json');
       await fs.writeJSON(assessmentInfoPath, courseInstance.assessments[assessmentName]);
+
+      // Write accessControl.json if it exists for this assessment
+      if (courseInstance.assessmentAccessControl?.[assessmentName]) {
+        const accessControlPath = path.join(assessmentPath, 'accessControl.json');
+        await fs.writeJSON(
+          accessControlPath,
+          courseInstance.assessmentAccessControl[assessmentName],
+        );
+      }
     }
   }
 }
