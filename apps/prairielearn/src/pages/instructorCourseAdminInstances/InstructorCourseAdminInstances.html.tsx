@@ -11,7 +11,9 @@ import { CreateCourseInstanceModal } from './components/CreateCourseInstanceModa
 import { EmptyState } from './components/EmptyState.js';
 import type { InstructorCourseAdminInstanceRow } from './instructorCourseAdminInstances.shared.js';
 
-function PopoverStartDate({ courseInstanceId }: { courseInstanceId: string }) {
+function renderPopoverStartDate(courseInstanceId: string) {
+  // React Bootstrap's OverlayTrigger expects the overlay prop to be JSX (or a render function)
+  // so we don't make this a component.
   return (
     <Popover id={`popover-start-date-${courseInstanceId}`}>
       <Popover.Header as="h3">Earliest Access Date</Popover.Header>
@@ -37,7 +39,7 @@ function PopoverStartDate({ courseInstanceId }: { courseInstanceId: string }) {
   );
 }
 
-function PopoverEndDate({ courseInstanceId }: { courseInstanceId: string }) {
+function renderPopoverEndDate(courseInstanceId: string) {
   return (
     <Popover id={`popover-end-date-${courseInstanceId}`}>
       <Popover.Header as="h3">Latest Access Date</Popover.Header>
@@ -173,7 +175,7 @@ export function InstructorCourseAdminInstances({
                           <OverlayTrigger
                             placement="bottom"
                             trigger="click"
-                            overlay={<PopoverStartDate courseInstanceId={row.id} />}
+                            overlay={renderPopoverStartDate(row.id)}
                           >
                             <Button
                               variant="light"
@@ -191,7 +193,7 @@ export function InstructorCourseAdminInstances({
                           <OverlayTrigger
                             placement="bottom"
                             trigger="click"
-                            overlay={<PopoverEndDate courseInstanceId={row.id} />}
+                            overlay={renderPopoverEndDate(row.id)}
                           >
                             <Button
                               variant="light"
