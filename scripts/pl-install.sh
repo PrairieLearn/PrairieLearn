@@ -100,6 +100,5 @@ uv python install --default --preview "cpython-3.10-${UV_ARCH}"
 uv venv --seed
 
 # Clear various caches to minimize the final image size.
-uv cache clean
 dnf clean all
 nvm cache clear
