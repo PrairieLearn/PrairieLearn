@@ -1,6 +1,7 @@
 import {
   DndContext,
   type DragEndEvent,
+  type DragOverEvent,
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
@@ -21,7 +22,7 @@ import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import type { Header, Row, SortDirection, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
 import type { AriaRole, ComponentChildren } from 'preact';
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
@@ -170,6 +171,7 @@ function SortableTableHeader<RowDataModel>({
   lastColumnId,
   tableRect,
   handleResizeEnd,
+  isDragOverInvalid,
 }: {
   header: Header<RowDataModel, unknown>;
   table: Table<RowDataModel>;
@@ -177,6 +179,7 @@ function SortableTableHeader<RowDataModel>({
   lastColumnId: string;
   tableRect?: DOMRect;
   handleResizeEnd?: () => void;
+  isDragOverInvalid?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: header.column.id,
@@ -205,6 +208,10 @@ function SortableTableHeader<RowDataModel>({
     opacity: isDragging ? 0.5 : 1,
     cursor: 'default', // Default cursor, resize handle and sort button will override
     touchAction: 'none',
+    backgroundColor: isDragOverInvalid ? 'var(--bs-danger-bg-subtle)' : undefined,
+    borderColor: isDragOverInvalid ? 'var(--bs-danger-border-subtle)' : undefined,
+    borderWidth: isDragOverInvalid ? '2px' : undefined,
+    borderStyle: isDragOverInvalid ? 'dashed' : undefined,
   };
 
   return (
@@ -422,6 +429,8 @@ export function TanstackTable<RowDataModel>({
   const displayedCount = table.getRowModel().rows.length;
   const totalCount = table.getCoreRowModel().rows.length;
 
+  const [invalidDragOverId, setInvalidDragOverId] = useState<string | null>(null);
+
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -439,13 +448,33 @@ export function TanstackTable<RowDataModel>({
     }),
   );
 
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      setInvalidDragOverId(null);
+      return;
+    }
+
+    // Check if dragging between frozen and unfrozen groups
+    const activeCol = table.getColumn(active.id as string);
+    const overCol = table.getColumn(over.id as string);
+
+    const activePinned = activeCol?.getIsPinned() === 'left';
+    const overPinned = overCol?.getIsPinned() === 'left';
+
+    // If crossing boundary, mark as invalid
+    if (activePinned !== overPinned) {
+      setInvalidDragOverId(over.id as string);
+    } else {
+      setInvalidDragOverId(null);
+    }
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    setInvalidDragOverId(null);
 
-    const columnOrder = table.getState().columnOrder;
-    const oldIndex = columnOrder.indexOf(active.id as string);
-    const newIndex = columnOrder.indexOf(over.id as string);
+    if (!over || active.id === over.id) return;
 
     // Handle pinning logic
     const activeCol = table.getColumn(active.id as string);
@@ -454,13 +483,37 @@ export function TanstackTable<RowDataModel>({
     const activePinned = activeCol?.getIsPinned() === 'left';
     const overPinned = overCol?.getIsPinned() === 'left';
 
-    // If we drag across the boundary, update pinning of the ACTIVE column to match the OVER column
+    // Prevent dragging between frozen and unfrozen groups
     if (activePinned !== overPinned) {
-      activeCol?.pin(overPinned ? 'left' : false);
+      return;
     }
+
+    const columnOrder = table.getState().columnOrder;
+    const oldIndex = columnOrder.indexOf(active.id as string);
+    const newIndex = columnOrder.indexOf(over.id as string);
 
     const newOrder = arrayMove(columnOrder, oldIndex, newIndex);
     table.setColumnOrder(newOrder);
+
+    // Update pinning.left to match the new order of pinned columns
+    // This ensures that when pinned columns are reordered, the pinning state reflects the new order
+    const currentPinning = table.getState().columnPinning;
+    const pinnedColumns = newOrder.filter((colId) => {
+      const col = table.getColumn(colId);
+      return col?.getIsPinned() === 'left';
+    });
+
+    // Only update if the pinned columns order has changed
+    const currentPinnedOrder = currentPinning.left ?? [];
+    if (
+      pinnedColumns.length !== currentPinnedOrder.length ||
+      !pinnedColumns.every((id, idx) => id === currentPinnedOrder[idx])
+    ) {
+      table.setColumnPinning({
+        ...currentPinning,
+        left: pinnedColumns,
+      });
+    }
   };
 
   return (
@@ -487,7 +540,9 @@ export function TanstackTable<RowDataModel>({
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
+            onDragCancel={() => setInvalidDragOverId(null)}
           >
             <table
               class="table table-hover mb-0"
@@ -512,6 +567,7 @@ export function TanstackTable<RowDataModel>({
                           lastColumnId={lastColumnId}
                           tableRect={tableRect}
                           handleResizeEnd={handleResizeEnd}
+                          isDragOverInvalid={invalidDragOverId === header.column.id}
                         />
                       ))}
                     </tr>
