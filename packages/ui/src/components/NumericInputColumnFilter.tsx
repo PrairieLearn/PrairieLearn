@@ -1,27 +1,33 @@
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
 import Dropdown from 'react-bootstrap/Dropdown';
+
+export type NumericColumnFilterValue =
+  | {
+      filterValue: string;
+      emptyOnly: false;
+    }
+  | {
+      filterValue: '';
+      emptyOnly: true;
+    };
 
 interface NumericInputColumnFilterProps {
   columnId: string;
   columnLabel: string;
-  value: string;
-  onChange: (value: string) => void;
-  /** If true, shows a checkbox to filter for only null/empty values */
-  allowEmptyFilter?: boolean;
-  emptyFilterChecked?: boolean;
-  onEmptyFilterChange?: (checked: boolean) => void;
+  value: NumericColumnFilterValue;
+  onChange: (value: NumericColumnFilterValue) => void;
 }
 
 /**
  * A component that allows the user to filter a numeric column using comparison operators.
  * Supports syntax like: <1, >0, <=5, >=10, =5, or just 5 (implicit equals)
+ * State is managed by the parent component.
  *
  * @param params
  * @param params.columnId - The ID of the column
  * @param params.columnLabel - The label of the column, e.g. "Manual Points"
- * @param params.value - The current filter value (e.g., ">5" or "10")
- * @param params.onChange - Callback when the filter value changes
+ * @param params.value - The current filter state (contains filterValue and emptyOnly)
+ * @param params.onChange - Callback when the filter state changes
  */
 export function NumericInputColumnFilter({
   columnId,
@@ -29,11 +35,10 @@ export function NumericInputColumnFilter({
   value,
   onChange,
 }: NumericInputColumnFilterProps) {
-  const [localValue, setLocalValue] = useState(value);
-  const [emptyFilterChecked, setEmptyFilterChecked] = useState(false);
-
-  const hasActiveFilter = localValue.trim().length > 0 || emptyFilterChecked;
-  const isInvalid = localValue.trim().length > 0 && parseNumericFilter(localValue) === null;
+  const filterValue = value.filterValue;
+  const emptyOnly = value.emptyOnly;
+  const hasActiveFilter = filterValue.trim().length > 0 || emptyOnly;
+  const isInvalid = filterValue.trim().length > 0 && parseNumericFilter(filterValue) === null;
 
   return (
     <Dropdown align="end">
@@ -69,10 +74,14 @@ export function NumericInputColumnFilter({
             type="text"
             class={clsx('form-control form-control-sm', isInvalid && 'is-invalid')}
             placeholder="e.g., >0, <5, =10"
-            value={value}
+            value={filterValue}
+            disabled={emptyOnly}
             onInput={(e) => {
               if (e.target instanceof HTMLInputElement) {
-                onChange(e.target.value);
+                onChange({
+                  filterValue: e.target.value,
+                  emptyOnly: false,
+                });
               }
             }}
             onClick={(e) => e.stopPropagation()}
@@ -90,19 +99,39 @@ export function NumericInputColumnFilter({
               Example: <code>&gt;5</code> or <code>&lt;=10</code>
             </div>
           )}
-          {hasActiveFilter && (
-            <button
-              type="button"
-              class="btn btn-sm btn-link text-decoration-none mt-2 p-0"
-              onClick={() => {
-                setLocalValue('');
-                onChange('');
-                setEmptyFilterChecked(false);
+          <div class="form-check mt-2">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              checked={emptyOnly}
+              id={`${columnId}-empty-filter`}
+              onChange={(e) => {
+                if (e.target instanceof HTMLInputElement) {
+                  onChange(
+                    e.target.checked
+                      ? { filterValue: '', emptyOnly: true }
+                      : { filterValue: '', emptyOnly: false },
+                  );
+                }
               }}
-            >
-              Clear filter
-            </button>
-          )}
+            />
+            <label class="form-check-label" for={`${columnId}-empty-filter`}>
+              Show only empty values
+            </label>
+          </div>
+          <button
+            type="button"
+            class={clsx('btn btn-sm btn-link text-decoration-none mt-2 p-0', {
+              // Hide the clear button if no filters are applied.
+              // Use `visibility` instead of conditional rendering to avoid layout shift.
+              invisible: !hasActiveFilter,
+            })}
+            onClick={() => {
+              onChange({ filterValue: '', emptyOnly: false });
+            }}
+          >
+            Clear
+          </button>
         </div>
       </Dropdown.Menu>
     </Dropdown>
@@ -133,15 +162,6 @@ export function parseNumericFilter(filterValue: string): {
   return { operator, value };
 }
 
-export type NumericColumnFilterValue =
-  | {
-      filterValue: string;
-      emptyOnly: false;
-    }
-  | {
-      filterValue: '';
-      emptyOnly: true;
-    };
 /**
  * TanStack Table filter function for numeric columns.
  * Use this as the `filterFn` for numeric columns.

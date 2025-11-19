@@ -336,28 +336,12 @@ function GradebookTable({
           <NumericInputColumnFilter
             columnId={header.column.id}
             columnLabel={assessment.label}
-            value={filterValue.filterValue}
-            emptyFilterChecked={filterValue.emptyOnly}
-            allowEmptyFilter
+            value={filterValue}
             onChange={(value) => {
               void setAssessmentFilterValues((prev) => {
                 const newValues: Record<string, NumericColumnFilterValue> = {
                   ...prev,
-                  [columnId]:
-                    value === ''
-                      ? { filterValue: '', emptyOnly: false }
-                      : { filterValue: value, emptyOnly: false },
-                };
-                return newValues;
-              });
-            }}
-            onEmptyFilterChange={(checked) => {
-              void setAssessmentFilterValues((prev) => {
-                const newValues: Record<string, NumericColumnFilterValue> = {
-                  ...prev,
-                  [columnId]: checked
-                    ? { filterValue: '', emptyOnly: true }
-                    : { filterValue: '', emptyOnly: false },
+                  [columnId]: value,
                 };
                 return newValues;
               });
