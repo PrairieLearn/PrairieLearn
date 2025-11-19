@@ -64,6 +64,15 @@ interface EditData {
   };
 }
 
+function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
+  const csrfToken = page.find('#test_csrf_token').text();
+
+  return {
+    csrfToken,
+    url: undefined,
+  };
+}
+
 const testEditData: EditData[] = [
   {
     url: questionsUrl,
@@ -250,7 +259,8 @@ const testEditData: EditData[] = [
   },
   {
     url: courseInstancesUrl,
-    formSelector: '#createCourseInstanceModal',
+    formSelector: 'body',
+    dynamicPostInfo: getCourseInstanceCreatePostInfo,
     action: 'add_course_instance',
     info: 'courseInstances/New_1/infoCourseInstance.json',
     data: {
