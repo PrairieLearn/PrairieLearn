@@ -29,7 +29,6 @@ export function NumericInputColumnFilter({
   value,
   onChange,
 }: NumericInputColumnFilterProps) {
-  // Use local state for smooth typing experience
   const [localValue, setLocalValue] = useState(value);
   const [emptyFilterChecked, setEmptyFilterChecked] = useState(false);
 
@@ -134,6 +133,15 @@ export function parseNumericFilter(filterValue: string): {
   return { operator, value };
 }
 
+export type NumericColumnFilterValue =
+  | {
+      filterValue: string;
+      emptyOnly: false;
+    }
+  | {
+      filterValue: '';
+      emptyOnly: true;
+    };
 /**
  * TanStack Table filter function for numeric columns.
  * Use this as the `filterFn` for numeric columns.
@@ -148,10 +156,7 @@ export function parseNumericFilter(filterValue: string): {
 export function numericColumnFilterFn(
   row: any,
   columnId: string,
-  {
-    filterValue,
-    emptyOnly,
-  }: { filterValue: string; emptyOnly: false } | { filterValue: ''; emptyOnly: true },
+  { filterValue, emptyOnly }: NumericColumnFilterValue,
 ): boolean {
   // Handle object-based filter value
   const cellValue = row.getValue(columnId) as number | null;

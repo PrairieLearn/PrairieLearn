@@ -7,6 +7,8 @@ import {
 import { NuqsAdapter as NuqsReactAdapter } from 'nuqs/adapters/react';
 import React from 'preact/compat';
 
+import type { NumericColumnFilterValue } from '@prairielearn/ui';
+
 const AdapterContext = React.createContext('');
 
 function useExpressAdapterContext(): unstable_AdapterInterface {
@@ -167,16 +169,21 @@ export const parseAsColumnPinningState = createParser<ColumnPinningState>({
  * Used for numeric column filters with comparison operators.
  *
  * Internal format: `>=5`, `<=10`, `>3`, `<7`, `=5`
- * URL format: `gte_5`, `lte_10`, `gt_3`, `lt_7`, `eq_5`
+ * URL format: `gte_5`, `lte_10`, `gt_3`, `lt_7`, `eq_5`, `empty`
  *
  * Example: `gte_5` <-> `>=5`
  */
-export const parseAsNumericFilter = createParser<string>({
+export const parseAsNumericFilter = createParser<NumericColumnFilterValue>({
   parse(queryValue) {
-    if (!queryValue) return '';
+    if (!queryValue) return { filterValue: '', emptyOnly: false };
     // Parse format: {operator}_{value}
     const match = queryValue.match(/^(gte|lte|gt|lt|eq)_(.+)$/);
-    if (!match) return '';
+    if (!match) {
+      if (queryValue === 'empty') {
+        return { filterValue: '', emptyOnly: true };
+      }
+      return { filterValue: '', emptyOnly: false };
+    }
     const [, opCode, value] = match;
     const opMap: Record<string, string> = {
       gte: '>=',
@@ -186,13 +193,20 @@ export const parseAsNumericFilter = createParser<string>({
       eq: '=',
     };
     const operator = opMap[opCode];
-    if (!operator) return '';
-    return `${operator}${value}`;
+    if (!operator) return { filterValue: '', emptyOnly: false };
+    return { filterValue: `${operator}${value}`, emptyOnly: false };
   },
   serialize(value) {
-    if (!value) return '';
+    const { filterValue, emptyOnly } = value;
+
+    if (emptyOnly) return 'empty';
+
+    if (filterValue.length === 0) {
+      return 'empty';
+    }
+
     // Serialize format: internal (>=5) -> URL (gte_5)
-    const match = value.match(/^(>=|<=|>|<|=)(.+)$/);
+    const match = filterValue.match(/^(>=|<=|>|<|=)(.+)$/);
     if (!match) return '';
     const [, operator, val] = match;
     const opMap: Record<string, string> = {
@@ -207,78 +221,6 @@ export const parseAsNumericFilter = createParser<string>({
     return `${opCode}_${val}`;
   },
   eq(a, b) {
-    return a === b;
-  },
-});
-
-/**
- * Parses and serializes assessment numeric filter values to/from URL-friendly format.
- * Values can be plain comparison strings (e.g. `>=5`) or objects that track
- * whether the \"empty only\" checkbox is selected.
- */
-const EMPTY_FILTER_PREFIX = 'empty';
-
-export type AssessmentFilterValue =
-  | string
-  | {
-      numeric: string;
-      emptyOnly: boolean;
-    };
-
-function isAssessmentFilterObject(
-  value: AssessmentFilterValue,
-): value is { numeric: string; emptyOnly: boolean } {
-  return typeof value === 'object';
-}
-
-export const parseAsAssessmentFilter = createParser<AssessmentFilterValue>({
-  parse(queryValue) {
-    if (!queryValue) {
-      return '';
-    }
-
-    if (queryValue === EMPTY_FILTER_PREFIX) {
-      return { numeric: '', emptyOnly: true };
-    }
-
-    if (queryValue.startsWith(`${EMPTY_FILTER_PREFIX}_`)) {
-      const encoded = queryValue.slice(`${EMPTY_FILTER_PREFIX}_`.length);
-      const numeric = parseAsNumericFilter.parse(encoded) ?? '';
-      return { numeric, emptyOnly: true };
-    }
-
-    const numeric = parseAsNumericFilter.parse(queryValue);
-    return numeric ?? '';
-  },
-  serialize(value) {
-    if (!value) {
-      return '';
-    }
-
-    if (typeof value === 'string') {
-      return parseAsNumericFilter.serialize(value);
-    }
-
-    if (!value.emptyOnly) {
-      return parseAsNumericFilter.serialize(value.numeric);
-    }
-
-    const encodedNumeric = parseAsNumericFilter.serialize(value.numeric);
-    if (encodedNumeric) {
-      return `${EMPTY_FILTER_PREFIX}_${encodedNumeric}`;
-    }
-
-    return EMPTY_FILTER_PREFIX;
-  },
-  eq(a, b) {
-    if (a === b) {
-      return true;
-    }
-
-    if (isAssessmentFilterObject(a) && isAssessmentFilterObject(b)) {
-      return a.numeric === b.numeric && a.emptyOnly === b.emptyOnly;
-    }
-
-    return false;
+    return a.filterValue === b.filterValue && a.emptyOnly === b.emptyOnly;
   },
 });

@@ -25,17 +25,18 @@ import { z } from 'zod';
 
 import {
   CategoricalColumnFilter,
+  type NumericColumnFilterValue,
   NumericInputColumnFilter,
   TanstackTableCard,
-  numericColumnFilterFnWithEmpty,
+  numericColumnFilterFn,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import {
   NuqsAdapter,
-  parseAsAssessmentFilter,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsNumericFilter,
   parseAsSortingState,
 } from '../../../lib/client/nuqs.js';
 import type { PageContextWithAuthzData } from '../../../lib/client/page-context.js';
@@ -60,7 +61,6 @@ type EnrollmentFilterOption = 'students-and-staff' | 'only-students' | 'only-joi
 const DEFAULT_ENROLLMENT_FILTER: EnrollmentFilterOption = 'only-joined-students';
 const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
 const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
-type AssessmentFilterParser = ReturnType<(typeof parseAsAssessmentFilter)['withDefault']>;
 
 const columnHelper = createColumnHelper<GradebookRow>();
 const queryClient = new QueryClient();
@@ -103,13 +103,13 @@ function GradebookTable({
     parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(DEFAULT_STATUS_FILTER),
   );
 
-  const assessmentFilterConfig = useMemo<Record<string, AssessmentFilterParser>>(() => {
-    const config: Record<string, AssessmentFilterParser> = {};
-    courseAssessments.forEach((assessment) => {
-      const columnId = `assessment_${assessment.assessment_id}`;
-      config[columnId] = parseAsAssessmentFilter.withDefault('');
-    });
-    return config;
+  const assessmentFilterConfig = useMemo(() => {
+    return Object.fromEntries(
+      courseAssessments.map((assessment) => {
+        const columnId = `assessment_${assessment.assessment_id}`;
+        return [columnId, parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false })];
+      }),
+    );
   }, [courseAssessments]);
 
   const [assessmentFilterValues, setAssessmentFilterValues] =
@@ -138,9 +138,6 @@ function GradebookTable({
     // 'students-and-staff' shows everyone, no filter
 
     Object.entries(assessmentFilterValues).forEach(([columnId, filterValue]) => {
-      if (filterValue === '') {
-        return;
-      }
       filters.push({ id: columnId, value: filterValue });
     });
 
@@ -287,10 +284,7 @@ function GradebookTable({
                 </span>
               );
             },
-            filterFn: (row, columnId, filterValue) => {
-              const result = numericColumnFilterFnWithEmpty(row, columnId, filterValue);
-              return result;
-            },
+            filterFn: numericColumnFilterFn,
           },
         ),
       ),
@@ -337,28 +331,36 @@ function GradebookTable({
       const columnId = `assessment_${assessment.assessment_id}`;
       assessmentFilters[columnId] = ({ header }: { header: Header<GradebookRow, unknown> }) => {
         const filterValue = assessmentFilterValues[columnId];
-        const numericValue =
-          typeof filterValue === 'string' ? filterValue : filterValue.numeric || '';
-        const emptyOnly = typeof filterValue === 'object' ? filterValue.emptyOnly : false;
 
         return (
           <NumericInputColumnFilter
             columnId={header.column.id}
             columnLabel={assessment.label}
-            value={numericValue}
-            emptyFilterChecked={emptyOnly}
+            value={filterValue.filterValue}
+            emptyFilterChecked={filterValue.emptyOnly}
             allowEmptyFilter
             onChange={(value) => {
-              void setAssessmentFilterValues((prev) => ({
-                ...prev,
-                [columnId]: value === '' ? '' : value,
-              }));
+              void setAssessmentFilterValues((prev) => {
+                const newValues: Record<string, NumericColumnFilterValue> = {
+                  ...prev,
+                  [columnId]:
+                    value === ''
+                      ? { filterValue: '', emptyOnly: false }
+                      : { filterValue: value, emptyOnly: false },
+                };
+                return newValues;
+              });
             }}
             onEmptyFilterChange={(checked) => {
-              void setAssessmentFilterValues((prev) => ({
-                ...prev,
-                [columnId]: checked ? { numeric: '', emptyOnly: true } : '',
-              }));
+              void setAssessmentFilterValues((prev) => {
+                const newValues: Record<string, NumericColumnFilterValue> = {
+                  ...prev,
+                  [columnId]: checked
+                    ? { filterValue: '', emptyOnly: true }
+                    : { filterValue: '', emptyOnly: false },
+                };
+                return newValues;
+              });
             }}
           />
         );
