@@ -11,7 +11,7 @@ import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
-import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
 import {
   CourseInstanceRowSchema,
@@ -111,7 +111,7 @@ router.post('/', [
       await authzCourseOrInstance(req, res);
       // Now we have authzData
 
-      await ensureCheckedEnrollment({
+      await ensureEnrollment({
         institution,
         course,
         courseInstance: course_instance,
