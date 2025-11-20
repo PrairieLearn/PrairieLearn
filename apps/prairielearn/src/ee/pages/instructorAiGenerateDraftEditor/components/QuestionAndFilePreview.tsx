@@ -84,12 +84,25 @@ function useQuestionHtml({
       // TODO: It's kind of wasteful to render the entire page, including fetching all
       // past AI chat messages, just to get the updated question HTML. We should consider
       // building a special dedicated route for this.
+
+      // Convert FormData to JSON, handling multiple values with the same name as arrays
+      const jsonData: Record<string, FormDataEntryValue | FormDataEntryValue[]> = {};
+      for (const [key, value] of formData.entries()) {
+        if (key in jsonData) {
+          // If key already exists, convert to array or append to array
+          const existing = jsonData[key];
+          jsonData[key] = Array.isArray(existing) ? [...existing, value] : [existing, value];
+        } else {
+          jsonData[key] = value;
+        }
+      }
+
       fetch(variantUrl, {
         method: form.method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(Object.fromEntries(formData.entries())),
+        body: JSON.stringify(jsonData),
       })
         .then(async (res) => {
           if (!res.ok) throw new Error(`Server returned status ${res.status}`);
