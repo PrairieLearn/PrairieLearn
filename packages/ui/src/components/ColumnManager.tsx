@@ -11,7 +11,7 @@ interface ColumnMenuItemProps<RowDataModel> {
   className?: string;
 }
 
-function ColumnMenuItem<RowDataModel>({
+function ColumnLeafItem<RowDataModel>({
   column,
   hidePinButton = false,
   onTogglePin,
@@ -74,18 +74,11 @@ function ColumnGroupItem<RowDataModel>({
   getHidePinButton: (columnId: string) => boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const checkboxRef = useRef<HTMLInputElement>(null);
 
   const leafColumns = column.getLeafColumns();
   const visibleLeafColumns = leafColumns.filter((c) => c.getIsVisible());
   const isAllVisible = visibleLeafColumns.length === leafColumns.length;
   const isSomeVisible = visibleLeafColumns.length > 0 && !isAllVisible;
-
-  useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.indeterminate = isSomeVisible;
-    }
-  }, [isSomeVisible]);
 
   const handleToggleVisibility = (e: Event) => {
     e.preventDefault();
@@ -108,10 +101,10 @@ function ColumnGroupItem<RowDataModel>({
       <div class="px-2 py-1 d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center flex-grow-1">
           <input
-            ref={checkboxRef}
             type="checkbox"
             class="form-check-input flex-shrink-0"
             checked={isAllVisible}
+            indeterminate={isSomeVisible}
             aria-label={`Toggle visibility for group '${header}'`}
             onChange={handleToggleVisibility}
           />
@@ -138,10 +131,9 @@ function ColumnGroupItem<RowDataModel>({
       {isExpanded && (
         <div class="ps-3 border-start ms-3 mb-1">
           {column.columns.map((childCol) => (
-            <ColumnHierarchyItem
+            <ColumnItem
               key={childCol.id}
               column={childCol}
-              hidePinButton={getHidePinButton(childCol.id)}
               getHidePinButton={getHidePinButton}
               onTogglePin={onTogglePin}
             />
@@ -152,15 +144,13 @@ function ColumnGroupItem<RowDataModel>({
   );
 }
 
-function ColumnHierarchyItem<RowDataModel>({
+function ColumnItem<RowDataModel>({
   column,
   onTogglePin,
-  hidePinButton,
   getHidePinButton,
 }: {
   column: Column<RowDataModel>;
   onTogglePin: (columnId: string) => void;
-  hidePinButton: boolean;
   getHidePinButton: (columnId: string) => boolean;
 }) {
   if (column.columns.length > 0) {
@@ -172,7 +162,13 @@ function ColumnHierarchyItem<RowDataModel>({
       />
     );
   }
-  return <ColumnMenuItem column={column} hidePinButton={hidePinButton} onTogglePin={onTogglePin} />;
+  return (
+    <ColumnLeafItem
+      column={column}
+      hidePinButton={getHidePinButton(column.id)}
+      onTogglePin={onTogglePin}
+    />
+  );
 }
 
 interface ColumnManagerProps<RowDataModel> {
@@ -219,7 +215,7 @@ export function ColumnManager<RowDataModel>({
   const pinnedColumns = allLeafColumns.filter((c) => c.getIsPinned() === 'left');
   const unpinnedColumns = allLeafColumns.filter((c) => c.getIsPinned() !== 'left');
 
-  // Calculate which columns should have their pin buttons hidden based on sequential pinning logic:
+  // Calculate which columns should have their pin buttons hidden:
   // - Columns that are part of a group (have a parent) cannot be pinned
   // - For pinned columns: only the last one can be unpinned
   // - For unpinned columns: only the first one can be pinned
@@ -296,9 +292,10 @@ export function ColumnManager<RowDataModel>({
               Frozen columns
             </div>
             <div role="group">
+              {/* Only leaf columns can be pinned in the current implementation. */}
               {pinnedColumns.map((column, index) => {
                 return (
-                  <ColumnMenuItem
+                  <ColumnLeafItem
                     key={column.id}
                     column={column}
                     hidePinButton={index !== pinnedColumns.length - 1}
@@ -316,13 +313,12 @@ export function ColumnManager<RowDataModel>({
               {unpinnedRootColumns.map((column) => {
                 // For root columns, only pass hidePinButton if it's a leaf column
                 // Group columns don't have pin buttons, so hidePinButton doesn't apply
-                const hidePinButton =
-                  column.columns.length === 0 ? getHidePinButton(column.id) : true;
+                // const hidePinButton =
+                //   column.columns.length === 0 ? getHidePinButton(column.id) : true;
                 return (
-                  <ColumnHierarchyItem
+                  <ColumnItem
                     key={column.id}
                     column={column}
-                    hidePinButton={hidePinButton}
                     getHidePinButton={getHidePinButton}
                     onTogglePin={handleTogglePin}
                   />

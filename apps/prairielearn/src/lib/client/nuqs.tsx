@@ -65,8 +65,10 @@ export const parseAsSortingState = createParser<SortingState>({
       })
       .filter((v): v is { id: string; desc: boolean } => !!v);
   },
-  serialize(value) {
-    if (value.length === 0) return '';
+  serialize(value): string {
+    // `null` indicates that the value should be omitted from the URL.
+    // @ts-expect-error - `null` is not assignable to type `string`.
+    if (value.length === 0) return null;
     return value
       .filter((v) => v.id)
       .map((v) => `${v.id}:${v.desc ? 'desc' : 'asc'}`)

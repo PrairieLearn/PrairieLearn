@@ -69,13 +69,17 @@ export function NumericInputColumnFilter({
         className="p-0"
       >
         <div class="p-3" style={{ minWidth: '240px' }}>
-          <label class="form-label fw-semibold mb-2">{columnLabel}</label>
+          <label class="form-label fw-semibold mb-2" id={`${columnId}-filter-label`}>
+            {columnLabel}
+          </label>
           <input
             type="text"
             class={clsx('form-control form-control-sm', isInvalid && 'is-invalid')}
             placeholder="e.g., >0, <5, =10"
+            aria-labelledby={`${columnId}-filter-label`}
             value={filterValue}
             disabled={emptyOnly}
+            aria-describedby={`${columnId}-filter-description`}
             onInput={(e) => {
               if (e.target instanceof HTMLInputElement) {
                 onChange({
@@ -92,12 +96,10 @@ export function NumericInputColumnFilter({
             </div>
           )}
           {!isInvalid && (
-            <div class="form-text small">
-              Use operators: <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>,{' '}
+            <small class="form-text text-nowrap" id={`${columnId}-filter-description`}>
+              Operators: <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>,{' '}
               <code>&gt;=</code>, <code>=</code>
-              <br />
-              Example: <code>&gt;5</code> or <code>&lt;=10</code>
-            </div>
+            </small>
           )}
           <div class="form-check mt-2">
             <input
@@ -116,7 +118,7 @@ export function NumericInputColumnFilter({
               }}
             />
             <label class="form-check-label" for={`${columnId}-empty-filter`}>
-              Show only empty values
+              Empty values
             </label>
           </div>
           <button

@@ -223,26 +223,18 @@ export function TanstackTable<RowDataModel>({
           rowVirtualizer.getTotalSize() - notUndefined(virtualRows.at(-1)).end,
         ]
       : [0, 0];
-  const allHeaderGroups = table.getHeaderGroups();
-  // Skip the first header group if it contains any group columns (top-level group headers)
-  const headerGroups = allHeaderGroups.filter((headerGroup, index) => {
-    if (index === 0) {
-      // Skip the first header group if it contains any group columns (headers with child columns)
-      const hasGroupColumns = headerGroup.headers.some(
-        (header) => header.column.columns.length > 0,
-      );
-      return !hasGroupColumns;
-    }
-    return true;
-  });
-  const isTableResizing = headerGroups.some((headerGroup) =>
-    headerGroup.headers.some((header) => header.column.getIsResizing()),
-  );
+
+  const headerGroups = table.getHeaderGroups();
+
+  const leafHeaderGroup = headerGroups[headerGroups.length - 1];
+
+  const isTableResizing = leafHeaderGroup.headers.some((header) => header.column.getIsResizing());
   const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
 
   const tableRect = tableRef.current?.getBoundingClientRect();
 
   // We toggle this here instead of in the parent since this component logically manages all UI for the table.
+
   useEffect(() => {
     document.body.classList.toggle('no-user-select', isTableResizing);
   }, [isTableResizing]);
@@ -290,133 +282,111 @@ export function TanstackTable<RowDataModel>({
             role="grid"
           >
             <thead>
-              {headerGroups.map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header, index) => {
-                    const isPinned = header.column.getIsPinned();
-                    const sortDirection = header.column.getIsSorted();
-                    const canSort = header.column.getCanSort();
-                    const canFilter = header.column.getCanFilter();
-                    const columnName =
-                      typeof header.column.columnDef.header === 'string'
-                        ? header.column.columnDef.header
-                        : header.column.id;
+              <tr key={leafHeaderGroup.id}>
+                {leafHeaderGroup.headers.map((header, index) => {
+                  const isPinned = header.column.getIsPinned();
+                  const sortDirection = header.column.getIsSorted();
+                  const canSort = header.column.getCanSort();
+                  const canFilter = header.column.getCanFilter();
+                  const columnName =
+                    header.column.columnDef.meta?.label ??
+                    (typeof header.column.columnDef.header === 'string'
+                      ? header.column.columnDef.header
+                      : header.column.id);
 
-                    const style: JSX.CSSProperties = {
-                      width:
-                        header.column.id === lastColumnId
-                          ? `max(100%, ${header.getSize()}px)`
-                          : header.getSize(),
-                      position: 'sticky',
-                      top: 0,
-                      zIndex: isPinned === 'left' ? 2 : 1,
-                      left: isPinned === 'left' ? header.getStart() : undefined,
-                      boxShadow:
-                        'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
-                    };
+                  const style: JSX.CSSProperties = {
+                    width:
+                      header.column.id === lastColumnId
+                        ? `max(100%, ${header.getSize()}px)`
+                        : header.getSize(),
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: isPinned === 'left' ? 2 : 1,
+                    left: isPinned === 'left' ? header.getStart() : undefined,
+                    boxShadow:
+                      'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
+                  };
 
-                    return (
-                      <th
-                        key={header.id}
-                        class={clsx(isPinned === 'left' && 'bg-light')}
-                        style={style}
-                        aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
-                        role="columnheader"
+                  return (
+                    <th
+                      key={header.id}
+                      class={clsx(isPinned === 'left' && 'bg-light')}
+                      style={style}
+                      aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
+                      role="columnheader"
+                    >
+                      <div
+                        class={clsx(
+                          'd-flex align-items-center',
+                          canSort || canFilter
+                            ? 'justify-content-between'
+                            : 'justify-content-center',
+                        )}
                       >
                         <div
                           class={clsx(
-                            'd-flex align-items-center',
-                            canSort || canFilter
-                              ? 'justify-content-between'
-                              : 'justify-content-center',
+                            'text-nowrap text-start',
+                            canSort || canFilter ? 'flex-grow-1' : '',
                           )}
+                          style={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            background: 'transparent',
+                            border: 'none',
+                          }}
+                          aria-label={
+                            canSort
+                              ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
+                              : undefined
+                          }
                         >
-                          <button
-                            class={clsx(
-                              'text-nowrap text-start',
-                              canSort || canFilter ? 'flex-grow-1' : '',
-                            )}
-                            style={{
-                              cursor: canSort ? 'pointer' : 'default',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              background: 'transparent',
-                              border: 'none',
-                            }}
-                            type="button"
-                            aria-label={
-                              canSort
-                                ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
-                                : undefined
-                            }
-                            onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                            onKeyDown={
-                              canSort
-                                ? (e) => {
-                                    const handleSort = header.column.getToggleSortingHandler();
-                                    if (e.key === 'Enter' && handleSort) {
-                                      e.preventDefault();
-                                      handleSort(e);
-                                    }
-                                  }
-                                : undefined
-                            }
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(header.column.columnDef.header, header.getContext())}
-                            {canSort && (
-                              <span class="visually-hidden">
-                                , {getAriaSort(sortDirection)}, click to sort
-                              </span>
-                            )}
-                          </button>
-
-                          {(canSort || canFilter) && (
-                            <div class="d-flex align-items-center">
-                              {canSort && (
-                                <button
-                                  type="button"
-                                  class="btn btn-link text-muted p-0"
-                                  aria-label={`Sort ${columnName.toLowerCase()}`}
-                                  title={`Sort ${columnName.toLowerCase()}`}
-                                  onClick={header.column.getToggleSortingHandler()}
-                                >
-                                  <SortIcon sortMethod={sortDirection || false} />
-                                </button>
-                              )}
-                              {canFilter && filters[header.column.id]?.({ header })}
-                            </div>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                          {canSort && (
+                            <span class="visually-hidden">
+                              , {getAriaSort(sortDirection)}, click to sort
+                            </span>
                           )}
                         </div>
-                        {tableRect?.width &&
-                        tableRect.width > table.getTotalSize() &&
-                        index === headerGroup.headers.length - 1
-                          ? null
-                          : header.column.getCanResize() && (
-                              <ResizeHandle
-                                header={header}
-                                setColumnSizing={table.setColumnSizing}
-                                onResizeEnd={handleResizeEnd}
-                              />
+
+                        {(canSort || canFilter) && (
+                          <div class="d-flex align-items-center">
+                            {canSort && (
+                              <button
+                                type="button"
+                                class="btn btn-link text-muted p-0"
+                                aria-label={`Sort ${columnName.toLowerCase()}`}
+                                title={`Sort ${columnName.toLowerCase()}`}
+                                onClick={header.column.getToggleSortingHandler()}
+                              >
+                                <SortIcon sortMethod={sortDirection} />
+                              </button>
                             )}
-                      </th>
-                    );
-                  })}
-                </tr>
-              ))}
+                            {canFilter && filters[header.column.id]?.({ header })}
+                          </div>
+                        )}
+                      </div>
+                      {tableRect?.width &&
+                      tableRect.width > table.getTotalSize() &&
+                      index === leafHeaderGroup.headers.length - 1
+                        ? null
+                        : header.column.getCanResize() && (
+                            <ResizeHandle
+                              header={header}
+                              setColumnSizing={table.setColumnSizing}
+                              onResizeEnd={handleResizeEnd}
+                            />
+                          )}
+                    </th>
+                  );
+                })}
+              </tr>
             </thead>
             <tbody>
               {before > 0 && (
                 <tr tabIndex={-1}>
-                  <td
-                    colSpan={
-                      headerGroups.length > 0
-                        ? headerGroups[headerGroups.length - 1].headers.length
-                        : table.getVisibleLeafColumns().length
-                    }
-                    style={{ height: before }}
-                  />
+                  <td colSpan={leafHeaderGroup.headers.length} style={{ height: before }} />
                 </tr>
               )}
               {virtualRows.map((virtualRow) => {
@@ -469,14 +439,7 @@ export function TanstackTable<RowDataModel>({
               })}
               {after > 0 && (
                 <tr tabIndex={-1}>
-                  <td
-                    colSpan={
-                      headerGroups.length > 0
-                        ? headerGroups[headerGroups.length - 1].headers.length
-                        : table.getVisibleLeafColumns().length
-                    }
-                    style={{ height: after }}
-                  />
+                  <td colSpan={leafHeaderGroup.headers.length} style={{ height: after }} />
                 </tr>
               )}
             </tbody>
