@@ -36,7 +36,11 @@ import {
   addCompletionCostToIntervalUsage,
   checkRender,
 } from '../aiQuestionGeneration.js';
-import { ALLOWED_ELEMENTS, buildContextForElementDocs } from '../context-parsers/documentation.js';
+import {
+  ALLOWED_ELEMENTS,
+  type DocumentChunk,
+  buildContextForSingleElementDoc,
+} from '../context-parsers/documentation.js';
 import { getPythonLibraries } from '../context-parsers/pyproject.js';
 import {
   type QuestionContext,
@@ -165,9 +169,17 @@ export async function createQuestionGenerationAgent({
   }
 
   // TODO: global cache or TTL cache of these?
-  const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
-  const elementDocsText = await fs.readFile(elementDocsPath, { encoding: 'utf-8' });
-  const elementDocs = buildContextForElementDocs(elementDocsText);
+  const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements');
+  const elementDocsFiles = await fs.readdir(elementDocsPath);
+  const elementDocs: DocumentChunk[] = [];
+  for (const file of elementDocsFiles) {
+    if (!file.endsWith('.md')) continue;
+    const text = await fs.readFile(path.join(elementDocsPath, file), { encoding: 'utf-8' });
+    const elementName = path.basename(file, '.md');
+    ALLOWED_ELEMENTS.add(elementName);
+    const context = buildContextForSingleElementDoc(text, elementName);
+    if (context) elementDocs.push(context);
+  }
 
   // TODO: ditto, cache these?
   // This is a map from element name to example questions that use that element.
