@@ -92,7 +92,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     ace_mode_path = None
     if os.path.exists(
-        os.path.join(data["options"]["client_files_course_path"], f"mode-{ace_mode}.js")
+        os.path.join(data["options"]["client_files_course_path"], f"{ace_mode.replace('ace/mode/', 'mode-')}.js")
     ):
         ace_mode_path = data["options"]["client_files_course_url"]
 
