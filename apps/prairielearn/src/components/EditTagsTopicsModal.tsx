@@ -8,23 +8,25 @@ import { ColorJsonSchema } from '../schemas/infoCourse.js';
 import { TagBadge } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
-export type EditTagsTopicsModalState =
+export type EditTagsTopicsModalState<Entity extends StaffTopic | StaffTag> =
   | { type: 'closed' }
-  | { type: 'create'; entityType: 'topic' | 'tag'; entity: StaffTopic | StaffTag }
-  | { type: 'edit'; entityType: 'topic' | 'tag'; entity: StaffTopic | StaffTag };
+  | { type: 'create'; entityType: 'topic' | 'tag'; entity: Entity }
+  | { type: 'edit'; entityType: 'topic' | 'tag'; entity: Entity };
 
-interface EditTagsTopicsModalProps {
-  state: EditTagsTopicsModalState;
+export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
+  state,
+  onClose,
+  onSave,
+}: {
+  state: EditTagsTopicsModalState<Entity>;
   onClose: () => void;
-  onSave: (entity: StaffTopic | StaffTag) => void;
-}
-
-export function EditTagsTopicsModal({ state, onClose, onSave }: EditTagsTopicsModalProps) {
+  onSave: (entity: Entity) => void;
+}) {
   // Extract the topic to edit/create, or null if closed
   const entityToEdit =
     state.type === 'create' ? state.entity : state.type === 'edit' ? state.entity : null;
 
-  const [entity, setEntity] = useState<StaffTopic | StaffTag | null>(entityToEdit);
+  const [entity, setEntity] = useState<Entity | null>(entityToEdit);
   const [invalidName, setInvalidName] = useState(false);
   const [invalidColor, setInvalidColor] = useState(false);
 

@@ -20,29 +20,31 @@ const emptyEntity = {
   number: null,
 };
 
-export function TagsTopicsTable({
+export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
   entities,
   entityType,
   allowEdit,
   origHash,
   csrfToken,
 }: {
-  entities: StaffTopic[] | StaffTag[];
+  entities: Entity[];
   entityType: 'topic' | 'tag';
   allowEdit: boolean;
   origHash: string | null;
   csrfToken: string;
 }) {
   const [editMode, setEditMode] = useState(false);
-  const [entitiesState, setEntitiesState] = useState<StaffTopic[] | StaffTag[]>(entities);
-  const [modalState, setModalState] = useState<EditTagsTopicsModalState>({ type: 'closed' });
+  const [entitiesState, setEntitiesState] = useState<Entity[]>(entities);
+  const [modalState, setModalState] = useState<EditTagsTopicsModalState<Entity>>({
+    type: 'closed',
+  });
 
   const handleCreate = () => {
     setModalState({
       type: 'create',
       entityType,
       entity: {
-        ...(emptyEntity as StaffTopic | StaffTag),
+        ...(emptyEntity as Entity),
         // This ID won't be used on the server; it's just a temporary unique identifier.
         id: crypto.randomUUID(),
         // Pick a random initial color.
@@ -63,22 +65,17 @@ export function TagsTopicsTable({
     });
   };
 
-  const handleSave = (entity: StaffTopic | StaffTag) => {
+  const handleSave = (entity: Entity) => {
     if (modalState.type === 'create') {
-      setEntitiesState((prevData) => [...prevData, entity] as StaffTopic[] | StaffTag[]);
+      setEntitiesState((prevData) => [...prevData, entity]);
     } else if (modalState.type === 'edit') {
-      setEntitiesState(
-        (prevData) =>
-          prevData.map((d) => (d.id === entity.id ? entity : d)) as StaffTopic[] | StaffTag[],
-      );
+      setEntitiesState((prevData) => prevData.map((d) => (d.id === entity.id ? entity : d)));
     }
     setModalState({ type: 'closed' });
   };
 
   const handleDelete = (deleteId: string) => {
-    setEntitiesState(
-      (prevData) => prevData.filter((d) => d.id !== deleteId) as StaffTopic[] | StaffTag[],
-    );
+    setEntitiesState((prevData) => prevData.filter((d) => d.id !== deleteId));
   };
 
   return (
