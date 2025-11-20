@@ -42,24 +42,20 @@ export function PageLayout({
   options?: {
     /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
-    /** Whether the main container should have a bottom padding of pb-4 in Bootstrap. */
-    paddingBottom?: boolean;
-    /** Whether the main container should have no left and right padding in Bootstrap. */
-    paddingSides?: boolean;
+    /** Sets the html and body tag heights to 100% */
+    fullHeight?: boolean;
+    /** Whether the page content should have padding around it. */
+    contentPadding?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
     /** Enables an htmx extension for an element and all its children */
     hxExt?: string;
-    /** Sets the html and body tag heights to 100% */
-    fullHeight?: boolean;
     /** Dataset attributes to add to the body tag. The "data-" prefix will be added, so do not include it. */
     dataAttributes?: Record<string, string>;
     /** Controls if the page should use enhanced navigation. */
     enableEnhancedNav?: boolean;
     /** Whether or not the navbar should be shown. */
     enableNavbar?: boolean;
-    /** Whether or not to include padding around the content. */
-    contentPadding?: boolean;
     /**
      * Forces the side nav to be in a specific state when the page loads,
      * regardless of the user's previous preference.
@@ -79,16 +75,13 @@ export function PageLayout({
   postContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
 }) {
   const resolvedOptions = {
-    hxExt: '',
-    paddingBottom: true,
-    paddingSides: true,
-    enableEnhancedNav: true,
-    dataAttributes: {},
-    enableNavbar: true,
-    fullHeight: false,
     fullWidth: false,
+    fullHeight: false,
     contentPadding: true,
-    persistToggleState: true,
+    hxExt: '',
+    dataAttributes: {},
+    enableEnhancedNav: true,
+    enableNavbar: true,
     ...options,
   };
 
@@ -232,12 +225,11 @@ export function PageLayout({
                         ? 'container-fluid'
                         : 'container'
                       : null,
-                    !resolvedOptions.paddingSides && 'px-0',
-                    // TODO: replace `paddingSides` with `contentPadding`?
-                    resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
-                    resolvedOptions.fullHeight && 'h-100',
                     resolvedOptions.contentPadding && 'pt-3',
                     resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
+                    !resolvedOptions.contentPadding && 'px-0',
+                    resolvedOptions.contentPadding && 'pb-3',
+                    resolvedOptions.fullHeight && 'h-100',
                   )}"
                 >
                   ${contentString}
@@ -288,9 +280,8 @@ export function PageLayout({
                   ? 'container-fluid'
                   : 'container'
                 : null,
-              !resolvedOptions.paddingSides && 'px-0',
-              // TODO: replace `paddingSides` with `contentPadding`?
-              resolvedOptions.contentPadding && resolvedOptions.paddingBottom && 'pb-4',
+              resolvedOptions.contentPadding && 'pb-3',
+              !resolvedOptions.contentPadding && 'px-0',
               resolvedOptions.fullHeight && 'flex-grow-1',
             )}
           "

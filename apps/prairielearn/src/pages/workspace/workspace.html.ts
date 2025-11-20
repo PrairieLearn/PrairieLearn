@@ -47,8 +47,7 @@ export function Workspace({
       },
       enableEnhancedNav: false,
       enableNavbar: false,
-      paddingBottom: false,
-      paddingSides: false,
+      contentPadding: false,
     },
     headContent: html`
       <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
