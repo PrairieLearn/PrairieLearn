@@ -107,8 +107,8 @@ export function getUniqueNames({
   shortName = 'New',
   longName = 'New',
 }: {
-  shortNames: string[];
-  longNames: string[];
+  shortNames: (string | null)[];
+  longNames: (string | null)[];
   /**
    * Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
    * Long name is matched case-sensitively
@@ -144,7 +144,7 @@ export function getUniqueNames({
     return numberOfMostRecentCopy;
   }
 
-  function getNumberLongName(oldLongNames: string[]): number {
+  function getNumberLongName(oldLongNames: (string | null)[]): number {
     let numberOfMostRecentCopy = 1;
     // longName is a copy of oldLongName if:
     // it matches exactly, or
@@ -164,7 +164,7 @@ export function getUniqueNames({
     return numberOfMostRecentCopy;
   }
 
-  const numberShortName = getNumberShortName(shortNames);
+  const numberShortName = getNumberShortName(shortNames.filter((name) => name !== null));
   const numberLongName = getNumberLongName(longNames);
   const number = Math.max(numberShortName, numberLongName);
 
@@ -582,7 +582,7 @@ function getNamesForCopy(
   oldShortName: string,
   shortNames: string[],
   oldLongName: string | null,
-  longNames: string[],
+  longNames: (string | null)[],
 ): { shortName: string; longName: string } {
   function getBaseShortName(oldname: string): string {
     const found = oldname.match(/^(.*)_copy[0-9]+$/);
@@ -619,7 +619,7 @@ function getNamesForCopy(
     return number;
   }
 
-  function getNumberLongName(basename: string, oldnames: string[]): number {
+  function getNumberLongName(basename: string, oldnames: (string | null)[]): number {
     let number = 1;
     oldnames.forEach((oldname) => {
       if (typeof oldname !== 'string') return;
@@ -1909,11 +1909,11 @@ export class QuestionCopyEditor extends Editor {
   }
 }
 
-async function selectQuestionTitlesForCourse(course: Course): Promise<string[]> {
+async function selectQuestionTitlesForCourse(course: Course) {
   return await sqldb.queryRows(
     sql.select_question_titles_for_course,
     { course_id: course.id },
-    z.string(),
+    z.string().nullable(),
   );
 }
 
@@ -1971,7 +1971,7 @@ async function copyQuestion({
   from_path: string;
   from_qid: string;
   uuid: string;
-  existingTitles: string[];
+  existingTitles: (string | null)[];
   existingQids: string[];
 }): Promise<{ questionPath: string; qid: string }> {
   const questionsPath = path.join(course.path, 'questions');

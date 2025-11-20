@@ -199,7 +199,8 @@ export function InstructorAssessmentQuestionStatistics({
                   <tr>
                     <td>
                       <a href="${resLocals.urlPrefix}/question/${row.question_id}/">
-                        ${row.assessment_question_number}. ${row.question_title}
+                        ${row.assessment_question_number}.
+                        ${row.question_title ?? html`<code>${row.question_qid}</code>`}
                       </a>
                     </td>
                     <td class="text-center align-middle">

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { EncodedData } from '@prairielearn/browser-utils';
-import { html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import {
@@ -40,6 +40,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   zone_id: IdSchema,
   zone_title: z.string().nullable(),
   question_title: z.string().nullable(),
+  question_qid: z.string().nullable(),
   max_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
@@ -343,7 +344,9 @@ export function StudentAssessmentInstance({
                         rowLabelText:
                           resLocals.assessment.type === 'Exam'
                             ? `Question ${instance_question_row.question_number}`
-                            : `${instance_question_row.question_number}. ${instance_question_row.question_title ?? 'Untitled question'}`,
+                            : html`${instance_question_row.question_number}.
+                              ${instance_question_row.question_title ??
+                              html`<code>${instance_question_row.question_qid}</code>`}`,
                       })}
                     </td>
                     ${resLocals.assessment.type === 'Exam'
@@ -799,7 +802,7 @@ function RowLabel({
 }: {
   instance_question_row: InstanceQuestionRow;
   userGroupRoles: string | null;
-  rowLabelText: string;
+  rowLabelText: HtmlSafeString;
   urlPrefix: string;
 }) {
   let lockedPopoverText: string | null = null;
