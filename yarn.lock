@@ -4369,7 +4369,6 @@ __metadata:
     "@types/klaw": "npm:^3.0.7"
     "@types/lodash": "npm:^4.17.20"
     "@types/loopbench": "npm:^1.2.4"
-    "@types/mdast": "npm:^4.0.4"
     "@types/memorystream": "npm:^0.3.4"
     "@types/mime": "npm:^4.0.0"
     "@types/minimist": "npm:^1.2.5"
@@ -6992,7 +6991,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mdast@npm:^4.0.0, @types/mdast@npm:^4.0.4":
+"@types/mdast@npm:^4.0.0":
   version: 4.0.4
   resolution: "@types/mdast@npm:4.0.4"
   dependencies:
