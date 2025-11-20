@@ -8,12 +8,12 @@ import { PageAuthzDataSchema } from '../authz-data-lib.js';
 
 import {
   RawStaffAssessmentSchema,
-  RawStaffAssessmentSetSchema,
   RawStaffCourseInstanceSchema,
   RawStaffCourseSchema,
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   StaffAssessmentQuestionSchema,
+  StaffAssessmentSetSchema,
   StaffInstitutionSchema,
   StaffQuestionSchema,
   StaffUserSchema,
@@ -128,8 +128,8 @@ const StaffAssessmentContextSchema = z
     assessment: RawStaffAssessmentSchema.extend({
       // `type` will always be one of these values
       type: z.enum(['Exam', 'Homework']),
-    }),
-    assessment_set: RawStaffAssessmentSetSchema,
+    }).brand('StaffAssessment'),
+    assessment_set: StaffAssessmentSetSchema,
   })
   .brand<'StaffAssessmentContext'>();
 type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema>;
