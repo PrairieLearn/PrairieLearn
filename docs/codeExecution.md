@@ -2,7 +2,7 @@
 
 Central to PrairieLearn is the ability to securely execute arbitrary code. There are three primary contexts in which PrairieLearn must execute code:
 
-- **Question and element code**: This is code from a question's `server.py` or any PrairieLearn/course [elements](elements.md). This code must execute as quickly as possible, as it will be executed any time a question is rendered or graded and thus needs to render during a single HTTP request.
+- **Question and element code**: This is code from a question's `server.py` or any PrairieLearn/course [elements](./elements/index.md). This code must execute as quickly as possible, as it will be executed any time a question is rendered or graded and thus needs to render during a single HTTP request.
 - [**Externally-graded questions**](externalGrading.md): This is code submitted by a student and graded for them by course code. This code can take longer to execute and is queued to be executed on a distributed set of machines.
 - [**Workspaces**](workspaces/index.md): This is an interactive environment in which a student can write and execute code, in contrast to the non-interactive batch execution by external graders. Workspaces can persist for many hours, and so they are executed on a distributed set of machines (the _workspace hosts_, a distinct set from the _external grader hosts_).
 
