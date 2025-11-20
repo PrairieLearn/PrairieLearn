@@ -19,7 +19,7 @@ import {
   useQueryState,
   useQueryStates,
 } from 'nuqs';
-import { useEffect, useMemo, useState } from 'preact/compat';
+import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 import { ButtonGroup, Dropdown } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -29,6 +29,7 @@ import {
   NumericInputColumnFilter,
   TanstackTableCard,
   numericColumnFilterFn,
+  useAutoSizeColumns,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
@@ -100,6 +101,7 @@ function GradebookTable({
   urlPrefix,
   csvFilename,
 }: GradebookTableProps) {
+  const tableRef = useRef<HTMLDivElement>(null);
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -280,9 +282,8 @@ function GradebookTable({
               },
               {
                 id: `a${assessment.assessment_id}`,
-                size: 100,
                 minSize: 100,
-                maxSize: 120,
+                maxSize: 500,
                 meta: {
                   label: assessment.label,
                 },
@@ -451,7 +452,6 @@ function GradebookTable({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     defaultColumn: {
-      minSize: 100,
       size: 150,
       maxSize: 500,
       enableSorting: true,
@@ -459,6 +459,9 @@ function GradebookTable({
       enablePinning: true,
     },
   });
+
+  // Auto-size columns based on header content
+  useAutoSizeColumns(table, tableRef);
 
   return (
     <>
@@ -535,6 +538,7 @@ function GradebookTable({
         }}
         tableOptions={{
           filters,
+          scrollRef: tableRef,
         }}
       />
     </>

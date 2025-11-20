@@ -122,6 +122,7 @@ function TableHeaderCell<RowDataModel>({
   return (
     <th
       key={header.id}
+      data-column-id={header.column.id}
       class={clsx(isPinned === 'left' && 'bg-light')}
       style={style}
       aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
