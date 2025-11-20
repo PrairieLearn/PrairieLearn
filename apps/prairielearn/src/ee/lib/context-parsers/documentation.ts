@@ -150,29 +150,14 @@ export function buildContextForSingleElementDoc(
   // Remove thematic breaks.
   const filteredContent = content.filter((node) => node.type !== 'thematicBreak');
 
-  // Rewrite all headings so that they can be nested under L2 headings.
-  // In individual files, headings start at level 2 (##), so we need to convert
-  // them to level 3+ to match the structure expected by the processing functions.
-  filteredContent.forEach((node) => {
-    if (node.type === 'heading') {
-      // Safety check: all headings should be at least level 2.
-      if (node.depth < 2) {
-        throw new Error('Expected heading to be at least level 2');
-      }
-      // Convert level 2 to level 3, level 3 to level 4, etc.
-      // This matches the behavior in cleanElementSections which expects level 4+.
-      node.depth += 1;
-    }
-  });
-
   // Process tables in the same way as the multi-file version.
   const elementSection: ElementSection = { elementName, content: filteredContent };
   const processedSections = writeOutTables([elementSection]);
 
-  // Add a level 2 heading with the element name.
+  // Add a level 1 heading with the element name.
   processedSections[0].content.unshift({
     type: 'heading',
-    depth: 2,
+    depth: 1,
     children: [{ type: 'text', value: elementName }],
   });
 
