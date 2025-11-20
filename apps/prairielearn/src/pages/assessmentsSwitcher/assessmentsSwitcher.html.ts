@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
-import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
+import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
+import { AssessmentSetHeadingHtml } from '../../components/AssessmentSetHeading.js';
 import { IssueBadgeHtml } from '../../components/IssueBadge.js';
 import type { NavSubPage } from '../../components/Navbar.types.js';
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
@@ -34,8 +34,8 @@ export function AssessmentSwitcher({
             ? html`
                 <div class="fw-bold ${index === 0 ? 'mt-0' : 'mt-3'}">
                   ${assessmentsGroupBy === 'Set'
-                    ? AssessmentSetHeading({ assessment_set: row.assessment_set })
-                    : AssessmentModuleHeading({
+                    ? AssessmentSetHeadingHtml({ assessment_set: row.assessment_set })
+                    : AssessmentModuleHeadingHtml({
                         assessment_module: row.assessment_module,
                       })}
                 </div>

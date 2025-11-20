@@ -4,8 +4,8 @@ import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
-import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
-import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
+import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
+import { AssessmentSetHeadingHtml } from '../../components/AssessmentSetHeading.js';
 import { IssueBadgeHtml } from '../../components/IssueBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -104,8 +104,10 @@ export function InstructorAssessments({
                               <tr>
                                 <th colspan="7" scope="row">
                                   ${assessmentsGroupBy === 'Set'
-                                    ? AssessmentSetHeading({ assessment_set: row.assessment_set })
-                                    : AssessmentModuleHeading({
+                                    ? AssessmentSetHeadingHtml({
+                                        assessment_set: row.assessment_set,
+                                      })
+                                    : AssessmentModuleHeadingHtml({
                                         assessment_module: row.assessment_module,
                                       })}
                                 </th>
