@@ -91,13 +91,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     focus = pl.get_boolean_attrib(element, "focus", FOCUS_DEFAULT)
 
     ace_mode_path = None
-    if ace_mode and os.path.exists(
-        os.path.join(
-            data["options"]["client_files_course_path"],
-            f"{ace_mode.replace('ace/mode/', 'mode-')}.js",
-        )
-    ):
-        ace_mode_path = data["options"]["client_files_course_url"]
+    if ace_mode:
+        mode_file_name = f"{ace_mode.replace('ace/mode/', 'ace/mode/mode-')}.js"
+        if os.path.exists(
+            os.path.join(
+                data["options"]["client_files_question_path"],
+                mode_file_name,
+            )
+        ):
+            ace_mode_path = os.path.join(
+                data["options"]["client_files_question_url"], "ace/mode"
+            )
+        elif os.path.exists(
+            os.path.join(
+                data["options"]["client_files_course_path"],
+                mode_file_name,
+            )
+        ):
+            ace_mode_path = os.path.join(
+                data["options"]["client_files_course_url"], "ace/mode"
+            )
 
     # stringify boolean attributes (needed when written to html_params)
     auto_resize = "true" if auto_resize else "false"
