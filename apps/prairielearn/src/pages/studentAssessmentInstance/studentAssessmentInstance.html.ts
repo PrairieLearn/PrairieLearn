@@ -39,7 +39,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
   zone_id: IdSchema,
   zone_title: z.string().nullable(),
-  question_title: z.string(),
+  question_title: z.string().nullable(),
   max_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
@@ -343,7 +343,7 @@ export function StudentAssessmentInstance({
                         rowLabelText:
                           resLocals.assessment.type === 'Exam'
                             ? `Question ${instance_question_row.question_number}`
-                            : `${instance_question_row.question_number}. ${instance_question_row.question_title}`,
+                            : `${instance_question_row.question_number}. ${instance_question_row.question_title ?? 'Untitled question'}`,
                       })}
                     </td>
                     ${resLocals.assessment.type === 'Exam'
