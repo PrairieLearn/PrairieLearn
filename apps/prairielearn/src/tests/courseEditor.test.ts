@@ -323,7 +323,8 @@ function getPostInfoFromCopyOption(form) {
 function getCourseInstanceCopyPostInfo(_: cheerio.Cheerio<any>) {
   const authnUserId = '1';
   // This is a workaround since we have no other way to get the CSRF token
-  // for the copy course instance form. This is
+  // for the copy course instance form. That is because a CSRF token is
+  // generated for each course, and this page has no GET handler to retrieve a CSRF token off of.
   const csrfToken = generateCsrfToken({
     url: '/pl/course/1/copy_public_course_instance',
     authnUserId,
