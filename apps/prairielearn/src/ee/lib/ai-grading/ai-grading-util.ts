@@ -598,3 +598,7 @@ export async function deleteAiGradingJobs({
 export async function toggleAiGradingMode(assessment_question_id: string): Promise<void> {
   await execute(sql.toggle_ai_grading_mode, { assessment_question_id });
 }
+
+export async function setAiGradingMode(assessment_question_id: string, ai_grading_mode: boolean) {
+  await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
+}

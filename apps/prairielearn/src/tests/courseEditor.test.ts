@@ -19,6 +19,7 @@ import { updateCourseSharingName } from '../models/course.js';
 
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
+import { generateCsrfToken } from './utils/csrf.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -319,6 +320,21 @@ function getPostInfoFromCopyOption(form) {
   return { csrfToken: option.attr('data-csrf-token'), url: option.attr('data-copy-url') };
 }
 
+function getCourseInstanceCopyPostInfo(_: cheerio.Cheerio<any>) {
+  const authnUserId = '1';
+  // This is a workaround since we have no other way to get the CSRF token
+  // for the copy course instance form. That is because a CSRF token is
+  // generated for each course, and this page has no GET handler to retrieve a CSRF token off of.
+  const csrfToken = generateCsrfToken({
+    url: '/pl/course/1/copy_public_course_instance',
+    authnUserId,
+  });
+  return {
+    csrfToken,
+    url: '/pl/course/1/copy_public_course_instance',
+  };
+}
+
 const publicCopyTestData: EditData[] = [
   {
     url: `${baseUrl}/public/course/2/question/2/preview`,
@@ -343,8 +359,8 @@ const publicCopyTestData: EditData[] = [
   },
   {
     url: `${baseUrl}/public/course_instance/2/assessments`,
-    formSelector: 'form.js-copy-course-instance-form',
-    dynamicPostInfo: getPostInfoFromCopyOption,
+    formSelector: 'body',
+    dynamicPostInfo: getCourseInstanceCopyPostInfo,
     action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
@@ -367,8 +383,8 @@ const publicCopyTestData: EditData[] = [
   },
   {
     url: `${baseUrl}/public/course_instance/2/assessments`,
-    formSelector: 'form.js-copy-course-instance-form',
-    dynamicPostInfo: getPostInfoFromCopyOption,
+    formSelector: 'body',
+    dynamicPostInfo: getCourseInstanceCopyPostInfo,
     action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
@@ -537,6 +553,7 @@ function testEdit(params: EditData) {
         method: 'POST',
         body: new URLSearchParams(urlParams),
       });
+
       assert.isOk(res.ok);
       currentUrl = res.url;
       currentPage$ = cheerio.load(await res.text());

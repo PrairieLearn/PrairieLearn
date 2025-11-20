@@ -32,16 +32,14 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
   }
   ```
 
-- in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#access-controls)). For example:
+- in `publishing`, you should set the dates in which you want your course to be available. For example:
 
   ```json title="infoCourseInstance.json"
   {
-    "allowAccess": [
-      {
-        "startDate": "2024-08-17T00:00:01",
-        "endDate": "2024-12-18T23:59:59"
-      }
-    ]
+    "publishing": {
+      "startDate": "2024-08-17T00:00:01",
+      "endDate": "2024-12-18T23:59:59"
+    }
   }
   ```
 
@@ -290,4 +288,4 @@ Learn more:
 
 - [Different ways to set up an assessment](assessment/index.md)
 
-- [Detailed list of PrairieLearn elements](elements.md)
+- [Detailed list of PrairieLearn elements](./elements/index.md)

@@ -35,7 +35,7 @@ exampleCourse
 
 - See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
 
-- See [HTML element list](../elements.md) for a list of elements provided by PrairieLearn to all courses; PrairieLearn will use a course version of an element whenever it exists.
+- See [HTML element list](../elements/index.md) for a list of elements provided by PrairieLearn to all courses; PrairieLearn will use a course version of an element whenever it exists.
 
 - See [clientFiles and serverFiles](../clientServerFiles.md) for information on the `clientFilesCourse` and `serverFilesCourse` directories.
 
