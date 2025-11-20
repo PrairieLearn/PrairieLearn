@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { CourseInstancePublishingExtensionSchema, IdSchema } from '../lib/db-types.js';
+import { CourseInstancePublishingExtensionSchema, IdSchema } from '../../lib/db-types.js';
 
 export const CourseInstancePublishingExtensionWithUsersSchema =
   CourseInstancePublishingExtensionSchema.extend({

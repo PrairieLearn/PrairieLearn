@@ -171,7 +171,7 @@ export async function syncContextDocuments(embeddingModel: EmbeddingModel, authn
 
     await execute(sql.delete_unused_doc_chunks, {
       doc_paths: allowedFilepaths,
-      chunk_ids: elementChunkIds.concat(['']),
+      chunk_ids: elementChunkIds,
     });
   });
   return serverJob.jobSequenceId;

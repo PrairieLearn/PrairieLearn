@@ -54,6 +54,7 @@ export interface ResLocalsForPage {
       ResLocalsCourseInstance &
       ResLocalsInstructorQuestion &
       ResLocalsQuestionRender &
+      ResLocalsAssessment &
       ResLocalsAssessmentQuestion
   >;
   'instance-question': Prettify<

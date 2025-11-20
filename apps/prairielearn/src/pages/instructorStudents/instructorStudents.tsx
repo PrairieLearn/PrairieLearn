@@ -12,6 +12,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { getUrl } from '../../lib/url.js';
@@ -222,7 +223,7 @@ router.get(
             <Hydrate fullHeight>
               <InstructorStudents
                 enrollmentManagementEnabled={enrollmentManagementEnabled}
-                isDevMode={process.env.NODE_ENV === 'development'}
+                isDevMode={config.devMode}
                 authzData={authz_data}
                 students={students}
                 search={search}
