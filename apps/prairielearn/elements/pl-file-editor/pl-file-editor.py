@@ -91,8 +91,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     focus = pl.get_boolean_attrib(element, "focus", FOCUS_DEFAULT)
 
     ace_mode_path = None
-    if os.path.exists(
-        os.path.join(data["options"]["client_files_course_path"], f"{ace_mode.replace('ace/mode/', 'mode-')}.js")
+    if ace_mode and os.path.exists(
+        os.path.join(
+            data["options"]["client_files_course_path"],
+            f"{ace_mode.replace('ace/mode/', 'mode-')}.js",
+        )
     ):
         ace_mode_path = data["options"]["client_files_course_url"]
 
