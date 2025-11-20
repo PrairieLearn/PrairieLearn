@@ -99,8 +99,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 mode_file_name,
             )
         ):
-            ace_mode_path = os.path.join(
-                data["options"]["client_files_question_url"], "ace/mode"
+            ace_mode_path = (
+                f"{data['options']['client_files_question_url'].rstrip('/')}/ace/mode"
             )
         elif os.path.exists(
             os.path.join(
@@ -108,8 +108,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 mode_file_name,
             )
         ):
-            ace_mode_path = os.path.join(
-                data["options"]["client_files_course_url"], "ace/mode"
+            ace_mode_path = (
+                f"{data['options']['client_files_course_url'].rstrip('/')}/ace/mode"
             )
 
     # stringify boolean attributes (needed when written to html_params)
