@@ -279,7 +279,6 @@ export function PageLayout({
                   ? 'container-fluid'
                   : 'container'
                 : null,
-              !resolvedOptions.contentPadding && 'px-0',
               resolvedOptions.contentPadding && 'pb-3',
               resolvedOptions.fullHeight && 'flex-grow-1',
             )}
