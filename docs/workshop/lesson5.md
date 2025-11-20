@@ -6,7 +6,7 @@
 
 ### Example 1
 
-Create a question with a decision tree. Think about ways to create dynamic versions of the question. You can use `pl-figure` to load images, but here we want to explore the use of `pl-graph` ([check the documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-graph-element)).
+Create a question with a decision tree. Think about ways to create dynamic versions of the question. You can use `pl-figure` to load images, but here we want to explore the use of `pl-graph` ([check the documentation](https://prairielearn.readthedocs.io/en/latest/elements/pl-graph)).
 
 ![Decision tree diagram](figs/tree.png)
 
