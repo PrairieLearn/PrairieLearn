@@ -22,7 +22,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
   onClose: () => void;
   onSave: (entity: Entity) => void;
 }) {
-  // Extract the topic to edit/create, or null if closed
+  // Extract the entity to edit/create, or null if closed
   const entityToEdit =
     state.type === 'create' ? state.entity : state.type === 'edit' ? state.entity : null;
 
