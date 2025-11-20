@@ -18,7 +18,7 @@ Learn more about configuring the four main aspects of your course:
 Some other important links are:
 
 - [Access control](../accessControl/index.md): learn how to control when and where students can access your course content.
-- [Element catalog](../elements.md): a reference for all elements available for use in questions.
+- [Element catalog](../elements/index.md): a reference for all elements available for use in questions.
 - [Code autograders](../externalGrading.md): learn how to automatically grade student code.
   - [Python](../python-grader/index.md)
   - [C / C++](../c-grader/index.md)
