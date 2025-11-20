@@ -33,7 +33,6 @@ interface TableCellProps<RowDataModel> {
   canSort: boolean;
   canFilter: boolean;
   wrapText: boolean;
-  lastColumnId: string;
   handleGridKeyDown: (e: KeyboardEvent, rowIdx: number, colIdx: number) => void;
 }
 
@@ -44,7 +43,6 @@ function TableCell<RowDataModel>({
   canSort,
   canFilter,
   wrapText,
-  lastColumnId,
   handleGridKeyDown,
 }: TableCellProps<RowDataModel>) {
   return (
@@ -56,15 +54,9 @@ function TableCell<RowDataModel>({
       class={clsx(!canSort && !canFilter && 'text-center')}
       style={{
         display: 'flex',
-        width:
-          cell.column.id === lastColumnId
-            ? `max(100%, ${cell.column.getSize()}px)`
-            : cell.column.getSize(),
+        width: cell.column.getSize(),
         minWidth: 0,
-        maxWidth:
-          cell.column.id === lastColumnId
-            ? `max(100%, ${cell.column.getSize()}px)`
-            : cell.column.getSize(),
+        maxWidth: cell.column.getSize(),
         flexShrink: 0,
         position: cell.column.getIsPinned() === 'left' ? 'sticky' : undefined,
         left: cell.column.getIsPinned() === 'left' ? cell.column.getStart() : undefined,
@@ -100,8 +92,6 @@ interface TableHeaderCellProps<RowDataModel> {
   table: Table<RowDataModel>;
   handleResizeEnd?: () => void;
   isPinned: 'left' | 'right' | false;
-  lastColumnId: string;
-  tableRect: DOMRect | undefined;
 }
 
 function TableHeaderCell<RowDataModel>({
@@ -114,16 +104,12 @@ function TableHeaderCell<RowDataModel>({
   table,
   handleResizeEnd,
   isPinned,
-  lastColumnId,
-  tableRect,
 }: TableHeaderCellProps<RowDataModel>) {
   const style: JSX.CSSProperties = {
     display: 'flex',
-    width:
-      header.column.id === lastColumnId ? `max(100%, ${header.getSize()}px)` : header.getSize(),
+    width: header.getSize(),
     minWidth: 0,
-    maxWidth:
-      header.column.id === lastColumnId ? `max(100%, ${header.getSize()}px)` : header.getSize(),
+    maxWidth: header.getSize(),
     flexShrink: 0,
     position: isPinned === 'left' ? 'sticky' : 'relative',
     top: 0,
@@ -132,9 +118,6 @@ function TableHeaderCell<RowDataModel>({
     boxShadow:
       'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
   };
-
-  const headerIndex = table.getVisibleLeafColumns().findIndex((col) => col.id === header.column.id);
-  const isLastColumn = headerIndex === table.getVisibleLeafColumns().length - 1;
 
   return (
     <th
@@ -191,15 +174,13 @@ function TableHeaderCell<RowDataModel>({
           </div>
         )}
       </div>
-      {tableRect?.width && tableRect.width > table.getTotalSize() && isLastColumn
-        ? null
-        : header.column.getCanResize() && (
-            <ResizeHandle
-              header={header}
-              setColumnSizing={table.setColumnSizing}
-              onResizeEnd={handleResizeEnd}
-            />
-          )}
+      {header.column.getCanResize() && (
+        <ResizeHandle
+          header={header}
+          setColumnSizing={table.setColumnSizing}
+          onResizeEnd={handleResizeEnd}
+        />
+      )}
     </th>
   );
 }
@@ -452,9 +433,6 @@ export function TanstackTable<RowDataModel>({
   );
 
   const isTableResizing = leafHeaderGroup.headers.some((header) => header.column.getIsResizing());
-  const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
-
-  const tableRect = tableRef.current?.getBoundingClientRect();
 
   // We toggle this here instead of in the parent since this component logically manages all UI for the table.
 
@@ -500,7 +478,10 @@ export function TanstackTable<RowDataModel>({
                 zIndex: 1,
               }}
             >
-              <tr key={leafHeaderGroup.id} style={{ display: 'flex', width: '100%' }}>
+              <tr
+                key={leafHeaderGroup.id}
+                style={{ display: 'flex', width: `${table.getTotalSize()}px` }}
+              >
                 {/* Left pinned columns */}
                 {leftPinnedHeaders.map((header) => {
                   const sortDirection = header.column.getIsSorted();
@@ -524,8 +505,6 @@ export function TanstackTable<RowDataModel>({
                       table={table}
                       handleResizeEnd={handleResizeEnd}
                       isPinned="left"
-                      lastColumnId={lastColumnId}
-                      tableRect={tableRect}
                     />
                   );
                 })}
@@ -561,8 +540,6 @@ export function TanstackTable<RowDataModel>({
                       table={table}
                       handleResizeEnd={handleResizeEnd}
                       isPinned={false}
-                      lastColumnId={lastColumnId}
-                      tableRect={tableRect}
                     />
                   );
                 })}
@@ -595,8 +572,6 @@ export function TanstackTable<RowDataModel>({
                       table={table}
                       handleResizeEnd={handleResizeEnd}
                       isPinned="right"
-                      lastColumnId={lastColumnId}
-                      tableRect={tableRect}
                     />
                   );
                 })}
@@ -634,7 +609,7 @@ export function TanstackTable<RowDataModel>({
                       display: 'flex',
                       position: 'absolute',
                       transform: `translateY(${virtualRow.start}px)`,
-                      width: '100%',
+                      width: `${table.getTotalSize()}px`,
                     }}
                   >
                     {/* Left pinned cells */}
@@ -653,7 +628,6 @@ export function TanstackTable<RowDataModel>({
                           canSort={canSort}
                           canFilter={canFilter}
                           wrapText={wrapText}
-                          lastColumnId={lastColumnId}
                           handleGridKeyDown={handleGridKeyDown}
                         />
                       );
@@ -683,7 +657,6 @@ export function TanstackTable<RowDataModel>({
                           canSort={canSort}
                           canFilter={canFilter}
                           wrapText={wrapText}
-                          lastColumnId={lastColumnId}
                           handleGridKeyDown={handleGridKeyDown}
                         />
                       );
@@ -710,7 +683,6 @@ export function TanstackTable<RowDataModel>({
                           canSort={canSort}
                           canFilter={canFilter}
                           wrapText={wrapText}
-                          lastColumnId={lastColumnId}
                           handleGridKeyDown={handleGridKeyDown}
                         />
                       );
