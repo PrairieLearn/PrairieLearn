@@ -88,11 +88,13 @@ async function insertDocumentChunk(
   );
 
   if (chunk && chunk.doc_text === doc.text) {
-    job.info(`Chunk for ${filepath} (${doc.chunkId}}) already exists in the database. Skipping.`);
+    job.info(
+      `Chunk for ${filepath} (${doc.chunkId || 'no chunk ID'}) already exists in the database. Skipping.`,
+    );
     return;
   }
 
-  job.info(`Inserting chunk for ${filepath} (${doc.chunkId}) into the database.`);
+  job.info(`Inserting chunk for ${filepath} (${doc.chunkId || 'no chunk ID'}) into the database.`);
   const embedding = await createEmbedding(embeddingModel, doc.text, openAiUser);
   await execute(sql.insert_embedding, {
     doc_path: filepath,
@@ -171,7 +173,8 @@ export async function syncContextDocuments(embeddingModel: EmbeddingModel, authn
 
     await execute(sql.delete_unused_doc_chunks, {
       doc_paths: allowedFilepaths,
-      chunk_ids: elementChunkIds,
+      // The example course questions have no chunk IDs.
+      chunk_ids: elementChunkIds.concat(['']),
     });
   });
   return serverJob.jobSequenceId;
