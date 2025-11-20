@@ -101,7 +101,7 @@ Create new questions using some of the elements discussed today:
 
 `pl-variable-output` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/pl-variable-output) and [example](https://us.prairielearn.com/pl/course/108/question/3637022/preview)
 
-`pl-python-variable` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/pl-python-variable-element) and [example](https://prairielearn.readthedocs.io/en/latest/elements/pl-python-variable)
+`pl-python-variable` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/pl-python-variable) and [example](https://prairielearn.readthedocs.io/en/latest/elements/pl-python-variable)
 
 `pl-string-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/pl-string-input) and [example](https://us.prairielearn.com/pl/course/108/question/1793642/preview)
 
