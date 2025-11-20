@@ -92,18 +92,16 @@ export function InstructorCourseAdminTopicsTable({
                   <input type="hidden" name="__csrf_token" value={csrfToken} />
                   <input type="hidden" name="orig_hash" value={origHash} />
                   <input type="hidden" name="topics" value={JSON.stringify(topicsState)} />
-                  <span class="js-edit-mode-buttons">
-                    <button class="btn btn-sm btn-light mx-1" type="submit">
-                      <i class="fa fa-save" aria-hidden="true" /> Save and sync
-                    </button>
-                    <button
-                      class="btn btn-sm btn-light"
-                      type="button"
-                      onClick={() => window.location.reload()}
-                    >
-                      Cancel
-                    </button>
-                  </span>
+                  <button class="btn btn-sm btn-light mx-1" type="submit">
+                    <i class="fa fa-save" aria-hidden="true" /> Save and sync
+                  </button>
+                  <button
+                    class="btn btn-sm btn-light"
+                    type="button"
+                    onClick={() => window.location.reload()}
+                  >
+                    Cancel
+                  </button>
                 </form>
               )
             ) : (
