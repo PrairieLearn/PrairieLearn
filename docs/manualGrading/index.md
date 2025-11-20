@@ -29,7 +29,7 @@ It is recommended to also mark manually-graded questions as `"singleVariant": tr
 }
 ```
 
-Any [elements](../elements.md) can be used in the [`question.html`](../question/index.md#html-questionhtml) to write manually graded questions. All student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
+Any [elements](../elements/index.md) can be used in the [`question.html`](../question/index.md#html-questionhtml) to write manually graded questions. All student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
 
 ## Manual grading using file uploads
 
@@ -104,7 +104,7 @@ In the grading page for individual submissions, the grader can assign a specific
 
 In some situations a grader may not feel confident to grade a particular submission. In such scenarios, the grader may Skip the question, or use the dropdown of the same button to assign this question to be reviewed by another grader (e.g., an instructor or lead TA).
 
-By default, the grading page will show the question, correct answer and submissions with the same content as a student would see it. However, for questions with long descriptions, it is possible to hide some of this information by using the [`pl-hide-in-manual-grading` element](../elements.md#pl-hide-in-manual-grading-element). This allows the grader to focus on important parts of the question or answer. It is also possible to add information to the question, such as staff-only solutions or grading comments, using the [`pl-manual-grading-only` element](../elements.md#pl-manual-grading-only-element). Any information within this element will be shown to graders, but not to students.
+By default, the grading page will show the question, correct answer and submissions with the same content as a student would see it. However, for questions with long descriptions, it is possible to hide some of this information by using the [`pl-hide-in-manual-grading` element](../elements/pl-hide-in-manual-grading.md). This allows the grader to focus on important parts of the question or answer. It is also possible to add information to the question, such as staff-only solutions or grading comments, using the [`pl-manual-grading-only` element](../elements/pl-manual-grading-only.md). Any information within this element will be shown to graders, but not to students.
 
 ### Creating a rubric for manual grading
 

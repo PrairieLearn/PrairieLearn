@@ -1,5 +1,5 @@
 import { type Column, type Table } from '@tanstack/react-table';
-import { useEffect, useRef, useState } from 'preact/compat';
+import { type JSX, useEffect, useRef, useState } from 'preact/compat';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 
@@ -14,11 +14,11 @@ function ColumnMenuItem<RowDataModel>({
   hidePinButton = false,
   onTogglePin,
 }: ColumnMenuItemProps<RowDataModel>) {
-  if (!column.getCanHide() && !column.getCanPin()) return null;
+  if (!column.getCanHide()) return null;
 
   // Use meta.label if available, otherwise fall back to header or column.id
   const header =
-    (column.columnDef.meta as any)?.label ??
+    column.columnDef.meta?.label ??
     (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
 
   return (
@@ -58,13 +58,15 @@ function ColumnMenuItem<RowDataModel>({
   );
 }
 
+interface ColumnManagerProps<RowDataModel> {
+  table: Table<RowDataModel>;
+  topContent?: JSX.Element;
+}
+
 export function ColumnManager<RowDataModel>({
   table,
-  id,
-}: {
-  table: Table<RowDataModel>;
-  id: string;
-}) {
+  topContent,
+}: ColumnManagerProps<RowDataModel>) {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -123,14 +125,20 @@ export function ColumnManager<RowDataModel>({
       }}
     >
       <Dropdown.Toggle
+        // We assume that this component will only appear once per page. If that changes,
+        // we'll need to do something to ensure ID uniqueness here.
+        id="column-manager"
         variant="tanstack-table"
-        id={id}
-        // eslint-disable-next-line @eslint-react/no-forbidden-props
-        className="tanstack-table-focusable-shadow"
       >
         <i class="bi bi-view-list me-2" aria-hidden="true" /> View{' '}
       </Dropdown.Toggle>
       <Dropdown.Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+        {topContent && (
+          <>
+            {topContent}
+            <Dropdown.Divider />
+          </>
+        )}
         {pinnedColumns.length > 0 && (
           <>
             <div class="px-2 py-1 text-muted small" role="presentation">
@@ -178,7 +186,8 @@ export function ColumnManager<RowDataModel>({
               onClick={() => {
                 table.resetColumnVisibility();
                 table.resetColumnPinning();
-                setActiveElementId(id);
+                // Move focus to the column manager button after resetting.
+                setActiveElementId('column-manager');
               }}
             >
               <i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
