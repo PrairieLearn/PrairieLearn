@@ -122,14 +122,14 @@ To migrate from `allowAccess` to publishing extensions:
 
 1. Find the allowAccess rule that contains no other settings (`uids`, `institution`). Create a section in your file for this configuration.
 
-```json title="infoCourseInstance.json"
-{
-  "publishing": {
-    "startDate": /* start date of allowAccess rule */,
-    "endDate": /* end date of allowAccess rule */
-  }
-}
-```
+   ```json title="infoCourseInstance.json"
+   {
+     "publishing": {
+       "startDate": /* start date of allowAccess rule */,
+       "endDate": /* end date of allowAccess rule */
+     }
+   }
+   ```
 
 2. For allowAccess rules with the `uids` field set, note down the UIDs and `endDate` of the rule. Then, delete the `allowAccess` property from your `infoCourseInstance.json` file, and sync your course.
 
