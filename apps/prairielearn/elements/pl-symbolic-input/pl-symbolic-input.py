@@ -594,10 +594,32 @@ def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
     Returns:
         The text with spaced tokens merged
     """
-    for token in tokens:
-        spaced_version = " ".join(token)
-        text = text.replace(spaced_version, token)
-    return text
+    result = []
+    skip_index = 0
+
+    # Tokens can overlap (e.g., "alpha" and "asin"), so we need to carefully
+    # traverse left-to-right instead of just search/replacing tokens
+    for i in range(len(text)):
+        if i < skip_index:
+            continue
+
+        # For each character, check if we have a spaced token match coming up
+        for token in tokens:
+            spaced_token = " ".join(token)
+            if text[i : i + len(spaced_token)] == spaced_token:
+                # for a match, add un-spaced token to result and skip the remaining token characters
+                result.append(token)
+                skip_index = i + len(spaced_token)
+                # Skip any other tokens (tokens are sorted by descending length; this prevents
+                # multiple matches if tokens are prefixes, like "sin" and "sinh")
+                break
+
+        # We use the skip_index as an indicator whether the previous loop found a match
+        # If it didn't, add the current character and continue the search
+        if i >= skip_index:
+            result.append(text[i])
+
+    return "".join(result)
 
 
 def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
