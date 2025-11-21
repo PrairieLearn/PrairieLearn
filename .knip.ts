@@ -85,6 +85,10 @@ const config: KnipConfig = {
       entry: ['src/test-utils.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
+    'packages/tsconfig': {
+      entry: [],
+      project: [],
+    },
   },
   ignoreDependencies: [
     ...[...packageDependencies].filter(
@@ -116,7 +120,7 @@ const config: KnipConfig = {
     'pyright',
     's3rver',
   ],
-  exclude: ['binaries', 'exports', 'types'],
+  exclude: ['binaries', 'files', 'dependencies', 'exports', 'unlisted', 'types'],
 };
 
 export default config;
