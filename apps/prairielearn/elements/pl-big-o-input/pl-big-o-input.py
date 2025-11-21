@@ -8,7 +8,6 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
-from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
 from typing_extensions import assert_never
 
 
@@ -290,18 +289,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     big_o_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
 
     try:
-        with ThreadingTimeout(SYMPY_TIMEOUT) as ctx:
-            pl.grade_answer_parameterized(
-                data,
-                name,
-                lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
-                weight=weight,
-            )
-        if ctx.state == TimeoutState.TIMED_OUT:
-            # If sympy times out, it's because the comparison couldn't converge, so we return an error.
-            data["format_errors"][name] = (
-                "Your answer did not converge, so your expression may be too loose or tight."
-            )
+        pl.grade_answer_parameterized(
+            data,
+            name,
+            lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
+            weight=weight,
+            timeout=SYMPY_TIMEOUT,
+            timeout_format_error="Your answer did not converge, so your expression may be too loose or tight.",
+        )
     except ValueError as e:
         # See https://github.com/PrairieLearn/PrairieLearn/pull/13178 for more context as to why we catch this error.
         if "integer string conversion" in str(e):
