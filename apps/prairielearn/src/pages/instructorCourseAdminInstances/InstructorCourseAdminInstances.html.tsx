@@ -16,7 +16,7 @@ function renderPopoverStartDate(courseInstanceId: string) {
   // so we don't make this a component.
   return (
     <Popover id={`popover-start-date-${courseInstanceId}`}>
-      <Popover.Header as="h3">Earliest Access Date</Popover.Header>
+      <Popover.Header as="h3">Earliest access date</Popover.Header>
       <Popover.Body>
         <p>
           This date is the earliest <code>startDate</code> that appears in any{' '}
@@ -137,8 +137,8 @@ export function InstructorCourseAdminInstances({
                 <tr>
                   <th>Long Name</th>
                   <th>CIID</th>
-                  <th id="earliest-access-date">Earliest Access Date</th>
-                  <th id="latest-access-date">Latest Access Date</th>
+                  <th>Start date</th>
+                  <th>End date</th>
                   <th>Students</th>
                 </tr>
               </thead>
@@ -178,9 +178,9 @@ export function InstructorCourseAdminInstances({
                             overlay={renderPopoverStartDate(row.id)}
                           >
                             <Button
-                              variant="light"
+                              variant="ghost"
                               class="btn-xs"
-                              aria-label="Information about Earliest Access Date"
+                              aria-label="Information about start date"
                             >
                               <i class="far fa-question-circle" aria-hidden="true" />
                             </Button>
@@ -196,9 +196,9 @@ export function InstructorCourseAdminInstances({
                             overlay={renderPopoverEndDate(row.id)}
                           >
                             <Button
-                              variant="light"
+                              variant="ghost"
                               class="btn-xs"
-                              aria-label="Information about Latest Access Date"
+                              aria-label="Information about end date"
                             >
                               <i class="far fa-question-circle" aria-hidden="true" />
                             </Button>
