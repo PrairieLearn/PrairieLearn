@@ -1,5 +1,5 @@
 -- BLOCK update_course_repository
-UPDATE pl_courses AS c
+UPDATE courses AS c
 SET
   repository = $course_repository
 WHERE
@@ -24,7 +24,7 @@ WITH
       sync_warnings,
       sync_errors
     FROM
-      pl_courses
+      courses
     WHERE
       path = $course_path
       AND (
@@ -44,7 +44,7 @@ WITH
       ci.sync_errors
     FROM
       course_instances AS ci
-      JOIN pl_courses AS c ON (ci.course_id = c.id)
+      JOIN courses AS c ON (ci.course_id = c.id)
     WHERE
       c.path = $course_path
       AND (
@@ -64,7 +64,7 @@ WITH
       q.sync_errors
     FROM
       questions AS q
-      JOIN pl_courses AS c ON (q.course_id = c.id)
+      JOIN courses AS c ON (q.course_id = c.id)
     WHERE
       c.path = $course_path
       AND (
@@ -85,7 +85,7 @@ WITH
     FROM
       assessments AS a
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-      JOIN pl_courses AS c ON (ci.course_id = c.id)
+      JOIN courses AS c ON (ci.course_id = c.id)
     WHERE
       c.path = $course_path
       AND (

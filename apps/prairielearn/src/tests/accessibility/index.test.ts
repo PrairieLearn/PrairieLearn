@@ -472,7 +472,7 @@ describe('accessibility', () => {
     );
 
     await sqldb.executeRow(
-      'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
+      'UPDATE courses SET sharing_name = $sharing_name WHERE id = $course_id',
       { sharing_name: 'test', course_id },
     );
   });
