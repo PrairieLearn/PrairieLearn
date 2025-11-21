@@ -1,12 +1,12 @@
-# Access control to course instances and assessments
+# Assessment access control
 
-By default, course instances and assessments are only accessible to [course staff](../course/index.md#course-staff). For course instances, you can use the `publishing` configuration to set basic availability dates, and the `allowAccess` option for more advanced access control. For assessments, the `allowAccess` option is used in the `infoAssessment.json` files.
+By default, assessments are only accessible to [course staff](../course/index.md#course-staff). To control access to assessments, the `allowAccess` option is used in the `infoAssessment.json` files.
 
-## Two levels of access control for assessments
+## Access control checks
 
-In PrairieLearn there are two levels of access control for students to gain access to assessments:
+In PrairieLearn there are two types of checks that determine whether a student has access to an assessment:
 
-1. First, a student must have access to the **course instance**. This access is controlled by the `publishing` configuration in [infoCourseInstance.json](../courseInstance.md) for basic date-based access, and with [publishing extensions](../courseInstance.md#controlling-access-by-uid). Giving a student access to a course instance allows the student to enroll in the course instance, but does not by itself grant them access to any assessments in the course instance.
+1. First, the **course instance** must be published to the student, and the student must be enrolled in the course instance. The `publishing` configuration in [infoCourseInstance.json](../courseInstance/index.md) alongside [publishing extensions](../courseInstance/index.md#publishing-extensions) can be used to publish the course instance. Students are able to view the course instance as long as they are enrolled and the course instance is published. This does not by itself grant them access to any assessments in the course instance.
 
 2. Second, a student must also have access to the specific **assessment**. This access is granted with the `allowAccess` rules in [infoAssessment.json](../assessment/index.md). Even if a student has been granted access to an assessment, however, they will only be able to actually access it if they also have access to the course instance (see previous item).
 
@@ -23,9 +23,7 @@ For course instances, you can control access using the `publishing` configuratio
 }
 ```
 
-This can be edited on the **Publishing** page (Course Instance → Instance settings → Publishing).
-
-Both `startDate` and `endDate` must be specified together.
+More details about the `publishing` configuration can be found in the [course instance documentation](../courseInstance/index.md#publishing-controls).
 
 ## `allowAccess` format
 
@@ -79,7 +77,7 @@ Access rules can also contain the deprecated `role` property. This is now ignore
 
 ## Dates
 
-All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in the [timezone of the course instance](../courseInstance.md#timezone).
+All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in the [timezone of the course instance](../courseInstance/index.md#timezone).
 
 If you want to include full days, then it is generally best to start at 1 second after midnight, and end at 1 second before midnight. This avoids any confusion around the meaning of times exactly at midnight. For example, start at `2015-04-05T00:00:01` and end at `2015-04-07T23:59:59` for the 3-day window from April 5th to April 7th inclusive.
 

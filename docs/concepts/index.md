@@ -4,7 +4,7 @@ PrairieLearn is extremely flexible and powerful, but this flexibility can appear
 
 ## High-level overview
 
-A [**course**](../course/index.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](../courseInstance.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "Spring 2022" and "Fall 2022".
+A [**course**](../course/index.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](../courseInstance/index.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "Spring 2022" and "Fall 2022".
 
 The course itself contains:
 
@@ -150,7 +150,7 @@ Now that you have an understanding of the key concepts in PrairieLearn, you can 
 
 You can also:
 
-- learn more about [courses](../course/index.md) or [course instances](../courseInstance.md)
+- learn more about [courses](../course/index.md) or [course instances](../courseInstance/index.md)
 - learn more about [questions](../question/index.md), [elements](../elements/index.md), or [custom elements](../devElements.md)
 - learn more about [assessments](../assessment/index.md)
 - learn more about [external grading](../externalGrading.md) or [workspaces](../workspaces/index.md)

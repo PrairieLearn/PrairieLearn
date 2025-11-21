@@ -3,7 +3,7 @@
 PrairieLearn currently has a few ways to do user authentication.
 
 - [Google OAuth 2](#google-oauth-2)
-- [LTI](../courseInstance.md#lti-overview)
+- [LTI](../courseInstance/index.md#lti-overview)
 
 ## Google OAuth 2
 
@@ -33,4 +33,4 @@ You should now be able to use Google to log in to your PrairieLearn instance.
 
 ## LTI
 
-Check out the [course instance LTI docs](../courseInstance.md#lti-overview) to learn more about LTI.
+Check out the [course instance LTI docs](../courseInstance/index.md#lti-overview) to learn more about LTI.

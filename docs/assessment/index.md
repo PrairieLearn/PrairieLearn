@@ -1,6 +1,8 @@
 # Assessments
 
-**NOTE:** Any time you edit or add an `infoAssessment.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the header so that the local PrairieLearn server reloads the changes.
+!!! note
+
+    Any time you edit or add an `infoAssessment.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the header so that the local PrairieLearn server reloads the changes.
 
 ## Overview
 
@@ -32,7 +34,7 @@ The assessment ID is the full path relative to `assessments`.
 | `set`                                                             | string  | Which assessment set this belongs to (e.g., `"Quiz"`, `"Practice Quiz"`). (Required; no default)                                          |
 | [`number`](#assessment-naming)                                    | string  | The number of the assessment within the set (e.g., `"1"`, `"2B"`). (Required; no default)                                                 |
 | [`module`](#grouping-assessments-by-modules)                      | string  | The module that this assessment belongs to (e.g., `Chapter 3`). (Optional; default: `"Default"`)                                          |
-| [`allowAccess`](../accessControl/index.md)                        | array   | List of access rules. (Optional; default: no student access)                                                                              |
+| [`allowAccess`](../assessment/accessControl.md)                   | array   | List of access rules. (Optional; default: no student access)                                                                              |
 | [`zones`](#question-specification)                                | array   | Specification of zones and questions. (Optional; default: none)                                                                           |
 | `text`                                                            | string  | HTML text shown on the assessment overview page. (Optional; default: none)                                                                |
 | `multipleInstance`                                                | boolean | Whether to allow students to create whole new attempts at the entire assessment. (Optional; default: `false`)                             |
@@ -79,8 +81,8 @@ A detailed comparison of the two types is shown below.
 | **Number of attempts**   | Unlimited attempts                                                                                  | [Limited attempts, possibly with decreasing points](#question-points-for-exam-assessments) |
 | **Gamification**         | [Rewards repeated correct answers](#question-points-for-homework-assessments)                       | Incentivizes a correct answer as early as possible                                         |
 | **Question order**       | [Fixed order by default](#question-order-randomization)                                             | [Shuffled order within zones by default](#question-order-randomization)                    |
-| **Time limits**          | Not supported                                                                                       | [Supported](../accessControl/index.md#time-limits)                                         |
-| **Passwords**            | Not supported                                                                                       | [Supported](../accessControl/index.md#passwords)                                           |
+| **Time limits**          | Not supported                                                                                       | [Supported](../assessment/accessControl.md#time-limits)                                    |
+| **Passwords**            | Not supported                                                                                       | [Supported](../assessment/accessControl.md#passwords)                                      |
 | **Multiple instances**   | Not supported                                                                                       | [Supported](#multiple-instance-versus-single-instance-assessments)                         |
 | **Assessment updates**   | Updated if assessment changes                                                                       | Assessment is fixed on creation                                                            |
 | **Closing assessments**  | Assessments remain open                                                                             | [By default, idle assessments are closed after 6 hours](#auto-closing-exam-assessments)    |
@@ -371,7 +373,7 @@ The rules for updating assessment instances differ between `Homework` and `Exam`
 
 ## Assessment points
 
-A student's percentage score will be determined by the number of points they have obtained, divided by the value of `maxPoints` for the assessment (subject to the rules associated to [`credit`](../accessControl/index.md#credit) in assessment access rules).
+A student's percentage score will be determined by the number of points they have obtained, divided by the value of `maxPoints` for the assessment (subject to the rules associated to [`credit`](../assessment/accessControl.md#credit) in assessment access rules).
 
 ```json title="infoAssessment.json"
 {
@@ -385,7 +387,7 @@ In the assessment configuration, the `maxPoints` determines the number of points
 
 By default, once a student obtains enough points to reach the value of `maxPoints`, any further points do not affect the assessment score. However, if a value is set for `maxBonusPoints` and `credit` is set to 100, the student can obtain additional points, up to a total of `maxPoints + maxBonusPoints`. The percentage is still based on `maxPoints`, so the use of `maxBonusPoints` allows students to obtain a percentage above 100%, either by completing additional questions, or by receiving additional bonus points in [manual grading](../manualGrading/index.md). If `maxBonusPoints` is set, but `maxPoints` is not provided, then `maxPoints` will be computed by subtracting `maxBonusPoints` from the maximum number of points in all questions.
 
-The choice of using `maxBonusPoints` or a `credit` value above 100 is based on instructor's choice. Additional points based on `maxBonusPoints` are intended to be credited based on extra work, while `credit` above 100 is to be awarded for early completion. It is possible to combine them, and use them together in the same assessment. If `maxBonusPoints` is set while the `credit` is above 100, then the percentage is based on both `maxBonusPoints` and `credit` (see [`credit`](../accessControl/index.md#credit) for details).
+The choice of using `maxBonusPoints` or a `credit` value above 100 is based on instructor's choice. Additional points based on `maxBonusPoints` are intended to be credited based on extra work, while `credit` above 100 is to be awarded for early completion. It is possible to combine them, and use them together in the same assessment. If `maxBonusPoints` is set while the `credit` is above 100, then the percentage is based on both `maxBonusPoints` and `credit` (see [`credit`](../assessment/accessControl.md#credit) for details).
 
 ## Multiple-instance versus single-instance assessments
 
@@ -654,11 +656,11 @@ Course staff see any reported issues show up on the "Issues" tab.
 
 ## Access control
 
-See the [Access control page](../accessControl/index.md) for details.
+See the [Access control page](../assessment/accessControl.md) for details.
 
 By default, an assessment is only accessible to course staff. To allow students to access the assessment, the `allowAccess` option can be used in the assessment's `infoAssessment.json` file.
 
-Access control options can also be used to control the open/close dates of assessments and apply penalties for late submissions. Once again, see [Access control page](../accessControl/index.md) for details and examples.
+Access control options can also be used to control the open/close dates of assessments and apply penalties for late submissions. Once again, see [Access control page](../assessment/accessControl.md) for details and examples.
 
 ## Adding text and links to assessments
 
@@ -730,7 +732,7 @@ Disabling real-time grading changes a number of things about the student experie
 - The "Grade saved answers" button on the assessment overview will only be shown if at least some questions have real-time grading enabled, and when clicked, it will only grade those questions.
 - Score information won't be shown for questions that have real-time grading disabled.
 
-If a [time limit](../accessControl/index.md#time-limits) is used and runs out, the assessment will still auto-grade and show students exactly which questions they got correct/incorrect. The same revealing behavior will happen if an instructor manually closes and grades the student assessment. To prevent this, set the [`showClosedAssessment` access rule restriction](../accessControl/index.md#showinghiding-closed-assessments).
+If a [time limit](../assessment/accessControl.md#time-limits) is used and runs out, the assessment will still auto-grade and show students exactly which questions they got correct/incorrect. The same revealing behavior will happen if an instructor manually closes and grades the student assessment. To prevent this, set the [`showClosedAssessment` access rule restriction](../assessment/accessControl.md#showinghiding-closed-assessments).
 
 ??? note
 
