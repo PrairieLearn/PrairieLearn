@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -12,22 +13,20 @@ import {
   type User,
   UserSchema,
 } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
+
+const CourseInstanceRoleRowSchema = z.object({
+  id: CourseInstanceSchema.shape.id,
+  short_name: CourseInstanceSchema.shape.short_name,
+  course_instance_permission_id: CourseInstancePermissionSchema.shape.id,
+  course_instance_role: CourseInstancePermissionSchema.shape.course_instance_role,
+  course_instance_role_formatted: z.string(),
+});
+type CourseInstanceRoleRow = z.infer<typeof CourseInstanceRoleRowSchema>;
 
 export const CourseUsersRowSchema = z.object({
   user: UserSchema,
   course_permission: CoursePermissionSchema,
-  course_instance_roles: z
-    .array(
-      z.object({
-        id: CourseInstanceSchema.shape.id,
-        short_name: CourseInstanceSchema.shape.short_name,
-        course_instance_permission_id: CourseInstancePermissionSchema.shape.id,
-        course_instance_role: CourseInstancePermissionSchema.shape.course_instance_role,
-        course_instance_role_formatted: z.string(),
-      }),
-    )
-    .nullable(),
+  course_instance_roles: CourseInstanceRoleRowSchema.array().nullable(),
   other_course_instances: z
     .array(
       z.object({
@@ -67,13 +66,6 @@ export function InstructorCourseAdminStaff({
     options: {
       fullWidth: true,
     },
-    headContent: html`
-      <style>
-        .popover {
-          max-width: 35%;
-        }
-      </style>
-    `,
     content: html`
       ${renderHtml(
         <CourseSyncErrorsAndWarnings
@@ -100,6 +92,7 @@ export function InstructorCourseAdminStaff({
                   csrfToken: resLocals.__csrf_token,
                 }),
               )}"
+              data-bs-custom-class="popover-wide"
               data-testid="remove-all-student-data-access-button"
             >
               <i class="fas fa-eye-slash" aria-hidden="true"></i>
@@ -119,6 +112,7 @@ export function InstructorCourseAdminStaff({
                   csrfToken: resLocals.__csrf_token,
                 }),
               )}"
+              data-bs-custom-class="popover-wide"
               data-testid="delete-users-with-no-access-button"
             >
               <i class="fas fa-recycle" aria-hidden="true"></i>
@@ -138,6 +132,7 @@ export function InstructorCourseAdminStaff({
                   csrfToken: resLocals.__csrf_token,
                 }),
               )}"
+              data-bs-custom-class="popover-wide"
               data-testid="delete-non-owners-button"
             >
               <i class="fas fa-users-slash" aria-hidden="true"></i>
@@ -159,6 +154,7 @@ export function InstructorCourseAdminStaff({
                   courseInstances,
                 }),
               )}"
+              data-bs-custom-class="popover-wide"
               data-testid="add-users-button"
             >
               <i class="fas fa-users" aria-hidden="true"></i>
@@ -218,7 +214,7 @@ function CoursePermissionsRemoveStudentDataAccessForm({ csrfToken }: { csrfToken
 
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Remove all student data access</button>
+        <button type="submit" class="btn btn-danger">Remove all student data access</button>
       </div>
     </form>
   `;
@@ -239,7 +235,7 @@ function CoursePermissionsDeleteNoAccessForm({ csrfToken }: { csrfToken: string 
 
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Delete users with no access</button>
+        <button type="submit" class="btn btn-danger">Delete users with no access</button>
       </div>
     </form>
   `;
@@ -301,7 +297,7 @@ function CoursePermissionsInsertForm({
         </select>
       </div>
 
-      ${courseInstances?.length > 0
+      ${courseInstances.length > 0
         ? html`
             <div class="mb-3">
               <label class="form-label" for="addUsersInputCourseInstance">
@@ -354,7 +350,35 @@ function CoursePermissionsDeleteNonOwnersForm({ csrfToken }: { csrfToken: string
 
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Delete non-owners</button>
+        <button type="submit" class="btn btn-danger">Delete non-owners</button>
+      </div>
+    </form>
+  `;
+}
+
+function CoursePermissionsRemoveStaffForm({
+  courseUser,
+  csrfToken,
+}: {
+  courseUser: CourseUsersRow;
+  csrfToken: string;
+}) {
+  return html`
+    <form method="POST">
+      <input type="hidden" name="__action" value="course_permissions_delete" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+
+      <div class="mb-3">
+        <p class="form-text">
+          Taking this action will remove ${courseUser.user.name ?? courseUser.user.uid} from course
+          staff.
+        </p>
+      </div>
+
+      <div class="text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-danger">Remove</button>
       </div>
     </form>
   `;
@@ -387,12 +411,6 @@ function StaffTable({
         </thead>
         <tbody>
           ${courseUsers.map((courseUser) => {
-            // Cannot change the course role of yourself (or of the
-            // user you are emulating) unless you are an administrator.
-            const canChangeCourseRole =
-              (courseUser.user.user_id !== authnUser.user_id &&
-                courseUser.user.user_id !== user.user_id) ||
-              isAdministrator;
             return html`
               <tr>
                 <td class="align-middle">${courseUser.user.uid}</td>
@@ -400,235 +418,21 @@ function StaffTable({
                   ${courseUser.user.name ?? html`<span class="text-danger">Unknown user</span>`}
                 </td>
                 <td class="align-middle">
-                  ${!canChangeCourseRole
-                    ? html`
-                        <button
-                          id="courseContentDropdown-${courseUser.user.user_id}"
-                          type="button"
-                          class="btn btn-sm btn-outline-primary disabled"
-                          disabled
-                        >
-                          ${courseUser.course_permission.course_role}
-                        </button>
-                      `
-                    : html`
-                        <form
-                          name="course-content-access-form-${courseUser.user.user_id}"
-                          method="POST"
-                        >
-                          <input
-                            type="hidden"
-                            name="__action"
-                            value="course_permissions_update_role"
-                          />
-                          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                          <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
-                          <div class="btn-group btn-group-sm" role="group">
-                            <button
-                              id="courseContentDropdown-${courseUser.user.user_id}"
-                              type="button"
-                              class="btn btn-sm btn-outline-primary dropdown-toggle"
-                              data-bs-toggle="dropdown"
-                              aria-haspopup="true"
-                              aria-expanded="false"
-                            >
-                              ${courseUser.course_permission.course_role}
-                            </button>
-                            <div
-                              class="dropdown-menu"
-                              aria-labelledby="courseContentDropdown-${courseUser.user.user_id}"
-                              style="width: 35em;"
-                            >
-                              <div class="dropdown-header text-wrap">
-                                <p>
-                                  Users with course content access can see aggregate student data
-                                  (e.g., mean scores), but cannot see the names or scores of
-                                  individual students without also having student data access to a
-                                  particular course instance.
-                                </p>
-                              </div>
-                              <div class="dropdown-divider"></div>
-                              <button
-                                class="dropdown-item mt-2"
-                                type="submit"
-                                name="course_role"
-                                value="None"
-                              >
-                                <div class="text-wrap">
-                                  <h6>None</h6>
-                                  <p class="small">Cannot see any course content.</p>
-                                </div>
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button
-                                class="dropdown-item"
-                                type="submit"
-                                name="course_role"
-                                value="Previewer"
-                              >
-                                <div class="text-wrap">
-                                  <h6>Previewer</h6>
-                                  <p class="small">
-                                    Can see all questions, course instances, and assessments. Can
-                                    see but not close issues. Cannot see any code or configuration
-                                    files.
-                                  </p>
-                                </div>
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button
-                                class="dropdown-item"
-                                type="submit"
-                                name="course_role"
-                                value="Viewer"
-                              >
-                                <div class="text-wrap">
-                                  <h6>Viewer</h6>
-                                  <p class="small">
-                                    Can see all questions, course instances, and assessments. Can
-                                    see but not close issues. Can see and download but not edit all
-                                    code and configuration files.
-                                  </p>
-                                </div>
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button
-                                class="dropdown-item"
-                                type="submit"
-                                name="course_role"
-                                value="Editor"
-                              >
-                                <div class="text-wrap">
-                                  <h6>Editor</h6>
-                                  <p class="small">
-                                    Can see all questions, course instances, and assessments. Can
-                                    see and close issues. Can see, download, and edit all code and
-                                    configuration files. Can sync course files to and from the
-                                    GitHub repository.
-                                  </p>
-                                </div>
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button
-                                class="dropdown-item"
-                                type="submit"
-                                name="course_role"
-                                value="Owner"
-                              >
-                                <div class="text-wrap">
-                                  <h6>Owner</h6>
-                                  <p class="small">
-                                    Can see all questions, course instances, and assessments. Can
-                                    see and close issues. Can see, download, and edit all code and
-                                    configuration files. Can sync course files to and from the
-                                    GitHub repository. Can add and remove course staff and can
-                                    change access roles.
-                                  </p>
-                                </div>
-                              </button>
-                            </div>
-                          </div>
-                        </form>
-                      `}
+                  ${CoursePermissionButton({
+                    // Cannot change the course role of yourself (or of the
+                    // user you are emulating) unless you are an administrator.
+                    canChangeCourseRole:
+                      (courseUser.user.user_id !== authnUser.user_id &&
+                        courseUser.user.user_id !== user.user_id) ||
+                      isAdministrator,
+                    courseUser,
+                    csrfToken,
+                  })}
                 </td>
                 <td class="align-middle">
-                  ${courseUser.course_instance_roles
-                    ? courseUser.course_instance_roles.map((cir) => {
-                        return html`
-                          <form
-                            name="student-data-access-change-${courseUser.user.user_id}-${cir.id}"
-                            method="POST"
-                            class="d-inline"
-                          >
-                            <input
-                              type="hidden"
-                              name="__action"
-                              value="course_instance_permissions_update_role_or_delete"
-                            />
-                            <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                            <input
-                              type="hidden"
-                              name="user_id"
-                              value="${courseUser.user.user_id}"
-                            />
-                            <input type="hidden" name="course_instance_id" value="${cir.id}" />
-                            <div
-                              class="btn-group btn-group-sm"
-                              role="group"
-                              aria-label="Button group with nested dropdown"
-                            >
-                              <div class="btn-group btn-group-sm" role="group">
-                                <button
-                                  id="changeCIPDrop-${courseUser.user.user_id}-${cir.id}"
-                                  type="button"
-                                  class="btn btn-sm btn-outline-primary dropdown-toggle"
-                                  data-bs-toggle="dropdown"
-                                  aria-haspopup="true"
-                                  aria-expanded="false"
-                                >
-                                  ${cir.short_name} (${cir.course_instance_role_formatted})
-                                </button>
-                                <div
-                                  class="dropdown-menu"
-                                  aria-labelledby="changeCIPDrop-${courseUser.user
-                                    .user_id}-${cir.id}"
-                                  style="width: 35em;"
-                                >
-                                  <div class="dropdown-header text-wrap">
-                                    <p>
-                                      Users with student data access can see all assessments in the
-                                      course instance <code>${cir.short_name}</code>, can see all
-                                      questions, and can see issues. They cannot see any code or
-                                      configuration files, or close issues, without also having
-                                      course content access.
-                                    </p>
-                                  </div>
-                                  <div class="dropdown-divider"></div>
-                                  <button
-                                    class="dropdown-item"
-                                    type="submit"
-                                    name="course_instance_role"
-                                    value="Student Data Viewer"
-                                  >
-                                    <div class="text-wrap">
-                                      <h6>Viewer</h6>
-                                      <p class="small">
-                                        Can see but not edit scores of individual students for the
-                                        course instance
-                                        <code>${cir.short_name}</code>.
-                                      </p>
-                                    </div>
-                                  </button>
-                                  <div class="dropdown-divider"></div>
-                                  <button
-                                    class="dropdown-item"
-                                    type="submit"
-                                    name="course_instance_role"
-                                    value="Student Data Editor"
-                                  >
-                                    <div class="text-wrap">
-                                      <h6>Editor</h6>
-                                      <p class="small">
-                                        Can see and edit scores of individual students for the
-                                        course instance
-                                        <code>${cir.short_name}</code>.
-                                      </p>
-                                    </div>
-                                  </button>
-                                </div>
-                              </div>
-                              <button
-                                type="submit"
-                                class="btn btn-sm btn-outline-primary"
-                                aria-label="Remove access"
-                              >
-                                <i class="fa fa-times"></i>
-                              </button>
-                            </div>
-                          </form>
-                        `;
-                      })
-                    : ''}
+                  ${courseUser.course_instance_roles?.map((cir) =>
+                    CourseInstancePermissionButton({ courseUser, cir, csrfToken }),
+                  )}
                   ${courseUser.other_course_instances?.length
                     ? html`
                         <form
@@ -649,6 +453,7 @@ function StaffTable({
                               type="button"
                               class="btn btn-sm btn-outline-dark dropdown-toggle"
                               data-bs-toggle="dropdown"
+                              data-bs-boundary="body"
                               aria-haspopup="true"
                               aria-expanded="false"
                             >
@@ -679,17 +484,26 @@ function StaffTable({
                 <td class="align-middle">
                   ${courseUser.course_permission.course_role !== 'Owner' || isAdministrator
                     ? html`
-                        <form
-                          name="student-data-access-remove-${courseUser.user.user_id}"
-                          method="POST"
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-dark"
+                          aria-label="Remove ${courseUser.user.name ?? courseUser.user.uid}"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Remove ${courseUser.user.name ?? courseUser.user.uid}"
+                          data-bs-content="${escapeHtml(
+                            CoursePermissionsRemoveStaffForm({
+                              csrfToken,
+                              courseUser,
+                            }),
+                          )}"
+                          data-bs-custom-class="popover-wide"
+                          data-testid="remove-staff-button"
                         >
-                          <input type="hidden" name="__action" value="course_permissions_delete" />
-                          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                          <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
-                          <button type="submit" class="btn btn-sm btn-outline-dark">
-                            <i class="fa fa-times"></i> Delete user
-                          </button>
-                        </form>
+                          <i class="fa fa-times"></i> Remove
+                        </button>
                       `
                     : ''}
                 </td>
@@ -699,6 +513,300 @@ function StaffTable({
         </tbody>
       </table>
     </div>
+  `;
+}
+
+function CoursePermissionButton({
+  canChangeCourseRole,
+  courseUser,
+  csrfToken,
+}: {
+  canChangeCourseRole: boolean;
+  courseUser: CourseUsersRow;
+  csrfToken: string;
+}) {
+  const currentRole = courseUser.course_permission.course_role;
+  if (!canChangeCourseRole) {
+    return html`
+      <button
+        id="course-permission-button-${courseUser.user.user_id}"
+        type="button"
+        class="btn btn-sm btn-outline-primary disabled"
+        disabled
+      >
+        ${currentRole}
+      </button>
+    `;
+  }
+
+  const popoverContent = html`
+    <form name="course-content-access-form-${courseUser.user.user_id}" method="POST">
+      <input type="hidden" name="__action" value="course_permissions_update_role" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <p class="d-none d-sm-block">
+        Users with course content access can see aggregate student data (e.g., mean scores), but
+        cannot see the names or scores of individual students without also having student data
+        access to a particular course instance.
+      </p>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_role"
+          value="None"
+          id="course-permission-input-${courseUser.user.user_id}-None"
+          ${currentRole === 'None' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-permission-input-${courseUser.user.user_id}-None"
+        >
+          <h6>None</h6>
+          <p class="small text-muted d-none d-sm-block">Cannot see any course content.</p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_role"
+          value="Previewer"
+          id="course-permission-input-${courseUser.user.user_id}-Previewer"
+          ${currentRole === 'Previewer' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-permission-input-${courseUser.user.user_id}-Previewer"
+        >
+          <h6>Previewer</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see all questions, course instances, and assessments. Can see but not close issues.
+            Cannot see any code or configuration files.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_role"
+          value="Viewer"
+          id="course-permission-input-${courseUser.user.user_id}-Viewer"
+          ${currentRole === 'Viewer' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-permission-input-${courseUser.user.user_id}-Viewer"
+        >
+          <h6>Viewer</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see all questions, course instances, and assessments. Can see but not close issues.
+            Can see and download but not edit all code and configuration files.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_role"
+          value="Editor"
+          id="course-permission-input-${courseUser.user.user_id}-Editor"
+          ${currentRole === 'Editor' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-permission-input-${courseUser.user.user_id}-Editor"
+        >
+          <h6>Editor</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see all questions, course instances, and assessments. Can see and close issues. Can
+            see, download, and edit all code and configuration files. Can sync course files to and
+            from the GitHub repository.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_role"
+          value="Owner"
+          id="course-permission-input-${courseUser.user.user_id}-Owner"
+          ${currentRole === 'Owner' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-permission-input-${courseUser.user.user_id}-Owner"
+        >
+          <h6>Owner</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see all questions, course instances, and assessments. Can see and close issues. Can
+            see, download, and edit all code and configuration files. Can sync course files to and
+            from the GitHub repository. Can add and remove course staff and can change access roles.
+          </p>
+        </label>
+      </div>
+      <div class="mt-3 text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-primary">Change access</button>
+      </div>
+    </form>
+  `;
+
+  return html`
+    <button
+      id="course-permission-button-${courseUser.user.user_id}"
+      type="button"
+      class="btn btn-sm btn-outline-primary dropdown-toggle"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Change course content access"
+      data-bs-content="${escapeHtml(popoverContent)}"
+      data-bs-custom-class="popover-wide popover-scrollable"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      ${courseUser.course_permission.course_role}
+    </button>
+  `;
+}
+
+function CourseInstancePermissionButton({
+  courseUser,
+  cir,
+  csrfToken,
+}: {
+  courseUser: CourseUsersRow;
+  cir: CourseInstanceRoleRow;
+  csrfToken: string;
+}) {
+  const popoverContent = html`
+    <form name="course-instance-access-form-${courseUser.user.user_id}-${cir.id}" method="POST">
+      <input
+        type="hidden"
+        name="__action"
+        value="course_instance_permissions_update_role_or_delete"
+      />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <input type="hidden" name="course_instance_id" value="${cir.id}" />
+      <p class="d-none d-sm-block">
+        Users with student data access can see all assessments in the course instance
+        <code>${cir.short_name}</code>, can see all questions, and can see issues. They cannot see
+        any code or configuration files, or close issues, without also having course content access.
+      </p>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_instance_role"
+          value="None"
+          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-None"
+        />
+        <label
+          class="form-check-label"
+          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-None"
+        >
+          <h6>None</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Remove permissions for the course instance <code>${cir.short_name}</code>.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_instance_role"
+          value="Student Data Viewer"
+          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Viewer"
+          ${cir.course_instance_role === 'Student Data Viewer' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Viewer"
+        >
+          <h6>Viewer</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see but not edit scores of individual students for the course instance
+            <code>${cir.short_name}</code>.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_instance_role"
+          value="Student Data Editor"
+          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Editor"
+          ${cir.course_instance_role === 'Student Data Editor' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Editor"
+        >
+          <h6>Editor</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see and edit scores of individual students for the course instance
+            <code>${cir.short_name}</code>.
+          </p>
+        </label>
+      </div>
+      <div class="mt-3 text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-primary">Change access</button>
+      </div>
+    </form>
+  `;
+
+  return html`
+    <form
+      name="course-instance-access-form-${courseUser.user.user_id}-${cir.id}-delete"
+      method="POST"
+    >
+      <input
+        type="hidden"
+        name="__action"
+        value="course_instance_permissions_update_role_or_delete"
+      />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <input type="hidden" name="course_instance_id" value="${cir.id}" />
+      <div class="btn-group btn-group-sm" role="group">
+        <div class="btn-group btn-group-sm">
+          <button
+            id="course-instance-permission-button-${courseUser.user.user_id}-${cir.id}"
+            type="button"
+            class="btn btn-sm btn-outline-primary dropdown-toggle"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Change student data access for ${cir.short_name}"
+            data-bs-content="${escapeHtml(popoverContent)}"
+            data-bs-custom-class="popover-wide popover-scrollable"
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            ${cir.short_name} (${cir.course_instance_role_formatted})
+          </button>
+        </div>
+        <button
+          type="submit"
+          class="btn btn-sm btn-outline-primary"
+          aria-label="Remove access"
+          name="course_instance_role"
+          value="None"
+        >
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+    </form>
   `;
 }
 

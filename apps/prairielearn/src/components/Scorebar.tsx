@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import { renderHtml } from '../lib/preact-html.js';
+import { renderHtml } from '@prairielearn/preact';
 
 export function Scorebar({
   score,
@@ -11,7 +11,7 @@ export function Scorebar({
   score: number | null;
   minWidth?: string;
   maxWidth?: string;
-  class: string;
+  class?: string;
 }) {
   if (score == null) return '';
   return (

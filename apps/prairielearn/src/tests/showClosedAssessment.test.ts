@@ -2,10 +2,12 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { ensureEnrollment } from '../models/enrollment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import { selectUserByUid } from '../models/user.js';
 
 import * as helperClient from './helperClient.js';
@@ -14,8 +16,7 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_000 }, function () {
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
@@ -50,7 +51,14 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
 
   test.sequential('enroll the test student user in the course', async () => {
     const user = await selectUserByUid('student@example.com');
-    await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+    const courseInstance = await selectCourseInstanceById('1');
+    await ensureUncheckedEnrollment({
+      userId: user.user_id,
+      courseInstance,
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
+    });
   });
 
   test.sequential('visit start exam page', async () => {

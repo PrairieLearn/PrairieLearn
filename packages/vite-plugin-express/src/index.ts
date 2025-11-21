@@ -79,6 +79,7 @@ async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFu
   // Store a cached copy of the most recent app module that we can use while
   // doing a full restart.
   let _mostRecentAppModule: any;
+
   async function _loadApp(config: VitePluginExpressConfig) {
     if (!isRunnableDevEnvironment(server.environments.ssr)) {
       throw new Error('VitePluginExpress can only be used with a runnable dev environment');
@@ -94,7 +95,6 @@ async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFu
       _mostRecentAppModule = appModule;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const app = appModule[config.exportName!];
     if (!app) {
       logger.error(`Failed to find a named ${config.exportName} from ${config.appPath}`, {
@@ -107,7 +107,6 @@ async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFu
   }
 
   if (config.initAppOnBoot) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     server.httpServer!.once('listening', async () => {
       await _loadApp(config).catch(() => {});
     });

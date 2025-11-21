@@ -6,6 +6,7 @@ import { html } from '@prairielearn/html';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { type Course, type CourseInstance, type Institution } from '../../lib/db-types.js';
+import type { FeatureName } from '../../lib/features/index.js';
 
 export const FeatureGrantRowSchema = z.object({
   id: z.string(),
@@ -30,14 +31,14 @@ export function AdministratorFeatures({
   features,
   resLocals,
 }: {
-  features: string[];
+  features: FeatureName[];
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Features',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'features',
     },
@@ -86,7 +87,7 @@ export function AdministratorFeature({
     resLocals,
     pageTitle: 'Features',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'features',
     },

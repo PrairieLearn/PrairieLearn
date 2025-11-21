@@ -12,7 +12,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import * as b64Util from '../lib/base64-util.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
@@ -269,7 +269,7 @@ describe('test file editor', { timeout: 20_000 }, function () {
     afterAll(helperServer.after);
 
     beforeAll(async () => {
-      await sqldb.queryAsync(sql.update_course_repository, {
+      await sqldb.execute(sql.update_course_repository, {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
@@ -430,7 +430,7 @@ function editPost(
         body: new URLSearchParams({
           __action: action,
           __csrf_token: locals.__csrf_token,
-          file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
+          file_edit_contents: b64EncodeUnicode(fileEditContents),
           file_edit_orig_hash: locals.file_edit_orig_hash,
         }),
       });
@@ -498,7 +498,7 @@ function verifyEdit(
   it('editor element should match expected draft file contents', function () {
     const editor = locals.$('#file-editor-draft');
     assert.lengthOf(editor, 1);
-    const fileContents = b64Util.b64DecodeUnicode(editor.data('contents'));
+    const fileContents = b64DecodeUnicode(editor.data('contents'));
     assert.strictEqual(fileContents, expectedDraftContents);
   });
   it(`should have results of save and sync - ${expectedToFindResults}`, function () {
@@ -513,7 +513,7 @@ function verifyEdit(
     const editor = locals.$('#file-editor-disk');
     if (expectedToFindChoice) {
       assert.lengthOf(editor, 1);
-      const fileContents = b64Util.b64DecodeUnicode(editor.data('contents'));
+      const fileContents = b64DecodeUnicode(editor.data('contents'));
       assert.strictEqual(fileContents, expectedDiskContents);
     } else {
       assert.lengthOf(editor, 0);

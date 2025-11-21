@@ -1,5 +1,35 @@
 # @prairielearn/formatter
 
+## 1.5.0
+
+### Minor Changes
+
+- 77f7620: Allow passing `Temporal.PlainDateTime` to `formatDate` and `formatDateFriendly`
+
+## 1.4.8
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 1.4.7
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 1.4.6
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 1.4.5
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
 ## 1.4.4
 
 ### Patch Changes

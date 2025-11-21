@@ -150,7 +150,7 @@ const sideNavPagesTabs = {
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['settings', 'access', 'lti', 'billing'],
+      activeSubPages: ['settings', 'publishing', 'lti', 'billing'],
       urlSuffix: '/instance_admin/settings',
       iconClasses: 'fas fa-cog',
       tabLabel: 'Instance settings',
@@ -163,10 +163,14 @@ export function SideNav({
   resLocals,
   page,
   subPage,
+  sideNavExpanded,
+  persistToggleState = true,
 }: {
   resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
+  sideNavExpanded: boolean;
+  persistToggleState?: boolean;
 }) {
   // We recompute `urlPrefix` instead of using the one from `resLocals` because
   // it may not be populated correctly in the case of an access error, specifically
@@ -189,6 +193,8 @@ export function SideNav({
       page,
       subPage,
       urlPrefix,
+      sideNavExpanded,
+      persistToggleState,
     })}
     ${resLocals.course_instance
       ? CourseInstanceNav({
@@ -196,6 +202,7 @@ export function SideNav({
           page,
           subPage,
           urlPrefix,
+          sideNavExpanded,
         })
       : ''}
   `;
@@ -206,11 +213,15 @@ function CourseNav({
   page,
   subPage,
   urlPrefix,
+  sideNavExpanded,
+  persistToggleState,
 }: {
   resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
   urlPrefix: string;
+  sideNavExpanded: boolean;
+  persistToggleState: boolean;
 }) {
   const courseSideNavPageTabs = sideNavPagesTabs.course_admin;
 
@@ -222,14 +233,12 @@ function CourseNav({
         type="button"
         data-bs-toggle="tooltip"
         data-bs-placement="right"
-        data-bs-title="${resLocals.side_nav_expanded ? 'Collapse side nav' : 'Expand side nav'}"
+        data-bs-title="${sideNavExpanded ? 'Collapse side nav' : 'Expand side nav'}"
+        data-persist-toggle-state="${persistToggleState ? 'true' : 'false'}"
       >
         <i
           id="side-nav-toggler-icon"
-          class="${clsx(
-            'bi',
-            resLocals.side_nav_expanded ? 'bi-arrow-bar-left' : 'bi-arrow-bar-right',
-          )}"
+          class="${clsx('bi', sideNavExpanded ? 'bi-arrow-bar-left' : 'bi-arrow-bar-right')}"
         ></i>
       </button>
     </div>
@@ -237,7 +246,7 @@ function CourseNav({
       <div id="course-dropdown" class="dropdown">
         <button
           type="button"
-          class="btn dropdown-toggle border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
+          class="btn dropdown-toggle border bg-white w-100 d-flex justify-content-between align-items-center mb-2"
           aria-label="Change course"
           aria-haspopup="true"
           aria-expanded="false"
@@ -270,6 +279,7 @@ function CourseNav({
           navSubPage: subPage,
           tabInfo,
           urlPrefix,
+          sideNavExpanded,
         }),
       )}
     </div>
@@ -281,23 +291,25 @@ function CourseInstanceNav({
   page,
   subPage,
   urlPrefix,
+  sideNavExpanded,
 }: {
   resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
   urlPrefix: string;
+  sideNavExpanded: boolean;
 }) {
   const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
   return html`
     <div class="side-nav-header">
       <div class="header-text">Course instance</div>
     </div>
-    <div class="side-nav-group mb-3">
+    <div class="side-nav-group mb-0">
       <div>
         <div id="course-instance-dropdown" class="dropdown">
           <button
             type="button"
-            class="btn dropdown-toggle border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
+            class="btn dropdown-toggle border bg-white w-100 d-flex justify-content-between align-items-center mb-2"
             aria-label="Change course instance"
             aria-haspopup="true"
             aria-expanded="false"
@@ -332,6 +344,7 @@ function CourseInstanceNav({
                 navSubPage: subPage,
                 tabInfo,
                 urlPrefix,
+                sideNavExpanded,
               }),
             )
           : ''}
@@ -346,12 +359,14 @@ function SideNavLink({
   navSubPage,
   tabInfo,
   urlPrefix,
+  sideNavExpanded,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage: NavSubPage;
   tabInfo: SideNavTabInfo;
   urlPrefix: string;
+  sideNavExpanded: boolean;
 }) {
   const {
     activePages,
@@ -373,8 +388,6 @@ function SideNavLink({
   if (isActive && (!checkActiveSubPageForPages || checkActiveSubPageForPages.includes(navPage))) {
     isActive = activeSubPages.includes(navSubPage);
   }
-
-  const sideNavExpanded = resLocals.side_nav_expanded;
 
   return html`
     <a

@@ -29,8 +29,7 @@ import { syncCourseData } from './sync/util.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let elemList;
-const locals: Record<string, any> = {};
-locals.siteUrl = 'http://localhost:' + config.serverPort;
+const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
@@ -334,12 +333,12 @@ describe(
 
         const res = await fetch(locals.assessmentUrl);
         assert.isOk(res.ok);
-        const result = await sqldb.queryAsync(sql.select_group_user_roles, {
+        const result = await sqldb.execute(sql.select_group_user_roles, {
           assessment_id: locals.assessment_id,
         });
 
         // Since there are no users currently in the group, there must be no role assignments
-        assert.lengthOf(result.rows, 0);
+        assert.equal(result, 0);
       },
     );
 
@@ -1799,7 +1798,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     assert.lengthOf(locals.studentUsers, 5);
   });
 
-  test.sequential('should setup group info', async function () {
+  test.sequential('should setup group info', function () {
     locals.groupId = '1';
     locals.groupName = '1';
     locals.groupMembers = locals.studentUsers.map((user) => ({
@@ -1972,7 +1971,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       );
       assert.isDefined(secondUserRoleAssignment);
       const expected =
-        secondUserRoleAssignment?.group_role_id === locals.manager.id ? expected1 : expected2;
+        secondUserRoleAssignment.group_role_id === locals.manager.id ? expected1 : expected2;
       assert.sameDeepMembers(result, expected);
     },
   );

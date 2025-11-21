@@ -1,8 +1,8 @@
 import _ from 'lodash';
 
 import { removeCookieClient, setCookieClient } from '../lib/client/cookie.js';
-import type { PageContext } from '../lib/client/page-context.js';
-import type { StaffUser } from '../lib/client/safe-db-types.js';
+import type { PageContextWithAuthzData } from '../lib/client/page-context.js';
+import type { StaffUser, StudentUser } from '../lib/client/safe-db-types.js';
 
 // These keys can be used as part of permission checks.
 export type CheckablePermissionKeys = Extract<
@@ -15,13 +15,13 @@ export type CheckablePermissionKeys = Extract<
   | 'has_course_instance_permission_edit'
   | 'has_student_access'
   | 'has_student_access_with_enrollment',
-  keyof PageContext['authz_data']
+  keyof PageContextWithAuthzData['authz_data']
 >;
 
 // These keys are used to show users diagnostic information about their permissions.
 type DiagnosticPermissionKeys = Extract<
   CheckablePermissionKeys | 'course_role' | 'course_instance_role',
-  keyof PageContext['authz_data']
+  keyof PageContextWithAuthzData['authz_data']
 >;
 
 interface PermissionMeta {
@@ -99,7 +99,7 @@ function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
       <thead>
         <tr>
           <th>Permission</th>
-          <th>Effective User</th>
+          <th>Effective User/Role</th>
           <th>Your Account</th>
         </tr>
       </thead>
@@ -131,6 +131,7 @@ function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
     </table>
   );
 }
+
 function clearEffectiveUserCookies() {
   removeCookieClient(['pl_requested_uid', 'pl2_requested_uid']);
   removeCookieClient(['pl_requested_course_role', 'pl2_requested_course_role']);
@@ -140,9 +141,28 @@ function clearEffectiveUserCookies() {
   window.location.reload();
 }
 
-function formatUser(user: StaffUser) {
+function formatUser(user: StudentUser | StaffUser) {
   if (!user.name) return user.uid;
   return `${user.name} (${user.uid})`;
+}
+
+function getPermissionDescription(permissionKeys: CheckablePermissionKeys[]): string {
+  const descriptions = permissionKeys.map((key) => {
+    const permission = PERMISSIONS_META.find((p) => p.key === key);
+    return permission?.label.toLowerCase() || key.toString().replaceAll('_', ' ');
+  });
+
+  if (descriptions.length === 1) {
+    return descriptions[0];
+  } else if (descriptions.length === 2) {
+    return descriptions.join(' or ');
+  } else {
+    return descriptions.slice(0, -1).join(', ') + ', or ' + descriptions.at(-1);
+  }
+}
+
+export function getErrorExplanation(permissionKeys: CheckablePermissionKeys[]): string {
+  return `This page requires ${getPermissionDescription(permissionKeys)} permissions.`;
 }
 
 export function AuthzAccessMismatch({
@@ -158,9 +178,9 @@ export function AuthzAccessMismatch({
    */
   errorExplanation?: string;
   oneOfPermissionKeys: CheckablePermissionKeys[];
-  authzData: PageContext['authz_data'];
-  authnUser: StaffUser;
-  authzUser: StaffUser | null;
+  authzData: PageContextWithAuthzData['authz_data'];
+  authnUser: StudentUser | StaffUser;
+  authzUser: StudentUser | StaffUser | null;
 }) {
   const permissions: PermissionData[] = PERMISSIONS_META.map((permission) => {
     return {
@@ -180,6 +200,11 @@ export function AuthzAccessMismatch({
     (permission) => permission.authnValue !== permission.value,
   );
 
+  // Use special messaging if there is an effective role but the effective user remains the same
+  const hasEffectiveUser = authzUser?.user_id !== authnUser.user_id;
+  const isStudentViewActive =
+    !authzData.has_course_permission_preview && !authzData.has_course_instance_permission_view;
+
   return (
     <main id="content" class="container">
       <div class="card mb-4">
@@ -187,12 +212,24 @@ export function AuthzAccessMismatch({
           <h1>Effective user has insufficient access</h1>
         </div>
         <div class="card-body">
-          <p>{errorExplanation}</p>
-          <p>
-            The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>} does
-            not have access to this page, but your account <strong>{formatUser(authnUser)}</strong>{' '}
-            does.
-          </p>
+          <p>{errorExplanation ?? getErrorExplanation(oneOfPermissionKeys)}</p>
+          {hasEffectiveUser ? (
+            <p>
+              The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>}{' '}
+              does not have access to this page, but your account{' '}
+              <strong>{formatUser(authnUser)}</strong> does.
+            </p>
+          ) : isStudentViewActive ? (
+            <p>
+              You are currently in <strong>Student view</strong>, which does not give you permission
+              to this page, but your account permissions do.
+            </p>
+          ) : (
+            <p>
+              The current effective role does not have access to this page, but your account
+              permissions do.
+            </p>
+          )}
 
           <details class="mb-3">
             <summary class="mb-1">View missing permissions</summary>
@@ -206,7 +243,7 @@ export function AuthzAccessMismatch({
           </details>
 
           <button type="button" class="btn btn-primary" onClick={clearEffectiveUserCookies}>
-            Clear effective user
+            Clear effective {hasEffectiveUser ? 'user' : 'role'}
           </button>
         </div>
       </div>

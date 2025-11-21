@@ -20,7 +20,7 @@ describe('sproc check_course_instance_access* tests', function () {
   afterAll(helperDb.after);
 
   beforeAll(async () => {
-    await sqldb.queryAsync(sql.setup_cia_generic_tests, {});
+    await sqldb.execute(sql.setup_cia_generic_tests);
   });
 
   it('pass if all parameters match', async () => {

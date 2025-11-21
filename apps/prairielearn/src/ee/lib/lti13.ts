@@ -2,26 +2,30 @@ import { setTimeout as sleep } from 'timers/promises';
 
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import type { Request } from 'express';
+import * as jose from 'jose';
 import _ from 'lodash';
 import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
-import { Issuer, type TokenSet } from 'openid-client';
+import * as client from 'openid-client';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryRow,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
+import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
+  type CourseInstance,
   DateFromISOString,
   IdSchema,
   Lti13CourseInstanceSchema,
+  type Lti13Instance,
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
@@ -191,6 +195,46 @@ export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
 export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
 
+export async function getOpenidClientConfig(
+  lti13_instance: Lti13Instance,
+  options?: client.ModifyAssertionOptions,
+): Promise<client.Configuration> {
+  const keystore = lti13_instance.keystore as jose.JSONWebKeySet | null | undefined;
+  if (!keystore || !Array.isArray(keystore.keys) || keystore.keys.length === 0) {
+    throw new Error('LTI 1.3 configuration error: no keys available in keystore');
+  }
+
+  const keyFromKeyStore = keystore.keys.at(-1);
+  if (!keyFromKeyStore) {
+    throw new Error('LTI 1.3 configuration error: unable to load key');
+  }
+
+  const cryptoKey = await jose.importJWK(keyFromKeyStore);
+  if (cryptoKey instanceof Uint8Array) {
+    throw new Error('LTI 1.3 configuration error: unsupported key type');
+  }
+
+  const openidClientConfig = new client.Configuration(
+    lti13_instance.issuer_params,
+    lti13_instance.client_params.client_id,
+    lti13_instance.client_params,
+    client.PrivateKeyJwt(
+      {
+        key: cryptoKey,
+        kid: keyFromKeyStore.kid,
+      },
+      options,
+    ),
+  );
+
+  // Only for testing
+  if (config.devMode) {
+    client.allowInsecureRequests(openidClientConfig);
+  }
+
+  return openidClientConfig;
+}
+
 export class Lti13Claim {
   private claims: Lti13ClaimType;
   private req: Request;
@@ -250,7 +294,7 @@ export class Lti13Claim {
   private assertValid() {
     if (!this.valid || Math.floor(Date.now() / 1000) > this.claims.exp) {
       this.valid = false;
-      delete this.req.session['lti13_claims'];
+      delete this.req.session.lti13_claims;
       throw new HttpStatusError(
         403,
         'LTI session invalid or timed out, please try logging in again.',
@@ -325,8 +369,8 @@ export class Lti13Claim {
    */
   remove() {
     this.valid = false;
-    delete this.req.session['lti13_claims'];
-    delete this.req.session['authn_lti13_instance_id'];
+    delete this.req.session.lti13_claims;
+    delete this.req.session.authn_lti13_instance_id;
   }
 }
 
@@ -350,51 +394,57 @@ export async function validateLti13CourseInstance(
 export async function getAccessToken(lti13_instance_id: string) {
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
-  let tokenSet: TokenSet = lti13_instance.access_tokenset;
-
   const fiveMinutesInTheFuture = new Date(Date.now() + 5 * 60 * 1000);
 
   if (
+    lti13_instance.access_tokenset &&
     lti13_instance.access_token_expires_at &&
     lti13_instance.access_token_expires_at > fiveMinutesInTheFuture
   ) {
-    return tokenSet.access_token;
+    return lti13_instance.access_tokenset.access_token;
   }
 
-  // Fetch the token
-  const issuer = new Issuer(lti13_instance.issuer_params);
-  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
+  const modAssertion: client.ModifyAssertionOptions = {
+    [client.modifyAssertion]: (_header, payload) => {
+      // Canvas requires the `aud` claim the be (or contain) the token endpoint:
+      // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/client_credentials_provider.rb#L26-L29
+      // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/asymmetric_client_credentials_provider.rb#L24
+      //
+      // From what we can tell, the OIDC spec requires this as well, see "private key jwt"
+      // here: https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.9
+      //
+      // "The Audience SHOULD be the URL of the Authorization Server's Token Endpoint."
+      //
+      // However, `openid-client` changed their behavior in the following commit:
+      // https://github.com/panva/openid-client/commit/0b05217e7f283b75fd93c27c0f8c647f37501a33
+      //
+      // There wasn't a justification provided and this seems to deviate from the OIDC spec.
+      // See a discussion here: https://github.com/panva/openid-client/discussions/730
+      payload.aud = [
+        ...new Set(
+          [lti13_instance.issuer_params.issuer, lti13_instance.issuer_params.token_endpoint].filter(
+            Boolean,
+          ),
+        ),
+      ];
 
-  tokenSet = await client.grant(
-    {
-      grant_type: 'client_credentials',
-      scope: TOKEN_SCOPES.join(' '),
+      // FUTURE WORK: Tool SHOULD include the deployment ID as part of the JWT to request a token.
+      // https://www.imsglobal.org/spec/lti/v1p3/#deployment-id
+      // payload['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
     },
-    {
-      clientAssertionPayload: {
-        // Canvas requires the `aud` claim the be (or contain) the token endpoint:
-        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/client_credentials_provider.rb#L26-L29
-        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/asymmetric_client_credentials_provider.rb#L24
-        //
-        // From what we can tell, the OIDC spec requires this as well, see "private key jwt"
-        // here: https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.9
-        //
-        // "The Audience SHOULD be the URL of the Authorization Server's Token Endpoint."
-        //
-        // However, `openid-client` changed their behavior in the following commit:
-        // https://github.com/panva/openid-client/commit/0b05217e7f283b75fd93c27c0f8c647f37501a33
-        //
-        // There wasn't a justification provided and this seems to deviate from the OIDC spec.
-        // See a discussion here: https://github.com/panva/openid-client/discussions/730
-        aud: [...new Set([issuer.issuer, issuer.token_endpoint].filter(Boolean))],
-      },
-    },
-  );
+  };
+
+  const openidClientConfig = await getOpenidClientConfig(lti13_instance, modAssertion);
+
+  // Fetch the token
+  const tokenSet = await client.clientCredentialsGrant(openidClientConfig, {
+    scope: TOKEN_SCOPES.join(' '),
+  });
 
   // Store the token for reuse
-  const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
+  const expires_at = tokenSet.expires_in ? Date.now() + tokenSet.expires_in * 1000 : Date.now();
 
-  await queryAsync(sql.update_token, {
+  await execute(sql.update_token, {
     lti13_instance_id,
     access_tokenset: tokenSet,
     access_token_expires_at: new Date(expires_at),
@@ -511,19 +561,14 @@ export async function queryAndLinkLineitem(
   unsafe_assessment_id: string | number,
 ) {
   const item = await getLineitem(instance, lineitem_id_url);
-
-  if (item) {
-    await linkAssessment(instance.lti13_course_instance.id, unsafe_assessment_id, item);
-  } else {
-    throw new HttpStatusError(400, 'Lineitem not found');
-  }
+  await linkAssessment(instance.lti13_course_instance.id, unsafe_assessment_id, item);
 }
 
 export async function unlinkAssessment(
   lti13_course_instance_id: string,
   assessment_id: string | number,
 ) {
-  await queryAsync(sql.delete_lti13_assessment, {
+  await execute(sql.delete_lti13_assessment, {
     lti13_course_instance_id,
     assessment_id,
   });
@@ -543,11 +588,7 @@ export async function linkAssessment(
     AssessmentSchema,
   );
 
-  if (assessment === null) {
-    throw new HttpStatusError(403, 'Invalid assessment id');
-  }
-
-  await queryAsync(sql.upsert_lti13_assessment, {
+  await execute(sql.upsert_lti13_assessment, {
     lti13_course_instance_id,
     lineitem_id_url: lineitem.id,
     lineitem: JSON.stringify(lineitem),
@@ -591,7 +632,7 @@ export function findValueByKey(obj: unknown, targetKey: string): unknown {
  */
 export async function fetchRetry(
   input: RequestInfo | URL,
-  opts?: RequestInit | undefined,
+  opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;
@@ -666,7 +707,7 @@ export async function fetchRetry(
  */
 export async function fetchRetryPaginated(
   input: RequestInfo | URL,
-  opts?: RequestInit | undefined,
+  opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;
@@ -797,6 +838,7 @@ class Lti13ContextMembership {
     for (const match of ['uid', 'email']) {
       const memberResults = this.#membershipsByEmail[user[match]];
 
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!memberResults) continue;
 
       // member.email cannot be duplicated in memberships
@@ -810,11 +852,17 @@ class Lti13ContextMembership {
   }
 }
 
-export async function updateLti13Scores(
-  unsafe_assessment_id: string | number,
-  instance: Lti13CombinedInstance,
-  job: ServerJob,
-) {
+export async function updateLti13Scores({
+  course_instance,
+  unsafe_assessment_id,
+  instance,
+  job,
+}: {
+  course_instance: CourseInstance;
+  unsafe_assessment_id: string | number;
+  instance: Lti13CombinedInstance;
+  job: ServerJob;
+}) {
   // Get the assessment metadata
   const assessment = await queryRow(
     sql.select_assessment_for_lti13_scores,
@@ -828,10 +876,6 @@ export async function updateLti13Scores(
       context_memberships_url: z.string(),
     }),
   );
-
-  if (assessment === null) {
-    throw new HttpStatusError(403, 'Invalid assessment.id');
-  }
 
   job.info(`Working on assessment ${assessment.title} (${assessment.tid})`);
 
@@ -848,7 +892,7 @@ export async function updateLti13Scores(
   );
 
   const courseStaff = await selectUsersWithCourseInstanceAccess({
-    course_instance_id: assessment.course_instance_id,
+    course_instance,
     minimal_role: 'Student Data Viewer',
   });
   const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));

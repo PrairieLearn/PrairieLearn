@@ -2,23 +2,28 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
-import { InstanceQuestionSchema, VariantSchema } from '../../lib/db-types.js';
+import {
+  InstanceQuestionSchema,
+  SprocUsersSelectOrInsertSchema,
+  VariantSchema,
+} from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   updateCourseInstancePermissionsRole,
 } from '../../models/course-permissions.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('student data access', { timeout: 60_000 }, function () {
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
   context.userIdInstructor = 2;
@@ -41,29 +46,30 @@ describe('student data access', { timeout: 60_000 }, function () {
   });
 
   beforeAll(async function () {
-    await sqldb.callAsync('users_select_or_insert', [
-      'instructor@example.com',
-      'Instructor User',
-      '100000000',
-      'instructor@example.com',
-      'dev',
-    ]);
-    await sqldb.callAsync('users_select_or_insert', [
-      'student@example.com',
-      'Student User',
-      '000000001',
-      'student@example.com',
-      'dev',
-    ]);
+    await sqldb.callRow(
+      'users_select_or_insert',
+      ['instructor@example.com', 'Instructor User', '100000000', 'instructor@example.com', 'dev'],
+      SprocUsersSelectOrInsertSchema,
+    );
+    await sqldb.callRow(
+      'users_select_or_insert',
+      ['student@example.com', 'Student User', '000000001', 'student@example.com', 'dev'],
+      SprocUsersSelectOrInsertSchema,
+    );
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',
       course_role: 'Owner',
       authn_user_id: '1',
     });
-    await ensureEnrollment({
-      user_id: '3',
-      course_instance_id: '1',
+    const courseInstance = await selectCourseInstanceById('1');
+
+    await ensureUncheckedEnrollment({
+      userId: '3',
+      courseInstance,
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
     });
   });
 

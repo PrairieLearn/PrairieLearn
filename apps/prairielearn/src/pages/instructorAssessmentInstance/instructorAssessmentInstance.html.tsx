@@ -2,9 +2,10 @@ import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
-import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.js';
+import { EditQuestionPointsScoreButtonHtml } from '../../components/EditQuestionPointsScore.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
@@ -13,13 +14,13 @@ import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndW
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
+  type Assessment,
   AssessmentQuestionSchema,
   type ClientFingerprint,
   IdSchema,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -111,9 +112,10 @@ export function InstructorAssessmentInstance({
           : html`${resLocals.instance_user.name}`}
       </h1>
       ${ResetQuestionVariantsModal({
+        assessment: resLocals.assessment,
         csrfToken: resLocals.__csrf_token,
-        groupWork: resLocals.assessment.group_work,
       })}
+      ${ExamResetNotSupportedModal({ assessment: resLocals.assessment })}
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
           authzData={resLocals.authz_data}
@@ -167,7 +169,7 @@ export function InstructorAssessmentInstance({
                 <th>Instance</th>
                 <td colspan="2">
                   ${resLocals.assessment_instance.number} (<a
-                    href="${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance
+                    href="/pl/course_instance/${resLocals.course_instance
                       .id}/assessment_instance/${resLocals.assessment_instance.id}"
                     >student view</a
                   >)
@@ -343,10 +345,10 @@ export function InstructorAssessmentInstance({
                           <th colspan="9">
                             ${instance_question.zone_title}
                             ${instance_question.zone_has_max_points
-                              ? html`(maximum ${instance_question.zone_max_points} points)}`
+                              ? html`(maximum ${instance_question.zone_max_points} points)`
                               : ''}
                             ${instance_question.zone_has_best_questions
-                              ? html`(best ${instance_question.zone_best_questions} questions)}`
+                              ? html`(best ${instance_question.zone_best_questions} questions)`
                               : ''}
                           </th>
                         </tr>
@@ -355,8 +357,8 @@ export function InstructorAssessmentInstance({
                   <tr>
                     <td>
                       S-${instance_question.question_number}. (<a
-                        href="${resLocals.plainUrlPrefix}/course_instance/${resLocals
-                          .course_instance.id}/instance_question/${instance_question.id}/"
+                        href="/pl/course_instance/${resLocals.course_instance
+                          .id}/instance_question/${instance_question.id}/"
                         >student view</a
                       >)
                     </td>
@@ -378,7 +380,7 @@ export function InstructorAssessmentInstance({
                         component: 'auto',
                       })}
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? EditQuestionPointsScoreButtonHtml({
                             field: 'auto_points',
                             instance_question,
                             assessment_question: instance_question.assessment_question,
@@ -394,7 +396,7 @@ export function InstructorAssessmentInstance({
                         component: 'manual',
                       })}
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? EditQuestionPointsScoreButtonHtml({
                             field: 'manual_points',
                             instance_question,
                             assessment_question: instance_question.assessment_question,
@@ -410,7 +412,7 @@ export function InstructorAssessmentInstance({
                         component: 'total',
                       })}
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? EditQuestionPointsScoreButtonHtml({
                             field: 'points',
                             instance_question,
                             assessment_question: instance_question.assessment_question,
@@ -424,7 +426,7 @@ export function InstructorAssessmentInstance({
                     </td>
                     <td style="width: 1em;">
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? EditQuestionPointsScoreButtonHtml({
                             field: 'score_perc',
                             instance_question,
                             assessment_question: instance_question.assessment_question,
@@ -463,7 +465,9 @@ export function InstructorAssessmentInstance({
                                 <button
                                   class="dropdown-item"
                                   data-bs-toggle="modal"
-                                  data-bs-target="#resetQuestionVariantsModal"
+                                  data-bs-target="${resLocals.assessment.type === 'Exam'
+                                    ? '#examResetNotSupportedModal'
+                                    : '#resetQuestionVariantsModal'}"
                                   data-instance-question-id="${instance_question.id}"
                                 >
                                   Reset question variants
@@ -608,7 +612,7 @@ export function InstructorAssessmentInstance({
                                 class="btn btn-xs color-${FINGERPRINT_COLORS[
                                   row.client_fingerprint_number % 6
                                 ]}"
-                                id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
+                                id="fingerprintPopover${row.client_fingerprint.id}-${index}"
                                 data-bs-toggle="popover"
                                 data-bs-container="body"
                                 data-bs-html="true"
@@ -641,8 +645,7 @@ export function InstructorAssessmentInstance({
                         ? row.variant_id
                           ? html`
                               <a
-                                href="${resLocals.plainUrlPrefix}/course_instance/${resLocals
-                                  .course_instance
+                                href="/pl/course_instance/${resLocals.course_instance
                                   .id}/instance_question/${row.instance_question_id}/?variant_id=${row.variant_id}"
                               >
                                 S-${row.student_question_number}#${row.variant_number}
@@ -798,10 +801,10 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
 
 function ResetQuestionVariantsModal({
   csrfToken,
-  groupWork,
+  assessment,
 }: {
   csrfToken: string;
-  groupWork: boolean;
+  assessment: Assessment;
 }) {
   return Modal({
     id: 'resetQuestionVariantsModal',
@@ -809,12 +812,12 @@ function ResetQuestionVariantsModal({
     body: html`
       <p>
         Are your sure you want to reset all current variants of this question for this
-        ${groupWork ? 'group' : 'student'}?
+        ${assessment.group_work ? 'group' : 'student'}?
         <strong>All ungraded attempts will be lost.</strong>
       </p>
       <p>
-        This ${groupWork ? 'group' : 'student'} will receive a new variant the next time they view
-        this question.
+        This ${assessment.group_work ? 'group' : 'student'} will receive a new variant the next time
+        they view this question.
       </p>
     `,
     footer: html`
@@ -823,6 +826,23 @@ function ResetQuestionVariantsModal({
       <input type="hidden" name="unsafe_instance_question_id" class="js-instance-question-id" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Reset question variants</button>
+    `,
+  });
+}
+
+function ExamResetNotSupportedModal({ assessment }: { assessment: Assessment }) {
+  return Modal({
+    id: 'examResetNotSupportedModal',
+    title: 'Not supported',
+    body: html`
+      <p>Resetting question variants is not supported for Exam assessments.</p>
+      <p class="mb-0">
+        Consider alternative options, such as deleting the assessment instance to allow the
+        ${assessment.group_work ? 'group' : 'student'} to start over.
+      </p>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }

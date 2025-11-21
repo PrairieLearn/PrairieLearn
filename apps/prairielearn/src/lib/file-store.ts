@@ -4,13 +4,13 @@ import * as path from 'path';
 import { type Stream } from 'stream';
 
 import debugfn from 'debug';
-import { v4 as uuidv4 } from 'uuid';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { getFromS3, uploadToS3 } from './aws.js';
 import { config } from './config.js';
 import { type File, FileSchema, IdSchema } from './db-types.js';
+import { assertNever } from './types.js';
 
 const debug = debugfn('prairielearn:socket-server');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -73,10 +73,7 @@ export async function uploadFile({
   let storage_filename;
   if (storage_type === StorageTypes.S3) {
     // use a UUIDv4 as the filename for S3
-    storage_filename = uuidv4();
-    if (config.fileStoreS3Bucket == null) {
-      throw new Error('config.fileStoreS3Bucket is null, which does not allow uploads');
-    }
+    storage_filename = crypto.randomUUID();
 
     const res = await uploadToS3(config.fileStoreS3Bucket, storage_filename, null, false, contents);
     debug('upload() : uploaded to ' + res.Location);
@@ -84,16 +81,13 @@ export async function uploadFile({
     // Make a filename to store the file. We use a UUIDv4 as the filename,
     // and put it in two levels of directories corresponding to the first-3
     // and second-3 characters of the filename.
-    const f = uuidv4();
+    const f = crypto.randomUUID();
     const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
     storage_filename = path.join(relDir, f.slice(6));
     const dir = path.join(config.filesRoot, relDir);
     const filename = path.join(config.filesRoot, storage_filename);
 
     debug('upload()');
-    if (config.filesRoot == null) {
-      throw new Error('config.filesRoot is null, which does not allow uploads');
-    }
 
     debug(`upload() : mkdir ${dir}`);
     await fsPromises.mkdir(dir, { recursive: true, mode: 0o700 });
@@ -133,7 +127,7 @@ export async function deleteFile(file_id: string, authn_user_id: string) {
   debug(`delete(): file_id=${file_id}`);
   debug(`delete(): authn_user_id=${authn_user_id}`);
 
-  await sqldb.queryAsync(sql.delete_file, { file_id, authn_user_id });
+  await sqldb.execute(sql.delete_file, { file_id, authn_user_id });
   debug('delete(): soft-deleted row in DB');
 }
 
@@ -183,39 +177,33 @@ export async function getFile(
     throw new Error(`No file with file_id ${file_id}`);
   }
 
-  if (file.storage_type === StorageTypes.FileSystem) {
-    if (config.filesRoot == null) {
-      throw new Error(
-        `config.filesRoot must be non-null to get file_id ${file_id} from file store`,
-      );
+  switch (file.storage_type) {
+    case StorageTypes.FileSystem: {
+      const filename = path.join(config.filesRoot, file.storage_filename);
+
+      const contents =
+        data_type === 'buffer'
+          ? await fsPromises.readFile(filename)
+          : fs.createReadStream(filename);
+
+      return {
+        contents,
+        file,
+      };
     }
+    case StorageTypes.S3: {
+      const contents =
+        data_type === 'buffer'
+          ? await getFromS3(config.fileStoreS3Bucket, file.storage_filename, true)
+          : await getFromS3(config.fileStoreS3Bucket, file.storage_filename, false);
 
-    const filename = path.join(config.filesRoot, file.storage_filename);
-
-    const contents =
-      data_type === 'buffer' ? await fsPromises.readFile(filename) : fs.createReadStream(filename);
-
-    return {
-      contents,
-      file,
-    };
-  } else if (file.storage_type === StorageTypes.S3) {
-    if (config.fileStoreS3Bucket == null) {
-      throw new Error(
-        `config.fileStoreS3Bucket must be non-null to get file_id ${file_id} from file store`,
-      );
+      return {
+        contents,
+        file,
+      };
     }
-
-    const contents =
-      data_type === 'buffer'
-        ? await getFromS3(config.fileStoreS3Bucket, file.storage_filename, true)
-        : await getFromS3(config.fileStoreS3Bucket, file.storage_filename, false);
-
-    return {
-      contents,
-      file,
-    };
-  } else {
-    throw new Error(`Unknown storage type: ${file.storage_type}`);
+    default: {
+      assertNever(file.storage_type);
+    }
   }
 }

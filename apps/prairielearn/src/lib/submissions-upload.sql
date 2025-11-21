@@ -9,11 +9,12 @@ WHERE
 
 -- BLOCK insert_assessment_instance
 INSERT INTO
-  assessment_instances (assessment_id, user_id, number, open)
+  assessment_instances (assessment_id, user_id, group_id, number, open)
 VALUES
   (
     $assessment_id,
     $user_id,
+    $group_id,
     $instance_number,
     FALSE -- Assume closed by default when recreating
   )
@@ -42,10 +43,12 @@ RETURNING
 INSERT INTO
   variants (
     course_id,
+    course_instance_id,
     instance_question_id,
     question_id,
     authn_user_id,
     user_id,
+    group_id,
     variant_seed,
     params,
     true_answer,
@@ -55,10 +58,12 @@ INSERT INTO
 VALUES
   (
     $course_id,
+    $course_instance_id,
     $instance_question_id,
     $question_id,
     $authn_user_id,
     $user_id,
+    $group_id,
     $seed,
     $params,
     $true_answer,
@@ -91,3 +96,19 @@ VALUES
   )
 RETURNING
   id AS submission_id;
+
+-- BLOCK select_rubric_items
+SELECT
+  *
+FROM
+  rubric_items AS ri
+WHERE
+  ri.rubric_id = $rubric_id
+  AND ri.deleted_at IS NULL;
+
+-- BLOCK update_assessment_instance_max_points
+UPDATE assessment_instances
+SET
+  max_points = $max_points
+WHERE
+  id = $assessment_instance_id;

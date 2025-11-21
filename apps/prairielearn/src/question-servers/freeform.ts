@@ -24,6 +24,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import { assertNever } from '../lib/types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -123,16 +124,21 @@ export async function init() {
  */
 async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   const elementSchema = run(() => {
-    if (elementType === 'core') return ElementCoreJsonSchema;
-    if (elementType === 'course') return ElementCourseJsonSchema;
-    throw new Error(`Unknown element type ${elementType}`);
+    switch (elementType) {
+      case 'core':
+        return ElementCoreJsonSchema;
+      case 'course':
+        return ElementCourseJsonSchema;
+      default:
+        assertNever(elementType);
+    }
   });
 
   let files: string[];
   try {
     files = await fs.readdir(sourceDir);
   } catch (err) {
-    if (err && err.code === 'ENOENT') {
+    if (err?.code === 'ENOENT') {
       // Directory doesn't exist, most likely a course with no elements.
       // Proceed with an empty object.
       return {};
@@ -155,7 +161,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     try {
       rawInfo = await fs.readJSON(elementInfoPath);
     } catch (err) {
-      if (err && err.code === 'ENOENT') {
+      if (err?.code === 'ENOENT') {
         // This must not be an element directory, skip it
         return;
       }
@@ -189,8 +195,8 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
 export async function loadElementsForCourse(course: Course) {
   if (
-    courseElementsCache[course.id] !== undefined &&
-    courseElementsCache[course.id].commit_hash &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    courseElementsCache[course.id]?.commit_hash &&
     courseElementsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseElementsCache[course.id].data;
@@ -284,8 +290,8 @@ async function loadExtensionsForCourse({
   course_dir_host: string;
 }) {
   if (
-    courseExtensionsCache[course.id] !== undefined &&
-    courseExtensionsCache[course.id].commit_hash &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    courseExtensionsCache[course.id]?.commit_hash &&
     courseExtensionsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseExtensionsCache[course.id].data;
@@ -397,28 +403,34 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
     if (!Object.prototype.hasOwnProperty.call(data, prop)) {
       return `"${prop}" is missing from "data"`;
     }
-    if (type === 'integer') {
-      if (!Number.isInteger(data[prop])) {
-        return `data.${prop} is not an integer: ${String(data[prop])}`;
-      }
-    } else if (type === 'number') {
-      if (!Number.isFinite(data[prop])) {
-        return `data.${prop} is not a number: ${String(data[prop])}`;
-      }
-    } else if (type === 'string') {
-      if (typeof data[prop] !== 'string') {
-        return `data.${prop} is not a string: ${String(data[prop])}`;
-      }
-    } else if (type === 'boolean') {
-      if (data[prop] !== true && data[prop] !== false) {
-        return `data.${prop} is not a boolean: ${String(data[prop])}`;
-      }
-    } else if (type === 'object') {
-      if (data[prop] == null || typeof data[prop] !== 'object') {
-        return `data.${prop} is not an object: ${String(data[prop])}`;
-      }
-    } else {
-      return `invalid type: ${String(type)}`;
+    switch (type) {
+      case 'integer':
+        if (!Number.isInteger(data[prop])) {
+          return `data.${prop} is not an integer: ${String(data[prop])}`;
+        }
+        break;
+      case 'number':
+        if (!Number.isFinite(data[prop])) {
+          return `data.${prop} is not a number: ${String(data[prop])}`;
+        }
+        break;
+      case 'string':
+        if (typeof data[prop] !== 'string') {
+          return `data.${prop} is not a string: ${String(data[prop])}`;
+        }
+        break;
+      case 'boolean':
+        if (data[prop] !== true && data[prop] !== false) {
+          return `data.${prop} is not a boolean: ${String(data[prop])}`;
+        }
+        break;
+      case 'object':
+        if (data[prop] == null || typeof data[prop] !== 'object') {
+          return `data.${prop} is not an object: ${String(data[prop])}`;
+        }
+        break;
+      default:
+        return `invalid type: ${String(type)}`;
     }
     if (!editPhases.includes(phase)) {
       if (!Object.prototype.hasOwnProperty.call(origData, prop)) {
@@ -489,7 +501,7 @@ async function processQuestionPhase<T>(
     course_path: config.workersExecutionMode === 'container' ? '/course' : context.course_dir_host,
   };
   const courseIssues: CourseIssueError[] = [];
-  let result: any | null = null;
+  let result: any = null;
   let output: string | null = null;
 
   try {
@@ -883,7 +895,7 @@ async function renderPanel(
   // broken submission kills the submission panel, but we can
   // proceed with other panels, treating the submission as
   // missing
-  if (submission && submission.broken) {
+  if (submission?.broken) {
     if (panel === 'submission') {
       return {
         courseIssues: [],
@@ -905,7 +917,7 @@ async function renderPanel(
   // it won't be present in `locals`). This URL will only have meaning if
   // there's a submission, so it will be `null` otherwise.
   const submissionFilesUrl = submission
-    ? locals.questionUrl + `submission/${submission?.id}/file`
+    ? locals.questionUrl + `submission/${submission.id}/file`
     : null;
 
   const options = {
@@ -943,7 +955,7 @@ async function renderPanel(
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
-    variant_seed: Number.parseInt(variant.variant_seed ?? '0', 36),
+    variant_seed: Number.parseInt(variant.variant_seed, 36),
     options,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
@@ -964,7 +976,7 @@ async function renderPanel(
     }),
     ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
-    num_valid_submissions: variant.num_tries ?? null,
+    num_valid_submissions: variant.num_tries,
   } satisfies ExecutionData;
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
@@ -1126,27 +1138,27 @@ export async function render(
 
       const extensions = context.course_element_extensions;
       const dependencies = {
-        coreStyles: [],
-        coreScripts: [],
-        nodeModulesStyles: [],
-        nodeModulesScripts: [],
-        coreElementStyles: [],
-        coreElementScripts: [],
-        courseElementStyles: [],
-        courseElementScripts: [],
-        extensionStyles: [],
-        extensionScripts: [],
-        clientFilesCourseStyles: [],
-        clientFilesCourseScripts: [],
-        clientFilesQuestionStyles: [],
-        clientFilesQuestionScripts: [],
+        coreStyles: [] as string[],
+        coreScripts: [] as string[],
+        nodeModulesStyles: [] as string[],
+        nodeModulesScripts: [] as string[],
+        coreElementStyles: [] as string[],
+        coreElementScripts: [] as string[],
+        courseElementStyles: [] as string[],
+        courseElementScripts: [] as string[],
+        extensionStyles: [] as string[],
+        extensionScripts: [] as string[],
+        clientFilesCourseStyles: [] as string[],
+        clientFilesCourseScripts: [] as string[],
+        clientFilesQuestionStyles: [] as string[],
+        clientFilesQuestionScripts: [] as string[],
       };
       const dynamicDependencies = {
-        nodeModulesScripts: {},
-        coreElementScripts: {},
-        courseElementScripts: {},
-        extensionScripts: {},
-        clientFilesCourseScripts: {},
+        nodeModulesScripts: {} as Record<string, string>,
+        coreElementScripts: {} as Record<string, string>,
+        courseElementScripts: {} as Record<string, string>,
+        extensionScripts: {} as Record<string, string>,
+        clientFilesCourseScripts: {} as Record<string, string>,
       };
 
       for (const type in question.dependencies) {

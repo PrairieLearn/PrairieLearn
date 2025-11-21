@@ -9,8 +9,8 @@ import { isBinaryFile } from 'isbinaryfile';
 
 import { HttpStatusError } from '@prairielearn/error';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -20,7 +20,7 @@ import { InsufficientCoursePermissionsCardPage } from '../../components/Insuffic
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema, IdSchema } from '../../lib/db-types.js';
-import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
+import { getFileMetadataForPath } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
@@ -105,10 +105,7 @@ router.get(
     }
 
     const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
-    const { errors: sync_errors, warnings: sync_warnings } = await getErrorsAndWarningsForFilePath(
-      res.locals.course.id,
-      relPath,
-    );
+    const fileMetadata = await getFileMetadataForPath(res.locals.course.id, relPath);
 
     const editorData: FileEditorData = {
       fileName: path.basename(relPath),
@@ -116,8 +113,7 @@ router.get(
       aceMode: getModeForPath(relPath).mode,
       diskContents: encodedContents,
       diskHash: getHash(encodedContents),
-      sync_errors,
-      sync_warnings,
+      fileMetadata,
     };
 
     const draftEdit = await readDraftEdit({
@@ -137,7 +133,7 @@ router.get(
       }
 
       if (draftEdit.jobSequence) {
-        if (draftEdit.jobSequence?.status === 'Running') {
+        if (draftEdit.jobSequence.status === 'Running') {
           // Because of the redirect, if the job sequence ends up failing to save,
           // then the corresponding draft will be lost (all drafts are soft-deleted
           // from the database on readDraftEdit).
@@ -289,7 +285,7 @@ async function readDraftEdit({
 }
 
 async function updateJobSequenceId(edit_id: string, job_sequence_id: string) {
-  await queryAsync(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
+  await execute(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
 }
 
 async function writeDraftEdit({

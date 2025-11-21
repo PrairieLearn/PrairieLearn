@@ -2,11 +2,19 @@ columns
     advance_score_perc: double precision
     assessment_id: bigint not null
     id: bigint not null default nextval('alternative_groups_id_seq'::regclass)
+    json_allow_real_time_grading: boolean
+    json_auto_points: jsonb
     json_can_submit: text[]
     json_can_view: text[]
     json_comment: jsonb
+    json_force_max_points: boolean
     json_grade_rate_minutes: double precision
     json_has_alternatives: boolean
+    json_manual_points: double precision
+    json_max_auto_points: double precision
+    json_max_points: double precision
+    json_points: jsonb
+    json_tries_per_variant: integer
     number: integer
     number_choose: integer
     zone_id: bigint not null

@@ -3,11 +3,19 @@ columns
     course_id: bigint not null
     deleted_at: timestamp with time zone
     display_timezone: text not null
+    enrollment_code: character varying(255) not null
     enrollment_limit: integer
     hide_in_enroll_page: boolean default false
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     json_comment: jsonb
     long_name: text
+    modern_publishing: boolean not null default false
+    publishing_end_date: timestamp with time zone
+    publishing_start_date: timestamp with time zone
+    self_enrollment_enabled: boolean default true
+    self_enrollment_enabled_before_date: timestamp with time zone
+    self_enrollment_restrict_to_institution: boolean default true
+    self_enrollment_use_enrollment_code: boolean default false
     share_source_publicly: boolean not null default false
     short_name: text
     sync_errors: text
@@ -18,7 +26,11 @@ columns
 indexes
     course_instances_pkey: PRIMARY KEY (id) USING btree (id)
     course_instances_course_id_uuid_key: UNIQUE (course_id, uuid) USING btree (course_id, uuid)
+    course_instances_enrollment_code_key: UNIQUE (enrollment_code) USING btree (enrollment_code)
     course_instances_course_id_idx: USING btree (course_id)
+
+check constraints
+    course_instances_publishing_dates_consistency_check: CHECK (publishing_start_date IS NULL AND publishing_end_date IS NULL OR publishing_start_date IS NOT NULL AND publishing_end_date IS NOT NULL)
 
 foreign-key constraints
     course_instances_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -27,9 +39,11 @@ foreign-key constraints
 referenced by
     ai_grading_jobs: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessments: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    audit_events: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
     chunks: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instance_access_rules: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instance_permissions: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_instance_publishing_extensions: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instance_required_plans: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id)
     course_instance_usages: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     current_pages: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

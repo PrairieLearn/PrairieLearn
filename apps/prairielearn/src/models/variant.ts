@@ -5,15 +5,17 @@ import { z } from 'zod';
 import { AugmentedError } from '@prairielearn/error';
 import {
   callRow,
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
 
+import { calculateCourseInstanceRolePermissions } from '../lib/authz-data-lib.js';
 import {
   type Course,
+  EnumCourseInstanceRoleSchema,
   IdSchema,
   SubmissionSchema,
   type User,
@@ -47,7 +49,7 @@ export async function resetVariantsForAssessmentQuestion({
   unsafe_assessment_question_id: string;
   authn_user_id: string;
 }) {
-  await queryAsync(sql.reset_variants_for_assessment_question, {
+  await execute(sql.reset_variants_for_assessment_question, {
     assessment_id,
     unsafe_assessment_question_id,
     authn_user_id,
@@ -63,7 +65,7 @@ export async function resetVariantsForInstanceQuestion({
   unsafe_instance_question_id: string;
   authn_user_id: string;
 }) {
-  await queryAsync(sql.reset_variants_for_instance_question, {
+  await execute(sql.reset_variants_for_instance_question, {
     assessment_instance_id,
     unsafe_instance_question_id,
     authn_user_id,
@@ -107,6 +109,17 @@ export async function selectAndAuthzVariant(options: {
   variant_course: Course;
   question_id: string;
   course_instance_id?: string;
+  /**
+   * This parameter serves two purposes:
+   *
+   * - If provided, it's used as a safety check to ensure that the variant being accessed
+   *   belongs to the given instance question.
+   * - If not provided, it indicates that the variant is being accessed outside the
+   *   context of a specific instance question, which means that additional authorization
+   *   checks are necessary. Specifically, if not provided, we can't assume that the
+   *   caller has validated access to the enclosing assessment instance, so we perform
+   *   additional checks to ensure that the caller has permission to view student data.
+   */
   instance_question_id?: string;
   authz_data?: Record<string, any>;
   authn_user: User;
@@ -133,8 +146,8 @@ export async function selectAndAuthzVariant(options: {
     VariantSchema,
   );
 
-  function denyAccess(): never {
-    throw new AugmentedError('Access denied', {
+  function denyAccess(msg?: string): never {
+    throw new AugmentedError(msg ?? 'Access denied', {
       status: 403,
       data: options,
     });
@@ -199,7 +212,7 @@ export async function selectAndAuthzVariant(options: {
     // variant's course instance.
     let authnHasCourseInstancePermissionView =
       authz_data?.authn_has_course_instance_permission_view;
-    let hasCourseInstancePermissionView = authz_data?.has_course_permission_view;
+    let hasCourseInstancePermissionView = authz_data?.has_course_instance_permission_view;
 
     // If we're missing authz data, accessing the variant from a
     // non-course-instance route, or accessing the variant from a different
@@ -213,25 +226,31 @@ export async function selectAndAuthzVariant(options: {
     ) {
       const authnUserPermissions = await callRow(
         'authz_course_instance',
-        [authn_user.user_id, variant.course_instance_id, is_administrator, new Date(), null],
-        z.object({ has_course_instance_permission_view: z.boolean() }),
+        [authn_user.user_id, variant.course_instance_id, new Date()],
+        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 
       const userPermissions = await callRow(
         'authz_course_instance',
-        [user.user_id, variant.course_instance_id, is_administrator, new Date(), null],
-        z.object({ has_course_instance_permission_view: z.boolean() }),
+        [user.user_id, variant.course_instance_id, new Date()],
+        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 
-      authnHasCourseInstancePermissionView =
-        authnUserPermissions.has_course_instance_permission_view;
-      hasCourseInstancePermissionView = userPermissions.has_course_instance_permission_view;
+      authnHasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
+        authnUserPermissions.course_instance_role,
+      ).has_course_instance_permission_view;
+      hasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
+        userPermissions.course_instance_role,
+      ).has_course_instance_permission_view;
     }
 
     // We'll only permit access if both the authenticated user and the
     // effective user have student data viewer permissions in the course instance.
-    if (!authnHasCourseInstancePermissionView || !hasCourseInstancePermissionView) {
-      denyAccess();
+    if (
+      !is_administrator &&
+      (!authnHasCourseInstancePermissionView || !hasCourseInstancePermissionView)
+    ) {
+      denyAccess('Access denied (must have student data viewer permissions)');
     }
   }
 

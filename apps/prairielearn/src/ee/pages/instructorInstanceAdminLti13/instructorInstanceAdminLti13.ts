@@ -7,8 +7,8 @@ import { flash } from '@prairielearn/flash';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryRow,
   queryRows,
   runInTransactionAsync,
@@ -290,17 +290,19 @@ router.post(
         },
         AssessmentSchema,
       );
-      if (assessment === null) {
-        throw new error.HttpStatusError(403, 'Invalid assessment.id');
-      }
 
       serverJobOptions.description = 'LTI 1.3 send assessment grades to LMS';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        await updateLti13Scores(assessment.id, instance, job);
+        await updateLti13Scores({
+          course_instance: res.locals.course_instance,
+          unsafe_assessment_id: assessment.id,
+          instance,
+          job,
+        });
 
-        await queryAsync(sql.update_lti13_assessment_last_activity, {
+        await execute(sql.update_lti13_assessment_last_activity, {
           assessment_id: assessment.id,
         });
       });

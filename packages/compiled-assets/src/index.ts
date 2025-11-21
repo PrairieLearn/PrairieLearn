@@ -148,6 +148,8 @@ export function handler() {
       // Prefer Brotli if the client supports it.
       orderPreference: ['br'],
       serveStatic: {
+        // 404 immediately if the file is not found.
+        fallthrough: false,
         maxAge: '31557600',
         immutable: true,
       },
@@ -200,6 +202,7 @@ export function handler() {
 }
 
 let cachedManifest: AssetsManifest | null = null;
+
 function readManifest(): AssetsManifest {
   assertConfigured();
 

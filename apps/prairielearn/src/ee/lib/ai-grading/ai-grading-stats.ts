@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString } from '@prairielearn/zod';
 
+import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import {
   type Assessment,
   type AssessmentQuestion,
@@ -12,13 +13,13 @@ import {
   type RubricItem,
   RubricItemSchema,
 } from '../../../lib/db-types.js';
-import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
+import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
 import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectRubricForGrading,
 } from './ai-grading-util.js';
-import type { WithAIGradingStats } from './types.js';
+import type { AiGradingGeneralStats, WithAIGradingStats } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const GradingJobInfoSchema = z.object({
@@ -32,45 +33,70 @@ const GradingJobInfoSchema = z.object({
 });
 type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
-export interface AiGradingGeneralStats {
-  submission_point_count: number;
-  submission_rubric_count: number;
-  mean_error: number | null;
-  rubric_stats: {
-    rubric_item: RubricItem;
-    disagreement_count: number;
-  }[];
-}
+type FillInstanceQuestionColumnEntriesResultType<
+  T extends {
+    instance_question: {
+      id: string;
+      ai_instance_question_group_id: string | null;
+      manual_instance_question_group_id: string | null;
+    };
+  },
+> = Omit<T, 'instance_question'> & {
+  instance_question: WithAIGradingStats<T['instance_question']>;
+};
 
 /**
  * Fills in missing columns for manual grading assessment question page.
  * This includes organizing information about past graders
  * and calculating point and/or rubric difference between human and AI.
  */
-export async function fillInstanceQuestionColumns<T extends { id: string }>(
-  instance_questions: T[],
+export async function fillInstanceQuestionColumnEntries<
+  T extends {
+    instance_question: {
+      id: string;
+      ai_instance_question_group_id: string | null;
+      manual_instance_question_group_id: string | null;
+    };
+  },
+>(
+  rows: T[],
   assessment_question: AssessmentQuestion,
-): Promise<WithAIGradingStats<T>[]> {
+): Promise<FillInstanceQuestionColumnEntriesResultType<T>[]> {
   const rubric_modify_time = await queryOptionalRow(
     sql.select_rubric_time,
     { rubric_id: assessment_question.manual_rubric_id },
     DateFromISOString,
   );
 
-  const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
+  const gradingJobMapping = await selectGradingJobsInfo(rows.map((row) => row.instance_question));
 
-  const results: WithAIGradingStats<T>[] = [];
+  const instanceQuestionIdToGroupName = (
+    await selectInstanceQuestionGroups({
+      assessmentQuestionId: assessment_question.id,
+    })
+  ).reduce((acc, curr) => {
+    acc[curr.id] = curr.instance_question_group_name;
+    return acc;
+  }, {});
 
-  for (const base_instance_question of instance_questions) {
-    const instance_question: WithAIGradingStats<T> = {
+  const results: FillInstanceQuestionColumnEntriesResultType<T>[] = [];
+
+  for (const row of rows) {
+    const base_instance_question = row.instance_question;
+
+    const instance_question: WithAIGradingStats<T['instance_question']> = {
       ...base_instance_question,
       last_human_grader: null,
       ai_grading_status: 'None',
       point_difference: null,
       rubric_difference: null,
+      instance_question_group_name: null,
       rubric_similarity: null,
     };
-    results.push(instance_question);
+    results.push({
+      ...row,
+      instance_question,
+    });
 
     const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
 
@@ -118,6 +144,16 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
         .map((item) => ({ ...item, false_positive: false }));
       instance_question.rubric_difference = fnItems.concat(fpItems);
     }
+
+    // Retrieve the current group of the instance question
+    const selectedInstanceQuestionGroupId =
+      instance_question.manual_instance_question_group_id ??
+      instance_question.ai_instance_question_group_id ??
+      null;
+
+    instance_question.instance_question_group_name = selectedInstanceQuestionGroupId
+      ? (instanceQuestionIdToGroupName[selectedInstanceQuestionGroupId] ?? null)
+      : null;
   }
   return results;
 }
@@ -125,9 +161,9 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
 export async function calculateAiGradingStats(
   assessment_question: AssessmentQuestion,
 ): Promise<AiGradingGeneralStats> {
-  const instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
-    assessment_question.id,
-  );
+  const instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
+    assessment_question_id: assessment_question.id,
+  });
   const rubric_items = await selectRubricForGrading(assessment_question.id);
 
   const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
@@ -171,19 +207,22 @@ export async function calculateAiGradingStats(
             testPointResults.map((item) => item.ai_points),
           )
         : null,
-    rubric_stats: [],
+    rubric_stats: {},
   };
   for (const rubric_item of rubric_items) {
     const disagreement_count = rubricItemDisagreementCount(testRubricResults, rubric_item);
-    stats.rubric_stats.push({
-      rubric_item,
-      disagreement_count,
-    });
+    stats.rubric_stats[rubric_item.id] = disagreement_count;
   }
   return stats;
 }
 
-async function selectGradingJobsInfo<T extends { id: string }>(
+/**
+ * Select the latest human grading job and AI grading job
+ * information, including rubric grading information for each input instance question.
+ * @param instance_questions the array of instance questions (including their ids)
+ * @returns a record mapping each id to its grading jobs
+ */
+export async function selectGradingJobsInfo<T extends { id: string }>(
   instance_questions: T[],
 ): Promise<Record<string, GradingJobInfo[]>> {
   const grading_jobs = await queryRows(
@@ -272,7 +311,7 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
     assessment_id: assessment.id,
   });
 
-  if (!assessmentQuestionRows) {
+  if (assessmentQuestionRows.length === 0) {
     return {
       perQuestion: [],
       total: {
@@ -301,12 +340,14 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
   for (let i = 0; i < assessmentQuestionRows.length; i++) {
     const questionRow = assessmentQuestionRows[i];
 
-    const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
-      questionRow.assessment_question.id,
-    );
+    const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
+      assessment_question_id: questionRow.assessment_question.id,
+    });
 
-    const instanceQuestionsTable = await fillInstanceQuestionColumns(
-      instanceQuestions,
+    const instanceQuestionsTable = await fillInstanceQuestionColumnEntries(
+      instanceQuestions.map((instanceQuestion) => ({
+        instance_question: instanceQuestion,
+      })),
       questionRow.assessment_question,
     );
 
@@ -317,7 +358,7 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
       falseNegatives: 0,
     };
 
-    for (const row of instanceQuestionsTable) {
+    for (const { instance_question: row } of instanceQuestionsTable) {
       if (row.ai_grading_status === 'LatestRubric') {
         if (row.rubric_difference) {
           for (const difference of row.rubric_difference) {

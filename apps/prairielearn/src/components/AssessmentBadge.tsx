@@ -1,11 +1,11 @@
+import { renderHtml } from '@prairielearn/preact';
+
 import { type AssessmentInstanceUrlParts, getAssessmentInstanceUrl } from '../lib/client/url.js';
-import { renderHtml } from '../lib/preact-html.js';
 
 export function AssessmentBadge({
   assessment,
   hideLink = false,
   urlPrefix,
-  plainUrlPrefix,
   courseInstanceId,
   publicURL = false,
 }: {
@@ -26,7 +26,6 @@ export function AssessmentBadge({
           publicURL,
         }
       : {
-          plainUrlPrefix,
           courseInstanceId,
           assessmentId: assessment.assessment_id,
           publicURL,
@@ -44,7 +43,6 @@ export function AssessmentBadgeHtml({
   assessment,
   hideLink = false,
   urlPrefix,
-  plainUrlPrefix,
   courseInstanceId,
   publicURL = false,
 }: {
@@ -57,7 +55,6 @@ export function AssessmentBadgeHtml({
       <AssessmentBadge
         assessment={assessment}
         hideLink={hideLink}
-        plainUrlPrefix={plainUrlPrefix}
         courseInstanceId={courseInstanceId}
         publicURL={publicURL}
       />,
@@ -77,7 +74,6 @@ export function AssessmentBadgeList({
   assessments,
   hideLink = false,
   urlPrefix,
-  plainUrlPrefix,
   courseInstanceId,
   publicURL = false,
 }: {
@@ -87,10 +83,9 @@ export function AssessmentBadgeList({
 } & (
   | {
       urlPrefix: string;
-      plainUrlPrefix?: undefined;
       courseInstanceId?: undefined;
     }
-  | { urlPrefix?: undefined; plainUrlPrefix: string; courseInstanceId: string }
+  | { urlPrefix?: undefined; courseInstanceId: string }
 )) {
   return assessments.map((assessment) => (
     <div key={assessment.assessment_id} class="d-inline-block me-1">
@@ -98,7 +93,6 @@ export function AssessmentBadgeList({
         <AssessmentBadge
           assessment={assessment}
           hideLink={hideLink}
-          plainUrlPrefix={plainUrlPrefix}
           courseInstanceId={courseInstanceId}
           publicURL={publicURL}
         />

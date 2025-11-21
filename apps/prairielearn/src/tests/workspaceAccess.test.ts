@@ -5,8 +5,10 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
-import { ensureEnrollment } from '../models/enrollment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
 import { type AuthUser, getOrCreateUser, withUser } from './utils/auth.js';
@@ -33,10 +35,10 @@ const studentNotEnrolled: AuthUser = {
 };
 
 describe('Test workspace authorization access', { timeout: 20_000 }, function () {
-  beforeAll(async function () {
+  beforeAll(function () {
     config.workspaceEnable = false;
   });
-  afterAll(async function () {
+  afterAll(function () {
     config.workspaceEnable = true;
   });
 
@@ -45,10 +47,23 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
 
   beforeAll(async function () {
     const studentOneUser = await getOrCreateUser(studentOne);
-    await ensureEnrollment({ user_id: studentOneUser.user_id, course_instance_id: '1' });
+    const courseInstance = await selectCourseInstanceById('1');
+    await ensureUncheckedEnrollment({
+      userId: studentOneUser.user_id,
+      courseInstance,
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
+    });
 
     const studentTwoUser = await getOrCreateUser(studentTwo);
-    await ensureEnrollment({ user_id: studentTwoUser.user_id, course_instance_id: '1' });
+    await ensureUncheckedEnrollment({
+      userId: studentTwoUser.user_id,
+      courseInstance,
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
+    });
 
     await getOrCreateUser(studentNotEnrolled);
   });

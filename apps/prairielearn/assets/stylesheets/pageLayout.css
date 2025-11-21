@@ -11,6 +11,10 @@ body:has(div.app-main-container) {
   overflow-y: hidden !important;
 }
 
+:root {
+  --navbar-height: 3.5rem;
+}
+
 /* Styles when the side nav is hidden */
 .app-container {
   display: block;
@@ -40,9 +44,12 @@ body:has(div.app-main-container) {
 
 .app-side-nav {
   grid-area: side-nav;
+  overflow-y: auto;
+}
+
+.app-side-nav-scroll {
   padding: 0.5rem;
   padding-top: 0.3rem;
-  overflow-y: auto;
 }
 
 .app-main {
@@ -247,7 +254,6 @@ body:has(div.app-main-container) {
     display: flex;
     flex-direction: column;
     transition: none;
-    --navbar-height: 3.5rem;
   }
 
   .app-container.side-nav-enabled #side-nav-toggler {
@@ -265,16 +271,20 @@ body:has(div.app-main-container) {
   .app-container.side-nav-enabled .app-side-nav {
     display: block;
     position: absolute;
-    padding-top: 1rem;
     top: var(--navbar-height);
     left: 0;
     width: 100%;
     z-index: 999;
     transform: translateX(-100%); /* Start off-screen to the left */
-    min-height: calc(
-      100vh - var(--navbar-height)
-    ); /* Subtract from 100vh to account for the navbar */
+    height: calc(100% - var(--navbar-height));
     will-change: transform; /* Performance optimization */
+  }
+
+  .app-container.side-nav-enabled .app-side-nav-scroll {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    padding-top: 1rem;
   }
 
   .app-container.side-nav-enabled.animate .app-side-nav {
@@ -359,4 +369,9 @@ body:has(div.app-main-container) {
   .app-container.side-nav-enabled {
     transition: none;
   }
+}
+
+.page-footer-text {
+  /* https://github.com/PrairieLearn/marketing/blob/6dc08c6028c8a45e71fce846b308326469958a16/src/components/Header.module.scss#L4-L6 */
+  color: #052c65;
 }

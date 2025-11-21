@@ -7,6 +7,7 @@ import { config } from '../../lib/config.js';
 import {
   CourseInstancePermissionSchema,
   CoursePermissionSchema,
+  SprocUsersSelectOrInsertSchema,
   UserSchema,
 } from '../../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
@@ -104,13 +105,11 @@ function runTest(context) {
   beforeAll(async function () {
     // Insert necessary users.
     for (const user of users) {
-      await sqldb.callAsync('users_select_or_insert', [
-        user.uid,
-        user.name,
-        user.uin,
-        user.email,
-        'Shibboleth',
-      ]);
+      await sqldb.callRow(
+        'users_select_or_insert',
+        [user.uid, user.name, user.uin, user.email, 'Shibboleth'],
+        SprocUsersSelectOrInsertSchema,
+      );
     }
 
     // Make the instructor a course owner.
@@ -208,14 +207,12 @@ function runTest(context) {
   });
 
   test.sequential('can delete user', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
+    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
+    helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'form[name=course-content-access-form-3]',
+      '#course-permission-button-3',
     );
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
@@ -252,14 +249,12 @@ function runTest(context) {
   });
 
   test.sequential('can change course role', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
+    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
+    helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'form[name=course-content-access-form-4]',
+      '#course-permission-button-4',
     );
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
@@ -398,14 +393,12 @@ function runTest(context) {
   });
 
   test.sequential('can update course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
+    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
+    helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'form[name=student-data-access-change-3-1]',
+      '#course-instance-permission-button-3-1',
     );
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
@@ -449,14 +442,12 @@ function runTest(context) {
   });
 
   test.sequential('can delete course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
+    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
+    helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'form[name=student-data-access-change-5-1]',
+      '#course-instance-permission-button-5-1',
     );
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
@@ -465,6 +456,7 @@ function runTest(context) {
         __csrf_token: context.__csrf_token,
         user_id: '5',
         course_instance_id: '1',
+        course_instance_role: 'None',
       }),
       headers,
     });
@@ -569,14 +561,12 @@ function runTest(context) {
   });
 
   test.sequential('can change course role', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
+    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
+    helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'form[name=course-content-access-form-4]',
+      '#course-permission-button-4',
     );
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
@@ -605,8 +595,7 @@ function runTest(context) {
 }
 
 describe('course admin access page through course route', { timeout: 60_000 }, function () {
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl/course/1`;
 
   runTest(context);
@@ -616,8 +605,7 @@ describe(
   'course admin access page through course instance route',
   { timeout: 60_000 },
   function () {
-    const context: Record<string, any> = {};
-    context.siteUrl = `http://localhost:${config.serverPort}`;
+    const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
     context.baseUrl = `${context.siteUrl}/pl/course_instance/1/instructor`;
 
     runTest(context);

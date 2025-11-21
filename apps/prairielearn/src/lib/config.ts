@@ -18,6 +18,12 @@ const IS_VITEST = (import.meta as any).env && (import.meta as any).env.MODE !== 
 const IS_VITE = (import.meta as any).env?.MODE === 'development';
 export const DEV_EXECUTION_MODE = IS_VITEST ? 'test' : IS_VITE ? 'hmr' : 'dev';
 
+const TokenPricingSchema = z.object({
+  input: z.number().nonnegative(),
+  cachedInput: z.number().nonnegative(),
+  output: z.number().nonnegative(),
+});
+
 export const STANDARD_COURSE_DIRS = [
   '/course',
   '/course2',
@@ -67,8 +73,6 @@ export const ConfigSchema = z.object({
     .array(z.string())
     .default([...STANDARD_COURSE_DIRS, EXAMPLE_COURSE_PATH, TEST_COURSE_PATH]),
   courseRepoDefaultBranch: z.string().default('master'),
-  urlPrefix: z.string().default('/pl'),
-  homeUrl: z.string().default('/'),
   assetsPrefix: z
     .string()
     .default('/assets')
@@ -320,7 +324,6 @@ export const ConfigSchema = z.object({
   nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   cacheKeyPrefix: z.string().default('prairielearn-cache:'),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
-  hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
   lti13InstancePlatforms: z
     .array(
@@ -351,7 +354,7 @@ export const ConfigSchema = z.object({
    * logs to cheaper storage tiers or evict them entirely after a certain
    * amount of time.
    */
-  workspaceLogsExpirationDays: z.number().default(120),
+  workspaceLogsExpirationDays: z.number().nullable().default(120),
   workspaceAuthzCookieMaxAgeMilliseconds: z.number().default(60 * 1000),
   workspaceJobsDirectoryOwnerUid: z.number().default(0),
   workspaceJobsDirectoryOwnerGid: z.number().default(0),
@@ -590,12 +593,19 @@ export const ConfigSchema = z.object({
    * Will be resolved relative to the repository root.
    */
   pythonVenvSearchPaths: z.string().array().default(['.venv']),
-  /**
-   * For the GPT-4o model as of 16 June 2025, in US dollars.
-   * Prices obtained from https://openai.com/api/pricing/.
-   */
-  costPerMillionPromptTokens: z.number().default(2.5),
-  costPerMillionCompletionTokens: z.number().default(10),
+  costPerMillionTokens: z
+    .object({
+      'gpt-5-2025-08-07': TokenPricingSchema,
+      'gpt-5-mini-2025-08-07': TokenPricingSchema,
+      'gpt-4o-2024-11-20': TokenPricingSchema,
+    })
+    .default({
+      // Prices current as of 2025-09-25. Values obtained from
+      // https://openai.com/api/pricing/
+      'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, output: 10 },
+      'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, output: 2 },
+      'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, output: 10 },
+    }),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -641,12 +651,16 @@ export async function loadConfig(paths: string[]) {
   }
 }
 
-export async function resetConfig() {
+export function resetConfig() {
   loader.reset();
 }
 
-export function setLocalsFromConfig(locals: Record<string, any>) {
-  locals.urlPrefix = config.urlPrefix;
-  locals.plainUrlPrefix = config.urlPrefix;
+export interface ResLocalsConfig {
+  urlPrefix: string;
+  navbarType: 'plain' | 'student' | 'instructor' | 'public';
+}
+
+export function setLocalsFromConfig(locals: Partial<ResLocalsConfig>) {
+  locals.urlPrefix = '/pl';
   locals.navbarType = 'plain';
 }

@@ -4,13 +4,16 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
-import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
+import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
+import type { AuthzData } from './authz-data-lib.js';
 import {
+  type Assessment,
+  type CourseInstance,
+  type Group,
   type GroupConfig,
   GroupConfigSchema,
   GroupRoleSchema,
@@ -21,6 +24,7 @@ import {
   UserSchema,
 } from './db-types.js';
 import { idsEqual } from './id.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class GroupOperationError extends Error {
@@ -157,9 +161,7 @@ async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<Role
     Object.values(roleAssignments).every((roles) => roles.length === 1);
 
   // Check if users have no roles
-  const usersWithoutRoles = groupMembers.filter(
-    (member) => roleAssignments[member.uid] === undefined,
-  );
+  const usersWithoutRoles = groupMembers.filter((member) => !(member.uid in roleAssignments));
 
   return {
     roleAssignments,
@@ -200,10 +202,12 @@ export async function getUserRoles(group_id: string, user_id: string) {
 
 async function selectUserInCourseInstance({
   uid,
-  course_instance_id,
+  courseInstance,
+  authzData,
 }: {
   uid: string;
-  course_instance_id: string;
+  courseInstance: CourseInstance;
+  authzData: AuthzData;
 }) {
   const user = await selectOptionalUserByUid(uid);
   if (!user) return null;
@@ -213,12 +217,15 @@ async function selectUserInCourseInstance({
   if (
     (await sqldb.callRow(
       'users_is_instructor_in_course_instance',
-      [user.user_id, course_instance_id],
+      [user.user_id, courseInstance.id],
       z.boolean(),
     )) ||
-    (await getEnrollmentForUserInCourseInstance({
-      course_instance_id,
-      user_id: user.user_id,
+    (await selectOptionalEnrollmentByUserId({
+      courseInstance,
+      userId: user.user_id,
+      // The function can be called by a student or instructor
+      requestedRole: 'Any',
+      authzData,
     }))
   ) {
     return user;
@@ -226,12 +233,9 @@ async function selectUserInCourseInstance({
 
   // In the example course, any user with instructor access in any other
   // course should have access and thus be allowed to be added to a group.
-  const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
-  if (course_instance) {
-    const course = await selectCourseById(course_instance.course_id);
-    if (course?.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
-      return user;
-    }
+  const course = await selectCourseById(courseInstance.course_id);
+  if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+    return user;
   }
 
   // We do not distinguish between an invalid user and a user that is not in the course instance
@@ -239,22 +243,26 @@ async function selectUserInCourseInstance({
 }
 
 export async function addUserToGroup({
-  assessment_id,
+  course_instance,
+  assessment,
   group_id,
   uid,
   authn_user_id,
   enforceGroupSize,
+  authzData,
 }: {
-  assessment_id: string;
+  course_instance: CourseInstance;
+  assessment: Assessment;
   group_id: string;
   uid: string;
   authn_user_id: string;
   enforceGroupSize: boolean;
+  authzData: AuthzData;
 }) {
   await sqldb.runInTransactionAsync(async () => {
     const group = await sqldb.queryOptionalRow(
       sql.select_and_lock_group,
-      { group_id, assessment_id },
+      { group_id, assessment_id: assessment.id },
       GroupForUpdateSchema,
     );
     if (group == null) {
@@ -263,7 +271,8 @@ export async function addUserToGroup({
 
     const user = await selectUserInCourseInstance({
       uid,
-      course_instance_id: group.course_instance_id,
+      courseInstance: course_instance,
+      authzData,
     });
     if (!user) {
       throw new GroupOperationError(`User ${uid} is not enrolled in this course.`);
@@ -271,8 +280,9 @@ export async function addUserToGroup({
 
     // This is technically susceptible to race conditions. That won't be an
     // issue once we have a unique constraint for group membership.
-    const existingGroupId = await getGroupId(assessment_id, user.user_id);
+    const existingGroupId = await getGroupId(assessment.id, user.user_id);
     if (existingGroupId != null) {
+      // Otherwise, the user is in a different group, which is an error
       if (idsEqual(user.user_id, authn_user_id)) {
         throw new GroupOperationError('You are already in another group.');
       } else {
@@ -288,28 +298,37 @@ export async function addUserToGroup({
     const groupRoleId = group.has_roles
       ? await sqldb.queryOptionalRow(
           sql.select_suitable_group_role,
-          { assessment_id, group_id: group.id, cur_size: group.cur_size },
+          { assessment_id: assessment.id, group_id: group.id, cur_size: group.cur_size },
           IdSchema,
         )
       : null;
 
-    await sqldb.queryAsync(sql.insert_group_user, {
+    await sqldb.execute(sql.insert_group_user, {
       group_id: group.id,
       user_id: user.user_id,
       group_config_id: group.group_config_id,
-      assessment_id,
+      assessment_id: assessment.id,
       authn_user_id,
       group_role_id: groupRoleId,
     });
   });
 }
 
-export async function joinGroup(
-  fullJoinCode: string,
-  assessment_id: string,
-  uid: string,
-  authn_user_id: string,
-): Promise<void> {
+export async function joinGroup({
+  course_instance,
+  assessment,
+  fullJoinCode,
+  uid,
+  authn_user_id,
+  authzData,
+}: {
+  course_instance: CourseInstance;
+  assessment: Assessment;
+  fullJoinCode: string;
+  uid: string;
+  authn_user_id: string;
+  authzData: AuthzData;
+}): Promise<void> {
   const splitJoinCode = fullJoinCode.split('-');
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
     // the join code input by user is not valid (not in format of groupname+4-character)
@@ -323,18 +342,20 @@ export async function joinGroup(
     await sqldb.runInTransactionAsync(async () => {
       const group = await sqldb.queryOptionalRow(
         sql.select_and_lock_group_by_name,
-        { group_name, assessment_id },
+        { group_name, assessment_id: assessment.id },
         GroupSchema,
       );
-      if (group == null || group.join_code !== join_code) {
+      if (group?.join_code !== join_code) {
         throw new GroupOperationError('Group does not exist.');
       }
       await addUserToGroup({
-        assessment_id,
+        course_instance,
+        assessment,
         group_id: group.id,
         uid,
         authn_user_id,
         enforceGroupSize: true,
+        authzData,
       });
     });
   } catch (err) {
@@ -345,12 +366,21 @@ export async function joinGroup(
   }
 }
 
-export async function createGroup(
-  group_name: string | null,
-  assessment_id: string,
-  uids: string[],
-  authn_user_id: string,
-): Promise<void> {
+export async function createGroup({
+  course_instance,
+  assessment,
+  group_name,
+  uids,
+  authn_user_id,
+  authzData,
+}: {
+  course_instance: CourseInstance;
+  assessment: Assessment;
+  group_name: string | null;
+  uids: string[];
+  authn_user_id: string;
+  authzData: AuthzData;
+}): Promise<Group> {
   if (group_name) {
     if (group_name.length > 30) {
       throw new GroupOperationError(
@@ -362,6 +392,18 @@ export async function createGroup(
         'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
       );
     }
+    if (/^group[0-9]{7,}$/.test(group_name)) {
+      // This test is used to simplify the logic behind system-generated group
+      // names. These are created automatically by adding one to the latest
+      // group name with a number. Allowing a user to specify a group name with
+      // this format could cause an issue if the number is too long, as it would
+      // cause integer overflows in the group calculation. While changing the
+      // process to generate group names that don't take these numbers into
+      // account is possible, this validation is simpler.
+      throw new GroupOperationError(
+        'User-specified group names cannot start with "group" followed by a large number.',
+      );
+    }
   }
 
   if (uids.length === 0) {
@@ -369,32 +411,35 @@ export async function createGroup(
   }
 
   try {
-    await sqldb.runInTransactionAsync(async () => {
-      let group_id;
-      try {
-        group_id = await sqldb.queryRow(
+    return await sqldb.runInTransactionAsync(async () => {
+      const group = await sqldb
+        .queryRow(
           sql.create_group,
-          { assessment_id, authn_user_id, group_name },
-          IdSchema,
-        );
-      } catch (err) {
-        // 23505 is the Postgres error code for unique constraint violation
-        // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
-        if (err.code === '23505' && err.constraint === 'unique_group_name') {
-          throw new GroupOperationError('Group name is already taken.');
-        }
-        // Any other error is unexpected and should be handled by the main processes
-        throw err;
-      }
+          { assessment_id: assessment.id, authn_user_id, group_name },
+          GroupSchema,
+        )
+        .catch((err) => {
+          // 23505 is the Postgres error code for unique constraint violation
+          // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
+          if (err.code === '23505' && err.constraint === 'unique_group_name') {
+            throw new GroupOperationError('Group name is already taken.');
+          }
+          // Any other error is unexpected and should be handled by the main processes
+          throw err;
+        });
+
       for (const uid of uids) {
         await addUserToGroup({
-          assessment_id,
-          group_id,
+          course_instance,
+          assessment,
+          group_id: group.id,
           uid,
           authn_user_id,
           enforceGroupSize: false,
+          authzData,
         });
       }
+      return group;
     });
   } catch (err) {
     if (err instanceof GroupOperationError) {
@@ -410,30 +455,49 @@ export async function createGroup(
   }
 }
 
-export async function createOrAddToGroup(
-  group_name: string,
-  assessment_id: string,
-  uids: string[],
-  authn_user_id: string,
-): Promise<void> {
-  await sqldb.runInTransactionAsync(async () => {
-    const group = await sqldb.queryOptionalRow(
+export async function createOrAddToGroup({
+  course_instance,
+  assessment,
+  group_name,
+  uids,
+  authn_user_id,
+  authzData,
+}: {
+  course_instance: CourseInstance;
+  assessment: Assessment;
+  group_name: string;
+  uids: string[];
+  authn_user_id: string;
+  authzData: AuthzData;
+}): Promise<Group> {
+  return await sqldb.runInTransactionAsync(async () => {
+    const existingGroup = await sqldb.queryOptionalRow(
       sql.select_and_lock_group_by_name,
-      { group_name, assessment_id },
+      { group_name, assessment_id: assessment.id },
       GroupSchema,
     );
-    if (group == null) {
-      await createGroup(group_name, assessment_id, uids, authn_user_id);
+    if (existingGroup == null) {
+      return await createGroup({
+        course_instance,
+        assessment,
+        group_name,
+        uids,
+        authn_user_id,
+        authzData,
+      });
     } else {
       for (const uid of uids) {
         await addUserToGroup({
-          assessment_id,
-          group_id: group.id,
+          course_instance,
+          assessment,
+          group_id: existingGroup.id,
           uid,
           authn_user_id,
           enforceGroupSize: false,
+          authzData,
         });
       }
+      return existingGroup;
     }
   });
 }
@@ -540,7 +604,7 @@ export async function leaveGroup(
       const currentSize = groupInfo.groupMembers.length;
       if (currentSize > 1) {
         const groupRoleAssignmentUpdates = getGroupRoleReassignmentsAfterLeave(groupInfo, userId);
-        await sqldb.queryAsync(sql.update_group_roles, {
+        await sqldb.execute(sql.update_group_roles, {
           role_assignments: JSON.stringify(groupRoleAssignmentUpdates),
           group_id: groupId,
           authn_user_id: authnUserId,
@@ -551,7 +615,7 @@ export async function leaveGroup(
           groupInfo.rolesInfo?.groupRoles.map((role) => role.minimum ?? 0),
         );
         if (currentSize - 1 <= minRolesToFill) {
-          await sqldb.queryAsync(sql.delete_non_required_roles, {
+          await sqldb.execute(sql.delete_non_required_roles, {
             group_id: groupId,
             assessment_id: assessmentId,
           });
@@ -560,7 +624,7 @@ export async function leaveGroup(
     }
 
     // Delete user from group and log
-    await sqldb.queryAsync(sql.delete_group_users, {
+    await sqldb.execute(sql.delete_group_users, {
       assessment_id: assessmentId,
       group_id: groupId,
       user_id: userId,
@@ -633,7 +697,7 @@ export async function updateGroupRoles(
       assignerRoleIds.includes(roleAssignment.group_role_id),
     );
     if (!assignerRoleFound) {
-      if (!groupInfo.groupMembers?.some((member) => idsEqual(member.user_id, userId))) {
+      if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
         // If the current user is not in the group, this usually means they are a staff member, so give the assigner role to the first user
         userId = groupInfo.groupMembers[0].user_id;
       }
@@ -644,7 +708,7 @@ export async function updateGroupRoles(
       });
     }
 
-    await sqldb.queryAsync(sql.update_group_roles, {
+    await sqldb.execute(sql.update_group_roles, {
       group_id: groupId,
       role_assignments: JSON.stringify(roleAssignments),
       authn_user_id: authnUserId,
@@ -667,7 +731,7 @@ export async function deleteGroup(assessment_id: string, group_id: string, authn
  * Delete all groups for the given assessment.
  */
 export async function deleteAllGroups(assessmentId: string, authnUserId: string) {
-  await sqldb.queryAsync(sql.delete_all_groups, {
+  await sqldb.execute(sql.delete_all_groups, {
     assessment_id: assessmentId,
     authn_user_id: authnUserId,
   });

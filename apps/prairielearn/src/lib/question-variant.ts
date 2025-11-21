@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import fg from 'fast-glob';
 import { z } from 'zod';
 
@@ -5,12 +7,18 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 
-import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
 
-import { type Course, IdSchema, type Question, type Variant, VariantSchema } from './db-types.js';
+import {
+  type Course,
+  type CourseInstance,
+  IdSchema,
+  type Question,
+  type Variant,
+  VariantSchema,
+} from './db-types.js';
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
 
@@ -74,14 +82,14 @@ export async function makeVariant(
 
   if (question.workspace_image !== null) {
     // if workspace, add graded files to params
-    variant.params['_workspace_required_file_names'] = (
-      question.workspace_graded_files || []
-    ).filter((file) => !fg.isDynamicPattern(file, workspaceFastGlobDefaultOptions));
+    variant.params._workspace_required_file_names = (question.workspace_graded_files || []).filter(
+      (file) => !fg.isDynamicPattern(file, workspaceFastGlobDefaultOptions),
+    );
     if (!('_required_file_names' in variant.params)) {
-      variant.params['_required_file_names'] = [];
+      variant.params._required_file_names = [];
     }
-    variant.params['_required_file_names'] = variant.params['_required_file_names'].concat(
-      variant.params['_workspace_required_file_names'],
+    variant.params._required_file_names = variant.params._required_file_names.concat(
+      variant.params._workspace_required_file_names,
     );
   }
 
@@ -95,8 +103,8 @@ export async function makeVariant(
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
     variant = {
       variant_seed,
-      params: data.params || {},
-      true_answer: data.true_answer || {},
+      params: data.params,
+      true_answer: data.true_answer,
       options: data.options || {},
       broken: hasFatalIssue,
     };
@@ -196,7 +204,7 @@ async function selectVariantForInstanceQuestion(
  * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param user_id - The user for the new variant.
  * @param authn_user_id - The current authenticated user.
- * @param course_instance_id - The course instance for this variant. Can be null for instructor questions.
+ * @param course_instance - The course instance for this variant. Can be null for instructor questions.
  * @param variant_course - The course for the variant.
  * @param question_course - The course for the question.
  * @param options - Options controlling the creation.
@@ -209,7 +217,7 @@ async function makeAndInsertVariant(
   instance_question_id: string | null,
   user_id: string,
   authn_user_id: string,
-  course_instance_id: string | null,
+  course_instance: CourseInstance | null,
   variant_course: Course,
   question_course: Course,
   options: { variant_seed?: string | null },
@@ -258,8 +266,11 @@ async function makeAndInsertVariant(
         throw new error.HttpStatusError(403, 'Assessment instance is not open');
       }
 
+      // We never expect these to fail, but we'll assert just to be sure.
+      assert(course_instance);
+      assert(instance_question.course_instance_id === course_instance.id);
+
       question_id = instance_question.question_id;
-      course_instance_id = instance_question.course_instance_id;
       real_user_id = instance_question.user_id;
       real_group_id = instance_question.group_id;
 
@@ -274,15 +285,9 @@ async function makeAndInsertVariant(
           'Attempt to create a variant without a question ID or instance question ID',
         );
       }
-      if (user_id == null) {
-        throw new Error('Attempt to create a variant without a user ID');
-      }
 
-      if (course_instance_id != null) {
-        const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
-        if (!course_instance || !idsEqual(course_instance.course_id, variant_course.id)) {
-          throw new error.HttpStatusError(403, 'Course instance not found in course');
-        }
+      if (course_instance != null && !idsEqual(course_instance.course_id, variant_course.id)) {
+        throw new error.HttpStatusError(403, 'Course instance not found in course');
       }
     }
 
@@ -298,7 +303,7 @@ async function makeAndInsertVariant(
         ...variantData,
         instance_question_id,
         question_id,
-        course_instance_id,
+        course_instance_id: course_instance?.id ?? null,
         user_id: real_user_id,
         group_id: real_group_id,
         number: new_number ?? 1,
@@ -331,7 +336,7 @@ async function makeAndInsertVariant(
  * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param user_id - The user for the new variant.
  * @param authn_user_id - The current authenticated user.
- * @param course_instance_id - The course instance for this variant. Can be null for instructor questions.
+ * @param course_instance - The course instance for this variant. Can be null for instructor questions.
  * @param variant_course - The course for the variant.
  * @param question_course - The course for the question.
  * @param options - Options controlling the creation.
@@ -344,7 +349,7 @@ export async function ensureVariant(
   instance_question_id: string | null,
   user_id: string,
   authn_user_id: string,
-  course_instance_id: string | null,
+  course_instance: CourseInstance | null,
   variant_course: Course,
   question_course: Course,
   options: { variant_seed?: string | null },
@@ -367,7 +372,7 @@ export async function ensureVariant(
     instance_question_id,
     user_id,
     authn_user_id,
-    course_instance_id,
+    course_instance,
     variant_course,
     question_course,
     options,

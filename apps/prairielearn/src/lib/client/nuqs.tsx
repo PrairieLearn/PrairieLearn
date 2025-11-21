@@ -64,14 +64,13 @@ export const parseAsSortingState = createParser<SortingState>({
       .filter((v): v is { id: string; desc: boolean } => !!v);
   },
   serialize(value) {
-    if (!value || value.length === 0) return '';
+    if (value.length === 0) return '';
     return value
       .filter((v) => v.id)
       .map((v) => `${v.id}:${v.desc ? 'desc' : 'asc'}`)
       .join(',');
   },
   eq(a, b) {
-    if (!a || !b) return a === b;
     return (
       a.length === b.length &&
       a.every((item, index) => item.id === b[index].id && item.desc === b[index].desc)
@@ -84,9 +83,15 @@ export const parseAsSortingState = createParser<SortingState>({
  * Parses a comma-separated list of visible columns from a query string, e.g. 'a,b'.
  * Serializes to a comma-separated list of visible columns, omitting if all are visible.
  * Used for reflecting column visibility in the URL.
+ *
+ * @param allColumns - Array of all column IDs
+ * @param defaultValueRef - A ref object with a `current` property that contains the default visibility state.
  */
-export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
-  return createParser<VisibilityState>({
+export function parseAsColumnVisibilityStateWithColumns(
+  allColumns: string[],
+  defaultValueRef?: React.RefObject<VisibilityState>,
+) {
+  const parser = createParser<VisibilityState>({
     parse(queryValue: string) {
       const shown =
         queryValue.length > 0
@@ -98,19 +103,33 @@ export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
       }
       return result;
     },
-    serialize(value) {
-      if (!value) return '';
+    serialize(value): string {
+      // We can't use `eq` to compare with the current default values from the
+      // ref. `eq` appears to be used as part of an optimization to avoid rerenders
+      // if the column set hasn't changed, so if it return `true`, we wouldn't be
+      // able to update the actual visible columns after changing the defaults if
+      // the new column set is equal to the default set of columns.
+      //
+      // Instead, we rely on the (undocumented) ability of `serialize` to return
+      // `null` to indicate that the value should be omitted from the URL.
+      // @ts-expect-error - `null` is not assignable to type `string`.
+      if (parser.eq(value, defaultValueRef?.current ?? {})) return null;
+
       // Only output columns that are visible
-      const visible = allColumns.filter((col) => value[col]);
-      if (visible.length === allColumns.length) return '';
+      const visible = Object.keys(value).filter((col) => value[col]);
       return visible.join(',');
     },
-    eq(a, b) {
-      const aKeys = Object.keys(a);
-      const bKeys = Object.keys(b);
-      return aKeys.length === bKeys.length && aKeys.every((col) => a[col] === b[col]);
+    eq(value, defaultValue) {
+      const valueKeys = Object.keys(value);
+      const defaultValueKeys = Object.keys(defaultValue);
+      const result =
+        valueKeys.length === defaultValueKeys.length &&
+        valueKeys.every((col) => value[col] === defaultValue[col]);
+      return result;
     },
   });
+
+  return parser;
 }
 
 /**
@@ -132,7 +151,7 @@ export const parseAsColumnPinningState = createParser<ColumnPinningState>({
     };
   },
   serialize(value) {
-    if (!value || !value.left) return '';
+    if (!value.left) return '';
     return value.left.join(',');
   },
   eq(a, b) {
@@ -140,5 +159,54 @@ export const parseAsColumnPinningState = createParser<ColumnPinningState>({
     const bLeft = Array.isArray(b.left) ? b.left : [];
     if (aLeft.length !== bLeft.length) return false;
     return aLeft.every((v, i) => v === bLeft[i]);
+  },
+});
+
+/**
+ * Parses and serializes numeric filter strings to/from URL-friendly format.
+ * Used for numeric column filters with comparison operators.
+ *
+ * Internal format: `>=5`, `<=10`, `>3`, `<7`, `=5`
+ * URL format: `gte_5`, `lte_10`, `gt_3`, `lt_7`, `eq_5`
+ *
+ * Example: `gte_5` <-> `>=5`
+ */
+export const parseAsNumericFilter = createParser<string>({
+  parse(queryValue) {
+    if (!queryValue) return '';
+    // Parse format: {operator}_{value}
+    const match = queryValue.match(/^(gte|lte|gt|lt|eq)_(.+)$/);
+    if (!match) return '';
+    const [, opCode, value] = match;
+    const opMap: Record<string, string> = {
+      gte: '>=',
+      lte: '<=',
+      gt: '>',
+      lt: '<',
+      eq: '=',
+    };
+    const operator = opMap[opCode];
+    if (!operator) return '';
+    return `${operator}${value}`;
+  },
+  serialize(value) {
+    if (!value) return '';
+    // Serialize format: internal (>=5) -> URL (gte_5)
+    const match = value.match(/^(>=|<=|>|<|=)(.+)$/);
+    if (!match) return '';
+    const [, operator, val] = match;
+    const opMap: Record<string, string> = {
+      '>=': 'gte',
+      '<=': 'lte',
+      '>': 'gt',
+      '<': 'lt',
+      '=': 'eq',
+    };
+    const opCode = opMap[operator];
+    if (!opCode) return '';
+    return `${opCode}_${val}`;
+  },
+  eq(a, b) {
+    return a === b;
   },
 });

@@ -67,27 +67,29 @@ The `info.json` file for each question defines properties of the question. For e
   "title": "Newton's third law",
   "topic": "Forces",
   "tags": ["secret", "Fa18"],
+  "authors": [{ "name": "John Doe", "email": "doe@example.org", "orcid": "0000-0000-0000-0001" }],
   "type": "v3",
   "comment": "You can add comments to JSON files using this property."
 }
 ```
 
-| Property                 | Type    | Description                                                                                                                                                            |
-| ------------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `uuid`                   | string  | [Unique identifier](../uuid.md). (Required; no default)                                                                                                                |
-| `type`                   | enum    | Type of the test. Must be `"v3"` for new-style questions. (Required; no default)                                                                                       |
-| `title`                  | string  | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)                                                             |
-| `topic`                  | string  | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)                                                       |
-| `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                                                         |
-| `gradingMethod`          | enum    | The grading method used for auto-grading this question. Valid values: `Internal`, `External`, or `Manual` (for manual-only questions). (Optional; default: `Internal`) |
-| `singleVariant`          | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)                                                               |
-| `showCorrectAnswer`      | boolean | Whether the question should display the answer panel. (Optional; default: `true`)                                                                                      |
-| `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                       |
-| `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](../externalGrading.md). (Optional; default: none)                                             |
-| `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                  |
-| `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                  |
-| `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                            |
-| `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                             |
+| Property                 | Type    | Description                                                                                                                                                                                                                                                                                                        |
+| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `uuid`                   | string  | [Unique identifier](../uuid.md). (Required; no default)                                                                                                                                                                                                                                                            |
+| `type`                   | enum    | Type of the test. Must be `"v3"` for new-style questions. (Required; no default)                                                                                                                                                                                                                                   |
+| `title`                  | string  | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)                                                                                                                                                                                                         |
+| `topic`                  | string  | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)                                                                                                                                                                                                   |
+| `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                                                                                                                                                                                                     |
+| `authors`                | array   | Authors of the question. Each author entry can have a `name`, and must contain at least one of the following attributes: `email`, `orcid` ([ORCID identifier](https://orcid.org)), or `originCourse` (course sharing name; see [Question Sharing](#question-sharing) for details). (Optional; default: no authors) |
+| `gradingMethod`          | enum    | The grading method used for auto-grading this question. Valid values: `Internal`, `External`, or `Manual` (for manual-only questions). (Optional; default: `Internal`)                                                                                                                                             |
+| `singleVariant`          | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)                                                                                                                                                                                                           |
+| `showCorrectAnswer`      | boolean | Whether the question should display the answer panel. (Optional; default: `true`)                                                                                                                                                                                                                                  |
+| `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                                                                                                                                                                   |
+| `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](../externalGrading.md). (Optional; default: none)                                                                                                                                                                                         |
+| `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                                                                                                                                                              |
+| `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                                                                                                                                                              |
+| `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                                                                                                                                                                        |
+| `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                                                                                                                                                                         |
 
 !!! note "Local development note"
 
@@ -102,6 +104,10 @@ Any question that is marked with `"shareSourcePublicly": true` will be considere
   "sharingSets": ["python-exercises"]
 }
 ```
+
+### Question Authorship
+
+Future versions of PrairieLearn may provide the ability to track the usage of shared questions. To ensure that questions remain associated with their original author(s) and course, we recommend including `authors` information in the `info.json` file. The `orcid` attribute in particular allows authors to be uniquely identified, even after changing their affiliation or email address. The `originCourse` attribute can be used to associate questions with courses by providing their [sharing name](../contentSharing.md#sharing-names). This allows a wider number of course staff to be credited with contributing to a question, and might allow them to track question usage in a future version of PrairieLearn.
 
 ### Question Dependencies
 
@@ -144,7 +150,7 @@ While it is recommended that all questions contain random parameters, sometimes 
 
 By default, all questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct, the student will be awarded 50% of the available points.
 
-To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](../elements.md) also provide more fine-grained control over partial credit.
+To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](../elements/index.md) also provide more fine-grained control over partial credit.
 
 In general, it is _strongly_ recommended to leave partial credit enabled for all questions.
 
@@ -179,7 +185,7 @@ The `question.html` is a template used to render the question to the student. A 
 The `question.html` is regular HTML, with a few special features:
 
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values using [Mustache](https://mustache.github.io/mustache.5.html). These parameters are typically defined by a [question's `server.py`](#custom-generation-and-grading-serverpy).
-2. Special HTML elements (like [`<pl-number-input>`](../elements.md#pl-number-input-element)) enable input and formatted output. A student's submission is composed of the answers they provide to the question elements. See the [list of PrairieLearn elements](../elements.md).
+2. Special HTML elements (like [`<pl-number-input>`](../elements/pl-number-input.md)) enable input and formatted output. A student's submission is composed of the answers they provide to the question elements. See the [list of PrairieLearn elements](../elements/index.md).
 
    :warning: **All submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
 
@@ -213,7 +219,7 @@ def generate(data):
 
 ## Grading student answers
 
-Elements like [`pl-multiple-choice`](../elements.md#pl-multiple-choice-element) or [`pl-checkbox`](../elements.md#pl-checkbox-element), which aren't freeform answers, are automatically graded based on the element parameters. For other elements, like [`pl-number-input`](../elements.md#pl-number-input-element) and [`pl-string-input`](../elements.md#pl-string-input-element), which have students input an answer of their choosing, there are four different methods of auto-grading the student answer:
+Elements like [`pl-multiple-choice`](../elements/pl-multiple-choice.md) or [`pl-checkbox`](../elements/pl-checkbox.md), which aren't freeform answers, are automatically graded based on the element parameters. For other elements, like [`pl-number-input`](../elements/pl-number-input.md) and [`pl-string-input`](../elements/pl-string-input.md), which have students input an answer of their choosing, there are four different methods of auto-grading the student answer:
 
 1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. This option is typically used for answers with a hard-coded value (i.e. if `"singleVariant": true` in `info.json`), and is not expected to be used in most randomized questions.
 

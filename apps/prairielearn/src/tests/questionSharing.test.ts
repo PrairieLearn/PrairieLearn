@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'node:path';
 
 import { execa } from 'execa';
@@ -76,6 +77,7 @@ const gitOptionsLive = {
   cwd: sharingCourseLiveDir,
   env: process.env,
 };
+
 async function commitAndPullSharingCourse() {
   await execa('git', ['add', '-A'], gitOptionsOrigin);
   await execa('git', ['commit', '-m', 'Add sharing set'], gitOptionsOrigin);
@@ -220,7 +222,7 @@ describe('Question Sharing', function () {
 
     test.sequential('Fail to sync course when validating shared question paths', async () => {
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-      if (syncResult.status === 'complete' && !syncResult?.hadJsonErrorsOrWarnings) {
+      if (syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings) {
         throw new Error(
           'Sync of consuming course succeeded when it should have failed due to unresolved shared question path.',
         );
@@ -236,7 +238,7 @@ describe('Question Sharing', function () {
       'Sync course with sharing enabled, disabling validating shared question paths',
       async () => {
         const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-        if (syncResult.status !== 'complete' || syncResult?.hadJsonErrorsOrWarnings) {
+        if (syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings) {
           throw new Error('Errors or warnings found during sync of consuming course');
         }
       },
@@ -481,7 +483,7 @@ describe('Question Sharing', function () {
     });
     test.sequential('Re-sync test course, validating shared questions', async () => {
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-      if (syncResult?.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings) {
+      if (syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings) {
         throw new Error('Errors or warnings found during sync of consuming course');
       }
     });
@@ -711,7 +713,7 @@ describe('Question Sharing', function () {
       );
 
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
-      if (syncResult.status !== 'complete' || syncResult?.hadJsonErrorsOrWarnings) {
+      if (syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings) {
         throw new Error('Errors or warnings found during sync of sharing course');
       }
     });
@@ -739,7 +741,7 @@ describe('Question Sharing', function () {
       );
 
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
-      if (syncResult.status !== 'complete' || syncResult?.hadJsonErrorsOrWarnings) {
+      if (syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings) {
         throw new Error('Errors or warnings found during sync of sharing course');
       }
     });

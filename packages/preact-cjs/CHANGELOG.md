@@ -1,5 +1,29 @@
 # @prairielearn/preact-cjs
 
+## 1.1.6
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 1.1.5
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 1.1.4
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 1.1.3
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
 ## 1.1.2
 
 ### Patch Changes

@@ -52,7 +52,7 @@ router.get(
   }),
   asyncHandler(async (req, res) => {
     const courseInstances = await selectCourseInstancesWithStaffAccess({
-      course_id: res.locals.course.id,
+      course: res.locals.course,
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.is_administrator,
@@ -109,7 +109,7 @@ router.post(
       // Verify the course instance id associated with the requested course instance
       // role is valid (should such a role have been requested)
       const course_instances = await selectCourseInstancesWithStaffAccess({
-        course_id: res.locals.course.id,
+        course: res.locals.course,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,
@@ -188,9 +188,9 @@ router.post(
         const given_cp_and_cip = result.given_cp.filter(
           (uid) => !result.not_given_cip.includes(uid),
         );
-        debug(`given_cp: ${result.given_cp}`);
-        debug(`not_given_cip: ${result.not_given_cip}`);
-        debug(`given_cp_and_cip: ${given_cp_and_cip}`);
+        debug(`given_cp: ${result.given_cp.join(', ')}`);
+        debug(`not_given_cip: ${result.not_given_cip.join(', ')}`);
+        debug(`given_cp_and_cip: ${given_cp_and_cip.join(', ')}`);
         if (given_cp_and_cip.length > 0) {
           if (course_instance) {
             info.push(html`
@@ -339,7 +339,7 @@ ${given_cp_and_cip.join(',\n')}
       // reason as above (see handler for course_permissions_update_role).
 
       const course_instances = await selectCourseInstancesWithStaffAccess({
-        course_id: res.locals.course.id,
+        course: res.locals.course,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,
@@ -354,7 +354,7 @@ ${given_cp_and_cip.join(',\n')}
         throw new error.HttpStatusError(400, 'Undefined course instance id');
       }
 
-      if (req.body.course_instance_role) {
+      if (['Student Data Viewer', 'Student Data Editor'].includes(req.body.course_instance_role)) {
         // In this case, we update the role associated with the course instance permission
         await updateCourseInstancePermissionsRole({
           course_id: res.locals.course.id,
@@ -364,7 +364,7 @@ ${given_cp_and_cip.join(',\n')}
           authn_user_id: res.locals.authz_data.authn_user.user_id,
         });
         res.redirect(req.originalUrl);
-      } else {
+      } else if (req.body.course_instance_role === 'None' || !req.body.course_instance_role) {
         // In this case, we delete the course instance permission
         await deleteCourseInstancePermissions({
           course_id: res.locals.course.id,
@@ -373,6 +373,11 @@ ${given_cp_and_cip.join(',\n')}
           authn_user_id: res.locals.authz_data.authn_user.user_id,
         });
         res.redirect(req.originalUrl);
+      } else {
+        throw new error.HttpStatusError(
+          400,
+          `Invalid requested course instance role: ${req.body.course_instance_role}`,
+        );
       }
     } else if (req.body.__action === 'course_instance_permissions_insert') {
       // Again, we could make some effort to verify that the user is still a
@@ -380,7 +385,7 @@ ${given_cp_and_cip.join(',\n')}
       // reason as above (see handler for course_permissions_update_role).
 
       const course_instances = await selectCourseInstancesWithStaffAccess({
-        course_id: res.locals.course.id,
+        course: res.locals.course,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,

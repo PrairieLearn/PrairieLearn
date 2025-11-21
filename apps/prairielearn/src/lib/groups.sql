@@ -53,19 +53,22 @@ WITH
           AND gc.deleted_at IS NULL
       )
     RETURNING
-      id,
-      group_config_id
+      *
+  ),
+  log_group AS (
+    INSERT INTO
+      group_logs (authn_user_id, group_id, action)
+    SELECT
+      $authn_user_id,
+      cg.id,
+      'create'
+    FROM
+      create_group AS cg
   )
-INSERT INTO
-  group_logs (authn_user_id, group_id, action)
 SELECT
-  $authn_user_id,
-  cg.id,
-  'create'
+  *
 FROM
-  create_group AS cg
-RETURNING
-  group_id;
+  create_group;
 
 -- BLOCK select_group
 SELECT

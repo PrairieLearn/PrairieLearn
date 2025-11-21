@@ -13,10 +13,9 @@ A trusted group of core developers are responsible for maintaining the PrairieLe
   - If you’d like to understand a PR better, ask questions rather than making assumptions.
 
 - **Responsibilities for reviewing**
+  - The primary reviewer should not approve a PR until it is in a satisfactory state for merging (i.e. testing has been performed). This may involve testing the changes via the instructions in the PR description, or indicating to the author that further testing is needed.
   - Maintainers are expected to participate in code reviews. Not all maintainers are expected to review every PR, but each PR should have at least one maintainer review it, and more complex ones likely benefit from multiple reviewers.
-  - When a PR is opened by a maintainer, that person should identify at least one other maintainer to review it and request a review from them on GitHub.
-  - When a PR is opened by a non-maintainer, it's expected that maintainers will work with each other to identify a primary reviewer and possibly secondary reviewers.
-  - If a maintainer was assigned to a PR but is unable to review the PR for any reason, they should unassign themselves and request that another maintainer take over the review.
+  - If a maintainer was assigned to a PR (e.g. via the auto-assignment review assignment process) but is unable to review the PR for any reason, they should unassign themselves and request that another maintainer take over the review.
   - Even if you aren't the primary reviewer, you are still encouraged to leave comments on PRs. More eyes on a PR generally results in higher-quality code.
 
 - **Responsibilities for merging**
@@ -50,8 +49,10 @@ A trusted group of core developers are responsible for maintaining the PrairieLe
 
 - **Addressing code review comments**
   - All code review comments should be addressed before merging.
+    - If you made a change that resolved a comment, you should reply to the comment with the commit that resolves it.
   - Addressing a comment does not always mean making a change. It may involve:
     - Explaining why a change is unnecessary. Ideally, wait for the reviewer to acknowledge this before considering the comment to be addressed.
     - Deferring a fix to a fast-follow PR and explicitly stating that in a comment.
     - For non-critical issues, opening an issue to track the need for a change in the future.
   - Use your best judgment to determine whether a comment has been sufficiently addressed.
+  - Once you have addressed or responded to all review comments, re-request review from the primary reviewer. This signals to the reviewer that you are ready for another review.

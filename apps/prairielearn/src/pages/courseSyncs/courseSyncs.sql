@@ -10,7 +10,7 @@ WHERE
   AND js.type IN ('sync', 'git_status', 'images_sync')
 ORDER BY
   js.start_date DESC,
-  js.id;
+  js.id ASC;
 
 -- BLOCK question_images
 WITH

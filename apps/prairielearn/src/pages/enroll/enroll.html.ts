@@ -7,12 +7,13 @@ import { HeadContents } from '../../components/HeadContents.js';
 import { Modal } from '../../components/Modal.js';
 import { Navbar } from '../../components/Navbar.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { EnrollmentSchema } from '../../lib/db-types.js';
 
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),
   short_label: z.string(),
   course_instance_id: z.string(),
-  enrolled: z.boolean(),
+  enrollment: EnrollmentSchema.nullable(),
   instructor_access: z.boolean(),
 });
 type CourseInstance = z.infer<typeof CourseInstanceRowSchema>;
@@ -32,10 +33,7 @@ export function Enroll({
       page: 'enroll',
     },
     headContent: compiledScriptTag('enrollClient.ts'),
-    preContent: html`
-      ${AddCourseModal({ csrfToken: resLocals.__csrf_token })}
-      ${RemoveCourseModal({ csrfToken: resLocals.__csrf_token })}
-    `,
+    preContent: AddCourseModal({ csrfToken: resLocals.__csrf_token }),
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -50,13 +48,14 @@ export function Enroll({
                     <td class="align-middle">${course_instance.label}</td>
                     ${course_instance.instructor_access
                       ? html`
-                          <td class="align-middle text-center" colspan="2">
+                          <td class="align-middle text-center">
                             <span class="badge text-bg-info">instructor access</span>
                           </td>
                         `
                       : html`
-                          <td>
-                            ${!course_instance.enrolled
+                          <td class="align-middle text-center">
+                            ${!course_instance.enrollment ||
+                            !['joined'].includes(course_instance.enrollment.status)
                               ? html`
                                   <button
                                     type="button"
@@ -69,23 +68,7 @@ export function Enroll({
                                     Add course
                                   </button>
                                 `
-                              : ''}
-                          </td>
-                          <td>
-                            ${course_instance.enrolled
-                              ? html`
-                                  <button
-                                    type="button"
-                                    class="btn btn-sm btn-danger"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#remove-course-modal"
-                                    data-course-instance-id="${course_instance.course_instance_id}"
-                                    data-course-instance-short-label="${course_instance.short_label}"
-                                  >
-                                    Remove course
-                                  </button>
-                                `
-                              : ''}
+                              : html` <span class="text-muted">Enrolled</span> `}
                           </td>
                         `}
                   </tr>
@@ -183,28 +166,6 @@ function AddCourseModal({ csrfToken }: { csrfToken: string }) {
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-info" name="__action" value="enroll">
         Add <span class="js-course-instance-short-label"></span>
-      </button>
-    `,
-  });
-}
-
-function RemoveCourseModal({ csrfToken }: { csrfToken: string }) {
-  return Modal({
-    id: 'remove-course-modal',
-    title: 'Confirm remove course',
-    body: html`
-      <p>Are you sure you want to remove this course content from your PrairieLearn account?</p>
-      <p>
-        Adding or removing courses here only affects what is visible to you on PrairieLearn. This
-        does not change your university course registration.
-      </p>
-    `,
-    footer: html`
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="course_instance_id" class="js-course-instance-id" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-danger" name="__action" value="unenroll">
-        Remove <span class="js-course-instance-short-label"></span>
       </button>
     `,
   });

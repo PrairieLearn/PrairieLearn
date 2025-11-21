@@ -1,4 +1,5 @@
 import type http from 'http';
+import assert from 'node:assert';
 
 import { createAdapter } from '@socket.io/redis-adapter';
 import debugfn from 'debug';
@@ -41,19 +42,21 @@ function attachEventListeners(client: Redis, type: string) {
   });
 }
 
-export let io: Server;
+export let io: Server | undefined;
 
-let pub: Redis;
-let sub: Redis;
+let pub: Redis | undefined;
+let sub: Redis | undefined;
 
-export async function init(server: http.Server) {
+export function init(server: http.Server) {
   debug('init(): creating socket server');
   io = new Server(server);
   if (config.redisUrl) {
-    // Use redis to mirror broadcasts via all servers
-    debug('init(): initializing redis pub/sub clients');
-    pub = new Redis(config.redisUrl);
-    sub = new Redis(config.redisUrl);
+    // Use redis to mirror broadcasts via all servers.
+    //
+    // We set `disableClientInfo: true` to work around this bug:
+    // https://github.com/redis/ioredis/issues/2037
+    pub = new Redis(config.redisUrl, { disableClientInfo: true });
+    sub = new Redis(config.redisUrl, { disableClientInfo: true });
 
     attachEventListeners(pub, 'pub');
     attachEventListeners(sub, 'sub');
@@ -64,6 +67,7 @@ export async function init(server: http.Server) {
 }
 
 export async function close() {
+  assert(io, 'io is required');
   // Note that we don't use `io.close()` here, as that actually tries to close
   // the underlying HTTP server. In our desired shutdown sequence, we first
   // close the HTTP server and then later disconnect all sockets. There's some
@@ -89,6 +93,8 @@ export async function close() {
 
   // Close the adapters. This will remove the pub/sub subscriptions to ensure we
   // don't receive any more messages from Redis.
+  // The type signature of `close()` is `Promise<void> | void`, so we need to disable the rule about the unneeded `Promise.all`.
+  // eslint-disable-next-line @typescript-eslint/await-thenable
   await Promise.all(adapters.map((adapter) => adapter.close()));
 
   // Close any remaining client connections.

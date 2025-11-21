@@ -4,9 +4,9 @@ import SelectorSet from 'selector-set';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 interface MigratorUtils {
-  addClass(el: Element, newClass: string | string[], message: string): void;
-  migrateClass(el: Element, oldClass: string, newClass: string): void;
-  migrateAttribute(el: Element, oldAttribute: string, newAttribute: string): void;
+  addClass(this: void, el: Element, newClass: string | string[], message: string): void;
+  migrateClass(this: void, el: Element, oldClass: string, newClass: string): void;
+  migrateAttribute(this: void, el: Element, oldAttribute: string, newAttribute: string): void;
 }
 
 interface MigratorOptions {
@@ -58,12 +58,12 @@ function addClass(el: Element, newClass: string | string[], message: string) {
   const newClasses = Array.isArray(newClass) ? newClass : [newClass];
 
   let didAddClass = false;
-  newClasses.forEach((newClass) => {
+  for (const newClass of newClasses) {
     if (!el.classList.contains(newClass)) {
       el.classList.add(newClass);
       didAddClass = true;
     }
-  });
+  }
 
   if (didAddClass) {
     console.warn(message, el);
@@ -84,7 +84,7 @@ function migrateClass(el: Element, oldClass: string, newClass: string) {
 
 function migrateAttribute(el: Element, oldAttribute: string, newAttribute: string) {
   if (el.hasAttribute(oldAttribute) && !el.hasAttribute(newAttribute)) {
-    el.setAttribute(newAttribute, el.getAttribute(oldAttribute) as string);
+    el.setAttribute(newAttribute, el.getAttribute(oldAttribute)!);
 
     // TODO: customizable message?
     console.warn(

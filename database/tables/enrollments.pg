@@ -1,6 +1,7 @@
 columns
     course_instance_id: bigint not null
     created_at: timestamp with time zone default CURRENT_TIMESTAMP
+    first_joined_at: timestamp with time zone
     id: bigint not null default nextval('enrollments_id_seq'::regclass)
     lti_managed: boolean not null default false
     pending_lti13_email: text
@@ -25,8 +26,13 @@ check constraints
     enrollments_lti13_pending_lti_managed_true: CHECK (status = 'lti13_pending'::enum_enrollment_status AND lti_managed = true OR status <> 'lti13_pending'::enum_enrollment_status)
     enrollments_pending_uid_null_only_if_invited_rejected: CHECK ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status])) = (pending_uid IS NOT NULL))
     enrollments_user_id_null_only_if_invited_rejected_pending: CHECK ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status, 'lti13_pending'::enum_enrollment_status])) = (user_id IS NULL))
+    first_joined_at_not_null_if_joined_and_created_at_not_null: CHECK (created_at IS NULL OR (status = ANY (ARRAY['invited'::enum_enrollment_status, 'lti13_pending'::enum_enrollment_status, 'rejected'::enum_enrollment_status])) OR first_joined_at IS NOT NULL)
 
 foreign-key constraints
     enrollments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     enrollments_pending_lti13_instance_id_fkey: FOREIGN KEY (pending_lti13_instance_id) REFERENCES lti13_course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     enrollments_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    audit_events: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE SET NULL
+    course_instance_publishing_extension_enrollments: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE CASCADE

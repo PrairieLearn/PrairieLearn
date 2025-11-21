@@ -1,13 +1,14 @@
+import assert from 'node:assert';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
-import express, { Router } from 'express';
+import express, { type ErrorRequestHandler, Router } from 'express';
 import { type HashElementNode, hashElement } from 'folder-hash';
-import { v4 as uuid } from 'uuid';
 
 import * as compiledAssets from '@prairielearn/compiled-assets';
+import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -58,7 +59,7 @@ function getHashForPath(hashes: HashElementNode, assetPath: string): string {
  */
 function getPackageNameForAssetPath(assetPath: string): string {
   const [maybeScope, maybeModule] = assetPath.split('/');
-  if (maybeScope.indexOf('@') === 0) {
+  if (maybeScope.startsWith('@')) {
     // This is a scoped module
     return `${maybeScope}/${maybeModule}`;
   } else {
@@ -134,7 +135,7 @@ function getNodeModulesAssetHash(assetPath: string): string {
     // a repeatable hash that would cause the browser to cache the asset. This
     // is because we want to be able to change them without changing the package
     // version number.
-    return uuid();
+    return crypto.randomUUID();
   }
 
   // Reading files synchronously and computing cryptographic hashes are both
@@ -229,6 +230,22 @@ export function applyMiddleware(app: express.Application) {
     }),
   );
 
+  // If the request reaches this point, it means that the requested asset does
+  // not exist. Return a 404 error.
+  router.use('/', (req, res, next) => {
+    next(new HttpStatusError(404, 'Not Found'));
+  });
+
+  // Transform ENOENT errors from static file serving into 404 errors.
+  router.use('/', ((err, req, res, next) => {
+    if (err?.code === 'ENOENT') {
+      next(new HttpStatusError(404, 'Not Found'));
+      return;
+    }
+
+    next(err);
+  }) satisfies ErrorRequestHandler);
+
   app.use(assetsPrefix, router);
 }
 
@@ -239,7 +256,8 @@ export function applyMiddleware(app: express.Application) {
  */
 export function assetPath(assetPath: string): string {
   const assetsPrefix = assertAssetsPrefix();
-  const hash = getHashForPath(publicHash as HashElementNode, assetPath);
+  assert(publicHash !== null);
+  const hash = getHashForPath(publicHash, assetPath);
   return `${assetsPrefix}/public/${hash}/${assetPath}`;
 }
 
@@ -262,7 +280,8 @@ export function nodeModulesAssetPath(assetPath: string): string {
  */
 export function coreElementAssetPath(assetPath: string): string {
   const assetsPrefix = assertAssetsPrefix();
-  const hash = getHashForPath(elementsHash as HashElementNode, assetPath);
+  assert(elementsHash !== null);
+  const hash = getHashForPath(elementsHash, assetPath);
   return `${assetsPrefix}/elements/${hash}/${assetPath}`;
 }
 

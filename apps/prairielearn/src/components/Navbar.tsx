@@ -3,6 +3,7 @@ import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { assertNever } from '../lib/types.js';
 
 import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
@@ -89,7 +90,7 @@ export function Navbar({
               </button>
             `
           : ''}
-        <a class="navbar-brand" href="${config.homeUrl}" aria-label="Homepage">
+        <a class="navbar-brand" href="/" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
             Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
@@ -134,7 +135,7 @@ export function Navbar({
       </div>
     </nav>
 
-    ${navbarType === 'instructor' && course && course.announcement_html && course.announcement_color
+    ${navbarType === 'instructor' && course?.announcement_html && course.announcement_color
       ? html`
           <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
             ${unsafeHtml(course.announcement_html)}
@@ -178,16 +179,19 @@ function NavbarByType({
         navbarType,
       });
     } else {
-      if (navbarType == null || navbarType === 'plain') {
-        return NavbarPlain({ resLocals, navPage });
-      } else if (navbarType === 'instructor') {
-        return NavbarInstructor({ resLocals, navPage, navSubPage });
-      } else if (navbarType === 'administrator_institution') {
-        return NavbarAdministratorInstitution({ resLocals });
-      } else if (navbarType === 'institution') {
-        return NavbarInstitution({ resLocals });
-      } else {
-        throw new Error(`Unknown navbarType: ${navbarType}`);
+      switch (navbarType) {
+        case undefined:
+        case 'plain':
+        case 'administrator':
+          return NavbarPlain({ resLocals, navPage });
+        case 'instructor':
+          return NavbarInstructor({ resLocals, navPage, navSubPage });
+        case 'administrator_institution':
+          return NavbarAdministratorInstitution({ resLocals });
+        case 'institution':
+          return NavbarInstitution({ resLocals });
+        default:
+          assertNever(navbarType);
       }
     }
   }
@@ -215,11 +219,13 @@ function UserDropdownMenu({
 
   let displayedName: HtmlValue;
   if (authz_data) {
-    displayedName = authz_data.user.name || authz_data.user.uid;
-
-    if (authz_data.mode != null && authz_data.mode !== 'Public') {
-      displayedName += ` (${authz_data.mode})`;
-    }
+    displayedName = run(() => {
+      const name = authz_data.user.name || authz_data.user.uid;
+      if (authz_data.mode != null && authz_data.mode !== 'Public') {
+        return `${name} (${authz_data.mode})`;
+      }
+      return name;
+    });
   } else if (authn_user) {
     displayedName = authn_user.name || authn_user.uid;
   } else {
@@ -229,11 +235,11 @@ function UserDropdownMenu({
   if (
     navbarType === 'student' &&
     course_instance &&
-    (authz_data.authn_has_course_permission_preview ||
-      authz_data.authn_has_course_instance_permission_view)
+    (authz_data?.authn_has_course_permission_preview ||
+      authz_data?.authn_has_course_instance_permission_view)
   ) {
     displayedName = html`${displayedName} <span class="badge text-bg-warning">student</span>`;
-  } else if (authz_data?.overrides) {
+  } else if (authz_data?.overrides?.length > 0) {
     displayedName = html`${displayedName} <span class="badge text-bg-warning">modified</span>`;
   } else if (navbarType === 'instructor') {
     displayedName = html`${displayedName} <span class="badge text-bg-success">staff</span>`;
@@ -267,7 +273,7 @@ function UserDropdownMenu({
               >`
             : ''}
         </a>
-        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+        <div class="dropdown-menu dropdown-menu-end">
           ${authn_is_administrator
             ? html`
                 <button type="button" class="dropdown-item" id="navbar-administrator-toggle">
@@ -291,13 +297,9 @@ function UserDropdownMenu({
               `
             : ''}
           ${!authz_data || authz_data?.mode === 'Public'
-            ? html`
-                <a class="dropdown-item" href="${config.urlPrefix}/request_course">
-                  Course Requests
-                </a>
-              `
+            ? html` <a class="dropdown-item" href="/pl/request_course"> Course Requests </a> `
             : ''}
-          <a class="dropdown-item" href="${config.urlPrefix}/settings">Settings</a>
+          <a class="dropdown-item" href="/pl/settings">Settings</a>
           <a
             class="dropdown-item news-item-link"
             href="${urlPrefix}/news_items"
@@ -313,7 +315,7 @@ function UserDropdownMenu({
               : ''}
           </a>
 
-          <a class="dropdown-item" href="${config.urlPrefix}/logout">Log out</a>
+          <a class="dropdown-item" href="/pl/logout">Log out</a>
         </div>
       </li>
     </ul>
@@ -367,8 +369,8 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the authenticated user is an administrator.
-  if (course?.example_course && !authz_data?.authn_is_administrator) {
+  // user if the authenticated user is an administrator or we are in development mode.
+  if (course?.example_course && !config.devMode && !authz_data?.authn_is_administrator) {
     return '';
   }
 
@@ -394,15 +396,17 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   let studentLink = '#';
   if (viewType === 'instructor') {
     if (assessment?.id) {
-      studentLink = `${config.urlPrefix}/course_instance/${course_instance.id}/assessment/${assessment.id}`;
+      studentLink = `/pl/course_instance/${course_instance.id}/assessment/${assessment.id}`;
     } else {
-      studentLink = `${config.urlPrefix}/course_instance/${course_instance.id}/assessments`;
+      studentLink = `/pl/course_instance/${course_instance.id}/assessments`;
     }
   } else {
     if (question?.id) {
       instructorLink = `${urlPrefix}/instructor/question/${question.id}`;
     } else if (assessment_instance?.assessment_id) {
       instructorLink = `${urlPrefix}/instructor/assessment/${assessment_instance.assessment_id}`;
+    } else if (assessment?.id) {
+      instructorLink = `${urlPrefix}/instructor/assessment/${assessment.id}`;
     } else {
       instructorLink = `${urlPrefix}/instructor/instance_admin`;
     }
@@ -465,7 +469,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   }
 
   return html`
-    ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
+    ${authz_data?.overrides?.length > 0 && authnViewTypeMenuChecked === 'instructor'
       ? html`
           <a class="dropdown-item" href="${instructorLink}" id="navbar-reset-view">
             Reset to default staff view
@@ -485,7 +489,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
     >
       <span class="${authnViewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">&check;</span>
       <span class="ps-3">
-        ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
+        ${authz_data?.overrides?.length > 0 && authnViewTypeMenuChecked === 'instructor'
           ? 'Modified staff'
           : 'Staff'}
         view <span class="badge text-bg-success">staff</span>
@@ -559,7 +563,7 @@ function AuthnOverrides({
   const { authz_data, urlPrefix, course, course_instance } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the authenticated user is an administrator.
+  // user if the authenticated user is an administrator or we are in development mode.
   if (course?.example_course && !config.devMode && !authz_data?.authn_is_administrator) {
     return '';
   }
@@ -584,9 +588,9 @@ function AuthnOverrides({
     // It is ok to use the instructor route only to the effectiveUser page - this will redirect
     // to the student route if necessary.
     if (course_instance) {
-      effectiveUserUrl = `${config.urlPrefix}/course_instance/${course_instance.id}/instructor/effectiveUser`;
+      effectiveUserUrl = `/pl/course_instance/${course_instance.id}/instructor/effectiveUser`;
     } else {
-      effectiveUserUrl = `${config.urlPrefix}/course/${course.id}/effectiveUser`;
+      effectiveUserUrl = `/pl/course/${course.id}/effectiveUser`;
     }
   }
 
@@ -610,7 +614,7 @@ function AuthnOverrides({
       </button>
     </form>
 
-    ${authz_data.overrides
+    ${authz_data?.overrides?.length > 0
       ? html`
           <div class="dropdown-item-text">
             <div class="list-group small text-nowrap">
@@ -654,7 +658,7 @@ function NavbarPlain({ resLocals, navPage }: { resLocals: Record<string, any>; n
 
   return html`
     <li class="nav-item ${navPage === 'admin' ? 'active' : ''}">
-      <a class="nav-link" href="${config.urlPrefix}/administrator/admins">Admin</a>
+      <a class="nav-link" href="/pl/administrator/admins">Admin</a>
     </li>
   `;
 }
@@ -716,12 +720,7 @@ function NavbarButtons({
     `;
   }
 
-  const allNavbarButtons: {
-    text: string;
-    href: string;
-  }[] = [];
-
-  allNavbarButtons.push({ text: 'Home', href: '/' });
+  const allNavbarButtons = [{ text: 'Home', href: '/' }];
 
   if (resLocals.is_administrator) {
     allNavbarButtons.push({ text: 'Global Admin', href: '/pl/administrator/admins' });
@@ -928,7 +927,7 @@ function NavbarInstructor({
               !(navSubPage === 'assessments' || navSubPage === 'gradebook')
                 ? 'active'
                 : ''}"
-              href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor/instance_admin"
+              href="/pl/course_instance/${course_instance.id}/instructor/instance_admin"
             >
               ${course_instance.short_name}
             </a>

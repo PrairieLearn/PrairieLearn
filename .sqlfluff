@@ -5,23 +5,20 @@ large_file_skip_byte_limit = 0
 sql_file_exts = .sql
 exclude_rules = aliasing.column,
     aliasing.expression,
-    aliasing.self_alias.column,
     aliasing.table,
-    aliasing.unique.column,
-    aliasing.unique.table,
+    # False positives with to_jsonb(ALIAS). See https://github.com/sqlfluff/sqlfluff/issues/7235
     aliasing.unused,
+    # TODO: Consider enabling this.
+    aliasing.unique.table,
+    # We are fine with using SELECT * in queries.
     ambiguous.column_count,
-    ambiguous.column_references,
     ambiguous.join,
-    ambiguous.order_by,
+    # TODO: Consider enabling this.
+    ambiguous.order_by_limit,
     capitalisation.functions,
     capitalisation.identifiers,
-    capitalisation.keywords,
-    capitalisation.literals,
     capitalisation.types,
     convention.casting_style,
-    convention.count_rows,
-    convention.left_join,
     layout.cte_newline,
     layout.functions,
     layout.indent,
@@ -33,14 +30,12 @@ exclude_rules = aliasing.column,
     references.from,
     references.keywords,
     references.qualification,
-    references.quoting,
     structure.column_order,
     structure.distinct,
+    # While explicit, this provides clarity.
     structure.else_null,
     structure.join_condition_order,
-    structure.simple_case,
-    structure.subquery,
-    structure.unused_cte,
+    # False positive -- see https://github.com/sqlfluff/sqlfluff/issues/7234
     structure.unused_join,
     structure.using
 

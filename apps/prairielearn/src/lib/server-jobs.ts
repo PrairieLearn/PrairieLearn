@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import { execa } from 'execa';
@@ -5,7 +6,7 @@ import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
@@ -31,6 +32,7 @@ interface CreateServerJobOptions {
 interface ServerJobExecOptions {
   cwd: string;
   env?: NodeJS.ProcessEnv;
+  cancelSignal?: AbortSignal;
 }
 
 export interface ServerJobResult {
@@ -124,13 +126,13 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
     const start = performance.now();
-    let didOutput = false;
+    let didOutput = false as boolean;
     const proc2 = execa(file, args, {
       ...options,
       all: true,
     });
-    proc2.all?.setEncoding('utf-8');
-    proc2.all?.on('data', (data) => {
+    proc2.all.setEncoding('utf-8');
+    proc2.all.on('data', (data) => {
       didOutput = true;
       this.addToOutput(data);
     });
@@ -181,7 +183,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
    */
   executeInBackground(fn: ServerJobExecutionFunction): void {
     this.checkAndMarkStarted();
-    this.executeInternal(fn, false);
+    void this.executeInternal(fn, false);
   }
 
   private checkAndMarkStarted() {
@@ -256,7 +258,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
     delete liveJobs[this.jobId];
 
-    await queryAsync(sql.update_job_on_finish, {
+    await execute(sql.update_job_on_finish, {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
@@ -334,6 +336,7 @@ export async function selectJobsByJobSequenceId(jobSequenceId: string): Promise<
 */
 
 export function init() {
+  assert(socketServer.io);
   socketServer.io.on('connection', connection);
 
   // Start a periodic task to heartbeat all live jobs. We don't use a cronjob
@@ -342,7 +345,7 @@ export function init() {
     const jobIds = Object.keys(liveJobs);
     if (jobIds.length === 0) return;
 
-    queryAsync(sql.update_heartbeats, { job_ids: jobIds }).catch((err) => {
+    execute(sql.update_heartbeats, { job_ids: jobIds }).catch((err) => {
       Sentry.captureException(err);
       logger.error('Error updating heartbeats for live server jobs', err);
     });
@@ -379,7 +382,8 @@ export function connection(socket) {
     queryRow(sql.select_job, { job_id: msg.job_id }, JobSchema).then(
       (job) => {
         const status = job.status;
-        const output = ansiToHtml(liveJobs[msg.job_id]?.output ?? job.output);
+        const liveJob = msg.job_id in liveJobs ? liveJobs[msg.job_id] : null;
+        const output = ansiToHtml(liveJob?.output ?? job.output);
         callback({ status, output });
       },
       (err) => {
@@ -439,7 +443,7 @@ export async function errorAbandonedJobs() {
   for (const row of abandonedJobs) {
     logger.debug('Job abandoned by server, id: ' + row.id);
     try {
-      await queryAsync(sql.update_job_on_error, {
+      await execute(sql.update_job_on_error, {
         job_id: row.id,
         output: null,
         error_message: 'Job abandoned by server',
@@ -448,16 +452,16 @@ export async function errorAbandonedJobs() {
       Sentry.captureException(err);
       logger.error('errorAbandonedJobs: error updating job on error', err);
     } finally {
-      socketServer.io.to('job-' + row.id).emit('update');
+      socketServer.io!.to('job-' + row.id).emit('update');
       if (row.job_sequence_id != null) {
-        socketServer.io.to('jobSequence-' + row.job_sequence_id).emit('update');
+        socketServer.io!.to('jobSequence-' + row.job_sequence_id).emit('update');
       }
     }
   }
 
   const abandonedJobSequences = await queryRows(sql.error_abandoned_job_sequences, IdSchema);
   abandonedJobSequences.forEach(function (job_sequence_id) {
-    socketServer.io.to('jobSequence-' + job_sequence_id).emit('update');
+    socketServer.io!.to('jobSequence-' + job_sequence_id).emit('update');
   });
 }
 

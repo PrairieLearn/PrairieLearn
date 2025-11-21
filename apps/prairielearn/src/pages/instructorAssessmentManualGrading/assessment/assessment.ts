@@ -6,8 +6,8 @@ import { stringify } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRows,
   runInTransactionAsync,
@@ -16,10 +16,10 @@ import {
 import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
-import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
@@ -44,7 +44,7 @@ router.get(
     );
     const num_open_instances = questions[0]?.num_open_instances || 0;
     const courseStaff = await selectCourseInstanceGraderStaff({
-      course_instance_id: res.locals.course_instance.id,
+      course_instance: res.locals.course_instance,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     res.send(
@@ -77,7 +77,7 @@ router.post(
       const allowedGraderIds = new Set(
         (
           await selectCourseInstanceGraderStaff({
-            course_instance_id: res.locals.course_instance.id,
+            course_instance: res.locals.course_instance,
           })
         ).map((user) => user.user_id),
       );
@@ -107,7 +107,7 @@ router.post(
         // number of instances as the others, and that is expected.
         const numInstancesPerGrader = Math.ceil(numInstancesToGrade / assignedGraderIds.length);
         for (const graderId of assignedGraderIds) {
-          await queryAsync(sql.update_instance_question_graders, {
+          await execute(sql.update_instance_question_graders, {
             assessment_id: res.locals.assessment.id,
             unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
             assigned_grader: graderId,
@@ -147,7 +147,8 @@ router.post(
         await aiGrade({
           question: row.question,
           course: res.locals.course,
-          course_instance_id: assessment.course_instance_id,
+          course_instance: res.locals.course_instance,
+          assessment,
           assessment_question: row.assessment_question,
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,

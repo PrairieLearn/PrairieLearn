@@ -23,7 +23,7 @@ import {
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
-import type { ResLocalsAuthnUser } from './authn.js';
+import type { ResLocalsAuthnUser } from './authn.types.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -42,7 +42,6 @@ import {
   GroupConfigSchema,
   IdSchema,
   type InstanceQuestion,
-  IssueSchema,
   type Question,
   type Submission,
   SubmissionSchema,
@@ -58,19 +57,16 @@ import {
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { selectRubricData } from './manualGrading.js';
-import type { RubricData } from './manualGrading.types.js';
-import type { SubmissionPanels } from './question-render.types.js';
+import {
+  IssueRenderDataSchema,
+  type QuestionUrls,
+  type ResLocalsInstanceQuestionRenderAdded,
+  type ResLocalsQuestionRenderAdded,
+  type SubmissionPanels,
+} from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const IssueRenderDataSchema = IssueSchema.extend({
-  formatted_date: z.string().nullable(),
-  user_uid: z.string().nullable(),
-  user_name: z.string().nullable(),
-  user_email: z.string().nullable(),
-});
-type IssueRenderData = z.infer<typeof IssueRenderDataSchema>;
 
 type InstanceQuestionWithAllowGrade = InstanceQuestion & {
   allow_grade_left_ms: number;
@@ -143,8 +139,8 @@ async function render(
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
   // user information may not be populated when rendering a panel.
-  const user_id = locals.user && locals.user.user_id ? locals.user.user_id : null;
-  const authn_user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
+  const user_id = locals.user?.user_id ?? null;
+  const authn_user_id = locals.authn_user?.user_id ?? null;
   await writeCourseIssues(
     courseIssues,
     variant,
@@ -154,21 +150,6 @@ async function render(
     courseData,
   );
   return data;
-}
-
-interface QuestionUrls {
-  questionUrl: string;
-  newVariantUrl: string;
-  tryAgainUrl: string;
-  reloadUrl: string;
-  clientFilesQuestionUrl: string;
-  calculationQuestionFileUrl: string;
-  calculationQuestionGeneratedFileUrl: string;
-  clientFilesCourseUrl: string;
-  clientFilesQuestionGeneratedFileUrl: string;
-  baseUrl: string;
-  externalImageCaptureUrl: string | null;
-  workspaceUrl?: string;
 }
 
 /**
@@ -347,7 +328,7 @@ function buildLocals({
         locals.showTrueAnswer = true;
       }
     }
-    if (!assessment.allow_real_time_grading) {
+    if (assessment_question.allow_real_time_grading === false) {
       locals.showGradeButton = false;
     }
     if (instance_question.allow_grade_left_ms > 0) {
@@ -363,7 +344,7 @@ function buildLocals({
     locals.showGradeButton = false;
     locals.showSaveButton = false;
     locals.allowAnswerEditing = false;
-    if (assessment && assessment.type === 'Homework') {
+    if (assessment?.type === 'Homework') {
       locals.showTryAgainButton = true;
       locals.showTrueAnswer = true;
     }
@@ -381,7 +362,7 @@ function buildLocals({
   if (
     assessment_question
       ? !assessment_question.max_auto_points && assessment_question.max_manual_points
-      : question?.grading_method === 'Manual'
+      : question.grading_method === 'Manual'
   ) {
     locals.showGradeButton = false;
   }
@@ -397,7 +378,7 @@ function buildLocals({
   }
 
   // Manually disable correct answer panel
-  if (!question?.show_correct_answer) {
+  if (!question.show_correct_answer) {
     locals.showTrueAnswer = false;
   }
 
@@ -408,31 +389,6 @@ function buildLocals({
 
   return locals;
 }
-
-// All properties that are added to the locals by `getAndRenderVariant`.
-interface ResLocalsQuestionRenderAdded {
-  question_is_shared: boolean;
-  variant: Variant;
-  urls: QuestionUrls;
-  showTrueAnswer: boolean;
-  submission: SubmissionForRender | null;
-  submissions: SubmissionForRender[];
-  effectiveQuestionType: questionServers.EffectiveQuestionType;
-  extraHeadersHtml: string;
-  questionHtml: string;
-  submissionHtmls: string[];
-  answerHtml: string;
-  issues: IssueRenderData[];
-  questionJsonBase64: string | undefined;
-}
-
-interface ResLocalsInstanceQuestionRenderAdded {
-  rubric_data: RubricData | null;
-}
-
-export type ResLocalsQuestionRender = ResLocalsBuildLocals & ResLocalsQuestionRenderAdded;
-export type ResLocalsInstanceQuestionRender = ResLocalsQuestionRender &
-  ResLocalsInstanceQuestionRenderAdded;
 
 /**
  * Render all information needed for a question.
@@ -509,14 +465,13 @@ export async function getAndRenderVariant(
     } else {
       const require_open = !!locals.assessment && locals.assessment.type !== 'Exam';
       const instance_question_id = locals.instance_question?.id ?? null;
-      const course_instance_id = locals.course_instance_id ?? locals.course_instance?.id ?? null;
       const options = { variant_seed };
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
         locals.user.user_id,
         locals.authn_user.user_id,
-        course_instance_id,
+        locals.course_instance ?? null,
         locals.course,
         question_course,
         options,
@@ -566,7 +521,7 @@ export async function getAndRenderVariant(
   if (
     (locals.questionRenderContext === 'manual_grading' ||
       locals.questionRenderContext === 'ai_grading') &&
-    question?.show_correct_answer
+    question.show_correct_answer
   ) {
     newLocals.showTrueAnswer = true;
   }
@@ -614,7 +569,7 @@ export async function getAndRenderVariant(
     })) satisfies SubmissionForRender[];
   });
 
-  const submission = submissions[0] ?? null;
+  const submission = submissions.at(0) ?? null;
   locals.submissions = submissions;
   locals.submission = submission;
 
@@ -761,7 +716,6 @@ export async function renderPanelsForSubmission({
 
   const locals = {
     urlPrefix,
-    plainUrlPrefix: config.urlPrefix,
     questionRenderContext,
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     ...buildLocals({
@@ -870,7 +824,7 @@ export async function renderPanelsForSubmission({
       const group_info = await run(async () => {
         if (!assessment_instance?.group_id || !group_config) return null;
 
-        return await getGroupInfo(assessment_instance?.group_id, group_config);
+        return await getGroupInfo(assessment_instance.group_id, group_config);
       });
 
       panels.questionPanelFooter = QuestionFooterContent({

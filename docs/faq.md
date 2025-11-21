@@ -71,23 +71,14 @@ You need to give the student access to both the course instance itself for the c
 
 For example, suppose Fall 2017 is the completed semester, and it is now Spring 2018. We have one student (`student@example.com`) that needs to take the final exam from Fall 2017 in February 2018. We will extend the Fall 2017 course instance and final exam access to include February 2018, but only for `student@example.com`.
 
-First, edit `pl-exp101/courseInstance/Fa17/infoCourseInstance.json` to add a section for `student@example.com`:
+First, for the course instance, create a extension for the student:
 
-```json title="infoCourseInstance.json"
-{
-  "allowAccess": [
-    {
-      "startDate": "2017-08-19T00:00:01",
-      "endDate": "2017-12-31T23:59:59"
-    },
-    {
-      "uids": ["student@example.com"],
-      "startDate": "2018-02-01T00:00:01",
-      "endDate": "2018-02-28T23:59:59"
-    }
-  ]
-}
-```
+1. Go to the course instance's **Publishing** page (Admin → Publishing)
+2. Click **Add Extension** to create a new extension
+3. Enter the student's UID and set the new end date to February 28th, 2018.
+4. Save the extension
+
+This will allow the student to access the course instance beyond the original end date.
 
 Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoAssessment.json` to add a section for `student@example.com`:
 
@@ -307,7 +298,7 @@ To address this, there are a variety of different ways. In particular, we have:
 
 ## Why do special characters like `<` and `>` break my question display?
 
-The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more with [this escaping tool](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements.md#pl-code-element). Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
+The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more with [this escaping tool](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements/pl-code.md). Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
 
 ## Why can't I connect to PrairieLearn with Docker Toolbox?
 
@@ -315,7 +306,7 @@ Docker Toolbox is no longer supported. [Docker Community Edition](https://www.do
 
 ## How can I make a block that can be re-used in many questions?
 
-If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can use the [`<pl-template>` element](./elements.md#pl-template-element). This element allows you to define a template in one place and then use it in many questions.
+If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can use the [`<pl-template>` element](./elements/pl-template.md). This element allows you to define a template in one place and then use it in many questions.
 
 !!! danger
 
@@ -335,7 +326,7 @@ For example:
 </pl-hide-in-panel>
 ```
 
-For more information on this granular technique, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).
+For more information on this granular technique, see [the documentation for pl-hide-in-panel](elements/pl-hide-in-panel.md).
 
 ## I forgot to set `"credit":100` and now my students all have 0%. How do I fix this?
 

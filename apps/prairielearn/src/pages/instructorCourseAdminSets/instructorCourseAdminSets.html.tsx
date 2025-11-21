@@ -1,10 +1,10 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
-import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
+import { AssessmentSetHeadingHtml } from '../../components/AssessmentSetHeading.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type AssessmentSet } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorCourseAdminSets({
   resLocals,
@@ -58,7 +58,7 @@ export function InstructorCourseAdminSets({
                       </span>
                     </td>
                     <td class="align-middle">${assessment_set.name}</td>
-                    <td class="align-middle">${AssessmentSetHeading({ assessment_set })}</td>
+                    <td class="align-middle">${AssessmentSetHeadingHtml({ assessment_set })}</td>
                     <td class="align-middle">${assessment_set.color}</td>
                   </tr>
                 `;
