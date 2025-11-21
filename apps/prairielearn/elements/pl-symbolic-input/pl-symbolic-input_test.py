@@ -1,4 +1,5 @@
 import importlib
+import string
 
 import pytest
 
@@ -47,6 +48,27 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
             ["bla", "abla", "ab"],
             [],
             "ab abla bla bla abla",
+        ),
+        (  # Overlapping-match test
+            "a b a b",
+            False,
+            ["ab", "aba"],
+            [],
+            "aba b",
+        ),
+        (  # Longer-match test
+            "a b c a b d",
+            False,
+            ["ab", "abc"],
+            [],
+            "abc ab d",
+        ),
+        (  # Performance test
+            "a b " * 1000,
+            False,
+            ["ab", *list(string.ascii_lowercase)[2:]],
+            [],
+            "ab " * 1000,
         ),
         # Trig functions
         ("s i n ( x )", True, ["x"], [], "sin ( x )"),
