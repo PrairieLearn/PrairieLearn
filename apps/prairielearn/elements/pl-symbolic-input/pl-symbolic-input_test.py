@@ -34,6 +34,13 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
         # Greek letters
         ("Α", False, ["Α"], [], " Alpha "),  # noqa: RUF001
         ("ΑΑ0Α0ΑΑ", False, ["Α", "Α0"], [], " Alpha  Alpha0 Alpha0 Alpha  Alpha "),  # noqa: RUF001
+        (
+            "t h e t a s i n t h e t a c o s t h e t a",
+            True,
+            ["theta"],
+            [],
+            "theta sin theta cos theta",
+        ),
         # Trig functions
         ("s i n ( x )", True, ["x"], [], "sin ( x )"),
         ("s i n ( x )", False, ["x"], [], "s i n ( x )"),
