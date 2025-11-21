@@ -1,3 +1,4 @@
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import z from 'zod';
 
@@ -40,6 +41,7 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
+import { createContext, manualGradingAssessmentQuestionRouter } from './trpc.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -230,6 +232,15 @@ router.get(
         use_instance_question_groups,
       }),
     );
+  }),
+);
+
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: manualGradingAssessmentQuestionRouter,
+    createContext,
+    // TODO: needs `onError` handler?
   }),
 );
 

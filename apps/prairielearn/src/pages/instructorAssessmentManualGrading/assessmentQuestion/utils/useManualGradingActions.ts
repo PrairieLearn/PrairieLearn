@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createTRPCClient, httpLink } from '@trpc/client';
 
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
+import type { ManualGradingAssessmentQuestionRouter } from '../trpc.js';
 
 export type BatchActionData =
   | { assigned_grader: string | null }
@@ -29,6 +31,18 @@ interface UseManualGradingActionsParams {
   csrfToken: string;
   courseInstanceId: string;
 }
+
+const client = createTRPCClient<ManualGradingAssessmentQuestionRouter>({
+  links: [
+    httpLink({
+      // TODO: there might be a better way to do this?
+      url: typeof window === 'undefined' ? '' : window.location.pathname + '/trpc',
+      headers: {
+        'X-TRPC': 'true',
+      },
+    }),
+  ],
+});
 
 export function useManualGradingActions({
   csrfToken,
@@ -246,27 +260,7 @@ export function useManualGradingActions({
 
   const setAiGradingModeMutation = useMutation({
     mutationFn: async (value: boolean) => {
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          __csrf_token: csrfToken,
-          __action: 'set_ai_grading_mode',
-          value,
-        }),
-      });
-
-      if (response.status === 204) {
-        return null;
-      }
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error);
-      }
+      await client.setAiGradingMode.mutate({ enabled: value });
     },
   });
 
