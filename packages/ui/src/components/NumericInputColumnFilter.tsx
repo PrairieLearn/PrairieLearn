@@ -69,9 +69,23 @@ export function NumericInputColumnFilter({
         className="p-0"
       >
         <div class="p-3" style={{ minWidth: '240px' }}>
-          <label class="form-label fw-semibold mb-2" id={`${columnId}-filter-label`}>
-            {columnLabel}
-          </label>
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="form-label fw-semibold mb-0" id={`${columnId}-filter-label`}>
+              {columnLabel}
+            </label>
+            <button
+              type="button"
+              class={clsx(
+                'btn btn-link btn-sm text-decoration-none',
+                !hasActiveFilter && 'invisible',
+              )}
+              onClick={() => {
+                onChange({ filterValue: '', emptyOnly: false });
+              }}
+            >
+              Clear
+            </button>
+          </div>
           <input
             type="text"
             class={clsx('form-control form-control-sm', isInvalid && 'is-invalid')}
@@ -121,19 +135,6 @@ export function NumericInputColumnFilter({
               Empty values
             </label>
           </div>
-          <button
-            type="button"
-            class={clsx('btn btn-sm btn-link text-decoration-none mt-2 p-0', {
-              // Hide the clear button if no filters are applied.
-              // Use `visibility` instead of conditional rendering to avoid layout shift.
-              invisible: !hasActiveFilter,
-            })}
-            onClick={() => {
-              onChange({ filterValue: '', emptyOnly: false });
-            }}
-          >
-            Clear
-          </button>
         </div>
       </Dropdown.Menu>
     </Dropdown>
