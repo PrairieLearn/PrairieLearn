@@ -41,6 +41,13 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
             [],
             "theta sin theta cos theta",
         ),
+        (
+            "a b a b l a b l a b l a a b l a",
+            False,
+            ["bla", "abla", "ab"],
+            [],
+            "ab abla bla bla abla",
+        ),
         # Trig functions
         ("s i n ( x )", True, ["x"], [], "sin ( x )"),
         ("s i n h ( s i n x )", True, ["x"], [], "sinh ( sin x )"),
