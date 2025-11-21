@@ -597,6 +597,9 @@ def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
     result = []
     skip_index = 0
 
+    # Pre-compute spaced tokens and lengths to avoid repeated computation in the loop
+    spaced_tokens = [(token, " ".join(token), len(" ".join(token))) for token in tokens]
+
     # Tokens can overlap (e.g., "alpha" and "asin"), so we need to carefully
     # traverse left-to-right instead of just search/replacing tokens
     for i in range(len(text)):
@@ -604,14 +607,11 @@ def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
             continue
 
         # For each character, check if we have a spaced token match coming up
-        for token in tokens:
-            spaced_token = " ".join(token)
-            if text[i : i + len(spaced_token)] == spaced_token:
+        for token, spaced_token, length in spaced_tokens:
+            if text[i : i + length] == spaced_token:
                 # for a match, add un-spaced token to result and skip the remaining token characters
                 result.append(token)
-                skip_index = i + len(spaced_token)
-                # Skip any other tokens (tokens are sorted by descending length; this prevents
-                # multiple matches if tokens are prefixes, like "sin" and "sinh")
+                skip_index = i + length
                 break
 
         # We use the skip_index as an indicator whether the previous loop found a match
