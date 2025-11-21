@@ -43,6 +43,7 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
         ),
         # Trig functions
         ("s i n ( x )", True, ["x"], [], "sin ( x )"),
+        ("s i n h ( s i n x )", True, ["x"], [], "sinh ( sin x )"),
         ("s i n ( x )", False, ["x"], [], "s i n ( x )"),
         ("s i n ( Α )", False, ["Α"], [], "s i n (  Alpha  )"),  # noqa: RUF001
         # Variables
