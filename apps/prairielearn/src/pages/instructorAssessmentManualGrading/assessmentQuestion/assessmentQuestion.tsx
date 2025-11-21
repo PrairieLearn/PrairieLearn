@@ -4,7 +4,7 @@ import z from 'zod';
 
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
@@ -16,23 +16,15 @@ import {
   fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
-  deleteAiGradingJobs,
-  setAiGradingMode,
-} from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
-import {
-  deleteAiInstanceQuestionGroups,
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
-import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
 import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
 import { features } from '../../../lib/features/index.js';
-import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getUrl } from '../../../lib/url.js';
@@ -166,35 +158,6 @@ router.get(
 );
 
 router.get(
-  '/instances.json',
-  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
-    if (req.accepts('html')) {
-      throw new error.HttpStatusError(406, 'Not Acceptable');
-    }
-
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
-
-    const instance_questions = await queryRows(
-      sql.select_instance_questions_manual_grading,
-      {
-        assessment_id: res.locals.assessment.id,
-        assessment_question_id: res.locals.assessment_question.id,
-      },
-      InstanceQuestionRowSchema,
-    );
-
-    res.send({
-      instance_questions: await fillInstanceQuestionColumnEntries(
-        instance_questions,
-        res.locals.assessment_question,
-      ),
-    });
-  }),
-);
-
-router.get(
   '/next_ungraded',
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
@@ -255,57 +218,7 @@ router.post(
       throw new error.HttpStatusError(406, 'Not Acceptable');
     }
 
-    if (req.body.__action === 'batch_action') {
-      if (req.body.batch_action === 'ai_grade_assessment_selected') {
-        if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
-          throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-        }
-
-        const instance_question_ids = Array.isArray(req.body.instance_question_id)
-          ? req.body.instance_question_id
-          : [req.body.instance_question_id];
-        const job_sequence_id = await aiGrade({
-          question: res.locals.question,
-          course: res.locals.course,
-          course_instance: res.locals.course_instance,
-          assessment: res.locals.assessment,
-          assessment_question: res.locals.assessment_question,
-          urlPrefix: res.locals.urlPrefix,
-          authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
-          mode: 'selected',
-          instance_question_ids,
-        });
-
-        res.send({ job_sequence_id });
-        return;
-      } else {
-        const action_data = req.body.batch_action_data ?? {};
-        const instance_question_ids = Array.isArray(req.body.instance_question_id)
-          ? req.body.instance_question_id
-          : [req.body.instance_question_id];
-        if (action_data?.assigned_grader != null) {
-          const courseStaff = await selectCourseInstanceGraderStaff({
-            course_instance: res.locals.course_instance,
-          });
-          if (!courseStaff.some((staff) => idsEqual(staff.user_id, action_data.assigned_grader))) {
-            throw new error.HttpStatusError(
-              400,
-              'Assigned grader does not have Student Data Editor permission',
-            );
-          }
-        }
-        await execute(sql.update_instance_questions, {
-          assessment_question_id: res.locals.assessment_question.id,
-          instance_question_ids,
-          update_requires_manual_grading: 'requires_manual_grading' in action_data,
-          requires_manual_grading: !!action_data?.requires_manual_grading,
-          update_assigned_grader: 'assigned_grader' in action_data,
-          assigned_grader: action_data?.assigned_grader,
-        });
-        res.sendStatus(204);
-      }
-    } else if (req.body.__action === 'edit_question_points') {
+    if (req.body.__action === 'edit_question_points') {
       const result = await manualGrading.updateInstanceQuestionScore(
         res.locals.assessment,
         req.body.instance_question_id,
@@ -327,32 +240,6 @@ router.post(
       } else {
         res.sendStatus(204);
       }
-    } else if (
-      ['ai_grade_assessment', 'ai_grade_assessment_graded', 'ai_grade_assessment_all'].includes(
-        req.body.__action,
-      )
-    ) {
-      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
-        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-      }
-
-      const job_sequence_id = await aiGrade({
-        question: res.locals.question,
-        course: res.locals.course,
-        course_instance: res.locals.course_instance,
-        assessment: res.locals.assessment,
-        assessment_question: res.locals.assessment_question,
-        urlPrefix: res.locals.urlPrefix,
-        authn_user_id: res.locals.authn_user.user_id,
-        user_id: res.locals.user.user_id,
-        mode: run(() => {
-          if (req.body.__action === 'ai_grade_assessment_graded') return 'human_graded';
-          if (req.body.__action === 'ai_grade_assessment_all') return 'all';
-          throw new Error(`Unknown action: ${req.body.__action}`);
-        }),
-      });
-
-      res.json({ job_sequence_id });
     } else if (req.body.__action === 'modify_rubric_settings') {
       try {
         await manualGrading.updateAssessmentQuestionRubric(

@@ -12,7 +12,6 @@ import {
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 import { Alert, Button, Dropdown, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { z } from 'zod';
 
 import { TanstackTableCard, useShiftClickCheckbox } from '@prairielearn/ui';
 
@@ -36,16 +35,17 @@ import {
   GRADING_STATUS_VALUES,
   type GradingStatusValue,
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
-  InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
   type InstanceQuestionRowWithAIGradingStats,
 } from '../assessmentQuestion.types.js';
 import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
+import { client } from '../utils/trpc.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
+import { QueryErrors } from './QueryErrors.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];
@@ -73,16 +73,7 @@ export interface AssessmentQuestionTableProps {
   aiGradingStats: AiGradingGeneralStats | null;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState | null) => void;
-  mutations: {
-    batchActionMutation: ReturnType<typeof useManualGradingActions>['batchActionMutation'];
-    handleBatchAction: ReturnType<typeof useManualGradingActions>['handleBatchAction'];
-    deleteAiGradingJobsMutation: ReturnType<
-      typeof useManualGradingActions
-    >['deleteAiGradingJobsMutation'];
-    deleteAiGroupingsMutation: ReturnType<
-      typeof useManualGradingActions
-    >['deleteAiGroupingsMutation'];
-  };
+  mutations: ReturnType<typeof useManualGradingActions>;
 }
 
 export function AssessmentQuestionTable({
@@ -176,21 +167,7 @@ export function AssessmentQuestionTable({
     isError: isInstanceQuestionsError,
   } = useQuery<InstanceQuestionRow[]>({
     queryKey: ['instance-questions'],
-    queryFn: async () => {
-      const res = await fetch(window.location.pathname + '/instances.json', {
-        headers: {
-          Accept: 'application/json',
-        },
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error);
-      }
-      if (!data.instance_questions) throw new Error('Invalid response format');
-      const parsedData = z.array(InstanceQuestionRowSchema).safeParse(data.instance_questions);
-      if (!parsedData.success) throw new Error('Failed to parse instance questions');
-      return parsedData.data;
-    },
+    queryFn: async () => await client.instances.query(),
     staleTime: Infinity,
     initialData: initialInstanceQuestionsInfo,
   });
@@ -485,10 +462,11 @@ export function AssessmentQuestionTable({
   }, [instanceQuestionsInfo, selectedIds]);
 
   const {
-    batchActionMutation,
-    handleBatchAction,
     deleteAiGradingJobsMutation,
     deleteAiGroupingsMutation,
+    setRequiresManualGradingMutation,
+    setAssignedGraderMutation,
+    gradeSubmissionsMutation,
   } = mutations;
 
   const columnFiltersComponents = createColumnFilters({
@@ -531,36 +509,7 @@ export function AssessmentQuestionTable({
           }}
         />
       </div>
-      {batchActionMutation.isError && (
-        <Alert
-          variant="danger"
-          class="mb-3"
-          dismissible
-          onClose={() => batchActionMutation.reset()}
-        >
-          <strong>Error:</strong> {batchActionMutation.error.message}
-        </Alert>
-      )}
-      {deleteAiGradingJobsMutation.isError && (
-        <Alert
-          variant="danger"
-          class="mb-3"
-          dismissible
-          onClose={() => deleteAiGradingJobsMutation.reset()}
-        >
-          <strong>Error:</strong> {deleteAiGradingJobsMutation.error.message}
-        </Alert>
-      )}
-      {deleteAiGroupingsMutation.isError && (
-        <Alert
-          variant="danger"
-          class="mb-3"
-          dismissible
-          onClose={() => deleteAiGroupingsMutation.reset()}
-        >
-          <strong>Error:</strong> {deleteAiGroupingsMutation.error.message}
-        </Alert>
-      )}
+      <QueryErrors queries={[deleteAiGradingJobsMutation, deleteAiGroupingsMutation]} />
       {deleteAiGradingJobsMutation.isSuccess && (
         <Alert
           variant="success"
@@ -632,11 +581,7 @@ export function AssessmentQuestionTable({
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
-                      onClick={() =>
-                        batchActionMutation.mutate({
-                          action: 'ai_grade_assessment_graded',
-                        })
-                      }
+                      onClick={() => gradeSubmissionsMutation.mutate({ selection: 'human_graded' })}
                     >
                       <div class="d-flex justify-content-between align-items-center w-100">
                         <span>Grade all human-graded</span>
@@ -645,12 +590,7 @@ export function AssessmentQuestionTable({
                     </Dropdown.Item>
                     <Dropdown.Item
                       disabled={selectedIds.length === 0}
-                      onClick={() =>
-                        handleBatchAction(
-                          { batch_action: 'ai_grade_assessment_selected' },
-                          selectedIds,
-                        )
-                      }
+                      onClick={() => gradeSubmissionsMutation.mutate({ selection: selectedIds })}
                     >
                       <div class="d-flex justify-content-between align-items-center w-100">
                         <span>Grade selected</span>
@@ -658,11 +598,7 @@ export function AssessmentQuestionTable({
                       </div>
                     </Dropdown.Item>
                     <Dropdown.Item
-                      onClick={() =>
-                        batchActionMutation.mutate({
-                          action: 'ai_grade_assessment_all',
-                        })
-                      }
+                      onClick={() => gradeSubmissionsMutation.mutate({ selection: 'all' })}
                     >
                       <div class="d-flex justify-content-between align-items-center w-100">
                         <span>Grade all</span>
@@ -738,7 +674,10 @@ export function AssessmentQuestionTable({
                       <Dropdown.Item
                         key={grader.user_id}
                         onClick={() =>
-                          handleBatchAction({ assigned_grader: grader.user_id }, selectedIds)
+                          setAssignedGraderMutation.mutate({
+                            assigned_grader: grader.user_id,
+                            instance_question_ids: selectedIds,
+                          })
                         }
                       >
                         <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
@@ -746,7 +685,12 @@ export function AssessmentQuestionTable({
                     ))}
                     <Dropdown.Item
                       key="remove-grader-assignment"
-                      onClick={() => handleBatchAction({ assigned_grader: null }, selectedIds)}
+                      onClick={() =>
+                        setAssignedGraderMutation.mutate({
+                          assigned_grader: null,
+                          instance_question_ids: selectedIds,
+                        })
+                      }
                     >
                       <i class="fas fa-user-slash" /> Remove grader assignment
                     </Dropdown.Item>
@@ -754,7 +698,10 @@ export function AssessmentQuestionTable({
                     <Dropdown.Item
                       key="tag-as-required-grading"
                       onClick={() =>
-                        handleBatchAction({ requires_manual_grading: true }, selectedIds)
+                        setRequiresManualGradingMutation.mutate({
+                          requires_manual_grading: true,
+                          instance_question_ids: selectedIds,
+                        })
                       }
                     >
                       <i class="fas fa-tag" /> Tag as required grading
@@ -762,7 +709,10 @@ export function AssessmentQuestionTable({
                     <Dropdown.Item
                       key="tag-as-graded"
                       onClick={() =>
-                        handleBatchAction({ requires_manual_grading: false }, selectedIds)
+                        setRequiresManualGradingMutation.mutate({
+                          requires_manual_grading: false,
+                          instance_question_ids: selectedIds,
+                        })
                       }
                     >
                       <i class="fas fa-check-square" /> Tag as graded
