@@ -1,22 +1,15 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { QueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'preact/compat';
-import { useForm } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { CourseInstancePublishingExtensionWithUsers } from '../instructorInstanceAdminPublishing.types.js';
 import {
   dateToPlainDateTime,
   nowRoundedToSeconds,
   plainDateTimeStringToDate,
 } from '../utils/dateUtils.js';
-
-import { PublishingExtensions } from './PublishingExtensions.js';
-
-const queryClient = new QueryClient();
 
 type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
 
@@ -42,65 +35,49 @@ function computeStatus(startDate: Date | null, endDate: Date | null): Publishing
   return 'unpublished';
 }
 
-interface PublishingFormValues {
+export interface PublishingFormValues {
   start_date: string;
   end_date: string;
 }
 
+/**
+ * Form for editing publishing settings for a course instance.
+ *
+ * This component must be wrapped in a <FormProvider> from react-hook-form. The parent component's form state should extend from
+ * PublishingFormValues.
+ *
+ * @param params
+ * @param params.courseInstance - The course instance to edit.
+ * @param params.canEdit - Whether the user can edit the publishing settings.
+ * @param params.originalStartDate - The original start date of the course instance.
+ * @param params.originalEndDate - The original end date of the course instance.
+ */
 export function CourseInstancePublishingForm({
   courseInstance,
   canEdit,
-  csrfToken,
-  origHash,
-  publishingExtensions,
-  isDevMode,
+  originalStartDate,
+  originalEndDate,
 }: {
   courseInstance: StaffCourseInstance;
   canEdit: boolean;
-  csrfToken: string;
-  origHash: string | null;
-  publishingExtensions: CourseInstancePublishingExtensionWithUsers[];
-  isDevMode: boolean;
+  originalStartDate: Date | null;
+  originalEndDate: Date | null;
 }) {
-  const originalStartDate = courseInstance.publishing_start_date;
-  const originalEndDate = courseInstance.publishing_end_date;
-
-  const originalStatus = computeStatus(
-    courseInstance.publishing_start_date,
-    courseInstance.publishing_end_date,
-  );
+  const originalStatus = computeStatus(originalStartDate, originalEndDate);
 
   const [selectedStatus, setSelectedStatus] = useState<PublishingStatus>(originalStatus);
-
-  const defaultValues: PublishingFormValues = {
-    start_date: originalStartDate
-      ? dateToPlainDateTime(originalStartDate, courseInstance.display_timezone).toString()
-      : '',
-    end_date: originalEndDate
-      ? dateToPlainDateTime(originalEndDate, courseInstance.display_timezone).toString()
-      : '',
-  };
 
   const {
     register,
     watch,
     setValue,
     trigger,
-    formState: { errors, isDirty, isValid },
-  } = useForm<PublishingFormValues>({
-    mode: 'onChange',
-    defaultValues,
-  });
+    reset,
+    formState: { errors, isDirty },
+  } = useFormContext<PublishingFormValues>();
 
   const startDate = watch('start_date');
   const endDate = watch('end_date');
-
-  const onSubmit = (e: SubmitEvent) => {
-    if (!isValid) {
-      e.preventDefault();
-      return;
-    }
-  };
 
   // Update form values when status changes
   const handleStatusChange = (newStatus: PublishingStatus) => {
@@ -177,7 +154,8 @@ export function CourseInstancePublishingForm({
         } else if (
           currentEndDate === null ||
           Temporal.PlainDateTime.compare(currentEndDate, nowTemporal) <= 0 ||
-          Temporal.PlainDateTime.compare(updatedStartDate!, currentEndDate) >= 0
+          (updatedStartDate &&
+            Temporal.PlainDateTime.compare(updatedStartDate, currentEndDate) >= 0)
         ) {
           updatedEndDate = eighteenWeeksLater;
         }
@@ -262,344 +240,284 @@ export function CourseInstancePublishingForm({
   return (
     <>
       <div class="mb-4">
-        <h4 class="mb-4">Publishing</h4>
-
-        {!canEdit && origHash !== null && (
-          <div class="alert alert-info" role="alert">
-            You do not have permission to edit publishing settings.
+        {/* Unpublished */}
+        <div class="mb-3">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="status"
+              id="status-unpublished"
+              value="unpublished"
+              checked={selectedStatus === 'unpublished'}
+              disabled={!canEdit}
+              onChange={(e) => {
+                if (e.currentTarget.checked) {
+                  handleStatusChange('unpublished');
+                }
+              }}
+            />
+            <label class="form-check-label" for="status-unpublished">
+              Unpublished
+            </label>
           </div>
-        )}
-        {!canEdit && origHash === null && (
-          <div class="alert alert-warning" role="alert">
-            You cannot edit publishing settings because the <code>infoCourseInstance.json</code>{' '}
-            file does not exist.
-          </div>
-        )}
-
-        <form method="POST" onSubmit={onSubmit}>
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <input type="hidden" name="__action" value="update_publishing" />
-          <input type="hidden" name="orig_hash" value={origHash ?? ''} />
-
-          <div class="mb-4">
-            {/* Unpublished */}
-            <div class="mb-3">
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="radio"
-                  name="status"
-                  id="status-unpublished"
-                  value="unpublished"
-                  checked={selectedStatus === 'unpublished'}
-                  disabled={!canEdit}
-                  onChange={(e) => {
-                    if (e.currentTarget.checked) {
-                      handleStatusChange('unpublished');
-                    }
-                  }}
-                />
-                <label class="form-check-label" for="status-unpublished">
-                  Unpublished
-                </label>
+          {selectedStatus === 'unpublished' && (
+            <>
+              <input type="hidden" name="start_date" value={startDate} />
+              <input type="hidden" name="end_date" value={endDate} />
+              <div class="ms-4 mt-1 small text-muted">
+                Course is not accessible by any students
+                {startDate && ' except those with extensions'}.
+                {endDate && (
+                  <>
+                    <br />
+                    The course{' '}
+                    {plainDateTimeStringToDate(
+                      endDate,
+                      courseInstance.display_timezone,
+                    ).getTime() === originalEndDate?.getTime() && originalStatus === 'unpublished'
+                      ? 'was'
+                      : 'will be'}{' '}
+                    unpublished at{' '}
+                    <FriendlyDate
+                      date={plainDateTimeStringToDate(endDate, courseInstance.display_timezone)}
+                      timezone={courseInstance.display_timezone}
+                      tooltip={true}
+                      options={{ timeFirst: true }}
+                    />
+                    .
+                  </>
+                )}
               </div>
-              {selectedStatus === 'unpublished' && (
-                <>
-                  <input type="hidden" name="start_date" value={startDate} />
-                  <input type="hidden" name="end_date" value={endDate} />
-                  <div class="ms-4 mt-1 small text-muted">
-                    Course is not accessible by any students
-                    {startDate && ' except those with extensions'}.
-                    {endDate && (
-                      <>
-                        <br />
-                        The course{' '}
-                        {plainDateTimeStringToDate(
-                          endDate,
-                          courseInstance.display_timezone,
-                        ).getTime() === originalEndDate?.getTime() &&
-                        originalStatus === 'unpublished'
-                          ? 'was'
-                          : 'will be'}{' '}
-                        unpublished at{' '}
-                        <FriendlyDate
-                          date={plainDateTimeStringToDate(endDate, courseInstance.display_timezone)}
-                          timezone={courseInstance.display_timezone}
-                          tooltip={true}
-                          options={{ timeFirst: true }}
-                        />
-                        .
-                      </>
+            </>
+          )}
+        </div>
+
+        {/* Publish Scheduled */}
+        <div class="mb-3">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="status"
+              id="status-publish-scheduled"
+              value="publish_scheduled"
+              checked={selectedStatus === 'publish_scheduled'}
+              disabled={!canEdit}
+              onChange={(e) => {
+                if (e.currentTarget.checked) {
+                  handleStatusChange('publish_scheduled');
+                }
+              }}
+            />
+            <label class="form-check-label" for="status-publish-scheduled">
+              Scheduled to be published
+            </label>
+          </div>
+
+          {selectedStatus === 'publish_scheduled' && (
+            <>
+              {startDate && endDate && (
+                <div class="ms-4 mt-1 small text-muted">
+                  The course will be published at{' '}
+                  <FriendlyDate
+                    date={Temporal.PlainDateTime.from(startDate)}
+                    timezone={courseInstance.display_timezone}
+                    tooltip={true}
+                    options={{ timeFirst: true }}
+                  />{' '}
+                  and will be unpublished at{' '}
+                  <FriendlyDate
+                    date={Temporal.PlainDateTime.from(endDate)}
+                    timezone={courseInstance.display_timezone}
+                    tooltip={true}
+                    options={{ timeFirst: true }}
+                  />
+                  .
+                </div>
+              )}
+              <div class="ms-4 mt-2">
+                <div class="mb-3">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <label class="form-label mb-0" for="start_date">
+                      Start date
+                    </label>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        disabled={!startDate}
+                        onClick={() => handleAddWeek('start_date')}
+                      >
+                        +1 week
+                      </button>
                     )}
                   </div>
-                </>
-              )}
-            </div>
-
-            {/* Publish Scheduled */}
-            <div class="mb-3">
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="radio"
-                  name="status"
-                  id="status-publish-scheduled"
-                  value="publish_scheduled"
-                  checked={selectedStatus === 'publish_scheduled'}
-                  disabled={!canEdit}
-                  onChange={(e) => {
-                    if (e.currentTarget.checked) {
-                      handleStatusChange('publish_scheduled');
-                    }
-                  }}
-                />
-                <label class="form-check-label" for="status-publish-scheduled">
-                  Scheduled to be published
-                </label>
-              </div>
-
-              {selectedStatus === 'publish_scheduled' && (
-                <>
-                  {startDate && endDate && (
-                    <div class="ms-4 mt-1 small text-muted">
-                      The course will be published at{' '}
-                      <FriendlyDate
-                        date={Temporal.PlainDateTime.from(startDate)}
-                        timezone={courseInstance.display_timezone}
-                        tooltip={true}
-                        options={{ timeFirst: true }}
-                      />{' '}
-                      and will be unpublished at{' '}
-                      <FriendlyDate
-                        date={Temporal.PlainDateTime.from(endDate)}
-                        timezone={courseInstance.display_timezone}
-                        tooltip={true}
-                        options={{ timeFirst: true }}
-                      />
-                      .
-                    </div>
-                  )}
-                  <div class="ms-4 mt-2">
-                    <div class="mb-3">
-                      <div class="d-flex justify-content-between align-items-center">
-                        <label class="form-label mb-0" for="start_date">
-                          Start date
-                        </label>
-                        {canEdit && (
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            disabled={!startDate}
-                            onClick={() => handleAddWeek('start_date')}
-                          >
-                            +1 week
-                          </button>
-                        )}
-                      </div>
-                      <div class="input-group mt-2">
-                        <input
-                          type="datetime-local"
-                          class={clsx('form-control', errors.start_date && 'is-invalid')}
-                          id="start_date"
-                          step="1"
-                          disabled={!canEdit}
-                          {...register('start_date', {
-                            validate: validateStartDate,
-                            deps: ['end_date'],
-                          })}
-                        />
-                        <span class="input-group-text">{courseInstance.display_timezone}</span>
-                      </div>
-                      {errors.start_date && (
-                        <div class="text-danger small mt-1">{errors.start_date.message}</div>
-                      )}
-                    </div>
-
-                    <div class="mb-3">
-                      <div class="d-flex justify-content-between align-items-center">
-                        <label class="form-label mb-0" for="end_date">
-                          End date
-                        </label>
-                        {canEdit && (
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            disabled={!endDate}
-                            onClick={() => handleAddWeek('end_date')}
-                          >
-                            +1 week
-                          </button>
-                        )}
-                      </div>
-                      <div class="input-group mt-2">
-                        <input
-                          type="datetime-local"
-                          class={clsx('form-control', errors.end_date && 'is-invalid')}
-                          id="end_date"
-                          step="1"
-                          disabled={!canEdit}
-                          {...register('end_date', {
-                            validate: validateEndDate,
-                          })}
-                        />
-                        <span class="input-group-text">{courseInstance.display_timezone}</span>
-                      </div>
-                      {errors.end_date && (
-                        <div class="text-danger small mt-1">{errors.end_date.message}</div>
-                      )}
-                    </div>
+                  <div class="input-group mt-2">
+                    <input
+                      type="datetime-local"
+                      class={clsx('form-control', errors.start_date && 'is-invalid')}
+                      id="start_date"
+                      step="1"
+                      disabled={!canEdit}
+                      {...register('start_date', {
+                        validate: validateStartDate,
+                        deps: ['end_date'],
+                      })}
+                    />
+                    <span class="input-group-text">{courseInstance.display_timezone}</span>
                   </div>
-                </>
-              )}
-            </div>
-
-            {/* Published */}
-            <div class="mb-3">
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="radio"
-                  name="status"
-                  id="status-published"
-                  value="published"
-                  checked={selectedStatus === 'published'}
-                  disabled={!canEdit}
-                  onChange={(e) => {
-                    if (e.currentTarget.checked) {
-                      handleStatusChange('published');
-                    }
-                  }}
-                />
-                <label class="form-check-label" for="status-published">
-                  Published
-                </label>
-              </div>
-              {selectedStatus === 'published' && (
-                <>
-                  {startDate && endDate && (
-                    <div class="ms-4 mt-1 small text-muted">
-                      The course{' '}
-                      {plainDateTimeStringToDate(
-                        startDate,
-                        courseInstance.display_timezone,
-                      ).getTime() === originalStartDate?.getTime() && originalStatus === 'published'
-                        ? 'was'
-                        : 'will be'}{' '}
-                      published at{' '}
-                      <FriendlyDate
-                        date={Temporal.PlainDateTime.from(startDate)}
-                        timezone={courseInstance.display_timezone}
-                        tooltip={true}
-                        options={{ timeFirst: true }}
-                      />{' '}
-                      and will be unpublished at{' '}
-                      <FriendlyDate
-                        date={Temporal.PlainDateTime.from(endDate)}
-                        timezone={courseInstance.display_timezone}
-                        tooltip={true}
-                        options={{ timeFirst: true }}
-                      />
-                      .
-                    </div>
+                  {errors.start_date && (
+                    <div class="text-danger small mt-1">{errors.start_date.message}</div>
                   )}
-                  <input type="hidden" name="start_date" value={startDate} />
-                  <div class="ms-4 mt-2">
-                    <div class="mb-3">
-                      <div class="d-flex justify-content-between align-items-center">
-                        <label class="form-label mb-0" for="end_date">
-                          End date
-                        </label>
-                        {canEdit && (
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            disabled={!endDate}
-                            onClick={() => handleAddWeek('end_date')}
-                          >
-                            +1 week
-                          </button>
-                        )}
-                      </div>
-                      <div class="input-group mt-2">
-                        <input
-                          type="datetime-local"
-                          class={clsx('form-control', errors.end_date && 'is-invalid')}
-                          id="end_date"
-                          step="1"
-                          disabled={!canEdit}
-                          {...register('end_date', {
-                            validate: validateEndDate,
-                          })}
-                        />
-                        <span class="input-group-text">{courseInstance.display_timezone}</span>
-                      </div>
-                      {errors.end_date && (
-                        <div class="text-danger small mt-1">{errors.end_date.message}</div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+                </div>
 
-          {canEdit && (
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary" disabled={!isDirty}>
-                Save
-              </button>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                disabled={!isDirty}
-                onClick={() => {
-                  setSelectedStatus(originalStatus);
-                  setValue(
-                    'start_date',
-                    originalStartDate
-                      ? dateToPlainDateTime(
-                          originalStartDate,
-                          courseInstance.display_timezone,
-                        ).toString()
-                      : '',
-                    {
-                      shouldDirty: true,
-                    },
-                  );
-                  setValue(
-                    'end_date',
-                    originalEndDate
-                      ? dateToPlainDateTime(
-                          originalEndDate,
-                          courseInstance.display_timezone,
-                        ).toString()
-                      : '',
-                    { shouldDirty: true },
-                  );
-                }}
-              >
-                Cancel
-              </button>
-            </div>
+                <div class="mb-3">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <label class="form-label mb-0" for="end_date">
+                      End date
+                    </label>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        disabled={!endDate}
+                        onClick={() => handleAddWeek('end_date')}
+                      >
+                        +1 week
+                      </button>
+                    )}
+                  </div>
+                  <div class="input-group mt-2">
+                    <input
+                      type="datetime-local"
+                      class={clsx('form-control', errors.end_date && 'is-invalid')}
+                      id="end_date"
+                      step="1"
+                      disabled={!canEdit}
+                      {...register('end_date', {
+                        validate: validateEndDate,
+                      })}
+                    />
+                    <span class="input-group-text">{courseInstance.display_timezone}</span>
+                  </div>
+                  {errors.end_date && (
+                    <div class="text-danger small mt-1">{errors.end_date.message}</div>
+                  )}
+                </div>
+              </div>
+            </>
           )}
-        </form>
+        </div>
 
-        {startDate && (
-          <>
-            <hr class="my-4" />
-            <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-              <PublishingExtensions
-                courseInstance={courseInstance}
-                initialExtensions={publishingExtensions}
-                canEdit={canEdit}
-                csrfToken={csrfToken}
-              />
-            </QueryClientProviderDebug>
-          </>
-        )}
+        {/* Published */}
+        <div class="mb-3">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="status"
+              id="status-published"
+              value="published"
+              checked={selectedStatus === 'published'}
+              disabled={!canEdit}
+              onChange={(e) => {
+                if (e.currentTarget.checked) {
+                  handleStatusChange('published');
+                }
+              }}
+            />
+            <label class="form-check-label" for="status-published">
+              Published
+            </label>
+          </div>
+          {selectedStatus === 'published' && (
+            <>
+              {startDate && endDate && (
+                <div class="ms-4 mt-1 small text-muted">
+                  The course{' '}
+                  {plainDateTimeStringToDate(
+                    startDate,
+                    courseInstance.display_timezone,
+                  ).getTime() === originalStartDate?.getTime() && originalStatus === 'published'
+                    ? 'was'
+                    : 'will be'}{' '}
+                  published at{' '}
+                  <FriendlyDate
+                    date={Temporal.PlainDateTime.from(startDate)}
+                    timezone={courseInstance.display_timezone}
+                    tooltip={true}
+                    options={{ timeFirst: true }}
+                  />{' '}
+                  and will be unpublished at{' '}
+                  <FriendlyDate
+                    date={Temporal.PlainDateTime.from(endDate)}
+                    timezone={courseInstance.display_timezone}
+                    tooltip={true}
+                    options={{ timeFirst: true }}
+                  />
+                  .
+                </div>
+              )}
+              <input type="hidden" name="start_date" value={startDate} />
+              <div class="ms-4 mt-2">
+                <div class="mb-3">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <label class="form-label mb-0" for="end_date">
+                      End date
+                    </label>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        disabled={!endDate}
+                        onClick={() => handleAddWeek('end_date')}
+                      >
+                        +1 week
+                      </button>
+                    )}
+                  </div>
+                  <div class="input-group mt-2">
+                    <input
+                      type="datetime-local"
+                      class={clsx('form-control', errors.end_date && 'is-invalid')}
+                      id="end_date"
+                      step="1"
+                      disabled={!canEdit}
+                      {...register('end_date', {
+                        validate: validateEndDate,
+                      })}
+                    />
+                    <span class="input-group-text">{courseInstance.display_timezone}</span>
+                  </div>
+                  {errors.end_date && (
+                    <div class="text-danger small mt-1">{errors.end_date.message}</div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
+
+      {canEdit && (
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary" disabled={!isDirty}>
+            Save
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            disabled={!isDirty}
+            onClick={() => {
+              setSelectedStatus(originalStatus);
+              reset();
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </>
   );
 }
-
-CourseInstancePublishingForm.displayName = 'CourseInstancePublishingForm';
