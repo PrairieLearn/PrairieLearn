@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createTRPCClient, httpLink } from '@trpc/client';
 
+import { run } from '@prairielearn/run';
+
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 import type { ManualGradingAssessmentQuestionRouter } from '../trpc.js';
 
@@ -141,66 +143,32 @@ export function useManualGradingActions({
 
   const deleteAiGradingJobsMutation = useMutation<{ num_deleted: number }, Error, undefined>({
     mutationFn: async () => {
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          __csrf_token: csrfToken,
-          __action: 'delete_ai_grading_jobs',
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error);
-      }
-
-      return data;
+      const res = await client.deleteAiGradingJobs.mutate();
+      return { num_deleted: res.num_deleted };
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['instance-questions'],
-      });
+      void queryClient.invalidateQueries({ queryKey: ['instance-questions'] });
     },
   });
 
   const deleteAiGroupingsMutation = useMutation<{ num_deleted: number }, Error, undefined>({
     mutationFn: async () => {
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          __csrf_token: csrfToken,
-          __action: 'delete_ai_instance_question_groupings',
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error);
-      }
-
-      return data;
+      const res = await client.deleteAiInstanceQuestionGroupings.mutate();
+      return { num_deleted: res.num_deleted };
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['instance-questions'],
-      });
+      void queryClient.invalidateQueries({ queryKey: ['instance-questions'] });
     },
   });
 
   const groupSubmissionMutation = useMutation<
-    { job_sequence_id: string } | null,
+    { job_sequence_id: string },
     Error,
     {
-      action: string;
+      action:
+        | 'batch_action'
+        | 'ai_instance_question_group_assessment_all'
+        | 'ai_instance_question_group_assessment_ungrouped';
       closedSubmissionsOnly: boolean;
       numOpenInstances: number;
       instanceQuestionIds?: string[];
@@ -212,49 +180,26 @@ export function useManualGradingActions({
       numOpenInstances,
       instanceQuestionIds,
     }) => {
-      const requestBody: Record<string, any> = {
-        __csrf_token: csrfToken,
-        __action: action,
-      };
-
-      if (action === 'batch_action') {
-        requestBody.batch_action = 'ai_instance_question_group_selected';
-        requestBody.instance_question_id = instanceQuestionIds || [];
-      }
-
-      if (numOpenInstances > 0) {
-        requestBody.closed_instance_questions_only = closedSubmissionsOnly;
-      } else {
-        requestBody.closed_instance_questions_only = false;
-      }
-
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(requestBody),
+      const res = await client.aiInstanceQuestionGroup.mutate({
+        selection: run(() => {
+          if (action === 'batch_action') {
+            // TODO: we can make the calls to this function more type-safe.
+            return instanceQuestionIds ?? [];
+          }
+          if (action === 'ai_instance_question_group_assessment_all') {
+            return 'all';
+          }
+          return 'ungrouped';
+        }),
+        closed_instance_questions_only: numOpenInstances > 0 ? closedSubmissionsOnly : false,
       });
-
-      if (response.status === 204) {
-        return null;
-      }
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error);
-      }
-
-      return data;
+      return { job_sequence_id: res.job_sequence_id };
     },
     onSuccess: (data) => {
-      if (data) {
-        window.location.href = getCourseInstanceJobSequenceUrl(
-          courseInstanceId,
-          data.job_sequence_id,
-        );
-      }
+      window.location.href = getCourseInstanceJobSequenceUrl(
+        courseInstanceId,
+        data.job_sequence_id,
+      );
     },
   });
 
