@@ -1,5 +1,22 @@
 # @prairielearn/ui
 
+## 1.4.0
+
+### Minor Changes
+
+- f7d6b62: - Improve options for singular/plural labels
+  - Improve UI for column manager / card
+  - Add ability to wrap columns
+  - Add HTML props to TanstackTableCard
+  - Add scrollRef to TanstackTable
+  - Add virtualized element measuring to TanstackTable
+  - Improve keyboard navigation in TanstackTable
+
+### Patch Changes
+
+- Updated dependencies [f7d6b62]
+  - @prairielearn/browser-utils@2.6.0
+
 ## 1.3.0
 
 ### Minor Changes
