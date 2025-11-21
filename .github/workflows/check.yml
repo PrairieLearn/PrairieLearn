@@ -214,3 +214,5 @@ jobs:
         run: make lint-sql
       - name: Run the SQL migrations linter
         run: make lint-sql-migrations
+
+      # npx linkinator ./site | jq '.links | .[] | select(.state | contains("BROKEN"))'

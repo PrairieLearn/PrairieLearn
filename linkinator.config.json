@@ -1,0 +1,6 @@
+{
+  "skip": ["localhost:3000", "us.prairielearn.com/pl/api/v1"],
+  "requireHttps": true,
+  "recurse": true,
+  "format": "json"
+}
