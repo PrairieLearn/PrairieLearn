@@ -29,7 +29,9 @@ export function AssessmentSetsTable({ assessmentSets }: { assessmentSets: StaffA
                     </span>
                   </td>
                   <td class="align-middle">{assessmentSet.name}</td>
-                  <td class="align-middle">{AssessmentSetHeading({ assessmentSet })}</td>
+                  <td class="align-middle">
+                    <AssessmentSetHeading assessmentSet={assessmentSet} />
+                  </td>
                   <td class="align-middle">{assessmentSet.color}</td>
                 </tr>
               );
