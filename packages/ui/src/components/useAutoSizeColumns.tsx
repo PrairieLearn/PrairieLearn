@@ -1,6 +1,58 @@
-import type { ColumnSizingState, Table } from '@tanstack/react-table';
+import type { ColumnSizingState, Header, Table } from '@tanstack/react-table';
 import type { RefObject } from 'preact';
-import { useEffect, useRef } from 'preact/hooks';
+import { render, unmountComponentAtNode } from 'preact/compat';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import type { JSX } from 'preact/jsx-runtime';
+
+import { TableHeaderCell } from './TanstackTable.js';
+
+interface HiddenMeasurementHeaderProps<TData> {
+  table: Table<TData>;
+  columnsToMeasure: { id: string }[];
+  filters?: Record<string, (props: { header: Header<TData, unknown> }) => JSX.Element>;
+}
+
+function HiddenMeasurementHeader<TData>({
+  table,
+  columnsToMeasure,
+  filters = {},
+}: HiddenMeasurementHeaderProps<TData>) {
+  const headerGroups = table.getHeaderGroups();
+  const leafHeaderGroup = headerGroups[headerGroups.length - 1];
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        visibility: 'hidden',
+        pointerEvents: 'none',
+        top: '-9999px',
+      }}
+    >
+      <table class="table table-hover mb-0" style={{ display: 'grid', tableLayout: 'fixed' }}>
+        <thead style={{ display: 'grid' }}>
+          <tr style={{ display: 'flex' }}>
+            {columnsToMeasure.map((col) => {
+              const header = leafHeaderGroup.headers.find((h) => h.column.id === col.id);
+              if (!header) return null;
+
+              return (
+                <TableHeaderCell
+                  key={header.id}
+                  header={header}
+                  filters={filters}
+                  table={table}
+                  isPinned={false}
+                  measurementMode={true}
+                />
+              );
+            })}
+          </tr>
+        </thead>
+      </table>
+    </div>
+  );
+}
 
 /**
  * Custom hook that automatically measures and sets column widths based on header content.
@@ -9,14 +61,19 @@ import { useEffect, useRef } from 'preact/hooks';
  * @param table - The TanStack Table instance
  * @param tableRef - Ref to the table container element
  * @param enabled - Whether auto-sizing is enabled (default: true)
+ * @param filters - Optional filters map for rendering filter components in measurement
+ * @returns A boolean indicating whether measurement has completed
  */
 export function useAutoSizeColumns<TData>(
   table: Table<TData>,
   tableRef: RefObject<HTMLDivElement>,
   enabled = true,
-) {
+  filters?: Record<string, (props: { header: Header<TData, unknown> }) => JSX.Element>,
+): boolean {
   const measuredColumnsRef = useRef<Set<string>>(new Set());
   const hasMeasuredRef = useRef(false);
+  const [hasMeasured, setHasMeasured] = useState(false);
+  const measurementContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!enabled || hasMeasuredRef.current) {
@@ -56,58 +113,38 @@ export function useAutoSizeColumns<TData>(
         return;
       }
 
-      // Find the table element - it might be nested inside the container
-      const tableElement = tableRef.current.querySelector('table[role="grid"]');
-      if (!tableElement) {
-        return;
+      // Create or reuse the hidden measurement container
+      let container = measurementContainerRef.current;
+      if (!container) {
+        container = document.createElement('div');
+        document.body.append(container);
+        measurementContainerRef.current = container;
       }
 
-      // Measure header cells
+      // Render the hidden measurement header
+      render(
+        <HiddenMeasurementHeader
+          table={table}
+          columnsToMeasure={columnsToMeasure}
+          filters={filters ?? {}}
+        />,
+        container,
+      );
+
+      // Force layout to ensure styles are applied
+      void container.offsetWidth;
+
+      // Measure header cells from the hidden container
       const newSizing: ColumnSizingState = {};
 
       columnsToMeasure.forEach((col) => {
-        const headerElement = tableElement.querySelector(
+        const headerElement = container.querySelector(
           `th[data-column-id="${col.id}"]`,
         ) as HTMLElement;
 
         if (headerElement) {
-          // Measure the entire header content by temporarily removing width constraints
-          // This includes all content: badge, text, sort button, filter, padding, etc.
-          const originalWidth = headerElement.style.width;
-          const originalMaxWidth = headerElement.style.maxWidth;
-          const originalMinWidth = headerElement.style.minWidth;
-          const originalDisplay = headerElement.style.display;
-
-          // Temporarily remove width constraints to allow natural expansion
-          headerElement.style.width = 'auto';
-          headerElement.style.maxWidth = 'none';
-          headerElement.style.minWidth = '0';
-          headerElement.style.display = 'inline-block';
-
-          // Also remove constraints from the inner flex container
-          const innerFlexContainer = headerElement.querySelector('div.d-flex') as HTMLElement;
-          const originalInnerWidth = innerFlexContainer?.style.width;
-          const originalInnerMaxWidth = innerFlexContainer?.style.maxWidth;
-          if (innerFlexContainer) {
-            innerFlexContainer.style.width = 'auto';
-            innerFlexContainer.style.maxWidth = 'none';
-          }
-
-          // Force reflow to ensure styles are applied
-          void headerElement.offsetWidth;
-
           // Measure the natural width of the entire header
           const measuredWidth = headerElement.scrollWidth;
-
-          // Restore original styles
-          headerElement.style.width = originalWidth;
-          headerElement.style.maxWidth = originalMaxWidth;
-          headerElement.style.minWidth = originalMinWidth;
-          headerElement.style.display = originalDisplay;
-          if (innerFlexContainer) {
-            innerFlexContainer.style.width = originalInnerWidth;
-            innerFlexContainer.style.maxWidth = originalInnerMaxWidth;
-          }
 
           // Add padding for resize handle if resizable (4px for the handle)
           const resizeHandlePadding = col.getCanResize() ? 4 : 0;
@@ -125,17 +162,33 @@ export function useAutoSizeColumns<TData>(
         }
       });
 
+      // Clean up the measurement container
+      unmountComponentAtNode(container);
+      container.innerHTML = '';
+
       // Update column sizing
       if (Object.keys(newSizing).length > 0) {
         table.setColumnSizing((prev) => ({ ...prev, ...newSizing }));
         hasMeasuredRef.current = true;
+        setHasMeasured(true);
       }
     }, 100); // Small delay to ensure table is fully rendered
 
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [table, tableRef, enabled]);
+  }, [table, tableRef, enabled, filters]);
+
+  // Clean up measurement container on unmount
+  useEffect(() => {
+    return () => {
+      if (measurementContainerRef.current) {
+        unmountComponentAtNode(measurementContainerRef.current);
+        measurementContainerRef.current.remove();
+        measurementContainerRef.current = null;
+      }
+    };
+  }, []);
 
   // Reset measured columns when columns change
   const columnIds = table
@@ -145,5 +198,11 @@ export function useAutoSizeColumns<TData>(
   useEffect(() => {
     measuredColumnsRef.current.clear();
     hasMeasuredRef.current = false;
+    // Reset measurement state when columns change
+
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    setHasMeasured(false);
   }, [columnIds]);
+
+  return hasMeasured;
 }

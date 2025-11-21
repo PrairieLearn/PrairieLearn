@@ -29,7 +29,6 @@ import {
   NumericInputColumnFilter,
   TanstackTableCard,
   numericColumnFilterFn,
-  useAutoSizeColumns,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
@@ -459,9 +458,6 @@ function GradebookTable({
       enablePinning: true,
     },
   });
-
-  // Auto-size columns based on header content
-  useAutoSizeColumns(table, tableRef);
 
   return (
     <>

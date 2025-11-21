@@ -15,6 +15,7 @@ import {
   TanstackTableDownloadButton,
   type TanstackTableDownloadButtonProps,
 } from './TanstackTableDownloadButton.js';
+import { useAutoSizeColumns } from './useAutoSizeColumns.js';
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {
@@ -84,32 +85,36 @@ function TableCell<RowDataModel>({
 
 interface TableHeaderCellProps<RowDataModel> {
   header: Header<RowDataModel, unknown>;
-  sortDirection: false | SortDirection;
-  canSort: boolean;
-  canFilter: boolean;
-  columnName: string;
   filters: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
   table: Table<RowDataModel>;
   handleResizeEnd?: () => void;
   isPinned: 'left' | 'right' | false;
+  measurementMode?: boolean;
 }
 
-function TableHeaderCell<RowDataModel>({
+export function TableHeaderCell<RowDataModel>({
   header,
-  sortDirection,
-  canSort,
-  canFilter,
-  columnName,
   filters,
   table,
   handleResizeEnd,
   isPinned,
+  measurementMode = false,
 }: TableHeaderCellProps<RowDataModel>) {
+  const sortDirection = header.column.getIsSorted();
+  const canSort = header.column.getCanSort();
+  const canFilter = header.column.getCanFilter();
+  const columnName =
+    header.column.columnDef.meta?.label ??
+    (typeof header.column.columnDef.header === 'string'
+      ? header.column.columnDef.header
+      : header.column.id);
+
+  const headerSize = measurementMode ? undefined : header.getSize();
   const style: JSX.CSSProperties = {
     display: 'flex',
-    width: header.getSize(),
+    width: headerSize,
     minWidth: 0,
-    maxWidth: header.getSize(),
+    maxWidth: headerSize,
     flexShrink: 0,
     position: isPinned === 'left' ? 'sticky' : 'relative',
     top: 0,
@@ -339,8 +344,8 @@ export function TanstackTable<RowDataModel>({
   const virtualColumns = columnVirtualizer.getVirtualItems();
 
   // Calculate virtual padding for columns
-  let virtualPaddingLeft: number | undefined;
-  let virtualPaddingRight: number | undefined;
+  let virtualPaddingLeft: number | null = null;
+  let virtualPaddingRight: number | null = null;
 
   if (columnVirtualizer && virtualColumns?.length) {
     virtualPaddingLeft = virtualColumns[0]?.start ?? 0;
@@ -441,6 +446,22 @@ export function TanstackTable<RowDataModel>({
     document.body.classList.toggle('no-user-select', isTableResizing);
   }, [isTableResizing]);
 
+  // Auto-size columns based on header content
+  const hasAutoSized = useAutoSizeColumns(table, tableRef, true, filters);
+
+  // Re-measure the virtualizer when auto-sizing completes
+  // This is needed because useAutoSizeColumns updates column sizes, and the virtualizer
+  // needs to know about these changes to correctly calculate which columns are visible
+  useEffect(() => {
+    if (hasAutoSized) {
+      // Use a small delay to ensure the DOM has updated with the new column sizes
+      const timeoutId = setTimeout(() => {
+        columnVirtualizer.measure();
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [columnVirtualizer, hasAutoSized]);
+
   const displayedCount = table.getRowModel().rows.length;
   const totalCount = table.getCoreRowModel().rows.length;
 
@@ -485,23 +506,10 @@ export function TanstackTable<RowDataModel>({
               >
                 {/* Left pinned columns */}
                 {leftPinnedHeaders.map((header) => {
-                  const sortDirection = header.column.getIsSorted();
-                  const canSort = header.column.getCanSort();
-                  const canFilter = header.column.getCanFilter();
-                  const columnName =
-                    header.column.columnDef.meta?.label ??
-                    (typeof header.column.columnDef.header === 'string'
-                      ? header.column.columnDef.header
-                      : header.column.id);
-
                   return (
                     <TableHeaderCell
                       key={header.id}
                       header={header}
-                      sortDirection={sortDirection}
-                      canSort={canSort}
-                      canFilter={canFilter}
-                      columnName={columnName}
                       filters={filters}
                       table={table}
                       handleResizeEnd={handleResizeEnd}
@@ -520,23 +528,10 @@ export function TanstackTable<RowDataModel>({
                   const header = centerHeaders[virtualColumn.index];
                   if (!header) return null;
 
-                  const sortDirection = header.column.getIsSorted();
-                  const canSort = header.column.getCanSort();
-                  const canFilter = header.column.getCanFilter();
-                  const columnName =
-                    header.column.columnDef.meta?.label ??
-                    (typeof header.column.columnDef.header === 'string'
-                      ? header.column.columnDef.header
-                      : header.column.id);
-
                   return (
                     <TableHeaderCell
                       key={header.id}
                       header={header}
-                      sortDirection={sortDirection}
-                      canSort={canSort}
-                      canFilter={canFilter}
-                      columnName={columnName}
                       filters={filters}
                       table={table}
                       handleResizeEnd={handleResizeEnd}
@@ -552,23 +547,10 @@ export function TanstackTable<RowDataModel>({
 
                 {/* Right pinned columns */}
                 {rightPinnedHeaders.map((header) => {
-                  const sortDirection = header.column.getIsSorted();
-                  const canSort = header.column.getCanSort();
-                  const canFilter = header.column.getCanFilter();
-                  const columnName =
-                    header.column.columnDef.meta?.label ??
-                    (typeof header.column.columnDef.header === 'string'
-                      ? header.column.columnDef.header
-                      : header.column.id);
-
                   return (
                     <TableHeaderCell
                       key={header.id}
                       header={header}
-                      sortDirection={sortDirection}
-                      canSort={canSort}
-                      canFilter={canFilter}
-                      columnName={columnName}
                       filters={filters}
                       table={table}
                       handleResizeEnd={handleResizeEnd}
@@ -592,11 +574,6 @@ export function TanstackTable<RowDataModel>({
                 // Get cells for each section
                 const leftPinnedCells = row.getLeftVisibleCells();
                 const centerCells = row.getCenterVisibleCells();
-                // Filter right-pinned cells from all visible cells
-                const allVisibleCells = row.getVisibleCells();
-                const rightPinnedCells = allVisibleCells.filter(
-                  (cell) => cell.column.getIsPinned() === 'right',
-                );
 
                 // Calculate column index for keyboard navigation
                 let currentColIdx = 0;
@@ -667,27 +644,6 @@ export function TanstackTable<RowDataModel>({
                     {virtualPaddingRight ? (
                       <td style={{ display: 'flex', width: virtualPaddingRight }} />
                     ) : null}
-
-                    {/* Right pinned cells */}
-                    {rightPinnedCells.map((cell) => {
-                      const colIdx = currentColIdx++;
-                      const canSort = cell.column.getCanSort();
-                      const canFilter = cell.column.getCanFilter();
-                      const wrapText = cell.column.columnDef.meta?.wrapText ?? false;
-
-                      return (
-                        <TableCell
-                          key={cell.id}
-                          cell={cell}
-                          rowIdx={rowIdx}
-                          colIdx={colIdx}
-                          canSort={canSort}
-                          canFilter={canFilter}
-                          wrapText={wrapText}
-                          handleGridKeyDown={handleGridKeyDown}
-                        />
-                      );
-                    })}
                   </tr>
                 );
               })}
