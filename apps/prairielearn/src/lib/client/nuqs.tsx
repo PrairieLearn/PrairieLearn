@@ -198,7 +198,7 @@ export const parseAsNumericFilter = createParser<NumericColumnFilterValue>({
     if (!operator) return { filterValue: '', emptyOnly: false };
     return { filterValue: `${operator}${value}`, emptyOnly: false };
   },
-  serialize(value) {
+  serialize(value): string {
     const { filterValue, emptyOnly } = value;
 
     if (emptyOnly) return 'empty';
@@ -209,7 +209,8 @@ export const parseAsNumericFilter = createParser<NumericColumnFilterValue>({
 
     // Serialize format: internal (>=5) -> URL (gte_5)
     const match = filterValue.match(/^(>=|<=|>|<|=)(.+)$/);
-    if (!match) return '';
+    // @ts-expect-error - `null` is not assignable to type `string`.
+    if (!match) return null;
     const [, operator, val] = match;
     const opMap: Record<string, string> = {
       '>=': 'gte',
@@ -219,7 +220,8 @@ export const parseAsNumericFilter = createParser<NumericColumnFilterValue>({
       '=': 'eq',
     };
     const opCode = opMap[operator];
-    if (!opCode) return '';
+    // @ts-expect-error - `null` is not assignable to type `string`.
+    if (!opCode) return null;
     return `${opCode}_${val}`;
   },
   eq(a, b) {
