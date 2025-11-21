@@ -595,29 +595,29 @@ def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
         The text with spaced tokens merged
     """
     result = []
-    skip_index = 0
+    i = 0
+    n = len(text)
 
-    # Pre-compute spaced tokens and lengths to avoid repeated computation in the loop
-    spaced_tokens = [(token, " ".join(token), len(" ".join(token))) for token in tokens]
+    # Precompute spaced forms and lengths
+    spaced = [(token, " ".join(token), len(" ".join(token))) for token in tokens]
 
-    # Tokens can overlap (e.g., "alpha" and "asin"), so we need to carefully
-    # traverse left-to-right instead of just search/replacing tokens
-    for i in range(len(text)):
-        if i < skip_index:
-            continue
+    # Sort by spaced_token length so longer tokens match first
+    spaced.sort(key=lambda x: -x[2])
 
-        # For each character, check if we have a spaced token match coming up
-        for token, spaced_token, length in spaced_tokens:
-            if text[i : i + length] == spaced_token:
-                # for a match, add un-spaced token to result and skip the remaining token characters
+    while i < n:
+        matched = False
+
+        # Try each spaced token
+        for token, spaced_token, length in spaced:
+            if text.startswith(spaced_token, i):
                 result.append(token)
-                skip_index = i + length
+                i += length
+                matched = True
                 break
 
-        # We use the skip_index as an indicator whether the previous loop found a match
-        # If it didn't, add the current character and continue the search
-        if i >= skip_index:
+        if not matched:
             result.append(text[i])
+            i += 1
 
     return "".join(result)
 
