@@ -206,7 +206,7 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 LTI, or Learning Tools Interoperability, is the ability for Learning Management Systems (LMSes) to link together. In our context, it means that sites like Coursera can link into assessments in PrairieLearn, give the student a PrairieLearn experience, and report the assessment score back to Coursera automatically.
 
-PrairieLearn LTI support enables a new authentication source (that creates the user in PL and enrolls them in the appropriate course instance) with a grade reporting functionality. Everything else (course instance, assessment and question configuration and workflows) are the same. Assessment [access control](../assessment/accessControl.md) rules still apply for LTI linked assessments.
+PrairieLearn LTI support enables a new authentication source (that creates the user in PL and enrolls them in the appropriate course instance) with a grade reporting functionality. Everything else (course instance, assessment and question configuration and workflows) are the same. Assessment [access control](../assessment/accessControl.md) rules still apply for LTI-linked assessments.
 
 ### Enabling LTI support in a course instance
 
