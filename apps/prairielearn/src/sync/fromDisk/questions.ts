@@ -13,7 +13,7 @@ import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 import { isDraftQid } from '../question.js';
 
-function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
+export function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
   if (!q) return null;
 
   let partialCredit;
