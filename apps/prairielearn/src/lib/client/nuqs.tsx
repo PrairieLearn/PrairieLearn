@@ -7,6 +7,8 @@ import {
 import { NuqsAdapter as NuqsReactAdapter } from 'nuqs/adapters/react';
 import React from 'preact/compat';
 
+import type { NumericColumnFilterValue } from '@prairielearn/ui';
+
 const AdapterContext = React.createContext('');
 
 function useExpressAdapterContext(): unstable_AdapterInterface {
@@ -63,8 +65,10 @@ export const parseAsSortingState = createParser<SortingState>({
       })
       .filter((v): v is { id: string; desc: boolean } => !!v);
   },
-  serialize(value) {
-    if (value.length === 0) return '';
+  serialize(value): string {
+    // `null` indicates that the value should be omitted from the URL.
+    // @ts-expect-error - `null` is not assignable to type `string`.
+    if (value.length === 0) return null;
     return value
       .filter((v) => v.id)
       .map((v) => `${v.id}:${v.desc ? 'desc' : 'asc'}`)
@@ -167,16 +171,21 @@ export const parseAsColumnPinningState = createParser<ColumnPinningState>({
  * Used for numeric column filters with comparison operators.
  *
  * Internal format: `>=5`, `<=10`, `>3`, `<7`, `=5`
- * URL format: `gte_5`, `lte_10`, `gt_3`, `lt_7`, `eq_5`
+ * URL format: `gte_5`, `lte_10`, `gt_3`, `lt_7`, `eq_5`, `empty`
  *
  * Example: `gte_5` <-> `>=5`
  */
-export const parseAsNumericFilter = createParser<string>({
+export const parseAsNumericFilter = createParser<NumericColumnFilterValue>({
   parse(queryValue) {
-    if (!queryValue) return '';
+    if (!queryValue) return { filterValue: '', emptyOnly: false };
     // Parse format: {operator}_{value}
     const match = queryValue.match(/^(gte|lte|gt|lt|eq)_(.+)$/);
-    if (!match) return '';
+    if (!match) {
+      if (queryValue === 'empty') {
+        return { filterValue: '', emptyOnly: true };
+      }
+      return { filterValue: '', emptyOnly: false };
+    }
     const [, opCode, value] = match;
     const opMap: Record<string, string> = {
       gte: '>=',
@@ -186,13 +195,20 @@ export const parseAsNumericFilter = createParser<string>({
       eq: '=',
     };
     const operator = opMap[opCode];
-    if (!operator) return '';
-    return `${operator}${value}`;
+    if (!operator) return { filterValue: '', emptyOnly: false };
+    return { filterValue: `${operator}${value}`, emptyOnly: false };
   },
   serialize(value) {
-    if (!value) return '';
+    const { filterValue, emptyOnly } = value;
+
+    if (emptyOnly) return 'empty';
+
+    if (filterValue.length === 0) {
+      return 'empty';
+    }
+
     // Serialize format: internal (>=5) -> URL (gte_5)
-    const match = value.match(/^(>=|<=|>|<|=)(.+)$/);
+    const match = filterValue.match(/^(>=|<=|>|<|=)(.+)$/);
     if (!match) return '';
     const [, operator, val] = match;
     const opMap: Record<string, string> = {
@@ -207,6 +223,6 @@ export const parseAsNumericFilter = createParser<string>({
     return `${opCode}_${val}`;
   },
   eq(a, b) {
-    return a === b;
+    return a.filterValue === b.filterValue && a.emptyOnly === b.emptyOnly;
   },
 });

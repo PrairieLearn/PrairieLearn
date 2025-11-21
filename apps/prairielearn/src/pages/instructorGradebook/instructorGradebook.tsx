@@ -3,20 +3,27 @@ import { pipeline } from 'node:stream/promises';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
+import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import {
   checkAssessmentInstanceBelongsToCourseInstance,
   getCourseOwners,
 } from '../../lib/course.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import { InstructorGradebook } from './instructorGradebook.html.js';
+import { InstructorGradebookTable } from './components/InstructorGradebookTable.js';
+import { RoleDescriptionModal } from './components/RoleDescriptionModal.js';
 import {
   AssessmentInstanceScoreResultSchema,
   CourseAssessmentRowSchema,
@@ -38,13 +45,21 @@ router.get(
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
+    const { course_instance, course, authz_data, urlPrefix, __csrf_token } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'courseInstance',
+        accessType: 'instructor',
+      },
+    );
+
+    if (!authz_data.has_course_instance_permission_view) {
       // We don't actually forbid access to this page if the user is not a student
       // data viewer, because we want to allow users to click the gradebook tab and
       // see instructions for how to get student data viewer permissions. Otherwise,
       // users just wouldn't see the tab at all, and this caused a lot of questions
       // about why staff couldn't see the gradebook tab.
-      const courseOwners = await getCourseOwners(res.locals.course.id);
+      const courseOwners = await getCourseOwners(course.id);
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
@@ -64,14 +79,52 @@ router.get(
     const csvFilename = buildCsvFilename(res.locals);
     const courseAssessments = await queryRows(
       sql.course_assessments,
-      { course_instance_id: res.locals.course_instance.id },
+      { course_instance_id: course_instance.id },
       CourseAssessmentRowSchema,
     );
+    const gradebookRows = await queryRows(
+      sql.user_scores,
+      { course_id: course.id, course_instance_id: course_instance.id },
+      GradebookRowSchema,
+    );
+
     res.send(
-      InstructorGradebook({
+      PageLayout({
         resLocals: res.locals,
-        csvFilename,
-        courseAssessments,
+        pageTitle: 'Gradebook',
+        navContext: {
+          type: 'instructor',
+          page: 'instance_admin',
+          subPage: 'gradebook',
+        },
+        options: {
+          fullWidth: true,
+          fullHeight: true,
+        },
+        headContent: compiledStylesheetTag('tanstackTable.css'),
+        content: (
+          <>
+            <CourseInstanceSyncErrorsAndWarnings
+              authzData={res.locals.authz_data}
+              courseInstance={course_instance}
+              course={course}
+              urlPrefix={urlPrefix}
+            />
+            <Hydrate fullHeight>
+              <InstructorGradebookTable
+                authzData={authz_data}
+                csrfToken={__csrf_token}
+                courseAssessments={courseAssessments}
+                gradebookRows={gradebookRows}
+                urlPrefix={urlPrefix}
+                csvFilename={csvFilename}
+                search={getUrl(req).search}
+                isDevMode={process.env.NODE_ENV === 'development'}
+              />
+            </Hydrate>
+          </>
+        ),
+        postContent: [RoleDescriptionModal()],
       }),
     );
   }),
