@@ -209,8 +209,11 @@ nav:
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course/index.md'
-      - 'Course instance configuration': 'courseInstance.md'
-      - 'Assessment configuration': 'assessment/index.md'
+      - 'Course instance configuration':
+          - courseInstance/index.md
+      - 'Assessment configuration':
+          - assessment/index.md
+          - 'Assessment access control': 'assessment/accessControl.md'
       - 'Question configuration':
           - 'question/index.md'
           - '<code>question.html</code>': 'question/template.md'
@@ -259,7 +262,7 @@ nav:
           - '<span class="muted">pl-</span>units-input': 'elements/pl-units-input.md'
           - '<span class="muted">pl-</span>variable-output': 'elements/pl-variable-output.md'
           - '<span class="muted">pl-</span>xss-safe': 'elements/pl-xss-safe.md'
-      - 'Access control': 'accessControl/index.md'
+
       - 'Remote exams': 'remoteExams.md'
       - 'clientFiles and serverFiles': 'clientServerFiles.md'
       - 'UUIDs in JSON files': 'uuid.md'

@@ -1,6 +1,8 @@
 # Course configuration
 
-**NOTE:** Any time you edit the `infoCourse.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
+!!! note
+
+    Any time you edit the `infoCourse.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
 
 ## Directory layout
 
@@ -29,7 +31,7 @@ exampleCourse
 ```
 
 1. See the [questions documentation](../question/index.md) for more information.
-2. See the [course instance documentation](../courseInstance.md) for more information.
+2. See the [course instance documentation](../courseInstance/index.md) for more information.
 3. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
 4. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
 
@@ -268,7 +270,7 @@ Properties for assessmentModules are as follows.
 | `name`    | Brief name for the module. Shorter is better.    |
 | `heading` | Longer title for the module, displayed to users. |
 
-The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`. See [Course Instance](../courseInstance.md#assessment-page-organization) for more details.
+The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`. See [Course Instance](../courseInstance/index.md#assessment-page-organization) for more details.
 
 ## Topics
 
