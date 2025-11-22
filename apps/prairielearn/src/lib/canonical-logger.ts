@@ -4,7 +4,7 @@ import { type NextFunction, type Request, type Response } from 'express';
 
 const als = new AsyncLocalStorage<CanonicalLogger>();
 
-export interface ICanonicalLogger {
+interface ICanonicalLogger {
   append(entries: Record<string, any>): void;
   increment(key: string, value?: number): void;
   data(): Record<string, any>;

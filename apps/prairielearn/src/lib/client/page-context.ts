@@ -184,7 +184,7 @@ export type PageContext<
   ? PageTypeReturnMap[AccessType][PageType] & AuthzDataPageContext
   : PageTypeReturnMap[AccessType][PageType];
 
-export type PlainPageContext = PageContext<'plain', 'student' | 'instructor', false>;
+type PlainPageContext = PageContext<'plain', 'student' | 'instructor', false>;
 export type PageContextWithAuthzData = PageContext<'plain', 'student' | 'instructor', true>;
 
 /**

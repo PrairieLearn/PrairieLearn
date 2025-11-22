@@ -40,7 +40,7 @@ export const IssueRowSchema = IssueSchema.extend({
   variant_seed: VariantSchema.shape.variant_seed.nullable(),
   issue_count: z.number(),
 });
-export type IssueRow = z.infer<typeof IssueRowSchema>;
+type IssueRow = z.infer<typeof IssueRowSchema>;
 type IssueComputedRow = IssueRow & {
   showUser: boolean;
   hideAssessmentLink: boolean;

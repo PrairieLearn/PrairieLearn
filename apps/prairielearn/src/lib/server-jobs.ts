@@ -59,7 +59,7 @@ export interface ServerJobExecutor {
   executeInBackground(fn: ServerJobExecutionFunction): void;
 }
 
-export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
+type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
 
 /**
  * Store currently active job information in memory. This is used

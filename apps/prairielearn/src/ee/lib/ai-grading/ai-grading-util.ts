@@ -59,7 +59,7 @@ export const GradedExampleSchema = z.object({
   instance_question_id: z.string(),
   manual_rubric_grading_id: z.string().nullable(),
 });
-export type GradedExample = z.infer<typeof GradedExampleSchema>;
+type GradedExample = z.infer<typeof GradedExampleSchema>;
 
 export async function generatePrompt({
   questionPrompt,

@@ -21,7 +21,7 @@ export const DurationStatSchema = z.object({
   thresholds: AssessmentSchema.shape.duration_stat_thresholds,
   hist: AssessmentSchema.shape.duration_stat_hist,
 });
-export type DurationStat = z.infer<typeof DurationStatSchema>;
+type DurationStat = z.infer<typeof DurationStatSchema>;
 
 export const AssessmentScoreHistogramByDateSchema = z.object({
   date: z.date(),

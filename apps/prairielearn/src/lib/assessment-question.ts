@@ -32,7 +32,7 @@ const OtherAssessmentSchema = z.object({
   assessment_set_color: AssessmentSetSchema.shape.color,
 });
 
-export type OtherAssessment = z.infer<typeof OtherAssessmentSchema>;
+type OtherAssessment = z.infer<typeof OtherAssessmentSchema>;
 
 const StaffAssessmentQuestionSqlSchema = z.object({
   assessment_question: StaffAssessmentQuestionSchema,

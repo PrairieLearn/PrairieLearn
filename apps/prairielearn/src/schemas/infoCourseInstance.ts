@@ -24,7 +24,7 @@ const AccessRuleJsonSchema = z
     'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
   );
 
-export type AccessRuleJson = z.infer<typeof AccessRuleJsonSchema>;
+type AccessRuleJson = z.infer<typeof AccessRuleJsonSchema>;
 
 const AllowAccessJsonSchema = z
   .array(AccessRuleJsonSchema)
@@ -47,7 +47,7 @@ const PublishingJsonSchema = z.object({
     .optional(),
 });
 
-export type PublishingJson = z.infer<typeof PublishingJsonSchema>;
+type PublishingJson = z.infer<typeof PublishingJsonSchema>;
 
 export const CourseInstanceJsonSchema = z
   .object({

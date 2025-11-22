@@ -25,7 +25,7 @@ import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
 const queryClient = new QueryClient();
 
-export interface AssessmentQuestionManualGradingProps {
+interface AssessmentQuestionManualGradingProps {
   hasCourseInstancePermissionEdit: boolean;
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];

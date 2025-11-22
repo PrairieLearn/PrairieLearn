@@ -25,7 +25,7 @@ export const QueryRunRowSchema = QueryRunSchema.extend({
   user_name: z.string().nullable(),
   user_uid: z.string().nullable(),
 });
-export type QueryRunRow = z.infer<typeof QueryRunRowSchema>;
+type QueryRunRow = z.infer<typeof QueryRunRowSchema>;
 
 export function AdministratorQuery({
   resLocals,

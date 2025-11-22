@@ -113,7 +113,7 @@ interface ClientFilesAssessmentChunk {
   assessmentId: string;
 }
 
-export interface QuestionChunk {
+interface QuestionChunk {
   type: 'question';
   questionId: string;
 }
@@ -179,7 +179,7 @@ const DatabaseChunkSchema = z.intersection(
  * database. They're sort of a superset of {@link Chunk} and {@link ChunkMetadata}
  * objects that contain both the IDs and human-readable names of the chunks.
  */
-export type DatabaseChunk = z.infer<typeof DatabaseChunkSchema>;
+type DatabaseChunk = z.infer<typeof DatabaseChunkSchema>;
 
 const RawCourseChunkSchema = z.object({
   ...ChunkSchema.shape,
@@ -190,7 +190,7 @@ const RawCourseChunkSchema = z.object({
   course_instance_uuid: CourseInstanceSchema.shape.uuid,
   course_instance_name: CourseInstanceSchema.shape.short_name,
 });
-export type RawCourseChunk = z.infer<typeof RawCourseChunkSchema>;
+type RawCourseChunk = z.infer<typeof RawCourseChunkSchema>;
 
 interface CourseInstanceChunks {
   clientFilesCourseInstance: boolean;

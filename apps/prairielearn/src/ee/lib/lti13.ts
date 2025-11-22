@@ -68,7 +68,7 @@ export const LineitemSchema = z.object({
     })
     .optional(),
 });
-export type Lineitem = z.infer<typeof LineitemSchema>;
+type Lineitem = z.infer<typeof LineitemSchema>;
 
 export const LineitemsSchema = z.array(LineitemSchema);
 export type Lineitems = z.infer<typeof LineitemsSchema>;
@@ -191,7 +191,7 @@ export const Lti13ClaimSchema = z.discriminatedUnion(
   'https://purl.imsglobal.org/spec/lti/claim/message_type',
   [Lti13ResourceLinkRequestSchema, Lti13DeepLinkingRequestSchema],
 );
-export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
+type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
 export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
 
@@ -745,7 +745,7 @@ export const Lti13ScoreSchema = z.object({
     .optional(),
   comment: z.string().optional(),
 });
-export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
+type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 
 const UserWithLti13SubSchema = UserSchema.extend({
   lti13_sub: z.string().nullable(),

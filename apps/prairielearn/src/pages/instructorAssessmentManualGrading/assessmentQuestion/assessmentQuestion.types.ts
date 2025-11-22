@@ -22,7 +22,7 @@ export const InstanceQuestionRowSchema = z.object({
   rubric_grading_item_ids: z.array(IdSchema),
   enrollment_id: IdSchema.nullable(),
 });
-export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
+type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
 export const InstanceQuestionRowWithAIGradingStatsSchema = z.object({
   ...InstanceQuestionRowSchema.shape,
@@ -35,7 +35,7 @@ export type InstanceQuestionRowWithAIGradingStats = z.infer<
   typeof InstanceQuestionRowWithAIGradingStatsSchema
 >;
 
-export interface InstanceQuestionTableData {
+interface InstanceQuestionTableData {
   hasCourseInstancePermissionEdit: boolean;
   urlPrefix: string;
   instancesUrl: string;

@@ -5,7 +5,7 @@ import Tooltip from 'react-bootstrap/Tooltip';
 
 import { formatDate, formatDateFriendly } from '@prairielearn/formatter';
 
-export interface FriendlyDateProps {
+interface FriendlyDateProps {
   date: Date | Temporal.PlainDateTime;
   timezone?: string;
   tooltip?: boolean;

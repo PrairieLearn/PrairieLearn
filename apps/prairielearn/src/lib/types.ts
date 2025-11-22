@@ -42,7 +42,7 @@ export type WithRequiredKeys<T, RequiredKeys extends keyof T> = Omit<
  * type Bar = ExpandRecursively<Foo>;
  * ```
  */
-export type ExpandRecursively<T> = T extends object
+type ExpandRecursively<T> = T extends object
   ? T extends infer O
     ? { [K in keyof O]: ExpandRecursively<O[K]> }
     : never

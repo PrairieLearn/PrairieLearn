@@ -30,7 +30,7 @@ export const GroupRoleJsonSchema = z
     'A custom role for use in group assessments that allows control over certain permissions.',
   );
 
-export type GroupRoleJson = z.infer<typeof GroupRoleJsonSchema>;
+type GroupRoleJson = z.infer<typeof GroupRoleJsonSchema>;
 export type GroupRoleJsonInput = z.input<typeof GroupRoleJsonSchema>;
 
 export const AssessmentAccessRuleJsonSchema = z
@@ -93,7 +93,7 @@ export const AssessmentAccessRuleJsonSchema = z
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
 
-export type AssessmentAccessRuleJson = z.infer<typeof AssessmentAccessRuleJsonSchema>;
+type AssessmentAccessRuleJson = z.infer<typeof AssessmentAccessRuleJsonSchema>;
 
 export const PointsSingleJsonSchema = z
   .number()
@@ -131,7 +131,7 @@ const QuestionPointsJsonSchema = z.object({
 });
 
 export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;
-export type QuestionPointsJsonInput = z.input<typeof QuestionPointsJsonSchema>;
+type QuestionPointsJsonInput = z.input<typeof QuestionPointsJsonSchema>;
 
 export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),

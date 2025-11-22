@@ -61,7 +61,7 @@ const RawPageAuthzDataSchema = z.object({
   has_course_instance_permission_view: z.boolean().optional(),
   has_course_instance_permission_edit: z.boolean().optional(),
 });
-export type RawPageAuthzData = z.infer<typeof RawPageAuthzDataSchema>;
+type RawPageAuthzData = z.infer<typeof RawPageAuthzDataSchema>;
 
 export const PageAuthzDataSchema = RawPageAuthzDataSchema.extend({
   user: StaffUserSchema,

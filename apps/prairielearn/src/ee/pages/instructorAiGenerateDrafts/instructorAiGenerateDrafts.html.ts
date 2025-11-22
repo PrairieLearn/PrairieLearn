@@ -18,7 +18,7 @@ export const DraftMetadataWithQidSchema = z.object({
   qid: z.string(),
   uid: z.string().nullable(),
 });
-export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
+type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 
 export function InstructorAIGenerateDrafts({
   resLocals,

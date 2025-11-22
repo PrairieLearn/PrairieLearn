@@ -16,4 +16,4 @@ export const StudentRowSchemaWithUser = StudentRowSchema.extend({
 
 export type StudentRow = z.infer<typeof StudentRowSchema>;
 
-export type StudentRowWithUser = z.infer<typeof StudentRowSchemaWithUser>;
+type StudentRowWithUser = z.infer<typeof StudentRowSchemaWithUser>;

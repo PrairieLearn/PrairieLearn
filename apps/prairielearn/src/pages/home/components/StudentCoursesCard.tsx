@@ -15,7 +15,7 @@ export const StudentHomePageCourseSchema = z.object({
   course_title: RawStudentCourseSchema.shape.title,
   enrollment: StudentEnrollmentSchema,
 });
-export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 
 export function StudentCoursesCard({
   studentCourses,

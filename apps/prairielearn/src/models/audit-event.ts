@@ -63,7 +63,7 @@ export async function selectAuditEvents({
   );
 }
 
-export type InsertAuditEventParams = SupportedTableActionCombination & {
+type InsertAuditEventParams = SupportedTableActionCombination & {
   action: EnumAuditEventAction;
   rowId: string;
   /** Most events should have an associated authenticated user */

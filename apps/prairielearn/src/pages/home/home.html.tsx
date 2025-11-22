@@ -26,7 +26,7 @@ export const InstructorHomePageCourseSchema = z.object({
     }),
   ),
 });
-export type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
+type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
 
 export const StudentHomePageCourseSchema = z.object({
   course_instance: RawStudentCourseInstanceSchema,
@@ -34,12 +34,12 @@ export const StudentHomePageCourseSchema = z.object({
   course_title: RawStudentCourseSchema.shape.title,
   enrollment: StudentEnrollmentSchema,
 });
-export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 
 export const StudentHomePageCourseWithExtensionSchema = StudentHomePageCourseSchema.extend({
   latest_publishing_extension: CourseInstancePublishingExtensionSchema.nullable(),
 });
-export type StudentHomePageCourseWithExtension = z.infer<
+type StudentHomePageCourseWithExtension = z.infer<
   typeof StudentHomePageCourseWithExtensionSchema
 >;
 
