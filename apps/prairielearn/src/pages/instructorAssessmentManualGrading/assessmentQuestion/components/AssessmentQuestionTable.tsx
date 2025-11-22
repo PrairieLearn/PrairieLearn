@@ -56,7 +56,7 @@ const DEFAULT_GRADED_BY_FILTER: string[] = [];
 const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
 const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 
-export interface AssessmentQuestionTableProps {
+interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];

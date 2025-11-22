@@ -107,36 +107,6 @@ export function formatTz(timeZone: string): string {
 }
 
 /**
- * Format a date to a human-readable string like '14:27:00 (CDT)'.
- *
- * @param date The date to format.
- * @param timeZone The time zone to use for formatting.
- * @param options
- * @param options.includeTz Whether to include the time zone in the output (default true).
- * @returns Human-readable string representing the date.
- */
-export function formatDateHMS(
-  date: Date,
-  timeZone: string,
-  { includeTz = true }: { includeTz?: boolean } = {},
-): string {
-  const options: Intl.DateTimeFormatOptions = {
-    timeZone,
-    hourCycle: 'h23',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    timeZoneName: 'short',
-  };
-  const parts = keyBy(new Intl.DateTimeFormat('en-US', options).formatToParts(date), (x) => x.type);
-  let dateFormatted = `${parts.hour.value}:${parts.minute.value}:${parts.second.value}`;
-  if (includeTz) {
-    dateFormatted = `${dateFormatted} (${parts.timeZoneName.value})`;
-  }
-  return dateFormatted;
-}
-
-/**
  * Format a date to a human-readable string like '18:23' or 'May 2, 07:12',
  * where the precision is determined by the range.
  *

@@ -63,6 +63,8 @@ const config: KnipConfig = {
       ignore: [
         'src/lib/no-deprecated-sql.d.ts',
         'src/ee/pages/instructorAiGenerateDraftEditor/RichTextEditor/extensions/react-rendered-component-sample.tsx',
+
+        'apps/prairielearn/src/lib/client/safe-db-types.ts',
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
@@ -128,7 +130,7 @@ const config: KnipConfig = {
     'pyright',
     's3rver',
   ],
-  exclude: ['binaries', 'dependencies', 'exports', 'types'],
+  exclude: ['binaries', 'dependencies'],
 };
 
 export default config;

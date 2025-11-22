@@ -7,7 +7,7 @@ import {
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 
-export const ConfigSchema = z.object({
+const ConfigSchema = z.object({
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
   postgresqlDatabase: z.string().default('postgres'),

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 
-export type BatchActionData =
+type BatchActionData =
   | { assigned_grader: string | null }
   | { requires_manual_grading: boolean }
   | { batch_action: 'ai_grade_assessment_selected'; closed_instance_questions_only?: boolean }
@@ -11,7 +11,7 @@ export type BatchActionData =
       closed_instance_questions_only?: boolean;
     };
 
-export type BatchActionParams =
+type BatchActionParams =
   | {
       action: 'batch_action';
       actionData: BatchActionData;

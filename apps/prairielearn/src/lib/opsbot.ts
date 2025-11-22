@@ -38,7 +38,7 @@ export async function sendMessage(msg: string): Promise<null | Response> {
  * @param msg String message to send.
  * @param channel Channel to send to.  Private channels must have the bot added.
  */
-export async function sendSlackMessage(
+async function sendSlackMessage(
   msg: string,
   channel: string | null,
 ): Promise<null | Response> {

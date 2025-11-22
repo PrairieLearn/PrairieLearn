@@ -12,7 +12,7 @@ export const AuthzAccessRuleSchema = z.object({
   mode: EnumModeSchema.nullable(),
   active: z.boolean().nullable(),
 });
-export type AuthzAccessRule = z.infer<typeof AuthzAccessRuleSchema>;
+type AuthzAccessRule = z.infer<typeof AuthzAccessRuleSchema>;
 
 export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzAccessRule[] }) {
   return html`

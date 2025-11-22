@@ -20,7 +20,7 @@ export function init() {
   namespace.on('connection', connection);
 }
 
-export function connection(socket: Socket) {
+function connection(socket: Socket) {
   socket.on('joinExternalImageCapture', (msg, callback) => {
     if (!ensureProps(msg, ['variant_id', 'variant_token', 'file_name'])) {
       return callback(null);

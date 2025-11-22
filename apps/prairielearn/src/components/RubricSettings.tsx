@@ -828,7 +828,7 @@ export function RubricSettings({
   );
 }
 
-export function RubricRow({
+function RubricRow({
   item,
   showAiGradingStats,
   submissionCount,

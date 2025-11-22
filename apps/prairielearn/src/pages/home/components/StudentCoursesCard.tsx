@@ -9,13 +9,13 @@ import {
   StudentEnrollmentSchema,
 } from '../../../lib/client/safe-db-types.js';
 
-export const StudentHomePageCourseSchema = z.object({
+const StudentHomePageCourseSchema = z.object({
   course_instance: RawStudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
   enrollment: StudentEnrollmentSchema,
 });
-export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 
 export function StudentCoursesCard({
   studentCourses,

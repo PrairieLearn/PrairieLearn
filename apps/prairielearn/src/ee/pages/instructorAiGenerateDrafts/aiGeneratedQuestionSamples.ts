@@ -1,4 +1,4 @@
-export type ExamplePrompt = {
+type ExamplePrompt = {
   name: string;
   prompt: string;
   generateVariant: () => SampleQuestionVariant;
@@ -138,7 +138,7 @@ const findCorrectVariantOptions = (options: VariantOption[], correctAnswers: str
   );
 };
 
-export type SampleQuestionVariant =
+type SampleQuestionVariant =
   | {
       answerType: 'checkbox' | 'radio';
       question: string;

@@ -155,7 +155,7 @@ async function checkRender(
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
  */
-export async function makeContext(
+async function makeContext(
   embeddingModel: EmbeddingModel,
   prompt: string,
   mandatoryElementNames: string[],
@@ -252,7 +252,7 @@ function extractFromResponse(
  * Returns the AI question generation cache used for rate limiting.
  */
 let aiQuestionGenerationCache: Cache | undefined;
-export async function getAiQuestionGenerationCache() {
+async function getAiQuestionGenerationCache() {
   // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
   if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
   aiQuestionGenerationCache = new Cache();
