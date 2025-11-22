@@ -92,5 +92,3 @@ export function addMathjaxExtension(marked: Marked, MathJax: any) {
     ],
   });
 }
-
-export default addMathjaxExtension;

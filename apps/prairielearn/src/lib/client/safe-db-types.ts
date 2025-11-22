@@ -142,6 +142,7 @@ export const StudentAssessmentSetSchema =
   RawStudentAssessmentSetSchema.brand<'StudentAssessmentSet'>();
 export type StudentAssessmentSet = z.infer<typeof StudentAssessmentSetSchema>;
 
+/** @alias RawStudentAssessmentSetSchema */
 export const RawPublicAssessmentSetSchema = RawStudentAssessmentSetSchema;
 export const PublicAssessmentSetSchema =
   RawPublicAssessmentSetSchema.brand<'PublicAssessmentSet'>();

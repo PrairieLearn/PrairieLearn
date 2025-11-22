@@ -254,6 +254,7 @@
     "@playwright/test": "^1.56.1",
     "@prairielearn/express-list-endpoints": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
+    "@prairielearn/vite-plugin-express": "workspace:^",
     "@sa11y/format": "^8.0.0",
     "@smithy/types": "^4.8.1",
     "@types/archiver": "^7.0.0",
