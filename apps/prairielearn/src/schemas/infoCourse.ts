@@ -37,8 +37,7 @@ export const ColorJsonSchema = z
   ])
   .describe('A color name.');
 
-type ColorJson = z.infer<typeof ColorJsonSchema>;
-export const TopicJsonSchema = z
+const TopicJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
@@ -47,10 +46,9 @@ export const TopicJsonSchema = z
   })
   .describe("A single topic, can represent a unit of learning (e.g. 'vectors').");
 
-type TopicJson = z.infer<typeof TopicJsonSchema>;
 export type TopicJsonInput = z.input<typeof TopicJsonSchema>;
 
-export const TagJsonSchema = z
+const TagJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     shortName: z.string().describe('Short name (preferably 2 to 7 characters).').optional(),
@@ -63,7 +61,7 @@ export const TagJsonSchema = z
 export type TagJson = z.infer<typeof TagJsonSchema>;
 export type TagJsonInput = z.input<typeof TagJsonSchema>;
 
-export const AssessmentSetJsonSchema = z
+const AssessmentSetJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     abbreviation: z
@@ -86,7 +84,7 @@ export const AssessmentSetJsonSchema = z
 export type AssessmentSetJson = z.infer<typeof AssessmentSetJsonSchema>;
 export type AssessmentSetJsonInput = z.input<typeof AssessmentSetJsonSchema>;
 
-export const CourseOptionsJsonSchema = z
+const CourseOptionsJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     useNewQuestionRenderer: z
@@ -105,8 +103,6 @@ export const CourseOptionsJsonSchema = z
   })
   .strict()
   .describe('Options for this course.');
-
-type CourseOptionsJson = z.infer<typeof CourseOptionsJsonSchema>;
 
 export const CourseJsonSchema = z
   .object({

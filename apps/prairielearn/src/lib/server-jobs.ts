@@ -66,7 +66,7 @@ type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
  * to accumulate stderr/stdout, which are only written to the DB
  * once the job is finished.
  */
-export const liveJobs: Record<string, ServerJobImpl> = {};
+const liveJobs: Record<string, ServerJobImpl> = {};
 
 /********************************************************************/
 
@@ -365,7 +365,7 @@ export async function stop() {
   }
 }
 
-export function connection(socket) {
+function connection(socket) {
   socket.on('joinJob', function (msg, callback) {
     if (!('job_id' in msg)) {
       logger.error('socket.io joinJob called without job_id');

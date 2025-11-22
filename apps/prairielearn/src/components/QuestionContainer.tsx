@@ -225,7 +225,7 @@ ${explanation}</pre
   `;
 }
 
-export function IssuePanel({
+function IssuePanel({
   issue,
   course_instance,
   authz_data,

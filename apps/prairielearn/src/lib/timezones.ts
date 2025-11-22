@@ -5,7 +5,6 @@ import { type Timezone, TimezoneCodec } from './timezone.shared.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 let memoizedAvailableTimezones: Timezone[] | null = null;
-let memoizedAvailableTimezonesByName: Map<string, Timezone> | null = null;
 
 async function getAvailableTimezonesFromDB(): Promise<Timezone[]> {
   const availableTimezones = await queryRows(sql.select_timezones, TimezoneCodec);
@@ -17,7 +16,7 @@ async function getAvailableTimezonesFromDB(): Promise<Timezone[]> {
  * memoized so that, if it is needed more than once in the same session, the
  * same list is returned.
  */
-export async function getAvailableTimezones(): Promise<Timezone[]> {
+async function getAvailableTimezones(): Promise<Timezone[]> {
   if (memoizedAvailableTimezones == null) {
     memoizedAvailableTimezones = await getAvailableTimezonesFromDB();
   }
@@ -44,21 +43,4 @@ export async function getCanonicalTimezones(alwaysInclude?: string[]): Promise<T
   return availableTimezones.filter(
     ({ name }) => canonicalTimezones.has(name) || alwaysInclude?.includes(name),
   );
-}
-
-export async function getAvailableTimezonesByName(): Promise<Map<string, Timezone>> {
-  if (memoizedAvailableTimezonesByName == null) {
-    const availableTimezones = await getAvailableTimezones();
-    memoizedAvailableTimezonesByName = new Map(availableTimezones.map((tz) => [tz.name, tz]));
-  }
-  return memoizedAvailableTimezonesByName;
-}
-
-export async function getTimezoneByName(name: string): Promise<Timezone> {
-  const availableTimezonesByName = await getAvailableTimezonesByName();
-  const timezone = availableTimezonesByName.get(name);
-  if (timezone == null) {
-    throw new Error(`Timezone "${name}" not found`);
-  }
-  return timezone;
 }

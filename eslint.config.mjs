@@ -530,6 +530,15 @@ export default tseslint.config([
       ],
       ...jsdoc.configs['flat/recommended-typescript-error'].rules,
       'jsdoc/check-line-alignment': 'error',
+      'jsdoc/check-tag-names': [
+        'error',
+        {
+          definedTags: ['typeignore'],
+          enableFixer: true,
+          inlineTags: ['link', 'linkcode', 'linkplain', 'tutorial'],
+          typed: true,
+        },
+      ],
       'jsdoc/convert-to-jsdoc-comments': [
         'error',
         {

@@ -20,7 +20,7 @@ import { selectQuestionByQid } from '../models/question.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export function waitForJobSequence(locals: Record<string, any>) {
+function waitForJobSequence(locals: Record<string, any>) {
   describe('The job sequence', function () {
     it('should have an id', async function () {
       const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);

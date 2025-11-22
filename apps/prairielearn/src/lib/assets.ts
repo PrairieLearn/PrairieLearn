@@ -353,11 +353,3 @@ export function compiledScriptTag(sourceFile: string): HtmlSafeString {
 export function compiledStylesheetTag(sourceFile: string): HtmlSafeString {
   return compiledAssets.compiledStylesheetTag(sourceFile);
 }
-
-export function compiledScriptPath(sourceFile: string): string {
-  return compiledAssets.compiledScriptPath(sourceFile);
-}
-
-export function compiledStylesheetPath(sourceFile: string): string {
-  return compiledAssets.compiledStylesheetPath(sourceFile);
-}

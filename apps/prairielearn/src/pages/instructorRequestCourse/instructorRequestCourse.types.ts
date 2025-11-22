@@ -8,7 +8,7 @@ export const CourseRequestRowSchema = z.object({
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
-export const Lti13CourseRequestInputSchema = z
+const Lti13CourseRequestInputSchema = z
   .object({
     'cr-firstname': z.string(),
     'cr-lastname': z.string(),

@@ -39,9 +39,6 @@ type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 export const StudentHomePageCourseWithExtensionSchema = StudentHomePageCourseSchema.extend({
   latest_publishing_extension: CourseInstancePublishingExtensionSchema.nullable(),
 });
-type StudentHomePageCourseWithExtension = z.infer<
-  typeof StudentHomePageCourseWithExtensionSchema
->;
 
 export function Home({
   canAddCourses,

@@ -39,7 +39,7 @@ const SelectAndAuthzAssessmentInstanceSchema = z.object({
 
 export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema>;
 
-export async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
+async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
   const row = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {

@@ -15,7 +15,7 @@ import { OverviewCard } from './components/OverviewCard.js';
 import { StudentAuditEventsTable } from './components/StudentAuditEventsTable.js';
 import { StudentGradebookTable } from './components/StudentGradebookTable.js';
 
-export const UserDetailSchema = z.object({
+const UserDetailSchema = z.object({
   user: StaffUserSchema.nullable(),
   course_instance: StaffCourseInstanceSchema,
   enrollment: StaffEnrollmentSchema,

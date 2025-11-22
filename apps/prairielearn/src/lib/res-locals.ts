@@ -70,14 +70,6 @@ export interface ResLocalsForPage {
   assessment: Prettify<ResLocals & ResLocalsCourseInstance & ResLocalsAssessment>;
 }
 
-type PageType = keyof ResLocalsForPage;
-
-export function getResLocalsForPage<T extends PageType>(
-  locals: Record<string, any>,
-): ResLocalsForPage[T] {
-  return locals as ResLocalsForPage[T];
-}
-
 /**
  * A wrapper around {@link asyncHandler} that ensures that the locals
  * are typed correctly for the given page type.

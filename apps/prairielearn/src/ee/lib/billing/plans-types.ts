@@ -1,4 +1,4 @@
-export const PLAN_FEATURE_NAMES = [
+const PLAN_FEATURE_NAMES = [
   'course-instance-access',
   'external-grading',
   'workspaces',

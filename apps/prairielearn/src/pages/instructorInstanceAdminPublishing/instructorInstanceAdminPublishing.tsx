@@ -49,7 +49,7 @@ const sql = loadSqlEquiv(import.meta.url);
  *
  * Only returns extensions for joined users.
  */
-export async function selectPublishingExtensionsWithUsersByCourseInstance({
+async function selectPublishingExtensionsWithUsersByCourseInstance({
   courseInstance,
   authzData,
   requestedRole,

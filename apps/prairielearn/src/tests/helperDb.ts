@@ -21,7 +21,7 @@ const POSTGRES_INIT_CONNECTION_STRING = 'postgres://postgres@localhost/postgres'
 const POSTGRES_DATABASE = 'pltest';
 const POSTGRES_DATABASE_TEMPLATE = 'pltest_template';
 
-export const postgresTestUtils = sqldb.makePostgresTestUtils({
+const postgresTestUtils = sqldb.makePostgresTestUtils({
   user: POSTGRES_USER,
   host: POSTGRES_HOST,
   defaultDatabase: 'postgres',
@@ -222,6 +222,8 @@ export async function dropTemplate(): Promise<void> {
  * @param params.name The name of the migration to test.
  * @param params.beforeMigration A function to run before the migration.
  * @param params.afterMigration A function to run after the migration.
+ *
+ * @typeignore
  */
 export async function testMigration<T>({
   name,

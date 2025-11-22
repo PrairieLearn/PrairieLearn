@@ -60,12 +60,12 @@ export async function selectAssessmentInfoForJob(assessment_id: string) {
   );
 }
 
-export const AssessmentStatsRowSchema = AssessmentSchema.extend({
+const AssessmentStatsRowSchema = AssessmentSchema.extend({
   needs_statistics_update: z.boolean().optional(),
 });
 export type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
 
-export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
+const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
   name: AssessmentSetSchema.shape.name,
   start_new_assessment_group: z.boolean(),
   assessment_set: AssessmentSetSchema,

@@ -70,7 +70,7 @@ export async function insertIssue({
 /**
  * Inserts an issue for a thrown error.
  */
-export async function insertIssueForError(
+async function insertIssueForError(
   err: ErrorMaybeWithData,
   data: IssueForErrorData,
 ): Promise<void> {

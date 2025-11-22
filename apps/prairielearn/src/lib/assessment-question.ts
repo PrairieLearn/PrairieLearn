@@ -32,8 +32,6 @@ const OtherAssessmentSchema = z.object({
   assessment_set_color: AssessmentSetSchema.shape.color,
 });
 
-type OtherAssessment = z.infer<typeof OtherAssessmentSchema>;
-
 const StaffAssessmentQuestionSqlSchema = z.object({
   assessment_question: StaffAssessmentQuestionSchema,
   question: StaffQuestionSchema,
@@ -51,6 +49,7 @@ const RawStaffAssessmentQuestionRowSchema = AssessmentQuestionRowMetaSchema.exte
   StaffAssessmentQuestionSqlSchema.shape,
 );
 
+/** @typeignore */
 export const StaffAssessmentQuestionRowSchema =
   RawStaffAssessmentQuestionRowSchema.brand<'StaffAssessmentQuestionRow'>();
 export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionRowSchema>;

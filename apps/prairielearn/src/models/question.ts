@@ -50,7 +50,7 @@ export async function selectQuestionByInstanceQuestionId(
   );
 }
 
-export const QuestionForCopySchema = QuestionSchema.extend({
+const QuestionForCopySchema = QuestionSchema.extend({
   should_copy: z.boolean().optional(),
 });
 type QuestionForCopy = z.infer<typeof QuestionForCopySchema>;

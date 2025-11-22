@@ -9,7 +9,7 @@ import {
   StudentEnrollmentSchema,
 } from '../../../lib/client/safe-db-types.js';
 
-export const StudentHomePageCourseSchema = z.object({
+const StudentHomePageCourseSchema = z.object({
   course_instance: RawStudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,

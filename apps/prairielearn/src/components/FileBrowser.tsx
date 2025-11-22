@@ -100,7 +100,7 @@ interface FileRenameInfo {
   dir: string;
 }
 
-export async function browseDirectory({
+async function browseDirectory({
   paths,
 }: {
   paths: InstructorFilePaths;
@@ -160,7 +160,7 @@ export async function browseDirectory({
   };
 }
 
-export async function browseFile({ paths }: { paths: InstructorFilePaths }): Promise<FileInfo> {
+async function browseFile({ paths }: { paths: InstructorFilePaths }): Promise<FileInfo> {
   const filepath = paths.workingPath;
   const movable = !paths.cannotMove.includes(filepath);
   const file: FileInfo = {
@@ -264,7 +264,7 @@ export async function createFileBrowser({
   }
 }
 
-export function FileBrowser({
+function FileBrowser({
   resLocals,
   paths,
   isFile,

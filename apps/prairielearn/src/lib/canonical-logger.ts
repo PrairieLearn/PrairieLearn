@@ -26,7 +26,7 @@ export class CanonicalLogger implements ICanonicalLogger {
   }
 }
 
-export function getCanonicalLogger(): CanonicalLogger | null {
+function getCanonicalLogger(): CanonicalLogger | null {
   return als.getStore() ?? null;
 }
 

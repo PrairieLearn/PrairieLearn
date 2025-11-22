@@ -34,20 +34,6 @@ export type WithRequiredKeys<T, RequiredKeys extends keyof T> = Omit<
   RequiredProperty<Pick<T, RequiredKeys>> &
   Partial<Record<NullableKeys<Omit<T, RequiredKeys>>, undefined>>;
 
-/**
- * Useful for convincing an IDE to show the expansion of a type.
- *
- * ```ts
- * type Foo = { a: string; b?: number; c: null };
- * type Bar = ExpandRecursively<Foo>;
- * ```
- */
-type ExpandRecursively<T> = T extends object
-  ? T extends infer O
-    ? { [K in keyof O]: ExpandRecursively<O[K]> }
-    : never
-  : T;
-
 export function assertNever(value: never): never {
   // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   throw new Error(`Unexpected value: ${value}`);
