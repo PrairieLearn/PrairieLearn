@@ -28,7 +28,14 @@ window.PLFileEditor = function (uuid, options) {
   this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
 
   if (options.aceMode) {
+    const oldModePath = ace.config.get('modePath');
+    if (options.aceModePath) {
+      ace.config.set('modePath', options.aceModePath);
+    }
     this.editor.getSession().setMode(options.aceMode);
+    if (options.aceModePath) {
+      ace.config.set('modePath', oldModePath);
+    }
   }
 
   if (localStorage.getItem('pl-file-editor-theme')) {
