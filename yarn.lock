@@ -4070,6 +4070,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/express-test-utils@workspace:packages/express-test-utils"
   dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/express": "npm:^4.17.25"
   languageName: unknown
   linkType: soft
@@ -4122,6 +4123,7 @@ __metadata:
     "@prairielearn/run": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/utils": "workspace:^"
     "@types/async": "npm:^3.2.25"
     "@types/dockerode": "npm:^3.3.45"
@@ -4421,6 +4423,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/ui": "workspace:^"
     "@prairielearn/utils": "workspace:^"
+    "@prairielearn/vite-plugin-express": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.7"
@@ -4828,7 +4831,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/vite-plugin-express@workspace:packages/vite-plugin-express":
+"@prairielearn/vite-plugin-express@workspace:^, @prairielearn/vite-plugin-express@workspace:packages/vite-plugin-express":
   version: 0.0.0-use.local
   resolution: "@prairielearn/vite-plugin-express@workspace:packages/vite-plugin-express"
   dependencies:
@@ -4860,6 +4863,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/run": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@socket.io/redis-emitter": "npm:^5.1.0"

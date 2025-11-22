@@ -142,16 +142,8 @@ export const StudentAssessmentSetSchema =
   RawStudentAssessmentSetSchema.brand<'StudentAssessmentSet'>();
 export type StudentAssessmentSet = z.infer<typeof StudentAssessmentSetSchema>;
 
-export const RawPublicAssessmentSetSchema = RawStudentAssessmentSetSchema.pick({
-  abbreviation: true,
-  color: true,
-  course_id: true,
-  heading: true,
-  id: true,
-  implicit: true,
-  name: true,
-  number: true,
-});
+/** @alias RawStudentAssessmentSetSchema */
+export const RawPublicAssessmentSetSchema = RawStudentAssessmentSetSchema;
 export const PublicAssessmentSetSchema =
   RawPublicAssessmentSetSchema.brand<'PublicAssessmentSet'>();
 export type PublicAssessmentSet = z.infer<typeof PublicAssessmentSetSchema>;

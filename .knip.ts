@@ -60,6 +60,10 @@ const config: KnipConfig = {
         'src/executor.ts',
         'src/question-servers/calculation-worker.ts',
       ],
+      ignore: [
+        'src/lib/no-deprecated-sql.d.ts',
+        'src/ee/pages/instructorAiGenerateDraftEditor/RichTextEditor/extensions/react-rendered-component-sample.tsx',
+      ],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'apps/workspace-host': {
@@ -88,6 +92,10 @@ const config: KnipConfig = {
     'packages/tsconfig': {
       entry: [],
       project: [],
+    },
+    'packages/markdown': {
+      entry: ['src/benchmark.ts'],
+      project: ['**/*.{ts,cts,mts,tsx}'],
     },
   },
   ignoreDependencies: [
@@ -120,7 +128,7 @@ const config: KnipConfig = {
     'pyright',
     's3rver',
   ],
-  exclude: ['binaries', 'files', 'dependencies', 'exports', 'unlisted', 'types'],
+  exclude: ['binaries', 'dependencies', 'exports', 'types'],
 };
 
 export default config;
