@@ -85,6 +85,41 @@ export interface AssessmentQuestionTableProps {
   };
 }
 
+function AiModelSelector({
+  text,
+  count,
+  onSelectModel
+}: {
+  text: string,
+  count: number,
+  onSelectModel: (model: string) => void
+}) {
+  const MODELS = [
+    'OpenAI GPT 5-mini',
+    'Google Gemini 3',
+    'Anthropic Claude'
+  ]
+
+  return (
+    <Dropdown drop="end"> 
+      <Dropdown.Toggle class={`dropdown-item ${count > 0 ? '' : 'disabled'}`}>
+        <div class="d-flex justify-content-between align-items-center w-100">
+          <span>{text}</span>
+          <span class="badge bg-secondary ms-2">{count}</span>
+        </div>
+      </Dropdown.Toggle>
+      <Dropdown.Menu>
+        <p class="my-0 text-muted px-3">AI grader model</p>
+        <Dropdown.Divider />
+        {MODELS.map(model => (
+          <Dropdown.Item key={model} onClick={() => onSelectModel(model)}>{model}</Dropdown.Item>
+        ))}
+      </Dropdown.Menu>
+    </Dropdown>
+  )
+}
+
+
 export function AssessmentQuestionTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
@@ -631,19 +666,35 @@ export function AssessmentQuestionTable({
                     <span>AI grading</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
-                    <Dropdown.Item
-                      onClick={() =>
+                    <AiModelSelector
+                      text="Grade all human-graded"
+                      count={aiGradingCounts.humanGraded}
+                      onSelectModel={(_) => {
                         batchActionMutation.mutate({
                           action: 'ai_grade_assessment_graded',
                         })
-                      }
-                    >
-                      <div class="d-flex justify-content-between align-items-center w-100">
-                        <span>Grade all human-graded</span>
-                        <span class="badge bg-secondary ms-2">{aiGradingCounts.humanGraded}</span>
-                      </div>
-                    </Dropdown.Item>
-                    <Dropdown.Item
+                      }}
+                    />
+                    <AiModelSelector
+                      text="Grade selected"
+                      count={aiGradingCounts.selected}
+                      onSelectModel={(_) => {
+                        handleBatchAction(
+                          { batch_action: 'ai_grade_assessment_selected' },
+                          selectedIds,
+                        )
+                      }}
+                    />
+                    <AiModelSelector
+                      text="Grade all"
+                      count={aiGradingCounts.all}
+                      onSelectModel={(_) => {
+                        batchActionMutation.mutate({
+                          action: 'ai_grade_assessment_all',
+                        })
+                      }}
+                    />
+                    {/* <Dropdown.Item
                       disabled={selectedIds.length === 0}
                       onClick={() =>
                         handleBatchAction(
@@ -668,7 +719,7 @@ export function AssessmentQuestionTable({
                         <span>Grade all</span>
                         <span class="badge bg-secondary ms-2">{aiGradingCounts.all}</span>
                       </div>
-                    </Dropdown.Item>
+                    </Dropdown.Item> */}
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
                       Delete all AI grading results
