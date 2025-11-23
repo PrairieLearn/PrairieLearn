@@ -323,6 +323,14 @@ export function InstructorQuestionSettings({
               >
                 Configure workspace
               </button>
+              <button
+                class="btn btn-sm btn-outline-danger"
+                type="button"
+                id="remove-workspace-options-button"
+                ${!resLocals.question.workspace_image ? 'hidden' : ''}
+              >
+                Remove workspace configuration
+              </button>
             </div>
             <div id="workspace-options" ${resLocals.question.workspace_image ? '' : 'hidden'}>
               <div class="mb-3">
@@ -459,6 +467,14 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                 ${resLocals.question.external_grading_image ? 'hidden' : ''}
               >
                 Configure external grading
+              </button>
+              <button
+                class="btn btn-sm btn-outline-danger"
+                type="button"
+                id="remove-external-grading-options-button"
+                ${!resLocals.question.external_grading_image ? 'hidden' : ''}
+              >
+                Remove external grading
               </button>
             </div>
             <div>
