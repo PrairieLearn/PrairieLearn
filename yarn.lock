@@ -83,6 +83,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ai-sdk/google@npm:^2.0.42":
+  version: 2.0.42
+  resolution: "@ai-sdk/google@npm:2.0.42"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@ai-sdk/provider-utils": "npm:3.0.17"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/44a7988aa2fe6e5d80e66b4bc5921aa2693be357eeb1d0b06c07b10de9460e5389ce24b25b03847e6fa449b4fa71fcffefc8837df62e47b4cf009f8e097c26ef
+  languageName: node
+  linkType: hard
+
 "@ai-sdk/openai@npm:^2.0.64":
   version: 2.0.64
   resolution: "@ai-sdk/openai@npm:2.0.64"
@@ -105,6 +117,19 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10c0/0922af1864b31aed4704174683d356c482199bf691c3d1a3e27cdedd574eec2249ea386b1081023d301a87e38dea09ec259ee45c5889316f7eed0de0a6064a49
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider-utils@npm:3.0.17":
+  version: 3.0.17
+  resolution: "@ai-sdk/provider-utils@npm:3.0.17"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@standard-schema/spec": "npm:^1.0.0"
+    eventsource-parser: "npm:^3.0.6"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/1bae6dc4cacd0305b6aa152f9589bbd61c29f150155482c285a77f83d7ed416d52bc2aa7fdaba2e5764530392d9e8f799baea34a63dce6c72ecd3de364dc62d1
   languageName: node
   linkType: hard
 
@@ -15681,6 +15706,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "prairielearn@workspace:."
   dependencies:
+    "@ai-sdk/google": "npm:^2.0.42"
     "@changesets/cli": "npm:^2.29.7"
     "@eslint-react/eslint-plugin": "npm:^2.3.1"
     "@html-eslint/eslint-plugin": "npm:^0.47.1"

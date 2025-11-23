@@ -126,6 +126,12 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
+      const provider = req.body.provider;
+      // TODO: Check providers type
+      if (!provider) {
+        flash('error', 'No AI provider selected for grading.');
+      }
+
       const assessment = res.locals.assessment as Assessment;
 
       const assessmentQuestionRows = await selectAssessmentQuestions({
@@ -153,6 +159,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
+          provider,
           mode: 'all',
         });
       }

@@ -261,6 +261,13 @@ router.post(
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
         }
 
+
+        const provider = req.body.provider;
+        // TODO: Check providers type
+        if (!provider) {
+          flash('error', 'No AI provider selected for grading.');
+        }
+
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
@@ -273,6 +280,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
+          provider,
           mode: 'selected',
           instance_question_ids,
         });
@@ -364,6 +372,12 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
+      const provider = req.body.provider;
+      // TODO: Check providers type
+      if (!provider) {
+        flash('error', 'No AI provider selected for grading.');
+      }
+
       const job_sequence_id = await aiGrade({
         question: res.locals.question,
         course: res.locals.course,
@@ -373,6 +387,7 @@ router.post(
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
+        provider,
         mode: run(() => {
           if (req.body.__action === 'ai_grade_assessment_graded') return 'human_graded';
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';

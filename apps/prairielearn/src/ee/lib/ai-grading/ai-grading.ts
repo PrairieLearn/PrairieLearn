@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import * as async from 'async';
@@ -29,6 +30,7 @@ import * as questionServers from '../../../question-servers/index.js';
 
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
+  AI_GRADING_GOOGLE_MODEL,
   AI_GRADING_OPENAI_MODEL,
   containsImageCapture,
   generatePrompt,
@@ -65,6 +67,7 @@ export async function aiGrade({
   user_id,
   mode,
   instance_question_ids,
+  provider
 }: {
   question: Question;
   course: Course;
@@ -80,18 +83,39 @@ export async function aiGrade({
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
+  provider: 'openai' | 'google' | 'anthropic';
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error
   if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
     throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
   }
 
-  const openai = createOpenAI({
-    apiKey: config.aiGradingOpenAiApiKey,
-    organization: config.aiGradingOpenAiOrganization,
-  });
-  const embeddingModel = openai.textEmbeddingModel('text-embedding-3-small');
-  const model = openai(AI_GRADING_OPENAI_MODEL);
+  if (provider === 'anthropic') {
+    throw new error.HttpStatusError(403, 'Not implemented (provider not available)');
+  }
+
+  const {
+    model, embeddingModel
+  } = run(() => {
+    if (provider === 'openai') {
+      const openai = createOpenAI({
+        apiKey: config.aiGradingOpenAiApiKey,
+        organization: config.aiGradingOpenAiOrganization,
+      });
+      return {
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
+        model: openai(AI_GRADING_OPENAI_MODEL),
+      }
+    } else {
+      const google = createGoogleGenerativeAI({
+        apiKey: config.aiGradingGoogleApiKey
+      })
+      return {
+        embeddingModel: null, // TODO: Implement
+        model: google(AI_GRADING_GOOGLE_MODEL)
+      }
+    }
+  })
 
   const question_course = await getQuestionCourse(question, course);
 
@@ -113,28 +137,34 @@ export async function aiGrade({
       assessment_question_id: assessment_question.id,
     });
 
+    job.info(`Using provider ${provider} for AI grading.`)
+
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
-    for (const instance_question of all_instance_questions) {
-      // Only checking for instance questions that can be used as RAG data.
-      // They should be graded last by a human.
-      if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
-        continue;
+    if (provider === 'openai' ) {
+      for (const instance_question of all_instance_questions) {
+        // Only checking for instance questions that can be used as RAG data.
+        // They should be graded last by a human.
+        if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
+          continue;
+        }
+        const submission_id = await selectLastSubmissionId(instance_question.id);
+        const submission_embedding = await selectEmbeddingForSubmission(submission_id);
+        if (!submission_embedding) {
+          await generateSubmissionEmbedding({
+            course,
+            question,
+            instance_question,
+            urlPrefix,
+            embeddingModel,
+          });
+          newEmbeddingsCount++;
+        }
       }
-      const submission_id = await selectLastSubmissionId(instance_question.id);
-      const submission_embedding = await selectEmbeddingForSubmission(submission_id);
-      if (!submission_embedding) {
-        await generateSubmissionEmbedding({
-          course,
-          question,
-          instance_question,
-          urlPrefix,
-          embeddingModel,
-        });
-        newEmbeddingsCount++;
-      }
+      job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
+    } else {
+      job.info('Skip embedding check for non-OpenAI provider.');
     }
-    job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
     const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
 
@@ -199,7 +229,7 @@ export async function aiGrade({
       const questionAnswer = render_question_results.data.answerHtml;
 
       let submission_embedding = await selectEmbeddingForSubmission(submission.id);
-      if (!submission_embedding) {
+      if (!submission_embedding && provider === 'openai') {
         submission_embedding = await generateSubmissionEmbedding({
           course,
           question,
@@ -250,6 +280,7 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
+        provider
       });
 
       // If the submission contains images, prompt the model to transcribe any relevant information

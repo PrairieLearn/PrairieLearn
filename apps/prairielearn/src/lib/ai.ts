@@ -1,9 +1,11 @@
+import { type GoogleAIProvider } from '@ai-sdk/google';
 import { type OpenAIProvider } from '@ai-sdk/openai';
 import type { GenerateObjectResult, GenerateTextResult, LanguageModelUsage } from 'ai';
 
 import { config } from './config.js';
 
 export type OpenAIModelId = Parameters<OpenAIProvider['languageModel']>[0];
+export type GoogleAIModelId = Parameters<GoogleAIProvider['languageModel']>[0];
 
 type Prompt = (string | string[])[];
 

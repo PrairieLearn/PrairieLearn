@@ -11,6 +11,8 @@ export type BatchActionData =
       closed_instance_questions_only?: boolean;
     };
 
+export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
+
 export type BatchActionParams =
   | {
       action: 'batch_action';
@@ -23,6 +25,7 @@ export type BatchActionParams =
         | 'ai_grade_assessment_all'
         | 'ai_instance_question_group_assessment_all'
         | 'ai_instance_question_group_assessment_ungrouped';
+      provider: AiGradingProvider;
     };
 
 interface UseManualGradingActionsParams {
@@ -46,6 +49,7 @@ export function useManualGradingActions({
       const requestBody: Record<string, any> = {
         __csrf_token: csrfToken,
         __action: params.action,
+        provider: params.provider,
         instance_question_id:
           'instanceQuestionIds' in params ? params.instanceQuestionIds : undefined,
       };

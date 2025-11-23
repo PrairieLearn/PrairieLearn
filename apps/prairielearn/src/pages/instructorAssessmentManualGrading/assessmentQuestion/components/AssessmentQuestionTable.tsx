@@ -42,7 +42,7 @@ import {
 import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
-import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
+import { type AiGradingProvider, type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
@@ -55,6 +55,16 @@ const DEFAULT_ASSIGNED_GRADER_FILTER: string[] = [];
 const DEFAULT_GRADED_BY_FILTER: string[] = [];
 const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
 const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
+
+const MODEL_PROVIDERS: {
+  provider: AiGradingProvider,
+  name: string
+} = [
+  { provider: 'openai', name: 'OpenAI GPT' },
+  { provider: 'google', name: 'Google Gemini' },
+  { provider: 'anthropic', name: 'Anthropic Claude' }
+]
+
 
 export interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
@@ -85,21 +95,15 @@ export interface AssessmentQuestionTableProps {
   };
 }
 
-function AiModelSelector({
+function AiProviderSelector({
   text,
   count,
-  onSelectModel
+  onSelectProvider
 }: {
   text: string,
   count: number,
-  onSelectModel: (model: string) => void
+  onSelectProvider: (provider: AiGradingProvider) => void
 }) {
-  const MODELS = [
-    'OpenAI GPT 5-mini',
-    'Google Gemini 3',
-    'Anthropic Claude'
-  ]
-
   return (
     <Dropdown drop="end"> 
       <Dropdown.Toggle class={`dropdown-item ${count > 0 ? '' : 'disabled'}`}>
@@ -111,14 +115,13 @@ function AiModelSelector({
       <Dropdown.Menu>
         <p class="my-0 text-muted px-3">AI grader model</p>
         <Dropdown.Divider />
-        {MODELS.map(model => (
-          <Dropdown.Item key={model} onClick={() => onSelectModel(model)}>{model}</Dropdown.Item>
+        {MODEL_PROVIDERS.map(provider => (
+          <Dropdown.Item key={provider.provider} onClick={() => onSelectProvider(provider.provider)}>{provider.name}</Dropdown.Item>
         ))}
       </Dropdown.Menu>
     </Dropdown>
   )
 }
-
 
 export function AssessmentQuestionTable({
   hasCourseInstancePermissionEdit,
@@ -666,31 +669,33 @@ export function AssessmentQuestionTable({
                     <span>AI grading</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
-                    <AiModelSelector
+                    <AiProviderSelector
                       text="Grade all human-graded"
                       count={aiGradingCounts.humanGraded}
-                      onSelectModel={(_) => {
+                      onSelectProvider={(provider) => {
                         batchActionMutation.mutate({
                           action: 'ai_grade_assessment_graded',
+                          provider
                         })
                       }}
                     />
-                    <AiModelSelector
+                    <AiProviderSelector
                       text="Grade selected"
                       count={aiGradingCounts.selected}
-                      onSelectModel={(_) => {
+                      onSelectProvider={(provider) => {
                         handleBatchAction(
                           { batch_action: 'ai_grade_assessment_selected' },
-                          selectedIds,
+                          provider
                         )
                       }}
                     />
-                    <AiModelSelector
+                    <AiProviderSelector
                       text="Grade all"
                       count={aiGradingCounts.all}
-                      onSelectModel={(_) => {
+                      onSelectProvider={(provider) => {
                         batchActionMutation.mutate({
                           action: 'ai_grade_assessment_all',
+                          provider
                         })
                       }}
                     />
