@@ -1,4 +1,4 @@
-import { useRef } from 'preact/compat';
+import { useEffect, useRef } from 'preact/compat';
 import {
   // eslint-disable-next-line no-restricted-imports
   OverlayTrigger as BootstrapOverlayTrigger,
@@ -116,6 +116,13 @@ export function OverlayTrigger({
     // Call the original onEntered callback if provided
     onEntered?.(node, isAppearing);
   };
+
+  // Deactivate the focus trap when the component unmounts
+  useEffect(() => {
+    return () => {
+      focusTrapRef.current?.deactivate();
+    };
+  }, []);
 
   const handleExit = (node: HTMLElement) => {
     // Deactivate the focus trap
