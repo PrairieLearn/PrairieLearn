@@ -7,7 +7,7 @@ Some questions may require manual grading, either fully (e.g., freeform essay-ty
 
 ## Configuring a question for manual grading
 
-For questions that require manual grading, the question can be set up for manual grading by using `manualPoints` in the [assessment configuration](../assessment/index.md#question-specification), like this:
+For questions that require manual grading, the question can be set up for manual grading by using `manualPoints` in the [assessment configuration](../assessment/configuration.md#question-specification), like this:
 
 ```json title="infoAssessment.json"
 {
@@ -20,7 +20,7 @@ For questions that require manual grading, the question can be set up for manual
 
 Questions set to use only manual grading (i.e., with manual points but no auto points) allow students to "Save" answers, but they don't have a "Save & Grade" button. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored.
 
-It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments. By default, manual grading is performed only for the last submission of the last variant, so having a single variant simplifies both the grading process and the student feedback. The `singleVariant` setting can be updated in the [`info.json` file](../question/index.md#metadata-infojson) in the question, like this:
+It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments. By default, manual grading is performed only for the last submission of the last variant, so having a single variant simplifies both the grading process and the student feedback. The `singleVariant` setting can be updated in the [`info.json` file](../question/overview.md#metadata-infojson) in the question, like this:
 
 ```json title="info.json"
 {
@@ -29,7 +29,7 @@ It is recommended to also mark manually-graded questions as `"singleVariant": tr
 }
 ```
 
-Any [elements](../elements/index.md) can be used in the [`question.html`](../question/index.md#html-questionhtml) to write manually graded questions. All student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
+Any [elements](../elements/index.md) can be used in the [`question.html`](../question/overview.md#html-questionhtml) to write manually graded questions. All student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
 
 ## Manual grading using file uploads
 
