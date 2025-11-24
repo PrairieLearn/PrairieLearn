@@ -4,7 +4,7 @@ import { render } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
 
-import { TableHeaderCell } from './TanstackTable.js';
+import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
 
 function HiddenMeasurementHeader<TData>({
   table,
@@ -35,7 +35,7 @@ function HiddenMeasurementHeader<TData>({
               if (!header) return null;
 
               return (
-                <TableHeaderCell
+                <TanstackTableHeaderCell
                   key={header.id}
                   header={header}
                   filters={filters}
