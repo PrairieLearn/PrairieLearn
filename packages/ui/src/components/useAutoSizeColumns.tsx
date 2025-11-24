@@ -136,8 +136,8 @@ export function useAutoSizeColumns<TData>(
         }
       }
 
-      // Clear container content
-      container.innerHTML = '';
+      // Clear container content by unmounting Preact components
+      render(null, container);
 
       // Apply measurements
       if (Object.keys(newSizing).length > 0) {
@@ -157,7 +157,7 @@ export function useAutoSizeColumns<TData>(
     return () => {
       const container = measurementContainerRef.current;
       if (container) {
-        container.innerHTML = '';
+        render(null, container);
         container.remove();
         measurementContainerRef.current = null;
       }
