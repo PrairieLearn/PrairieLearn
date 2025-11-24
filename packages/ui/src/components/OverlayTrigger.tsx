@@ -141,7 +141,7 @@ export function OverlayTrigger({
   // Construct the popover with our managed ref
   const popoverOverlay = popover ? (
     <Popover {...popover.props}>
-      {popover.header}
+      {popover.header && <Popover.Header>{popover.header}</Popover.Header>}
       <Popover.Body ref={overlayBodyRef}>{popover.body}</Popover.Body>
     </Popover>
   ) : null;
