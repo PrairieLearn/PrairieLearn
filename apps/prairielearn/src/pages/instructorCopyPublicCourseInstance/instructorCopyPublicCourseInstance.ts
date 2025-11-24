@@ -32,11 +32,13 @@ router.post(
     const startDate = start_date.length > 0 ? start_date : undefined;
     const endDate = end_date.length > 0 ? end_date : undefined;
 
-    // We always copy at least the empty object to clear out any existing publishing settings.
-    const resolvedPublishing = {
-      startDate,
-      endDate,
-    };
+    const resolvedPublishing =
+      (startDate ?? endDate)
+        ? {
+            startDate,
+            endDate,
+          }
+        : undefined;
 
     const fileTransferId = await copyCourseInstanceBetweenCourses({
       fromCourse: course,
