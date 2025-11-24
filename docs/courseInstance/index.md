@@ -120,7 +120,7 @@ To migrate from `allowAccess` to publishing extensions:
     }
     ```
 
-1. Find the allowAccess rule that contains no other settings (`uids`, `institution`). Create a section in your file for this configuration.
+1. Find the allowAccess rule that contains no other settings (`uids`, `institution`). Create a new `publishing` section in your `infoCourseInstance.json` file, containing the start and end dates for your term.
 
    ```json title="infoCourseInstance.json"
    {
