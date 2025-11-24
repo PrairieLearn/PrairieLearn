@@ -4,62 +4,58 @@
 
     Any time you edit or add an `infoAssessment.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the header so that the local PrairieLearn server reloads the changes.
 
-## Overview
+## Required properties
 
-Each assessment is a single directory in the `assessments` folder or any subfolder. Assessments may be nested in subdirectories of the `assessments` folder. The assessment directory must contain a single file called `infoAssessment.json` that describes the assessment and looks like:
+Each assessment must set the following properties in their `infoAssessment.json` file:
 
-```json title="infoAssessment.json"
-{
-  "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
-  "type": "Exam",
-  "title": "Coordinates and Vectors",
-  "set": "Quiz",
-  "module": "Linear algebra review",
-  "number": "2",
-  "allowAccess": [],
-  "zones": [],
-  "comment": "You can add comments to JSON files using this property."
-}
-```
+| Property                       | Type   | Description                                                               |
+| ------------------------------ | ------ | ------------------------------------------------------------------------- |
+| `uuid`                         | string | [Unique identifier](../uuid.md).                                          |
+| [`type`](#assessment-types)    | string | Either `"Homework"` or `"Exam"`.                                          |
+| `title`                        | string | The title of the assessment (e.g., `"Derivatives and integrals"`).        |
+| `set`                          | string | Which assessment set this belongs to (e.g., `"Quiz"`, `"Practice Quiz"`). |
+| [`number`](#assessment-naming) | string | The number of the assessment within the set (e.g., `"1"`, `"2B"`).        |
 
-The assessment ID is the full path relative to `assessments`.
+### Optional properties
 
-## Format specification
+In addition to those properties, the following properties can be used to further configure how the assessment behaves. Most assessments will need to configure the [`allowAccess`](../assessment/accessControl.md) property to control access to the assessment, and the [`zones`](#question-specification) property, which breaks down the assessment into zones of questions. Each zone allows for additional configuration of the questions within the zone.
 
-| Property                                                          | Type    | Description                                                                                                                               |
-| ----------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `uuid`                                                            | string  | [Unique identifier](../uuid.md). (Required; no default)                                                                                   |
-| [`type`](#assessment-types)                                       | string  | Either `"Homework"` or `"Exam"`. (Required; no default)                                                                                   |
-| `title`                                                           | string  | The title of the assessment (e.g., `"Derivatives and integrals"`). (Required; no default)                                                 |
-| `set`                                                             | string  | Which assessment set this belongs to (e.g., `"Quiz"`, `"Practice Quiz"`). (Required; no default)                                          |
-| [`number`](#assessment-naming)                                    | string  | The number of the assessment within the set (e.g., `"1"`, `"2B"`). (Required; no default)                                                 |
-| [`module`](#grouping-assessments-by-modules)                      | string  | The module that this assessment belongs to (e.g., `Chapter 3`). (Optional; default: `"Default"`)                                          |
-| [`allowAccess`](../assessment/accessControl.md)                   | array   | List of access rules. (Optional; default: no student access)                                                                              |
-| [`zones`](#question-specification)                                | array   | Specification of zones and questions. (Optional; default: none)                                                                           |
-| `text`                                                            | string  | HTML text shown on the assessment overview page. (Optional; default: none)                                                                |
-| `multipleInstance`                                                | boolean | Whether to allow students to create whole new attempts at the entire assessment. (Optional; default: `false`)                             |
-| `maxPoints`                                                       | number  | The maximum points that can be earned. (Optional; default: sum of zone max points)                                                        |
-| [`maxBonusPoints`](#assessment-points)                            | number  | The maximum number of additional points that can be earned beyond `maxPoints`. (Optional; default: 0)                                     |
-| [`shuffleQuestions`](#question-order-randomization)               | boolean | Whether to randomize the question order. (Optional; default: `false` for Homework-type assessments, `true` for Exam-type assessments)     |
-| `autoClose`                                                       | boolean | Whether to automatically close the assessment after 6 hours of inactivity (Exams only). (Optional; default: `true`)                       |
-| `allowIssueReporting`                                             | boolean | Whether to allow students to report question issues. (Optional; default: `true`)                                                          |
-| `allowPersonalNotes`                                              | boolean | Whether to allow students to add personal notes. (Optional; default: `true`)                                                              |
-| `constantQuestionValue`                                           | boolean | Whether to disable the question value boost on correct solutions (Homework only). (Optional; default: `false`)                            |
-| `allowRealTimeGrading`                                            | boolean | Whether to grade questions in real time (Exams only). (Optional; default: `true`)                                                         |
-| `requireHonorCode`                                                | boolean | Whether to require students to agree to the honor code (Exams only). (Optional; default: `true`)                                          |
-| `honorCode`                                                       | string  | Custom text to be specified for the honor code (Exams only). (Optional; default: none)                                                    |
-| `advanceScorePerc`                                                | number  | Minimum score percentage require to advance to the next question (Exams only). (Optional; default: 0)                                     |
-| `gradeRateMinutes`                                                | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (Optional; default: 0)                               |
-| [`groupWork`](#enabling-group-work-for-collaborative-assessments) | boolean | Whether the assessment will support group work. (Optional; default: `false`)                                                              |
-| `groupMaxSize`                                                    | number  | Maximum number of students in a group. (Optional; default: none)                                                                          |
-| `groupMinSize`                                                    | number  | Minimum number of students in a group. (Optional; default: none)                                                                          |
-| [`groupRoles`](#enabling-custom-group-roles)                      | array   | Array of custom user roles in a group. (Optional; default: none)                                                                          |
-| `canSubmit`                                                       | array   | A list of group role names that can submit questions in this assessment. Only applicable for group assessments. (Optional; default: none) |
-| `canView`                                                         | array   | A list of group role names that can view questions in this assessment. Only applicable for group assessments. (Optional; default: none)   |
-| `studentGroupCreate`                                              | boolean | Whether students can create groups. (Optional; default: `false`)                                                                          |
-| `studentGroupJoin`                                                | boolean | Whether students can join groups. (Optional; default: `false`)                                                                            |
-| `studentGroupLeave`                                               | boolean | Whether students can leave groups. (Optional; default: `false`)                                                                           |
-| `studentGroupChooseName`                                          | boolean | Whether students can choose their own group name. (Optional; default: `true`)                                                             |
+| Property                                            | Type    | Description                                                                                                                 |
+| --------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [`module`](#grouping-assessments-by-modules)        | string  | The module that this assessment belongs to (e.g., `Chapter 3`). (default: `"Default"`)                                      |
+| [`allowAccess`](../assessment/accessControl.md)     | array   | List of access rules. (default: no student access)                                                                          |
+| [`zones`](#question-specification)                  | array   | Specification of zones and questions. (default: none)                                                                       |
+| `text`                                              | string  | HTML text shown on the assessment overview page. (default: none)                                                            |
+| `multipleInstance`                                  | boolean | Whether to allow students to create whole new attempts at the entire assessment. (default: `false`)                         |
+| `maxPoints`                                         | number  | The maximum points that can be earned. (default: sum of zone max points)                                                    |
+| [`maxBonusPoints`](#assessment-points)              | number  | The maximum number of additional points that can be earned beyond `maxPoints`. (default: 0)                                 |
+| [`shuffleQuestions`](#question-order-randomization) | boolean | Whether to randomize the question order. (default: `false` for Homework-type assessments, `true` for Exam-type assessments) |
+| `autoClose`                                         | boolean | Whether to automatically close the assessment after 6 hours of inactivity (Exams only). (default: `true`)                   |
+| `allowIssueReporting`                               | boolean | Whether to allow students to report question issues. (default: `true`)                                                      |
+| `allowPersonalNotes`                                | boolean | Whether to allow students to add personal notes. (default: `true`)                                                          |
+| `constantQuestionValue`                             | boolean | Whether to disable the question value boost on correct solutions (Homework only). (default: `false`)                        |
+| `allowRealTimeGrading`                              | boolean | Whether to grade questions in real time (Exams only). (default: `true`)                                                     |
+| `requireHonorCode`                                  | boolean | Whether to require students to agree to the honor code (Exams only). (default: `true`)                                      |
+| `honorCode`                                         | string  | Custom text to be specified for the honor code (Exams only). (default: none)                                                |
+| `advanceScorePerc`                                  | number  | Minimum score percentage require to advance to the next question (Exams only). (default: 0)                                 |
+| `gradeRateMinutes`                                  | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (default: 0)                           |
+
+#### Group work
+
+The following group work properties (all optional) can be used to configure group work for an assessment.
+
+| Property                                                          | Type    | Description                                                                                                                     |
+| ----------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| [`groupWork`](#enabling-group-work-for-collaborative-assessments) | boolean | Whether the assessment will support group work. (default: `false`)                                                              |
+| `groupMaxSize`                                                    | number  | Maximum number of students in a group. (default: none)                                                                          |
+| `groupMinSize`                                                    | number  | Minimum number of students in a group. (default: none)                                                                          |
+| [`groupRoles`](#enabling-custom-group-roles)                      | array   | Array of custom user roles in a group. (default: none)                                                                          |
+| `canSubmit`                                                       | array   | A list of group role names that can submit questions in this assessment. Only applicable for group assessments. (default: none) |
+| `canView`                                                         | array   | A list of group role names that can view questions in this assessment. Only applicable for group assessments. (default: none)   |
+| `studentGroupCreate`                                              | boolean | Whether students can create groups. (default: `false`)                                                                          |
+| `studentGroupJoin`                                                | boolean | Whether students can join groups. (default: `false`)                                                                            |
+| `studentGroupLeave`                                               | boolean | Whether students can leave groups. (default: `false`)                                                                           |
+| `studentGroupChooseName`                                          | boolean | Whether students can choose their own group name. (default: `true`)                                                             |
 
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 

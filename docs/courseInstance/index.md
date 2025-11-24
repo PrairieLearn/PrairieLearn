@@ -76,7 +76,7 @@ You can extend the end date of the course instance to particular students by cre
 
 ### Controlling access by institution
 
-By default, only students that belong to the course's institution can access the course instance. You can use the [`institution` property](../assessment/accessControl.md#institutions) to allow access from other institutions. It can be set to `"Any"` to allow access from all institutions, or to a specific institution name, such as `"UIUC"`, or for LTI 1.1-linked courses, to `"LTI"`. For instance, you can use the following rule to allow students from any institution to access the course instance between the specified dates:
+By default, only students that belong to the course's institution can access the course instance. You can use the `institution` property to allow access from other institutions. It can be set to `"Any"` to allow access from all institutions, or to a specific institution name, such as `"UIUC"`, or for LTI 1.1-linked courses, to `"LTI"`. For instance, you can use the following rule to allow students from any institution to access the course instance between the specified dates:
 
 !!! note "Planned deprecation"
 
