@@ -59,7 +59,7 @@ const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 const MODEL_PROVIDERS: {
   provider: AiGradingProvider,
   name: string
-} = [
+}[] = [
   { provider: 'openai', name: 'OpenAI GPT' },
   { provider: 'google', name: 'Google Gemini' },
   { provider: 'anthropic', name: 'Anthropic Claude' }
@@ -684,8 +684,8 @@ export function AssessmentQuestionTable({
                       count={aiGradingCounts.selected}
                       onSelectProvider={(provider) => {
                         handleBatchAction(
-                          { batch_action: 'ai_grade_assessment_selected' },
-                          provider
+                          { batch_action: 'ai_grade_assessment_selected', provider },
+                          selectedIds
                         )
                       }}
                     />

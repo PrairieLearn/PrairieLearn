@@ -3,6 +3,7 @@ import z from 'zod';
 
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';

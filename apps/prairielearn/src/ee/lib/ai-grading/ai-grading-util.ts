@@ -19,7 +19,7 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { type GoogleAIModelId, type OpenAIModelId, calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
+import { type AnthropicAIModelId, type GoogleAIModelId, type OpenAIModelId, calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
   type Course,
@@ -48,6 +48,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export const AI_GRADING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAIModelId;
 export const AI_GRADING_GOOGLE_MODEL = 'gemini-2.5-flash' satisfies GoogleAIModelId;
+export const AI_GRADING_ANTHROPIC_MODEL = 'claude-haiku-4-5' satisfies AnthropicAIModelId;
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -77,9 +78,12 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
-  provider: 'openai' | 'google';
+  provider: 'openai' | 'google' | 'anthropic';
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
+
+  const systemPromptsAsFirstMessageOnly = provider === 'google' || provider === 'anthropic';
+  const systemPromptAfterFirstMessage = systemPromptsAsFirstMessageOnly ? 'user' : 'system';
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -129,7 +133,7 @@ export async function generatePrompt({
 
   input.push(
     {
-      role: provider === 'openai' ? 'system' : 'user',
+      role: systemPromptAfterFirstMessage,
       content: 'This is the question for which you will be grading a response:',
     },
     {
@@ -141,7 +145,7 @@ export async function generatePrompt({
   if (questionAnswer.trim()) {
     input.push(
       {
-        role: provider === 'openai' ? 'system' : 'user',
+        role: systemPromptAfterFirstMessage,
         content: 'The instructor has provided the following answer for this question:',
       },
       {
@@ -154,13 +158,13 @@ export async function generatePrompt({
   if (example_submissions.length > 0) {
     if (rubric_items.length > 0) {
       input.push({      
-        role: provider === 'openai' ? 'system' : 'user',
+        role: systemPromptAfterFirstMessage,
         content:
           'Here are some example student responses and their corresponding selected rubric items.',
       });
     } else {
       input.push({
-        role: provider === 'openai' ? 'system' : 'user',
+        role: systemPromptAfterFirstMessage,
         content:
           'Here are some example student responses and their corresponding scores and feedback.',
       });
@@ -217,7 +221,7 @@ export async function generatePrompt({
 
   input.push(
     {
-      role: provider === 'openai' ? 'system' : 'user',
+      role: systemPromptAfterFirstMessage,
       content: 'The student made the following submission:',
     },
     generateSubmissionMessage({
@@ -225,7 +229,7 @@ export async function generatePrompt({
       submitted_answer,
     }),
     {
-      role: provider === 'openai' ? 'system' : 'user',
+      role: systemPromptAfterFirstMessage,
       content: 'Please grade the submission according to the above instructions.',
     },
   );

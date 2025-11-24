@@ -5,7 +5,7 @@ import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 export type BatchActionData =
   | { assigned_grader: string | null }
   | { requires_manual_grading: boolean }
-  | { batch_action: 'ai_grade_assessment_selected'; closed_instance_questions_only?: boolean }
+  | { batch_action: 'ai_grade_assessment_selected'; provider: AiGradingProvider; closed_instance_questions_only?: boolean }
   | {
       batch_action: 'ai_instance_question_group_selected';
       closed_instance_questions_only?: boolean;
@@ -49,7 +49,6 @@ export function useManualGradingActions({
       const requestBody: Record<string, any> = {
         __csrf_token: csrfToken,
         __action: params.action,
-        provider: params.provider,
         instance_question_id:
           'instanceQuestionIds' in params ? params.instanceQuestionIds : undefined,
       };
@@ -63,10 +62,15 @@ export function useManualGradingActions({
           if (actionData.closed_instance_questions_only !== undefined) {
             requestBody.closed_instance_questions_only = actionData.closed_instance_questions_only;
           }
+          if ('provider' in actionData) {
+            requestBody.provider = actionData.provider;
+          }
         } else {
           // For regular batch actions
           requestBody.batch_action_data = actionData;
         }
+      } else {
+        requestBody.provider = params.provider;
       }
 
       const response = await fetch(window.location.pathname, {

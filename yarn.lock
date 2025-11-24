@@ -70,6 +70,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ai-sdk/anthropic@npm:^2.0.45":
+  version: 2.0.45
+  resolution: "@ai-sdk/anthropic@npm:2.0.45"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@ai-sdk/provider-utils": "npm:3.0.17"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/ef0e54f032e3b8324c278f3b25d9b388308204d753404c49fd880709a796c2343aee36d335c99f50e683edd39d5b8b6f42b2e9034e1725d8e0db514e2233d104
+  languageName: node
+  linkType: hard
+
 "@ai-sdk/gateway@npm:2.0.7":
   version: 2.0.7
   resolution: "@ai-sdk/gateway@npm:2.0.7"
@@ -95,15 +107,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/openai@npm:^2.0.64":
-  version: 2.0.64
-  resolution: "@ai-sdk/openai@npm:2.0.64"
+"@ai-sdk/openai@npm:^2.0.71":
+  version: 2.0.71
+  resolution: "@ai-sdk/openai@npm:2.0.71"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.16"
+    "@ai-sdk/provider-utils": "npm:3.0.17"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/fde91951ca5f2612458d618fd2b8a6e29a8cae61f1bda45816258c697af5ec6f047dbd3acc1fcc921db6e39dfa3158799f0e66f737bcd40f5f0cdd10be74d2a7
+  checksum: 10c0/19a0a1648df074ba1c1836bf7b5cd874a3e4e5c2d4efad3bec1ecdcd7f013008b1f573685be2f5d8b6b326a91309f4f6c8b556755d62e6b03c840f9030ad7a5f
   languageName: node
   linkType: hard
 
@@ -4250,7 +4262,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
   dependencies:
-    "@ai-sdk/openai": "npm:^2.0.64"
+    "@ai-sdk/openai": "npm:^2.0.71"
     "@aws-sdk/client-auto-scaling": "npm:^3.926.0"
     "@aws-sdk/client-cloudwatch": "npm:^3.926.0"
     "@aws-sdk/client-ec2": "npm:^3.926.0"
@@ -15706,7 +15718,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "prairielearn@workspace:."
   dependencies:
+    "@ai-sdk/anthropic": "npm:^2.0.45"
     "@ai-sdk/google": "npm:^2.0.42"
+    "@ai-sdk/openai": "npm:^2.0.71"
     "@changesets/cli": "npm:^2.29.7"
     "@eslint-react/eslint-plugin": "npm:^2.3.1"
     "@html-eslint/eslint-plugin": "npm:^0.47.1"
