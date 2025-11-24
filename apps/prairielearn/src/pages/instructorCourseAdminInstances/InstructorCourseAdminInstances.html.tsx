@@ -1,8 +1,9 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useState } from 'preact/compat';
-import { Button, OverlayTrigger, Popover } from 'react-bootstrap';
+import { Button, Popover } from 'react-bootstrap';
 
 import { formatDate, formatDateYMDHM } from '@prairielearn/formatter';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { SyncProblemButton } from '../../components/SyncProblemButton.js';
 import type { StaffCourse } from '../../lib/client/safe-db-types.js';
@@ -175,7 +176,12 @@ export function InstructorCourseAdminInstances({
                           <OverlayTrigger
                             placement="bottom"
                             trigger="focus"
-                            overlay={renderPopoverStartDate(row.id)}
+                            popover={{
+                              props: {
+                                id: `popover-start-date-${row.id}`,
+                              },
+                              body: renderPopoverStartDate(row.id),
+                            }}
                           >
                             <Button
                               variant="ghost"
@@ -193,7 +199,12 @@ export function InstructorCourseAdminInstances({
                           <OverlayTrigger
                             placement="bottom"
                             trigger="focus"
-                            overlay={renderPopoverEndDate(row.id)}
+                            popover={{
+                              props: {
+                                id: `popover-end-date-${row.id}`,
+                              },
+                              body: renderPopoverEndDate(row.id),
+                            }}
                           >
                             <Button
                               variant="ghost"
