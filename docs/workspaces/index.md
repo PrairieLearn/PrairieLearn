@@ -226,7 +226,7 @@ If a file name appears in multiple locations, the following precedence takes eff
 
 - Dynamic content from `_workspace_files` has the highest precedence;
 
-- Files in the `workspaceTemplate/` directory are considered next;
+- Files in the `workspaceTemplates/` directory are considered next;
 
 - Files in the `workspace/` directory are considered last.
 

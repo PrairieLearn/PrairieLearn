@@ -293,8 +293,8 @@ The above `allowAccess` directive means that this assessment is available under 
     {
       "uids": ["student1@example.com", "student2@example.com"],
       "credit": 100,
-      "startDate": "2014-09-31T11:00:00",
-      "endDate": "2014-09-31T11:59:59",
+      "startDate": "2014-09-10T11:00:00",
+      "endDate": "2014-09-10T11:59:59",
       "timeLimitMin": 50
     }
   ]
