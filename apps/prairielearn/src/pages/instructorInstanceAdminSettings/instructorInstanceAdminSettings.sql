@@ -7,6 +7,25 @@ WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
 
+-- BLOCK long_names
+SELECT
+  ci.long_name
+FROM
+  course_instances AS ci
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_course_instance_by_short_name
+SELECT
+  ci.id
+FROM
+  course_instances AS ci
+WHERE
+  ci.course_id = $course_id
+  AND ci.short_name = $short_name
+  AND ci.deleted_at IS NULL;
+
 -- BLOCK select_enrollment_count
 SELECT
   COUNT(e.user_id)::integer AS enrollment_count

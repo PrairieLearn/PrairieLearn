@@ -1,5 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import clsx from 'clsx';
+import { useState } from 'preact/compat';
 import { Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -10,6 +11,7 @@ import type { PageContext } from '../../lib/client/page-context.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
+import { CopyCourseInstanceModal } from './components/CopyCourseInstanceModal.js';
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 import type { SettingsFormValues } from './instructorInstanceAdminSettings.types.js';
 
@@ -22,6 +24,7 @@ export function InstructorInstanceAdminSettings({
   courseInstance,
   institution,
   shortNames,
+  longNames,
   availableTimezones,
   origHash,
   instanceGHLink,
@@ -39,6 +42,7 @@ export function InstructorInstanceAdminSettings({
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   institution: PageContext<'courseInstance', 'instructor'>['institution'];
   shortNames: string[];
+  longNames: string[];
   availableTimezones: Timezone[];
   origHash: string;
   instanceGHLink: string | undefined | null;
@@ -48,6 +52,66 @@ export function InstructorInstanceAdminSettings({
   enrollmentManagementEnabled: boolean;
   infoCourseInstancePath: string;
 }) {
+  const [showCopyModal, setShowCopyModal] = useState(false);
+
+  // Calculate initial names for copy
+  const getInitialCopyNames = () => {
+    const getBaseShortName = (oldname: string): string => {
+      const found = oldname.match(/^(.*)_copy[0-9]+$/);
+      return found ? found[1] : oldname;
+    };
+
+    const getBaseLongName = (oldname: string | null): string => {
+      if (typeof oldname !== 'string') return 'Unknown';
+      const found = oldname.match(/^(.*) \(copy [0-9]+\)$/);
+      return found ? found[1] : oldname;
+    };
+
+    const getNumberShortName = (basename: string, oldnames: string[]): number => {
+      let number = 1;
+      oldnames.forEach((oldname) => {
+        const escapedBasename = basename.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const found = oldname.match(new RegExp(`^${escapedBasename}_copy([0-9]+)$`));
+        if (found) {
+          const foundNumber = Number.parseInt(found[1]);
+          if (foundNumber >= number) {
+            number = foundNumber + 1;
+          }
+        }
+      });
+      return number;
+    };
+
+    const getNumberLongName = (basename: string, oldnames: string[]): number => {
+      let number = 1;
+      oldnames.forEach((oldname) => {
+        if (typeof oldname !== 'string') return;
+        const escapedBasename = basename.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const found = oldname.match(new RegExp(`^${escapedBasename} \\(copy ([0-9]+)\\)$`));
+        if (found) {
+          const foundNumber = Number.parseInt(found[1]);
+          if (foundNumber >= number) {
+            number = foundNumber + 1;
+          }
+        }
+      });
+      return number;
+    };
+
+    const baseShortName = getBaseShortName(courseInstance.short_name);
+    const baseLongName = getBaseLongName(courseInstance.long_name);
+    const numberShortName = getNumberShortName(baseShortName, shortNames);
+    const numberLongName = getNumberLongName(baseLongName, longNames);
+    const number = Math.max(numberShortName, numberLongName);
+
+    return {
+      shortName: `${baseShortName}_copy${number}`,
+      longName: `${baseLongName} (copy ${number})`,
+    };
+  };
+
+  const initialCopyNames = getInitialCopyNames();
+
   const defaultValues: SettingsFormValues = {
     ciid: courseInstance.short_name,
     long_name: courseInstance.long_name ?? '',
@@ -279,17 +343,9 @@ export function InstructorInstanceAdminSettings({
         </form>
       </div>
       <div class="card-footer d-flex flex-wrap gap-2">
-        <form name="copy-course-instance-form" method="POST">
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <button
-            type="submit"
-            name="__action"
-            value="copy_course_instance"
-            class="btn btn-sm btn-primary"
-          >
-            <i class="fa fa-clone" /> Make a copy of this course instance
-          </button>
-        </form>
+        <button type="button" class="btn btn-sm btn-primary" onClick={() => setShowCopyModal(true)}>
+          <i class="fa fa-clone" /> Make a copy of this course instance
+        </button>
         <button
           type="button"
           class="btn btn-sm btn-primary"
@@ -299,6 +355,15 @@ export function InstructorInstanceAdminSettings({
           <i class="fa fa-times" aria-hidden="true" /> Delete this course instance
         </button>
       </div>
+
+      <CopyCourseInstanceModal
+        show={showCopyModal}
+        csrfToken={csrfToken}
+        courseInstance={courseInstance}
+        initialShortName={initialCopyNames.shortName}
+        initialLongName={initialCopyNames.longName}
+        onHide={() => setShowCopyModal(false)}
+      />
     </div>
   );
 }
