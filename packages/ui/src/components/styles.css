@@ -1,13 +1,17 @@
-body.no-user-select {
+/* Global styles for the PrairieLearn UI components. These should be included in any
+page that uses the PrairieLearn UI components, and class names should not be directly referenced by consumers.
+*/
+
+body.pl-ui-no-user-select {
   user-select: none;
   -webkit-user-select: none;
 }
 
-.tanstack-table-search-input {
+.pl-ui-tanstack-table-search-input {
   padding-right: 2.5rem;
 }
 
-.tanstack-table-clear-search {
+.btn.btn-floating-clear {
   position: absolute;
   right: 0;
   top: 50%;
@@ -19,18 +23,19 @@ body.no-user-select {
   text-decoration: none;
 }
 
-.tanstack-table-clear-search:hover {
+.btn.btn-floating-icon:hover {
   opacity: 1;
   color: var(--bs-secondary);
   text-decoration: none;
 }
 
-.tanstack-table-clear-search:focus {
+.btn.btn-floating-icon:focus {
   opacity: 1;
   color: var(--bs-secondary);
   text-decoration: none;
 }
 
+/* https://react-bootstrap.github.io/docs/getting-started/theming/#new-variants-and-sizes */
 .btn.btn-tanstack-table {
   --bs-btn-color: var(--bs-body-color);
   --bs-btn-bg: var(--bs-input-bg);
@@ -48,6 +53,6 @@ body.no-user-select {
   --bs-btn-disabled-border-color: var(--bs-border-color);
 }
 
-:is(.btn.btn-tanstack-table, .tanstack-table-focusable-shadow):not(:focus-visible) {
+:is(.btn.btn-tanstack-table, .pl-ui-tanstack-table-focusable-shadow):not(:focus-visible) {
   box-shadow: var(--bs-box-shadow-sm);
 }

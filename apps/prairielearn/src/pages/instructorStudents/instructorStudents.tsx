@@ -207,7 +207,6 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        headContent: compiledStylesheetTag('tanstackTable.css'),
         content: (
           <>
             <CourseInstanceSyncErrorsAndWarnings

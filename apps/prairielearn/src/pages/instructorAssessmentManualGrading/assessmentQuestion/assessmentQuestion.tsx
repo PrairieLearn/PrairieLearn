@@ -118,7 +118,6 @@ router.get(
           fullWidth: true,
           pageNote: `Question ${number_in_alternative_group}`,
         },
-        headContent: compiledStylesheetTag('tanstackTable.css'),
         content: (
           <>
             <AssessmentSyncErrorsAndWarnings
