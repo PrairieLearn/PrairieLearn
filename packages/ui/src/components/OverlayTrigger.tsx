@@ -62,8 +62,23 @@ export interface OverlayTriggerProps extends Omit<BootstrapOverlayTriggerProps, 
  * @example
  * ```tsx
  * <OverlayTrigger
- *   overlayBody={<div>Content here</div>}
- *   overlayHeader="Title"
+ *   tooltip={{
+ *     body: 'Tooltip content',
+ *     props: { id: 'tooltip-id' },
+ *   }}
+ *   placement="right"
+ * >
+ *   <button>Hover me</button>
+ * </OverlayTrigger>
+ * ```
+ *
+ * @example
+ * ```tsx
+ * <OverlayTrigger
+ *   popover={{
+ *     header: 'Popover title',
+ *     body: 'Popover content',
+ *   }}
  *   placement="right"
  * >
  *   <button>Click me</button>
