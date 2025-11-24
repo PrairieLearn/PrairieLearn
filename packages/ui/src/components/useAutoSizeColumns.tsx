@@ -6,17 +6,15 @@ import type { JSX } from 'preact/jsx-runtime';
 
 import { TableHeaderCell } from './TanstackTable.js';
 
-interface HiddenMeasurementHeaderProps<TData> {
-  table: Table<TData>;
-  columnsToMeasure: { id: string }[];
-  filters?: Record<string, (props: { header: Header<TData, unknown> }) => JSX.Element>;
-}
-
 function HiddenMeasurementHeader<TData>({
   table,
   columnsToMeasure,
   filters = {},
-}: HiddenMeasurementHeaderProps<TData>) {
+}: {
+  table: Table<TData>;
+  columnsToMeasure: { id: string }[];
+  filters?: Record<string, (props: { header: Header<TData, unknown> }) => JSX.Element>;
+}) {
   const headerGroups = table.getHeaderGroups();
   const leafHeaderGroup = headerGroups[headerGroups.length - 1];
 
@@ -56,7 +54,8 @@ function HiddenMeasurementHeader<TData>({
 
 /**
  * Custom hook that automatically measures and sets column widths based on header content.
- * Only measures columns that don't have explicit sizes set, preserving user resizes.
+ * Only measures columns that have `meta: { autoSize: true }` and don't have explicit sizes set.
+ * User resizes are preserved.
  *
  * @param table - The TanStack Table instance
  * @param tableRef - Ref to the table container element
@@ -93,12 +92,8 @@ export function useAutoSizeColumns<TData>(
     }
 
     const allColumns = table.getVisibleLeafColumns();
-    const columnSizing = table.getState().columnSizing;
 
-    // Find columns that need measurement (not in columnSizing state = using default size)
-    const columnsToMeasure = allColumns.filter((col) => {
-      return columnSizing[col.id] === undefined;
-    });
+    const columnsToMeasure = allColumns.filter((col) => col.columnDef.meta?.autoSize);
 
     if (columnsToMeasure.length === 0) {
       // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
