@@ -73,7 +73,7 @@ export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
 
 /**
  * Providers whose models support system messages after the first user message.
- * As of November 2025, 
+ * As of November 2025,
  * - OpenAI GPT 5-mini supports this.
  * - Google Gemini 2.5-flash does not support this.
  * - Anthropic Claude Haiku 4.5 does not support this.
@@ -99,7 +99,9 @@ export async function generatePrompt({
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
 
-  const systemRoleAfterUserMessage = PROVIDERS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(provider) ? 'system' : 'user';
+  const systemRoleAfterUserMessage = PROVIDERS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(provider)
+    ? 'system'
+    : 'user';
 
   // Instructions for grading
   if (rubric_items.length > 0) {

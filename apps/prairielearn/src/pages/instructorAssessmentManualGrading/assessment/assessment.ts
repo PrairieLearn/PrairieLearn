@@ -14,7 +14,10 @@ import {
 } from '@prairielearn/postgres';
 
 import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
-import { type AiGradingProvider, deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import {
+  type AiGradingProvider,
+  deleteAiGradingJobs,
+} from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import { type Assessment } from '../../../lib/db-types.js';

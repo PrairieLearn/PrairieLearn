@@ -114,7 +114,7 @@ export async function aiGrade({
         // TODO: Add support for generating embeddings with Google Generative AI.
         // We did not add it yet since Gemini models will be primarily tested
         // with image submissions, which we do not support for RAG.
-        embeddingModel: null, 
+        embeddingModel: null,
         model: google(AI_GRADING_GOOGLE_MODEL),
       };
     } else {
@@ -124,7 +124,7 @@ export async function aiGrade({
       }
       const anthropic = createAnthropic({
         apiKey: config.aiGradingAnthropicApiKey,
-      }); 
+      });
       return {
         // TODO: Add support for generating embeddings with Anthropic AI.
         // We did not add it yet since Gemini models will be primarily tested
@@ -186,9 +186,7 @@ export async function aiGrade({
       }
       job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
     } else {
-      job.info(
-        `Skip embedding generation as AI grading does not support RAG for ${provider} yet.`,
-      );
+      job.info(`Skip embedding generation as AI grading does not support RAG for ${provider} yet.`);
     }
 
     const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
