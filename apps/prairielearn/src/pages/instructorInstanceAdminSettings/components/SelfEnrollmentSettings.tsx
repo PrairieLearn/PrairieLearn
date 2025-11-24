@@ -32,7 +32,12 @@ function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
           style="font-family: monospace; font-size: 1.1em; letter-spacing: 0.1em;"
           disabled
         />
-        <OverlayTrigger tooltip={{ body: copied ? 'Copied!' : 'Copy' }}>
+        <OverlayTrigger
+          tooltip={{
+            body: copied ? 'Copied!' : 'Copy',
+            props: { id: 'self-enrollment-code-copy-tooltip' },
+          }}
+        >
           <Button
             size="sm"
             variant="outline-secondary"
@@ -75,7 +80,12 @@ function SelfEnrollmentLink({
         </label>
         <InputGroup>
           <Form.Control id="self_enrollment_link" value={selfEnrollLink} disabled />
-          <OverlayTrigger tooltip={{ body: copied ? 'Copied!' : 'Copy' }}>
+          <OverlayTrigger
+            tooltip={{
+              body: copied ? 'Copied!' : 'Copy',
+              props: { id: 'self-enrollment-link-copy-tooltip' },
+            }}
+          >
             <Button
               size="sm"
               variant="outline-secondary"
@@ -89,7 +99,12 @@ function SelfEnrollmentLink({
               <i class="bi bi-clipboard" />
             </Button>
           </OverlayTrigger>
-          <OverlayTrigger tooltip={{ body: 'View QR Code' }}>
+          <OverlayTrigger
+            tooltip={{
+              body: 'View QR Code',
+              props: { id: 'self-enrollment-link-qr-code-tooltip' },
+            }}
+          >
             <Button
               size="sm"
               variant="outline-secondary"
@@ -100,7 +115,12 @@ function SelfEnrollmentLink({
             </Button>
           </OverlayTrigger>
           {canEdit && (
-            <OverlayTrigger tooltip={{ body: 'Regenerate' }}>
+            <OverlayTrigger
+              tooltip={{
+                body: 'Regenerate',
+                props: { id: 'self-enrollment-link-regenerate-tooltip' },
+              }}
+            >
               <Button
                 size="sm"
                 variant="outline-secondary"

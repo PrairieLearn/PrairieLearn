@@ -729,6 +729,7 @@ export function AssessmentQuestionTable({
                               higher can be assigned as graders
                             </>
                           ),
+                          props: { id: 'assign-for-grading-tooltip' },
                         }}
                       >
                         <span>

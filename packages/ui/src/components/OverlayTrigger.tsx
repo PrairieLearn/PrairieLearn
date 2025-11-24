@@ -28,9 +28,9 @@ export interface OverlayTriggerProps extends Omit<BootstrapOverlayTriggerProps, 
   };
   tooltip?: {
     /**
-     * Additional props to pass to the Tooltip component.
+     * Additional props to pass to the Tooltip component. `id` is required for accessibility.
      */
-    props?: Omit<TooltipProps, 'children'>;
+    props: Omit<TooltipProps, 'children' | 'id'> & { id: string };
     /**
      * The content to display in the tooltip body.
      */

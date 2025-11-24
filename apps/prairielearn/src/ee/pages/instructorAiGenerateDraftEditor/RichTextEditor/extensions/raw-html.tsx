@@ -39,6 +39,7 @@ const RawHtmlComponent = (
                       single element by wrapping both of them in a single div.
                     </>
                   ),
+                  props: { id: 'raw-html-warning-tooltip' },
                 }}
               >
                 <i
@@ -58,6 +59,7 @@ const RawHtmlComponent = (
                   underlying HTML here.
                 </>
               ),
+              props: { id: 'raw-html-help-tooltip' },
             }}
           >
             <i class="bi bi-question-circle" aria-label="Raw HTML help" role="img" />

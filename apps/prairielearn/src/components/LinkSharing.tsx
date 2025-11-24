@@ -79,7 +79,12 @@ export function PublicLinkSharing({
         <label for="publicLink">Public link</label>
         <InputGroup>
           <Form.Control type="text" id="publicLink" value={publicLink} disabled />
-          <OverlayTrigger tooltip={{ body: copied ? 'Copied!' : 'Copy' }}>
+          <OverlayTrigger
+            tooltip={{
+              body: copied ? 'Copied!' : 'Copy',
+              props: { id: 'public-link-copy-tooltip' },
+            }}
+          >
             <Button
               size="sm"
               variant="outline-secondary"
@@ -131,7 +136,12 @@ export function StudentLinkSharing({
       </label>
       <InputGroup>
         <Form.Control type="text" id="student_link" value={studentLink} disabled />
-        <OverlayTrigger tooltip={{ body: copied ? 'Copied!' : 'Copy' }}>
+        <OverlayTrigger
+          tooltip={{
+            body: copied ? 'Copied!' : 'Copy',
+            props: { id: 'student-link-copy-tooltip' },
+          }}
+        >
           <Button
             size="sm"
             variant="outline-secondary"
@@ -145,7 +155,12 @@ export function StudentLinkSharing({
             <i class="bi bi-clipboard" />
           </Button>
         </OverlayTrigger>
-        <OverlayTrigger tooltip={{ body: 'View QR Code' }}>
+        <OverlayTrigger
+          tooltip={{
+            body: 'View QR Code',
+            props: { id: 'student-link-qr-code-tooltip' },
+          }}
+        >
           <Button
             size="sm"
             variant="outline-secondary"
