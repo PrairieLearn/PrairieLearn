@@ -209,13 +209,13 @@ nav:
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course/index.md'
-      - 'Course instance configuration':
-          - courseInstance/index.md
-      - 'Assessment configuration':
+      - 'Course instances': 'courseInstance/index.md'
+      - 'Assessments':
           - assessment/index.md
-          - 'Assessment access control': 'assessment/accessControl.md'
-      - 'Question configuration':
-          - 'question/index.md'
+          - 'Configuration': assessment/configuration.md
+          - 'Access control': 'assessment/accessControl.md'
+      - 'Questions':
+          - question/index.md
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
           - 'Accessibility': 'question/accessibility.md'

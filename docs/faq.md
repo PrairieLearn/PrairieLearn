@@ -126,7 +126,7 @@ then the feature can be disabled by specifying in the `infoAssessment.json`:
 }
 ```
 
-See [Auto-closing Exam assessments](assessment/index.md#auto-closing-exam-assessments)
+See [Auto-closing Exam assessments](assessment/configuration.md#auto-closing-exam-assessments)
 for more details.
 
 ## How can we provide a cheat sheet for exams held in a testing center?
@@ -239,7 +239,7 @@ For example, this error would be triggered under:
 }
 ```
 
-See [Question Specification](assessment/index.md#question-specification) for more details.
+See [Question Specification](assessment/configuration.md#question-specification) for more details.
 
 ## Why is the UUID used in multiple questions?
 
@@ -396,4 +396,4 @@ There are a few possible ways to address these cases:
 
 - Alternatively, you can remove the `group_name` column altogether. While the column is used to match a row to a specific submission, if the column is not found, the row can be identified with other columns such as the `submission_id`.
 
-One way to avoid this problem is to remove the ability for students to specify their own group names. This can be done by [setting `"studentGroupChooseName": false`](./assessment/index.md#enabling-group-work-for-collaborative-assessments) in the assessment configuration. When this option is set, all student-created groups are named with a default pattern of `groupXXX`, where `XXX` is an integer number. This pattern does not typically cause issues with spreadsheet applications.
+One way to avoid this problem is to remove the ability for students to specify their own group names. This can be done by [setting `"studentGroupChooseName": false`](./assessment/configuration.md#enabling-group-work-for-collaborative-assessments) in the assessment configuration. When this option is set, all student-created groups are named with a default pattern of `groupXXX`, where `XXX` is an integer number. This pattern does not typically cause issues with spreadsheet applications.

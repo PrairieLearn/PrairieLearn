@@ -225,7 +225,7 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 - click the `Edit` button next to `infoAssessment.json`.
 
-- select the [assessment type](assessment/index.md#assessment-types) to be either `Homework` or `Exam`. For this example, we will use `Homework`.
+- select the [assessment type](assessment/configuration.md#assessment-types) to be either `Homework` or `Exam`. For this example, we will use `Homework`.
 
 - change the `title`. For example:
 

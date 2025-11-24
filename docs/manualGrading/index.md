@@ -7,7 +7,7 @@ Some questions may require manual grading, either fully (e.g., freeform essay-ty
 
 ## Configuring a question for manual grading
 
-For questions that require manual grading, the question can be set up for manual grading by using `manualPoints` in the [assessment configuration](../assessment/index.md#question-specification), like this:
+For questions that require manual grading, the question can be set up for manual grading by using `manualPoints` in the [assessment configuration](../assessment/configuration.md#question-specification), like this:
 
 ```json title="infoAssessment.json"
 {

@@ -76,7 +76,7 @@ You can extend the end date of the course instance to particular students by cre
 
 ### Controlling access by institution
 
-By default, only students that belong to the course's institution can access the course instance. You can use the [`institution` property](../assessment/accessControl.md#institutions) to allow access from other institutions. For instance, you can use the following rule to allow students from any institution to access the course instance between the specified dates:
+By default, only students that belong to the course's institution can access the course instance. You can use the [`institution` property](../assessment/accessControl.md#institutions) to allow access from other institutions. It can be set to `"Any"` to allow access from all institutions, or to a specific institution name, such as `"UIUC"`, or for LTI 1.1-linked courses, to `"LTI"`. For instance, you can use the following rule to allow students from any institution to access the course instance between the specified dates:
 
 !!! note "Planned deprecation"
 
@@ -156,7 +156,7 @@ To migrate from `allowAccess` to publishing extensions:
 
 Students can enroll in a course instance through one of two ways:
 
-1. They can use a URL specific to the course instance or [to one of its assessments](../assessment/index.md#linking-to-assessments). You can find the "student link" on the "Settings" tab of the course instance. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
+1. They can use a URL specific to the course instance or [to one of its assessments](../assessment/configuration.md#linking-to-assessments). You can find the "student link" on the "Settings" tab of the course instance. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
 
 2. They can use the "Add or remove courses" button on PrairieLearn's homepage. This button opens a page listing all course instances that are currently available for enrollment, giving students the option to add new courses.
 
