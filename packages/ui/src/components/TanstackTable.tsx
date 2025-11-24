@@ -570,7 +570,7 @@ export function TanstackTableCard<RowDataModel>({
             <OverlayTrigger overlay={<Tooltip>Clear search</Tooltip>}>
               <button
                 type="button"
-                class="btn btn-link btn-floating-icon"
+                class="btn btn-floating-icon"
                 aria-label="Clear search"
                 onClick={() => globalFilter.setValue('')}
               >
