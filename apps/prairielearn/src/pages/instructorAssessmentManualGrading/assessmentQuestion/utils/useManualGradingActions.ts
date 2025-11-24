@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 
+export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
+
 export type BatchActionData =
   | { assigned_grader: string | null }
   | { requires_manual_grading: boolean }
@@ -14,8 +16,6 @@ export type BatchActionData =
       batch_action: 'ai_instance_question_group_selected';
       closed_instance_questions_only?: boolean;
     };
-
-export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
 
 export type BatchActionParams =
   | {

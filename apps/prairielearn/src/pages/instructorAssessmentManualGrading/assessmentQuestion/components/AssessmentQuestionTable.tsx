@@ -100,6 +100,15 @@ export interface AssessmentQuestionTableProps {
   };
 }
 
+function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade: number }) {
+  return (
+    <div class="d-flex justify-content-between align-items-center w-100">
+      <span>{text}</span>
+      <span class="badge bg-secondary ms-2">{numToGrade}</span>
+    </div>
+  );
+}
+
 function AiGradingOption({
   text,
   numToGrade,
@@ -114,10 +123,7 @@ function AiGradingOption({
   if (!aiGradingProviderSelectionEnabled) {
     return (
       <Dropdown.Item disabled={numToGrade === 0} onClick={() => onSelectProvider(DEFAULT_PROVIDER)}>
-        <div class="d-flex justify-content-between align-items-center w-100">
-          <span>{text}</span>
-          <span class="badge bg-secondary ms-2">{numToGrade}</span>
-        </div>
+        <AiGradingOptionContent text={text} numToGrade={numToGrade} />
       </Dropdown.Item>
     );
   }
@@ -125,10 +131,7 @@ function AiGradingOption({
   return (
     <Dropdown drop="end">
       <Dropdown.Toggle class={`dropdown-item ${numToGrade > 0 ? '' : 'disabled'}`}>
-        <div class="d-flex justify-content-between align-items-center w-100">
-          <span>{text}</span>
-          <span class="badge bg-secondary ms-2">{numToGrade}</span>
-        </div>
+        <AiGradingOptionContent text={text} numToGrade={numToGrade} />
       </Dropdown.Toggle>
       <Dropdown.Menu>
         <p class="my-0 text-muted px-3">AI grader model</p>

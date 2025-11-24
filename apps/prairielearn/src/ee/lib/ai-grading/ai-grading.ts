@@ -186,7 +186,9 @@ export async function aiGrade({
       }
       job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
     } else {
-      job.info(`Skip embedding generation as AI grading does not support RAG for ${provider} yet.`);
+      job.info(
+        `Skip embedding generation as AI grading does not support RAG for model provider ${provider} yet.`,
+      );
     }
 
     const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
