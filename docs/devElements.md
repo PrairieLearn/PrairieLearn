@@ -69,23 +69,23 @@ Note that not all functions have the same return type. The arguments are:
 
 The `data` dictionary has the following possible keys (not all keys will be present in all element functions):
 
-| Key                             | Type    | Description                                                                                                                                           |
-| ------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data["correct_answers"]`       | dict    | The true answer (if any) for the variant.                                                                                                             |
-| `data["editable"]`              | boolean | Whether the question is currently in an editable state.                                                                                               |
+| Key                             | Type    | Description                                                                                                                                                    |
+| ------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data["correct_answers"]`       | dict    | The true answer (if any) for the variant.                                                                                                                      |
+| `data["editable"]`              | boolean | Whether the question is currently in an editable state.                                                                                                        |
 | `data["extensions"]`            | dict    | A list of extensions that are available to be loaded by this element. For more information see the [element extensions](./elementExtensions.md) documentation. |
-| `data["feedback"]`              | dict    | Any feedback to the student on their submitted answer.                                                                                                |
-| `data["format_errors"]`         | dict    | Any errors encountered while parsing the student input.                                                                                               |
-| `data["manual_grading"]`        | boolean | Whether the question is being rendered in the manual grading view.                                                                                    |
-| `data["num_valid_submissions"]` | int     | The number of valid (not containing format errors) submissions by the student for the current variant.                                                |
-| `data["options"]`               | dict    | Any options associated with the question.                                                                                                             |
-| `data["panel"]`                 | string  | Which panel is being rendered (`question`, `submission`, or `answer`).                                                                                |
-| `data["params"]`                | dict    | Parameters that describe the question variant.                                                                                                        |
-| `data["partial_scores"]`        | dict    | Partial scores for individual variables in the question.                                                                                              |
-| `data["raw_submitted_answers"]` | dict    | The answer submitted by the student before parsing.                                                                                                   |
-| `data["score"]`                 | float   | The total final score for the question.                                                                                                               |
-| `data["submitted_answers"]`     | dict    | The answer submitted by the student (after parsing).                                                                                                  |
-| `data["variant_seed"]`          | integer | The random seed for this question variant.                                                                                                            |
+| `data["feedback"]`              | dict    | Any feedback to the student on their submitted answer.                                                                                                         |
+| `data["format_errors"]`         | dict    | Any errors encountered while parsing the student input.                                                                                                        |
+| `data["manual_grading"]`        | boolean | Whether the question is being rendered in the manual grading view.                                                                                             |
+| `data["num_valid_submissions"]` | int     | The number of valid (not containing format errors) submissions by the student for the current variant.                                                         |
+| `data["options"]`               | dict    | Any options associated with the question.                                                                                                                      |
+| `data["panel"]`                 | string  | Which panel is being rendered (`question`, `submission`, or `answer`).                                                                                         |
+| `data["params"]`                | dict    | Parameters that describe the question variant.                                                                                                                 |
+| `data["partial_scores"]`        | dict    | Partial scores for individual variables in the question.                                                                                                       |
+| `data["raw_submitted_answers"]` | dict    | The answer submitted by the student before parsing.                                                                                                            |
+| `data["score"]`                 | float   | The total final score for the question.                                                                                                                        |
+| `data["submitted_answers"]`     | dict    | The answer submitted by the student (after parsing).                                                                                                           |
+| `data["variant_seed"]`          | integer | The random seed for this question variant.                                                                                                                     |
 
 So that multiple elements can exist together in one question, the convention is that each element instance is associated with one or more **variables**. These variables are keys in the dictionaries for the data elements. For example, if there are variables `x` and `y` then we might have:
 
