@@ -1,5 +1,5 @@
-import { useState } from 'preact/hooks';
-import { Modal } from 'react-bootstrap';
+import { useRef, useState } from 'preact/hooks';
+import { Modal, Overlay, Tooltip } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 import z from 'zod';
 
@@ -41,7 +41,7 @@ export function CopyCourseInstanceModal({
   const [selectedCourseId, setSelectedCourseId] = useState(
     courseInstanceCopyTargets?.[0]?.id ?? '',
   );
-
+  const buttonRef = useRef<HTMLButtonElement>(null);
   // Calculate question stats
   const questionsToCopy = questionsForCopy.filter((q) => q.should_copy).length;
   const questionsToLink = questionsForCopy.filter((q) => !q.should_copy).length;
@@ -64,20 +64,28 @@ export function CopyCourseInstanceModal({
   }
 
   const canCopy = courseInstanceCopyTargets.length > 0;
+  const hasSharingName = course.sharing_name !== null;
 
   return (
     <>
+      <Overlay placement="bottom" show={!hasSharingName && show} target={buttonRef}>
+        <Tooltip show={!hasSharingName && show}>
+          This course has not set a sharing name. You cannot copy this course instance to your
+          course.
+        </Tooltip>
+      </Overlay>
       <button
+        ref={buttonRef}
         class="btn btn-sm btn-outline-light"
         type="button"
         aria-label="Copy course instance"
-        onClick={() => setShow(true)}
+        onClick={() => setShow(!show)}
       >
         <i class="fa fa-clone" />
         <span class="d-none d-sm-inline">Copy course instance</span>
       </button>
 
-      <Modal show={show} size="lg" onHide={() => setShow(false)}>
+      <Modal show={show && hasSharingName} size="lg" onHide={() => setShow(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Copy course instance</Modal.Title>
         </Modal.Header>

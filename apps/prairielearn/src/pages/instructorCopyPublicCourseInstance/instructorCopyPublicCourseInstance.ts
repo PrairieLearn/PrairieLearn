@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 
@@ -12,17 +13,42 @@ const router = Router();
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const courseInstance = await selectOptionalCourseInstanceById(req.body.course_instance_id);
+    const { start_date, end_date, course_instance_id } = z
+      .object({
+        start_date: z.string(),
+        end_date: z.string(),
+        course_instance_id: z.string(),
+      })
+      .parse(req.body);
+
+    const courseInstance = await selectOptionalCourseInstanceById(course_instance_id);
     if (!courseInstance?.share_source_publicly) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
     const course = await selectCourseById(courseInstance.course_id);
 
-    await copyCourseInstanceBetweenCourses(res, {
+    const toCourseId = res.locals.course.id;
+
+    const startDate = start_date.length > 0 ? start_date : undefined;
+    const endDate = end_date.length > 0 ? end_date : undefined;
+
+    // We always copy at least the empty object to clear out any existing publishing settings.
+    const resolvedPublishing = {
+      startDate,
+      endDate,
+    };
+
+    const fileTransferId = await copyCourseInstanceBetweenCourses({
       fromCourse: course,
       fromCourseInstance: courseInstance,
-      toCourseId: res.locals.course.id,
+      toCourseId,
+      userId: res.locals.user.user_id,
+      metadataOverrides: {
+        publishing: resolvedPublishing,
+      },
     });
+
+    res.redirect(`/pl/course/${toCourseId}/file_transfer/${fileTransferId}`);
   }),
 );
 

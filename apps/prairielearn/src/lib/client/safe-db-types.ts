@@ -189,6 +189,7 @@ export type StaffCourse = z.infer<typeof StaffCourseSchema>;
 
 export const RawPublicCourseSchema = RawStaffCourseSchema.pick({
   id: true,
+  sharing_name: true,
   short_name: true,
   title: true,
 });
