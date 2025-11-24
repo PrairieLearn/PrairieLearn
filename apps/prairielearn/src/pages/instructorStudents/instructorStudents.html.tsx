@@ -24,7 +24,11 @@ import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
-import { CategoricalColumnFilter, TanstackTableCard } from '@prairielearn/ui';
+import {
+  CategoricalColumnFilter,
+  TanstackTableCard,
+  TanstackTableEmptyState,
+} from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
@@ -34,10 +38,7 @@ import {
   parseAsColumnVisibilityStateWithColumns,
   parseAsSortingState,
 } from '../../lib/client/nuqs.js';
-import type {
-  PageContextWithAuthzData,
-  StaffCourseInstanceContext,
-} from '../../lib/client/page-context.js';
+import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
@@ -69,7 +70,7 @@ async function copyToClipboard(text: string) {
 function CopyEnrollmentLinkButton({
   courseInstance,
 }: {
-  courseInstance: StaffCourseInstanceContext['course_instance'];
+  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
 }) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -147,8 +148,8 @@ function CopyEnrollmentLinkButton({
 
 interface StudentsCardProps {
   authzData: PageContextWithAuthzData['authz_data'];
-  course: StaffCourseInstanceContext['course'];
-  courseInstance: StaffCourseInstanceContext['course_instance'];
+  course: PageContext<'courseInstance', 'instructor'>['course'];
+  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
   enrollmentManagementEnabled: boolean;
   students: StudentRow[];
@@ -284,8 +285,7 @@ function StudentsCard({
         cell: (info) => <EnrollmentStatusIcon type="text" status={info.getValue()} />,
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const current = row.getValue(columnId);
-          if (typeof current !== 'string') return false;
+          const current = row.getValue<StudentRow['enrollment']['status']>(columnId);
           return filterValues.includes(current);
         },
       }),
@@ -370,9 +370,12 @@ function StudentsCard({
       <TanstackTableCard
         table={table}
         title="Students"
+        // eslint-disable-next-line @eslint-react/no-forbidden-props
+        className="h-100"
+        singularLabel="student"
+        pluralLabel="students"
         downloadButtonOptions={{
           filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
-          pluralLabel: 'students',
           mapRowToData: (row) => {
             return {
               uid: row.user?.uid ?? row.enrollment.pending_uid,
@@ -389,7 +392,7 @@ function StudentsCard({
         }}
         headerButtons={
           <>
-            {enrollmentManagementEnabled && (
+            {enrollmentManagementEnabled && courseInstance.modern_publishing && (
               <>
                 <Button
                   variant="light"
@@ -425,25 +428,18 @@ function StudentsCard({
             ),
           },
           emptyState: (
-            <>
-              <i class="bi bi-person-exclamation display-4 mb-2" aria-hidden="true" />
-              {/* medium screen and larger, 75% width */}
-              <p class="col-md-9">
-                No students found. To enroll students in your course, you can provide them with a
-                link to enroll (recommended) or invite them. You can manage the self-enrollment
-                settings on the
-                <a class="mx-1" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
-                  course instance settings
-                </a>
-                page.
-              </p>
-            </>
+            <TanstackTableEmptyState iconName="bi-person-exclamation">
+              No students found. To enroll students in your course, you can provide them with a link
+              to enroll (recommended) or invite them. You can manage the self-enrollment settings on
+              the{' '}
+              <a href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>course instance settings</a>{' '}
+              page.
+            </TanstackTableEmptyState>
           ),
           noResultsState: (
-            <>
-              <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
-              <p class="mb-0">No students found matching your search criteria.</p>
-            </>
+            <TanstackTableEmptyState iconName="bi-search">
+              No students found matching your search criteria.
+            </TanstackTableEmptyState>
           ),
         }}
       />

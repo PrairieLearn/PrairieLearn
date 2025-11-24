@@ -14,7 +14,7 @@ function computeSelected<T extends readonly any[]>(
 }
 
 function defaultRenderValueLabel<T>({ value }: { value: T }) {
-  return <span>{String(value)}</span>;
+  return <span class="text-nowrap">{String(value)}</span>;
 }
 /**
  * A component that allows the user to filter a categorical column. State is managed by the parent component.
@@ -81,40 +81,70 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
         />
       </Dropdown.Toggle>
       <Dropdown.Menu class="p-0">
-        <div class="p-3">
+        <div class="p-3 pb-0">
           <div class="d-flex align-items-center justify-content-between mb-2">
             <div class="fw-semibold">{columnLabel}</div>
             <button
               type="button"
-              class="btn btn-link btn-sm text-decoration-none"
-              onClick={() => apply(mode, new Set())}
+              class={clsx('btn btn-link btn-sm text-decoration-none', {
+                // Hide the clear button if no filters are applied.
+                // Use `visibility` instead of conditional rendering to avoid layout shift.
+                invisible: selected.size === 0 && mode === 'include',
+              })}
+              onClick={() => apply('include', new Set())}
             >
               Clear
             </button>
           </div>
 
-          <div class="btn-group w-100 mb-2" role="group" aria-label="Include or exclude values">
-            <button
-              type="button"
-              class={clsx('btn', mode === 'include' ? 'btn-primary' : 'btn-outline-secondary')}
-              onClick={() => apply('include', selected)}
-            >
-              Include
-            </button>
-            <button
-              type="button"
-              class={clsx('btn', mode === 'exclude' ? 'btn-primary' : 'btn-outline-secondary')}
-              onClick={() => apply('exclude', selected)}
-            >
-              Exclude
-            </button>
-          </div>
+          <div class="btn-group btn-group-sm w-100 mb-2">
+            <input
+              type="radio"
+              class="btn-check"
+              name={`filter-${columnId}-options`}
+              id={`filter-${columnId}-include`}
+              autocomplete="off"
+              checked={mode === 'include'}
+              onChange={() => apply('include', selected)}
+            />
+            <label class="btn btn-outline-primary" for={`filter-${columnId}-include`}>
+              <span class="text-nowrap">
+                {mode === 'include' && <i class="bi bi-check-lg me-1" aria-hidden="true" />}
+                Include
+              </span>
+            </label>
 
-          <div class="list-group list-group-flush">
-            {allColumnValues.map((value) => {
-              const isSelected = selected.has(value);
-              return (
-                <div key={value} class="list-group-item d-flex align-items-center gap-3">
+            <input
+              type="radio"
+              class="btn-check"
+              name={`filter-${columnId}-options`}
+              id={`filter-${columnId}-exclude`}
+              autocomplete="off"
+              checked={mode === 'exclude'}
+              onChange={() => apply('exclude', selected)}
+            />
+            <label class="btn btn-outline-primary" for={`filter-${columnId}-exclude`}>
+              <span class="text-nowrap">
+                {mode === 'exclude' && <i class="bi bi-check-lg me-1" aria-hidden="true" />}
+                Exclude
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div
+          class="list-group list-group-flush"
+          style={{
+            // This is needed to prevent the last item's background from covering
+            // the dropdown's border radius.
+            '--bs-list-group-bg': 'transparent',
+          }}
+        >
+          {allColumnValues.map((value) => {
+            const isSelected = selected.has(value);
+            return (
+              <div key={value} class="list-group-item d-flex align-items-center gap-3">
+                <div class="form-check">
                   <input
                     class="form-check-input"
                     type="checkbox"
@@ -122,16 +152,16 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
                     id={`${columnId}-${value}`}
                     onChange={() => toggleSelected(value)}
                   />
-                  <label class="form-check-label" for={`${columnId}-${value}`}>
+                  <label class="form-check-label fw-normal" for={`${columnId}-${value}`}>
                     {renderValueLabel({
                       value,
                       isSelected,
                     })}
                   </label>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </Dropdown.Menu>
     </Dropdown>

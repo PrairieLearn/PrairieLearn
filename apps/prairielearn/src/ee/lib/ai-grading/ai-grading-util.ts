@@ -19,7 +19,13 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { type OpenAIModelId, calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
+import {
+  type AnthropicAIModelId,
+  type GoogleAIModelId,
+  type OpenAIModelId,
+  calculateResponseCost,
+  formatPrompt,
+} from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
   type Course,
@@ -47,6 +53,8 @@ import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 export const AI_GRADING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAIModelId;
+export const AI_GRADING_GOOGLE_MODEL = 'gemini-2.5-flash' satisfies GoogleAIModelId;
+export const AI_GRADING_ANTHROPIC_MODEL = 'claude-haiku-4-5' satisfies AnthropicAIModelId;
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -61,6 +69,17 @@ export const GradedExampleSchema = z.object({
 });
 export type GradedExample = z.infer<typeof GradedExampleSchema>;
 
+export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
+
+/**
+ * Providers whose models we use for AI grading support system messages after the first user message.
+ * As of November 2025,
+ * - OpenAI GPT 5-mini supports this.
+ * - Google Gemini 2.5-flash does not support this.
+ * - Anthropic Claude Haiku 4.5 does not support this.
+ */
+const PROVIDERS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingProvider>(['openai']);
+
 export async function generatePrompt({
   questionPrompt,
   questionAnswer,
@@ -68,6 +87,7 @@ export async function generatePrompt({
   submitted_answer,
   example_submissions,
   rubric_items,
+  provider,
 }: {
   questionPrompt: string;
   questionAnswer: string;
@@ -75,8 +95,13 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
+  provider: AiGradingProvider;
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
+
+  const systemRoleAfterUserMessage = PROVIDERS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(provider)
+    ? 'system'
+    : 'user';
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -126,7 +151,7 @@ export async function generatePrompt({
 
   input.push(
     {
-      role: 'system',
+      role: systemRoleAfterUserMessage,
       content: 'This is the question for which you will be grading a response:',
     },
     {
@@ -138,7 +163,7 @@ export async function generatePrompt({
   if (questionAnswer.trim()) {
     input.push(
       {
-        role: 'system',
+        role: systemRoleAfterUserMessage,
         content: 'The instructor has provided the following answer for this question:',
       },
       {
@@ -151,13 +176,13 @@ export async function generatePrompt({
   if (example_submissions.length > 0) {
     if (rubric_items.length > 0) {
       input.push({
-        role: 'system',
+        role: systemRoleAfterUserMessage,
         content:
           'Here are some example student responses and their corresponding selected rubric items.',
       });
     } else {
       input.push({
-        role: 'system',
+        role: systemRoleAfterUserMessage,
         content:
           'Here are some example student responses and their corresponding scores and feedback.',
       });
@@ -214,7 +239,7 @@ export async function generatePrompt({
 
   input.push(
     {
-      role: 'system',
+      role: systemRoleAfterUserMessage,
       content: 'The student made the following submission:',
     },
     generateSubmissionMessage({
@@ -222,7 +247,7 @@ export async function generatePrompt({
       submitted_answer,
     }),
     {
-      role: 'system',
+      role: systemRoleAfterUserMessage,
       content: 'Please grade the submission according to the above instructions.',
     },
   );
@@ -597,4 +622,8 @@ export async function deleteAiGradingJobs({
 
 export async function toggleAiGradingMode(assessment_question_id: string): Promise<void> {
   await execute(sql.toggle_ai_grading_mode, { assessment_question_id });
+}
+
+export async function setAiGradingMode(assessment_question_id: string, ai_grading_mode: boolean) {
+  await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
 }
