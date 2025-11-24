@@ -656,7 +656,7 @@ Course staff see any reported issues show up on the "Issues" tab.
 
 ## Access control
 
-See the [Access control page](../assessment/accessControl.md) for details.
+See the [Assessment access control page](../assessment/accessControl.md) for details.
 
 By default, an assessment is only accessible to course staff. To allow students to access the assessment, the `allowAccess` option can be used in the assessment's `infoAssessment.json` file.
 
