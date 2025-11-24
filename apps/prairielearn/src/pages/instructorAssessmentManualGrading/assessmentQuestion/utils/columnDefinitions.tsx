@@ -1,8 +1,8 @@
 import { type Row, type Table, createColumnHelper } from '@tanstack/react-table';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Tooltip } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
-import { numericColumnFilterFn } from '@prairielearn/ui';
+import { OverlayTrigger, numericColumnFilterFn } from '@prairielearn/ui';
 
 import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';

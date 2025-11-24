@@ -11,21 +11,14 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'preact/compat';
-import {
-  Alert,
-  Button,
-  ButtonGroup,
-  Dropdown,
-  DropdownButton,
-  OverlayTrigger,
-  Tooltip,
-} from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, Dropdown, DropdownButton, Tooltip } from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
+  OverlayTrigger,
   TanstackTableCard,
   TanstackTableEmptyState,
 } from '@prairielearn/ui';

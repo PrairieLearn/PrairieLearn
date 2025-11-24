@@ -1,7 +1,9 @@
 import clsx from 'clsx';
 import { useState } from 'preact/compat';
-import { Button, Form, InputGroup, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, Form, InputGroup, Modal } from 'react-bootstrap';
 import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { StudentLinkSharing } from '../../../components/LinkSharing.js';
 import { QRCodeModal } from '../../../components/QRCodeModal.js';
@@ -30,7 +32,7 @@ function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
           style="font-family: monospace; font-size: 1.1em; letter-spacing: 0.1em;"
           disabled
         />
-        <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
+        <OverlayTrigger tooltip={{ body: copied ? 'Copied!' : 'Copy' }}>
           <Button
             size="sm"
             variant="outline-secondary"
@@ -73,7 +75,7 @@ function SelfEnrollmentLink({
         </label>
         <InputGroup>
           <Form.Control id="self_enrollment_link" value={selfEnrollLink} disabled />
-          <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
+          <OverlayTrigger tooltip={{ body: copied ? 'Copied!' : 'Copy' }}>
             <Button
               size="sm"
               variant="outline-secondary"
@@ -87,7 +89,7 @@ function SelfEnrollmentLink({
               <i class="bi bi-clipboard" />
             </Button>
           </OverlayTrigger>
-          <OverlayTrigger overlay={<Tooltip>View QR Code</Tooltip>}>
+          <OverlayTrigger tooltip={{ body: 'View QR Code' }}>
             <Button
               size="sm"
               variant="outline-secondary"
@@ -98,7 +100,7 @@ function SelfEnrollmentLink({
             </Button>
           </OverlayTrigger>
           {canEdit && (
-            <OverlayTrigger overlay={<Tooltip>Regenerate</Tooltip>}>
+            <OverlayTrigger tooltip={{ body: 'Regenerate' }}>
               <Button
                 size="sm"
                 variant="outline-secondary"

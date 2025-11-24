@@ -5,12 +5,14 @@ import {
   type OverlayTriggerProps as BootstrapOverlayTriggerProps,
   Popover,
   type PopoverProps,
+  Tooltip,
+  type TooltipProps,
 } from 'react-bootstrap';
 
 import { type FocusTrap, focusFirstFocusableChild, trapFocus } from '@prairielearn/browser-utils';
 
 export interface OverlayTriggerProps extends Omit<BootstrapOverlayTriggerProps, 'overlay'> {
-  popover: {
+  popover?: {
     /**
      * Additional props to pass to the Popover component.
      */
@@ -23,6 +25,16 @@ export interface OverlayTriggerProps extends Omit<BootstrapOverlayTriggerProps, 
      * Optional header content for the popover.
      */
     header?: React.ReactNode;
+  };
+  tooltip?: {
+    /**
+     * Additional props to pass to the Tooltip component.
+     */
+    props?: Omit<TooltipProps, 'children'>;
+    /**
+     * The content to display in the tooltip body.
+     */
+    body: React.ReactNode;
   };
   /**
    * Whether to trap focus inside the overlay when it's shown.
@@ -61,6 +73,7 @@ export interface OverlayTriggerProps extends Omit<BootstrapOverlayTriggerProps, 
 export function OverlayTrigger({
   children,
   popover,
+  tooltip,
   trapFocus: shouldTrapFocus = true,
   returnFocus = true,
   onEntered,
@@ -106,18 +119,24 @@ export function OverlayTrigger({
     onExit?.(node);
   };
 
+  if (Boolean(popover) === Boolean(tooltip)) {
+    throw new Error('Only one of popover or tooltip must be provided');
+  }
+
   // Construct the popover with our managed ref
-  const popoverOverlay = (
+  const popoverOverlay = popover ? (
     <Popover {...popover.props}>
       {popover.header}
       <Popover.Body ref={overlayBodyRef}>{popover.body}</Popover.Body>
     </Popover>
-  );
+  ) : null;
+
+  const tooltipOverlay = tooltip ? <Tooltip {...tooltip.props}>{tooltip.body}</Tooltip> : null;
 
   return (
     <BootstrapOverlayTrigger
       {...props}
-      overlay={popoverOverlay}
+      overlay={popoverOverlay ?? tooltipOverlay!}
       onEntered={handleEntered}
       onExit={handleExit}
     >

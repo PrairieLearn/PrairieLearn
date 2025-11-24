@@ -11,10 +11,10 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
-import { Alert, Button, Dropdown, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { TanstackTableCard, useShiftClickCheckbox } from '@prairielearn/ui';
+import { OverlayTrigger, TanstackTableCard, useShiftClickCheckbox } from '@prairielearn/ui';
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
@@ -722,12 +722,14 @@ export function AssessmentQuestionTable({
                     <Dropdown.Header class="d-flex align-items-center gap-1">
                       Assign for grading
                       <OverlayTrigger
-                        overlay={
-                          <Tooltip>
-                            Only staff with <strong>Student Data Editor</strong> permissions or
-                            higher can be assigned as graders
-                          </Tooltip>
-                        }
+                        tooltip={{
+                          body: (
+                            <>
+                              Only staff with <strong>Student Data Editor</strong> permissions or
+                              higher can be assigned as graders
+                            </>
+                          ),
+                        }}
                       >
                         <span>
                           <i class="fas fa-question-circle text-secondary" />
