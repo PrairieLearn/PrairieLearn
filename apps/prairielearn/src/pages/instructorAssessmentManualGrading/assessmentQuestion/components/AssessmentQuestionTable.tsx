@@ -144,19 +144,19 @@ export function AssessmentQuestionTable({
 
   const [manualPointsFilter, setManualPointsFilter] = useQueryState(
     'manual_points',
-    parseAsNumericFilter.withDefault(''),
+    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
   );
   const [autoPointsFilter, setAutoPointsFilter] = useQueryState(
     'auto_points',
-    parseAsNumericFilter.withDefault(''),
+    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
   );
   const [totalPointsFilter, setTotalPointsFilter] = useQueryState(
     'total_points',
-    parseAsNumericFilter.withDefault(''),
+    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
   );
   const [scoreFilter, setScoreFilter] = useQueryState(
     'score',
-    parseAsNumericFilter.withDefault(''),
+    parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
   );
 
   const { createCheckboxProps } = useShiftClickCheckbox<InstanceQuestionRow>();
