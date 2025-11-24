@@ -16,7 +16,7 @@ Each assessment must set the following properties in their `infoAssessment.json`
 | `set`                          | string | Which assessment set this belongs to (e.g., `"Quiz"`, `"Practice Quiz"`). |
 | [`number`](#assessment-naming) | string | The number of the assessment within the set (e.g., `"1"`, `"2B"`).        |
 
-### Optional properties
+## Optional properties
 
 In addition to those properties, the following properties can be used to further configure how the assessment behaves. Most assessments will need to configure the [`allowAccess`](../assessment/accessControl.md) property to control access to the assessment, and the [`zones`](#question-specification) property, which breaks down the assessment into zones of questions. Each zone allows for additional configuration of the questions within the zone.
 
@@ -40,7 +40,7 @@ In addition to those properties, the following properties can be used to further
 | `advanceScorePerc`                                  | number  | Minimum score percentage require to advance to the next question (Exams only). (default: 0)                                 |
 | `gradeRateMinutes`                                  | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (default: 0)                           |
 
-#### Group work
+### Group work
 
 The following group work properties (all optional) can be used to configure group work for an assessment.
 
