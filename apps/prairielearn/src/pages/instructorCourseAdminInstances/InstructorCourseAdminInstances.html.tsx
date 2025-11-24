@@ -174,7 +174,7 @@ export function InstructorCourseAdminInstances({
                         {isLegacyStartDate ? (
                           <OverlayTrigger
                             placement="bottom"
-                            trigger="click"
+                            trigger="focus"
                             overlay={renderPopoverStartDate(row.id)}
                           >
                             <Button
@@ -192,7 +192,7 @@ export function InstructorCourseAdminInstances({
                         {isLegacyEndDate ? (
                           <OverlayTrigger
                             placement="bottom"
-                            trigger="click"
+                            trigger="focus"
                             overlay={renderPopoverEndDate(row.id)}
                           >
                             <Button
