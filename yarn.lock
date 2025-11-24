@@ -70,6 +70,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ai-sdk/anthropic@npm:^2.0.45":
+  version: 2.0.45
+  resolution: "@ai-sdk/anthropic@npm:2.0.45"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@ai-sdk/provider-utils": "npm:3.0.17"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/ef0e54f032e3b8324c278f3b25d9b388308204d753404c49fd880709a796c2343aee36d335c99f50e683edd39d5b8b6f42b2e9034e1725d8e0db514e2233d104
+  languageName: node
+  linkType: hard
+
 "@ai-sdk/gateway@npm:2.0.7":
   version: 2.0.7
   resolution: "@ai-sdk/gateway@npm:2.0.7"
@@ -80,6 +92,18 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10c0/b57db87ccfbda6d28c8ac6e24df5e57a45f18826bff3ca5d1b65b00d863dd779d2b0d80496eee8eea8cbf6db232c31bd00494cd0d25e745cb402aa98b0b4d50d
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/google@npm:^2.0.42":
+  version: 2.0.42
+  resolution: "@ai-sdk/google@npm:2.0.42"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@ai-sdk/provider-utils": "npm:3.0.17"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/44a7988aa2fe6e5d80e66b4bc5921aa2693be357eeb1d0b06c07b10de9460e5389ce24b25b03847e6fa449b4fa71fcffefc8837df62e47b4cf009f8e097c26ef
   languageName: node
   linkType: hard
 
@@ -105,6 +129,19 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10c0/0922af1864b31aed4704174683d356c482199bf691c3d1a3e27cdedd574eec2249ea386b1081023d301a87e38dea09ec259ee45c5889316f7eed0de0a6064a49
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider-utils@npm:3.0.17":
+  version: 3.0.17
+  resolution: "@ai-sdk/provider-utils@npm:3.0.17"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@standard-schema/spec": "npm:^1.0.0"
+    eventsource-parser: "npm:^3.0.6"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/1bae6dc4cacd0305b6aa152f9589bbd61c29f150155482c285a77f83d7ed416d52bc2aa7fdaba2e5764530392d9e8f799baea34a63dce6c72ecd3de364dc62d1
   languageName: node
   linkType: hard
 
@@ -4225,6 +4262,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
   dependencies:
+    "@ai-sdk/anthropic": "npm:^2.0.45"
+    "@ai-sdk/google": "npm:^2.0.42"
     "@ai-sdk/openai": "npm:^2.0.64"
     "@aws-sdk/client-auto-scaling": "npm:^3.926.0"
     "@aws-sdk/client-cloudwatch": "npm:^3.926.0"

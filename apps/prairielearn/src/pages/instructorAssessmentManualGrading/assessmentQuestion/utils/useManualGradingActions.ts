@@ -2,10 +2,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 
+export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
+
 export type BatchActionData =
   | { assigned_grader: string | null }
   | { requires_manual_grading: boolean }
-  | { batch_action: 'ai_grade_assessment_selected'; closed_instance_questions_only?: boolean }
+  | {
+      batch_action: 'ai_grade_assessment_selected';
+      provider: AiGradingProvider;
+      closed_instance_questions_only?: boolean;
+    }
   | {
       batch_action: 'ai_instance_question_group_selected';
       closed_instance_questions_only?: boolean;
@@ -23,6 +29,7 @@ export type BatchActionParams =
         | 'ai_grade_assessment_all'
         | 'ai_instance_question_group_assessment_all'
         | 'ai_instance_question_group_assessment_ungrouped';
+      provider: AiGradingProvider;
     };
 
 interface UseManualGradingActionsParams {
@@ -59,10 +66,16 @@ export function useManualGradingActions({
           if (actionData.closed_instance_questions_only !== undefined) {
             requestBody.closed_instance_questions_only = actionData.closed_instance_questions_only;
           }
+
+          if ('provider' in actionData) {
+            requestBody.provider = actionData.provider;
+          }
         } else {
           // For regular batch actions
           requestBody.batch_action_data = actionData;
         }
+      } else {
+        requestBody.provider = params.provider;
       }
 
       const response = await fetch(window.location.pathname, {

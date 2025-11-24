@@ -1,5 +1,7 @@
 import assert from 'node:assert';
 
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import * as async from 'async';
@@ -29,7 +31,10 @@ import * as questionServers from '../../../question-servers/index.js';
 
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
+  AI_GRADING_ANTHROPIC_MODEL,
+  AI_GRADING_GOOGLE_MODEL,
   AI_GRADING_OPENAI_MODEL,
+  type AiGradingProvider,
   containsImageCapture,
   generatePrompt,
   generateSubmissionEmbedding,
@@ -65,6 +70,7 @@ export async function aiGrade({
   user_id,
   mode,
   instance_question_ids,
+  provider,
 }: {
   question: Question;
   course: Course;
@@ -80,18 +86,54 @@ export async function aiGrade({
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
+  provider: AiGradingProvider;
 }): Promise<string> {
-  // If OpenAI API Key and Organization are not provided, throw error
-  if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
-    throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
-  }
-
-  const openai = createOpenAI({
-    apiKey: config.aiGradingOpenAiApiKey,
-    organization: config.aiGradingOpenAiOrganization,
+  const { model, embeddingModel } = run(() => {
+    if (provider === 'openai') {
+      // If an OpenAI API Key and Organization are not provided, throw an error
+      if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
+        throw new error.HttpStatusError(403, 'Not implemented (OpenAI API key not available)');
+      }
+      const openai = createOpenAI({
+        apiKey: config.aiGradingOpenAiApiKey,
+        organization: config.aiGradingOpenAiOrganization,
+      });
+      return {
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
+        model: openai(AI_GRADING_OPENAI_MODEL),
+      };
+    } else if (provider === 'google') {
+      // If a Google API Key is not provided, throw an error
+      if (!config.aiGradingGoogleApiKey) {
+        throw new error.HttpStatusError(403, 'Not implemented (Google API key not available)');
+      }
+      const google = createGoogleGenerativeAI({
+        apiKey: config.aiGradingGoogleApiKey,
+      });
+      return {
+        // TODO: Add support for generating embeddings with Google Generative AI.
+        // We did not add it yet since Gemini models will be primarily tested
+        // with image submissions, which we do not support for RAG.
+        embeddingModel: null,
+        model: google(AI_GRADING_GOOGLE_MODEL),
+      };
+    } else {
+      // If an Anthropic API Key is not provided, throw an error
+      if (!config.aiGradingAnthropicApiKey) {
+        throw new error.HttpStatusError(403, 'Not implemented (Anthropic API key not available)');
+      }
+      const anthropic = createAnthropic({
+        apiKey: config.aiGradingAnthropicApiKey,
+      });
+      return {
+        // TODO: Add support for generating embeddings with Anthropic AI.
+        // We did not add it yet since Claude models will be primarily tested
+        // with image submissions, which we do not support for RAG.
+        embeddingModel: null,
+        model: anthropic(AI_GRADING_ANTHROPIC_MODEL),
+      };
+    }
   });
-  const embeddingModel = openai.textEmbeddingModel('text-embedding-3-small');
-  const model = openai(AI_GRADING_OPENAI_MODEL);
 
   const question_course = await getQuestionCourse(question, course);
 
@@ -113,28 +155,41 @@ export async function aiGrade({
       assessment_question_id: assessment_question.id,
     });
 
+    job.info(`Using model provider ${provider} for AI grading.`);
+
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
-    for (const instance_question of all_instance_questions) {
-      // Only checking for instance questions that can be used as RAG data.
-      // They should be graded last by a human.
-      if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
-        continue;
+    if (provider === 'openai') {
+      if (!embeddingModel) {
+        // This should not happen.
+        job.fail('No embedding model available for OpenAI provider.');
+        return;
       }
-      const submission_id = await selectLastSubmissionId(instance_question.id);
-      const submission_embedding = await selectEmbeddingForSubmission(submission_id);
-      if (!submission_embedding) {
-        await generateSubmissionEmbedding({
-          course,
-          question,
-          instance_question,
-          urlPrefix,
-          embeddingModel,
-        });
-        newEmbeddingsCount++;
+      for (const instance_question of all_instance_questions) {
+        // Only checking for instance questions that can be used as RAG data.
+        // They should be graded last by a human.
+        if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
+          continue;
+        }
+        const submission_id = await selectLastSubmissionId(instance_question.id);
+        const submission_embedding = await selectEmbeddingForSubmission(submission_id);
+        if (!submission_embedding) {
+          await generateSubmissionEmbedding({
+            course,
+            question,
+            instance_question,
+            urlPrefix,
+            embeddingModel,
+          });
+          newEmbeddingsCount++;
+        }
       }
+      job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
+    } else {
+      job.info(
+        `Skip embedding generation; RAG is not supported for model provider ${provider} yet.`,
+      );
     }
-    job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
     const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
 
@@ -199,7 +254,7 @@ export async function aiGrade({
       const questionAnswer = render_question_results.data.answerHtml;
 
       let submission_embedding = await selectEmbeddingForSubmission(submission.id);
-      if (!submission_embedding) {
+      if (!submission_embedding && embeddingModel) {
         submission_embedding = await generateSubmissionEmbedding({
           course,
           question,
@@ -208,11 +263,37 @@ export async function aiGrade({
           embeddingModel,
         });
       }
-      const submission_text = submission_embedding.submission_text;
+
+      const submission_text = await run(async () => {
+        if (submission_embedding) {
+          return submission_embedding.submission_text;
+        } else {
+          const render_submission_results = await questionModule.render(
+            { question: false, submissions: true, answer: false },
+            variant,
+            question,
+            submission,
+            [submission],
+            question_course,
+            locals,
+          );
+          return render_submission_results.data.submissionHtmls[0];
+        }
+      });
 
       const hasImage = containsImageCapture(submission_text);
 
       const example_submissions = await run(async () => {
+        if (provider !== 'openai') {
+          // For now, we are implementing RAG support only for OpenAI models.
+          return [];
+        }
+
+        if (!submission_embedding) {
+          logger.info('No embedding available for submission, skipping RAG.');
+          return [];
+        }
+
         // We're currently disabling RAG for submissions that deal with images.
         // It won't make sense to pull graded examples for such questions until we
         // have a strategy for finding similar example submissions based on the
@@ -250,6 +331,7 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
+        provider,
       });
 
       // If the submission contains images, prompt the model to transcribe any relevant information
