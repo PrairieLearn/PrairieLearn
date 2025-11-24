@@ -1,6 +1,7 @@
+import { observe } from 'selector-observer';
 import { type Socket, io } from 'socket.io-client';
 
-import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
+import { decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
 
 import type {
   StatusMessage,
@@ -14,50 +15,59 @@ import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
 import { mathjaxTypeset } from './lib/mathjax.js';
 
-onDocumentReady(() => {
-  const questionContainer = document.querySelector<HTMLElement>('.question-container');
-  if (questionContainer?.dataset.gradingMethod === 'External') {
-    externalGradingLiveUpdate();
-  }
+// We use `selector-observer` here to handle the case of updating the page's
+// contents without reloading the whole page. At the time of writing, this was
+// used on the AI question generation draft editor page.
+observe('.question-container', {
+  constructor: HTMLDivElement,
+  // TODO: do we need to clean up anything on removal for long-lived pages?
+  initialize(container) {
+    // TODO: is this the correct sequencing of MathJax?
+    void mathjaxTypeset([container]);
 
-  const questionForm = document.querySelector<HTMLFormElement>('form.question-form');
-  if (questionForm) {
-    confirmOnUnload(questionForm);
-  }
+    if (container.dataset.gradingMethod === 'External') {
+      externalGradingLiveUpdate();
+    }
 
-  const markdownBody = document.querySelector<HTMLDivElement>('.markdown-body');
-  const revealFade = document.querySelector<HTMLDivElement>('.reveal-fade');
-  const expandButtonContainer = document.querySelector('.js-expand-button-container');
-  const expandButton = expandButtonContainer?.querySelector('button');
+    const questionForm = container.querySelector<HTMLFormElement>('form.question-form');
+    if (questionForm) {
+      confirmOnUnload(questionForm);
+    }
 
-  let readMeExpanded = false;
+    const markdownBody = container.querySelector<HTMLDivElement>('.markdown-body');
+    const revealFade = container.querySelector<HTMLDivElement>('.reveal-fade');
+    const expandButtonContainer = container.querySelector('.js-expand-button-container');
+    const expandButton = expandButtonContainer?.querySelector('button');
 
-  function toggleExpandReadMe() {
-    if (!markdownBody || !expandButton) return;
-    readMeExpanded = !readMeExpanded;
-    expandButton.textContent = readMeExpanded ? 'Collapse' : 'Expand';
-    revealFade?.classList.toggle('d-none');
-    markdownBody.classList.toggle('max-height');
-  }
+    let readMeExpanded = false;
 
-  expandButton?.addEventListener('click', toggleExpandReadMe);
+    function toggleExpandReadMe() {
+      if (!markdownBody || !expandButton) return;
+      readMeExpanded = !readMeExpanded;
+      expandButton.textContent = readMeExpanded ? 'Collapse' : 'Expand';
+      revealFade?.classList.toggle('d-none');
+      markdownBody.classList.toggle('max-height');
+    }
 
-  if (markdownBody && markdownBody.scrollHeight > 150) {
-    markdownBody.classList.add('max-height');
-    revealFade?.classList.remove('d-none');
-    expandButtonContainer?.classList.remove('d-none');
-    expandButtonContainer?.classList.add('d-flex');
-  }
+    expandButton?.addEventListener('click', toggleExpandReadMe);
 
-  setupDynamicObjects();
-  disableOnSubmit();
+    if (markdownBody && markdownBody.scrollHeight > 150) {
+      markdownBody.classList.add('max-height');
+      revealFade?.classList.remove('d-none');
+      expandButtonContainer?.classList.remove('d-none');
+      expandButtonContainer?.classList.add('d-flex');
+    }
 
-  $<HTMLDivElement>('.js-submission-body.render-pending').on('show.bs.collapse', (e) => {
-    loadPendingSubmissionPanel(e.currentTarget, false);
-  });
+    setupDynamicObjects();
+    disableOnSubmit();
 
-  const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
-  copyContentModal(copyQuestionForm);
+    $<HTMLDivElement>('.js-submission-body.render-pending').on('show.bs.collapse', (e) => {
+      loadPendingSubmissionPanel(e.currentTarget, false);
+    });
+
+    const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
+    copyContentModal(copyQuestionForm);
+  },
 });
 
 function externalGradingLiveUpdate() {

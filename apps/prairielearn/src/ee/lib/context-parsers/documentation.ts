@@ -4,7 +4,7 @@ import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';
 
 const DEPRECATED_ELEMENTS = new Set(['pl-prairiedraw-figure', 'pl-threejs', 'pl-variable-score']);
-const ALLOWED_ELEMENTS = new Set([
+export const ALLOWED_ELEMENTS = new Set([
   'pl-question-panel',
   'pl-multiple-choice',
   'pl-checkbox',
