@@ -64,7 +64,7 @@ sudo make dev
 If you want to preview the documentation, run:
 
 ```sh
-make preview-docs
+make dev-docs
 ```
 
 ## Testing
