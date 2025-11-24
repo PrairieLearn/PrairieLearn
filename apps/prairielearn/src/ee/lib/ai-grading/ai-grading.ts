@@ -155,7 +155,7 @@ export async function aiGrade({
       assessment_question_id: assessment_question.id,
     });
 
-    job.info(`Using ${provider} model for AI grading.`);
+    job.info(`Using model provider ${provider} for AI grading.`);
 
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
@@ -187,7 +187,7 @@ export async function aiGrade({
       job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
     } else {
       job.info(
-        `Skip embedding generation as AI grading does not support RAG for model provider ${provider} yet.`,
+        `Skip embedding generation; RAG is not supported for model provider ${provider} yet.`,
       );
     }
 
