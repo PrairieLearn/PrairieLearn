@@ -1,5 +1,4 @@
 import { type Row, type Table, createColumnHelper } from '@tanstack/react-table';
-import { Tooltip } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import { OverlayTrigger, numericColumnFilterFn } from '@prairielearn/ui';
@@ -101,18 +100,20 @@ export function createColumns({
             </a>
             {row.open_issue_count ? (
               <OverlayTrigger
-                overlay={
-                  <Tooltip id={`open-issues-${row.instance_question.id}`}>
-                    Instance question has {row.open_issue_count} open{' '}
-                    {row.open_issue_count > 1 ? 'issues' : 'issue'}
-                  </Tooltip>
-                }
+                tooltip={{
+                  body: (
+                    <>
+                      Instance question has {row.open_issue_count} open{' '}
+                      {row.open_issue_count > 1 ? 'issues' : 'issue'}
+                    </>
+                  ),
+                }}
               >
                 <button class="btn btn-danger badge rounded-pill">{row.open_issue_count}</button>
               </OverlayTrigger>
             ) : null}
             {row.assessment_open ? (
-              <OverlayTrigger overlay={<Tooltip>Assessment instance is still open</Tooltip>}>
+              <OverlayTrigger tooltip={{ body: 'Assessment instance is still open' }}>
                 <button
                   // This is a tricky case: we need an interactive element to trigger the tooltip
                   // for keyboard users, but we don't want it to be announced as a button by screen
@@ -140,7 +141,6 @@ export function createColumns({
       id: 'instance_question_group_name',
       header: 'Submission group',
       cell: (info) => {
-        const row = info.row.original;
         const value = info.getValue();
         if (!value) {
           return <span class="text-secondary">No Group</span>;
@@ -151,11 +151,9 @@ export function createColumns({
             {value}
             {group && (
               <OverlayTrigger
-                overlay={
-                  <Tooltip id={`group-description-${row.instance_question.id}`}>
-                    {group.instance_question_group_description}
-                  </Tooltip>
-                }
+                tooltip={{
+                  body: group.instance_question_group_description,
+                }}
               >
                 <button class="btn btn-xs btn-ghost" aria-label="Group description">
                   <i class="fas fa-circle-info fa-width-auto text-secondary" aria-hidden="true" />
@@ -372,7 +370,7 @@ export function createColumns({
 
         if (row.instance_question.rubric_difference.length === 0) {
           return (
-            <OverlayTrigger overlay={<Tooltip>AI and human grading are in agreement</Tooltip>}>
+            <OverlayTrigger tooltip={{ body: 'AI and human grading are in agreement' }}>
               <i class="bi bi-check-square-fill text-success" />
             </OverlayTrigger>
           );
@@ -383,11 +381,11 @@ export function createColumns({
             {row.instance_question.rubric_difference.map((item) => (
               <div key={item.description}>
                 {item.false_positive ? (
-                  <OverlayTrigger overlay={<Tooltip>Selected by AI but not by human</Tooltip>}>
+                  <OverlayTrigger tooltip={{ body: 'Selected by AI but not by human' }}>
                     <i class="bi bi-plus-square-fill text-danger" />
                   </OverlayTrigger>
                 ) : (
-                  <OverlayTrigger overlay={<Tooltip>Selected by human but not by AI</Tooltip>}>
+                  <OverlayTrigger tooltip={{ body: 'Selected by human but not by AI' }}>
                     <i class="bi bi-dash-square-fill text-danger" />
                   </OverlayTrigger>
                 )}{' '}
