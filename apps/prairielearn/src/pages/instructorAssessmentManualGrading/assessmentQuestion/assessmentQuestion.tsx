@@ -58,6 +58,11 @@ router.get(
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const aiGradingProviderSelectionEnabled = await features.enabledFromLocals(
+      'ai-grading-provider-selection',
+      res.locals,
+    );
+
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
     });
@@ -142,6 +147,7 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
+                aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
                 initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
@@ -261,7 +267,6 @@ router.post(
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
         }
-
 
         const provider = req.body.provider;
         // TODO: Check providers type

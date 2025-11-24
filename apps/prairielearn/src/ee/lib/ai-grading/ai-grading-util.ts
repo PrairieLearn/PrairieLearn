@@ -19,7 +19,13 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { type AnthropicAIModelId, type GoogleAIModelId, type OpenAIModelId, calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
+import {
+  type AnthropicAIModelId,
+  type GoogleAIModelId,
+  type OpenAIModelId,
+  calculateResponseCost,
+  formatPrompt,
+} from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
   type Course,
@@ -63,6 +69,10 @@ export const GradedExampleSchema = z.object({
 });
 export type GradedExample = z.infer<typeof GradedExampleSchema>;
 
+export const AI_GRADING_PROVIDERS = ['openai', 'google', 'anthropic'] as const;
+
+export type AiGradingProvider = (typeof AI_GRADING_PROVIDERS)[number];
+
 export async function generatePrompt({
   questionPrompt,
   questionAnswer,
@@ -70,7 +80,7 @@ export async function generatePrompt({
   submitted_answer,
   example_submissions,
   rubric_items,
-  provider
+  provider,
 }: {
   questionPrompt: string;
   questionAnswer: string;
@@ -78,7 +88,7 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
-  provider: 'openai' | 'google' | 'anthropic';
+  provider: AiGradingProvider;
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
 
@@ -157,7 +167,7 @@ export async function generatePrompt({
 
   if (example_submissions.length > 0) {
     if (rubric_items.length > 0) {
-      input.push({      
+      input.push({
         role: systemPromptAfterFirstMessage,
         content:
           'Here are some example student responses and their corresponding selected rubric items.',
