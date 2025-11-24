@@ -181,7 +181,6 @@ router.get(
       return;
     }
 
-    // For now, this is a development-only feature, so that can can get PRs merged without affecting users.
     const enrollmentManagementEnabled =
       (await features.enabled('enrollment-management', {
         institution_id: institution.id,
