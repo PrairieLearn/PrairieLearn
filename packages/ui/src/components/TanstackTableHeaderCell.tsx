@@ -160,11 +160,6 @@ export function TanstackTableHeaderCell<RowDataModel>({
             background: 'transparent',
             border: 'none',
           }}
-          aria-label={
-            canSort
-              ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
-              : undefined
-          }
         >
           {header.isPlaceholder
             ? null
@@ -180,7 +175,7 @@ export function TanstackTableHeaderCell<RowDataModel>({
               <button
                 type="button"
                 class="btn btn-link text-muted p-0"
-                aria-label={`Sort ${columnName.toLowerCase()}`}
+                aria-label={`Sort ${columnName.toLowerCase()}, current sort is ${getAriaSort(sortDirection)}`}
                 title={`Sort ${columnName.toLowerCase()}`}
                 onClick={header.column.getToggleSortingHandler()}
               >
