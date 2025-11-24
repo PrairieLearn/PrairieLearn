@@ -211,16 +211,16 @@ nav:
       - 'Course configuration': 'course/index.md'
       - 'Course instances': 'courseInstance/index.md'
       - 'Assessments':
-          - assessment/index.md
+          - 'Overview': assessment/overview.md
           - 'Configuration': assessment/configuration.md
           - 'Access control': 'assessment/accessControl.md'
       - 'Questions':
-          - question/index.md
+          - 'Overview': question/overview.md
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
+          - 'Runtime environment': 'question/runtime.md'
           - 'Accessibility': 'question/accessibility.md'
-      - 'Question runtime environment': 'questionRuntime/index.md'
-      - 'Elements for writing questions':
+      - 'Elements':
           - elements/index.md
           - '<span class="muted">pl-</span>answer-panel': 'elements/pl-answer-panel.md'
           - '<span class="muted">pl-</span>big-o-input': 'elements/pl-big-o-input.md'
@@ -309,8 +309,8 @@ nav:
       - dev-guide/guide.md
       - 'Migrations': 'dev-guide/migrations/'
       - 'Server configuration': 'dev-guide/configJson.md'
-      - 'Building question elements': 'devElements.md'
-      - 'Building element extensions': 'elementExtensions.md'
+      - 'Building question elements': 'elements/dev.md'
+      - 'Building element extensions': 'elements/extensions.md'
       - 'Code execution': 'codeExecution.md'
       - 'Contributing': 'contributing.md'
       - 'Utility scripts': 'dev-guide/contrib/'

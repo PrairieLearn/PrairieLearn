@@ -8,7 +8,7 @@ In PrairieLearn there are two types of checks that determine whether a student h
 
 1. First, the **course instance** must be published to the student, and the student must be enrolled in the course instance. The `publishing` configuration in [infoCourseInstance.json](../courseInstance/index.md#publishing-controls) alongside [publishing extensions](../courseInstance/index.md#publishing-extensions) can be used to publish the course instance. Students are able to view the course instance as long as they are enrolled and the course instance is published. This does not by itself grant them access to any assessments in the course instance.
 
-2. Second, a student must also have access to the specific **assessment**. This access is granted with the `allowAccess` rules in [infoAssessment.json](../assessment/index.md). Even if a student has been granted access to an assessment, however, they will only be able to actually access it if they also have access to the course instance (see previous item).
+2. Second, a student must also have access to the specific **assessment**. This access is granted with the `allowAccess` rules in [infoAssessment.json](../assessment/overview.md). Even if a student has been granted access to an assessment, however, they will only be able to actually access it if they also have access to the course instance (see previous item).
 
 ## `allowAccess` format
 

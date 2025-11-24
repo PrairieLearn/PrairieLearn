@@ -77,7 +77,7 @@ The `source-file-name` attribute is particularly useful when working with static
 
 ## Extension API
 
-Custom values for `params-type` can be added with [element extensions](../elementExtensions.md). Each custom type is defined as a function that takes as input the `element` and `data` values and returns processed DOT syntax as output.
+Custom values for `params-type` can be added with [element extensions](./extensions.md). Each custom type is defined as a function that takes as input the `element` and `data` values and returns processed DOT syntax as output.
 
 A minimal type function can look something like:
 

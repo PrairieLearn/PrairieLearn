@@ -191,7 +191,7 @@ To resolve this issue, first check the name of the folder inside `questions/`
 and, then, check the question name listed in `infoAssessments.json`. Either
 rename the folder or change the name listed in assessments to be the same.
 
-See [Directory Structure](question/index.md#directory-structure) for more details.
+See [Directory Structure](question/overview.md#directory-structure) for more details.
 
 ## Why do I have a Syntax Error in my JSON file?
 
@@ -314,7 +314,7 @@ If you have a block of text that you want to re-use in many questions, possibly 
 
 ## How can I hide the correct answer when students see their grading results?
 
-Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question/index.md#metadata-infojson).
+Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question/overview.md#metadata-infojson).
 
 For more granular control, some elements in PL have their own options for specifying whether to hide individual correct answers (for example, `pl-checkbox` has a `hide-answer-panel` attribute). Not all element types offer this as an attribute (e.g., `pl-multiple-choice` currently does not). However, to hide the correct answer for any kind of element, you can surround the particular graded pl-element with `pl-hide-in-panel` in the `question.html` file.
 

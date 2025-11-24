@@ -29,7 +29,7 @@ The `info.json` file is structurally similar to the element info file and may co
 }
 ```
 
-See the [reference for `infoElementExtension.json`](./schemas/infoElementExtension.md) for more information about what can be added to this file.
+See the [reference for `infoElementExtension.json`](../schemas/infoElementExtension.md) for more information about what can be added to this file.
 
 ### Python Controller
 
@@ -90,7 +90,7 @@ def my_cool_function():
 
 ### Extension Dependencies
 
-Similar to how questions and elements may require client-side assets (as described in the [element developer guide](devElements.md#element-dependencies)), extensions may also require client-side JavaScript and CSS. The different properties are summarized here. Note that script dependencies may be set as either static or dynamic dependencies, while styles may only be set as static dependencies.
+Similar to how questions and elements may require client-side assets (as described in the [element developer guide](dev.md#element-dependencies)), extensions may also require client-side JavaScript and CSS. The different properties are summarized here. Note that script dependencies may be set as either static or dynamic dependencies, while styles may only be set as static dependencies.
 
 | Property                   | Description                                                                                                                                     |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |

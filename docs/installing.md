@@ -9,8 +9,8 @@ PrairieLearn provides the ability to create and update questions with a browser 
 - Questions using [code autograding](externalGrading.md)
 - Questions using [workspaces](workspaces/index.md)
 - Questions that involve a significant number of [images, documents and other files](clientServerFiles.md)
-- Questions using [custom Python libraries](questionRuntime/index.md#installing-libraries-in-your-course) in the generation and/or grading process
-- Custom [elements](devElements.md) or [element extensions](elementExtensions.md)
+- Questions using [custom Python libraries](question/runtime.md#installing-libraries-in-your-course) in the generation and/or grading process
+- Custom [elements](elements/dev.md) or [element extensions](elements/extensions.md)
 
 Using the course repository with a local installation simplifies the process of updating the course content. This workflow allows instructors to test changes in the question code or assessment configuration without affecting the student experience. It also supports collaboration and coordination in courses with multiple staff members using [Git workflows](https://git-scm.com/book/en/v2/Distributed-Git-Distributed-Workflows) and [pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
 

@@ -91,7 +91,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 ### Change the content of the question
 
-To provide a simple example, here we first create a question without any randomization, by modifying the file [question.html](question/index.md#html-questionhtml).
+To provide a simple example, here we first create a question without any randomization, by modifying the file [question.html](question/overview.md#html-questionhtml).
 
 - go to the `Files` tab.
 
@@ -141,7 +141,7 @@ Note that this question does not use any server side code, and for that reason, 
 
 ### Change the content of the question
 
-We will add randomization to the previous question, using the file [server.py](question/index.md#custom-generation-and-grading-serverpy)
+We will add randomization to the previous question, using the file [server.py](question/overview.md#custom-generation-and-grading-serverpy)
 
 - go to the `Files` tab.
 
@@ -286,6 +286,6 @@ Learn more:
 
 - [Quick reference guide about question structure and PrairieLearn elements](https://coatless.github.io/pl-cheatsheets/pdfs/prairielearn-authoring-cheatsheet.pdf)
 
-- [Different ways to set up an assessment](assessment/index.md)
+- [Different ways to set up an assessment](assessment/overview.md)
 
 - [Detailed list of PrairieLearn elements](./elements/index.md)

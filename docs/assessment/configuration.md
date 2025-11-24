@@ -744,7 +744,7 @@ For assessments with type "Exam", each student will only be presented with a sin
 
 For assessments with type "Homework", students will be presented with an unlimited number of attempts for each question. By default, every new attempt corresponds to a different variant of the question, unless:
 
-- the question is set to [`"singleVariant": true` in the question configuration file](../question/index.md#non-randomized-questions). In this case, students will get unlimited attempts for the same variant.
+- the question is set to [`"singleVariant": true` in the question configuration file](../question/overview.md#non-randomized-questions). In this case, students will get unlimited attempts for the same variant.
 
 - the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
 

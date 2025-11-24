@@ -30,7 +30,7 @@ exampleCourse
     `-- secret1.js
 ```
 
-1. See the [questions documentation](../question/index.md) for more information.
+1. See the [questions documentation](../question/overview.md) for more information.
 2. See the [course instance documentation](../courseInstance/index.md) for more information.
 3. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
 4. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
@@ -369,7 +369,7 @@ The tag order in `infoCourse.json` is the order in which the tags will be listed
 
 ## Sharing Sets
 
-Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to use, you should make them publicly shared as explained in the [question documentation](../question/index.md), or the [sharing documentation](../contentSharing.md).
+Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to use, you should make them publicly shared as explained in the [question documentation](../question/overview.md), or the [sharing documentation](../contentSharing.md).
 
 | Property      | Description                                                                                                                                                                                          |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
