@@ -103,7 +103,7 @@ Both of these features can be setup by modifying the `info.json` file for the qu
 
 ### Elements
 
-Questions can use [**elements**](../elements/index.md) to accept student input, display diagrams, control how questions are displayed, and more. You can use built-in elements for common questions types, including numerical inputs, multiple choice, and more. If you require more flexibility, you can create reusable [**custom elements**](../elements/dev.md) that can be tailored to your course to create more complex questions.
+Questions can use [**elements**](../elements/index.md) to accept student input, display diagrams, control how questions are displayed, and more. You can use built-in elements for common questions types, including numerical inputs, multiple choice, and more. If you require more flexibility, you can create reusable [**custom elements**](../devElements.md) that can be tailored to your course to create more complex questions.
 
 === "Integer input element"
 
@@ -151,7 +151,7 @@ Now that you have an understanding of the key concepts in PrairieLearn, you can 
 You can also:
 
 - learn more about [courses](../course/index.md) or [course instances](../courseInstance/index.md)
-- learn more about [questions](../question/overview.md), [elements](../elements/index.md), or [custom elements](../elements/dev.md)
+- learn more about [questions](../question/overview.md), [elements](../elements/index.md), or [custom elements](../devElements.md)
 - learn more about [assessments](../assessment/overview.md)
 - learn more about [external grading](../externalGrading.md) or [workspaces](../workspaces/index.md)
 - learn how to [develop locally](../installing.md)

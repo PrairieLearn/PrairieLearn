@@ -309,8 +309,8 @@ nav:
       - dev-guide/guide.md
       - 'Migrations': 'dev-guide/migrations/'
       - 'Server configuration': 'dev-guide/configJson.md'
-      - 'Building question elements': 'elements/dev.md'
-      - 'Building element extensions': 'elements/extensions.md'
+      - 'Building question elements': 'devElements.md'
+      - 'Building element extensions': 'elementExtensions.md'
       - 'Code execution': 'codeExecution.md'
       - 'Contributing': 'contributing.md'
       - 'Utility scripts': 'dev-guide/contrib/'

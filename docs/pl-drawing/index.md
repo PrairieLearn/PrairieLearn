@@ -1834,7 +1834,7 @@ A `pl-graph-line` element adds straight or quadratic lines to plots. It wraps th
 
 ## Extension API
 
-Custom elements for `pl-drawing` can be added with [element extensions](../elements/extensions.md). Elements are defined in two places: in serverside Python to handle generation and reading of attributes from HTML, and in clientside JavaScript to enable user interaction and serializing back to the server. Your extension should thus contain at minimum a Python file and a JavaScript file.
+Custom elements for `pl-drawing` can be added with [element extensions](../elementExtensions.md). Elements are defined in two places: in serverside Python to handle generation and reading of attributes from HTML, and in clientside JavaScript to enable user interaction and serializing back to the server. Your extension should thus contain at minimum a Python file and a JavaScript file.
 
 ### Python
 

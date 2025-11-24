@@ -73,7 +73,7 @@ The `data` dictionary has the following possible keys (not all keys will be pres
 | ------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `data["correct_answers"]`       | dict    | The true answer (if any) for the variant.                                                                                                             |
 | `data["editable"]`              | boolean | Whether the question is currently in an editable state.                                                                                               |
-| `data["extensions"]`            | dict    | A list of extensions that are available to be loaded by this element. For more information see the [element extensions](extensions.md) documentation. |
+| `data["extensions"]`            | dict    | A list of extensions that are available to be loaded by this element. For more information see the [element extensions](./elementExtensions.md) documentation. |
 | `data["feedback"]`              | dict    | Any feedback to the student on their submitted answer.                                                                                                |
 | `data["format_errors"]`         | dict    | Any errors encountered while parsing the student input.                                                                                               |
 | `data["manual_grading"]`        | boolean | Whether the question is being rendered in the manual grading view.                                                                                    |
@@ -140,7 +140,7 @@ The different types of dependency properties currently available are summarized 
 | `clientFilesCourseStyles`  | The styles required by this element relative to `[course directory]/clientFilesCourse`. _(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)_  |
 | `clientFilesCourseScripts` | The scripts required by this element relative to `[course directory]/clientFilesCourse`. _(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)_ |
 
-The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated and should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](../dev-guide/guide.md#html-style).
+The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated and should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](./dev-guide/guide.md#html-style).
 
 While the use of node module dependencies in course elements is supported, it is recommended that caution be used when doing so. In particular, note that node modules may be updated without warning, which in some cases may break your element. If your code relies on a particular version of a node module, it is recommended that you copy the module into your element directory or `courseFilesCourse` and link to that module from there instead.
 
@@ -184,5 +184,5 @@ Note that the key used in the dynamic dependencies will be shared among all elem
 
 You can also find more detail about the types of dependencies in the schema references:
 
-- [System-wide elements](../schemas/infoElementCore.md)
-- [Course-specific elements](../schemas/infoElementCourse.md)
+- [System-wide elements](./schemas/infoElementCore.md)
+- [Course-specific elements](./schemas/infoElementCourse.md)
