@@ -17,7 +17,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.71",
+    "@ai-sdk/openai": "^2.0.64",
     "@aws-sdk/client-auto-scaling": "^3.926.0",
     "@aws-sdk/client-cloudwatch": "^3.926.0",
     "@aws-sdk/client-ec2": "^3.926.0",
