@@ -392,7 +392,7 @@ function StudentsCard({
         }}
         headerButtons={
           <>
-            {enrollmentManagementEnabled && (
+            {enrollmentManagementEnabled && courseInstance.modern_publishing && (
               <>
                 <Button
                   variant="light"

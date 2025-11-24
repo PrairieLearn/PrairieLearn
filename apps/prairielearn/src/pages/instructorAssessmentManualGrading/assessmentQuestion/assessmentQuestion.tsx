@@ -15,6 +15,7 @@ import {
   fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
+  type AiGradingProvider,
   deleteAiGradingJobs,
   setAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
@@ -57,6 +58,11 @@ router.get(
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const aiGradingProviderSelectionEnabled = await features.enabledFromLocals(
+      'ai-grading-provider-selection',
+      res.locals,
+    );
+
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
     });
@@ -141,6 +147,7 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
+                aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
                 initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
@@ -261,6 +268,11 @@ router.post(
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
         }
 
+        const provider = req.body.provider as AiGradingProvider | undefined;
+        if (!provider) {
+          throw new error.HttpStatusError(400, 'No AI grading provider specified');
+        }
+
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
@@ -273,6 +285,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
+          provider,
           mode: 'selected',
           instance_question_ids,
         });
@@ -364,6 +377,11 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
+      const provider = req.body.provider as AiGradingProvider | undefined;
+      if (!provider) {
+        throw new error.HttpStatusError(400, 'No AI grading provider specified');
+      }
+
       const job_sequence_id = await aiGrade({
         question: res.locals.question,
         course: res.locals.course,
@@ -373,6 +391,7 @@ router.post(
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
+        provider,
         mode: run(() => {
           if (req.body.__action === 'ai_grade_assessment_graded') return 'human_graded';
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';

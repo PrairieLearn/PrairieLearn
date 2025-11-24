@@ -1,9 +1,13 @@
+import { type AnthropicProvider } from '@ai-sdk/anthropic';
+import { type GoogleGenerativeAIProvider } from '@ai-sdk/google';
 import { type OpenAIProvider } from '@ai-sdk/openai';
 import type { GenerateObjectResult, GenerateTextResult, LanguageModelUsage } from 'ai';
 
 import { config } from './config.js';
 
 export type OpenAIModelId = Parameters<OpenAIProvider['languageModel']>[0];
+export type GoogleAIModelId = Parameters<GoogleGenerativeAIProvider['languageModel']>[0];
+export type AnthropicAIModelId = Parameters<AnthropicProvider['languageModel']>[0];
 
 type Prompt = (string | string[])[];
 
