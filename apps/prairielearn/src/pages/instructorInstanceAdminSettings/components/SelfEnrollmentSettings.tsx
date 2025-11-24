@@ -206,7 +206,11 @@ export function SelfEnrollmentSettings({
       {!hasModernPublishing && enrollmentManagementEnabled ? (
         <div class="alert alert-warning">
           You are using access rules to control who can access the course instance. To change the
-          self-enrollment settings, you must first switch to using publishing to control access.
+          self-enrollment settings, you must first{' '}
+          <a href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess">
+            migrate to publishing
+          </a>{' '}
+          .
         </div>
       ) : null}
 
