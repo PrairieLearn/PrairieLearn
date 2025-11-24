@@ -71,6 +71,15 @@ export type GradedExample = z.infer<typeof GradedExampleSchema>;
 
 export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
 
+/**
+ * Providers whose models support system messages after the first user message.
+ * As of November 2025, 
+ * - OpenAI GPT 5-mini supports this.
+ * - Google Gemini 2.5-flash does not support this.
+ * - Anthropic Claude Haiku 4.5 does not support this.
+ */
+const PROVIDERS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingProvider>(['openai']);
+
 export async function generatePrompt({
   questionPrompt,
   questionAnswer,
@@ -90,8 +99,7 @@ export async function generatePrompt({
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
 
-  const systemPromptsAsFirstMessageOnly = provider === 'google' || provider === 'anthropic';
-  const systemPromptAfterFirstMessage = systemPromptsAsFirstMessageOnly ? 'user' : 'system';
+  const systemRoleAfterUserMessage = PROVIDERS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(provider) ? 'system' : 'user';
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -141,7 +149,7 @@ export async function generatePrompt({
 
   input.push(
     {
-      role: systemPromptAfterFirstMessage,
+      role: systemRoleAfterUserMessage,
       content: 'This is the question for which you will be grading a response:',
     },
     {
@@ -153,7 +161,7 @@ export async function generatePrompt({
   if (questionAnswer.trim()) {
     input.push(
       {
-        role: systemPromptAfterFirstMessage,
+        role: systemRoleAfterUserMessage,
         content: 'The instructor has provided the following answer for this question:',
       },
       {
@@ -166,13 +174,13 @@ export async function generatePrompt({
   if (example_submissions.length > 0) {
     if (rubric_items.length > 0) {
       input.push({
-        role: systemPromptAfterFirstMessage,
+        role: systemRoleAfterUserMessage,
         content:
           'Here are some example student responses and their corresponding selected rubric items.',
       });
     } else {
       input.push({
-        role: systemPromptAfterFirstMessage,
+        role: systemRoleAfterUserMessage,
         content:
           'Here are some example student responses and their corresponding scores and feedback.',
       });
@@ -229,7 +237,7 @@ export async function generatePrompt({
 
   input.push(
     {
-      role: systemPromptAfterFirstMessage,
+      role: systemRoleAfterUserMessage,
       content: 'The student made the following submission:',
     },
     generateSubmissionMessage({
@@ -237,7 +245,7 @@ export async function generatePrompt({
       submitted_answer,
     }),
     {
-      role: systemPromptAfterFirstMessage,
+      role: systemRoleAfterUserMessage,
       content: 'Please grade the submission according to the above instructions.',
     },
   );
