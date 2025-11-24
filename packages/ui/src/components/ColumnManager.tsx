@@ -1,4 +1,5 @@
 import { type Column, type Table } from '@tanstack/react-table';
+import clsx from 'clsx';
 import { type JSX, useEffect, useRef, useState } from 'preact/compat';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
@@ -7,12 +8,14 @@ interface ColumnMenuItemProps<RowDataModel> {
   column: Column<RowDataModel>;
   hidePinButton: boolean;
   onTogglePin: (columnId: string) => void;
+  className?: string;
 }
 
-function ColumnMenuItem<RowDataModel>({
+function ColumnLeafItem<RowDataModel>({
   column,
   hidePinButton = false,
   onTogglePin,
+  className,
 }: ColumnMenuItemProps<RowDataModel>) {
   if (!column.getCanHide()) return null;
 
@@ -22,7 +25,10 @@ function ColumnMenuItem<RowDataModel>({
     (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
 
   return (
-    <div key={column.id} class="px-2 py-1 d-flex align-items-center justify-content-between">
+    <div
+      key={column.id}
+      class={clsx('px-2 py-1 d-flex align-items-center justify-content-between', className)}
+    >
       <label class="form-check me-auto text-nowrap d-flex align-items-stretch">
         <input
           type="checkbox"
@@ -55,6 +61,113 @@ function ColumnMenuItem<RowDataModel>({
         </button>
       )}
     </div>
+  );
+}
+
+function ColumnGroupItem<RowDataModel>({
+  column,
+  onTogglePin,
+  getHidePinButton,
+}: {
+  column: Column<RowDataModel>;
+  onTogglePin: (columnId: string) => void;
+  getHidePinButton: (columnId: string) => boolean;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const leafColumns = column.getLeafColumns();
+  const visibleLeafColumns = leafColumns.filter((c) => c.getIsVisible());
+  const isAllVisible = visibleLeafColumns.length === leafColumns.length;
+  const isSomeVisible = visibleLeafColumns.length > 0 && !isAllVisible;
+
+  const handleToggleVisibility = (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const targetVisibility = !isAllVisible;
+    leafColumns.forEach((col) => {
+      if (col.getCanHide()) {
+        col.toggleVisibility(targetVisibility);
+      }
+    });
+  };
+
+  // Use meta.label if available, otherwise fall back to header or column.id
+  const header =
+    column.columnDef.meta?.label ??
+    (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
+
+  return (
+    <div class="d-flex flex-column">
+      <div class="px-2 py-1 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center flex-grow-1">
+          <input
+            type="checkbox"
+            class="form-check-input flex-shrink-0"
+            checked={isAllVisible}
+            indeterminate={isSomeVisible}
+            aria-label={`Toggle visibility for group '${header}'`}
+            onChange={handleToggleVisibility}
+          />
+          <button
+            type="button"
+            class="btn btn-link text-decoration-none text-reset w-100 text-start d-flex align-items-center justify-content-between ps-2 py-0 pe-0"
+            aria-expanded={isExpanded}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+          >
+            <span class="fw-bold text-truncate">{header}</span>
+            <i
+              class={clsx(
+                'bi ms-2 text-muted',
+                isExpanded ? 'bi-chevron-down' : 'bi-chevron-right',
+              )}
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+      </div>
+      {isExpanded && (
+        <div class="ps-3 border-start ms-3 mb-1">
+          {column.columns.map((childCol) => (
+            <ColumnItem
+              key={childCol.id}
+              column={childCol}
+              getHidePinButton={getHidePinButton}
+              onTogglePin={onTogglePin}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ColumnItem<RowDataModel>({
+  column,
+  onTogglePin,
+  getHidePinButton,
+}: {
+  column: Column<RowDataModel>;
+  onTogglePin: (columnId: string) => void;
+  getHidePinButton: (columnId: string) => boolean;
+}) {
+  if (column.columns.length > 0) {
+    return (
+      <ColumnGroupItem
+        column={column}
+        getHidePinButton={getHidePinButton}
+        onTogglePin={onTogglePin}
+      />
+    );
+  }
+  return (
+    <ColumnLeafItem
+      column={column}
+      hidePinButton={getHidePinButton(column.id)}
+      onTogglePin={onTogglePin}
+    />
   );
 }
 
@@ -98,8 +211,42 @@ export function ColumnManager<RowDataModel>({
     initialPinning.some((id) => !currentPinning.includes(id));
   const showResetButton = isVisibilityChanged || isPinningChanged;
 
-  const pinnedColumns = table.getAllLeafColumns().filter((c) => c.getIsPinned() === 'left');
-  const unpinnedColumns = table.getAllLeafColumns().filter((c) => c.getIsPinned() !== 'left');
+  const allLeafColumns = table.getAllLeafColumns();
+  const pinnedColumns = allLeafColumns.filter((c) => c.getIsPinned() === 'left');
+  const unpinnedColumns = allLeafColumns.filter((c) => c.getIsPinned() !== 'left');
+
+  // Calculate which columns should have their pin buttons hidden:
+  // - Columns that are part of a group (have a parent) cannot be pinned
+  // - For pinned columns: only the last one can be unpinned
+  // - For unpinned columns: only the first one can be pinned
+  const getHidePinButton = (columnId: string) => {
+    const column = allLeafColumns.find((c) => c.id === columnId);
+    if (!column) return true;
+
+    // If the column is part of a group (has a parent), it cannot be pinned
+    if (column.parent) {
+      return true;
+    }
+
+    if (column.getIsPinned() === 'left') {
+      // Only the last pinned column can be unpinned
+      const pinnedIndex = pinnedColumns.findIndex((c) => c.id === columnId);
+      return pinnedIndex !== pinnedColumns.length - 1;
+    } else {
+      // Only the first unpinned column can be pinned
+      const unpinnedIndex = unpinnedColumns.findIndex((c) => c.id === columnId);
+      return unpinnedIndex !== 0;
+    }
+  };
+
+  // Get root columns (for showing hierarchy), but filter to only show unpinned ones
+  // We'll show pinned columns separately in the "Frozen columns" section
+  const unpinnedRootColumns = table.getAllColumns().filter((c) => {
+    if (c.depth !== 0) return false;
+    // A root column is considered unpinned if all its leaf columns are unpinned
+    const leafCols = c.getLeafColumns();
+    return leafCols.length > 0 && leafCols.every((leaf) => leaf.getIsPinned() !== 'left');
+  });
 
   useEffect(() => {
     // When we use the pin or reset button, we want to refocus to another element.
@@ -145,9 +292,10 @@ export function ColumnManager<RowDataModel>({
               Frozen columns
             </div>
             <div role="group">
+              {/* Only leaf columns can be pinned in the current implementation. */}
               {pinnedColumns.map((column, index) => {
                 return (
-                  <ColumnMenuItem
+                  <ColumnLeafItem
                     key={column.id}
                     column={column}
                     hidePinButton={index !== pinnedColumns.length - 1}
@@ -159,15 +307,19 @@ export function ColumnManager<RowDataModel>({
             <Dropdown.Divider />
           </>
         )}
-        {unpinnedColumns.length > 0 && (
+        {unpinnedRootColumns.length > 0 && (
           <>
             <div role="group">
-              {unpinnedColumns.map((column, index) => {
+              {unpinnedRootColumns.map((column) => {
+                // For root columns, only pass hidePinButton if it's a leaf column
+                // Group columns don't have pin buttons, so hidePinButton doesn't apply
+                // const hidePinButton =
+                //   column.columns.length === 0 ? getHidePinButton(column.id) : true;
                 return (
-                  <ColumnMenuItem
+                  <ColumnItem
                     key={column.id}
                     column={column}
-                    hidePinButton={index !== 0}
+                    getHidePinButton={getHidePinButton}
                     onTogglePin={handleTogglePin}
                   />
                 );

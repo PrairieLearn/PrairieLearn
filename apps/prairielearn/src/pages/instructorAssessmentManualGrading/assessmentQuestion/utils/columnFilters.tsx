@@ -3,6 +3,7 @@ import type { Header } from '@tanstack/react-table';
 import {
   CategoricalColumnFilter,
   MultiSelectColumnFilter,
+  type NumericColumnFilterValue,
   NumericInputColumnFilter,
 } from '@prairielearn/ui';
 
@@ -39,21 +40,29 @@ interface CreateColumnFiltersParams {
   setAiAgreementFilter: (
     value: string[] | null | ((prev: string[]) => string[] | null),
   ) => Promise<URLSearchParams>;
-  manualPointsFilter: string;
+  manualPointsFilter: NumericColumnFilterValue;
   setManualPointsFilter: (
-    value: string | null | ((prev: string) => string | null),
+    value:
+      | NumericColumnFilterValue
+      | ((prev: NumericColumnFilterValue) => NumericColumnFilterValue),
   ) => Promise<URLSearchParams>;
-  autoPointsFilter: string;
+  autoPointsFilter: NumericColumnFilterValue;
   setAutoPointsFilter: (
-    value: string | null | ((prev: string) => string | null),
+    value:
+      | NumericColumnFilterValue
+      | ((prev: NumericColumnFilterValue) => NumericColumnFilterValue),
   ) => Promise<URLSearchParams>;
-  totalPointsFilter: string;
+  totalPointsFilter: NumericColumnFilterValue;
   setTotalPointsFilter: (
-    value: string | null | ((prev: string) => string | null),
+    value:
+      | NumericColumnFilterValue
+      | ((prev: NumericColumnFilterValue) => NumericColumnFilterValue),
   ) => Promise<URLSearchParams>;
-  scoreFilter: string;
+  scoreFilter: NumericColumnFilterValue;
   setScoreFilter: (
-    value: string | null | ((prev: string) => string | null),
+    value:
+      | NumericColumnFilterValue
+      | ((prev: NumericColumnFilterValue) => NumericColumnFilterValue),
   ) => Promise<URLSearchParams>;
 }
 

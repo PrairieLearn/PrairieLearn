@@ -57,8 +57,8 @@ describe('parseAsSortingState', () => {
       ];
       expect(parseAsSortingState.serialize(state)).toBe('col1:asc,col2:desc');
     });
-    it('serializes empty array as empty string', () => {
-      expect(parseAsSortingState.serialize([])).toBe('');
+    it('serializes empty array as null', () => {
+      expect(parseAsSortingState.serialize([])).toBe(null);
     });
     it('serializes missing id as empty string', () => {
       expect(parseAsSortingState.serialize([{ id: '', desc: false }])).toBe('');
