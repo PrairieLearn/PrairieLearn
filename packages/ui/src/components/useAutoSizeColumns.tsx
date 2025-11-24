@@ -1,7 +1,7 @@
 import type { ColumnSizingState, Header, Table } from '@tanstack/react-table';
 import type { RefObject } from 'preact';
 import { render } from 'preact/compat';
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
 
 import { TableHeaderCell } from './TanstackTable.js';
@@ -70,28 +70,13 @@ export function useAutoSizeColumns<TData>(
   const [hasMeasured, setHasMeasured] = useState(false);
   const measurementContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Track visible column IDs to detect when columns change
-  const visibleColumnIds = useMemo(
-    () => table.getVisibleLeafColumns().map((col) => col.id),
-    [table],
-  );
-
-  // Create a stable string representation for dependency tracking
-  const columnIdsKey = useMemo(() => visibleColumnIds.join(','), [visibleColumnIds]);
-
-  // Reset measurement state when columns change
-  useEffect(() => {
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-    setHasMeasured(false);
-  }, [columnIdsKey]);
-
   // Perform measurement
   useEffect(() => {
     if (hasMeasured || !tableRef.current) {
       return;
     }
 
-    const allColumns = table.getVisibleLeafColumns();
+    const allColumns = table.getAllLeafColumns();
 
     const columnsToMeasure = allColumns.filter((col) => col.columnDef.meta?.autoSize);
 
@@ -165,7 +150,7 @@ export function useAutoSizeColumns<TData>(
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, [table, tableRef, filters, hasMeasured, columnIdsKey]);
+  }, [table, tableRef, filters, hasMeasured]);
 
   // Clean up measurement container on unmount
   useEffect(() => {
