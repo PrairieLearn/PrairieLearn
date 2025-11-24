@@ -66,6 +66,7 @@ export function useManualGradingActions({
           if (actionData.closed_instance_questions_only !== undefined) {
             requestBody.closed_instance_questions_only = actionData.closed_instance_questions_only;
           }
+
           if ('provider' in actionData) {
             requestBody.provider = actionData.provider;
           }

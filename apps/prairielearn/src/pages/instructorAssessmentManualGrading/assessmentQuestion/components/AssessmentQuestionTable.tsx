@@ -59,7 +59,7 @@ const DEFAULT_GRADED_BY_FILTER: string[] = [];
 const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
 const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 
-const MODEL_PROVIDERS: {
+const AI_GRADING_PROVIDERS: {
   provider: AiGradingProvider;
   name: string;
 }[] = [
@@ -102,21 +102,21 @@ export interface AssessmentQuestionTableProps {
 
 function AiGradingOption({
   text,
-  count,
+  numToGrade,
   aiGradingProviderSelectionEnabled,
   onSelectProvider,
 }: {
   text: string;
-  count: number;
+  numToGrade: number;
   aiGradingProviderSelectionEnabled: boolean;
   onSelectProvider: (provider: AiGradingProvider) => void;
 }) {
   if (!aiGradingProviderSelectionEnabled) {
     return (
-      <Dropdown.Item disabled={count === 0} onClick={() => onSelectProvider(DEFAULT_PROVIDER)}>
+      <Dropdown.Item disabled={numToGrade === 0} onClick={() => onSelectProvider(DEFAULT_PROVIDER)}>
         <div class="d-flex justify-content-between align-items-center w-100">
           <span>{text}</span>
-          <span class="badge bg-secondary ms-2">{count}</span>
+          <span class="badge bg-secondary ms-2">{numToGrade}</span>
         </div>
       </Dropdown.Item>
     );
@@ -124,16 +124,16 @@ function AiGradingOption({
 
   return (
     <Dropdown drop="end">
-      <Dropdown.Toggle class={`dropdown-item ${count > 0 ? '' : 'disabled'}`}>
+      <Dropdown.Toggle class={`dropdown-item ${numToGrade > 0 ? '' : 'disabled'}`}>
         <div class="d-flex justify-content-between align-items-center w-100">
           <span>{text}</span>
-          <span class="badge bg-secondary ms-2">{count}</span>
+          <span class="badge bg-secondary ms-2">{numToGrade}</span>
         </div>
       </Dropdown.Toggle>
       <Dropdown.Menu>
         <p class="my-0 text-muted px-3">AI grader model</p>
         <Dropdown.Divider />
-        {MODEL_PROVIDERS.map((provider) => (
+        {AI_GRADING_PROVIDERS.map((provider) => (
           <Dropdown.Item
             key={provider.provider}
             onClick={() => onSelectProvider(provider.provider)}
@@ -695,7 +695,7 @@ export function AssessmentQuestionTable({
                   <Dropdown.Menu align="end">
                     <AiGradingOption
                       text="Grade all human-graded"
-                      count={aiGradingCounts.humanGraded}
+                      numToGrade={aiGradingCounts.humanGraded}
                       aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
                       onSelectProvider={(provider) => {
                         batchActionMutation.mutate({
@@ -706,7 +706,7 @@ export function AssessmentQuestionTable({
                     />
                     <AiGradingOption
                       text="Grade selected"
-                      count={aiGradingCounts.selected}
+                      numToGrade={aiGradingCounts.selected}
                       aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
                       onSelectProvider={(provider) => {
                         handleBatchAction(
@@ -717,7 +717,7 @@ export function AssessmentQuestionTable({
                     />
                     <AiGradingOption
                       text="Grade all"
-                      count={aiGradingCounts.all}
+                      numToGrade={aiGradingCounts.all}
                       aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
                       onSelectProvider={(provider) => {
                         batchActionMutation.mutate({

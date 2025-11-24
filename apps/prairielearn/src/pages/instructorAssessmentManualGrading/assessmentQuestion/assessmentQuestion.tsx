@@ -3,7 +3,6 @@ import z from 'zod';
 
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
@@ -16,6 +15,7 @@ import {
   fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
+  type AiGradingProvider,
   deleteAiGradingJobs,
   setAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
@@ -268,10 +268,9 @@ router.post(
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
         }
 
-        const provider = req.body.provider;
-        // TODO: Check providers type
+        const provider = req.body.provider as AiGradingProvider | undefined;
         if (!provider) {
-          flash('error', 'No AI provider selected for grading.');
+          throw new error.HttpStatusError(400, 'No AI grading provider specified');
         }
 
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
@@ -378,10 +377,9 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const provider = req.body.provider;
-      // TODO: Check providers type
+      const provider = req.body.provider as AiGradingProvider | undefined;
       if (!provider) {
-        flash('error', 'No AI provider selected for grading.');
+        throw new error.HttpStatusError(400, 'No AI grading provider specified');
       }
 
       const job_sequence_id = await aiGrade({

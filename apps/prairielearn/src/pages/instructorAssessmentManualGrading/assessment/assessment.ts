@@ -14,7 +14,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
-import { AI_GRADING_PROVIDERS, deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { type AiGradingProvider, deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import { type Assessment } from '../../../lib/db-types.js';
@@ -126,15 +126,9 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const provider = req.body.provider;
+      const provider = req.body.provider as AiGradingProvider | undefined;
       if (!provider) {
-        flash('error', 'No AI provider selected for grading.');
-      }
-
-      if (!AI_GRADING_PROVIDERS.includes(provider)) {
-        flash('error', 'Invalid AI provider selected for grading.');
-        res.redirect(req.originalUrl);
-        return;
+        throw new HttpStatusError(400, 'No AI grading provider specified');
       }
 
       const assessment = res.locals.assessment as Assessment;

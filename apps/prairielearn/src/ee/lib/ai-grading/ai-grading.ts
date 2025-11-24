@@ -155,7 +155,7 @@ export async function aiGrade({
       assessment_question_id: assessment_question.id,
     });
 
-    job.info(`Using ${provider} for AI grading.`);
+    job.info(`Using ${provider} model for AI grading.`);
 
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;

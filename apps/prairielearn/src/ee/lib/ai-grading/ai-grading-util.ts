@@ -69,9 +69,7 @@ export const GradedExampleSchema = z.object({
 });
 export type GradedExample = z.infer<typeof GradedExampleSchema>;
 
-export const AI_GRADING_PROVIDERS = ['openai', 'google', 'anthropic'] as const;
-
-export type AiGradingProvider = (typeof AI_GRADING_PROVIDERS)[number];
+export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
 
 export async function generatePrompt({
   questionPrompt,
