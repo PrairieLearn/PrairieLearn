@@ -181,8 +181,8 @@ lint-docs: lint-d2 lint-links lint-markdown
 
 build-docs: python-deps
 	@.venv/bin/mkdocs build --strict
-preview-docs: python-deps
-	@.venv/bin/mkdocs serve
+dev-docs: python-deps
+	@.venv/bin/mkdocs serve --livereload
 
 format-d2:
 	@d2 fmt docs/**/*.d2
