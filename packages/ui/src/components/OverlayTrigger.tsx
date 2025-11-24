@@ -105,7 +105,7 @@ export function OverlayTrigger({
       triggerElementRef.current = document.activeElement;
     }
 
-    if (shouldTrapFocus && overlayBodyRef.current) {
+    if (shouldTrapFocus && overlayBodyRef.current && props.trigger === 'click') {
       // Trap focus inside the overlay body
       focusTrapRef.current = trapFocus(overlayBodyRef.current);
 
