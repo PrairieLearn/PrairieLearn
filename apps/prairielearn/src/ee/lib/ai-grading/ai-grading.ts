@@ -90,7 +90,7 @@ export async function aiGrade({
 }): Promise<string> {
   const { model, embeddingModel } = run(() => {
     if (provider === 'openai') {
-      // If an OpenAI API Key and Organization are not provided, throw error
+      // If an OpenAI API Key and Organization are not provided, throw an error
       if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
         throw new error.HttpStatusError(403, 'Not implemented (OpenAI API key not available)');
       }
@@ -127,7 +127,7 @@ export async function aiGrade({
       });
       return {
         // TODO: Add support for generating embeddings with Anthropic AI.
-        // We did not add it yet since Gemini models will be primarily tested
+        // We did not add it yet since Claude models will be primarily tested
         // with image submissions, which we do not support for RAG.
         embeddingModel: null,
         model: anthropic(AI_GRADING_ANTHROPIC_MODEL),

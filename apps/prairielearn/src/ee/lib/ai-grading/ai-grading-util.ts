@@ -72,7 +72,7 @@ export type GradedExample = z.infer<typeof GradedExampleSchema>;
 export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
 
 /**
- * Providers whose models support system messages after the first user message.
+ * Providers whose models we use for AI grading support system messages after the first user message.
  * As of November 2025,
  * - OpenAI GPT 5-mini supports this.
  * - Google Gemini 2.5-flash does not support this.
