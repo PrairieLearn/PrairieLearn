@@ -515,6 +515,10 @@ async function processQuestionPhase<T>(
     result = res.result;
     output = res.output;
   } catch (err) {
+    logger.error(
+      `Error in processQuestionPhase(${phase}) for question ${context.question.directory}`,
+      err,
+    );
     courseIssues.push(
       new CourseIssueError(err.message, {
         data: err.data,
@@ -653,6 +657,10 @@ async function processQuestionServer<T extends ExecutionData>(
   try {
     ({ result, output } = await execPythonServer(codeCaller, phase, data, html, context));
   } catch (err) {
+    logger.error(
+      `Error in processQuestionServer(${phase}) for question ${context.question.directory}`,
+      err,
+    );
     const serverFile = path.join(context.question_dir, 'server.py');
     courseIssues.push(
       new CourseIssueError(`${serverFile}: Error calling ${phase}(): ${err.toString()}`, {
