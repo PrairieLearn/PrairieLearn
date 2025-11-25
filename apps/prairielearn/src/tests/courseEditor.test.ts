@@ -12,6 +12,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
+import { getCourseInstanceSettingsUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
@@ -52,6 +53,7 @@ const newAssessmentUrl = `${courseInstanceUrl}/assessment/2`;
 const newAssessmentSettingsUrl = `${newAssessmentUrl}/settings`;
 
 interface EditData {
+  isJSON?: boolean;
   url?: string;
   formSelector: string;
   button?: string;
@@ -295,8 +297,16 @@ const testEditData: EditData[] = [
   },
   {
     url: `${courseInstanceUrl}/instance_admin/settings`,
-    formSelector: 'form[name="copy-course-instance-form"]',
+    formSelector: 'body',
+    dynamicPostInfo: getCourseInstanceCreatePostInfo,
     action: 'copy_course_instance',
+    data: {
+      short_name: 'Fa18_copy1',
+      long_name: 'Fall 2018',
+      start_date: '',
+      end_date: '',
+    },
+    isJSON: true,
     info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
     files: new Set([
       'README.md',
@@ -565,12 +575,27 @@ function testEdit(params: EditData) {
       };
       const res = await fetch(url, {
         method: 'POST',
-        body: new URLSearchParams(urlParams),
+        body: params.isJSON ? JSON.stringify(urlParams) : new URLSearchParams(urlParams),
+        headers: params.isJSON
+          ? { 'Content-Type': 'application/json', Accept: 'application/json' }
+          : { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
 
-      assert.isOk(res.ok);
-      currentUrl = res.url;
-      currentPage$ = cheerio.load(await res.text());
+      const text = await res.text();
+      if (!params.isJSON) {
+        currentUrl = res.url;
+        currentPage$ = cheerio.load(text);
+      } else {
+        // This is a hack to get the CSRF token for the next test since copy_course_instance returns an id.
+        assert.equal(params.action, 'copy_course_instance');
+        const body = JSON.parse(text);
+        const courseInstanceId = body.course_instance_id;
+        const settingsUrl = getCourseInstanceSettingsUrl(courseInstanceId);
+        const settingsRes = await fetch(siteUrl + settingsUrl);
+        assert.isOk(settingsRes.ok);
+        currentUrl = settingsRes.url;
+        currentPage$ = cheerio.load(await settingsRes.text());
+      }
     });
   });
 

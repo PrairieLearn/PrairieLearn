@@ -75,7 +75,7 @@ export function CopyCourseInstanceModal({
             courseInstance.id,
             result.job_sequence_id,
           );
-          return;
+          return null;
         }
 
         throw new Error(result.error);
@@ -84,7 +84,7 @@ export function CopyCourseInstanceModal({
       return result;
     },
     onSuccess: (data) => {
-      if (data.course_instance_id) {
+      if (data?.course_instance_id) {
         window.location.href = getCourseInstanceSettingsUrl(data.course_instance_id);
       }
     },
