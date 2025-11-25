@@ -1343,7 +1343,15 @@
     "costPerMillionTokens": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["gpt-5-2025-08-07", "gpt-5-mini-2025-08-07", "gpt-4o-2024-11-20"],
+      "required": [
+        "gpt-5-2025-08-07",
+        "gpt-5-mini-2025-08-07",
+        "gpt-4o-2024-11-20",
+        "gemini-2.5-flash",
+        "gemini-3-pro-preview",
+        "claude-haiku-4-5",
+        "claude-sonnet-4-5"
+      ],
       "properties": {
         "gpt-5-2025-08-07": {
           "type": "object",
@@ -1369,6 +1377,18 @@
         },
         "gpt-4o-2024-11-20": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
+        },
+        "gemini-2.5-flash": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
+        },
+        "gemini-3-pro-preview": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
+        },
+        "claude-haiku-4-5": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
+        },
+        "claude-sonnet-4-5": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
         }
       },
       "default": {
@@ -1386,6 +1406,26 @@
           "input": 2.5,
           "cachedInput": 1.25,
           "output": 10
+        },
+        "gemini-2.5-flash": {
+          "input": 0.3,
+          "cachedInput": 0.03,
+          "output": 2.5
+        },
+        "gemini-3-pro-preview": {
+          "input": 2,
+          "cachedInput": 0.2,
+          "output": 12
+        },
+        "claude-haiku-4-5": {
+          "input": 1,
+          "cachedInput": 0.1,
+          "output": 5
+        },
+        "claude-sonnet-4-5": {
+          "input": 3,
+          "cachedInput": 0.3,
+          "output": 15
         }
       }
     }

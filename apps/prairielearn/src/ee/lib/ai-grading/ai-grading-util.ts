@@ -85,7 +85,9 @@ export const AI_GRADING_MODEL_PROVIDERS = {
   'claude-sonnet-4-5': 'anthropic',
 } as const satisfies Record<AiGradingModelId, 'openai' | 'google' | 'anthropic'>;
 
-// Users without the ai-grading-model-selection feature flag must use this default model.
+/**
+ * Users without the ai-grading-model-selection feature flag enabled must use the default model.
+ */
 export const DEFAULT_AI_GRADING_MODEL = 'gpt-5-mini-2025-08-07';
 
 /**
@@ -491,7 +493,7 @@ export async function selectRubricGradingItems(
 export async function insertAiGradingJob({
   grading_job_id,
   job_sequence_id,
-  model,
+  model_id,
   prompt,
   response,
   course_id,
@@ -499,7 +501,7 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  model: AiGradingModelId;
+  model_id: AiGradingModelId;
   prompt: ModelMessage[];
   response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
@@ -510,10 +512,10 @@ export async function insertAiGradingJob({
     job_sequence_id,
     prompt: JSON.stringify(prompt),
     completion: response,
-    model,
+    model: model_id,
     prompt_tokens: response.usage.inputTokens ?? 0,
     completion_tokens: response.usage.outputTokens ?? 0,
-    cost: calculateResponseCost({ model, usage: response.usage }),
+    cost: calculateResponseCost({ model: model_id, usage: response.usage }),
     course_id,
     course_instance_id,
   });

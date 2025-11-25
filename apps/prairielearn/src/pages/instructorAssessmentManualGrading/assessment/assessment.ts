@@ -17,7 +17,7 @@ import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-
 import {
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
-  deleteAiGradingJobs,
+  deleteAiGradingJobs
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
@@ -130,7 +130,7 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const model_id = req.body.model_id as AiGradingModelId | undefined;
+      const model_id = req.body.modelx_id as AiGradingModelId | undefined;
 
       if (!model_id) {
         throw new HttpStatusError(400, 'No AI grading model specified');

@@ -67,7 +67,7 @@ const AI_GRADING_MODELS = [
 
 type AiGradingModelId = (typeof AI_GRADING_MODELS)[number]['modelId'];
 
-const DEFAULT_AI_GRADING_MODEL_ID = 'gpt-5-mini-2025-08-07' as const;
+const DEFAULT_AI_GRADING_MODEL_ID = 'gpt-5-mini-2025-08-07';
 
 export interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;

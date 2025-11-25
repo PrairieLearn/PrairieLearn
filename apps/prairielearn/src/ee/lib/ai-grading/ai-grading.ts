@@ -422,7 +422,7 @@ export async function aiGrade({
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
-              model: model_id,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,
@@ -460,7 +460,7 @@ export async function aiGrade({
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
-              model: model_id,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,
@@ -529,7 +529,7 @@ export async function aiGrade({
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
-              model: model_id,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,
@@ -558,7 +558,7 @@ export async function aiGrade({
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
-              model: model_id,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,

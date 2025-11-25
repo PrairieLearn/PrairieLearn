@@ -14,6 +14,7 @@ import {
   fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
+  AI_GRADING_MODELS,
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
   deleteAiGradingJobs,
@@ -284,6 +285,10 @@ router.post(
           );
         }
 
+        if (!AI_GRADING_MODELS.includes(model_id)) {
+          throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
+        }
+
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
@@ -391,6 +396,10 @@ router.post(
       const model_id = req.body.model_id as AiGradingModelId | undefined;
       if (!model_id) {
         throw new error.HttpStatusError(400, 'No AI grading model specified');
+      }
+
+      if (!AI_GRADING_MODELS.includes(model_id)) {
+        throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
       }
 
       const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
