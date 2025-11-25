@@ -135,6 +135,8 @@ export function TanstackTableHeaderCell<RowDataModel>({
       'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
   };
 
+  const isNormalColumn = canSort || canFilter;
+
   return (
     <th
       key={header.id}
@@ -146,15 +148,19 @@ export function TanstackTableHeaderCell<RowDataModel>({
     >
       <div
         class={clsx(
-          'd-flex align-items-center',
-          canSort || canFilter ? 'flex-grow-1 justify-content-between' : 'justify-content-center',
+          'd-flex align-items-center flex-grow-1',
+          isNormalColumn ? 'justify-content-between' : 'justify-content-center',
         )}
         style={{
           minWidth: 0,
         }}
       >
         <div
-          class="text-nowrap text-start"
+          class={clsx(
+            'text-nowrap text-start',
+            // e.g. checkboxes
+            !isNormalColumn && 'd-flex align-items-center justify-content-center',
+          )}
           style={{
             minWidth: 0,
             flex: '1 1 0%',
