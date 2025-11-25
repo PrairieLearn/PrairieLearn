@@ -149,12 +149,15 @@ export function TanstackTableHeaderCell<RowDataModel>({
           'd-flex align-items-center',
           canSort || canFilter ? 'flex-grow-1 justify-content-between' : 'justify-content-center',
         )}
+        style={{
+          minWidth: 0,
+        }}
       >
         <div
           class="text-nowrap text-start"
           style={{
             minWidth: 0,
-            maxWidth: '100%',
+            flex: '1 1 0%',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             background: 'transparent',
@@ -170,7 +173,7 @@ export function TanstackTableHeaderCell<RowDataModel>({
         </div>
 
         {(canSort || canFilter) && (
-          <div class="d-flex align-items-center">
+          <div class="d-flex align-items-center" style={{ flexShrink: 0 }}>
             {canSort && (
               <button
                 type="button"
