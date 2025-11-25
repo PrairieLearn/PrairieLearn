@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import z from 'zod';
 
-import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
@@ -119,7 +118,6 @@ router.get(
           fullWidth: true,
           pageNote: `Question ${number_in_alternative_group}`,
         },
-        headContent: compiledStylesheetTag('tanstackTable.css'),
         content: (
           <>
             <AssessmentSyncErrorsAndWarnings

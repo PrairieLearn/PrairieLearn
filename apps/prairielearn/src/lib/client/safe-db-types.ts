@@ -189,6 +189,7 @@ export type StaffCourse = z.infer<typeof StaffCourseSchema>;
 
 export const RawPublicCourseSchema = RawStaffCourseSchema.pick({
   id: true,
+  sharing_name: true,
   short_name: true,
   title: true,
 });
@@ -235,6 +236,7 @@ export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
 export const RawPublicCourseInstanceSchema = RawStudentCourseInstanceSchema.pick({
   assessments_group_by: true,
+  display_timezone: true,
   id: true,
   long_name: true,
   short_name: true,
