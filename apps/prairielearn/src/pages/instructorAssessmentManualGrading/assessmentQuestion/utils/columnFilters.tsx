@@ -6,71 +6,87 @@ import {
   NumericInputColumnFilter,
 } from '@prairielearn/ui';
 
-import {
-  GRADING_STATUS_VALUES,
-  type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
-} from '../assessmentQuestion.types.js';
-
-interface CreateColumnFiltersParams {
-  allGraders: string[];
-  allSubmissionGroups: string[];
-  allAiAgreementItems: { number: number; description: string }[];
-}
+import { type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
 
 export function createColumnFilters({
   allGraders,
   allSubmissionGroups,
   allAiAgreementItems,
-}: CreateColumnFiltersParams) {
+}: {
+  allGraders: string[];
+  allSubmissionGroups: string[];
+  allAiAgreementItems: { number: number; description: string }[];
+}) {
   return {
-    requires_manual_grading: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
+    requires_manual_grading: ({
+      header,
+    }: {
+      header: Header<InstanceQuestionRow, 'Requires manual grading' | 'Graded'>;
+    }) => (
       <CategoricalColumnFilter
-        header={header}
-        columnLabel="Status"
-        allColumnValues={GRADING_STATUS_VALUES}
+        column={header.column}
+        allColumnValues={['Requires grading', 'Graded']}
       />
     ),
-    assigned_grader_name: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
+    assigned_grader_name: ({
+      header,
+    }: {
+      header: Header<InstanceQuestionRow, InstanceQuestionRow['assigned_grader_name']>;
+    }) => (
       <CategoricalColumnFilter
-        header={header}
-        columnLabel="Assigned grader"
+        column={header.column}
         allColumnValues={[...allGraders, 'Unassigned']}
       />
     ),
-    last_grader_name: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
+    last_grader_name: ({
+      header,
+    }: {
+      header: Header<InstanceQuestionRow, InstanceQuestionRow['last_grader_name']>;
+    }) => (
       <CategoricalColumnFilter
-        header={header}
-        columnLabel="Graded by"
+        column={header.column}
         allColumnValues={[...allGraders, 'Unassigned']}
       />
     ),
     instance_question_group_name: ({
       header,
     }: {
-      header: Header<InstanceQuestionRow, unknown>;
+      header: Header<
+        InstanceQuestionRow,
+        InstanceQuestionRow['instance_question']['instance_question_group_name']
+      >;
     }) => (
       <CategoricalColumnFilter
-        header={header}
-        columnLabel="Submission group"
+        column={header.column}
         allColumnValues={[...allSubmissionGroups, 'No group']}
       />
     ),
-    manual_points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
-      <NumericInputColumnFilter header={header} columnLabel="Manual points" />
-    ),
-    auto_points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
-      <NumericInputColumnFilter header={header} columnLabel="Auto points" />
-    ),
-    points: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
-      <NumericInputColumnFilter header={header} columnLabel="Total points" />
-    ),
-    score_perc: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
-      <NumericInputColumnFilter header={header} columnLabel="Score" />
-    ),
-    rubric_difference: ({ header }: { header: Header<InstanceQuestionRow, unknown> }) => (
+    manual_points: ({
+      header,
+    }: {
+      header: Header<
+        InstanceQuestionRow,
+        InstanceQuestionRow['instance_question']['manual_points']
+      >;
+    }) => <NumericInputColumnFilter column={header.column} />,
+    auto_points: ({
+      header,
+    }: {
+      header: Header<InstanceQuestionRow, InstanceQuestionRow['instance_question']['auto_points']>;
+    }) => <NumericInputColumnFilter column={header.column} />,
+    points: ({
+      header,
+    }: {
+      header: Header<InstanceQuestionRow, InstanceQuestionRow['instance_question']['points']>;
+    }) => <NumericInputColumnFilter column={header.column} />,
+    score_perc: ({
+      header,
+    }: {
+      header: Header<InstanceQuestionRow, InstanceQuestionRow['instance_question']['score_perc']>;
+    }) => <NumericInputColumnFilter column={header.column} />,
+    rubric_difference: ({ header }: { header: Header<InstanceQuestionRow, string> }) => (
       <MultiSelectColumnFilter
-        header={header}
-        columnLabel="AI disagreements"
+        column={header.column}
         allColumnValues={allAiAgreementItems.map((item) => item.description)}
       />
     ),

@@ -349,7 +349,7 @@ export function AssessmentQuestionTable({
     rubricData,
   ]);
 
-  const columnFilterSetters = useMemo(() => {
+  const columnFilterSetters = useMemo<Record<string, Updater<any>>>(() => {
     return {
       grading_status: setGradingStatusFilter,
       assigned_grader: setAssignedGraderFilter,
@@ -379,10 +379,7 @@ export function AssessmentQuestionTable({
       const newFilters =
         typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
       for (const filter of newFilters) {
-        const setter = columnFilterSetters[filter.id];
-        if (setter) {
-          setter(filter.value);
-        }
+        columnFilterSetters[filter.id]?.(filter.value);
       }
     },
     [columnFilters, columnFilterSetters],

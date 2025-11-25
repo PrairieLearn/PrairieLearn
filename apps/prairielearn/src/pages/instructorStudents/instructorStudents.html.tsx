@@ -3,6 +3,7 @@ import {
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
+  type Header,
   type SortingState,
   type Updater,
   createColumnHelper,
@@ -197,7 +198,7 @@ function StudentsCard({
     ];
   }, [enrollmentStatusFilter]);
 
-  const columnFilterSetters = useMemo(() => {
+  const columnFilterSetters = useMemo<Record<string, Updater<any>>>(() => {
     return {
       enrollment_status: setEnrollmentStatusFilter,
     };
@@ -209,10 +210,7 @@ function StudentsCard({
       const newFilters =
         typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
       for (const filter of newFilters) {
-        const setter = columnFilterSetters[filter.id];
-        if (setter) {
-          setter(filter.value);
-        }
+        columnFilterSetters[filter.id]?.(filter.value);
       }
     },
     [columnFilters, columnFilterSetters],
@@ -447,10 +445,13 @@ function StudentsCard({
         }}
         tableOptions={{
           filters: {
-            enrollment_status: ({ header }) => (
+            enrollment_status: ({
+              header,
+            }: {
+              header: Header<StudentRow, StudentRow['enrollment']['status']>;
+            }) => (
               <CategoricalColumnFilter
-                header={header}
-                columnLabel="Status"
+                column={header.column}
                 allColumnValues={STATUS_VALUES}
                 renderValueLabel={({ value }) => (
                   <EnrollmentStatusIcon type="text" status={value} />

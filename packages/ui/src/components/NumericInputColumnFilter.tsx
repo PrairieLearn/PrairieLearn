@@ -1,4 +1,4 @@
-import type { Header } from '@tanstack/react-table';
+import type { Column } from '@tanstack/table-core';
 import clsx from 'clsx';
 import Dropdown from 'react-bootstrap/Dropdown';
 
@@ -15,37 +15,29 @@ export type NumericColumnFilterValue =
 /**
  * A component that allows the user to filter a numeric column using comparison operators.
  * Supports syntax like: <1, >0, <=5, >=10, =5, or just 5 (implicit equals)
- * State is managed by TanStack Table.
  *
  * @param params
- * @param params.header - The TanStack Table header object
- * @param params.columnLabel - The label of the column, e.g. "Manual Points"
+ * @param params.column - The TanStack Table column object
  */
-export function NumericInputColumnFilter<TData>({
-  header,
-  columnLabel,
+export function NumericInputColumnFilter<TData, TValue>({
+  column,
 }: {
-  header: Header<TData, unknown>;
-  columnLabel: string;
+  column: Column<TData, TValue>;
 }) {
-  const columnId = header.column.id;
-  const value = (header.column.getFilterValue() as NumericColumnFilterValue | undefined) ?? {
+  const columnId = column.id;
+  const value = (column.getFilterValue() as NumericColumnFilterValue | undefined) ?? {
     filterValue: '',
     emptyOnly: false,
   };
+
+  const label =
+    column.columnDef.meta?.label ??
+    (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
 
   const filterValue = value.filterValue;
   const emptyOnly = value.emptyOnly;
   const hasActiveFilter = filterValue.trim().length > 0 || emptyOnly;
   const isInvalid = filterValue.trim().length > 0 && parseNumericFilter(filterValue) === null;
-
-  const onChange = (newValue: NumericColumnFilterValue) => {
-    if (newValue.filterValue === '' && !newValue.emptyOnly) {
-      header.column.setFilterValue(undefined);
-    } else {
-      header.column.setFilterValue(newValue);
-    }
-  };
 
   return (
     <Dropdown align="end">
@@ -56,8 +48,8 @@ export function NumericInputColumnFilter<TData>({
           hasActiveFilter && (isInvalid ? 'text-warning' : 'text-primary'),
         )}
         id={`filter-${columnId}`}
-        aria-label={`Filter ${columnLabel.toLowerCase()}`}
-        title={`Filter ${columnLabel.toLowerCase()}`}
+        aria-label={`Filter ${label.toLowerCase()}`}
+        title={`Filter ${label.toLowerCase()}`}
       >
         <i
           class={clsx(
@@ -78,7 +70,7 @@ export function NumericInputColumnFilter<TData>({
         <div class="p-3" style={{ minWidth: '240px' }}>
           <div class="d-flex align-items-center justify-content-between mb-2">
             <label class="form-label fw-semibold mb-0" id={`${columnId}-filter-label`}>
-              {columnLabel}
+              {label}
             </label>
             <button
               type="button"
@@ -87,7 +79,7 @@ export function NumericInputColumnFilter<TData>({
                 !hasActiveFilter && 'invisible',
               )}
               onClick={() => {
-                onChange({ filterValue: '', emptyOnly: false });
+                column.setFilterValue({ filterValue: '', emptyOnly: false });
               }}
             >
               Clear
@@ -103,7 +95,7 @@ export function NumericInputColumnFilter<TData>({
             aria-describedby={`${columnId}-filter-description`}
             onInput={(e) => {
               if (e.target instanceof HTMLInputElement) {
-                onChange({
+                column.setFilterValue({
                   filterValue: e.target.value,
                   emptyOnly: false,
                 });
@@ -130,7 +122,7 @@ export function NumericInputColumnFilter<TData>({
               id={`${columnId}-empty-filter`}
               onChange={(e) => {
                 if (e.target instanceof HTMLInputElement) {
-                  onChange(
+                  column.setFilterValue(
                     e.target.checked
                       ? { filterValue: '', emptyOnly: true }
                       : { filterValue: '', emptyOnly: false },

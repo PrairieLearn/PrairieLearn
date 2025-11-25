@@ -1,4 +1,4 @@
-import type { Header } from '@tanstack/react-table';
+import type { Column } from '@tanstack/table-core';
 import clsx from 'clsx';
 import { type JSX, useMemo } from 'preact/compat';
 import Dropdown from 'react-bootstrap/Dropdown';
@@ -10,33 +10,35 @@ function defaultRenderValueLabel<T>({ value }: { value: T }) {
 /**
  * A component that allows the user to filter a column containing arrays of values.
  * Uses AND logic: rows must contain ALL selected values to match.
- * State is managed by TanStack Table.
  *
  * @param params
- * @param params.header - The TanStack Table header object
- * @param params.columnLabel - The label of the column, e.g. "Rubric Items"
- * @param params.allColumnValues - All possible values that can appear in the column
+ * @param params.column - The TanStack Table column object
+ * @param params.allColumnValues - All possible values that can appear in the column filter
  * @param params.renderValueLabel - A function that renders the label for a value
  */
-export function MultiSelectColumnFilter<TData, T extends readonly any[]>({
-  header,
-  columnLabel,
+export function MultiSelectColumnFilter<TData, TValue>({
+  column,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
 }: {
-  header: Header<TData, unknown>;
-  columnLabel: string;
-  allColumnValues: T;
-  renderValueLabel?: (props: { value: T[number]; isSelected: boolean }) => JSX.Element;
+  column: Column<TData, TValue>;
+  /** In some cases, the filter values are not the same as the column values, but `TValue` is a good estimation. */
+  allColumnValues: TValue[];
+  renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => JSX.Element;
 }) {
-  const columnId = header.column.id;
+  const columnId = column.id;
+
+  const label =
+    column.columnDef.meta?.label ??
+    (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
+
+  const columnValuesFilter = column.getFilterValue() as TValue[] | undefined;
 
   const selected = useMemo(() => {
-    const columnValuesFilter = (header.column.getFilterValue() as T[number][] | undefined) ?? [];
     return new Set(columnValuesFilter);
-  }, [header.column]);
+  }, [columnValuesFilter]);
 
-  const toggleSelected = (value: T[number]) => {
+  const toggleSelected = (value: TValue) => {
     const set = new Set(selected);
     if (set.has(value)) {
       set.delete(value);
@@ -44,7 +46,7 @@ export function MultiSelectColumnFilter<TData, T extends readonly any[]>({
       set.add(value);
     }
     const newValue = Array.from(set);
-    header.column.setFilterValue(newValue.length > 0 ? newValue : undefined);
+    column.setFilterValue(newValue);
   };
 
   const hasActiveFilter = selected.size > 0;
@@ -55,8 +57,8 @@ export function MultiSelectColumnFilter<TData, T extends readonly any[]>({
         variant="link"
         class="text-muted p-0"
         id={`filter-${columnId}`}
-        aria-label={`Filter ${columnLabel.toLowerCase()}`}
-        title={`Filter ${columnLabel.toLowerCase()}`}
+        aria-label={`Filter ${label.toLowerCase()}`}
+        title={`Filter ${label.toLowerCase()}`}
       >
         <i
           class={clsx('bi', hasActiveFilter ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
@@ -66,11 +68,11 @@ export function MultiSelectColumnFilter<TData, T extends readonly any[]>({
       <Dropdown.Menu class="p-0">
         <div class="p-3 pb-0" style={{ minWidth: '250px' }}>
           <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="fw-semibold">{columnLabel}</div>
+            <div class="fw-semibold">{label}</div>
             <button
               type="button"
               class="btn btn-link btn-sm text-decoration-none p-0"
-              onClick={() => header.column.setFilterValue(undefined)}
+              onClick={() => column.setFilterValue([])}
             >
               Clear
             </button>
