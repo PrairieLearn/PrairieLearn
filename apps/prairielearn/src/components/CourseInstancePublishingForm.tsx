@@ -3,13 +3,14 @@ import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { useFormContext } from 'react-hook-form';
 
-import { FriendlyDate } from '../../../components/FriendlyDate.js';
-import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import type { PublicCourseInstance, StaffCourseInstance } from '../lib/client/safe-db-types.js';
 import {
   dateToPlainDateTime,
   nowRoundedToSeconds,
   plainDateTimeStringToDate,
-} from '../utils/dateUtils.js';
+} from '../pages/instructorInstanceAdminPublishing/utils/dateUtils.js';
+
+import { FriendlyDate } from './FriendlyDate.js';
 
 type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
 
@@ -51,17 +52,20 @@ export interface PublishingFormValues {
  * @param params.canEdit - Whether the user can edit the publishing settings.
  * @param params.originalStartDate - The original start date of the course instance.
  * @param params.originalEndDate - The original end date of the course instance.
+ * @param params.showButtons - Whether to show the buttons to save and cancel.
  */
 export function CourseInstancePublishingForm({
   courseInstance,
   canEdit,
   originalStartDate,
   originalEndDate,
+  showButtons = true,
 }: {
-  courseInstance: StaffCourseInstance;
+  courseInstance: PublicCourseInstance | StaffCourseInstance;
   canEdit: boolean;
   originalStartDate: Date | null;
   originalEndDate: Date | null;
+  showButtons?: boolean;
 }) {
   const originalStatus = computeStatus(originalStartDate, originalEndDate);
 
@@ -500,7 +504,7 @@ export function CourseInstancePublishingForm({
         </div>
       </div>
 
-      {canEdit && (
+      {canEdit && showButtons && (
         <div class="d-flex gap-2">
           <button type="submit" class="btn btn-primary" disabled={!isDirty}>
             Save
