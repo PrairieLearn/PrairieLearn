@@ -149,7 +149,9 @@ export async function syncAccessControl(
       const listBeforeRelease = mapField(rule.listBeforeRelease);
 
       // Date control fields
-      const dateControlOverridden = mapField(dateControl.enabled);
+      // const dateControlOverridden = mapField(dateControl.enabled);
+      // dateControlOverridden is implicitly set if any of its properties are overriden
+
       const releaseDateOverridden = mapField(dateControl.releaseDate);
       const dueDateOverridden = mapField(dateControl.dueDate);
       const earlyDeadlinesOverridden = mapField(dateControl.earlyDeadlines);
@@ -160,9 +162,25 @@ export async function syncAccessControl(
       // After Last Deadline
       const afterLastDeadlineAllowSubmissions = mapField(afterLastDeadline.allowSubmissions);
       const afterLastDeadlineCreditOverridden = mapField(afterLastDeadline.credit);
+      const dateControlOverridden = {
+        overridden:
+          releaseDateOverridden.overridden ||
+          dueDateOverridden.overridden ||
+          earlyDeadlinesOverridden.overridden ||
+          lateDeadlinesOverridden.overridden ||
+          durationMinutesOverridden.overridden ||
+          passwordOverridden.overridden ||
+          afterLastDeadlineAllowSubmissions.overridden ||
+          afterLastDeadlineCreditOverridden.overridden,
+        value: null, // This field isn't actually used, just needs to match the structure
+      };
 
       // PrairieTestControl
-      const prairietestControlOverridden = mapField(rule.prairieTestControl?.enabled);
+      // const prairietestControlOverridden = mapField(rule.prairieTestControl?.enabled);
+      const prairietestControlOverridden = {
+        overridden: rule.prairieTestControl?.exams !== undefined,
+        value: null,
+      };
 
       // After Complete
       const hideQuestions = mapField(afterComplete.hideQuestions);

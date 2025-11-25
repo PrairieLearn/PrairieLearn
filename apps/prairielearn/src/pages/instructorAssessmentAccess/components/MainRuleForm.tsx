@@ -1,7 +1,7 @@
 import { Form } from 'react-bootstrap';
 import { type Control, type UseFormSetValue, type UseFormTrigger, useWatch } from 'react-hook-form';
 
-import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
+import type { PageContext } from '../../../lib/client/page-context.js';
 
 import { AfterCompleteForm } from './AfterCompleteForm.js';
 import { DateControlForm } from './DateControlForm.js';
@@ -11,7 +11,7 @@ import type { AccessControlFormData } from './types.js';
 interface MainRuleFormProps {
   control: Control<AccessControlFormData>;
   trigger: UseFormTrigger<AccessControlFormData>;
-  courseInstance: StaffCourseInstanceContext['course_instance'];
+  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   setValue: UseFormSetValue<AccessControlFormData>;
 }
 

@@ -1659,6 +1659,7 @@ export function validateAccessControlArray({
   return results;
 }
 
+/** TODO: Rewrite this as we no longer use enabled in the JSON */
 export function validateAccessControl({
   accessControlJson,
 }: {

@@ -7,7 +7,7 @@ import { hydrateHtml } from '@prairielearn/preact/server';
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { getAssessmentContext, getCourseInstanceContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
@@ -42,8 +42,14 @@ export function InstructorAssessmentAccess({
   enhancedAccessControl: boolean;
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
-  const { assessment, assessment_set: assessmentSet } = getAssessmentContext(resLocals);
-  const { course_instance: courseInstance } = getCourseInstanceContext(resLocals, 'instructor');
+  const { assessment, assessment_set: assessmentSet } = extractPageContext(resLocals, {
+    pageType: 'assessment',
+    accessType: 'instructor',
+  });
+  const { course_instance: courseInstance } = extractPageContext(resLocals, {
+    pageType: 'courseInstance',
+    accessType: 'instructor',
+  });
   return PageLayout({
     resLocals,
     pageTitle: 'Access',

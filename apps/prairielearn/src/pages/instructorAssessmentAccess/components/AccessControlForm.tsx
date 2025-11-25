@@ -2,7 +2,7 @@ import { useState } from 'preact/compat';
 import { Accordion, Button, Card, Form } from 'react-bootstrap';
 import { useFieldArray, useForm } from 'react-hook-form';
 
-import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
+import type { PageContext } from '../../../lib/client/page-context.js';
 import type { AccessControlJson } from '../../../schemas/accessControl.js';
 
 import { MainRuleForm } from './MainRuleForm.js';
@@ -16,7 +16,7 @@ import {
 interface AccessControlFormProps {
   initialData?: AccessControlJson[];
   onSubmit: (data: AccessControlJson[]) => void;
-  courseInstance: StaffCourseInstanceContext['course_instance'];
+  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   assessmentType?: 'Exam' | 'Homework';
 }
 

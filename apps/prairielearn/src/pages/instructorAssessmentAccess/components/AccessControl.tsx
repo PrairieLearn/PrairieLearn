@@ -1,7 +1,4 @@
-import type {
-  StaffAssessmentContext,
-  StaffCourseInstanceContext,
-} from '../../../lib/client/page-context.js';
+import type { PageContext } from '../../../lib/client/page-context.js';
 import type { AccessControlJson } from '../../../schemas/accessControl.js';
 
 import { AccessControlForm } from './AccessControlForm.js';
@@ -84,9 +81,9 @@ export function AccessControl({
   assessmentSet,
   courseInstance,
 }: {
-  assessment: StaffAssessmentContext['assessment'];
-  assessmentSet: StaffAssessmentContext['assessment_set'];
-  courseInstance: StaffCourseInstanceContext['course_instance'];
+  assessment: PageContext<'assessment', 'instructor'>['assessment'];
+  assessmentSet: PageContext<'assessment', 'instructor'>['assessment_set'];
+  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
 }) {
   const handleFormSubmit = (data: AccessControlJson[]) => {
     // TODO: Implement actual save functionality

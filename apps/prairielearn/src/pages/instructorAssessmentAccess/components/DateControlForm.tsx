@@ -10,7 +10,7 @@ import {
 } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
-import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
+import type { PageContext } from '../../../lib/client/page-context.js';
 
 import { OverrideElement } from './OverrideElement.js';
 import type { AccessControlFormData } from './types.js';
@@ -18,7 +18,7 @@ import type { AccessControlFormData } from './types.js';
 interface DateControlFormProps {
   control: Control<AccessControlFormData>;
   trigger?: UseFormTrigger<AccessControlFormData>;
-  courseInstance?: StaffCourseInstanceContext['course_instance'];
+  courseInstance?: PageContext<'courseInstance', 'instructor'>['course_instance'];
   setValue: UseFormSetValue<AccessControlFormData>;
   namePrefix?: 'mainRule' | `overrides.${number}`;
   _ruleEnabled?: boolean;

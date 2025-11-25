@@ -1,6 +1,8 @@
 import { useState } from 'preact/compat';
-import { Button, Card, Col, Collapse, Form, OverlayTrigger, Popover, Row } from 'react-bootstrap';
+import { Button, Card, Col, Collapse, Form, Row } from 'react-bootstrap';
 import { type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AccessControlFormData } from './types.js';
 
@@ -100,10 +102,10 @@ export function AfterCompleteForm({
     }
   };
 
-  const infoPopover = (
-    <Popover id="after-complete-info-popover">
-      <Popover.Header as="h3">When is an assessment "complete"?</Popover.Header>
-      <Popover.Body>
+  const infoPopoverConfig = {
+    header: 'When is an assessment "complete"?',
+    body: (
+      <>
         <p>
           An assessment is considered complete when students can no longer answer questions. This
           typically happens when:
@@ -117,9 +119,10 @@ export function AfterCompleteForm({
           The completion date can be different for different students based on when they started or
           their specific accommodations.
         </p>
-      </Popover.Body>
-    </Popover>
-  );
+      </>
+    ),
+    props: { id: 'after-complete-info-popover' },
+  };
 
   return (
     <Card class="mb-4" style={getCardStyle()}>
@@ -131,7 +134,7 @@ export function AfterCompleteForm({
         <div>
           <div class="d-flex align-items-center">
             <span>{title}</span>
-            <OverlayTrigger trigger="click" placement="right" overlay={infoPopover}>
+            <OverlayTrigger trigger="click" placement="right" popover={infoPopoverConfig}>
               <Button variant="link" size="sm" class="ms-2 p-0">
                 <i class="bi bi-info-circle" aria-hidden="true" />
               </Button>
