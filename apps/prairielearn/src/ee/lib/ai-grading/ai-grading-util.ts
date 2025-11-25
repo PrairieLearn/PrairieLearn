@@ -74,7 +74,7 @@ export const AI_GRADING_MODELS = [
   'claude-sonnet-4-5',
 ] as const satisfies (OpenAIModelId | GoogleAIModelId | AnthropicAIModelId)[];
 
-export type AiGradingModelId = typeof AI_GRADING_MODELS[number];
+export type AiGradingModelId = (typeof AI_GRADING_MODELS)[number];
 
 export const AI_GRADING_MODEL_PROVIDERS = {
   'gpt-5-mini-2025-08-07': 'openai',
@@ -95,7 +95,10 @@ export const DEFAULT_AI_GRADING_MODEL = 'gpt-5-mini-2025-08-07';
  * - Google Gemini 2.5-flash and Gemini 3 Pro Preview do not support this.
  * - Anthropic Claude Haiku 4.5 and Claude Sonnet 4.5 do not support this.
  */
-const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>(['gpt-5-mini-2025-08-07', 'gpt-5-2025-08-07']);
+const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
+  'gpt-5-mini-2025-08-07',
+  'gpt-5-2025-08-07',
+]);
 
 export async function generatePrompt({
   questionPrompt,

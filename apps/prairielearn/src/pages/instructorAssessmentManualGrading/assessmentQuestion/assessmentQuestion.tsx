@@ -17,7 +17,7 @@ import {
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
   deleteAiGradingJobs,
-  setAiGradingMode
+  setAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
@@ -266,17 +266,17 @@ router.post(
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
         }
-        
+
         const model_id = req.body.model_id as AiGradingModelId | undefined;
         if (!model_id) {
           throw new error.HttpStatusError(400, 'No AI grading model specified');
         }
-        
+
         const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
           'ai-grading-model-selection',
           res.locals,
         );
-  
+
         if (!aiGradingModelSelectionEnabled && model_id !== DEFAULT_AI_GRADING_MODEL) {
           throw new error.HttpStatusError(
             403,
@@ -392,7 +392,7 @@ router.post(
       if (!model_id) {
         throw new error.HttpStatusError(400, 'No AI grading model specified');
       }
-      
+
       const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
         'ai-grading-model-selection',
         res.locals,

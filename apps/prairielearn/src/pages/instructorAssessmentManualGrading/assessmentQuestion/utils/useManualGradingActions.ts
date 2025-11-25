@@ -8,10 +8,10 @@ export const AI_GRADING_MODELS = [
   'gemini-2.5-flash',
   'gemini-3-pro-preview',
   'claude-haiku-4-5',
-  'claude-sonnet-4-5'
+  'claude-sonnet-4-5',
 ] as const;
 
-export type AiGradingModelId = typeof AI_GRADING_MODELS[number];
+export type AiGradingModelId = (typeof AI_GRADING_MODELS)[number];
 
 export type BatchActionData =
   | { assigned_grader: string | null }

@@ -612,12 +612,12 @@ export const ConfigSchema = z.object({
       'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, output: 2 },
       'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, output: 10 },
 
-      // Prices current as of 2025-11-25. Values obtained from 
+      // Prices current as of 2025-11-25. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
       'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, output: 2.5 },
       'gemini-3-pro-preview': { input: 2, cachedInput: 0.2, output: 12 },
 
-      // Prices current as of 2025-11-25. Values obtained from 
+      // Prices current as of 2025-11-25. Values obtained from
       // https://www.claude.com/pricing#api
       'claude-haiku-4-5': { input: 1, cachedInput: 0.1, output: 5 },
       'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, output: 15 },

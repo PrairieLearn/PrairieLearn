@@ -43,7 +43,7 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading
+  selectRubricForGrading,
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -84,7 +84,7 @@ export async function aiGrade({
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
-  model_id: AiGradingModelId
+  model_id: AiGradingModelId;
 }): Promise<string> {
   const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
   const { model, embeddingModel } = run(() => {
@@ -119,7 +119,10 @@ export async function aiGrade({
     } else {
       // If an Anthropic API Key is not provided, throw an error
       if (!config.aiGradingAnthropicApiKey) {
-        throw new error.HttpStatusError(403, 'Model not available (Anthropic API key not provided)');
+        throw new error.HttpStatusError(
+          403,
+          'Model not available (Anthropic API key not provided)',
+        );
       }
       const anthropic = createAnthropic({
         apiKey: config.aiGradingAnthropicApiKey,
@@ -185,9 +188,7 @@ export async function aiGrade({
       }
       job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
     } else {
-      job.info(
-        `Skip embedding generation; RAG is not supported for model provider ${provider}.`,
-      );
+      job.info(`Skip embedding generation; RAG is not supported for model provider ${provider}.`);
     }
 
     const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
@@ -330,7 +331,7 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
-        model_id
+        model_id,
       });
 
       // If the submission contains images, prompt the model to transcribe any relevant information

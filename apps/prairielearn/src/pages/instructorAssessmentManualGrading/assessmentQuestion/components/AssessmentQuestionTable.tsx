@@ -42,9 +42,7 @@ import {
 import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
-import {
-  type useManualGradingActions
-} from '../utils/useManualGradingActions.js';
+import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
@@ -67,7 +65,7 @@ const AI_GRADING_MODELS = [
   { provider: 'anthropic', modelId: 'claude-sonnet-4-5', name: 'Anthropic Claude Sonnet 4.5' },
 ] as const;
 
-type AiGradingModelId = typeof AI_GRADING_MODELS[number]['modelId'];
+type AiGradingModelId = (typeof AI_GRADING_MODELS)[number]['modelId'];
 
 const DEFAULT_AI_GRADING_MODEL_ID = 'gpt-5-mini-2025-08-07' as const;
 
@@ -123,7 +121,10 @@ function AiGradingOption({
 }) {
   if (!aiGradingModelSelectionEnabled) {
     return (
-      <Dropdown.Item disabled={numToGrade === 0} onClick={() => onSelectModel(DEFAULT_AI_GRADING_MODEL_ID)}>
+      <Dropdown.Item
+        disabled={numToGrade === 0}
+        onClick={() => onSelectModel(DEFAULT_AI_GRADING_MODEL_ID)}
+      >
         <AiGradingOptionContent text={text} numToGrade={numToGrade} />
       </Dropdown.Item>
     );
@@ -138,10 +139,7 @@ function AiGradingOption({
         <p class="my-0 text-muted px-3">AI grader model</p>
         <Dropdown.Divider />
         {AI_GRADING_MODELS.map((model) => (
-          <Dropdown.Item
-            key={model.modelId}
-            onClick={() => onSelectModel(model.modelId)}
-          >
+          <Dropdown.Item key={model.modelId} onClick={() => onSelectModel(model.modelId)}>
             {model.name}
           </Dropdown.Item>
         ))}

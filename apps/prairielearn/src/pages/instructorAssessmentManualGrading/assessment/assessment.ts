@@ -17,7 +17,7 @@ import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-
 import {
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
-  deleteAiGradingJobs
+  deleteAiGradingJobs,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
