@@ -99,18 +99,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 mode_file_name,
             )
         ):
-            ace_mode_path = (
-                f"{data['options']['client_files_question_url'].rstrip('/')}/ace/mode"
-            )
+            ace_mode_path = f"{data['options']['client_files_question_url'].rstrip('/')}/{mode_file_name}"
         elif os.path.exists(
             os.path.join(
                 data["options"]["client_files_course_path"],
                 mode_file_name,
             )
         ):
-            ace_mode_path = (
-                f"{data['options']['client_files_course_url'].rstrip('/')}/ace/mode"
-            )
+            ace_mode_path = f"{data['options']['client_files_course_url'].rstrip('/')}/{mode_file_name}"
 
     # stringify boolean attributes (needed when written to html_params)
     auto_resize = "true" if auto_resize else "false"
