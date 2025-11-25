@@ -1,49 +1,33 @@
 import { z } from 'zod';
 
-import { html } from '@prairielearn/html';
+import {
+  type AdminCourse,
+  type AdminInstitution,
+  StaffCourseInstanceSchema,
+} from '../../../lib/client/safe-db-types.js';
 
-import { PageLayout } from '../../../components/PageLayout.js';
-import { type Course, CourseInstanceSchema, type Institution } from '../../../lib/db-types.js';
-
-export const CourseInstanceRowSchema = z.object({
-  course_instance: CourseInstanceSchema,
+export const SafeCourseInstanceRowSchema = z.object({
+  course_instance: StaffCourseInstanceSchema,
   enrollment_count: z.number(),
 });
-type CourseInstanceRow = z.infer<typeof CourseInstanceRowSchema>;
+type SafeCourseInstanceRow = z.infer<typeof SafeCourseInstanceRowSchema>;
 
 export function AdministratorInstitutionCourse({
   institution,
   course,
   rows,
-  resLocals,
+  csrfToken,
 }: {
-  institution: Institution;
-  course: Course;
-  rows: CourseInstanceRow[];
-  resLocals: Record<string, any>;
+  institution: AdminInstitution;
+  course: AdminCourse;
+  rows: SafeCourseInstanceRow[];
+  csrfToken: string;
 }) {
-  return PageLayout({
-    resLocals: { ...resLocals, institution },
-    pageTitle: `${course.short_name} - Institution Admin`,
-    navContext: {
-      type: 'administrator_institution',
-      page: 'administrator_institution',
-      subPage: 'courses',
-    },
-    preContent: html`
-      <nav class="container" aria-label="Breadcrumbs">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item">
-            <a href="/pl/administrator/institution/${institution.id}/courses">Courses</a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page">
-            ${course.short_name}: ${course.title}
-          </li>
-        </ol>
-      </nav>
-    `,
-    content: html`
-      <p><a href="/pl/course/${course.id}">View as instructor</a></p>
+  return (
+    <>
+      <p>
+        <a href={`/pl/course/${course.id}`}>View as instructor</a>
+      </p>
 
       <h2 class="h4">Limits</h2>
       <form method="POST" class="mb-3">
@@ -53,10 +37,10 @@ export function AdministratorInstitutionCourse({
           </label>
           <input
             type="number"
-            disabled
             class="form-control"
             id="institution_course_instance_enrollment_limit"
-            value="${institution.course_instance_enrollment_limit}"
+            value={institution.course_instance_enrollment_limit}
+            disabled
           />
           <small class="form-text text-muted">
             This limit applies to all course instances without a specific enrollment limit set.
@@ -69,10 +53,10 @@ export function AdministratorInstitutionCourse({
           </label>
           <input
             type="number"
-            disabled
             class="form-control"
             id="institution_yearly_enrollment_limit"
-            value="${institution.yearly_enrollment_limit}"
+            value={institution.yearly_enrollment_limit}
+            disabled
           />
           <small class="form-text text-muted">
             This limit applies to all enrollments in this course's institution.
@@ -88,7 +72,7 @@ export function AdministratorInstitutionCourse({
             class="form-control"
             id="course_instance_enrollment_limit"
             name="course_instance_enrollment_limit"
-            value="${course.course_instance_enrollment_limit}"
+            value={course.course_instance_enrollment_limit ?? ''}
           />
           <small class="form-text text-muted">
             This limit will apply to all course instances in this course. If no override is set, the
@@ -105,15 +89,18 @@ export function AdministratorInstitutionCourse({
             class="form-control"
             id="yearly_enrollment_limit"
             name="yearly_enrollment_limit"
-            value="${course.yearly_enrollment_limit}"
+            value={course.yearly_enrollment_limit ?? ''}
           />
           <small class="form-text text-muted">
             This limit applies only to this course. It is applied
-            <i><strong>in addition to</strong></i> the institution-wide yearly enrollment limit.
+            <i>
+              <strong>in addition to</strong>
+            </i>{' '}
+            the institution-wide yearly enrollment limit.
           </small>
         </div>
 
-        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <input type="hidden" name="__csrf_token" value={csrfToken} />
         <button
           type="submit"
           name="__action"
@@ -135,28 +122,28 @@ export function AdministratorInstitutionCourse({
             </tr>
           </thead>
           <tbody>
-            ${rows.map(({ course_instance, enrollment_count }) => {
-              return html`
-                <tr>
+            {rows.map(({ course_instance, enrollment_count }) => {
+              return (
+                <tr key={course_instance.id}>
                   <td>
                     <a
-                      href="/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}"
+                      href={`/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}`}
                     >
-                      ${course_instance.short_name ?? '—'}: ${course_instance.long_name ?? '—'}
+                      {course_instance.short_name ?? '—'}: {course_instance.long_name ?? '—'}
                     </a>
                   </td>
-                  <td>${enrollment_count}</td>
+                  <td>{enrollment_count}</td>
                   <td>
-                    ${course_instance.enrollment_limit ??
-                    course.course_instance_enrollment_limit ??
-                    institution.course_instance_enrollment_limit}
+                    {course_instance.enrollment_limit ??
+                      course.course_instance_enrollment_limit ??
+                      institution.course_instance_enrollment_limit}
                   </td>
                 </tr>
-              `;
+              );
             })}
           </tbody>
         </table>
       </div>
-    `,
-  });
+    </>
+  );
 }

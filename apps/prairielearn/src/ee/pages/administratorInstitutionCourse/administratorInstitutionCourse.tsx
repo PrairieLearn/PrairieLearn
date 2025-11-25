@@ -5,13 +5,16 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
+import { PageLayout } from '../../../components/PageLayout.js';
+import { extractPageContext } from '../../../lib/client/page-context.js';
+import { AdminCourseSchema, AdminInstitutionSchema } from '../../../lib/client/safe-db-types.js';
 import { CourseSchema } from '../../../lib/db-types.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import { getInstitution } from '../../lib/institution.js';
 
 import {
   AdministratorInstitutionCourse,
-  CourseInstanceRowSchema,
+  SafeCourseInstanceRowSchema,
 } from './administratorInstitutionCourse.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -20,26 +23,58 @@ const router = Router({ mergeParams: true });
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const institution = await getInstitution(req.params.institution_id);
+    const institution = AdminInstitutionSchema.parse(
+      await getInstitution(req.params.institution_id),
+    );
     const course = await queryRow(
       sql.select_course,
       {
         institution_id: req.params.institution_id,
         course_id: req.params.course_id,
       },
-      CourseSchema,
+      AdminCourseSchema,
     );
     const rows = await queryRows(
       sql.select_course_instances,
       { course_id: course.id },
-      CourseInstanceRowSchema,
+      SafeCourseInstanceRowSchema,
     );
+    const { __csrf_token } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+      withAuthzData: false,
+    });
     res.send(
-      AdministratorInstitutionCourse({
-        institution,
-        course,
-        rows,
-        resLocals: res.locals,
+      PageLayout({
+        resLocals: { ...res.locals, institution },
+        pageTitle: `${course.short_name} - Institution Admin`,
+        navContext: {
+          type: 'administrator_institution',
+          page: 'administrator_institution',
+          subPage: 'courses',
+        },
+        preContent: (
+          <nav class="container" aria-label="Breadcrumbs">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item">
+                <a href={`/pl/administrator/institution/${institution.id}/courses`}>Courses</a>
+              </li>
+              <li class="breadcrumb-item active" aria-current="page">
+                {course.short_name}: {course.title}
+              </li>
+            </ol>
+          </nav>
+        ),
+        content: (
+          <>
+            <AdministratorInstitutionCourse
+              institution={institution}
+              course={course}
+              rows={rows}
+              csrfToken={__csrf_token}
+            />
+          </>
+        ),
       }),
     );
   }),
