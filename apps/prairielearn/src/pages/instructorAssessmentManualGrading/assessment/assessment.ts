@@ -14,7 +14,10 @@ import {
 } from '@prairielearn/postgres';
 
 import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
-import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import {
+  type AiGradingProvider,
+  deleteAiGradingJobs,
+} from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import { type Assessment } from '../../../lib/db-types.js';
@@ -126,6 +129,11 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
+      const provider = req.body.provider as AiGradingProvider | undefined;
+      if (!provider) {
+        throw new HttpStatusError(400, 'No AI grading provider specified');
+      }
+
       const assessment = res.locals.assessment as Assessment;
 
       const assessmentQuestionRows = await selectAssessmentQuestions({
@@ -153,6 +161,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
+          provider,
           mode: 'all',
         });
       }

@@ -1,14 +1,15 @@
 import { useState } from 'preact/compat';
 
-import { TopicBadge } from '../../../components/TopicBadge.js';
-import { TopicDescription } from '../../../components/TopicDescription.js';
-import { type StaffTopic } from '../../../lib/client/safe-db-types.js';
-import { type Topic } from '../../../lib/db-types.js';
-import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
+import { type StaffTag, type StaffTopic } from '../lib/client/safe-db-types.js';
+import { ColorJsonSchema } from '../schemas/infoCourse.js';
 
-import { type EditTopicModalState, EditTopicsModal } from './EditTopicModal.js';
+import { EditTagsTopicsModal, type EditTagsTopicsModalState } from './EditTagsTopicsModal.js';
+import { TagBadge } from './TagBadge.js';
+import { TagDescription } from './TagDescription.js';
+import { TopicBadge } from './TopicBadge.js';
+import { TopicDescription } from './TopicDescription.js';
 
-const emptyTopic: Topic = {
+const emptyEntity = {
   color: '',
   course_id: '',
   description: '',
@@ -19,26 +20,31 @@ const emptyTopic: Topic = {
   number: null,
 };
 
-export function InstructorCourseAdminTopicsTable({
-  topics,
+export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
+  entities,
+  entityType,
   allowEdit,
   origHash,
   csrfToken,
 }: {
-  topics: StaffTopic[];
+  entities: Entity[];
+  entityType: 'topic' | 'tag';
   allowEdit: boolean;
   origHash: string | null;
   csrfToken: string;
 }) {
   const [editMode, setEditMode] = useState(false);
-  const [topicsState, setTopicsState] = useState<Topic[]>(topics);
-  const [modalState, setModalState] = useState<EditTopicModalState>({ type: 'closed' });
+  const [entitiesState, setEntitiesState] = useState<Entity[]>(entities);
+  const [modalState, setModalState] = useState<EditTagsTopicsModalState<Entity>>({
+    type: 'closed',
+  });
 
-  const handleCreateTopic = () => {
+  const handleCreate = () => {
     setModalState({
       type: 'create',
-      topic: {
-        ...emptyTopic,
+      entityType,
+      entity: {
+        ...(emptyEntity as Entity),
         // This ID won't be used on the server; it's just a temporary unique identifier.
         id: crypto.randomUUID(),
         // Pick a random initial color.
@@ -47,35 +53,36 @@ export function InstructorCourseAdminTopicsTable({
     });
   };
 
-  const handleEditTopic = (topicIndex: number) => {
+  const handleEdit = (index: number) => {
     setModalState({
       type: 'edit',
-      topic: {
-        ...topicsState[topicIndex],
-        // Once a topic is edited, it is no longer implicit.
+      entityType,
+      entity: {
+        ...entitiesState[index],
+        // Once a tag/topic is edited, it is no longer implicit.
         implicit: false,
       },
     });
   };
 
-  const handleSaveTopic = (topic: Topic) => {
+  const handleSave = (entity: Entity) => {
     if (modalState.type === 'create') {
-      setTopicsState((prevTopics) => [...prevTopics, topic]);
+      setEntitiesState((prevData) => [...prevData, entity]);
     } else if (modalState.type === 'edit') {
-      setTopicsState((prevTopics) => prevTopics.map((t) => (t.id === topic.id ? topic : t)));
+      setEntitiesState((prevData) => prevData.map((d) => (d.id === entity.id ? entity : d)));
     }
     setModalState({ type: 'closed' });
   };
 
-  const handleDeleteTopic = (deleteTopicId: string) => {
-    setTopicsState((prevTopics) => prevTopics.filter((topic) => topic.id !== deleteTopicId));
+  const handleDelete = (deleteId: string) => {
+    setEntitiesState((prevData) => prevData.filter((d) => d.id !== deleteId));
   };
 
   return (
     <>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h1>Topics</h1>
+          <h1>{entityType === 'topic' ? 'Topics' : 'Tags'}</h1>
           <div class="ms-auto">
             {allowEdit && origHash ? (
               !editMode ? (
@@ -84,14 +91,14 @@ export function InstructorCourseAdminTopicsTable({
                   type="button"
                   onClick={() => setEditMode(true)}
                 >
-                  <i class="fa fa-edit" aria-hidden="true" /> Edit topics
+                  <i class="fa fa-edit" aria-hidden="true" /> Edit {entityType}s
                 </button>
               ) : (
                 <form method="POST">
-                  <input type="hidden" name="__action" value="save_topics" />
+                  <input type="hidden" name="__action" value="save_data" />
                   <input type="hidden" name="__csrf_token" value={csrfToken} />
                   <input type="hidden" name="orig_hash" value={origHash} />
-                  <input type="hidden" name="topics" value={JSON.stringify(topicsState)} />
+                  <input type="hidden" name="data" value={JSON.stringify(entitiesState)} />
                   <span class="js-edit-mode-buttons">
                     <button class="btn btn-sm btn-light mx-1" type="submit">
                       <i class="fa fa-save" aria-hidden="true" /> Save and sync
@@ -112,7 +119,10 @@ export function InstructorCourseAdminTopicsTable({
           </div>
         </div>
         <div class="table-responsive">
-          <table class="table table-sm table-hover table-striped" aria-label="Topics">
+          <table
+            class="table table-sm table-hover table-striped"
+            aria-label={entityType === 'topic' ? 'Topics' : 'Tags'}
+          >
             <thead>
               <tr>
                 {editMode && allowEdit && (
@@ -127,25 +137,25 @@ export function InstructorCourseAdminTopicsTable({
               </tr>
             </thead>
             <tbody>
-              {topicsState.map((topic, index) => {
+              {entitiesState.map((row, index) => {
                 return (
-                  <tr key={topic.name}>
+                  <tr key={row.name}>
                     {editMode && allowEdit && (
                       <td class="align-middle">
                         <div class="d-flex align-items-center">
                           <button
                             class="btn btn-sm btn-ghost"
                             type="button"
-                            aria-label={`Edit topic ${topic.name}`}
-                            onClick={() => handleEditTopic(index)}
+                            aria-label={`Edit ${entityType} ${row.name}`}
+                            onClick={() => handleEdit(index)}
                           >
                             <i class="fa fa-edit" aria-hidden="true" />
                           </button>
                           <button
                             class="btn btn-sm btn-ghost"
                             type="button"
-                            aria-label={`Delete topic ${topic.name}`}
-                            onClick={() => handleDeleteTopic(topic.id)}
+                            aria-label={`Delete ${entityType} ${row.name}`}
+                            onClick={() => handleDelete(row.id)}
                           >
                             <i class="fa fa-trash text-danger" aria-hidden="true" />
                           </button>
@@ -154,11 +164,15 @@ export function InstructorCourseAdminTopicsTable({
                     )}
                     <td class="align-middle">{index + 1}</td>
                     <td class="align-middle">
-                      <TopicBadge topic={topic} />
+                      {entityType === 'topic' ? <TopicBadge topic={row} /> : <TagBadge tag={row} />}
                     </td>
-                    <td class="align-middle">{topic.color}</td>
+                    <td class="align-middle">{row.color}</td>
                     <td class="align-middle">
-                      <TopicDescription topic={topic} />
+                      {entityType === 'topic' ? (
+                        <TopicDescription topic={row} />
+                      ) : (
+                        <TagDescription tag={row} />
+                      )}
                     </td>
                   </tr>
                 );
@@ -166,8 +180,8 @@ export function InstructorCourseAdminTopicsTable({
               {editMode ? (
                 <tr>
                   <td colSpan={5}>
-                    <button class="btn btn-sm btn-ghost" type="button" onClick={handleCreateTopic}>
-                      <i class="fa fa-plus" aria-hidden="true" /> New Topic
+                    <button class="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
+                      <i class="fa fa-plus" aria-hidden="true" /> New {entityType}
                     </button>
                   </td>
                 </tr>
@@ -178,13 +192,13 @@ export function InstructorCourseAdminTopicsTable({
           </table>
         </div>
       </div>
-      <EditTopicsModal
+      <EditTagsTopicsModal
         state={modalState}
         onClose={() => setModalState({ type: 'closed' })}
-        onSave={handleSaveTopic}
+        onSave={handleSave}
       />
     </>
   );
 }
 
-InstructorCourseAdminTopicsTable.displayName = 'InstructorCourseAdminTopicsTable';
+TagsTopicsTable.displayName = 'TagsTopicsTable';

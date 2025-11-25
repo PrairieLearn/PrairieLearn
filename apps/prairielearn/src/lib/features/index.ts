@@ -4,9 +4,10 @@ const featureNames = [
   'course-instance-billing',
   'enforce-plan-grants-for-questions',
   // Should only be applied to courses/institutions.
-  'question-sharing',
+  'question-sharing', // This also controls course instance sharing.
   'consume-public-questions',
   'ai-grading',
+  'ai-grading-provider-selection',
   'disable-public-workspaces',
   // Should be applied to courses only.
   'ai-question-generation-course-toggle',

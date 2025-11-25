@@ -65,6 +65,15 @@ interface EditData {
   };
 }
 
+function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
+  const csrfToken = page.find('#test_csrf_token').text();
+
+  return {
+    csrfToken,
+    url: undefined,
+  };
+}
+
 const testEditData: EditData[] = [
   {
     url: questionsUrl,
@@ -251,7 +260,8 @@ const testEditData: EditData[] = [
   },
   {
     url: courseInstancesUrl,
-    formSelector: '#createCourseInstanceModal',
+    formSelector: 'body',
+    dynamicPostInfo: getCourseInstanceCreatePostInfo,
     action: 'add_course_instance',
     info: 'courseInstances/New_1/infoCourseInstance.json',
     data: {
@@ -364,6 +374,8 @@ const publicCopyTestData: EditData[] = [
     action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
+      start_date: '',
+      end_date: '',
     },
     info: 'questions/shared-publicly/info.json',
     files: new Set([
@@ -388,6 +400,8 @@ const publicCopyTestData: EditData[] = [
     action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
+      start_date: '',
+      end_date: '',
     },
     info: 'questions/shared-publicly/info.json',
     files: new Set([

@@ -2,7 +2,6 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
@@ -181,7 +180,6 @@ router.get(
       return;
     }
 
-    // For now, this is a development-only feature, so that can can get PRs merged without affecting users.
     const enrollmentManagementEnabled =
       (await features.enabled('enrollment-management', {
         institution_id: institution.id,
@@ -208,7 +206,6 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        headContent: compiledStylesheetTag('tanstackTable.css'),
         content: (
           <>
             <CourseInstanceSyncErrorsAndWarnings

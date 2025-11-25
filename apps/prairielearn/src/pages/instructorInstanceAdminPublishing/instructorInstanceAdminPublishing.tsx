@@ -36,7 +36,7 @@ import {
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
-import { CourseInstancePublishingForm } from './components/CourseInstancePublishingForm.js';
+import { CourseInstancePublishing } from './components/CourseInstancePublishing.js';
 import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
 import { CourseInstancePublishingExtensionWithUsersSchema } from './instructorInstanceAdminPublishing.types.js';
 import { plainDateTimeStringToDate } from './utils/dateUtils.js';
@@ -196,7 +196,7 @@ router.get(
 
             {courseInstance.modern_publishing ? (
               <Hydrate>
-                <CourseInstancePublishingForm
+                <CourseInstancePublishing
                   courseInstance={courseInstance}
                   canEdit={hasCourseInstancePermissionEdit && origHash !== null}
                   csrfToken={csrfToken}

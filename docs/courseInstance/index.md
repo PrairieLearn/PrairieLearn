@@ -1,10 +1,12 @@
 # Course instance configuration
 
-**NOTE:** Any time you edit or add an `infoCourseInstance.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
+!!! note
+
+    Any time you edit or add an `infoCourseInstance.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
 
 ## Directory layout
 
-A _course instance_ corresponds to a single offering of a [course](course/index.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment/index.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
+A _course instance_ corresponds to a single offering of a [course](../course/index.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](../assessment/overview.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
 
 ```bash
 exampleCourse
@@ -26,9 +28,9 @@ exampleCourse
         |   `-- ...                   # files for Spring 2017
 ```
 
-1. See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
+1. See [clientFiles and serverFiles](../clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
 
-2. See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
+2. See [clientFiles and serverFiles](../clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
 
 See an [example `courseInstances` directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances) in the PrairieLearn example course.
 
@@ -47,7 +49,7 @@ This file specifies basic information about the course instance:
 }
 ```
 
-See the [reference for `infoCourseInstance.json`](./schemas/infoCourseInstance.md) for more information about what can be added to this file.
+See the [reference for `infoCourseInstance.json`](../schemas/infoCourseInstance.md) for more information about what can be added to this file.
 
 ## Publishing controls
 
@@ -62,11 +64,24 @@ The course instance `publishing` configuration determines when the course instan
 }
 ```
 
-Both `startDate` and `endDate` must be specified together.
+Both `startDate` and `endDate` must be specified together. This can be edited on the **Publishing** page (Course Instance → Instance settings → Publishing).
+
+### Publishing extensions
+
+You can extend the end date of the course instance to particular students by creating a publishing extension through the UI (Course Instance -> Settings -> Publishing -> Extensions).
+
+!!! warning "`allowAccess` is deprecated"
+
+    The previous system, `allowAccess`, allowed you to (1) list UIDs in the JSON file, (2) change the start date for certain students and (2) set the end date to a date _before_ the overall end date. The new system does not support these features.
 
 ### Controlling access by institution
 
-By default, only students that belong to the course's institution can access the course instance. You can use the [`institution` property](./accessControl/index.md#institutions) to allow access from other institutions. For instance, you can use the following rule to allow students from any institution to access the course instance between the specified dates:
+By default, only students that belong to the course's institution can access the course instance. You can use the `institution` property to allow access from other institutions. It can be set to `"Any"` to allow access from all institutions, or to a specific institution name, such as `"UIUC"`, or for LTI 1.1-linked courses, to `"LTI"`. For instance, you can use the following rule to allow students from any institution to access the course instance between the specified dates:
+
+!!! note "Planned deprecation"
+
+    The `institution` property is planned to be deprecated in the future alongside the release of our new self-enrollment system which has an equivalent feature. If you really need this control, then you should still use the `allowAccess` property.
+    <!-- Remove this note when the new system is released -->
 
 ```json title="infoCourseInstance.json"
 {
@@ -80,17 +95,68 @@ By default, only students that belong to the course's institution can access the
 }
 ```
 
-### Controlling access by UID
+### Migrating from `allowAccess`
 
-You can restrict access to particular students by creating a publishing extension through the UI (Course Instance -> Settings -> Publishing -> Extensions).
+To migrate from `allowAccess` to publishing extensions:
 
-Previously, you could restrict access to particular students by listing their UIDs in the `uids` property of `allowAccess` rules. This is now deprecated as we move away from storing student information in configuration files.
+??? example "Sample old `allowAccess` configuration"
+
+    ```json title="infoCourseInstance.json"
+    {
+      "allowAccess": [
+        {
+          "startDate": "2025-11-01T00:00:01",
+          "endDate": "2025-12-15T23:59:59",
+        },
+        {
+          "startDate": "2025-11-01T00:00:01",
+          "endDate": "2025-12-30T23:59:59",
+          "uids": [
+            "student1@example.com",
+            "student2@example.com"
+          ]
+        }
+      ]
+    }
+    ```
+
+1. Find the allowAccess rule that contains no other settings (`uids`, `institution`). Create a new `publishing` section in your `infoCourseInstance.json` file, containing the start and end dates for your term.
+
+   ```json title="infoCourseInstance.json"
+   {
+     "publishing": {
+       "startDate": /* start date of allowAccess rule */,
+       "endDate": /* end date of allowAccess rule */
+     }
+   }
+   ```
+
+2. For allowAccess rules with the `uids` field set, note down the UIDs and `endDate` of the rule. Then, delete the `allowAccess` property from your `infoCourseInstance.json` file, and sync your course.
+
+3. Navigate to `Course Instance -> Settings -> Publishing -> Extensions` in the UI. In the publishing extensions section, for each rule you had previously, add an extension that will replace it, filling in the UIDs and `endDate`. Extensions are automatically saved and applied.
+
+??? example "Adding an extension"
+
+    ![Modal adding an extension for the students in the sample configuration](./publishing-page-add-extension.png)
+
+??? example "New `publishing` configuration"
+
+    ```json title="infoCourseInstance.json"
+    {
+      "publishing": {
+        "startDate": "2025-11-01T00:00:01",
+        "endDate": "2025-12-15T23:59:59",
+      }
+    }
+    ```
+
+    ![The migrated publishing configuration](./publishing-page-example-with-extensions.png)
 
 ## Enrollment controls
 
 Students can enroll in a course instance through one of two ways:
 
-1. They can use a URL specific to the course instance or [to one of its assessments](assessment/index.md#linking-to-assessments). You can find the "student link" on the "Settings" tab of the course instance. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
+1. They can use a URL specific to the course instance or [to one of its assessments](../assessment/configuration.md#linking-to-assessments). You can find the "student link" on the "Settings" tab of the course instance. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
 
 2. They can use the "Add or remove courses" button on PrairieLearn's homepage. This button opens a page listing all course instances that are currently available for enrollment, giving students the option to add new courses.
 
@@ -102,7 +168,9 @@ Some instructors may wish to hide their course from the list of available course
 }
 ```
 
-Note that _this is not a security setting_. Students may still enroll in the course instance if they get access to the URL, such as from a friend. Instructors that wish to actually restrict course enrollment to a specific list of students should instead use an access rule with an explicit list of UIDs, as described under ["Controlling access by UID"](#controlling-access-by-uid).
+!!! warning
+
+    _`hideInEnrollPage` is not a security setting_. Students may still enroll in the course instance if they get access to the URL, such as from a friend.
 
 ## Assessment page organization
 
@@ -114,7 +182,7 @@ Instructors can group assessments by course modules (topics, sections, or chapte
 }
 ```
 
-For more information about assessment modules, see [Course configuration](course/index.md#assessment-modules).
+For more information about assessment modules, see [Course configuration](../course/index.md#assessment-modules).
 
 ## Timezone
 
@@ -132,13 +200,13 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 !!! warning
 
-    LTI 1.1 support as described below is deprecated. We recommend using LTI 1.3 for all new course instances. See [the LTI 1.3 documentation](./lmsIntegrationInstructor.md) for more details.
+    LTI 1.1 support as described below is deprecated. We recommend using LTI 1.3 for all new course instances. See [the LTI 1.3 documentation](../lmsIntegrationInstructor.md) for more details.
 
 ### LTI Overview
 
 LTI, or Learning Tools Interoperability, is the ability for Learning Management Systems (LMSes) to link together. In our context, it means that sites like Coursera can link into assessments in PrairieLearn, give the student a PrairieLearn experience, and report the assessment score back to Coursera automatically.
 
-PrairieLearn LTI support enables a new authentication source (that creates the user in PL and enrolls them in the appropriate course instance) with a grade reporting functionality. Everything else (course instance, assessment and question configuration and workflows) are the same. Assessment [access control](accessControl/index.md) rules still apply for LTI linked assessments.
+PrairieLearn LTI support enables a new authentication source (that creates the user in PL and enrolls them in the appropriate course instance) with a grade reporting functionality. Everything else (course instance, assessment and question configuration and workflows) are the same. Assessment [access control](../assessment/accessControl.md) rules still apply for LTI-linked assessments.
 
 ### Enabling LTI support in a course instance
 
@@ -156,7 +224,7 @@ A single LMS course should use the same credential. If multiple courses need to 
 
 PrairieLearn logins via LTI are unique to their LMS course. For example, if an Illinois student is taking a Coursera LTI course they will have two different user accounts in PrairieLearn.
 
-It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](accessControl/index.md) for more details.
+It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](../assessment/accessControl.md) for more details.
 
 ### LTI linking into an assessment
 
