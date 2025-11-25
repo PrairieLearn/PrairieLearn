@@ -18,3 +18,4 @@ export {
 } from './components/NumericInputColumnFilter.js';
 export { useShiftClickCheckbox } from './components/useShiftClickCheckbox.js';
 export { useAutoSizeColumns } from './components/useAutoSizeColumns.js';
+export { OverlayTrigger, type OverlayTriggerProps } from './components/OverlayTrigger.js';
