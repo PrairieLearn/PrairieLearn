@@ -59,7 +59,7 @@ import { TanstackTableCard } from '@prairielearn/ui';
 You should also include the CSS file in your page:
 
 ```css
-@import url('@prairielearn/ui/components/TanstackTable.css');
+@import url('@prairielearn/ui/components/styles.css');
 ```
 
 ### CategoricalColumnFilter

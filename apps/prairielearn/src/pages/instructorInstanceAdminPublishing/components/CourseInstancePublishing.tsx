@@ -1,15 +1,15 @@
 import { QueryClient } from '@tanstack/react-query';
 import { FormProvider, useForm } from 'react-hook-form';
 
+import {
+  CourseInstancePublishingForm,
+  type PublishingFormValues,
+} from '../../../components/CourseInstancePublishingForm.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { CourseInstancePublishingExtensionWithUsers } from '../instructorInstanceAdminPublishing.types.js';
 import { dateToPlainDateTime } from '../utils/dateUtils.js';
 
-import {
-  CourseInstancePublishingForm,
-  type PublishingFormValues,
-} from './CourseInstancePublishingForm.js';
 import { PublishingExtensions } from './PublishingExtensions.js';
 
 const queryClient = new QueryClient();

@@ -11,21 +11,14 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'preact/compat';
-import {
-  Alert,
-  Button,
-  ButtonGroup,
-  Dropdown,
-  DropdownButton,
-  OverlayTrigger,
-  Tooltip,
-} from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
+  OverlayTrigger,
   TanstackTableCard,
   TanstackTableEmptyState,
 } from '@prairielearn/ui';
@@ -116,7 +109,10 @@ function CopyEnrollmentLinkButton({
       {courseInstance.self_enrollment_use_enrollment_code && (
         <OverlayTrigger
           placement="right"
-          overlay={<Tooltip>{copiedCode ? 'Copied!' : 'Copy'}</Tooltip>}
+          tooltip={{
+            body: copiedCode ? 'Copied!' : 'Copy',
+            props: { id: 'students-copy-code-tooltip' },
+          }}
           show={copiedCode ? true : undefined}
         >
           <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
@@ -129,7 +125,10 @@ function CopyEnrollmentLinkButton({
       {courseInstance.self_enrollment_enabled && (
         <OverlayTrigger
           placement="right"
-          overlay={<Tooltip>{copiedLink ? 'Copied!' : 'Copy'}</Tooltip>}
+          tooltip={{
+            body: copiedLink ? 'Copied!' : 'Copy',
+            props: { id: 'students-copy-link-tooltip' },
+          }}
           show={copiedLink ? true : undefined}
         >
           <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
@@ -273,7 +272,12 @@ function StudentsCard({
             return info.getValue() || '—';
           }
           return (
-            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+            <OverlayTrigger
+              tooltip={{
+                body: 'Student information is not yet available.',
+                props: { id: 'students-name-tooltip' },
+              }}
+            >
               <i class="bi bi-question-circle" />
             </OverlayTrigger>
           );
@@ -297,7 +301,12 @@ function StudentsCard({
             return info.getValue() || '—';
           }
           return (
-            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+            <OverlayTrigger
+              tooltip={{
+                body: 'Student information is not yet available.',
+                props: { id: 'students-email-tooltip' },
+              }}
+            >
               <i class="bi bi-question-circle" />
             </OverlayTrigger>
           );

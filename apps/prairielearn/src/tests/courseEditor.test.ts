@@ -374,6 +374,8 @@ const publicCopyTestData: EditData[] = [
     action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
+      start_date: '',
+      end_date: '',
     },
     info: 'questions/shared-publicly/info.json',
     files: new Set([
@@ -398,6 +400,8 @@ const publicCopyTestData: EditData[] = [
     action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
+      start_date: '',
+      end_date: '',
     },
     info: 'questions/shared-publicly/info.json',
     files: new Set([
