@@ -7,6 +7,7 @@ const featureNames = [
   'question-sharing',
   'consume-public-questions',
   'ai-grading',
+  'ai-grading-provider-selection',
   'disable-public-workspaces',
   // Should be applied to courses only.
   'ai-question-generation-course-toggle',

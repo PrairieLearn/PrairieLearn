@@ -14,5 +14,7 @@ export {
   NumericInputColumnFilter,
   parseNumericFilter,
   numericColumnFilterFn,
+  type NumericColumnFilterValue,
 } from './components/NumericInputColumnFilter.js';
 export { useShiftClickCheckbox } from './components/useShiftClickCheckbox.js';
+export { OverlayTrigger, type OverlayTriggerProps } from './components/OverlayTrigger.js';

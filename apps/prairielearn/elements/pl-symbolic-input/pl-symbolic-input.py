@@ -603,9 +603,6 @@ def _build_known_tokens(
     """
     Build a list of all multi-character tokens that should be recognized as single units.
 
-    Returns tokens sorted by length (longest first) to handle prefix matching correctly.
-    For example, "acosh" must be checked before "acos" to avoid partial matches.
-
     Returns:
         List of all multi-character tokens that should be recognized as single units.
     """
@@ -630,8 +627,6 @@ def _build_known_tokens(
 
     # Filter out single-letter tokens
     tokens = [token for token in tokens if len(token) > 1]
-
-    tokens.sort(key=len, reverse=True)
 
     return tokens
 
@@ -660,10 +655,33 @@ def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
     Returns:
         The text with spaced tokens merged
     """
-    for token in tokens:
-        spaced_version = " ".join(token)
-        text = text.replace(spaced_version, token)
-    return text
+    result = []
+    i = 0
+    n = len(text)
+
+    # Precompute spaced forms and lengths
+    spaced = [(token, " ".join(token), len(" ".join(token))) for token in tokens]
+
+    # Sort by spaced_token length so longer tokens match first
+    # e.g. "acosh" must be checked before "acos" to avoid partial matches.
+    spaced.sort(key=lambda x: -x[2])
+
+    while i < n:
+        matched = False
+
+        # Try each spaced token
+        for token, spaced_token, length in spaced:
+            if text.startswith(spaced_token, i):
+                result.append(token)
+                i += length
+                matched = True
+                break
+
+        if not matched:
+            result.append(text[i])
+            i += 1
+
+    return "".join(result)
 
 
 def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:

@@ -1,4 +1,5 @@
 import importlib
+import string
 
 import pytest
 import sympy
@@ -37,8 +38,44 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
         # Greek letters
         ("Α", False, ["Α"], [], " Alpha "),  # noqa: RUF001
         ("ΑΑ0Α0ΑΑ", False, ["Α", "Α0"], [], " Alpha  Alpha0 Alpha0 Alpha  Alpha "),  # noqa: RUF001
+        (
+            "t h e t a s i n t h e t a c o s t h e t a",
+            True,
+            ["theta"],
+            [],
+            "theta sin theta cos theta",
+        ),
+        (
+            "a b a b l a b l a b l a a b l a",
+            False,
+            ["bla", "abla", "ab"],
+            [],
+            "ab abla bla bla abla",
+        ),
+        (  # Overlapping-match test
+            "a b a b",
+            False,
+            ["ab", "aba"],
+            [],
+            "aba b",
+        ),
+        (  # Longer-match test
+            "a b c a b d",
+            False,
+            ["ab", "abc"],
+            [],
+            "abc ab d",
+        ),
+        (  # Performance test
+            "a b " * 1000,
+            False,
+            ["ab", *list(string.ascii_lowercase)[2:]],
+            [],
+            "ab " * 1000,
+        ),
         # Trig functions
         ("s i n ( x )", True, ["x"], [], "sin ( x )"),
+        ("s i n h ( s i n x )", True, ["x"], [], "sinh ( sin x )"),
         ("s i n ( x )", False, ["x"], [], "s i n ( x )"),
         ("s i n ( Α )", False, ["Α"], [], "s i n (  Alpha  )"),  # noqa: RUF001
         # Variables

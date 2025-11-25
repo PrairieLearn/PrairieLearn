@@ -209,15 +209,18 @@ nav:
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course/index.md'
-      - 'Course instance configuration': 'courseInstance.md'
-      - 'Assessment configuration': 'assessment/index.md'
-      - 'Question configuration':
-          - 'question/index.md'
+      - 'Course instances': 'courseInstance/index.md'
+      - 'Assessments':
+          - 'Overview': assessment/overview.md
+          - 'Configuration': assessment/configuration.md
+          - 'Access control': 'assessment/accessControl.md'
+      - 'Questions':
+          - 'Overview': question/overview.md
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
+          - 'Runtime environment': 'question/runtime.md'
           - 'Accessibility': 'question/accessibility.md'
-      - 'Question runtime environment': 'questionRuntime/index.md'
-      - 'Elements for writing questions':
+      - 'Elements':
           - elements/index.md
           - '<span class="muted">pl-</span>answer-panel': 'elements/pl-answer-panel.md'
           - '<span class="muted">pl-</span>big-o-input': 'elements/pl-big-o-input.md'
@@ -259,7 +262,7 @@ nav:
           - '<span class="muted">pl-</span>units-input': 'elements/pl-units-input.md'
           - '<span class="muted">pl-</span>variable-output': 'elements/pl-variable-output.md'
           - '<span class="muted">pl-</span>xss-safe': 'elements/pl-xss-safe.md'
-      - 'Access control': 'accessControl/index.md'
+
       - 'Remote exams': 'remoteExams.md'
       - 'clientFiles and serverFiles': 'clientServerFiles.md'
       - 'UUIDs in JSON files': 'uuid.md'
@@ -340,7 +343,6 @@ not_in_nav: |
   elements/pl-dropdown.md
   elements/pl-threejs.md
   elements/pl-variable-score.md
-  elements/llm-context.md
 
 validation:
   omitted_files: warn
