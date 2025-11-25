@@ -1,3 +1,4 @@
+import type { Header } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { type JSX, useMemo } from 'preact/compat';
 import Dropdown from 'react-bootstrap/Dropdown';
@@ -9,31 +10,31 @@ function defaultRenderValueLabel<T>({ value }: { value: T }) {
 /**
  * A component that allows the user to filter a column containing arrays of values.
  * Uses AND logic: rows must contain ALL selected values to match.
+ * State is managed by TanStack Table.
  *
  * @param params
- * @param params.columnId - The ID of the column
+ * @param params.header - The TanStack Table header object
  * @param params.columnLabel - The label of the column, e.g. "Rubric Items"
  * @param params.allColumnValues - All possible values that can appear in the column
  * @param params.renderValueLabel - A function that renders the label for a value
- * @param params.columnValuesFilter - The current state of the column filter
- * @param params.setColumnValuesFilter - A function that sets the state of the column filter
  */
-export function MultiSelectColumnFilter<T extends readonly any[]>({
-  columnId,
+export function MultiSelectColumnFilter<TData, T extends readonly any[]>({
+  header,
   columnLabel,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
-  columnValuesFilter,
-  setColumnValuesFilter,
 }: {
-  columnId: string;
+  header: Header<TData, unknown>;
   columnLabel: string;
   allColumnValues: T;
   renderValueLabel?: (props: { value: T[number]; isSelected: boolean }) => JSX.Element;
-  columnValuesFilter: T[number][];
-  setColumnValuesFilter: (value: T[number][]) => void;
 }) {
-  const selected = useMemo(() => new Set(columnValuesFilter), [columnValuesFilter]);
+  const columnId = header.column.id;
+
+  const selected = useMemo(() => {
+    const columnValuesFilter = (header.column.getFilterValue() as T[number][] | undefined) ?? [];
+    return new Set(columnValuesFilter);
+  }, [header.column]);
 
   const toggleSelected = (value: T[number]) => {
     const set = new Set(selected);
@@ -42,7 +43,8 @@ export function MultiSelectColumnFilter<T extends readonly any[]>({
     } else {
       set.add(value);
     }
-    setColumnValuesFilter(Array.from(set));
+    const newValue = Array.from(set);
+    header.column.setFilterValue(newValue.length > 0 ? newValue : undefined);
   };
 
   const hasActiveFilter = selected.size > 0;
@@ -68,7 +70,7 @@ export function MultiSelectColumnFilter<T extends readonly any[]>({
             <button
               type="button"
               class="btn btn-link btn-sm text-decoration-none p-0"
-              onClick={() => setColumnValuesFilter([])}
+              onClick={() => header.column.setFilterValue(undefined)}
             >
               Clear
             </button>

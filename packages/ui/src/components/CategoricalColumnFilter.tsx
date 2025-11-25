@@ -1,3 +1,4 @@
+import type { Header } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { type JSX, useMemo, useState } from 'preact/compat';
 import Dropdown from 'react-bootstrap/Dropdown';
@@ -17,43 +18,40 @@ function defaultRenderValueLabel<T>({ value }: { value: T }) {
   return <span class="text-nowrap">{String(value)}</span>;
 }
 /**
- * A component that allows the user to filter a categorical column. State is managed by the parent component.
+ * A component that allows the user to filter a categorical column. State is managed by TanStack Table.
  * The filter mode always defaults to "include".
  *
  * @param params
- * @param params.columnId - The ID of the column
+ * @param params.header - The TanStack Table header object
  * @param params.columnLabel - The label of the column, e.g. "Status"
  * @param params.allColumnValues - The values to filter by
  * @param params.renderValueLabel - A function that renders the label for a value
- * @param params.columnValuesFilter - The current state of the column filter
- * @param params.setColumnValuesFilter - A function that sets the state of the column filter
  */
-export function CategoricalColumnFilter<T extends readonly any[]>({
-  columnId,
+export function CategoricalColumnFilter<TData, T extends readonly any[]>({
+  header,
   columnLabel,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
-  columnValuesFilter,
-  setColumnValuesFilter,
 }: {
-  columnId: string;
+  header: Header<TData, unknown>;
   columnLabel: string;
   allColumnValues: T;
   renderValueLabel?: (props: { value: T[number]; isSelected: boolean }) => JSX.Element;
-  columnValuesFilter: T[number][];
-  setColumnValuesFilter: (value: T[number][]) => void;
 }) {
   const [mode, setMode] = useState<'include' | 'exclude'>('include');
 
-  const selected = useMemo(
-    () => computeSelected(allColumnValues, mode, new Set(columnValuesFilter)),
-    [mode, columnValuesFilter, allColumnValues],
-  );
+  const columnId = header.column.id;
+
+  const selected = useMemo(() => {
+    const columnValuesFilter = (header.column.getFilterValue() as T[number][] | undefined) ?? [];
+    return computeSelected(allColumnValues, mode, new Set(columnValuesFilter));
+  }, [mode, allColumnValues, header.column]);
 
   const apply = (newMode: 'include' | 'exclude', newSelected: Set<T[number]>) => {
     const selected = computeSelected(allColumnValues, newMode, newSelected);
     setMode(newMode);
-    setColumnValuesFilter(Array.from(selected));
+    const newValue = Array.from(selected);
+    header.column.setFilterValue(newValue.length > 0 ? newValue : undefined);
   };
 
   const toggleSelected = (value: T[number]) => {

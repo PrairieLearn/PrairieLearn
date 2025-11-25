@@ -1,3 +1,4 @@
+import type { Header } from '@tanstack/react-table';
 import clsx from 'clsx';
 import Dropdown from 'react-bootstrap/Dropdown';
 
@@ -11,34 +12,40 @@ export type NumericColumnFilterValue =
       emptyOnly: true;
     };
 
-interface NumericInputColumnFilterProps {
-  columnId: string;
-  columnLabel: string;
-  value: NumericColumnFilterValue;
-  onChange: (value: NumericColumnFilterValue) => void;
-}
-
 /**
  * A component that allows the user to filter a numeric column using comparison operators.
  * Supports syntax like: <1, >0, <=5, >=10, =5, or just 5 (implicit equals)
- * State is managed by the parent component.
+ * State is managed by TanStack Table.
  *
  * @param params
- * @param params.columnId - The ID of the column
+ * @param params.header - The TanStack Table header object
  * @param params.columnLabel - The label of the column, e.g. "Manual Points"
- * @param params.value - The current filter state (contains filterValue and emptyOnly)
- * @param params.onChange - Callback when the filter state changes
  */
-export function NumericInputColumnFilter({
-  columnId,
+export function NumericInputColumnFilter<TData>({
+  header,
   columnLabel,
-  value,
-  onChange,
-}: NumericInputColumnFilterProps) {
+}: {
+  header: Header<TData, unknown>;
+  columnLabel: string;
+}) {
+  const columnId = header.column.id;
+  const value = (header.column.getFilterValue() as NumericColumnFilterValue | undefined) ?? {
+    filterValue: '',
+    emptyOnly: false,
+  };
+
   const filterValue = value.filterValue;
   const emptyOnly = value.emptyOnly;
   const hasActiveFilter = filterValue.trim().length > 0 || emptyOnly;
   const isInvalid = filterValue.trim().length > 0 && parseNumericFilter(filterValue) === null;
+
+  const onChange = (newValue: NumericColumnFilterValue) => {
+    if (newValue.filterValue === '' && !newValue.emptyOnly) {
+      header.column.setFilterValue(undefined);
+    } else {
+      header.column.setFilterValue(newValue);
+    }
+  };
 
   return (
     <Dropdown align="end">

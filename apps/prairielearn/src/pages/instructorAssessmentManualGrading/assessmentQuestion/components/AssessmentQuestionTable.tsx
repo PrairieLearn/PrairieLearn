@@ -1,8 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type SortingState,
+  type Updater,
   type VisibilityState,
   getCoreRowModel,
   getFilteredRowModel,
@@ -347,6 +349,45 @@ export function AssessmentQuestionTable({
     rubricData,
   ]);
 
+  const columnFilterSetters = useMemo(() => {
+    return {
+      grading_status: setGradingStatusFilter,
+      assigned_grader: setAssignedGraderFilter,
+      graded_by: setGradedByFilter,
+      submission_group: setSubmissionGroupFilter,
+      ai_agreement: setAiAgreementFilter,
+      manual_points: setManualPointsFilter,
+      auto_points: setAutoPointsFilter,
+      total_points: setTotalPointsFilter,
+      score: setScoreFilter,
+    };
+  }, [
+    setGradingStatusFilter,
+    setAssignedGraderFilter,
+    setGradedByFilter,
+    setSubmissionGroupFilter,
+    setAiAgreementFilter,
+    setManualPointsFilter,
+    setAutoPointsFilter,
+    setTotalPointsFilter,
+    setScoreFilter,
+  ]);
+
+  // Sync TanStack column filter changes back to URL
+  const handleColumnFiltersChange = useMemo(
+    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
+      const newFilters =
+        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      for (const filter of newFilters) {
+        const setter = columnFilterSetters[filter.id];
+        if (setter) {
+          setter(filter.value);
+        }
+      }
+    },
+    [columnFilters, columnFilterSetters],
+  );
+
   // Create columns using the extracted function
   const columns = useMemo(
     () =>
@@ -466,6 +507,7 @@ export function AssessmentQuestionTable({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     onRowSelectionChange: setRowSelection,
+    onColumnFiltersChange: handleColumnFiltersChange,
     enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -560,24 +602,6 @@ export function AssessmentQuestionTable({
     allGraders,
     allSubmissionGroups,
     allAiAgreementItems,
-    gradingStatusFilter,
-    setGradingStatusFilter,
-    assignedGraderFilter,
-    setAssignedGraderFilter,
-    gradedByFilter,
-    setGradedByFilter,
-    submissionGroupFilter,
-    setSubmissionGroupFilter,
-    aiAgreementFilter,
-    setAiAgreementFilter,
-    manualPointsFilter,
-    setManualPointsFilter,
-    autoPointsFilter,
-    setAutoPointsFilter,
-    totalPointsFilter,
-    setTotalPointsFilter,
-    scoreFilter,
-    setScoreFilter,
   });
 
   return (

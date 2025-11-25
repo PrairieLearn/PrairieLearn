@@ -1,8 +1,10 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type SortingState,
+  type Updater,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
@@ -195,6 +197,27 @@ function StudentsCard({
     ];
   }, [enrollmentStatusFilter]);
 
+  const columnFilterSetters = useMemo(() => {
+    return {
+      enrollment_status: setEnrollmentStatusFilter,
+    };
+  }, [setEnrollmentStatusFilter]);
+
+  // Sync TanStack column filter changes back to URL
+  const handleColumnFiltersChange = useMemo(
+    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
+      const newFilters =
+        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      for (const filter of newFilters) {
+        const setter = columnFilterSetters[filter.id];
+        if (setter) {
+          setter(filter.value);
+        }
+      }
+    },
+    [columnFilters, columnFilterSetters],
+  );
+
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   const { data: students } = useQuery<StudentRow[]>({
@@ -352,6 +375,7 @@ function StudentsCard({
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
+    onColumnFiltersChange: handleColumnFiltersChange,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
@@ -425,14 +449,12 @@ function StudentsCard({
           filters: {
             enrollment_status: ({ header }) => (
               <CategoricalColumnFilter
-                columnId={header.column.id}
+                header={header}
                 columnLabel="Status"
                 allColumnValues={STATUS_VALUES}
                 renderValueLabel={({ value }) => (
                   <EnrollmentStatusIcon type="text" status={value} />
                 )}
-                columnValuesFilter={enrollmentStatusFilter}
-                setColumnValuesFilter={setEnrollmentStatusFilter}
               />
             ),
           },
