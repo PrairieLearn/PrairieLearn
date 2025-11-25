@@ -52,10 +52,6 @@ import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const AI_GRADING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAIModelId;
-export const AI_GRADING_GOOGLE_MODEL = 'gemini-2.5-flash' satisfies GoogleAIModelId;
-export const AI_GRADING_ANTHROPIC_MODEL = 'claude-haiku-4-5' satisfies AnthropicAIModelId;
-
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
@@ -69,16 +65,37 @@ export const GradedExampleSchema = z.object({
 });
 export type GradedExample = z.infer<typeof GradedExampleSchema>;
 
-export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
+export const AI_GRADING_MODELS = [
+  'gpt-5-mini-2025-08-07',
+  'gpt-5-2025-08-07',
+  'gemini-2.5-flash',
+  'gemini-3-pro-preview',
+  'claude-haiku-4-5',
+  'claude-sonnet-4-5',
+] as const satisfies (OpenAIModelId | GoogleAIModelId | AnthropicAIModelId)[];
+
+export type AiGradingModelId = typeof AI_GRADING_MODELS[number];
+
+export const AI_GRADING_MODEL_PROVIDERS = {
+  'gpt-5-mini-2025-08-07': 'openai',
+  'gpt-5-2025-08-07': 'openai',
+  'gemini-2.5-flash': 'google',
+  'gemini-3-pro-preview': 'google',
+  'claude-haiku-4-5': 'anthropic',
+  'claude-sonnet-4-5': 'anthropic',
+} as const satisfies Record<AiGradingModelId, 'openai' | 'google' | 'anthropic'>;
+
+// Users without the ai-grading-model-selection feature flag must use this default model.
+export const DEFAULT_AI_GRADING_MODEL = 'gpt-5-mini-2025-08-07';
 
 /**
- * Providers whose models we use for AI grading support system messages after the first user message.
+ * Models supporting system messages after the first user message.
  * As of November 2025,
- * - OpenAI GPT 5-mini supports this.
- * - Google Gemini 2.5-flash does not support this.
- * - Anthropic Claude Haiku 4.5 does not support this.
+ * - OpenAI GPT 5-mini and GPT 5 support this.
+ * - Google Gemini 2.5-flash and Gemini 3 Pro Preview do not support this.
+ * - Anthropic Claude Haiku 4.5 and Claude Sonnet 4.5 do not support this.
  */
-const PROVIDERS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingProvider>(['openai']);
+const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>(['gpt-5-mini-2025-08-07', 'gpt-5-2025-08-07']);
 
 export async function generatePrompt({
   questionPrompt,
@@ -87,7 +104,7 @@ export async function generatePrompt({
   submitted_answer,
   example_submissions,
   rubric_items,
-  provider,
+  model_id,
 }: {
   questionPrompt: string;
   questionAnswer: string;
@@ -95,11 +112,11 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
-  provider: AiGradingProvider;
+  model_id: AiGradingModelId;
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
 
-  const systemRoleAfterUserMessage = PROVIDERS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(provider)
+  const systemRoleAfterUserMessage = MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(model_id)
     ? 'system'
     : 'user';
 
@@ -471,6 +488,7 @@ export async function selectRubricGradingItems(
 export async function insertAiGradingJob({
   grading_job_id,
   job_sequence_id,
+  model,
   prompt,
   response,
   course_id,
@@ -478,6 +496,7 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
+  model: AiGradingModelId;
   prompt: ModelMessage[];
   response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
@@ -488,10 +507,10 @@ export async function insertAiGradingJob({
     job_sequence_id,
     prompt: JSON.stringify(prompt),
     completion: response,
-    model: AI_GRADING_OPENAI_MODEL,
+    model,
     prompt_tokens: response.usage.inputTokens ?? 0,
     completion_tokens: response.usage.outputTokens ?? 0,
-    cost: calculateResponseCost({ model: AI_GRADING_OPENAI_MODEL, usage: response.usage }),
+    cost: calculateResponseCost({ model, usage: response.usage }),
     course_id,
     course_instance_id,
   });

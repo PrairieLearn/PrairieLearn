@@ -2,14 +2,23 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 
-export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
+export const AI_GRADING_MODELS = [
+  'gpt-5-mini-2025-08-07',
+  'gpt-5-2025-08-07',
+  'gemini-2.5-flash',
+  'gemini-3-pro-preview',
+  'claude-haiku-4-5',
+  'claude-sonnet-4-5'
+] as const;
+
+export type AiGradingModelId = typeof AI_GRADING_MODELS[number];
 
 export type BatchActionData =
   | { assigned_grader: string | null }
   | { requires_manual_grading: boolean }
   | {
       batch_action: 'ai_grade_assessment_selected';
-      provider: AiGradingProvider;
+      model_id: AiGradingModelId;
       closed_instance_questions_only?: boolean;
     }
   | {
@@ -29,7 +38,7 @@ export type BatchActionParams =
         | 'ai_grade_assessment_all'
         | 'ai_instance_question_group_assessment_all'
         | 'ai_instance_question_group_assessment_ungrouped';
-      provider: AiGradingProvider;
+      modelId: AiGradingModelId;
     };
 
 interface UseManualGradingActionsParams {
@@ -67,15 +76,15 @@ export function useManualGradingActions({
             requestBody.closed_instance_questions_only = actionData.closed_instance_questions_only;
           }
 
-          if ('provider' in actionData) {
-            requestBody.provider = actionData.provider;
+          if ('model_id' in actionData) {
+            requestBody.model_id = actionData.model_id;
           }
         } else {
           // For regular batch actions
           requestBody.batch_action_data = actionData;
         }
       } else {
-        requestBody.provider = params.provider;
+        requestBody.model_id = params.modelId;
       }
 
       const response = await fetch(window.location.pathname, {

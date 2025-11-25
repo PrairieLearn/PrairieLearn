@@ -43,8 +43,7 @@ import { createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
 import {
-  type AiGradingProvider,
-  type useManualGradingActions,
+  type useManualGradingActions
 } from '../utils/useManualGradingActions.js';
 
 import type { ConflictModalState } from './GradingConflictModal.js';
@@ -59,16 +58,18 @@ const DEFAULT_GRADED_BY_FILTER: string[] = [];
 const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
 const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 
-const AI_GRADING_PROVIDERS: {
-  provider: AiGradingProvider;
-  name: string;
-}[] = [
-  { provider: 'openai', name: 'OpenAI GPT' },
-  { provider: 'google', name: 'Google Gemini' },
-  { provider: 'anthropic', name: 'Anthropic Claude' },
-];
+const AI_GRADING_MODELS = [
+  { provider: 'openai', modelId: 'gpt-5-mini-2025-08-07', name: 'OpenAI GPT 5-mini' },
+  { provider: 'openai', modelId: 'gpt-5-2025-08-07', name: 'OpenAI GPT 5' },
+  { provider: 'google', modelId: 'gemini-2.5-flash', name: 'Google Gemini 2.5 Flash' },
+  { provider: 'google', modelId: 'gemini-3-pro-preview', name: 'Google Gemini 3 Pro Preview' },
+  { provider: 'anthropic', modelId: 'claude-haiku-4-5', name: 'Anthropic Claude Haiku 4.5' },
+  { provider: 'anthropic', modelId: 'claude-sonnet-4-5', name: 'Anthropic Claude Sonnet 4.5' },
+] as const;
 
-const DEFAULT_PROVIDER: AiGradingProvider = 'openai';
+type AiGradingModelId = typeof AI_GRADING_MODELS[number]['modelId'];
+
+const DEFAULT_AI_GRADING_MODEL_ID = 'gpt-5-mini-2025-08-07' as const;
 
 export interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
@@ -81,7 +82,7 @@ export interface AssessmentQuestionTableProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingMode: boolean;
-  aiGradingProviderSelectionEnabled: boolean;
+  aiGradingModelSelectionEnabled: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
@@ -112,17 +113,17 @@ function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade
 function AiGradingOption({
   text,
   numToGrade,
-  aiGradingProviderSelectionEnabled,
-  onSelectProvider,
+  aiGradingModelSelectionEnabled,
+  onSelectModel,
 }: {
   text: string;
   numToGrade: number;
-  aiGradingProviderSelectionEnabled: boolean;
-  onSelectProvider: (provider: AiGradingProvider) => void;
+  aiGradingModelSelectionEnabled: boolean;
+  onSelectModel: (modelId: AiGradingModelId) => void;
 }) {
-  if (!aiGradingProviderSelectionEnabled) {
+  if (!aiGradingModelSelectionEnabled) {
     return (
-      <Dropdown.Item disabled={numToGrade === 0} onClick={() => onSelectProvider(DEFAULT_PROVIDER)}>
+      <Dropdown.Item disabled={numToGrade === 0} onClick={() => onSelectModel(DEFAULT_AI_GRADING_MODEL_ID)}>
         <AiGradingOptionContent text={text} numToGrade={numToGrade} />
       </Dropdown.Item>
     );
@@ -136,12 +137,12 @@ function AiGradingOption({
       <Dropdown.Menu>
         <p class="my-0 text-muted px-3">AI grader model</p>
         <Dropdown.Divider />
-        {AI_GRADING_PROVIDERS.map((provider) => (
+        {AI_GRADING_MODELS.map((model) => (
           <Dropdown.Item
-            key={provider.provider}
-            onClick={() => onSelectProvider(provider.provider)}
+            key={model.modelId}
+            onClick={() => onSelectModel(model.modelId)}
           >
-            {provider.name}
+            {model.name}
           </Dropdown.Item>
         ))}
       </Dropdown.Menu>
@@ -158,7 +159,7 @@ export function AssessmentQuestionTable({
   assessmentQuestion,
   questionQid,
   aiGradingMode,
-  aiGradingProviderSelectionEnabled,
+  aiGradingModelSelectionEnabled,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
@@ -699,21 +700,21 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all human-graded"
                       numToGrade={aiGradingCounts.humanGraded}
-                      aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
-                      onSelectProvider={(provider) => {
+                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                      onSelectModel={(modelId) => {
                         batchActionMutation.mutate({
                           action: 'ai_grade_assessment_graded',
-                          provider,
+                          modelId,
                         });
                       }}
                     />
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
-                      aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
-                      onSelectProvider={(provider) => {
+                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                      onSelectModel={(modelId) => {
                         handleBatchAction(
-                          { batch_action: 'ai_grade_assessment_selected', provider },
+                          { batch_action: 'ai_grade_assessment_selected', model_id: modelId },
                           selectedIds,
                         );
                       }}
@@ -721,11 +722,11 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all"
                       numToGrade={aiGradingCounts.all}
-                      aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
-                      onSelectProvider={(provider) => {
+                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                      onSelectModel={(modelId) => {
                         batchActionMutation.mutate({
                           action: 'ai_grade_assessment_all',
-                          provider,
+                          modelId,
                         });
                       }}
                     />

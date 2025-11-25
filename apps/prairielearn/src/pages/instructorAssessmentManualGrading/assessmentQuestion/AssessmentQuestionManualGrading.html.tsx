@@ -36,7 +36,7 @@ export interface AssessmentQuestionManualGradingProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingEnabled: boolean;
-  aiGradingProviderSelectionEnabled: boolean;
+  aiGradingModelSelectionEnabled: boolean;
   initialAiGradingMode: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
@@ -65,7 +65,7 @@ function AssessmentQuestionManualGradingInner({
   assessmentQuestion,
   questionQid,
   aiGradingEnabled,
-  aiGradingProviderSelectionEnabled,
+  aiGradingModelSelectionEnabled,
   initialAiGradingMode,
   rubricData,
   instanceQuestionGroups,
@@ -146,7 +146,7 @@ function AssessmentQuestionManualGradingInner({
         assessmentQuestion={assessmentQuestion}
         questionQid={questionQid}
         aiGradingMode={aiGradingMode}
-        aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
+        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
         rubricData={rubricData}
         instanceQuestionGroups={instanceQuestionGroups}
         courseStaff={courseStaff}
