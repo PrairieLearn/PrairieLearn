@@ -8,6 +8,7 @@ import { GitHubButton } from '../../components/GitHubButton.js';
 import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import type { NavPage } from '../../components/Navbar.types.js';
 import type { PageContext } from '../../lib/client/page-context.js';
+import { getNamesForCopy } from '../../lib/editors.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
@@ -23,8 +24,7 @@ export function InstructorInstanceAdminSettings({
   canEdit,
   courseInstance,
   institution,
-  shortNames,
-  longNames,
+  names,
   availableTimezones,
   origHash,
   instanceGHLink,
@@ -41,8 +41,7 @@ export function InstructorInstanceAdminSettings({
   canEdit: boolean;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   institution: PageContext<'courseInstance', 'instructor'>['institution'];
-  shortNames: string[];
-  longNames: string[];
+  names: { short_name: string; long_name: string | null }[];
   availableTimezones: Timezone[];
   origHash: string;
   instanceGHLink: string | undefined | null;
@@ -54,63 +53,15 @@ export function InstructorInstanceAdminSettings({
 }) {
   const [showCopyModal, setShowCopyModal] = useState(false);
 
-  // Calculate initial names for copy
-  const getInitialCopyNames = () => {
-    const getBaseShortName = (oldname: string): string => {
-      const found = oldname.match(/^(.*)_copy[0-9]+$/);
-      return found ? found[1] : oldname;
-    };
+  const shortNames = names.map((name) => name.short_name);
+  const longNames = names.map((name) => name.long_name).filter((longName) => longName !== null);
 
-    const getBaseLongName = (oldname: string | null): string => {
-      if (typeof oldname !== 'string') return 'Unknown';
-      const found = oldname.match(/^(.*) \(copy [0-9]+\)$/);
-      return found ? found[1] : oldname;
-    };
-
-    const getNumberShortName = (basename: string, oldnames: string[]): number => {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        const escapedBasename = basename.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const found = oldname.match(new RegExp(`^${escapedBasename}_copy([0-9]+)$`));
-        if (found) {
-          const foundNumber = Number.parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    };
-
-    const getNumberLongName = (basename: string, oldnames: string[]): number => {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        if (typeof oldname !== 'string') return;
-        const escapedBasename = basename.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const found = oldname.match(new RegExp(`^${escapedBasename} \\(copy ([0-9]+)\\)$`));
-        if (found) {
-          const foundNumber = Number.parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    };
-
-    const baseShortName = getBaseShortName(courseInstance.short_name);
-    const baseLongName = getBaseLongName(courseInstance.long_name);
-    const numberShortName = getNumberShortName(baseShortName, shortNames);
-    const numberLongName = getNumberLongName(baseLongName, longNames);
-    const number = Math.max(numberShortName, numberLongName);
-
-    return {
-      shortName: `${baseShortName}_copy${number}`,
-      longName: `${baseLongName} (copy ${number})`,
-    };
-  };
-
-  const initialCopyNames = getInitialCopyNames();
+  const { shortName: initialShortName, longName: initialLongName } = getNamesForCopy(
+    courseInstance.short_name,
+    shortNames,
+    courseInstance.long_name ?? null,
+    longNames,
+  );
 
   const defaultValues: SettingsFormValues = {
     ciid: courseInstance.short_name,
@@ -360,8 +311,8 @@ export function InstructorInstanceAdminSettings({
         show={showCopyModal}
         csrfToken={csrfToken}
         courseInstance={courseInstance}
-        initialShortName={initialCopyNames.shortName}
-        initialLongName={initialCopyNames.longName}
+        initialShortName={initialShortName}
+        initialLongName={initialLongName}
         onHide={() => setShowCopyModal(false)}
       />
     </div>

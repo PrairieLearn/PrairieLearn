@@ -52,6 +52,7 @@ export function CopyCourseInstanceModal({
       const body = {
         __csrf_token: csrfToken,
         __action: 'copy_course_instance',
+        // TODO: Let this be modifiable.
         short_name: data.short_name.trim(),
         long_name: data.long_name.trim(),
         start_date: data.start_date,
@@ -130,6 +131,7 @@ export function CopyCourseInstanceModal({
                     message: 'Use only letters, numbers, dashes, and underscores, with no spaces',
                   },
                 })}
+                disabled
               />
               {errors.short_name && (
                 <div class="text-danger small mt-1">{errors.short_name.message}</div>
@@ -150,6 +152,7 @@ export function CopyCourseInstanceModal({
                 {...register('long_name', {
                   required: 'Long name is required',
                 })}
+                disabled
               />
               {errors.long_name && (
                 <div class="text-danger small mt-1">{errors.long_name.message}</div>

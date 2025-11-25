@@ -59,11 +59,10 @@ router.get(
       accessType: 'instructor',
     });
 
-    const shortNames = await sqldb.queryRows(sql.short_names, { course_id: course.id }, z.string());
-    const longNames = await sqldb.queryRows(
-      sql.long_names,
+    const names = await sqldb.queryRows(
+      sql.select_names,
       { course_id: course.id },
-      z.string().nullable(),
+      z.object({ short_name: z.string(), long_name: z.string().nullable() }),
     );
     const enrollmentCount = await sqldb.queryRow(
       sql.select_enrollment_count,
@@ -140,8 +139,7 @@ router.get(
                 canEdit={canEdit}
                 courseInstance={courseInstance}
                 institution={institution}
-                shortNames={shortNames}
-                longNames={longNames}
+                names={names}
                 availableTimezones={availableTimezones}
                 origHash={origHash}
                 instanceGHLink={instanceGHLink}
@@ -190,12 +188,13 @@ router.post(
         );
       }
 
-      // Check if short_name already exists
-      const existingShortNames = await sqldb.queryRows(
-        sql.short_names,
+      const existingNames = await sqldb.queryRows(
+        sql.select_names,
         { course_id: res.locals.course.id },
-        z.string(),
+        z.object({ short_name: z.string() }),
       );
+      const existingShortNames = existingNames.map((name) => name.short_name);
+
       if (existingShortNames.includes(short_name)) {
         throw new error.HttpStatusError(
           400,
@@ -215,7 +214,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      } catch {
         throw new error.HttpStatusError(500, 'Failed to copy course instance');
       }
 

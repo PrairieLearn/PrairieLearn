@@ -578,7 +578,7 @@ async function getExistingShortNames(rootDirectory: string, infoFile: string) {
   return files;
 }
 
-function getNamesForCopy(
+export function getNamesForCopy(
   oldShortName: string,
   shortNames: string[],
   oldLongName: string | null,
