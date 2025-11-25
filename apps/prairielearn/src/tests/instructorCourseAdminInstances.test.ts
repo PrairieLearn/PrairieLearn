@@ -25,6 +25,15 @@ const courseInstancesCourseLiveDir = path.join(courseLiveDir, 'courseInstances')
 const courseDevDir = path.join(baseDir, 'courseDev');
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
+const getCourseInstanceFileContents = async (shortName: string) => {
+  const courseInstanceInfoPath = path.join(
+    courseInstancesCourseLiveDir,
+    shortName,
+    'infoCourseInstance.json',
+  );
+  return await fs.readFile(courseInstanceInfoPath, 'utf8');
+};
+
 describe('Creating a course instance', () => {
   beforeAll(async () => {
     // Clone the course template for testing
@@ -68,8 +77,7 @@ describe('Creating a course instance', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
           short_name: 'Fa19',
           long_name: 'Fall 2019',
           start_access_date: '2021-01-01T00:00:00',
@@ -89,13 +97,7 @@ describe('Creating a course instance', () => {
   });
 
   test.sequential('verify course instance has the correct info', async () => {
-    const courseInstanceInfoPath = path.join(
-      courseInstancesCourseLiveDir,
-      'Fa19', // Verify that the short_name has been used as the course instance folder's name
-      'infoCourseInstance.json',
-    );
-
-    const courseInstanceInfo = JSON.parse(await fs.readFile(courseInstanceInfoPath, 'utf8'));
+    const courseInstanceInfo = JSON.parse(await getCourseInstanceFileContents('Fa19'));
 
     assert.equal(courseInstanceInfo.longName, 'Fall 2019');
     assert.equal(courseInstanceInfo.allowAccess.length, 1);
@@ -117,8 +119,7 @@ describe('Creating a course instance', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
           short_name: 'Fa19', // Same short_name as the first course instance
           long_name: 'Fall 2019', // Same long_name as the first course instance
           start_access_date: '2021-01-01T00:00:00',
@@ -138,13 +139,7 @@ describe('Creating a course instance', () => {
   });
 
   test.sequential('verify that the new course instance names had 2 appended to them', async () => {
-    const courseInstanceInfoPath = path.join(
-      courseInstancesCourseLiveDir,
-      'Fa19_2',
-      'infoCourseInstance.json',
-    );
-
-    const courseInstanceInfo = JSON.parse(await fs.readFile(courseInstanceInfoPath, 'utf8'));
+    const courseInstanceInfo = JSON.parse(await getCourseInstanceFileContents('Fa19_2'));
 
     assert.equal(courseInstanceInfo.longName, 'Fall 2019 (2)');
   });
@@ -163,8 +158,7 @@ describe('Creating a course instance', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
           short_name: 'Fa20',
           long_name: 'Fall 2020',
           access_dates_enabled: 'on',
@@ -209,8 +203,7 @@ describe('Creating a course instance', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
           short_name: 'Sp21',
           long_name: 'Spring 2021',
           start_access_date: '2021-01-01T00:00:00',
@@ -229,13 +222,7 @@ describe('Creating a course instance', () => {
   });
 
   test.sequential('verify course instance is created with an empty allowAccess array', async () => {
-    const courseInstanceInfoPath = path.join(
-      courseInstancesCourseLiveDir,
-      'Sp21',
-      'infoCourseInstance.json',
-    );
-
-    const courseInstanceInfo = JSON.parse(await fs.readFile(courseInstanceInfoPath, 'utf8'));
+    const courseInstanceInfo = JSON.parse(await getCourseInstanceFileContents('Sp21'));
 
     assert.equal(courseInstanceInfo.longName, 'Spring 2021');
 
@@ -255,8 +242,7 @@ describe('Creating a course instance', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
           // No short_name specified
           long_name: 'Fall 2019',
           start_access_date: '2021-01-01T00:00:00',
@@ -286,8 +272,7 @@ describe('Creating a course instance', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
           short_name: 'Fa19',
           // No long_name specified
           start_access_date: '2021-01-01T00:00:00',
@@ -320,8 +305,7 @@ describe('Creating a course instance', () => {
           method: 'POST',
           body: new URLSearchParams({
             __action: 'add_course_instance',
-            __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+            __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
             short_name: '../Fa26',
             long_name: 'Fall 2026',
             access_dates_enabled: 'on',

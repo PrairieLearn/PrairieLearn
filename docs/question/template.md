@@ -22,7 +22,7 @@ All three panels are displayed based on the same `question.html` template, but e
 
 ### `"question"` panel
 
-Text in `question.html` can be set to only display in the "question" panel by wrapping it in the [`<pl-question-panel>` element](../elements.md#pl-question-panel-element). This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. For example:
+Text in `question.html` can be set to only display in the "question" panel by wrapping it in the [`<pl-question-panel>` element](../elements/pl-question-panel.md). This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. For example:
 
 === "Good"
 
@@ -44,7 +44,7 @@ Text in `question.html` can be set to only display in the "question" panel by wr
 
 ### `"submission"` panel
 
-By default, feedback given by elements (`data["partial_scores"][NAME]["feedback"]`) is rendered when an element renders in the "submission" panel. You can use the [`pl-submission-panel`](../elements.md#pl-submission-panel-element) to show additional text only in the "submission" panel. For example:
+By default, feedback given by elements (`data["partial_scores"][NAME]["feedback"]`) is rendered when an element renders in the "submission" panel. You can use the [`pl-submission-panel`](../elements/pl-submission-panel.md) to show additional text only in the "submission" panel. For example:
 
 === "Good"
 
@@ -70,7 +70,7 @@ More details about providing feedback can be found on the [`server.py` page](ser
 
 By default, the correct answers are shown in the "answer" panel. This can be disabled by setting `showCorrectAnswer: false` in the question's `info.json`. The FAQ item ["How can I hide the correct answer when students see their grading results?"](../faq.md#how-can-i-hide-the-correct-answer-when-students-see-their-grading-results) describes some other techniques for hiding the correct answer.
 
-If you grade a question using a [custom grading function](./server.md#step-5-grade), an [external grader](../externalGrading.md), or using [manual grading](../manualGrading/index.md), you are encouraged to display a correct answer so that students can see it in the answer panel. If there are multiple correct answers, you should add a note within the [`pl-answer-panel`](../elements.md#pl-answer-panel-element) element that any correct answer would be accepted, and the displayed answer is only an example. You can also show additional text in the answer panel as well, e.g. extended explanations for the correct answers.
+If you grade a question using a [custom grading function](./server.md#step-5-grade), an [external grader](../externalGrading.md), or using [manual grading](../manualGrading/index.md), you are encouraged to display a correct answer so that students can see it in the answer panel. If there are multiple correct answers, you should add a note within the [`pl-answer-panel`](../elements/pl-answer-panel.md) element that any correct answer would be accepted, and the displayed answer is only an example. You can also show additional text in the answer panel as well, e.g. extended explanations for the correct answers.
 
 ## Mustache templates
 
@@ -114,7 +114,7 @@ You can use this syntax to render over an array of strings (the `.` represents t
 
     By default, Mustache escapes special characters when using double braces (`{{params.x}}`). This ensures that any content that may contain characters used by HTML (such as quotes or `<` characters) is displayed or interpreted in its original context.
 
-    You can use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML without escaping. This should only be used for content that is defined by the instructor. If you want to render student-provided HTML, you can use the [`<pl-xss-safe>` element](../elements.md#pl-xss-safe-element).
+    You can use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML without escaping. This should only be used for content that is defined by the instructor. If you want to render student-provided HTML, you can use the [`<pl-xss-safe>` element](../elements/pl-xss-safe.md).
 
 ### Hiding staff comments in `question.html`
 
@@ -174,7 +174,7 @@ That question would be rendered like this:
 
 ### Markdown code blocks
 
-Fenced code blocks (those using triple-backticks ` ``` `) are rendered as [`<pl-code>` elements](../elements.md#pl-code-element), which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following Markdown:
+Fenced code blocks (those using triple-backticks ` ``` `) are rendered as [`<pl-code>` elements](../elements/pl-code.md), which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following Markdown:
 
 <!-- prettier-ignore -->
 ````html title="question.html"

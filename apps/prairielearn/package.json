@@ -17,6 +17,8 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.45",
+    "@ai-sdk/google": "^2.0.42",
     "@ai-sdk/openai": "^2.0.64",
     "@aws-sdk/client-auto-scaling": "^3.926.0",
     "@aws-sdk/client-cloudwatch": "^3.926.0",

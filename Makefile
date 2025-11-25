@@ -32,9 +32,13 @@ python-deps: venv-setup
 		.venv/bin/python3 -m pip install . --group docs --group dev
 	@rm -rf build
 
+# This is a separate target since we can't currently install the necessary
+# browsers in the development Docker image.
+e2e-deps:
+	@yarn playwright install chromium --with-deps
+
 deps:
 	@yarn
-	@yarn playwright install chromium --with-deps
 	@$(MAKE) python-deps build
 
 migrate:
@@ -78,7 +82,10 @@ start-redis:
 start-s3rver:
 	@scripts/start_s3rver.sh
 
-test: test-js test-python test-e2e
+# Runs additional tests that may not work in the container.
+test-all: test-js test-python test-e2e
+
+test: test-js test-python
 test-js: start-support
 	@yarn test
 test-prairielearn-docker-smoke-tests: start-support
@@ -164,7 +171,7 @@ typecheck-js:
 typecheck-python: python-deps
 	@yarn pyright
 typecheck-sql:
-	@yarn postgrestools check .
+	@yarn postgres-language-server check .
 
 changeset:
 	@yarn changeset
@@ -174,8 +181,8 @@ lint-docs: lint-d2 lint-links lint-markdown
 
 build-docs: python-deps
 	@.venv/bin/mkdocs build --strict
-preview-docs: python-deps
-	@.venv/bin/mkdocs serve
+dev-docs: python-deps
+	@.venv/bin/mkdocs serve --livereload
 
 format-d2:
 	@d2 fmt docs/**/*.d2

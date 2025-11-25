@@ -361,8 +361,8 @@ const PostBodySchema = z.union([
           order: z.coerce.number(),
           points: z.coerce.number(),
           description: z.string(),
-          explanation: z.string().optional(),
-          grader_note: z.string().optional(),
+          explanation: z.string().nullable().optional(),
+          grader_note: z.string().nullable().optional(),
           always_show_to_students: z.boolean(),
         }),
       )

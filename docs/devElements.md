@@ -69,23 +69,23 @@ Note that not all functions have the same return type. The arguments are:
 
 The `data` dictionary has the following possible keys (not all keys will be present in all element functions):
 
-| Key                             | Type    | Description                                                                                                                                                  |
-| ------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `data["correct_answers"]`       | dict    | The true answer (if any) for the variant.                                                                                                                    |
-| `data["editable"]`              | boolean | Whether the question is currently in an editable state.                                                                                                      |
-| `data["extensions"]`            | dict    | A list of extensions that are available to be loaded by this element. For more information see the [element extensions](elementExtensions.md) documentation. |
-| `data["feedback"]`              | dict    | Any feedback to the student on their submitted answer.                                                                                                       |
-| `data["format_errors"]`         | dict    | Any errors encountered while parsing the student input.                                                                                                      |
-| `data["manual_grading"]`        | boolean | Whether the question is being rendered in the manual grading view.                                                                                           |
-| `data["num_valid_submissions"]` | int     | The number of valid (not containing format errors) submissions by the student for the current variant.                                                       |
-| `data["options"]`               | dict    | Any options associated with the question.                                                                                                                    |
-| `data["panel"]`                 | string  | Which panel is being rendered (`question`, `submission`, or `answer`).                                                                                       |
-| `data["params"]`                | dict    | Parameters that describe the question variant.                                                                                                               |
-| `data["partial_scores"]`        | dict    | Partial scores for individual variables in the question.                                                                                                     |
-| `data["raw_submitted_answers"]` | dict    | The answer submitted by the student before parsing.                                                                                                          |
-| `data["score"]`                 | float   | The total final score for the question.                                                                                                                      |
-| `data["submitted_answers"]`     | dict    | The answer submitted by the student (after parsing).                                                                                                         |
-| `data["variant_seed"]`          | integer | The random seed for this question variant.                                                                                                                   |
+| Key                             | Type    | Description                                                                                                                                                    |
+| ------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data["correct_answers"]`       | dict    | The true answer (if any) for the variant.                                                                                                                      |
+| `data["editable"]`              | boolean | Whether the question is currently in an editable state.                                                                                                        |
+| `data["extensions"]`            | dict    | A list of extensions that are available to be loaded by this element. For more information see the [element extensions](./elementExtensions.md) documentation. |
+| `data["feedback"]`              | dict    | Any feedback to the student on their submitted answer.                                                                                                         |
+| `data["format_errors"]`         | dict    | Any errors encountered while parsing the student input.                                                                                                        |
+| `data["manual_grading"]`        | boolean | Whether the question is being rendered in the manual grading view.                                                                                             |
+| `data["num_valid_submissions"]` | int     | The number of valid (not containing format errors) submissions by the student for the current variant.                                                         |
+| `data["options"]`               | dict    | Any options associated with the question.                                                                                                                      |
+| `data["panel"]`                 | string  | Which panel is being rendered (`question`, `submission`, or `answer`).                                                                                         |
+| `data["params"]`                | dict    | Parameters that describe the question variant.                                                                                                                 |
+| `data["partial_scores"]`        | dict    | Partial scores for individual variables in the question.                                                                                                       |
+| `data["raw_submitted_answers"]` | dict    | The answer submitted by the student before parsing.                                                                                                            |
+| `data["score"]`                 | float   | The total final score for the question.                                                                                                                        |
+| `data["submitted_answers"]`     | dict    | The answer submitted by the student (after parsing).                                                                                                           |
+| `data["variant_seed"]`          | integer | The random seed for this question variant.                                                                                                                     |
 
 So that multiple elements can exist together in one question, the convention is that each element instance is associated with one or more **variables**. These variables are keys in the dictionaries for the data elements. For example, if there are variables `x` and `y` then we might have:
 
@@ -140,7 +140,7 @@ The different types of dependency properties currently available are summarized 
 | `clientFilesCourseStyles`  | The styles required by this element relative to `[course directory]/clientFilesCourse`. _(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)_  |
 | `clientFilesCourseScripts` | The scripts required by this element relative to `[course directory]/clientFilesCourse`. _(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)_ |
 
-The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated and should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](dev-guide/guide.md#html-style).
+The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated and should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](./dev-guide/guide.md#html-style).
 
 While the use of node module dependencies in course elements is supported, it is recommended that caution be used when doing so. In particular, note that node modules may be updated without warning, which in some cases may break your element. If your code relies on a particular version of a node module, it is recommended that you copy the module into your element directory or `courseFilesCourse` and link to that module from there instead.
 

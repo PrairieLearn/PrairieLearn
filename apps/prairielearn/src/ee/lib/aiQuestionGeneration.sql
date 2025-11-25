@@ -14,7 +14,7 @@ SELECT
 FROM
   question_generation_context_embeddings
 WHERE
-  doc_path = $doc_path
+  doc_path LIKE $doc_path_pattern
 ORDER BY
   embedding <=> $embedding
 LIMIT
@@ -26,7 +26,7 @@ SELECT
 FROM
   question_generation_context_embeddings
 WHERE
-  doc_path = $doc_path
+  doc_path LIKE $doc_path_pattern
   AND chunk_id = ANY ($chunk_ids);
 
 -- BLOCK insert_draft_question_metadata

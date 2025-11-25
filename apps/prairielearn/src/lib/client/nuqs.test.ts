@@ -57,8 +57,8 @@ describe('parseAsSortingState', () => {
       ];
       expect(parseAsSortingState.serialize(state)).toBe('col1:asc,col2:desc');
     });
-    it('serializes empty array as empty string', () => {
-      expect(parseAsSortingState.serialize([])).toBe('');
+    it('serializes empty array as null', () => {
+      expect(parseAsSortingState.serialize([])).toBe(null);
     });
     it('serializes missing id as empty string', () => {
       expect(parseAsSortingState.serialize([{ id: '', desc: false }])).toBe('');
@@ -124,10 +124,6 @@ describe('parseAsColumnVisibilityStateWithColumns', () => {
   it('parses comma-separated columns as only those visible', () => {
     expect(parser.parse('a,b')).toEqual({ a: true, b: true, c: false });
     expect(parser.parse('b')).toEqual({ a: false, b: true, c: false });
-  });
-
-  it('serializes all columns visible as empty string', () => {
-    expect(parser.serialize({ a: true, b: true, c: true })).toBe('');
   });
 
   it('serializes partial visibility as comma-separated columns', () => {

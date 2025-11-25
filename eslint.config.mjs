@@ -668,6 +668,23 @@ export default tseslint.config([
     },
   },
   {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              importNames: ['OverlayTrigger'],
+              message: 'Use OverlayTrigger from @prairielearn/ui.',
+              name: 'react-bootstrap',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['apps/prairielearn/src/models/**/*'],
     rules: {
       'no-restricted-imports': [

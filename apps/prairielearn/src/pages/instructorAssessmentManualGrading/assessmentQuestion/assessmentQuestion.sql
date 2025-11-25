@@ -47,7 +47,7 @@ WITH
       ls.instance_question_id
   )
 SELECT
-  iq.*,
+  to_jsonb(iq.*) AS instance_question,
   ai.open AS assessment_open,
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
   COALESCE(agu.name, agu.uid) AS assigned_grader_name,
@@ -61,14 +61,20 @@ SELECT
   -- individual students, which reduces bias. See
   -- https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4603146
   ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
-  COALESCE(ri.rubric_grading_item_ids, '[]'::json) AS rubric_grading_item_ids
+  COALESCE(ri.rubric_grading_item_ids, '[]'::json) AS rubric_grading_item_ids,
+  e.id AS enrollment_id
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
   LEFT JOIN groups AS g ON (g.id = ai.group_id)
   LEFT JOIN groups_uid_list (g.id) AS gul ON TRUE
+  LEFT JOIN enrollments AS e ON (
+    e.user_id = ai.user_id
+    AND e.course_instance_id = a.course_instance_id
+  )
   LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
   LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
   LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)

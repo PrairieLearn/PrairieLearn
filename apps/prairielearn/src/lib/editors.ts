@@ -1029,7 +1029,9 @@ export class CourseInstanceCopyEditor extends Editor {
 
       // Clear access rules to avoid leaking student PII or unexpectedly
       // making the copied course instance available to users.
-      infoJson.allowAccess = [];
+      // Note: this means that copied course instances will be switched to the modern publishing
+      // system.
+      infoJson.allowAccess = undefined;
 
       const questionsForCopy = await selectQuestionsForCourseInstanceCopy(this.course_instance.id);
       const questionsToLink = new Set(

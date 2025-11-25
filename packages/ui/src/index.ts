@@ -1,3 +1,6 @@
+// Augment @tanstack/react-table types
+import './react-table.js';
+
 export {
   TanstackTable,
   TanstackTableCard,
@@ -11,5 +14,7 @@ export {
   NumericInputColumnFilter,
   parseNumericFilter,
   numericColumnFilterFn,
+  type NumericColumnFilterValue,
 } from './components/NumericInputColumnFilter.js';
 export { useShiftClickCheckbox } from './components/useShiftClickCheckbox.js';
+export { OverlayTrigger, type OverlayTriggerProps } from './components/OverlayTrigger.js';

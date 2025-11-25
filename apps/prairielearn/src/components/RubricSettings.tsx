@@ -342,7 +342,7 @@ export function RubricSettings({
 
     const res = await fetch(window.location.pathname, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
@@ -765,7 +765,7 @@ export function RubricSettings({
               {copyPopoverTarget && (
                 <Overlay target={copyPopoverTarget} placement="right" show>
                   {(props) => (
-                    <Popover id="dynamic-popover" {...props}>
+                    <Popover {...props}>
                       <Popover.Body>Copied!</Popover.Body>
                     </Popover>
                   )}

@@ -9,7 +9,8 @@ import {
   ReactNodeViewRenderer,
 } from '@tiptap/react';
 import { type ComponentType } from 'preact/compat';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 export const panelMeta = {
   'pl-question-panel': {
@@ -68,7 +69,10 @@ export const PlPanel = Node.create({
         <NodeViewWrapper class="my-2">
           <div class={`d-flex border-start border-4 border-${style.color} rounded-1`}>
             <div class="d-flex align-items-center justify-content-center" style={{ width: '2em' }}>
-              <OverlayTrigger placement="top" overlay={<Tooltip>{style.label}</Tooltip>}>
+              <OverlayTrigger
+                placement="top"
+                tooltip={{ body: style.label, props: { id: `pl-panel-${tag}-tooltip` } }}
+              >
                 <i
                   class={`bi ${style.icon} text-${style.color}`}
                   aria-label={style.label}

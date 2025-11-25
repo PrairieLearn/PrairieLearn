@@ -1276,8 +1276,8 @@ export async function initExpress(): Promise<Express> {
       .default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/access',
-    (await import('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess.js'))
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/publishing',
+    (await import('./pages/instructorInstanceAdminPublishing/instructorInstanceAdminPublishing.js'))
       .default,
   );
   app.use(

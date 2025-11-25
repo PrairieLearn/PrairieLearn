@@ -40,7 +40,7 @@
     "@eslint-react/eslint-plugin": "^2.3.1",
     "@html-eslint/eslint-plugin": "^0.47.1",
     "@playwright/test": "^1.56.1",
-    "@postgrestools/postgrestools": "^0.17.2",
+    "@postgres-language-server/cli": "^0.17.2",
     "@stylistic/eslint-plugin": "^5.5.0",
     "@tanstack/eslint-plugin-query": "^5.91.2",
     "@vitest/coverage-v8": "^4.0.7",

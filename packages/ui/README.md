@@ -14,9 +14,11 @@ import { TanstackTableCard } from '@prairielearn/ui';
 <TanstackTableCard
   table={table}
   title="Students"
+  className="h-100"
+  singularLabel="student"
+  pluralLabel="students"
   downloadButtonOptions={{
     filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
-    singularLabel: 'student',
     mapRowToData: (row) => {
       return {
         uid: row.user?.uid ?? row.enrollment.pending_uid,
@@ -57,7 +59,7 @@ import { TanstackTableCard } from '@prairielearn/ui';
 You should also include the CSS file in your page:
 
 ```css
-@import url('@prairielearn/ui/components/TanstackTable.css');
+@import url('@prairielearn/ui/components/styles.css');
 ```
 
 ### CategoricalColumnFilter

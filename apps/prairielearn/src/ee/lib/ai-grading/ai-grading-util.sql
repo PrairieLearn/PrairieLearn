@@ -346,3 +346,10 @@ SET
   ai_grading_mode = NOT ai_grading_mode
 WHERE
   id = $assessment_question_id;
+
+-- BLOCK set_ai_grading_mode
+UPDATE assessment_questions
+SET
+  ai_grading_mode = $ai_grading_mode
+WHERE
+  id = $assessment_question_id;

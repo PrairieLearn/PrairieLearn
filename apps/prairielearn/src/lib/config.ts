@@ -568,6 +568,8 @@ export const ConfigSchema = z.object({
   aiGradingOpenAiOrganization: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
+  aiGradingGoogleApiKey: z.string().nullable().default(null),
+  aiGradingAnthropicApiKey: z.string().nullable().default(null),
   /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
