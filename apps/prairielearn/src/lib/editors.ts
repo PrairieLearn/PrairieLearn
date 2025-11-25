@@ -8,7 +8,7 @@ import debugfn from 'debug';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
-import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { AugmentedError, HttpStatusError, formatErrorStack } from '@prairielearn/error';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
@@ -27,10 +27,11 @@ import {
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import * as courseDB from '../sync/course-db.js';
+import { attemptFastSync, getFastSyncStrategy } from '../sync/fast/index.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import { identifyChangedFiles, logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -57,6 +58,48 @@ async function syncCourseFromDisk(
 ) {
   const endGitHash = await getCourseCommitHash(course.path);
 
+  // Check if we can use fast sync based on what files changed
+  if (startGitHash !== endGitHash) {
+    try {
+      // TODO: it'd be nice to have a single call to `identifyChangedFiles` per sync operation,
+      // as this is slower than many operations since it hits disk.
+      const changedFiles = await identifyChangedFiles(course.path, startGitHash, endGitHash);
+      const fastSyncStrategy = getFastSyncStrategy(changedFiles);
+
+      if (fastSyncStrategy) {
+        job.info(
+          `Attempting fast sync for ${fastSyncStrategy.type.toLowerCase()}: ${fastSyncStrategy.pathPrefix}`,
+        );
+        const fastSyncSucceeded = await attemptFastSync(course, fastSyncStrategy);
+
+        if (fastSyncSucceeded) {
+          job.info('Fast sync completed successfully');
+
+          // Still need to handle chunks generation for fast sync
+          if (config.chunksGenerator) {
+            const chunkChanges = await updateChunksForCourse({
+              coursePath: course.path,
+              courseId: course.id,
+              courseData: courseData || (await courseDB.loadFullCourse(course.id, course.path)),
+              oldHash: startGitHash,
+              newHash: endGitHash,
+            });
+            logChunkChangesToJob(chunkChanges, job);
+          }
+
+          await updateCourseCommitHash(course);
+          return;
+        } else {
+          job.info('Could not perform fast sync, falling back to full sync');
+        }
+      }
+    } catch (error) {
+      job.error(formatErrorStack(error));
+      job.info('Fast sync check failed, falling back to full sync');
+    }
+  }
+
+  // Fall back to full sync
   const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
     course.id,
     course.path,
