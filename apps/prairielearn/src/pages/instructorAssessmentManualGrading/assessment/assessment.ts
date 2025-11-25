@@ -130,7 +130,7 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const model_id = req.body.modelx_id as AiGradingModelId | undefined;
+      const model_id = req.body.model_id as AiGradingModelId | undefined;
 
       if (!model_id) {
         throw new HttpStatusError(400, 'No AI grading model specified');
