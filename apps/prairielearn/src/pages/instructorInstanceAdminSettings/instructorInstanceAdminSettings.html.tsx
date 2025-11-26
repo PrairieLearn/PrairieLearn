@@ -305,23 +305,25 @@ export function InstructorInstanceAdminSettings({
             )}
           </form>
         </div>
-        <div class="card-footer d-flex flex-wrap gap-2">
-          <button
-            type="button"
-            class="btn btn-sm btn-primary"
-            onClick={() => setShowCopyModal(true)}
-          >
-            <i class="fa fa-clone" /> Make a copy of this course instance
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm btn-primary"
-            data-bs-toggle="modal"
-            data-bs-target="#deleteCourseInstanceModal"
-          >
-            <i class="fa fa-times" aria-hidden="true" /> Delete this course instance
-          </button>
-        </div>
+        {canEdit && (
+          <div class="card-footer d-flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              onClick={() => setShowCopyModal(true)}
+            >
+              <i class="fa fa-clone" /> Make a copy of this course instance
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#deleteCourseInstanceModal"
+            >
+              <i class="fa fa-times" aria-hidden="true" /> Delete this course instance
+            </button>
+          </div>
+        )}
 
         <CopyCourseInstanceModal
           show={showCopyModal}

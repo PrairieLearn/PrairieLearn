@@ -102,6 +102,7 @@ export function CopyCourseInstanceModal({
       size="lg"
       onHide={() => {
         copyMutation.reset();
+        reset();
         onHide();
       }}
     >
