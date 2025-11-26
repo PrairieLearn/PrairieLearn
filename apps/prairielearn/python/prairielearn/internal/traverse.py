@@ -110,6 +110,10 @@ def traverse_and_replace(
                 new_elements = fragments
 
             if isinstance(new_elements, list):
+                # If no new elements, add an empty string so the tail stack is processed in the next loop
+                if not new_elements:
+                    new_elements = [""]
+
                 # Modify count stack for new elements and decrement for element that was replaced
                 count_stack[-1] += len(new_elements) - 1
 
@@ -119,8 +123,7 @@ def traverse_and_replace(
                     work_stack.append(element.tail)
 
                 # Extend and go to the next iteration
-                if new_elements:
-                    work_stack.extend(reversed(new_elements))
+                work_stack.extend(reversed(new_elements))
 
                 continue
 
