@@ -17,7 +17,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffTagSchema } from '../../lib/client/safe-db-types.js';
 import { TagSchema } from '../../lib/db-types.js';
-import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
+import { FileModifyEditor, getOrigHash, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectTagsByCourseId } from '../../models/tags.js';
@@ -33,17 +33,7 @@ router.get(
     });
     const tags = await selectTagsByCourseId(pageContext.course.id);
 
-    const courseInfoExists = await fs.pathExists(
-      path.join(pageContext.course.path, 'infoCourse.json'),
-    );
-    let origHash: string | null = null;
-    if (courseInfoExists) {
-      origHash = sha256(
-        b64EncodeUnicode(
-          await fs.readFile(path.join(pageContext.course.path, 'infoCourse.json'), 'utf8'),
-        ),
-      ).toString();
-    }
+    const origHash = await getOrigHash(path.join(pageContext.course.path, 'infoCourse.json'));
 
     const allowEdit =
       pageContext.authz_data.has_course_permission_edit && !pageContext.course.example_course;

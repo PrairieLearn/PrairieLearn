@@ -183,6 +183,14 @@ export function getUniqueNames({
   }
 }
 
+export async function getOrigHash(path: string) {
+  const fileExists = await fs.pathExists(path);
+  if (!fileExists) {
+    return null;
+  }
+  return sha256(b64EncodeUnicode(await fs.readFile(path, 'utf8'))).toString();
+}
+
 /**
  * Returns the new value if it differs from the default value. Otherwise, returns undefined.
  * This is helpful for setting JSON properties that we only want to write to if they are different
