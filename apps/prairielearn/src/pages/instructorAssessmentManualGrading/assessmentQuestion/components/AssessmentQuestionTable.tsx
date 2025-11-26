@@ -41,7 +41,7 @@ import {
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
   type InstanceQuestionRowWithAIGradingStats,
 } from '../assessmentQuestion.types.js';
-import { createColumns } from '../utils/columnDefinitions.js';
+import { type ColumnId, createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
 import {
@@ -305,7 +305,7 @@ export function AssessmentQuestionTable({
   }, [instanceQuestionsInfo]);
 
   const columnFilters = useMemo(() => {
-    const filters = [
+    const filters: { id: ColumnId; value: any }[] = [
       { id: 'requires_manual_grading', value: gradingStatusFilter },
       { id: 'assigned_grader_name', value: assignedGraderFilter },
       { id: 'last_grader_name', value: gradedByFilter },
@@ -349,17 +349,22 @@ export function AssessmentQuestionTable({
     rubricData,
   ]);
 
-  const columnFilterSetters = useMemo<Record<string, Updater<any>>>(() => {
+  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
     return {
-      grading_status: setGradingStatusFilter,
-      assigned_grader: setAssignedGraderFilter,
-      graded_by: setGradedByFilter,
-      submission_group: setSubmissionGroupFilter,
-      ai_agreement: setAiAgreementFilter,
+      requires_manual_grading: setGradingStatusFilter,
+      assigned_grader_name: setAssignedGraderFilter,
+      last_grader_name: setGradedByFilter,
+      instance_question_group_name: setSubmissionGroupFilter,
+      rubric_difference: setAiAgreementFilter,
       manual_points: setManualPointsFilter,
       auto_points: setAutoPointsFilter,
-      total_points: setTotalPointsFilter,
-      score: setScoreFilter,
+      points: setTotalPointsFilter,
+      score_perc: setScoreFilter,
+      rubric_grading_item_ids: setRubricItemsFilter,
+      uid: undefined,
+      user_or_group_name: undefined,
+      select: undefined,
+      index: undefined,
     };
   }, [
     setGradingStatusFilter,
@@ -368,9 +373,10 @@ export function AssessmentQuestionTable({
     setSubmissionGroupFilter,
     setAiAgreementFilter,
     setManualPointsFilter,
-    setAutoPointsFilter,
     setTotalPointsFilter,
     setScoreFilter,
+    setRubricItemsFilter,
+    setAutoPointsFilter,
   ]);
 
   // Sync TanStack column filter changes back to URL
@@ -379,7 +385,7 @@ export function AssessmentQuestionTable({
       const newFilters =
         typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
       for (const filter of newFilters) {
-        columnFilterSetters[filter.id]?.(filter.value);
+        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
       }
     },
     [columnFilters, columnFilterSetters],
