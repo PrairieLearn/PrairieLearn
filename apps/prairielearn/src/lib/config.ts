@@ -602,6 +602,7 @@ export const ConfigSchema = z.object({
       'gpt-4o-2024-11-20': TokenPricingSchema,
       'gemini-2.5-flash': TokenPricingSchema,
       'gemini-3-pro-preview': TokenPricingSchema,
+      'claude-opus-4-5': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
       'claude-sonnet-4-5': TokenPricingSchema,
     })
@@ -621,6 +622,7 @@ export const ConfigSchema = z.object({
       // https://www.claude.com/pricing#api
       'claude-haiku-4-5': { input: 1, cachedInput: 0.1, output: 5 },
       'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, output: 15 },
+      'claude-opus-4-5': { input: 5, cachedInput: 0.5, output: 25 },
     }),
 });
 

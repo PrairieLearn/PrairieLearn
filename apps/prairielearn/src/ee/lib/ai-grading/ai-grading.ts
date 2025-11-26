@@ -29,10 +29,9 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 
+import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
-  AI_GRADING_MODEL_PROVIDERS,
-  type AiGradingModelId,
   containsImageCapture,
   generatePrompt,
   generateSubmissionEmbedding,

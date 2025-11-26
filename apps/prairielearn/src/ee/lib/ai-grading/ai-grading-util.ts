@@ -19,13 +19,7 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import {
-  type AnthropicAIModelId,
-  type GoogleAIModelId,
-  type OpenAIModelId,
-  calculateResponseCost,
-  formatPrompt,
-} from '../../../lib/ai.js';
+import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
   type Course,
@@ -50,6 +44,8 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
+import type { AiGradingModelId } from './ai-grading-models.shared.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 
 export const SubmissionVariantSchema = z.object({
@@ -64,31 +60,6 @@ export const GradedExampleSchema = z.object({
   manual_rubric_grading_id: z.string().nullable(),
 });
 export type GradedExample = z.infer<typeof GradedExampleSchema>;
-
-export const AI_GRADING_MODELS = [
-  'gpt-5-mini-2025-08-07',
-  'gpt-5-2025-08-07',
-  'gemini-2.5-flash',
-  'gemini-3-pro-preview',
-  'claude-haiku-4-5',
-  'claude-sonnet-4-5',
-] as const satisfies (OpenAIModelId | GoogleAIModelId | AnthropicAIModelId)[];
-
-export type AiGradingModelId = (typeof AI_GRADING_MODELS)[number];
-
-export const AI_GRADING_MODEL_PROVIDERS = {
-  'gpt-5-mini-2025-08-07': 'openai',
-  'gpt-5-2025-08-07': 'openai',
-  'gemini-2.5-flash': 'google',
-  'gemini-3-pro-preview': 'google',
-  'claude-haiku-4-5': 'anthropic',
-  'claude-sonnet-4-5': 'anthropic',
-} as const satisfies Record<AiGradingModelId, 'openai' | 'google' | 'anthropic'>;
-
-/**
- * Users without the ai-grading-model-selection feature flag enabled must use the default model.
- */
-export const DEFAULT_AI_GRADING_MODEL = 'gpt-5-mini-2025-08-07';
 
 /**
  * Models supporting system messages after the first user message.

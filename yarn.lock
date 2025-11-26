@@ -70,15 +70,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/anthropic@npm:^2.0.45":
-  version: 2.0.45
-  resolution: "@ai-sdk/anthropic@npm:2.0.45"
+"@ai-sdk/anthropic@npm:^2.0.49":
+  version: 2.0.49
+  resolution: "@ai-sdk/anthropic@npm:2.0.49"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.17"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/ef0e54f032e3b8324c278f3b25d9b388308204d753404c49fd880709a796c2343aee36d335c99f50e683edd39d5b8b6f42b2e9034e1725d8e0db514e2233d104
+  checksum: 10c0/7aedd5b4be51c4601f54361de47db60fa03a3d1926957771294961cc6c88aac6eddcd1529324bc2a71734d36f35103225619f2aedf0c01c99f678e97e2bfff50
   languageName: node
   linkType: hard
 
@@ -4262,7 +4262,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
   dependencies:
-    "@ai-sdk/anthropic": "npm:^2.0.45"
+    "@ai-sdk/anthropic": "npm:^2.0.49"
     "@ai-sdk/google": "npm:^2.0.42"
     "@ai-sdk/openai": "npm:^2.0.64"
     "@aws-sdk/client-auto-scaling": "npm:^3.926.0"

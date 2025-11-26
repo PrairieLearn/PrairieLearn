@@ -13,12 +13,12 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
-  deleteAiGradingJobs,
-} from '../../../ee/lib/ai-grading/ai-grading-util.js';
+} from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import { type Assessment } from '../../../lib/db-types.js';

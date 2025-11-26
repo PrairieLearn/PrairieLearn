@@ -17,6 +17,11 @@ import { z } from 'zod';
 import { OverlayTrigger, TanstackTableCard, useShiftClickCheckbox } from '@prairielearn/ui';
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
+import {
+  AI_GRADING_MODELS,
+  type AiGradingModelId,
+  DEFAULT_AI_GRADING_MODEL,
+} from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import {
   parseAsColumnPinningState,
@@ -55,19 +60,6 @@ const DEFAULT_ASSIGNED_GRADER_FILTER: string[] = [];
 const DEFAULT_GRADED_BY_FILTER: string[] = [];
 const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
 const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
-
-const AI_GRADING_MODELS = [
-  { provider: 'openai', modelId: 'gpt-5-mini-2025-08-07', name: 'OpenAI GPT 5-mini' },
-  { provider: 'openai', modelId: 'gpt-5-2025-08-07', name: 'OpenAI GPT 5' },
-  { provider: 'google', modelId: 'gemini-2.5-flash', name: 'Google Gemini 2.5 Flash' },
-  { provider: 'google', modelId: 'gemini-3-pro-preview', name: 'Google Gemini 3 Pro Preview' },
-  { provider: 'anthropic', modelId: 'claude-haiku-4-5', name: 'Anthropic Claude Haiku 4.5' },
-  { provider: 'anthropic', modelId: 'claude-sonnet-4-5', name: 'Anthropic Claude Sonnet 4.5' },
-] as const;
-
-type AiGradingModelId = (typeof AI_GRADING_MODELS)[number]['modelId'];
-
-const DEFAULT_AI_GRADING_MODEL_ID = 'gpt-5-mini-2025-08-07';
 
 export interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
@@ -123,7 +115,7 @@ function AiGradingOption({
     return (
       <Dropdown.Item
         disabled={numToGrade === 0}
-        onClick={() => onSelectModel(DEFAULT_AI_GRADING_MODEL_ID)}
+        onClick={() => onSelectModel(DEFAULT_AI_GRADING_MODEL)}
       >
         <AiGradingOptionContent text={text} numToGrade={numToGrade} />
       </Dropdown.Item>

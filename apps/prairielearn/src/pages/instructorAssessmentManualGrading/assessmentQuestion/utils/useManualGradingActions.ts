@@ -1,17 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import type { AiGradingModelId } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
-
-export const AI_GRADING_MODELS = [
-  'gpt-5-mini-2025-08-07',
-  'gpt-5-2025-08-07',
-  'gemini-2.5-flash',
-  'gemini-3-pro-preview',
-  'claude-haiku-4-5',
-  'claude-sonnet-4-5',
-] as const;
-
-export type AiGradingModelId = (typeof AI_GRADING_MODELS)[number];
 
 export type BatchActionData =
   | { assigned_grader: string | null }

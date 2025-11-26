@@ -10,13 +10,15 @@ import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpen
 import { PageLayout } from '../../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import {
+  AI_GRADING_MODEL_IDS,
+  type AiGradingModelId,
+  DEFAULT_AI_GRADING_MODEL,
+} from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
-  AI_GRADING_MODELS,
-  type AiGradingModelId,
-  DEFAULT_AI_GRADING_MODEL,
   deleteAiGradingJobs,
   setAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
@@ -285,7 +287,7 @@ router.post(
           );
         }
 
-        if (!AI_GRADING_MODELS.includes(model_id)) {
+        if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
           throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
         }
 
@@ -398,7 +400,7 @@ router.post(
         throw new error.HttpStatusError(400, 'No AI grading model specified');
       }
 
-      if (!AI_GRADING_MODELS.includes(model_id)) {
+      if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
         throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
       }
 
