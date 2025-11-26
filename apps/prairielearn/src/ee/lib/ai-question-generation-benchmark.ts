@@ -24,6 +24,7 @@ const sql = loadSqlEquiv(import.meta.filename);
 interface Benchmark {
   prompt: string;
 }
+
 export const QUESTION_BENCHMARKING_OPENAI_MODEL = 'gpt-5-2025-08-07' satisfies OpenAIModelId;
 
 const BENCHMARKS: Benchmark[] = [

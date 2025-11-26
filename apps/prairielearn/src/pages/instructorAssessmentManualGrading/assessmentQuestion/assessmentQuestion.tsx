@@ -400,10 +400,6 @@ router.post(
         throw new error.HttpStatusError(400, 'No AI grading model specified');
       }
 
-      if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
-        throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
-      }
-
       const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
         'ai-grading-model-selection',
         res.locals,
@@ -414,6 +410,10 @@ router.post(
           403,
           `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
         );
+      }
+
+      if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
+        throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
       }
 
       const job_sequence_id = await aiGrade({
