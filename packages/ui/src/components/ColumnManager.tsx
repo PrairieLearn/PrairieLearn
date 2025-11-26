@@ -186,13 +186,20 @@ export function ColumnManager<RowDataModel>({
   const handleTogglePin = (columnId: string) => {
     const currentLeft = table.getState().columnPinning.left ?? [];
     const isPinned = currentLeft.includes(columnId);
+    const allLeafColumns = table.getAllLeafColumns();
+    const currentColumnIndex = allLeafColumns.findIndex((c) => c.id === columnId);
     let newLeft: string[];
     if (isPinned) {
-      newLeft = currentLeft.filter((id) => id !== columnId);
+      // Get the previous column that can be set to unpinned.
+      // This is useful since we want to unpin/pin columns that are not shown in the view manager.
+      const previousFrozenColumnIndex = allLeafColumns.findLastIndex(
+        (c, index) => c.getCanHide() && index < currentColumnIndex,
+      );
+      newLeft = allLeafColumns.slice(0, previousFrozenColumnIndex + 1).map((c) => c.id);
     } else {
-      const columnOrder = table.getAllLeafColumns().map((c) => c.id);
-      const newPinned = new Set([...currentLeft, columnId]);
-      newLeft = columnOrder.filter((id) => newPinned.has(id));
+      // Pin all columns to the left of the current column.
+      const leftColumns = allLeafColumns.slice(0, currentColumnIndex + 1);
+      newLeft = leftColumns.map((c) => c.id);
     }
     table.setColumnPinning({ left: newLeft, right: [] });
     setActiveElementId(`${columnId}-pin`);
@@ -212,8 +219,12 @@ export function ColumnManager<RowDataModel>({
   const showResetButton = isVisibilityChanged || isPinningChanged;
 
   const allLeafColumns = table.getAllLeafColumns();
-  const pinnedColumns = allLeafColumns.filter((c) => c.getIsPinned() === 'left');
-  const unpinnedColumns = allLeafColumns.filter((c) => c.getIsPinned() !== 'left');
+  const unpinnableColumns = allLeafColumns.filter(
+    (c) => c.getCanHide() && c.getIsPinned() === 'left',
+  );
+  const pinnableColumns = allLeafColumns.filter(
+    (c) => c.getCanHide() && c.getIsPinned() !== 'left',
+  );
 
   // Calculate which columns should have their pin buttons hidden:
   // - Columns that are part of a group (have a parent) cannot be pinned
@@ -230,11 +241,11 @@ export function ColumnManager<RowDataModel>({
 
     if (column.getIsPinned() === 'left') {
       // Only the last pinned column can be unpinned
-      const pinnedIndex = pinnedColumns.findIndex((c) => c.id === columnId);
-      return pinnedIndex !== pinnedColumns.length - 1;
+      const pinnedIndex = pinnableColumns.findIndex((c) => c.id === columnId);
+      return pinnedIndex !== pinnableColumns.length - 1;
     } else {
       // Only the first unpinned column can be pinned
-      const unpinnedIndex = unpinnedColumns.findIndex((c) => c.id === columnId);
+      const unpinnedIndex = unpinnableColumns.findIndex((c) => c.id === columnId);
       return unpinnedIndex !== 0;
     }
   };
@@ -286,19 +297,19 @@ export function ColumnManager<RowDataModel>({
             <Dropdown.Divider />
           </>
         )}
-        {pinnedColumns.length > 0 && (
+        {pinnableColumns.length > 0 && (
           <>
             <div class="px-2 py-1 text-muted small" role="presentation">
               Frozen columns
             </div>
             <div role="group">
               {/* Only leaf columns can be pinned in the current implementation. */}
-              {pinnedColumns.map((column, index) => {
+              {pinnableColumns.map((column, index) => {
                 return (
                   <ColumnLeafItem
                     key={column.id}
                     column={column}
-                    hidePinButton={index !== pinnedColumns.length - 1}
+                    hidePinButton={index !== pinnableColumns.length - 1}
                     onTogglePin={handleTogglePin}
                   />
                 );
