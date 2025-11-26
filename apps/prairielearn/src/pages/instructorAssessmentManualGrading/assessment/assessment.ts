@@ -14,6 +14,7 @@ import {
 } from '@prairielearn/postgres';
 
 import {
+  AI_GRADING_MODEL_IDS,
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
@@ -146,6 +147,10 @@ router.post(
           403,
           `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
         );
+      }
+
+      if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
+        throw new HttpStatusError(400, 'Invalid AI grading model specified');
       }
 
       const assessment = res.locals.assessment as Assessment;

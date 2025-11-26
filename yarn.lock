@@ -107,15 +107,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/openai@npm:^2.0.64":
-  version: 2.0.64
-  resolution: "@ai-sdk/openai@npm:2.0.64"
+"@ai-sdk/openai@npm:^2.0.73":
+  version: 2.0.73
+  resolution: "@ai-sdk/openai@npm:2.0.73"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.16"
+    "@ai-sdk/provider-utils": "npm:3.0.17"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/fde91951ca5f2612458d618fd2b8a6e29a8cae61f1bda45816258c697af5ec6f047dbd3acc1fcc921db6e39dfa3158799f0e66f737bcd40f5f0cdd10be74d2a7
+  checksum: 10c0/59b9873f5280b377e81b61bd1145654140f78433eac20e1bcb3a5c2844cb270e7fda23547f0811de86baf05b1eaaccf465d748759f4bd44bb840f80aaf03fc74
   languageName: node
   linkType: hard
 
@@ -4264,7 +4264,7 @@ __metadata:
   dependencies:
     "@ai-sdk/anthropic": "npm:^2.0.49"
     "@ai-sdk/google": "npm:^2.0.42"
-    "@ai-sdk/openai": "npm:^2.0.64"
+    "@ai-sdk/openai": "npm:^2.0.73"
     "@aws-sdk/client-auto-scaling": "npm:^3.926.0"
     "@aws-sdk/client-cloudwatch": "npm:^3.926.0"
     "@aws-sdk/client-ec2": "npm:^3.926.0"

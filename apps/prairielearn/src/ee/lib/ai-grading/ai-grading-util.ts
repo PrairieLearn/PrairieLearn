@@ -64,13 +64,14 @@ export type GradedExample = z.infer<typeof GradedExampleSchema>;
 /**
  * Models supporting system messages after the first user message.
  * As of November 2025,
- * - OpenAI GPT 5-mini and GPT 5 support this.
+ * - OpenAI GPT 5-mini, GPT 5, and GPT 5.1 support this.
  * - Google Gemini 2.5-flash and Gemini 3 Pro Preview do not support this.
  * - Anthropic Claude Haiku 4.5 and Claude Sonnet 4.5 do not support this.
  */
 const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
   'gpt-5-mini-2025-08-07',
   'gpt-5-2025-08-07',
+  'gpt-5.1-2025-11-13'
 ]);
 
 export async function generatePrompt({

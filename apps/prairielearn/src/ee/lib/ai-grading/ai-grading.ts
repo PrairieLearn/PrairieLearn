@@ -98,7 +98,7 @@ export async function aiGrade({
       });
       return {
         embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
-        model: openai(model_id),
+        model: openai('gpt-5'),
       };
     } else if (provider === 'google') {
       // If a Google API Key is not provided, throw an error
