@@ -159,6 +159,13 @@ interface StudentsCardProps {
   urlPrefix: string;
 }
 
+type ColumnId =
+  | 'user_uid'
+  | 'user_name'
+  | 'enrollment_status'
+  | 'user_email'
+  | 'enrollment_first_joined_at';
+
 function StudentsCard({
   authzData,
   course,
@@ -189,7 +196,7 @@ function StudentsCard({
   const [lastInvitation, setLastInvitation] = useState<StaffEnrollment | null>(null);
 
   // The individual column filters are the source of truth, and this is derived from them.
-  const columnFilters = useMemo(() => {
+  const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
     return [
       {
         id: 'enrollment_status',
@@ -198,9 +205,13 @@ function StudentsCard({
     ];
   }, [enrollmentStatusFilter]);
 
-  const columnFilterSetters = useMemo<Record<string, Updater<any>>>(() => {
+  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
     return {
+      user_uid: undefined,
+      user_name: undefined,
       enrollment_status: setEnrollmentStatusFilter,
+      user_email: undefined,
+      enrollment_first_joined_at: undefined,
     };
   }, [setEnrollmentStatusFilter]);
 
@@ -210,7 +221,7 @@ function StudentsCard({
       const newFilters =
         typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
       for (const filter of newFilters) {
-        columnFilterSetters[filter.id]?.(filter.value);
+        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
       }
     },
     [columnFilters, columnFilterSetters],

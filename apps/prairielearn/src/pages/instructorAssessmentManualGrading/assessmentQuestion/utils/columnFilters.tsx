@@ -6,7 +6,11 @@ import {
   NumericInputColumnFilter,
 } from '@prairielearn/ui';
 
-import { type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
+import {
+  GRADING_STATUS_VALUES,
+  type GradingStatusValue,
+  type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
+} from '../assessmentQuestion.types.js';
 
 export function createColumnFilters({
   allGraders,
@@ -21,11 +25,11 @@ export function createColumnFilters({
     requires_manual_grading: ({
       header,
     }: {
-      header: Header<InstanceQuestionRow, 'Requires manual grading' | 'Graded'>;
+      header: Header<InstanceQuestionRow, GradingStatusValue>;
     }) => (
       <CategoricalColumnFilter
         column={header.column}
-        allColumnValues={['Requires grading', 'Graded']}
+        allColumnValues={[...GRADING_STATUS_VALUES]}
       />
     ),
     assigned_grader_name: ({

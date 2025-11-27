@@ -83,7 +83,7 @@ export function CategoricalColumnFilter<TData, TValue>({
       <Dropdown.Menu class="p-0">
         <div class="p-3 pb-0">
           <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="fw-semibold">{label}</div>
+            <div class="fw-semibold text-nowrap">{label}</div>
             <button
               type="button"
               class={clsx('btn btn-link btn-sm text-decoration-none', {
