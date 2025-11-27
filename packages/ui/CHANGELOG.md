@@ -1,5 +1,27 @@
 # @prairielearn/ui
 
+## 1.4.0
+
+### Minor Changes
+
+- 02db253: Add `OverlayTrigger` component
+- e6c52c9: Namespace UI classes that aren't for direct use, simplify usage
+- 4d11204: Virtualize columns, add useAutoSizeColumns hook, hierarchical display of columns
+- f7d6b62: - Improve options for singular/plural labels
+  - Improve UI for column manager / card
+  - Add ability to wrap columns
+  - Add HTML props to TanstackTableCard
+  - Add scrollRef to TanstackTable
+  - Add virtualized element measuring to TanstackTable
+  - Improve keyboard navigation in TanstackTable
+- cf71f7e: Support for grouped columns in ColumnManager, empty values in NumericInputColumnFilter
+- b6c34cf: Refactor state management of filters
+
+### Patch Changes
+
+- Updated dependencies [f7d6b62]
+  - @prairielearn/browser-utils@2.6.0
+
 ## 1.3.0
 
 ### Minor Changes
