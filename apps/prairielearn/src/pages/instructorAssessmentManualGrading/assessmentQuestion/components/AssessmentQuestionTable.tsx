@@ -268,12 +268,12 @@ export function AssessmentQuestionTable({
     instanceQuestionsInfo.forEach((row) => {
       if (row.assigned_grader_name) graders.add(row.assigned_grader_name);
       if (row.last_grader_name) graders.add(row.last_grader_name);
-      if (row.instance_question.ai_grading_status !== 'None') {
+      if (row.instance_question.ai_grading_status !== 'None' && aiGradingMode) {
         graders.add(generateAiGraderName(row.instance_question.ai_grading_status));
       }
     });
     return Array.from(graders).sort();
-  }, [instanceQuestionsInfo]);
+  }, [instanceQuestionsInfo, aiGradingMode]);
 
   // Get all unique submission groups
   const allSubmissionGroups = useMemo(() => {

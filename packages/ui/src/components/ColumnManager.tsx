@@ -6,14 +6,14 @@ import Dropdown from 'react-bootstrap/Dropdown';
 
 interface ColumnMenuItemProps<RowDataModel> {
   column: Column<RowDataModel>;
-  hidePinButton: boolean;
+  onPinningBoundary: boolean;
   onTogglePin: (columnId: string) => void;
   className?: string;
 }
 
 function ColumnLeafItem<RowDataModel>({
   column,
-  hidePinButton = false,
+  onPinningBoundary = false,
   onTogglePin,
   className,
 }: ColumnMenuItemProps<RowDataModel>) {
@@ -43,23 +43,24 @@ function ColumnLeafItem<RowDataModel>({
           {header}
         </span>
       </label>
-      {column.getCanPin() && !hidePinButton && (
-        <button
-          type="button"
-          // Since the HTML changes, but we want to refocus the pin button, we track
-          // the active pin button and refocuses it when the column manager is rerendered.
-          id={`${column.id}-pin`}
-          class="btn btn-sm btn-ghost ms-2"
-          aria-label={
-            column.getIsPinned() ? `Unfreeze '${header}' column` : `Freeze '${header}'  column`
-          }
-          title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
-          data-bs-toggle="tooltip"
-          onClick={() => onTogglePin(column.id)}
-        >
-          <i class={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} aria-hidden="true" />
-        </button>
-      )}
+      <button
+        type="button"
+        // Since the HTML changes, but we want to refocus the pin button, we track
+        // the active pin button and refocuses it when the column manager is rerendered.
+        id={`${column.id}-pin`}
+        class={clsx(
+          'btn btn-sm btn-ghost ms-2',
+          (!column.getCanPin() || !onPinningBoundary) && 'invisible',
+        )}
+        aria-label={
+          column.getIsPinned() ? `Unfreeze '${header}' column` : `Freeze '${header}'  column`
+        }
+        title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
+        data-bs-toggle="tooltip"
+        onClick={() => onTogglePin(column.id)}
+      >
+        <i class={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} aria-hidden="true" />
+      </button>
     </div>
   );
 }
@@ -67,11 +68,11 @@ function ColumnLeafItem<RowDataModel>({
 function ColumnGroupItem<RowDataModel>({
   column,
   onTogglePin,
-  getHidePinButton,
+  getIsOnPinningBoundary,
 }: {
   column: Column<RowDataModel>;
   onTogglePin: (columnId: string) => void;
-  getHidePinButton: (columnId: string) => boolean;
+  getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -134,7 +135,7 @@ function ColumnGroupItem<RowDataModel>({
             <ColumnItem
               key={childCol.id}
               column={childCol}
-              getHidePinButton={getHidePinButton}
+              getIsOnPinningBoundary={getIsOnPinningBoundary}
               onTogglePin={onTogglePin}
             />
           ))}
@@ -147,17 +148,17 @@ function ColumnGroupItem<RowDataModel>({
 function ColumnItem<RowDataModel>({
   column,
   onTogglePin,
-  getHidePinButton,
+  getIsOnPinningBoundary,
 }: {
   column: Column<RowDataModel>;
   onTogglePin: (columnId: string) => void;
-  getHidePinButton: (columnId: string) => boolean;
+  getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
   if (column.columns.length > 0) {
     return (
       <ColumnGroupItem
         column={column}
-        getHidePinButton={getHidePinButton}
+        getIsOnPinningBoundary={getIsOnPinningBoundary}
         onTogglePin={onTogglePin}
       />
     );
@@ -165,7 +166,7 @@ function ColumnItem<RowDataModel>({
   return (
     <ColumnLeafItem
       column={column}
-      hidePinButton={getHidePinButton(column.id)}
+      onPinningBoundary={getIsOnPinningBoundary(column.id)}
       onTogglePin={onTogglePin}
     />
   );
@@ -219,34 +220,38 @@ export function ColumnManager<RowDataModel>({
   const showResetButton = isVisibilityChanged || isPinningChanged;
 
   const allLeafColumns = table.getAllLeafColumns();
-  const unpinnableColumns = allLeafColumns.filter(
+  const pinnedMenuColumns = allLeafColumns.filter(
     (c) => c.getCanHide() && c.getIsPinned() === 'left',
   );
-  const pinnableColumns = allLeafColumns.filter(
+  // Only the first unpinned menu column can be pinned, so we only need to find the first one
+  const firstUnpinnedMenuColumn = allLeafColumns.find(
     (c) => c.getCanHide() && c.getIsPinned() !== 'left',
   );
 
-  // Calculate which columns should have their pin buttons hidden:
-  // - Columns that are part of a group (have a parent) cannot be pinned
-  // - For pinned columns: only the last one can be unpinned
-  // - For unpinned columns: only the first one can be pinned
-  const getHidePinButton = (columnId: string) => {
+  // Determine if a column is on the pinning boundary (can toggle its pin state).
+  // - Columns in a group cannot be pinned
+  // - Columns after a group cannot be pinned
+  // - Only the last pinned menu column can be unpinned
+  // - Only the first unpinned menu column can be pinned
+  const getIsOnPinningBoundary = (columnId: string) => {
     const column = allLeafColumns.find((c) => c.id === columnId);
-    if (!column) return true;
+    if (!column) return false;
 
-    // If the column is part of a group (has a parent), it cannot be pinned
-    if (column.parent) {
-      return true;
-    }
+    // Columns in a group cannot be pinned
+    if (column.parent) return false;
+
+    // Check if any column at or before this one in the full column order is in a group
+    const columnIdx = allLeafColumns.findIndex((c) => c.id === columnId);
+    const hasGroupAtOrBefore = allLeafColumns.slice(0, columnIdx + 1).some((c) => c.parent);
 
     if (column.getIsPinned() === 'left') {
-      // Only the last pinned column can be unpinned
-      const pinnedIndex = pinnableColumns.findIndex((c) => c.id === columnId);
-      return pinnedIndex !== pinnableColumns.length - 1;
+      // Only the last pinned menu column can be unpinned
+      return columnId === pinnedMenuColumns[pinnedMenuColumns.length - 1]?.id;
     } else {
-      // Only the first unpinned column can be pinned
-      const unpinnedIndex = unpinnableColumns.findIndex((c) => c.id === columnId);
-      return unpinnedIndex !== 0;
+      // Cannot pin if there's a group at or before this column
+      if (hasGroupAtOrBefore) return false;
+      // Only the first unpinned menu column can be pinned
+      return columnId === firstUnpinnedMenuColumn?.id;
     }
   };
 
@@ -256,7 +261,10 @@ export function ColumnManager<RowDataModel>({
     if (c.depth !== 0) return false;
     // A root column is considered unpinned if all its leaf columns are unpinned
     const leafCols = c.getLeafColumns();
-    return leafCols.length > 0 && leafCols.every((leaf) => leaf.getIsPinned() !== 'left');
+    return (
+      leafCols.length > 0 &&
+      leafCols.every((leaf) => leaf.getIsPinned() !== 'left' && c.getCanHide())
+    );
   });
 
   useEffect(() => {
@@ -297,19 +305,19 @@ export function ColumnManager<RowDataModel>({
             <Dropdown.Divider />
           </>
         )}
-        {pinnableColumns.length > 0 && (
+        {pinnedMenuColumns.length > 0 && (
           <>
             <div class="px-2 py-1 text-muted small" role="presentation">
               Frozen columns
             </div>
             <div role="group">
               {/* Only leaf columns can be pinned in the current implementation. */}
-              {pinnableColumns.map((column, index) => {
+              {pinnedMenuColumns.map((column, index) => {
                 return (
                   <ColumnLeafItem
                     key={column.id}
                     column={column}
-                    hidePinButton={index !== pinnableColumns.length - 1}
+                    onPinningBoundary={index === pinnedMenuColumns.length - 1}
                     onTogglePin={handleTogglePin}
                   />
                 );
@@ -322,15 +330,11 @@ export function ColumnManager<RowDataModel>({
           <>
             <div role="group">
               {unpinnedRootColumns.map((column) => {
-                // For root columns, only pass hidePinButton if it's a leaf column
-                // Group columns don't have pin buttons, so hidePinButton doesn't apply
-                // const hidePinButton =
-                //   column.columns.length === 0 ? getHidePinButton(column.id) : true;
                 return (
                   <ColumnItem
                     key={column.id}
                     column={column}
-                    getHidePinButton={getHidePinButton}
+                    getIsOnPinningBoundary={getIsOnPinningBoundary}
                     onTogglePin={handleTogglePin}
                   />
                 );
