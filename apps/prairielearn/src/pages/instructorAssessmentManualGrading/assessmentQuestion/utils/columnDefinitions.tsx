@@ -234,6 +234,9 @@ export function createColumns({
         const status = requiresGrading ? 'Requires grading' : 'Graded';
         return filterValues.includes(status);
       },
+      meta: {
+        autoSize: true,
+      },
     }),
 
     columnHelper.accessor('assigned_grader_name', {
@@ -245,6 +248,9 @@ export function createColumns({
         const current = row.getValue<InstanceQuestionRow['assigned_grader_name']>(columnId);
         if (!current) return filterValues.includes('Unassigned');
         return filterValues.includes(current);
+      },
+      meta: {
+        autoSize: true,
       },
     }),
 
@@ -261,6 +267,9 @@ export function createColumns({
       header: 'Manual points',
       cell: (info) => <PointsCell row={info.row.original} field="manual_points" />,
       filterFn: numericColumnFilterFn,
+      meta: {
+        autoSize: true,
+      },
     }),
 
     columnHelper.accessor((row) => row.instance_question.points, {
@@ -367,7 +376,7 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.rubric_difference, {
       id: 'rubric_difference',
       header: 'AI agreement',
-      size: 300,
+      size: 400,
       minSize: 200,
       maxSize: 600,
       meta: {
