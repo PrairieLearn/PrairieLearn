@@ -1,8 +1,11 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
+  type Header,
   type SortingState,
+  type Updater,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
@@ -156,6 +159,13 @@ interface StudentsCardProps {
   urlPrefix: string;
 }
 
+type ColumnId =
+  | 'user_uid'
+  | 'user_name'
+  | 'enrollment_status'
+  | 'user_email'
+  | 'enrollment_first_joined_at';
+
 function StudentsCard({
   authzData,
   course,
@@ -186,7 +196,7 @@ function StudentsCard({
   const [lastInvitation, setLastInvitation] = useState<StaffEnrollment | null>(null);
 
   // The individual column filters are the source of truth, and this is derived from them.
-  const columnFilters = useMemo(() => {
+  const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
     return [
       {
         id: 'enrollment_status',
@@ -194,6 +204,28 @@ function StudentsCard({
       },
     ];
   }, [enrollmentStatusFilter]);
+
+  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
+    return {
+      user_uid: undefined,
+      user_name: undefined,
+      enrollment_status: setEnrollmentStatusFilter,
+      user_email: undefined,
+      enrollment_first_joined_at: undefined,
+    };
+  }, [setEnrollmentStatusFilter]);
+
+  // Sync TanStack column filter changes back to URL
+  const handleColumnFiltersChange = useMemo(
+    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
+      const newFilters =
+        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      for (const filter of newFilters) {
+        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
+      }
+    },
+    [columnFilters, columnFilterSetters],
+  );
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
@@ -352,6 +384,7 @@ function StudentsCard({
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
+    onColumnFiltersChange: handleColumnFiltersChange,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
@@ -423,16 +456,17 @@ function StudentsCard({
         }}
         tableOptions={{
           filters: {
-            enrollment_status: ({ header }) => (
+            enrollment_status: ({
+              header,
+            }: {
+              header: Header<StudentRow, StudentRow['enrollment']['status']>;
+            }) => (
               <CategoricalColumnFilter
-                columnId={header.column.id}
-                columnLabel="Status"
+                column={header.column}
                 allColumnValues={STATUS_VALUES}
                 renderValueLabel={({ value }) => (
                   <EnrollmentStatusIcon type="text" status={value} />
                 )}
-                columnValuesFilter={enrollmentStatusFilter}
-                setColumnValuesFilter={setEnrollmentStatusFilter}
               />
             ),
           },

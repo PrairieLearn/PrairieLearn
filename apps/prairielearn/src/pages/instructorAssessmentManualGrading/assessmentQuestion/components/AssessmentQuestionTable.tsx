@@ -1,8 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type SortingState,
+  type Updater,
   type VisibilityState,
   getCoreRowModel,
   getFilteredRowModel,
@@ -44,7 +46,7 @@ import {
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
   type InstanceQuestionRowWithAIGradingStats,
 } from '../assessmentQuestion.types.js';
-import { createColumns } from '../utils/columnDefinitions.js';
+import { type ColumnId, createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
@@ -257,12 +259,12 @@ export function AssessmentQuestionTable({
     instanceQuestionsInfo.forEach((row) => {
       if (row.assigned_grader_name) graders.add(row.assigned_grader_name);
       if (row.last_grader_name) graders.add(row.last_grader_name);
-      if (row.instance_question.ai_grading_status !== 'None') {
+      if (row.instance_question.ai_grading_status !== 'None' && aiGradingMode) {
         graders.add(generateAiGraderName(row.instance_question.ai_grading_status));
       }
     });
     return Array.from(graders).sort();
-  }, [instanceQuestionsInfo]);
+  }, [instanceQuestionsInfo, aiGradingMode]);
 
   // Get all unique submission groups
   const allSubmissionGroups = useMemo(() => {
@@ -294,7 +296,7 @@ export function AssessmentQuestionTable({
   }, [instanceQuestionsInfo]);
 
   const columnFilters = useMemo(() => {
-    const filters = [
+    const filters: { id: ColumnId; value: any }[] = [
       { id: 'requires_manual_grading', value: gradingStatusFilter },
       { id: 'assigned_grader_name', value: assignedGraderFilter },
       { id: 'last_grader_name', value: gradedByFilter },
@@ -337,6 +339,48 @@ export function AssessmentQuestionTable({
     assessmentQuestion.max_auto_points,
     rubricData,
   ]);
+
+  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
+    return {
+      requires_manual_grading: setGradingStatusFilter,
+      assigned_grader_name: setAssignedGraderFilter,
+      last_grader_name: setGradedByFilter,
+      instance_question_group_name: setSubmissionGroupFilter,
+      rubric_difference: setAiAgreementFilter,
+      manual_points: setManualPointsFilter,
+      auto_points: setAutoPointsFilter,
+      points: setTotalPointsFilter,
+      score_perc: setScoreFilter,
+      rubric_grading_item_ids: setRubricItemsFilter,
+      uid: undefined,
+      user_or_group_name: undefined,
+      select: undefined,
+      index: undefined,
+    };
+  }, [
+    setGradingStatusFilter,
+    setAssignedGraderFilter,
+    setGradedByFilter,
+    setSubmissionGroupFilter,
+    setAiAgreementFilter,
+    setManualPointsFilter,
+    setTotalPointsFilter,
+    setScoreFilter,
+    setRubricItemsFilter,
+    setAutoPointsFilter,
+  ]);
+
+  // Sync TanStack column filter changes back to URL
+  const handleColumnFiltersChange = useMemo(
+    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
+      const newFilters =
+        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      for (const filter of newFilters) {
+        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
+      }
+    },
+    [columnFilters, columnFilterSetters],
+  );
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -457,6 +501,7 @@ export function AssessmentQuestionTable({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     onRowSelectionChange: setRowSelection,
+    onColumnFiltersChange: handleColumnFiltersChange,
     enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -551,24 +596,6 @@ export function AssessmentQuestionTable({
     allGraders,
     allSubmissionGroups,
     allAiAgreementItems,
-    gradingStatusFilter,
-    setGradingStatusFilter,
-    assignedGraderFilter,
-    setAssignedGraderFilter,
-    gradedByFilter,
-    setGradedByFilter,
-    submissionGroupFilter,
-    setSubmissionGroupFilter,
-    aiAgreementFilter,
-    setAiAgreementFilter,
-    manualPointsFilter,
-    setManualPointsFilter,
-    autoPointsFilter,
-    setAutoPointsFilter,
-    totalPointsFilter,
-    setTotalPointsFilter,
-    scoreFilter,
-    setScoreFilter,
   });
 
   return (
