@@ -16,7 +16,6 @@ import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import { escapeRegExp } from '@prairielearn/sanitize';
 
 import { selectAssessments } from '../models/assessment.js';
 import {
@@ -31,6 +30,7 @@ import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import type { StaffCourse } from './client/safe-db-types.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -41,6 +41,7 @@ import {
   type Question,
   type User,
 } from './db-types.js';
+import { getNamesForCopy } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -578,73 +579,6 @@ async function getExistingShortNames(rootDirectory: string, infoFile: string) {
   return files;
 }
 
-function getNamesForCopy(
-  oldShortName: string,
-  shortNames: string[],
-  oldLongName: string | null,
-  longNames: string[],
-): { shortName: string; longName: string } {
-  function getBaseShortName(oldname: string): string {
-    const found = oldname.match(/^(.*)_copy[0-9]+$/);
-    if (found) {
-      return found[1];
-    } else {
-      return oldname;
-    }
-  }
-
-  function getBaseLongName(oldname: string | null): string {
-    if (typeof oldname !== 'string') return 'Unknown';
-    debug(oldname);
-    const found = oldname.match(/^(.*) \(copy [0-9]+\)$/);
-    debug(found);
-    if (found) {
-      return found[1];
-    } else {
-      return oldname;
-    }
-  }
-
-  function getNumberShortName(basename: string, oldnames: string[]): number {
-    let number = 1;
-    oldnames.forEach((oldname) => {
-      const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
-      if (found) {
-        const foundNumber = Number.parseInt(found[1]);
-        if (foundNumber >= number) {
-          number = foundNumber + 1;
-        }
-      }
-    });
-    return number;
-  }
-
-  function getNumberLongName(basename: string, oldnames: string[]): number {
-    let number = 1;
-    oldnames.forEach((oldname) => {
-      if (typeof oldname !== 'string') return;
-      const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
-      if (found) {
-        const foundNumber = Number.parseInt(found[1]);
-        if (foundNumber >= number) {
-          number = foundNumber + 1;
-        }
-      }
-    });
-    return number;
-  }
-
-  const baseShortName = getBaseShortName(oldShortName);
-  const baseLongName = getBaseLongName(oldLongName);
-  const numberShortName = getNumberShortName(baseShortName, shortNames);
-  const numberLongName = getNumberLongName(baseLongName, longNames);
-  const number = Math.max(numberShortName, numberLongName);
-  return {
-    shortName: `${baseShortName}_copy${number}`,
-    longName: `${baseLongName} (copy ${number})`,
-  };
-}
-
 export class AssessmentCopyEditor extends Editor {
   private assessment: Assessment;
   private course_instance: CourseInstance;
@@ -946,7 +880,7 @@ export class AssessmentAddEditor extends Editor {
 
 export class CourseInstanceCopyEditor extends Editor {
   private course_instance: CourseInstance;
-  private from_course: Course;
+  private from_course: Course | StaffCourse;
   private from_path: string;
   private is_transfer: boolean;
 
@@ -954,9 +888,9 @@ export class CourseInstanceCopyEditor extends Editor {
 
   constructor(
     params: BaseEditorOptions & {
-      from_course: Course;
+      from_course: Course | StaffCourse;
       from_path: string;
-      course_instance: any;
+      course_instance: CourseInstance;
     },
   ) {
     const is_transfer = !idsEqual(params.locals.course.id, params.from_course.id);
@@ -1968,8 +1902,8 @@ async function copyQuestion({
   existingTitles: oldLongNames,
   existingQids: oldShortNames,
 }: {
-  course: Course;
-  from_course: Course;
+  course: Course | StaffCourse;
+  from_course: Course | StaffCourse;
   from_path: string;
   from_qid: string;
   uuid: string;
