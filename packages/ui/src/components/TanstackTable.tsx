@@ -240,7 +240,7 @@ export function TanstackTable<RowDataModel>({
 
   // We toggle this here instead of in the parent since this component logically manages all UI for the table.
   useEffect(() => {
-    document.body.classList.toggle('no-user-select', isTableResizing);
+    document.body.classList.toggle('pl-ui-no-user-select', isTableResizing);
   }, [isTableResizing]);
 
   const hasAutoSized = useAutoSizeColumns(table, tableRef, filters);
@@ -556,7 +556,7 @@ export function TanstackTableCard<RowDataModel>({
           <input
             ref={searchInputRef}
             type="text"
-            class="form-control tanstack-table-search-input tanstack-table-focusable-shadow"
+            class="form-control pl-ui-tanstack-table-search-input pl-ui-tanstack-table-focusable-shadow"
             aria-label={globalFilter.placeholder}
             placeholder={globalFilter.placeholder}
             value={globalFilter.value}
@@ -570,7 +570,7 @@ export function TanstackTableCard<RowDataModel>({
             <OverlayTrigger overlay={<Tooltip>Clear search</Tooltip>}>
               <button
                 type="button"
-                class="btn btn-link tanstack-table-clear-search"
+                class="btn btn-floating-icon"
                 aria-label="Clear search"
                 onClick={() => globalFilter.setValue('')}
               >

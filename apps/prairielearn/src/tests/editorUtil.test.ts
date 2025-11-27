@@ -5,7 +5,7 @@ import {
   type AssessmentInfo,
   type CourseInstanceInfo,
   type QuestionInfo,
-} from '../lib/editorUtil.types.js';
+} from '../lib/editorUtil.shared.js';
 
 describe('editor library', () => {
   it('gets details for course info file', () => {
