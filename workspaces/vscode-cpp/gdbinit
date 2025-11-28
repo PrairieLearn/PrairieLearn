@@ -1,0 +1,2 @@
+set debuginfod enabled off
+set disable-randomization off
