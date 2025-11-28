@@ -156,7 +156,6 @@ interface StudentsCardProps {
   enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
-  urlPrefix: string;
 }
 
 type ColumnId =
@@ -174,7 +173,6 @@ function StudentsCard({
   students: initialStudents,
   timezone,
   csrfToken,
-  urlPrefix,
 }: StudentsCardProps) {
   const queryClient = useQueryClient();
 
@@ -356,7 +354,7 @@ function StudentsCard({
         },
       }),
     ],
-    [timezone, urlPrefix],
+    [timezone, courseInstance.id],
   );
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
@@ -512,7 +510,6 @@ export const InstructorStudents = ({
   enrollmentManagementEnabled,
   csrfToken,
   isDevMode,
-  urlPrefix,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
   search: string;
@@ -531,7 +528,6 @@ export const InstructorStudents = ({
           students={students}
           timezone={timezone}
           csrfToken={csrfToken}
-          urlPrefix={urlPrefix}
         />
       </QueryClientProviderDebug>
     </NuqsAdapter>
