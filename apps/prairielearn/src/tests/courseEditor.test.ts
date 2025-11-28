@@ -302,7 +302,7 @@ const testEditData: EditData[] = [
     action: 'copy_course_instance',
     data: {
       short_name: 'Fa18_copy1',
-      long_name: 'Fall 2018',
+      long_name: 'Fall 2018 (Copy 1)',
       start_date: '',
       end_date: '',
     },
