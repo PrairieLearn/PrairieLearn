@@ -252,7 +252,7 @@ Some instructors may wish to hide their course from the list of available course
 
     **`hideInEnrollPage` is not a security setting**. Students may still enroll in the course instance if they get access to the URL, such as from a friend.
 
-    This feature is planned to be deprecated in favor of the new self-enrollment system.
+    This feature will be removed in January 2026 in favor of the new self-enrollment system.
 
 ## Assessment page organization
 
