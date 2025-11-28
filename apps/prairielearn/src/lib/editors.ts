@@ -1270,10 +1270,10 @@ export class CourseInstanceAddEditor extends Editor {
 
     debug('Write infoCourseInstance.json');
 
-    let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
+    let publishing: { startDate?: string; endDate?: string } | undefined = undefined;
 
     if (this.start_access_date || this.end_access_date) {
-      allowAccess = {
+      publishing = {
         startDate: this.start_access_date
           ? formatDate(
               new Date(this.start_access_date.epochMilliseconds),
@@ -1298,7 +1298,7 @@ export class CourseInstanceAddEditor extends Editor {
     const infoJson = {
       uuid: this.uuid,
       longName: this.long_name,
-      allowAccess: allowAccess !== undefined ? [allowAccess] : [],
+      publishing: (publishing?.startDate ?? publishing?.endDate) ? publishing : undefined,
     };
 
     // We use outputJson to create the directory this.courseInstancePath if it
