@@ -144,6 +144,15 @@ WHERE
 ORDER BY
   ri.number;
 
+-- BLOCK select_rubric_additional_context
+SELECT
+  r.ai_grading_additional_context
+FROM
+  rubrics AS r
+  JOIN assessment_questions AS aq ON r.id = aq.manual_rubric_id
+WHERE
+  aq.id = $assessment_question_id;
+
 -- BLOCK select_last_submission_id
 SELECT
   s.id

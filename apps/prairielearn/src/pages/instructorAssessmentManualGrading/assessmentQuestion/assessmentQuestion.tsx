@@ -296,9 +296,15 @@ router.post(
           throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
         }
 
+        const ai_grading_additional_context_enabled = await features.enabledFromLocals(
+          'ai-grading-additional-context',
+          res.locals
+        );
+  
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
+
         const job_sequence_id = await aiGrade({
           question: res.locals.question,
           course: res.locals.course,
@@ -311,6 +317,7 @@ router.post(
           model_id,
           mode: 'selected',
           instance_question_ids,
+          ai_grading_additional_context_enabled,
         });
 
         res.send({ job_sequence_id });
@@ -421,6 +428,11 @@ router.post(
         throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
       }
 
+      const ai_grading_additional_context_enabled = await features.enabledFromLocals(
+        'ai-grading-additional-context',
+        res.locals
+      );
+
       const job_sequence_id = await aiGrade({
         question: res.locals.question,
         course: res.locals.course,
@@ -436,6 +448,7 @@ router.post(
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';
           throw new Error(`Unknown action: ${req.body.__action}`);
         }),
+        ai_grading_additional_context_enabled,
       });
 
       res.json({ job_sequence_id });

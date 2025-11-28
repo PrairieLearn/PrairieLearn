@@ -153,6 +153,11 @@ router.post(
         throw new HttpStatusError(400, 'Invalid AI grading model specified');
       }
 
+      const ai_grading_additional_context_enabled = await features.enabledFromLocals(
+        'ai-grading-additional-context',
+        res.locals
+      )
+
       const assessment = res.locals.assessment as Assessment;
 
       const assessmentQuestionRows = await selectAssessmentQuestions({
@@ -182,6 +187,7 @@ router.post(
           user_id: res.locals.user.user_id,
           model_id,
           mode: 'all',
+          ai_grading_additional_context_enabled,
         });
       }
       flash('success', 'AI grading successfully initiated.');

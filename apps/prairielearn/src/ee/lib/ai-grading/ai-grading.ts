@@ -42,7 +42,8 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
+  selectRubricAdditionalContext,
+  selectRubricForGrading
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -68,6 +69,7 @@ export async function aiGrade({
   mode,
   instance_question_ids,
   model_id,
+  ai_grading_additional_context_enabled
 }: {
   question: Question;
   course: Course;
@@ -84,6 +86,7 @@ export async function aiGrade({
    */
   instance_question_ids?: string[];
   model_id: AiGradingModelId;
+  ai_grading_additional_context_enabled: boolean;
 }): Promise<string> {
   const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
   const { model, embeddingModel } = run(() => {
@@ -323,6 +326,8 @@ export async function aiGrade({
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
 
+      const additional_context = ai_grading_additional_context_enabled ? (await selectRubricAdditionalContext(assessment_question.id)) : undefined;
+
       const input = await generatePrompt({
         questionPrompt,
         questionAnswer,
@@ -330,6 +335,7 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
+        additional_context,
         model_id,
       });
 
