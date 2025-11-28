@@ -185,8 +185,8 @@ router.post(
     if (req.body.__action === 'copy_course_instance') {
       const { short_name, long_name, start_date, end_date } = z
         .object({
-          short_name: z.string(),
-          long_name: z.string(),
+          short_name: z.string().trim(),
+          long_name: z.string().trim(),
           start_date: z.string(),
           end_date: z.string(),
         })
