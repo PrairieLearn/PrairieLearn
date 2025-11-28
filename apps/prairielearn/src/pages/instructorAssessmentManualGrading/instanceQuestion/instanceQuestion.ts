@@ -120,6 +120,11 @@ router.get(
 
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
+    const aiGradingAdditionalContextEnabled = await features.enabledFromLocals(
+      'ai-grading-additional-context',
+      res.locals,
+    );
+
     const instanceQuestionGroups = await selectInstanceQuestionGroups({
       assessmentQuestionId: res.locals.assessment_question.id,
     });
@@ -230,6 +235,7 @@ router.get(
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
+        aiGradingAdditionalContextEnabled,
         skipGradedSubmissions: req.session.skip_graded_submissions,
       }),
     );
@@ -589,6 +595,10 @@ router.post(
         }),
       );
     } else if (body.__action === 'modify_rubric_settings') {
+      const aiGradingAdditionalContextEnabled = await features.enabledFromLocals(
+        'ai-grading-additional-context',
+        res.locals,
+      );
       try {
         await manualGrading.updateAssessmentQuestionRubric(
           res.locals.assessment,
@@ -601,6 +611,7 @@ router.post(
           body.rubric_items,
           body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
+          aiGradingAdditionalContextEnabled ? body.ai_grading_additional_context : undefined,
         );
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {

@@ -65,6 +65,10 @@ router.get(
       'ai-grading-model-selection',
       res.locals,
     );
+    const aiGradingAdditionalContextEnabled = await features.enabledFromLocals(
+      'ai-grading-additional-context',
+      res.locals,
+    );
 
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
@@ -150,6 +154,7 @@ router.get(
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
                 aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                aiGradingAdditionalContextEnabled={aiGradingAdditionalContextEnabled}
                 initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
@@ -494,6 +499,10 @@ router.post(
       res.json({ num_deleted });
       return;
     } else if (req.body.__action === 'modify_rubric_settings') {
+      const aiGradingAdditionalContextEnabled = await features.enabledFromLocals(
+        'ai-grading-additional-context',
+        res.locals,
+      );
       try {
         await manualGrading.updateAssessmentQuestionRubric(
           res.locals.assessment,
@@ -506,6 +515,7 @@ router.post(
           req.body.rubric_items,
           req.body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
+          aiGradingAdditionalContextEnabled ? req.body.ai_grading_additional_context : undefined,
         );
         res.redirect(req.originalUrl);
       } catch (err) {

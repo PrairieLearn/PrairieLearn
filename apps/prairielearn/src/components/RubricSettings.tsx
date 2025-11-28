@@ -28,12 +28,16 @@ export function RubricSettings({
   rubricData,
   csrfToken,
   aiGradingStats,
+  aiGradingAdditionalContextEnabled,
+  initialAiGradingAdditionalContext,
   context,
 }: {
   assessmentQuestion: AssessmentQuestion;
   rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
+  aiGradingAdditionalContextEnabled: boolean;
+  initialAiGradingAdditionalContext: string | null;
   context: Record<string, any>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
@@ -57,6 +61,7 @@ export function RubricSettings({
   });
 
   // Define states
+  const [aiGradingAdditionalContext, setAiGradingAdditionalContext] = useState<string>(initialAiGradingAdditionalContext ?? '');
   const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubricItemDataMerged);
   const [replaceAutoPoints, setReplaceAutoPoints] = useState<boolean>(
     rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
@@ -191,6 +196,7 @@ export function RubricSettings({
       max_points: assessmentQuestion.max_points,
       max_manual_points: assessmentQuestion.max_manual_points,
       max_auto_points: assessmentQuestion.max_auto_points,
+      ai_grading_additional_context: aiGradingAdditionalContextEnabled ? aiGradingAdditionalContext : null,
       rubric_items: rubricItems.map((it, idx) => ({
         order: idx,
         points: it.points ? Number(it.points) : null,
@@ -286,6 +292,11 @@ export function RubricSettings({
         });
       }
       setRubricItems(scaledRubricItems);
+
+      if (aiGradingAdditionalContextEnabled && parsedData.ai_grading_additional_context) {
+        setAiGradingAdditionalContext(parsedData.ai_grading_additional_context);
+      }
+
       resetImportModal();
     } catch {
       setImportModalWarning('Error reading file content.');
@@ -328,6 +339,7 @@ export function RubricSettings({
       starting_points: startingPoints,
       min_points: minPoints,
       max_extra_points: maxExtraPoints,
+      ai_grading_additional_context: aiGradingAdditionalContext,
       rubric_items: rubricItems.map((it, idx) => ({
         id: it.id,
         order: idx,
@@ -462,6 +474,30 @@ export function RubricSettings({
       <div id="rubric-setting" class="js-collapsible-card-body p-2 collapse">
         {/* Settings */}
         <div>
+          {aiGradingAdditionalContextEnabled && (
+            <div class="mb-3">
+              <label class="form-label" for="ai-grading-additional-context">
+                AI grading additional context
+              </label> 
+              <textarea
+                id="ai-grading-additional-context"
+                class="form-control"
+                rows="5"
+                name="ai-grading-additional-context"
+                aria-describedby="ai_grading_additional_context_help"
+                value={aiGradingAdditionalContext}
+                required
+                onChange={(e) =>
+                  setAiGradingAdditionalContext((e.target as HTMLTextAreaElement).value)
+                }
+              />
+              <small id="ai_grading_additional_context_help" class="form-text text-muted">
+                Additional context to provide to the AI model during grading. This can include
+                instructions, guidelines, or any other relevant information that can help improve
+                grading accuracy.
+              </small>
+            </div>  
+          )}
           {assessmentQuestion.max_auto_points != null && assessmentQuestion.max_auto_points > 0 && (
             <>
               <div class="row">
