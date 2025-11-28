@@ -3,7 +3,6 @@ import { pipeline } from 'node:stream/promises';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
@@ -101,7 +100,6 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        headContent: compiledStylesheetTag('tanstackTable.css'),
         content: (
           <>
             <CourseInstanceSyncErrorsAndWarnings
