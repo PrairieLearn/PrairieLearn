@@ -368,7 +368,7 @@ function GradebookTable({
   // Extract only leaf column IDs (exclude group columns)
   const allColumnIds = extractLeafColumnIds(columns);
 
-  // Set default visibility: hide UID, UIN, Role, and enrollment_status columns by default
+  // Set default visibility: hide name, UIN, role, and enrollment status columns by default
   const defaultColumnVisibility = Object.fromEntries(
     allColumnIds.map((id) => {
       if (['user_name', 'uin', 'role', 'enrollment_status'].includes(id)) {
