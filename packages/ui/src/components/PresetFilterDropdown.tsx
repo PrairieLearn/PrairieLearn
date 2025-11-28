@@ -118,18 +118,11 @@ export function PresetFilterDropdown<TData>({
 
   return (
     <Dropdown as={ButtonGroup}>
-      <Dropdown.Toggle variant="outline-secondary">
+      <Dropdown.Toggle variant="tanstack-table">
         <i class="bi bi-funnel me-2" aria-hidden="true" />
         {label}: {displayLabel}
       </Dropdown.Toggle>
       <Dropdown.Menu>
-        {/* Show Custom option only when no preset matches */}
-        {selectedOption === null && (
-          <Dropdown.Item as="button" type="button" active disabled>
-            <i class="bi bi-check-circle-fill me-2" />
-            Custom
-          </Dropdown.Item>
-        )}
         {Object.keys(options).map((optionName) => {
           const isSelected = selectedOption === optionName;
           return (
@@ -145,8 +138,14 @@ export function PresetFilterDropdown<TData>({
             </Dropdown.Item>
           );
         })}
+        {/* Show Custom option only when no preset matches */}
+        {selectedOption === null && (
+          <Dropdown.Item as="button" type="button" active disabled>
+            <i class="bi bi-check-circle-fill me-2" />
+            Custom
+          </Dropdown.Item>
+        )}
       </Dropdown.Menu>
     </Dropdown>
   );
 }
-

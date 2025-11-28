@@ -110,12 +110,12 @@ router.get(
             />
             <Hydrate fullHeight>
               <InstructorGradebookTable
-                authzData={authz_data}
                 csrfToken={__csrf_token}
                 courseAssessments={courseAssessments}
                 gradebookRows={gradebookRows}
                 urlPrefix={urlPrefix}
                 csvFilename={csvFilename}
+                courseInstanceId={course_instance.id}
                 search={getUrl(req).search}
                 isDevMode={process.env.NODE_ENV === 'development'}
               />

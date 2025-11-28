@@ -3,17 +3,23 @@ import { useState } from 'preact/compat';
 import { Alert, Button, Form, InputGroup, Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { AssessmentInstanceScoreResultSchema } from '../instructorGradebook.types.js';
+import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
+import {
+  AssessmentInstanceScoreResultSchema,
+  type OtherGroupUser,
+} from '../instructorGradebook.types.js';
 
 interface EditScoreButtonProps {
   assessmentInstanceId: string;
+  courseInstanceId: string;
   currentScore: number;
-  otherUsers: string[];
+  otherUsers: OtherGroupUser[];
   csrfToken: string;
 }
 
 export function EditScoreButton({
   assessmentInstanceId,
+  courseInstanceId,
   currentScore,
   otherUsers,
   csrfToken,
@@ -58,6 +64,7 @@ export function EditScoreButton({
 
   const handleClose = () => {
     setScoreInput(currentScore.toString());
+    editScoreMutation.reset();
     setShow(false);
   };
 
@@ -102,9 +109,17 @@ export function EditScoreButton({
                     This is a group assessment. Updating this grade will also update grades for:
                   </small>
                   <ul class="mb-0">
-                    {otherUsers.map((uid) => (
+                    {otherUsers.map(({ uid, enrollment_id }) => (
                       <li key={uid}>
-                        <small>{uid}</small>
+                        <small>
+                          {enrollment_id ? (
+                            <a href={getStudentEnrollmentUrl(courseInstanceId, enrollment_id)}>
+                              {uid}
+                            </a>
+                          ) : (
+                            uid
+                          )}
+                        </small>
                       </li>
                     ))}
                   </ul>

@@ -290,7 +290,7 @@ function StudentsCard({
         header: 'UID',
         cell: (info) => {
           return (
-            <a href={getStudentEnrollmentUrl(urlPrefix, info.row.original.enrollment.id)}>
+            <a href={getStudentEnrollmentUrl(courseInstance.id, info.row.original.enrollment.id)}>
               {info.getValue()}
             </a>
           );

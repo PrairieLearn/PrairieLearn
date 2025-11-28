@@ -40,7 +40,6 @@ import {
   parseAsNumericFilter,
   parseAsSortingState,
 } from '../../../lib/client/nuqs.js';
-import type { PageContextWithAuthzData } from '../../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type EnumEnrollmentStatus, EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
@@ -56,9 +55,9 @@ const DEFAULT_SORT: SortingState = [{ id: 'role', desc: true }];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['uid'], right: [] };
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
-const DEFAULT_ROLE_FILTER: (typeof ROLE_VALUES)[number][] = [];
+const DEFAULT_ROLE_FILTER: (typeof ROLE_VALUES)[number][] = ['Student'];
 const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
-const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
+const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = ['joined'];
 
 const columnHelper = createColumnHelper<GradebookRow>();
 const queryClient = new QueryClient();
@@ -84,20 +83,20 @@ function extractLeafColumnIds(columns: { id?: string | null; columns?: unknown[]
 type ColumnId = 'uid' | 'user_name' | 'uin' | 'role' | 'enrollment_status' | `a${number}`;
 
 interface GradebookTableProps {
-  authzData: PageContextWithAuthzData['authz_data'];
   csrfToken: string;
   courseAssessments: CourseAssessmentRow[];
   gradebookRows: GradebookRow[];
   urlPrefix: string;
+  courseInstanceId: string;
   csvFilename: string;
 }
 
 function GradebookTable({
-  authzData: _authzData,
   csrfToken,
   courseAssessments,
   gradebookRows: initialGradebookRows,
   urlPrefix,
+  courseInstanceId,
   csvFilename,
 }: GradebookTableProps) {
   const tableRef = useRef<HTMLDivElement>(null);
@@ -235,7 +234,7 @@ function GradebookTable({
           const enrollmentId = info.row.original.enrollment?.id;
           if (!uid) return '—';
           if (!enrollmentId) return uid;
-          return <a href={getStudentEnrollmentUrl(urlPrefix, enrollmentId)}>{uid}</a>;
+          return <a href={getStudentEnrollmentUrl(courseInstanceId, enrollmentId)}>{uid}</a>;
         },
         size: 200,
       }),
@@ -348,6 +347,7 @@ function GradebookTable({
                       </a>
                       <EditScoreButton
                         assessmentInstanceId={assessmentData.assessment_instance_id}
+                        courseInstanceId={courseInstanceId}
                         currentScore={score}
                         otherUsers={assessmentData.uid_other_users_group}
                         csrfToken={csrfToken}
@@ -362,7 +362,7 @@ function GradebookTable({
         }),
       ),
     ],
-    [assessmentsBySet, urlPrefix, csrfToken],
+    [assessmentsBySet.groups, assessmentsBySet.headingById, urlPrefix, courseInstanceId, csrfToken],
   );
 
   // Extract only leaf column IDs (exclude group columns)
@@ -467,8 +467,8 @@ function GradebookTable({
       <TanstackTableCard
         table={table}
         title="Gradebook"
-        singularLabel="student"
-        pluralLabel="students"
+        singularLabel="user"
+        pluralLabel="users"
         // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="h-100"
         headerButtons={
@@ -487,7 +487,10 @@ function GradebookTable({
             table={table}
             label="Filter"
             options={{
-              'Joined Students': [{ id: 'enrollment_status', value: ['joined'] }],
+              'Joined Students': [
+                { id: 'enrollment_status', value: ['joined'] },
+                { id: 'role', value: ['Student'] },
+              ],
               Students: [{ id: 'role', value: ['Student'] }],
               'Students & Staff': [],
             }}
@@ -508,11 +511,7 @@ function GradebookTable({
   );
 }
 
-/**
- * Wrapper component for GradebookTable with React Query and NuqsAdapter
- */
 export function InstructorGradebookTable({
-  authzData,
   csrfToken,
   courseAssessments,
   gradebookRows,
@@ -520,21 +519,22 @@ export function InstructorGradebookTable({
   csvFilename,
   search,
   isDevMode,
+  courseInstanceId,
 }: {
-  authzData: PageContextWithAuthzData['authz_data'];
   search: string;
   isDevMode: boolean;
+  courseInstanceId: string;
 } & GradebookTableProps) {
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
         <GradebookTable
-          authzData={authzData}
           csrfToken={csrfToken}
           courseAssessments={courseAssessments}
           gradebookRows={gradebookRows}
           urlPrefix={urlPrefix}
           csvFilename={csvFilename}
+          courseInstanceId={courseInstanceId}
         />
       </QueryClientProviderDebug>
     </NuqsAdapter>
