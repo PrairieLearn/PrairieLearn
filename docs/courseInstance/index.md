@@ -176,7 +176,7 @@ Students can enroll in a course instance through a few different ways:
 
 1. They can use a URL specific to the course instance or [to one of its assessments](../assessment/configuration.md#linking-to-assessments). You can find the "student link" on the "Settings" tab of the course instance. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
 
-2. They can use a self-enrollment code. You can find the enrollment code on the "Settings" tab of the course instance after enabling "Use enrollment code for self-enrollment". Students can enroll in a course via the PrairieLearn homepage and input the enrollment code.
+2. They can use a self-enrollment code. You can find the enrollment code on the "Settings" tab of the course instance after enabling "Use enrollment code for self-enrollment". Students can enroll in a course by clicking on the "Add course" button on their PrairieLearn homepage and entering the enrollment code.
 
 3. They can be invited to a course instance by an instructor. Instructors can invite students to a course instance by visiting the "Students" tab of the course instance and clicking the "Invite" button. Invites will show up on the student's PrairieLearn homepage.
 
