@@ -228,7 +228,7 @@ If you want to disable self-enrollment after a certain date, you can set the `be
 
 #### Completely disabling self-enrollment
 
-If you want to disable self-enrollment completely, you can set the `enabled` property to `false` in the `selfEnrollment` section of `infoCourseInstance.json`. Turning this on means that only invited students can enroll in the course instance, not via a direct link or enrollment code.
+If you want to disable self-enrollment completely, you can set the `enabled` property to `false` in the `selfEnrollment` section of `infoCourseInstance.json`. This will mean that only invited students can enroll in the course instance, not via a direct link or enrollment code.
 
 ```json title="infoCourseInstance.json"
 {
