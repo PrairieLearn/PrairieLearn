@@ -284,7 +284,7 @@ function GradebookTable({
       // Enrollment Status column
       columnHelper.accessor((row) => row.enrollment?.status, {
         id: 'enrollment_status',
-        header: 'Status',
+        header: 'Enrollment',
         cell: (info) => {
           const status = info.getValue();
           return status ? <EnrollmentStatusIcon type="text" status={status} /> : '—';
@@ -371,7 +371,7 @@ function GradebookTable({
   // Set default visibility: hide name, UIN, role, and enrollment status columns by default
   const defaultColumnVisibility = Object.fromEntries(
     allColumnIds.map((id) => {
-      if (['user_name', 'uin', 'role', 'enrollment_status'].includes(id)) {
+      if (['uin', 'role', 'enrollment_status'].includes(id)) {
         return [id, false];
       }
       return [id, true];
@@ -383,13 +383,14 @@ function GradebookTable({
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
 
-  const handleEnrollmentFilterSelect = (optionName: string) => {
+  const handleEnrollmentFilterSelect = (
+    optionName: 'Joined Students' | 'Students' | 'Students & Staff',
+  ) => {
     if (optionName === 'Joined Students') {
       void setColumnVisibility((prev) => ({ ...prev, role: false, enrollment_status: false }));
     } else if (optionName === 'Students') {
       void setColumnVisibility((prev) => ({ ...prev, enrollment_status: true, role: false }));
     } else {
-      // Students & Staff: Show both
       void setColumnVisibility((prev) => ({ ...prev, role: true, enrollment_status: true }));
     }
   };
