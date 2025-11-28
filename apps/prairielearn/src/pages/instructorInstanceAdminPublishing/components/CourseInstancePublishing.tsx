@@ -81,7 +81,7 @@ export function CourseInstancePublishing({
 
           <FormProvider {...methods}>
             <CourseInstancePublishingForm
-              courseInstance={courseInstance}
+              displayTimezone={courseInstance.display_timezone}
               canEdit={canEdit}
               originalStartDate={courseInstance.publishing_start_date}
               originalEndDate={courseInstance.publishing_end_date}

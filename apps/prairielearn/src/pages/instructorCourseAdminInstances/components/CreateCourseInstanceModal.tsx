@@ -84,16 +84,6 @@ export function CreateCourseInstanceModal({
     void createMutation.mutate(data);
   };
 
-  // Create a pseudo course instance for the publishing form
-  // The form only needs display_timezone, but we need to satisfy the type
-  const pseudoCourseInstance = {
-    id: '' as any,
-    display_timezone: course.display_timezone,
-    short_name: '',
-    long_name: '',
-    assessments_group_by: 'Set' as const,
-  };
-
   return (
     <Modal
       show={show}
@@ -175,11 +165,12 @@ export function CreateCourseInstanceModal({
 
             <h3 class="h5">Publishing settings</h3>
             <p class="text-muted small">
-              Choose the initial publishing status for your new course instance.
+              Choose the initial publishing status for your new course instance. This can be changed
+              later.
             </p>
 
             <CourseInstancePublishingForm
-              courseInstance={pseudoCourseInstance as any}
+              displayTimezone={course.display_timezone}
               canEdit={true}
               originalStartDate={null}
               originalEndDate={null}

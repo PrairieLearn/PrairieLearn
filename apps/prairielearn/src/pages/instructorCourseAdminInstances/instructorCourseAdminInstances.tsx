@@ -5,7 +5,6 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 
@@ -111,34 +110,57 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_course_instance') {
-      const isJsonRequest = req.headers.accept?.includes('application/json');
+      const { short_name, long_name, start_date, end_date } = z
+        .object({
+          short_name: z.string(),
+          long_name: z.string(),
+          start_date: z.string(),
+          end_date: z.string(),
+        })
+        .parse(req.body);
 
-      if (!req.body.short_name) {
-        if (isJsonRequest) {
-          res.status(400).json({ error: 'short_name is required' });
-          return;
-        }
-        throw new error.HttpStatusError(400, 'short_name is required');
+      // Validate short_name
+      if (!short_name) {
+        throw new error.HttpStatusError(400, 'Short name is required');
       }
-      if (!req.body.long_name) {
-        if (isJsonRequest) {
-          res.status(400).json({ error: 'long_name is required' });
-          return;
-        }
-        throw new error.HttpStatusError(400, 'long_name is required');
+      if (!/^[-A-Za-z0-9_/]+$/.test(short_name)) {
+        throw new error.HttpStatusError(
+          400,
+          'Short name must contain only letters, numbers, dashes, and underscores, with no spaces',
+        );
+      }
+
+      // Validate long_name
+      if (!long_name) {
+        throw new error.HttpStatusError(400, 'Long name is required');
+      }
+
+      // Check for duplicate short_name
+      const existingNames = await sqldb.queryRows(
+        sql.select_short_names,
+        { course_id: res.locals.course.id },
+        z.object({ short_name: z.string() }),
+      );
+      const existingShortNames = existingNames.map((name) => name.short_name);
+
+      if (existingShortNames.includes(short_name)) {
+        throw new error.HttpStatusError(
+          400,
+          'A course instance with this short name already exists',
+        );
       }
 
       let startAccessDate: Temporal.ZonedDateTime | undefined;
       let endAccessDate: Temporal.ZonedDateTime | undefined;
 
       // Parse dates if provided (empty strings mean unpublished)
-      if (req.body.start_date) {
-        startAccessDate = Temporal.PlainDateTime.from(req.body.start_date).toZonedDateTime(
+      if (start_date) {
+        startAccessDate = Temporal.PlainDateTime.from(start_date).toZonedDateTime(
           res.locals.course.display_timezone,
         );
       }
-      if (req.body.end_date) {
-        endAccessDate = Temporal.PlainDateTime.from(req.body.end_date).toZonedDateTime(
+      if (end_date) {
+        endAccessDate = Temporal.PlainDateTime.from(end_date).toZonedDateTime(
           res.locals.course.display_timezone,
         );
       }
@@ -148,17 +170,13 @@ router.post(
         endAccessDate &&
         startAccessDate.epochMilliseconds >= endAccessDate.epochMilliseconds
       ) {
-        if (isJsonRequest) {
-          res.status(400).json({ error: 'end_date must be after start_date' });
-          return;
-        }
-        throw new error.HttpStatusError(400, 'end_date must be after start_date');
+        throw new error.HttpStatusError(400, 'End date must be after start date');
       }
 
       const editor = new CourseInstanceAddEditor({
         locals: res.locals as any,
-        short_name: req.body.short_name,
-        long_name: req.body.long_name,
+        short_name,
+        long_name,
         start_access_date: startAccessDate,
         end_access_date: endAccessDate,
       });
@@ -167,11 +185,7 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        if (isJsonRequest) {
-          res.status(500).json({ job_sequence_id: serverJob.jobSequenceId });
-          return;
-        }
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.status(500).json({ job_sequence_id: serverJob.jobSequenceId });
         return;
       }
 
@@ -180,16 +194,7 @@ router.post(
         course: res.locals.course,
       });
 
-      if (isJsonRequest) {
-        res.json({ course_instance_id: courseInstance.id });
-        return;
-      }
-
-      flash('success', 'Course instance created successfully.');
-
-      res.redirect(
-        '/pl/course_instance/' + courseInstance.id + '/instructor/instance_admin/assessments',
-      );
+      res.json({ course_instance_id: courseInstance.id });
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

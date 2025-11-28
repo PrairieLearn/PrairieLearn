@@ -1,3 +1,4 @@
+import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
 import { Button, Popover } from 'react-bootstrap';
 
@@ -6,10 +7,13 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import { SyncProblemButton } from '../../components/SyncProblemButton.js';
 import type { StaffCourse } from '../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
 import { CreateCourseInstanceModal } from './components/CreateCourseInstanceModal.js';
 import { EmptyState } from './components/EmptyState.js';
 import type { InstructorCourseAdminInstanceRow } from './instructorCourseAdminInstances.shared.js';
+
+const queryClient = new QueryClient();
 
 function renderPopoverStartDate(courseInstanceId: string) {
   // React Bootstrap's OverlayTrigger expects the overlay prop to be JSX (or a render function)
@@ -66,21 +70,23 @@ function renderPopoverEndDate(courseInstanceId: string) {
   );
 }
 
-export function InstructorCourseAdminInstances({
-  courseInstances,
-  course,
-  canEditCourse,
-  needToSync,
-  csrfToken,
-  urlPrefix,
-}: {
+interface InstructorCourseAdminInstancesInnerProps {
   courseInstances: InstructorCourseAdminInstanceRow[];
   course: StaffCourse;
   canEditCourse: boolean;
   needToSync: boolean;
   csrfToken: string;
   urlPrefix: string;
-}) {
+}
+
+export function InstructorCourseAdminInstancesInner({
+  courseInstances,
+  course,
+  canEditCourse,
+  needToSync,
+  csrfToken,
+  urlPrefix,
+}: InstructorCourseAdminInstancesInnerProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const canCreateInstances = canEditCourse && !course.example_course && !needToSync;
@@ -215,4 +221,13 @@ export function InstructorCourseAdminInstances({
   );
 }
 
+export function InstructorCourseAdminInstances({
+  ...props
+}: InstructorCourseAdminInstancesInnerProps) {
+  return (
+    <QueryClientProviderDebug client={queryClient}>
+      <InstructorCourseAdminInstancesInner {...props} />
+    </QueryClientProviderDebug>
+  );
+}
 InstructorCourseAdminInstances.displayName = 'InstructorCourseAdminInstances';
