@@ -200,5 +200,3 @@ export function CreateCourseInstanceModal({
     </Modal>
   );
 }
-
-CreateCourseInstanceModal.displayName = 'CreateCourseInstanceModal';
