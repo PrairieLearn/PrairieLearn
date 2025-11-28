@@ -384,11 +384,11 @@ function GradebookTable({
   );
 
   const handleEnrollmentFilterSelect = (
-    optionName: 'Joined Students' | 'Students' | 'Students & Staff',
+    optionName: 'All students' | 'All students & staff' | 'Joined students',
   ) => {
-    if (optionName === 'Joined Students') {
+    if (optionName === 'All students') {
       void setColumnVisibility((prev) => ({ ...prev, role: false, enrollment_status: false }));
-    } else if (optionName === 'Students') {
+    } else if (optionName === 'All students & staff') {
       void setColumnVisibility((prev) => ({ ...prev, enrollment_status: true, role: false }));
     } else {
       void setColumnVisibility((prev) => ({ ...prev, role: true, enrollment_status: true }));
@@ -488,12 +488,12 @@ function GradebookTable({
             table={table}
             label="Filter"
             options={{
-              'Joined Students': [
+              'Joined students': [
                 { id: 'enrollment_status', value: ['joined'] },
                 { id: 'role', value: ['Student'] },
               ],
-              Students: [{ id: 'role', value: ['Student'] }],
-              'Students & Staff': [],
+              'All students': [{ id: 'role', value: ['Student'] }],
+              'All students & staff': [],
             }}
             onSelect={handleEnrollmentFilterSelect}
           />
