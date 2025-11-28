@@ -387,11 +387,11 @@ function GradebookTable({
     optionName: 'All students' | 'All students & staff' | 'Joined students',
   ) => {
     if (optionName === 'All students') {
-      void setColumnVisibility((prev) => ({ ...prev, role: false, enrollment_status: false }));
+      void setColumnVisibility((prev) => ({ ...prev, role: false, enrollment_status: true }));
     } else if (optionName === 'All students & staff') {
-      void setColumnVisibility((prev) => ({ ...prev, enrollment_status: true, role: false }));
+      void setColumnVisibility((prev) => ({ ...prev, enrollment_status: true, role: true }));
     } else {
-      void setColumnVisibility((prev) => ({ ...prev, role: true, enrollment_status: true }));
+      void setColumnVisibility((prev) => ({ ...prev, role: false, enrollment_status: false }));
     }
   };
 
