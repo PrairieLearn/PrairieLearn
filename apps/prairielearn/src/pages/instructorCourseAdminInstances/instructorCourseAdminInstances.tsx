@@ -111,28 +111,36 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_course_instance') {
+      const isJsonRequest = req.headers.accept?.includes('application/json');
+
       if (!req.body.short_name) {
+        if (isJsonRequest) {
+          res.status(400).json({ error: 'short_name is required' });
+          return;
+        }
         throw new error.HttpStatusError(400, 'short_name is required');
       }
       if (!req.body.long_name) {
+        if (isJsonRequest) {
+          res.status(400).json({ error: 'long_name is required' });
+          return;
+        }
         throw new error.HttpStatusError(400, 'long_name is required');
       }
 
       let startAccessDate: Temporal.ZonedDateTime | undefined;
       let endAccessDate: Temporal.ZonedDateTime | undefined;
 
-      if (req.body.access_dates_enabled === 'on') {
-        // Only parse the dates if access dates are enabled (the corresponding checkbox is checked)
-        if (req.body.start_access_date) {
-          startAccessDate = Temporal.PlainDateTime.from(req.body.start_access_date).toZonedDateTime(
-            res.locals.course.display_timezone,
-          );
-        }
-        if (req.body.end_access_date) {
-          endAccessDate = Temporal.PlainDateTime.from(req.body.end_access_date).toZonedDateTime(
-            res.locals.course.display_timezone,
-          );
-        }
+      // Parse dates if provided (empty strings mean unpublished)
+      if (req.body.start_date) {
+        startAccessDate = Temporal.PlainDateTime.from(req.body.start_date).toZonedDateTime(
+          res.locals.course.display_timezone,
+        );
+      }
+      if (req.body.end_date) {
+        endAccessDate = Temporal.PlainDateTime.from(req.body.end_date).toZonedDateTime(
+          res.locals.course.display_timezone,
+        );
       }
 
       if (
@@ -140,7 +148,11 @@ router.post(
         endAccessDate &&
         startAccessDate.epochMilliseconds >= endAccessDate.epochMilliseconds
       ) {
-        throw new error.HttpStatusError(400, 'end_access_date must be after start_access_date');
+        if (isJsonRequest) {
+          res.status(400).json({ error: 'end_date must be after start_date' });
+          return;
+        }
+        throw new error.HttpStatusError(400, 'end_date must be after start_date');
       }
 
       const editor = new CourseInstanceAddEditor({
@@ -155,6 +167,10 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
+        if (isJsonRequest) {
+          res.status(500).json({ job_sequence_id: serverJob.jobSequenceId });
+          return;
+        }
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         return;
       }
@@ -163,6 +179,11 @@ router.post(
         uuid: editor.uuid,
         course: res.locals.course,
       });
+
+      if (isJsonRequest) {
+        res.json({ course_instance_id: courseInstance.id });
+        return;
+      }
 
       flash('success', 'Course instance created successfully.');
 

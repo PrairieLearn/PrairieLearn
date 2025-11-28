@@ -1,8 +1,7 @@
-import { Temporal } from '@js-temporal/polyfill';
 import { useState } from 'preact/compat';
 import { Button, Popover } from 'react-bootstrap';
 
-import { formatDate, formatDateYMDHM } from '@prairielearn/formatter';
+import { formatDate } from '@prairielearn/formatter';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { SyncProblemButton } from '../../components/SyncProblemButton.js';
@@ -85,34 +84,13 @@ export function InstructorCourseAdminInstances({
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const canCreateInstances = canEditCourse && !course.example_course && !needToSync;
-  const initialStartDate = Temporal.Now.zonedDateTimeISO(course.display_timezone).with({
-    hour: 0,
-    minute: 1,
-    second: 0,
-  });
-  const initialStartDateFormatted = formatDateYMDHM(
-    new Date(initialStartDate.epochMilliseconds),
-    course.display_timezone,
-  );
 
-  const initialEndDate = initialStartDate.add({ months: 4 }).with({
-    hour: 23,
-    minute: 59,
-    second: 0,
-  });
-  const initialEndDateFormatted = formatDateYMDHM(
-    new Date(initialEndDate.epochMilliseconds),
-    course.display_timezone,
-  );
   return (
     <>
       <CreateCourseInstanceModal
         show={showCreateModal}
-        courseShortName={course.short_name!}
+        course={course}
         csrfToken={csrfToken}
-        timezone={course.display_timezone}
-        initialStartDateFormatted={initialStartDateFormatted}
-        initialEndDateFormatted={initialEndDateFormatted}
         onHide={() => setShowCreateModal(false)}
       />
 
