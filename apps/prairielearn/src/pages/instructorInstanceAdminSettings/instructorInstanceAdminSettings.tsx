@@ -211,19 +211,19 @@ router.post(
         { course_id: course.id },
         z.object({ short_name: z.string(), long_name: z.string().nullable() }),
       );
-      const existingShortNames = existingNames.map((name) => name.short_name);
+      const existingShortNames = existingNames.map((name) => name.short_name.toLowerCase());
       const existingLongNames = existingNames
-        .map((name) => name.long_name)
-        .filter((name): name is string => name !== null);
+        .map((name) => name.long_name?.toLowerCase())
+        .filter((name) => name != null);
 
-      if (existingShortNames.includes(short_name)) {
+      if (existingShortNames.includes(short_name.toLowerCase())) {
         throw new error.HttpStatusError(
           400,
           'A course instance with this short name already exists',
         );
       }
 
-      if (existingLongNames.includes(long_name)) {
+      if (existingLongNames.includes(long_name.toLowerCase())) {
         throw new error.HttpStatusError(
           400,
           'A course instance with this long name already exists',
