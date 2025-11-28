@@ -59,6 +59,8 @@ function filtersMatchPreset(current: ColumnFiltersState, preset: ColumnFiltersSt
  * A dropdown component that allows users to select from preset filter configurations.
  * The selected state is derived from the table's current column filters.
  * If no preset matches, a "Custom" option is shown as selected.
+ *
+ * Currently, this component expects that the filters states are arrays.
  */
 export function PresetFilterDropdown<OptionName extends string, TData>({
   table,
@@ -75,7 +77,7 @@ export function PresetFilterDropdown<OptionName extends string, TData>({
   /** Callback when an option is selected, useful for side effects like column visibility */
   onSelect?: (optionName: OptionName) => void;
 }) {
-  const relevantColumnIds = useMemo(() => getRelevantColumnIds(options), [options]);
+  const relevantColumnIds = getRelevantColumnIds(options);
 
   const currentRelevantFilters = useMemo(
     () => getRelevantFilters(table, relevantColumnIds),
@@ -103,7 +105,11 @@ export function PresetFilterDropdown<OptionName extends string, TData>({
     // This ensures the table's onColumnFiltersChange handler can sync the cleared state
     const clearedFilters = Array.from(relevantColumnIds)
       .filter((colId) => !presetFilters.some((f) => f.id === colId))
-      .map((colId) => ({ id: colId, value: [] }));
+      .map((colId) => ({
+        id: colId,
+        // TODO: This expects that we are only clearing filters whose state is an array.
+        value: [],
+      }));
 
     // Combine preserved filters with the new preset filters and cleared filters
     const newFilters = [...preservedFilters, ...presetFilters, ...clearedFilters];

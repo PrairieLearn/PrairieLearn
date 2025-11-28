@@ -167,12 +167,13 @@ router.get(
 
       const stringifier = stringifyStream<GradebookRow>({
         header: true,
-        columns: ['UID', 'UIN', 'Name', 'Role', ...assessments.map((a) => a.label)],
+        columns: ['UID', 'Name', 'UIN', 'Role', 'Enrollment', ...assessments.map((a) => a.label)],
         transform: (record) => [
           record.uid,
           record.uin,
           record.user_name,
           record.role,
+          record.enrollment?.status ?? null,
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           ...assessments.map((a) => record.scores[a.assessment_id]?.score_perc ?? null),
         ],
