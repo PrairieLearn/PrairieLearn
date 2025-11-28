@@ -11,7 +11,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { CourseInstanceSchema } from '../../lib/db-types.js';
+import { type Course, CourseInstanceSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import {
@@ -109,6 +109,11 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    const { course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
     if (req.body.__action === 'add_course_instance') {
       const { short_name, long_name, start_date, end_date } = z
         .object({
@@ -119,10 +124,14 @@ router.post(
         })
         .parse(req.body);
 
-      // Validate short_name
       if (!short_name) {
         throw new error.HttpStatusError(400, 'Short name is required');
       }
+
+      if (!long_name) {
+        throw new error.HttpStatusError(400, 'Long name is required');
+      }
+
       if (!/^[-A-Za-z0-9_/]+$/.test(short_name)) {
         throw new error.HttpStatusError(
           400,
@@ -130,23 +139,27 @@ router.post(
         );
       }
 
-      // Validate long_name
-      if (!long_name) {
-        throw new error.HttpStatusError(400, 'Long name is required');
-      }
-
-      // Check for duplicate short_name
       const existingNames = await sqldb.queryRows(
-        sql.select_short_names,
-        { course_id: res.locals.course.id },
-        z.object({ short_name: z.string() }),
+        sql.select_names,
+        { course_id: course.id },
+        z.object({ short_name: z.string(), long_name: z.string().nullable() }),
       );
       const existingShortNames = existingNames.map((name) => name.short_name);
+      const existingLongNames = existingNames
+        .map((name) => name.long_name)
+        .filter((name): name is string => name !== null);
 
       if (existingShortNames.includes(short_name)) {
         throw new error.HttpStatusError(
           400,
           'A course instance with this short name already exists',
+        );
+      }
+
+      if (existingLongNames.includes(long_name)) {
+        throw new error.HttpStatusError(
+          400,
+          'A course instance with this long name already exists',
         );
       }
 
@@ -156,12 +169,12 @@ router.post(
       // Parse dates if provided (empty strings mean unpublished)
       if (start_date) {
         startAccessDate = Temporal.PlainDateTime.from(start_date).toZonedDateTime(
-          res.locals.course.display_timezone,
+          course.display_timezone,
         );
       }
       if (end_date) {
         endAccessDate = Temporal.PlainDateTime.from(end_date).toZonedDateTime(
-          res.locals.course.display_timezone,
+          course.display_timezone,
         );
       }
 
@@ -191,7 +204,7 @@ router.post(
 
       const courseInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
-        course: res.locals.course,
+        course: course as unknown as Course, // TODO: We need to write up proper model functions for Courses.
       });
 
       res.json({ course_instance_id: courseInstance.id });

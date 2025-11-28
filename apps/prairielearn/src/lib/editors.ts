@@ -1250,30 +1250,7 @@ export class CourseInstanceAddEditor extends Editor {
     debug('CourseInstanceAddEditor: write()');
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
-    debug('Get all existing long names');
-    const oldNamesLong = await sqldb.queryRows(
-      sql.select_course_instances_with_course,
-      { course_id: this.course.id },
-      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
-      // course instances, which should always have a non-null long name.
-      z.string(),
-    );
-
-    debug('Get all existing short names');
-    const oldNamesShort = await getExistingShortNames(
-      courseInstancesPath,
-      'infoCourseInstance.json',
-    );
-
-    debug('Generate short_name and long_name');
-    const { shortName, longName } = getUniqueNames({
-      shortNames: oldNamesShort,
-      longNames: oldNamesLong,
-      shortName: this.short_name,
-      longName: this.long_name,
-    });
-
-    const courseInstancePath = path.join(courseInstancesPath, shortName);
+    const courseInstancePath = path.join(courseInstancesPath, this.short_name);
 
     // Ensure that the new course instance folder path is fully contained in the course instances directory
     if (!contains(courseInstancesPath, courseInstancePath)) {
@@ -1320,7 +1297,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     const infoJson = {
       uuid: this.uuid,
-      longName,
+      longName: this.long_name,
       allowAccess: allowAccess !== undefined ? [allowAccess] : [],
     };
 
@@ -1334,7 +1311,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `add course instance ${shortName}`,
+      commitMessage: `add course instance ${this.short_name}`,
     };
   }
 }
