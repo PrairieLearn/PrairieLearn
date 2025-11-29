@@ -115,6 +115,8 @@ lint-js-cached:
 lint-python: python-deps
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
+lint-docs-links: build-docs
+	@yarn linkinator ./site | python3 scripts/process_linkinator_output.py
 # Lint HTML files, and the build output of the docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
@@ -170,7 +172,7 @@ changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
 
-lint-docs: lint-d2 lint-links lint-markdown
+lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 
 build-docs: python-deps
 	@.venv/bin/mkdocs build --strict

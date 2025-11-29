@@ -8746,7 +8746,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^5.6.2":
+"chalk@npm:^5.0.0, chalk@npm:^5.6.2":
   version: 5.6.2
   resolution: "chalk@npm:5.6.2"
   checksum: 10c0/99a4b0f0e7991796b1e7e3f52dceb9137cae2a9dfc8fc0784a550dc4c558e15ab32ed70b14b21b52beb2679b4892b41a0aa44249bcb996f01e125d58477c6976
@@ -11729,6 +11729,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"github-slugger@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "github-slugger@npm:2.0.0"
+  checksum: 10c0/21b912b6b1e48f1e5a50b2292b48df0ff6abeeb0691b161b3d93d84f4ae6b1acd6ae23702e914af7ea5d441c096453cf0f621b72d57893946618d21dd1a1c486
+  languageName: node
+  linkType: hard
+
 "glob-parent@npm:^5.1.2, glob-parent@npm:~5.1.2":
   version: 5.1.2
   resolution: "glob-parent@npm:5.1.2"
@@ -13324,6 +13331,27 @@ __metadata:
   languageName: node
   linkType: hard
 
+"linkinator@npm:^7.5.0":
+  version: 7.5.0
+  resolution: "linkinator@npm:7.5.0"
+  dependencies:
+    chalk: "npm:^5.0.0"
+    escape-html: "npm:^1.0.3"
+    glob: "npm:^10.3.10"
+    htmlparser2: "npm:^10.0.0"
+    marked: "npm:^16.0.0"
+    marked-gfm-heading-id: "npm:^4.1.2"
+    meow: "npm:^14.0.0"
+    mime: "npm:^4.0.0"
+    server-destroy: "npm:^1.0.1"
+    srcset: "npm:^5.0.0"
+    undici: "npm:^7.16.0"
+  bin:
+    linkinator: build/src/cli.js
+  checksum: 10c0/fb9f17fcd807e38859d91470c044a4edfafaf583acb59b527e771bbf47ea080002683e66a3534a1205010f4451c5246af7de6a6e44e8a27ef42ed710f8026164
+  languageName: node
+  linkType: hard
+
 "locate-path@npm:^5.0.0":
   version: 5.0.0
   resolution: "locate-path@npm:5.0.0"
@@ -13610,12 +13638,32 @@ __metadata:
   languageName: node
   linkType: hard
 
+"marked-gfm-heading-id@npm:^4.1.2":
+  version: 4.1.3
+  resolution: "marked-gfm-heading-id@npm:4.1.3"
+  dependencies:
+    github-slugger: "npm:^2.0.0"
+  peerDependencies:
+    marked: ">=13 <18"
+  checksum: 10c0/a4f1624d9b1e6ceaad79eeb9b392dfbde5fe91fd480723784dca6722d10bf02ae764546d9e9cd51937536b14a46f658a5afc396e1344c2404310aa8aaebe1b72
+  languageName: node
+  linkType: hard
+
 "marked@npm:^11.1.1":
   version: 11.2.0
   resolution: "marked@npm:11.2.0"
   bin:
     marked: bin/marked.js
   checksum: 10c0/4713cceabdcd0b4de9a156d601a55ae7e9091cd89ba75d8283042ddbbedb7cd765e02445a80be01131aa24a79003346fc650d66bf4423f7aa186dcc46b403849
+  languageName: node
+  linkType: hard
+
+"marked@npm:^16.0.0":
+  version: 16.4.2
+  resolution: "marked@npm:16.4.2"
+  bin:
+    marked: bin/marked.js
+  checksum: 10c0/fc6051142172454f2023f3d6b31cca92879ec8e1b96457086a54c70354c74b00e1b6543a76a1fad6d399366f52b90a848f6ffb8e1d65a5baff87f3ba9b8f1847
   languageName: node
   linkType: hard
 
@@ -13840,6 +13888,13 @@ __metadata:
   version: 0.3.1
   resolution: "memorystream@npm:0.3.1"
   checksum: 10c0/4bd164657711d9747ff5edb0508b2944414da3464b7fe21ac5c67cf35bba975c4b446a0124bd0f9a8be54cfc18faf92e92bd77563a20328b1ccf2ff04e9f39b9
+  languageName: node
+  linkType: hard
+
+"meow@npm:^14.0.0":
+  version: 14.0.0
+  resolution: "meow@npm:14.0.0"
+  checksum: 10c0/dbe4e136e0f858472d8b8c24d382054fe9898f6f47c58a42be25e6b1985e5ae31048573bf399f6e5877bf9d5b89cb840beae7350682019f998ff30baaa5e4106
   languageName: node
   linkType: hard
 
@@ -14256,7 +14311,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mime@npm:*, mime@npm:^4.1.0":
+"mime@npm:*, mime@npm:^4.0.0, mime@npm:^4.1.0":
   version: 4.1.0
   resolution: "mime@npm:4.1.0"
   bin:
@@ -15706,6 +15761,7 @@ __metadata:
     get-stream: "npm:^9.0.1"
     globby: "npm:^15.0.0"
     htmlhint: "npm:^1.7.1"
+    linkinator: "npm:^7.5.0"
     markdownlint-cli: "npm:^0.45.0"
     node-gyp: "npm:^11.5.0"
     preact-compat: "npm:^3.19.0"
@@ -17017,6 +17073,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"server-destroy@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "server-destroy@npm:1.0.1"
+  checksum: 10c0/ab771f12b24cde1bc622cce0c14a1365f3ab0685937c641c762916fb43aa7a03d6c577cc4375ea5361d6bc1bb20ab689ec5723086e5798c6781edb61287e24b8
+  languageName: node
+  linkType: hard
+
 "set-cookie-parser@npm:^2.4.8, set-cookie-parser@npm:^2.7.2":
   version: 2.7.2
   resolution: "set-cookie-parser@npm:2.7.2"
@@ -17350,6 +17413,13 @@ __metadata:
   bin:
     sql-formatter: bin/sql-formatter-cli.cjs
   checksum: 10c0/752c3008c763a83f3fcb27bfdcd7e7d2620f035594742406ebcc1e036832014ab33089834b6e5bbb269a37eb3df0e2a5174854181af94104d02ffcfa20861b6b
+  languageName: node
+  linkType: hard
+
+"srcset@npm:^5.0.0":
+  version: 5.0.2
+  resolution: "srcset@npm:5.0.2"
+  checksum: 10c0/bb742fc3848e8c68ec44879fde95ffce3555b485ed0b537561e401826f821e2f6a7f1b2ef3b4b21c4847970135c2a94276365755dd3cc65fd22e59af1eed6a99
   languageName: node
   linkType: hard
 
@@ -18295,6 +18365,13 @@ __metadata:
   version: 7.13.0
   resolution: "undici@npm:7.13.0"
   checksum: 10c0/8865d40b141f073215a6763aad5d1b2f4bd4e252600e93e68055d6c5d23a8a0e5782669236b2ecfa4d415d1d969d9c4623ff1c0386d32fa60088a19ffa58c611
+  languageName: node
+  linkType: hard
+
+"undici@npm:^7.16.0":
+  version: 7.16.0
+  resolution: "undici@npm:7.16.0"
+  checksum: 10c0/efd867792e9f233facf9efa0a087e2d9c3e4415c0b234061b9b40307ca4fa01d945fee4d43c7b564e1b80e0d519bcc682f9f6e0de13c717146c00a80e2f1fb0f
   languageName: node
   linkType: hard
 
