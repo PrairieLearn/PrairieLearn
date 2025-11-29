@@ -79,7 +79,7 @@ interface InstructorCourseAdminInstancesInnerProps {
   urlPrefix: string;
 }
 
-export function InstructorCourseAdminInstancesInner({
+function InstructorCourseAdminInstancesInner({
   courseInstances,
   course,
   canEditCourse,
