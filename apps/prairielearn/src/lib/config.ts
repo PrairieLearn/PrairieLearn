@@ -36,7 +36,7 @@ const STANDARD_COURSE_DIRS = [
   '/course9',
 ];
 
-const ConfigSchema = z.object({
+export const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
