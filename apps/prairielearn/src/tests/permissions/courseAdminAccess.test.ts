@@ -18,7 +18,7 @@ import * as helperServer from '../helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-interface User {
+interface TestUser {
   uid: string;
   name?: string;
   uin?: string | null;
@@ -27,7 +27,7 @@ interface User {
   cir?: EnumCourseInstanceRole | null;
 }
 
-async function checkPermissions(users: User[]) {
+async function checkPermissions(users: TestUser[]) {
   const result = await sqldb.queryRows(
     sql.select_permissions,
     {
@@ -57,7 +57,7 @@ async function checkPermissions(users: User[]) {
 }
 
 function updatePermissions(
-  users: User[],
+  users: TestUser[],
   uid: string,
   cr: EnumCourseRole | null,
   cir: EnumCourseInstanceRole | null,
@@ -87,7 +87,7 @@ function runTest(context: TestContext) {
     cookie: 'pl_test_user=test_instructor',
   };
 
-  const users: User[] = [
+  const users: TestUser[] = [
     {
       uid: 'instructor@example.com',
       name: 'Instructor User',
