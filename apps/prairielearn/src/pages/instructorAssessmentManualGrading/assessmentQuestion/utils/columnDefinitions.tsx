@@ -21,6 +21,7 @@ interface CreateColumnsParams {
   urlPrefix: string;
   csrfToken: string;
   assessment: StaffAssessment;
+  courseInstanceId: string;
   createCheckboxProps: (row: Row<InstanceQuestionRow>, table: Table<InstanceQuestionRow>) => any;
   onEditPointsSuccess: () => void;
   onEditPointsConflict: (conflictDetailsUrl: string) => void;
@@ -51,6 +52,7 @@ export function createColumns({
   hasCourseInstancePermissionEdit,
   urlPrefix,
   csrfToken,
+  courseInstanceId,
   createCheckboxProps,
   onEditPointsSuccess,
   onEditPointsConflict,
@@ -218,7 +220,7 @@ export function createColumns({
         const enrollmentId = info.row.original.enrollment_id;
         if (!uid) return '—';
         if (enrollmentId) {
-          return <a href={getStudentEnrollmentUrl(urlPrefix, enrollmentId)}>{uid}</a>;
+          return <a href={getStudentEnrollmentUrl(courseInstanceId, enrollmentId)}>{uid}</a>;
         }
         return uid;
       },
