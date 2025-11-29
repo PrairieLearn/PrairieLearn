@@ -7,16 +7,15 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffAuditEventSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
 import {
-  deleteEnrollmentById,
-  enrollUserInCourseInstance,
-  inviteEnrollmentById,
+  deleteEnrollment,
+  inviteEnrollment,
   selectEnrollmentById,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
@@ -35,13 +34,12 @@ router.get(
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     const { urlPrefix } = pageContext;
-    const {
-      course_instance: courseInstance,
-      course,
-      institution,
-    } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance, course, institution } = pageContext;
     const courseInstanceUrl = getCourseInstanceUrl(courseInstance.id);
 
     const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
@@ -111,6 +109,7 @@ router.get(
               hasCourseInstancePermissionEdit={
                 pageContext.authz_data.has_course_instance_permission_edit
               }
+              hasModernPublishing={courseInstance.modern_publishing}
               enrollmentManagementEnabled={enrollmentManagementEnabled}
             />
           </Hydrate>
@@ -123,21 +122,26 @@ router.get(
 router.post(
   '/:enrollment_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     if (!pageContext.authz_data.has_course_instance_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
-    const { course_instance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { authz_data: authzData, course_instance: courseInstance } = pageContext;
 
     const action = req.body.__action;
     const enrollment_id = req.params.enrollment_id;
 
     // assert that the enrollment belongs to the course instance
-    const enrollment = await selectEnrollmentById({ id: enrollment_id });
-    if (enrollment.course_instance_id !== course_instance.id) {
-      throw new HttpStatusError(400, 'Enrollment does not belong to the course instance');
-    }
+    const enrollment = await selectEnrollmentById({
+      id: enrollment_id,
+      courseInstance,
+      requestedRole: 'Student Data Editor',
+      authzData,
+    });
 
     switch (action) {
       case 'block_student': {
@@ -145,11 +149,10 @@ router.post(
           throw new HttpStatusError(400, 'Enrollment is not joined');
         }
         await setEnrollmentStatus({
+          enrollment,
           status: 'blocked',
-          enrollment_id,
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
-          required_status: 'joined',
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
         res.redirect(req.originalUrl);
         break;
@@ -158,11 +161,11 @@ router.post(
         if (enrollment.status !== 'blocked') {
           throw new HttpStatusError(400, 'Enrollment is not blocked');
         }
-        await enrollUserInCourseInstance({
-          enrollment_id,
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
-          action_detail: 'unblocked',
+        await setEnrollmentStatus({
+          enrollment,
+          status: 'joined',
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
         res.redirect(req.originalUrl);
         break;
@@ -171,15 +174,13 @@ router.post(
         if (enrollment.status !== 'invited') {
           throw new HttpStatusError(400, 'Enrollment is not invited');
         }
-        await deleteEnrollmentById({
-          enrollment_id,
-          action_detail: 'invitation_deleted',
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
+        await deleteEnrollment({
+          enrollment,
+          actionDetail: 'invitation_deleted',
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
-        res.redirect(
-          `/pl/course_instance/${course_instance.id}/instructor/instance_admin/students`,
-        );
+        res.redirect(`/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`);
         break;
       }
       case 'invite_student': {
@@ -187,7 +188,7 @@ router.post(
           throw new HttpStatusError(400, 'Enrollment is not rejected or removed');
         }
 
-        const pending_uid = await run(async () => {
+        const pendingUid = await run(async () => {
           if (enrollment.pending_uid) {
             return enrollment.pending_uid;
           }
@@ -197,11 +198,12 @@ router.post(
           }
           throw new HttpStatusError(400, 'Enrollment does not have a pending UID or user ID');
         });
-        await inviteEnrollmentById({
-          enrollment_id,
-          pending_uid,
-          agent_user_id: res.locals.authn_user.user_id,
-          agent_authn_user_id: res.locals.user.id,
+
+        await inviteEnrollment({
+          enrollment,
+          pendingUid,
+          authzData,
+          requestedRole: 'Student Data Editor',
         });
         res.redirect(req.originalUrl);
         break;

@@ -2,11 +2,13 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
-import { EnrollmentSchema } from '../lib/db-types.js';
+import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
+import { features } from '../lib/features/index.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
-import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
   selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUserId,
@@ -172,7 +174,7 @@ describe('Enroll page (non-enterprise)', () => {
 });
 
 describe('Self-enrollment settings transitions', () => {
-  let courseInstanceCode: string | null = null;
+  let courseInstance: CourseInstance;
 
   const courseInstanceUrl = baseUrl + '/course_instance/1';
   const assessmentsUrl = courseInstanceUrl + '/assessments';
@@ -181,9 +183,7 @@ describe('Self-enrollment settings transitions', () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
 
-    const instance = await selectOptionalCourseInstanceById('1');
-    assert.isNotNull(instance);
-    courseInstanceCode = instance.enrollment_code;
+    courseInstance = await selectCourseInstanceById('1');
 
     // Set uid_regexp for the default institution to allow @example.com UIDs
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
@@ -219,8 +219,10 @@ describe('Self-enrollment settings transitions', () => {
       async () => {
         // Check that user is not enrolled initially
         const initialEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: studentUser.user_id,
-          course_instance_id: '1',
+          userId: studentUser.user_id,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNull(initialEnrollment);
 
@@ -230,8 +232,10 @@ describe('Self-enrollment settings transitions', () => {
 
         // Check that user is now enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: studentUser.user_id,
-          course_instance_id: '1',
+          userId: studentUser.user_id,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNull(finalEnrollment);
       },
@@ -264,8 +268,10 @@ describe('Self-enrollment settings transitions', () => {
       async () => {
         // Check that user is not enrolled initially
         const initialEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: studentUser.user_id,
-          course_instance_id: '1',
+          userId: studentUser.user_id,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNull(initialEnrollment);
 
@@ -275,8 +281,10 @@ describe('Self-enrollment settings transitions', () => {
 
         // Check that user is now enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: studentUser.user_id,
-          course_instance_id: '1',
+          userId: studentUser.user_id,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
@@ -318,8 +326,10 @@ describe('Self-enrollment settings transitions', () => {
       },
       async () => {
         const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
-          pending_uid: invitedUser.uid,
-          course_instance_id: '1',
+          pendingUid: invitedUser.uid,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(initialEnrollment);
         assert.equal(initialEnrollment.status, 'invited');
@@ -328,8 +338,10 @@ describe('Self-enrollment settings transitions', () => {
         assert.equal(response.status, 200);
 
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: invitedUser.user_id,
-          course_instance_id: '1',
+          userId: invitedUser.user_id,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
@@ -377,8 +389,10 @@ describe('Self-enrollment settings transitions', () => {
         assert.equal(response.status, 403);
 
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: blockedUser.user_id,
-          course_instance_id: '1',
+          userId: blockedUser.user_id,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'blocked');
@@ -417,8 +431,10 @@ describe('Self-enrollment settings transitions', () => {
 
         // Check that user is still not enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: studentUser.user_id,
-          course_instance_id: '1',
+          userId: studentUser.user_id,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNull(finalEnrollment);
       },
@@ -454,7 +470,7 @@ describe('Self-enrollment settings transitions', () => {
           siteUrl +
             getSelfEnrollmentLinkUrl({
               courseInstanceId: '1',
-              enrollmentCode: courseInstanceCode!,
+              enrollmentCode: courseInstance.enrollment_code,
             }),
           { redirect: 'manual' },
         );
@@ -463,8 +479,10 @@ describe('Self-enrollment settings transitions', () => {
 
         // Check that user is now enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: studentUser.user_id,
-          course_instance_id: '1',
+          userId: studentUser.user_id,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
@@ -480,9 +498,6 @@ describe('Self-enrollment institution restriction transitions', () => {
   beforeAll(async function () {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
-
-    const instance = await selectOptionalCourseInstanceById('1');
-    assert.isNotNull(instance);
 
     // Set uid_regexp for the default institution to allow @example.com UIDs
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
@@ -603,18 +618,36 @@ describe('Self-enrollment institution restriction transitions', () => {
         );
         assert.isNull(initialEnrollment);
 
-        // Hit the assessments endpoint - this should NOT trigger auto-enrollment
-        const response = await fetch(assessmentsUrl);
+        await features.runWithGlobalOverrides({ 'enrollment-management': true }, async () => {
+          // Hit the assessments endpoint with the enrollment management feature enabled.
+          // This should NOT trigger auto-enrollment.
+          const response = await fetch(assessmentsUrl);
+          assert.equal(response.status, 403);
 
-        // Check that user is still not enrolled
-        const finalEnrollment = await queryOptionalRow(
-          'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-          { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
-          EnrollmentSchema,
-        );
-        assert.isNull(finalEnrollment);
+          // Check that user is still not enrolled.
+          const finalEnrollment = await queryOptionalRow(
+            'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
+            { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
+            EnrollmentSchema,
+          );
+          assert.isNull(finalEnrollment);
+        });
 
-        assert.equal(response.status, 403);
+        await features.runWithGlobalOverrides({ 'enrollment-management': false }, async () => {
+          // Hit the assessments endpoint with the enrollment management feature disabled.
+          // This SHOULD trigger auto-enrollment.
+          const response = await fetch(assessmentsUrl);
+          assert.equal(response.status, 200);
+
+          // Check that user is now enrolled.
+          const finalEnrollment = await queryOptionalRow(
+            'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
+            { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
+            EnrollmentSchema,
+          );
+          assert.isOk(finalEnrollment);
+          assert.equal(finalEnrollment.status, 'joined');
+        });
       },
     );
   });

@@ -8,6 +8,7 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
+from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
 from typing_extensions import assert_never
 
 
@@ -36,6 +37,9 @@ BLANK_VALUE_DEFAULT = "0"
 PLACEHOLDER_DEFAULT = "symbolic expression"
 SHOW_SCORE_DEFAULT = True
 SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
+# This timeout is chosen to allow multiple sympy-based elements to grade on one page,
+# while not exceeding the global timeout enforced for Python execution.
+SYMPY_TIMEOUT = 3
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -353,15 +357,21 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Get submitted answer or return parse_error if it does not exist
     submitted_answer = data["submitted_answers"].get(name, None)
+
     if formula_editor:
-        a_sub = format_formula_editor_submission_for_sympy(
+        submitted_answer = format_formula_editor_submission_for_sympy(
             submitted_answer,
             allow_trig,
             variables,
             custom_functions,
         )
-    else:
-        a_sub = submitted_answer
+
+    # Pre-processing to make submission parseable by SymPy
+    a_sub, error_msg = format_submission_for_sympy(submitted_answer)
+    if error_msg is not None:
+        data["format_errors"][name] = error_msg
+        data["submitted_answers"][name] = None
+        return
 
     if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
@@ -430,6 +440,50 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
 
 
+def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None]:
+    """
+    Format submission to be compatible with SymPy.
+
+    Converts absolute value bars to abs() function calls, handling nested cases.
+
+    Examples:
+        "|x|" becomes "abs(x)"
+        "||x|+y|" becomes "abs(abs(x)+y)"
+
+    Args:
+        sub: The text submission to format
+
+    Returns:
+        A tuple of (Formatted text with absolute value bars replaced by abs() calls, or None if input is None, and an error message if there is an error)
+    """
+    original_sub = sub
+    if sub is None:
+        return None, None
+
+    while True:
+        # Find matches of |...| where:
+        # when ignoring spaces, it either:
+        # - starts with letter/number/opening paren/plus/minus and ends with letter/number/closing/exclamation mark paren
+        # - is a single leter/number
+        match = re.search(
+            r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)",
+            sub,
+        )
+        if not match:
+            break
+
+        content = match.group(0)[1:-1]  # Strip the bars
+        sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
+
+    if "|" in sub:
+        return (
+            None,
+            f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_sub}</code>.",
+        )
+
+    return sub, None
+
+
 def format_formula_editor_submission_for_sympy(
     sub: str | None,
     allow_trig: bool,
@@ -483,9 +537,6 @@ def _build_known_tokens(
     """
     Build a list of all multi-character tokens that should be recognized as single units.
 
-    Returns tokens sorted by length (longest first) to handle prefix matching correctly.
-    For example, "acosh" must be checked before "acos" to avoid partial matches.
-
     Returns:
         List of all multi-character tokens that should be recognized as single units.
     """
@@ -510,8 +561,6 @@ def _build_known_tokens(
 
     # Filter out single-letter tokens
     tokens = [token for token in tokens if len(token) > 1]
-
-    tokens.sort(key=len, reverse=True)
 
     return tokens
 
@@ -540,10 +589,33 @@ def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
     Returns:
         The text with spaced tokens merged
     """
-    for token in tokens:
-        spaced_version = " ".join(token)
-        text = text.replace(spaced_version, token)
-    return text
+    result = []
+    i = 0
+    n = len(text)
+
+    # Precompute spaced forms and lengths
+    spaced = [(token, " ".join(token), len(" ".join(token))) for token in tokens]
+
+    # Sort by spaced_token length so longer tokens match first
+    # e.g. "acosh" must be checked before "acos" to avoid partial matches.
+    spaced.sort(key=lambda x: -x[2])
+
+    while i < n:
+        matched = False
+
+        # Try each spaced token
+        for token, spaced_token, length in spaced:
+            if text.startswith(spaced_token, i):
+                result.append(token)
+                i += length
+                matched = True
+                break
+
+        if not matched:
+            result.append(text[i])
+            i += 1
+
+    return "".join(result)
 
 
 def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
@@ -655,7 +727,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         return a_tru_sympy.equals(a_sub_sympy) is True, None
 
     try:
-        pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
+        with ThreadingTimeout(SYMPY_TIMEOUT) as ctx:
+            pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
+        if ctx.state == TimeoutState.TIMED_OUT:
+            # If sympy times out, it's because the comparison couldn't converge, so we return an error.
+            data["format_errors"][name] = (
+                "Your answer did not converge, try a simpler expression."
+            )
     except ValueError as e:
         # We only want to catch the integer string conversion limit ValueError.
         # Others might be outside of the student's control and should error like normal.

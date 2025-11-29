@@ -1,5 +1,6 @@
 import random
 from enum import Enum
+from sys import get_int_max_str_digits
 
 import big_o_utils as bou
 import chevron
@@ -7,6 +8,7 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
+from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
 from typing_extensions import assert_never
 
 
@@ -43,6 +45,9 @@ SHOW_SCORE_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "1"
 BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-big-o-input.mustache"
+# This timeout is chosen to allow multiple sympy-based elements to grade on one page,
+# while not exceeding the global timeout enforced for Python execution.
+SYMPY_TIMEOUT = 3
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -284,12 +289,28 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     big_o_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
 
-    pl.grade_answer_parameterized(
-        data,
-        name,
-        lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
-        weight=weight,
-    )
+    try:
+        with ThreadingTimeout(SYMPY_TIMEOUT) as ctx:
+            pl.grade_answer_parameterized(
+                data,
+                name,
+                lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
+                weight=weight,
+            )
+        if ctx.state == TimeoutState.TIMED_OUT:
+            # If sympy times out, it's because the comparison couldn't converge, so we return an error.
+            data["format_errors"][name] = (
+                "Your answer did not converge, so your expression may be too loose or tight."
+            )
+    except ValueError as e:
+        # See https://github.com/PrairieLearn/PrairieLearn/pull/13178 for more context as to why we catch this error.
+        if "integer string conversion" in str(e):
+            data["format_errors"][name] = (
+                f"Your expression expands integers longer than {get_int_max_str_digits()} digits, "
+                "try a simpler expression."
+            )
+        else:
+            raise
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:

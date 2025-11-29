@@ -10,12 +10,13 @@ import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { assertNever } from '../../lib/types.js';
-import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -368,6 +369,7 @@ const SKIP_ROUTES = [
 
   // API routes.
   '/pl/course_instance/lookup',
+  '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
 ];
 
 function shouldSkipPath(path) {
@@ -426,17 +428,14 @@ describe('accessibility', () => {
       IdSchema,
     );
 
-    const courseInstance = await selectOptionalCourseInstanceById(
-      STATIC_ROUTE_PARAMS.course_instance_id,
-    );
-    assert.isNotNull(courseInstance);
+    const courseInstance = await selectCourseInstanceById(STATIC_ROUTE_PARAMS.course_instance_id);
 
-    const enrollment = await ensureEnrollment({
-      course_instance_id: courseInstance.id,
-      user_id,
-      agent_user_id: null,
-      agent_authn_user_id: null,
-      action_detail: 'implicit_joined',
+    const enrollment = await ensureUncheckedEnrollment({
+      courseInstance,
+      userId: user_id,
+      requestedRole: 'System',
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
     });
     assert.isNotNull(enrollment);
 

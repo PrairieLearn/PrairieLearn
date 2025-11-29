@@ -9,14 +9,6 @@ import {
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
 
-interface OverviewCardProps {
-  student: UserDetail;
-  courseInstanceUrl: string;
-  csrfToken: string;
-  hasCourseInstancePermissionEdit: boolean;
-  enrollmentManagementEnabled: boolean;
-}
-
 export const UserDetailSchema = z.object({
   user: StaffUserSchema.nullable(),
   course_instance: StaffCourseInstanceSchema,
@@ -32,7 +24,15 @@ export function OverviewCard({
   csrfToken,
   hasCourseInstancePermissionEdit,
   enrollmentManagementEnabled,
-}: OverviewCardProps) {
+  hasModernPublishing,
+}: {
+  student: UserDetail;
+  courseInstanceUrl: string;
+  csrfToken: string;
+  hasCourseInstancePermissionEdit: boolean;
+  enrollmentManagementEnabled: boolean;
+  hasModernPublishing: boolean;
+}) {
   const { user, enrollment, role } = student;
   const handleViewAsStudent = () => {
     if (!user) throw new Error('User is required');
@@ -57,83 +57,82 @@ export function OverviewCard({
         )}
       </div>
       <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex flex-column flex-md-row mb-2 mb-md-0 align-items-md-center justify-content-between">
           <h2 class="d-flex align-items-center">
             {user?.name ?? enrollment.pending_uid}
             {enrollment.status !== 'joined' && (
               <EnrollmentStatusIcon type="badge" class="ms-2 fs-6" status={enrollment.status} />
             )}
           </h2>
-          {hasCourseInstancePermissionEdit && enrollmentManagementEnabled && (
-            <div class="d-flex gap-2 align-items-center">
-              {enrollment.status === 'joined' && (
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value={csrfToken} />
-                  <input type="hidden" name="__action" value="block_student" />
+          {hasCourseInstancePermissionEdit &&
+            enrollmentManagementEnabled &&
+            hasModernPublishing && (
+              <div class="d-flex gap-2 align-items-center">
+                {enrollment.status === 'joined' && (
+                  <form method="POST">
+                    <input type="hidden" name="__csrf_token" value={csrfToken} />
+                    <input type="hidden" name="__action" value="block_student" />
+                    <button
+                      type="submit"
+                      class="btn btn-sm btn-outline-danger d-flex flex-row align-items-center gap-1"
+                    >
+                      <i class="fas fa-user-slash" aria-hidden="true" />
+                      <span>Block student</span>
+                    </button>
+                  </form>
+                )}
+                {enrollment.status === 'blocked' && (
+                  <form method="POST">
+                    <input type="hidden" name="__csrf_token" value={csrfToken} />
+                    <input type="hidden" name="__action" value="unblock_student" />
+                    <button
+                      type="submit"
+                      class="btn btn-sm btn-outline-success d-flex flex-row align-items-center gap-1"
+                    >
+                      <i class="fas fa-user-check" aria-hidden="true" />
+                      <span>Remove block</span>
+                    </button>
+                  </form>
+                )}
+                {enrollment.status === 'invited' && (
                   <button
-                    type="submit"
-                    class="btn btn-sm btn-outline-danger d-flex flex-row align-items-center gap-1"
-                  >
-                    <i class="fas fa-user-slash" aria-hidden="true" />
-                    <span>Block student</span>
-                  </button>
-                </form>
-              )}
-              {enrollment.status === 'blocked' && (
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value={csrfToken} />
-                  <input type="hidden" name="__action" value="unblock_student" />
-                  <button
-                    type="submit"
-                    class="btn btn-sm btn-outline-success d-flex flex-row align-items-center gap-1"
-                  >
-                    <i class="fas fa-user-check" aria-hidden="true" />
-                    <span>Remove block</span>
-                  </button>
-                </form>
-              )}
-              {enrollment.status === 'invited' && (
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value={csrfToken} />
-                  <input type="hidden" name="__action" value="cancel_invitation" />
-                  <button
-                    type="submit"
+                    type="button"
                     class="btn btn-sm btn-outline-secondary d-flex flex-row align-items-center gap-1"
+                    data-bs-toggle="modal"
+                    data-bs-target="#cancelInvitationModal"
                   >
                     <i class="fas fa-times" aria-hidden="true" />
-                    {/* This permanently removes the enrollment from the course instance. */}
                     <span>Cancel invitation</span>
                   </button>
-                </form>
-              )}
-              {enrollment.status === 'removed' && (
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value={csrfToken} />
-                  <input type="hidden" name="__action" value="invite_student" />
-                  <button
-                    type="submit"
-                    class="btn btn-sm btn-outline-primary d-flex flex-row align-items-center gap-1"
-                  >
-                    <i class="fas fa-user-plus" aria-hidden="true" />
-                    <span>Invite student</span>
-                  </button>
-                </form>
-              )}
-              {enrollment.status === 'rejected' && (
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value={csrfToken} />
-                  <input type="hidden" name="__action" value="invite_student" />
-                  <button
-                    type="submit"
-                    class="btn btn-sm btn-outline-primary d-flex flex-row align-items-center gap-1"
-                  >
-                    <i class="fas fa-user-plus" aria-hidden="true" />
-                    <span>Re-invite student</span>
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
+                )}
+                {enrollment.status === 'removed' && (
+                  <form method="POST">
+                    <input type="hidden" name="__csrf_token" value={csrfToken} />
+                    <input type="hidden" name="__action" value="invite_student" />
+                    <button
+                      type="submit"
+                      class="btn btn-sm btn-outline-primary d-flex flex-row align-items-center gap-1"
+                    >
+                      <i class="fas fa-user-plus" aria-hidden="true" />
+                      <span>Invite student</span>
+                    </button>
+                  </form>
+                )}
+                {enrollment.status === 'rejected' && (
+                  <form method="POST">
+                    <input type="hidden" name="__csrf_token" value={csrfToken} />
+                    <input type="hidden" name="__action" value="invite_student" />
+                    <button
+                      type="submit"
+                      class="btn btn-sm btn-outline-primary d-flex flex-row align-items-center gap-1"
+                    >
+                      <i class="fas fa-user-plus" aria-hidden="true" />
+                      <span>Re-invite student</span>
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
         </div>
         {user ? (
           <>
@@ -166,6 +165,43 @@ export function OverviewCard({
             <FriendlyDate date={enrollment.first_joined_at} />
           </div>
         )}
+      </div>
+
+      <div
+        class="modal fade"
+        id="cancelInvitationModal"
+        tabIndex={-1}
+        role="dialog"
+        aria-labelledby="cancelInvitationModalLabel"
+      >
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 class="modal-title h4" id="cancelInvitationModalLabel">
+                Confirm cancel invitation
+              </h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" />
+            </div>
+            <div class="modal-body">
+              <p>
+                The student will no longer appear in your course and any progress they have made on
+                assessments will be lost.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancel
+              </button>
+              <form method="POST" class="d-inline">
+                <input type="hidden" name="__csrf_token" value={csrfToken} />
+                <input type="hidden" name="__action" value="cancel_invitation" />
+                <button type="submit" class="btn btn-danger">
+                  Cancel invitation
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

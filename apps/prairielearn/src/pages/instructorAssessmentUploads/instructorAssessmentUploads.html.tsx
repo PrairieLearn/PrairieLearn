@@ -350,6 +350,11 @@ function UploadSubmissionsCsvModal({ csrfToken }: { csrfToken: string }) {
         <code>raw_submitted_answers</code>, whether or not a submission was considered gradable, and
         scores (including manual grading and rubrics) will not be preserved.
       </p>
+      <p>
+        If the assessment has questions that use <b>manual rubric grading</b>, upload their rubrics
+        before uploading the CSV. The rubrics must be identical to those used when the submissions
+        were downloaded.
+      </p>
       <div class="alert alert-danger">
         This will delete all existing assessment instances and submissions for this assessment and
         replace them with the submissions from the CSV file. This action cannot be undone.

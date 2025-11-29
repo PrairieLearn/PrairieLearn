@@ -1,8 +1,11 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
+  type Header,
   type SortingState,
+  type Updater,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
@@ -11,20 +14,17 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'preact/compat';
-import {
-  Alert,
-  Button,
-  ButtonGroup,
-  Dropdown,
-  DropdownButton,
-  OverlayTrigger,
-  Tooltip,
-} from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
-import { CategoricalColumnFilter, TanstackTableCard } from '@prairielearn/ui';
+import {
+  CategoricalColumnFilter,
+  OverlayTrigger,
+  TanstackTableCard,
+  TanstackTableEmptyState,
+} from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
@@ -34,10 +34,7 @@ import {
   parseAsColumnVisibilityStateWithColumns,
   parseAsSortingState,
 } from '../../lib/client/nuqs.js';
-import type {
-  PageContextWithAuthzData,
-  StaffCourseInstanceContext,
-} from '../../lib/client/page-context.js';
+import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
@@ -69,14 +66,18 @@ async function copyToClipboard(text: string) {
 function CopyEnrollmentLinkButton({
   courseInstance,
 }: {
-  courseInstance: StaffCourseInstanceContext['course_instance'];
+  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
 }) {
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
   const selfEnrollmentCodeLink = getSelfEnrollmentLinkUrl({
     courseInstanceId: courseInstance.id,
     enrollmentCode: courseInstance.enrollment_code,
   });
 
-  const handleCopyLink = async () => {
+  const handleCopyLink = async (e: Event) => {
+    e.stopPropagation();
     const selfEnrollmentLink = run(() => {
       if (!courseInstance.self_enrollment_use_enrollment_code) {
         return getStudentCourseInstanceUrl(courseInstance.id);
@@ -84,9 +85,12 @@ function CopyEnrollmentLinkButton({
       return selfEnrollmentCodeLink;
     });
     await copyToClipboard(`${window.location.origin}${selfEnrollmentLink}`);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const handleCopyCode = async () => {
+  const handleCopyCode = async (e: Event) => {
+    e.stopPropagation();
     const enrollmentCodeDashed =
       courseInstance.enrollment_code.slice(0, 3) +
       '-' +
@@ -94,6 +98,8 @@ function CopyEnrollmentLinkButton({
       '-' +
       courseInstance.enrollment_code.slice(6);
     await copyToClipboard(enrollmentCodeDashed);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   return (
@@ -104,17 +110,35 @@ function CopyEnrollmentLinkButton({
       variant="light"
     >
       {courseInstance.self_enrollment_use_enrollment_code && (
-        <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
-          <i class="bi bi-key me-2" />
-          Copy enrollment code
-        </Dropdown.Item>
+        <OverlayTrigger
+          placement="right"
+          tooltip={{
+            body: copiedCode ? 'Copied!' : 'Copy',
+            props: { id: 'students-copy-code-tooltip' },
+          }}
+          show={copiedCode ? true : undefined}
+        >
+          <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
+            <i class="bi bi-key me-2" />
+            Copy enrollment code
+          </Dropdown.Item>
+        </OverlayTrigger>
       )}
 
       {courseInstance.self_enrollment_enabled && (
-        <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
-          <i class="bi bi-link-45deg me-2" />
-          Copy enrollment link
-        </Dropdown.Item>
+        <OverlayTrigger
+          placement="right"
+          tooltip={{
+            body: copiedLink ? 'Copied!' : 'Copy',
+            props: { id: 'students-copy-link-tooltip' },
+          }}
+          show={copiedLink ? true : undefined}
+        >
+          <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
+            <i class="bi bi-link-45deg me-2" />
+            Copy enrollment link
+          </Dropdown.Item>
+        </OverlayTrigger>
       )}
       <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
         <i class="bi bi-gear me-2" />
@@ -126,14 +150,20 @@ function CopyEnrollmentLinkButton({
 
 interface StudentsCardProps {
   authzData: PageContextWithAuthzData['authz_data'];
-  course: StaffCourseInstanceContext['course'];
-  courseInstance: StaffCourseInstanceContext['course_instance'];
+  course: PageContext<'courseInstance', 'instructor'>['course'];
+  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
   enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
-  urlPrefix: string;
 }
+
+type ColumnId =
+  | 'user_uid'
+  | 'user_name'
+  | 'enrollment_status'
+  | 'user_email'
+  | 'enrollment_first_joined_at';
 
 function StudentsCard({
   authzData,
@@ -143,7 +173,6 @@ function StudentsCard({
   students: initialStudents,
   timezone,
   csrfToken,
-  urlPrefix,
 }: StudentsCardProps) {
   const queryClient = useQueryClient();
 
@@ -165,7 +194,7 @@ function StudentsCard({
   const [lastInvitation, setLastInvitation] = useState<StaffEnrollment | null>(null);
 
   // The individual column filters are the source of truth, and this is derived from them.
-  const columnFilters = useMemo(() => {
+  const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
     return [
       {
         id: 'enrollment_status',
@@ -174,12 +203,38 @@ function StudentsCard({
     ];
   }, [enrollmentStatusFilter]);
 
+  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
+    return {
+      user_uid: undefined,
+      user_name: undefined,
+      enrollment_status: setEnrollmentStatusFilter,
+      user_email: undefined,
+      enrollment_first_joined_at: undefined,
+    };
+  }, [setEnrollmentStatusFilter]);
+
+  // Sync TanStack column filter changes back to URL
+  const handleColumnFiltersChange = useMemo(
+    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
+      const newFilters =
+        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      for (const filter of newFilters) {
+        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
+      }
+    },
+    [columnFilters, columnFilterSetters],
+  );
+
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   const { data: students } = useQuery<StudentRow[]>({
     queryKey: ['enrollments', 'students'],
     queryFn: async () => {
-      const res = await fetch(window.location.pathname + '/data.json');
+      const res = await fetch(window.location.pathname + '/data.json', {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
       if (!res.ok) throw new Error('Failed to fetch students');
       const data = await res.json();
       const parsedData = z.array(StudentRowSchema).safeParse(data);
@@ -203,6 +258,9 @@ function StudentsCard({
       const res = await fetch(window.location.href, {
         method: 'POST',
         body,
+        headers: {
+          Accept: 'application/json',
+        },
       });
       const json = await res.json();
       if (!res.ok) {
@@ -230,7 +288,7 @@ function StudentsCard({
         header: 'UID',
         cell: (info) => {
           return (
-            <a href={getStudentEnrollmentUrl(urlPrefix, info.row.original.enrollment.id)}>
+            <a href={getStudentEnrollmentUrl(courseInstance.id, info.row.original.enrollment.id)}>
               {info.getValue()}
             </a>
           );
@@ -244,7 +302,12 @@ function StudentsCard({
             return info.getValue() || '—';
           }
           return (
-            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+            <OverlayTrigger
+              tooltip={{
+                body: 'Student information is not yet available.',
+                props: { id: 'students-name-tooltip' },
+              }}
+            >
               <i class="bi bi-question-circle" />
             </OverlayTrigger>
           );
@@ -256,8 +319,7 @@ function StudentsCard({
         cell: (info) => <EnrollmentStatusIcon type="text" status={info.getValue()} />,
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const current = row.getValue(columnId);
-          if (typeof current !== 'string') return false;
+          const current = row.getValue<StudentRow['enrollment']['status']>(columnId);
           return filterValues.includes(current);
         },
       }),
@@ -269,7 +331,12 @@ function StudentsCard({
             return info.getValue() || '—';
           }
           return (
-            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+            <OverlayTrigger
+              tooltip={{
+                body: 'Student information is not yet available.',
+                props: { id: 'students-email-tooltip' },
+              }}
+            >
               <i class="bi bi-question-circle" />
             </OverlayTrigger>
           );
@@ -287,7 +354,7 @@ function StudentsCard({
         },
       }),
     ],
-    [timezone, urlPrefix],
+    [timezone, courseInstance.id],
   );
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
@@ -315,6 +382,7 @@ function StudentsCard({
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
+    onColumnFiltersChange: handleColumnFiltersChange,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
@@ -342,9 +410,12 @@ function StudentsCard({
       <TanstackTableCard
         table={table}
         title="Students"
+        // eslint-disable-next-line @eslint-react/no-forbidden-props
+        className="h-100"
+        singularLabel="student"
+        pluralLabel="students"
         downloadButtonOptions={{
           filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
-          pluralLabel: 'students',
           mapRowToData: (row) => {
             return {
               uid: row.user?.uid ?? row.enrollment.pending_uid,
@@ -361,7 +432,7 @@ function StudentsCard({
         }}
         headerButtons={
           <>
-            {enrollmentManagementEnabled && (
+            {enrollmentManagementEnabled && courseInstance.modern_publishing && (
               <>
                 <Button
                   variant="light"
@@ -383,39 +454,33 @@ function StudentsCard({
         }}
         tableOptions={{
           filters: {
-            enrollment_status: ({ header }) => (
+            enrollment_status: ({
+              header,
+            }: {
+              header: Header<StudentRow, StudentRow['enrollment']['status']>;
+            }) => (
               <CategoricalColumnFilter
-                columnId={header.column.id}
-                columnLabel="Status"
+                column={header.column}
                 allColumnValues={STATUS_VALUES}
                 renderValueLabel={({ value }) => (
                   <EnrollmentStatusIcon type="text" status={value} />
                 )}
-                columnValuesFilter={enrollmentStatusFilter}
-                setColumnValuesFilter={setEnrollmentStatusFilter}
               />
             ),
           },
           emptyState: (
-            <>
-              <i class="bi bi-person-exclamation display-4 mb-2" aria-hidden="true" />
-              {/* medium screen and larger, 75% width */}
-              <p class="col-md-9">
-                No students found. To enroll students in your course, you can provide them with a
-                link to enroll (recommended) or invite them. You can manage the self-enrollment
-                settings on the
-                <a class="mx-1" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
-                  course instance settings
-                </a>
-                page.
-              </p>
-            </>
+            <TanstackTableEmptyState iconName="bi-person-exclamation">
+              No students found. To enroll students in your course, you can provide them with a link
+              to enroll (recommended) or invite them. You can manage the self-enrollment settings on
+              the{' '}
+              <a href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>course instance settings</a>{' '}
+              page.
+            </TanstackTableEmptyState>
           ),
           noResultsState: (
-            <>
-              <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
-              <p class="mb-0">No students found matching your search criteria.</p>
-            </>
+            <TanstackTableEmptyState iconName="bi-search">
+              No students found matching your search criteria.
+            </TanstackTableEmptyState>
           ),
         }}
       />
@@ -445,7 +510,6 @@ export const InstructorStudents = ({
   enrollmentManagementEnabled,
   csrfToken,
   isDevMode,
-  urlPrefix,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
   search: string;
@@ -464,7 +528,6 @@ export const InstructorStudents = ({
           students={students}
           timezone={timezone}
           csrfToken={csrfToken}
-          urlPrefix={urlPrefix}
         />
       </QueryClientProviderDebug>
     </NuqsAdapter>

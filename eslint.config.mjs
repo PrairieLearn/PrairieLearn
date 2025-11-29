@@ -300,6 +300,7 @@ export default tseslint.config([
       'unicorn/no-array-callback-reference': 'off',
       'unicorn/no-array-method-this-argument': 'off',
       'unicorn/no-array-reduce': 'off', // Sometimes, an array reduce is more readable
+      'unicorn/no-array-sort': 'off', // Disabling for the time being to avoid unnecessary diffs
       'unicorn/no-hex-escape': 'off',
       'unicorn/no-lonely-if': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2252261293
       'unicorn/no-null': 'off',
@@ -571,7 +572,7 @@ export default tseslint.config([
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['vite.config.ts', 'vitest.config.ts'],
+          allowDefaultProject: ['playwright.config.ts', 'vite.config.ts', 'vitest.config.ts'],
         },
         tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
       },
@@ -664,6 +665,23 @@ export default tseslint.config([
     files: ['apps/prairielearn/src/tests/**/*', 'scripts/**/*', 'contrib/**/*'],
     rules: {
       'no-console': 'off',
+    },
+  },
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              importNames: ['OverlayTrigger'],
+              message: 'Use OverlayTrigger from @prairielearn/ui.',
+              name: 'react-bootstrap',
+            },
+          ],
+        },
+      ],
     },
   },
   {

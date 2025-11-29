@@ -33,6 +33,7 @@ interface StudentDetailProps {
   csrfToken: string;
   hasCourseInstancePermissionEdit?: boolean;
   enrollmentManagementEnabled: boolean;
+  hasModernPublishing: boolean;
 }
 
 export function InstructorStudentDetail({
@@ -44,6 +45,7 @@ export function InstructorStudentDetail({
   csrfToken,
   hasCourseInstancePermissionEdit,
   enrollmentManagementEnabled,
+  hasModernPublishing,
 }: StudentDetailProps) {
   const { user, course_instance } = student;
 
@@ -74,6 +76,7 @@ export function InstructorStudentDetail({
         csrfToken={csrfToken}
         hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}
         enrollmentManagementEnabled={enrollmentManagementEnabled}
+        hasModernPublishing={hasModernPublishing}
       />
 
       <div class="card mb-4">
