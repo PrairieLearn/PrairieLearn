@@ -706,7 +706,7 @@ export function InstructorAssessmentInstance({
 }
 
 function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint }) {
-  const { browser, device, os } = UAParser(fingerprint.user_agent);
+  const { browser, device, os } = UAParser(fingerprint.user_agent ?? undefined);
   return html`
     <div>
       IP Address:

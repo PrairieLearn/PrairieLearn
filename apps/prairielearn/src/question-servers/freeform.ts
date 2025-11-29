@@ -1159,7 +1159,7 @@ export async function render(
         clientFilesCourseScripts: [] as string[],
         clientFilesQuestionStyles: [] as string[],
         clientFilesQuestionScripts: [] as string[],
-      };
+      } satisfies Record<string, string[]>;
       const dynamicDependencies = {
         nodeModulesScripts: {} as Record<string, string>,
         coreElementScripts: {} as Record<string, string>,
@@ -1168,8 +1168,10 @@ export async function render(
         clientFilesCourseScripts: {} as Record<string, string>,
       };
 
-      for (const type in question.dependencies) {
-        if (!(type in dependencies)) continue;
+      for (const rawType in question.dependencies) {
+        if (!(rawType in dependencies)) continue;
+
+        const type = rawType as keyof typeof dependencies;
 
         for (const dep of question.dependencies[type]) {
           if (!dependencies[type].includes(dep)) {
@@ -1220,9 +1222,11 @@ export async function render(
 
           if (!(resolvedType in dependencies)) continue;
 
-          for (const dep of elementDependencies[type]) {
-            if (!dependencies[resolvedType].includes(dep)) {
-              dependencies[resolvedType].push(dep);
+          type ElementDependencyKey = keyof Omit<typeof elementDependencies, 'comment'>;
+
+          for (const dep of elementDependencies[type as ElementDependencyKey] ?? []) {
+            if (!dependencies[resolvedType as keyof typeof dependencies].includes(dep)) {
+              dependencies[resolvedType as keyof typeof dependencies].push(dep);
             }
           }
         }
@@ -1238,17 +1242,32 @@ export async function render(
             return type;
           });
 
-          for (const key in elementDynamicDependencies[type]) {
-            if (!Object.hasOwn(dynamicDependencies[resolvedType], key)) {
-              dynamicDependencies[resolvedType][key] = elementDynamicDependencies[type][key];
+          type ElementDynamicDependencyKey = keyof Omit<
+            typeof elementDynamicDependencies,
+            'comment'
+          >;
+
+          for (const key in elementDynamicDependencies[type as ElementDynamicDependencyKey]) {
+            if (
+              !Object.hasOwn(
+                dynamicDependencies[resolvedType as keyof typeof dynamicDependencies],
+                key,
+              )
+            ) {
+              dynamicDependencies[resolvedType as keyof typeof dynamicDependencies][key] =
+                elementDynamicDependencies[type as ElementDynamicDependencyKey]![key];
             } else if (
-              dynamicDependencies[resolvedType][key] !== elementDynamicDependencies[type][key]
+              dynamicDependencies[resolvedType as keyof typeof dynamicDependencies][key] !==
+              elementDynamicDependencies[type as ElementDynamicDependencyKey]![key]
             ) {
               courseIssues.push(
                 new CourseIssueError(`Dynamic dependency ${key} assigned to conflicting files`, {
                   data: {
                     dependencyType: type,
-                    values: [dynamicDependencies[type][key], elementDynamicDependencies[type][key]],
+                    values: [
+                      dynamicDependencies[resolvedType as keyof typeof dynamicDependencies][key],
+                      elementDynamicDependencies[type as ElementDynamicDependencyKey]![key],
+                    ],
                   },
                   fatal: true,
                 }),
@@ -1291,24 +1310,35 @@ export async function render(
             for (const type in extension) {
               if (!(type in dependencies)) continue;
 
-              for (const dep of extension[type]) {
-                if (!dependencies[type].includes(dep)) {
-                  dependencies[type].push(dep);
+              for (const dep of extension[type as keyof typeof extension] ?? []) {
+                if (!dependencies[type as keyof typeof dependencies].includes(dep)) {
+                  dependencies[type as keyof typeof dependencies].push(dep);
                 }
               }
             }
             for (const type in extensionDynamic) {
-              for (const key in extensionDynamic[type]) {
-                if (!Object.hasOwn(dynamicDependencies[type], key)) {
-                  dynamicDependencies[type][key] = extensionDynamic[type][key];
-                } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
+              type ExtensionDynamicDependencyKey = keyof Omit<typeof extensionDynamic, 'comment'>;
+
+              for (const key in extensionDynamic[type as ExtensionDynamicDependencyKey]) {
+                if (
+                  !Object.hasOwn(dynamicDependencies[type as keyof typeof dynamicDependencies], key)
+                ) {
+                  dynamicDependencies[type as keyof typeof dynamicDependencies][key] =
+                    extensionDynamic[type as ExtensionDynamicDependencyKey]![key];
+                } else if (
+                  dynamicDependencies[type as keyof typeof dynamicDependencies][key] !==
+                  extensionDynamic[type as ExtensionDynamicDependencyKey]![key]
+                ) {
                   courseIssues.push(
                     new CourseIssueError(
                       `Dynamic dependency ${key} assigned to conflicting files`,
                       {
                         data: {
                           dependencyType: type,
-                          values: [dynamicDependencies[type][key], extensionDynamic[type][key]],
+                          values: [
+                            dynamicDependencies[type as keyof typeof dynamicDependencies][key],
+                            extensionDynamic[type as ExtensionDynamicDependencyKey]![key],
+                          ],
                         },
                         fatal: true,
                       },
