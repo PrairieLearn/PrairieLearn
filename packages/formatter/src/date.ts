@@ -114,6 +114,8 @@ export function formatTz(timeZone: string): string {
  * @param options
  * @param options.includeTz Whether to include the time zone in the output (default true).
  * @returns Human-readable string representing the date.
+ *
+ * @typeignore
  */
 export function formatDateHMS(
   date: Date,
