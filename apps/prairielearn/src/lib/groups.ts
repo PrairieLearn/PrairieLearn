@@ -45,7 +45,7 @@ type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
 const GroupRoleWithCountSchema = GroupRoleSchema.extend({
   count: z.number(),
 });
-type GroupRoleWithCount = z.infer<typeof GroupRoleWithCountSchema>;
+export type GroupRoleWithCount = z.infer<typeof GroupRoleWithCountSchema>;
 
 interface RolesInfo {
   roleAssignments: Record<string, RoleAssignment[]>;

@@ -64,7 +64,10 @@ interface QuestionProcessingContext {
   course_element_extensions: ElementExtensionNameDirMap;
 }
 
-type ElementExtensionNameDirMap = Record<string, Record<string, ElementExtensionJsonExtension>>;
+export type ElementExtensionNameDirMap = Record<
+  string,
+  Record<string, ElementExtensionJsonExtension>
+>;
 type ElementNameMap = Record<
   string,
   ((ElementCoreJson & { type: 'core' }) | (ElementCourseJson & { type: 'course' })) & {
