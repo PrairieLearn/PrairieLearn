@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { useState } from 'preact/compat';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import {
@@ -11,8 +12,6 @@ import type { CourseInstancePublishingExtensionWithUsers } from '../instructorIn
 import { dateToPlainDateTime } from '../utils/dateUtils.js';
 
 import { PublishingExtensions } from './PublishingExtensions.js';
-
-const queryClient = new QueryClient();
 
 export function CourseInstancePublishing({
   courseInstance,
@@ -29,6 +28,8 @@ export function CourseInstancePublishing({
   publishingExtensions: CourseInstancePublishingExtensionWithUsers[];
   isDevMode: boolean;
 }) {
+  const [queryClient] = useState(() => new QueryClient());
+
   const originalStartDate = courseInstance.publishing_start_date;
   const originalEndDate = courseInstance.publishing_end_date;
 
