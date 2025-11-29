@@ -59,11 +59,13 @@ const config: KnipConfig = {
         'src/admin_queries/*.ts',
         'src/executor.ts',
         'src/question-servers/calculation-worker.ts',
+        '../../scripts/gen-jsonschema.mts',
       ],
       ignore: [
         'src/lib/no-deprecated-sql.d.ts',
         'src/ee/pages/instructorAiGenerateDraftEditor/RichTextEditor/extensions/react-rendered-component-sample.tsx',
         'src/lib/client/safe-db-types.ts',
+        '../../scripts/gen-jsonschema.mts',
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
@@ -129,7 +131,7 @@ const config: KnipConfig = {
     'pyright',
     's3rver',
   ],
-  exclude: ['binaries', 'dependencies', 'exports', 'types'],
+  exclude: ['binaries', 'dependencies'],
 };
 
 export default config;

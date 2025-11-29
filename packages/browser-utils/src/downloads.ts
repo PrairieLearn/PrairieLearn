@@ -7,7 +7,7 @@ import { stringify } from 'csv-stringify/browser/esm/sync';
  * @param filename The desired filename.
  * @param mimeType The MIME type of the file.
  */
-export function downloadTextFile(content: string, filename: string, mimeType: string): void {
+function downloadTextFile(content: string, filename: string, mimeType: string): void {
   if (typeof window === 'undefined') return;
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);

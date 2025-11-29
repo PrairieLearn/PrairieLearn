@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AiGradingModelId } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 
-export type BatchActionData =
+type BatchActionData =
   | { assigned_grader: string | null }
   | { requires_manual_grading: boolean }
   | {
@@ -16,7 +16,7 @@ export type BatchActionData =
       closed_instance_questions_only?: boolean;
     };
 
-export type BatchActionParams =
+type BatchActionParams =
   | {
       action: 'batch_action';
       actionData: BatchActionData;

@@ -27,7 +27,7 @@ import { createServerJob } from './server-jobs.js';
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export const InstanceLogSchema = z.object({
+const InstanceLogSchema = z.object({
   event_name: z.string(),
   event_color: z.string(),
   event_date: z.date(),
@@ -537,7 +537,7 @@ export async function selectAssessmentInstanceLogCursor(
   );
 }
 
-export async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
+async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
   await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
 }
 

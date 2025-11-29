@@ -27,9 +27,8 @@ export const AssessmentInstanceScoreResultSchema = z.object({
   score_perc: AssessmentInstanceSchema.shape.score_perc,
   assessment_instance_id: AssessmentInstanceSchema.shape.id,
 });
-export type AssessmentInstanceScoreResult = z.infer<typeof AssessmentInstanceScoreResultSchema>;
 
-export const OtherGroupUserSchema = z.object({
+const OtherGroupUserSchema = z.object({
   uid: UserSchema.shape.uid,
   enrollment_id: EnrollmentSchema.shape.id.nullable(),
 });

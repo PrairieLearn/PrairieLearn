@@ -63,7 +63,7 @@ export interface ResLocalsInstanceQuestionRenderAdded {
   rubric_data: RubricData | null;
 }
 
-export interface ResLocalsBuildLocals {
+interface ResLocalsBuildLocals {
   showGradeButton: boolean;
   showSaveButton: boolean;
   disableGradeButton: boolean;

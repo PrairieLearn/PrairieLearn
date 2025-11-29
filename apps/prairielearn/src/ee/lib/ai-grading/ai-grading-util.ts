@@ -48,18 +48,18 @@ import type { AiGradingModelId } from './ai-grading-models.shared.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const SubmissionVariantSchema = z.object({
+const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
-export const GradedExampleSchema = z.object({
+const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
   feedback: z.record(z.string(), z.any()).nullable(),
   instance_question_id: z.string(),
   manual_rubric_grading_id: z.string().nullable(),
 });
-export type GradedExample = z.infer<typeof GradedExampleSchema>;
+type GradedExample = z.infer<typeof GradedExampleSchema>;
 
 /**
  * Models supporting system messages after the first user message.
