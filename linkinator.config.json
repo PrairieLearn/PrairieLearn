@@ -3,6 +3,7 @@
     "localhost:3000",
     "us.prairielearn.com/pl/api/v1",
     "github.com",
+    "mediaspace.illinois.edu",
     "prairielearn.readthedocs.io/en/latest"
   ],
   "requireHttps": true,
