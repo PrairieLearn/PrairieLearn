@@ -12,7 +12,7 @@ const AfterLastDeadlineJsonSchema = z.object({
 
 const DateControlJsonSchema = z
   .object({
-    enabled: z.boolean().optional().describe('Whether dateControl is enabled or not'),
+    enabled: z.boolean().optional().describe('Whether dateControl is enabled or not'), // convenience flag for saying everything is overriden and disabled
     releaseDate: z.string().optional().describe('Deadline date as ISO String'),
     dueDate: z.string().nullable().optional().describe('Due date as ISO String'),
     earlyDeadlines: z
@@ -45,37 +45,11 @@ const ExamJsonSchema = z.object({
 
 const PrairieTestControlJsonSchema = z
   .object({
-    enabled: z.boolean().optional().describe('Whether praireTestControl is enabled or not'),
+    enabled: z.boolean().optional().describe('Whether praireTestControl is enabled or not'), // convenience flag for saying everything is overriden and disabled
     exams: z
       .array(ExamJsonSchema)
       .optional()
       .describe('Array of associated PrairieTest exam configs'),
-  })
-  .optional();
-
-const HideQuestionsDateControlJsonSchema = z
-  .object({
-    showAgainDate: z
-      .string()
-      .optional()
-      .describe(
-        'Date as ISO String for when to unhide questions to students after assessment completion',
-      ),
-    hideAgainDate: z
-      .string()
-      .optional()
-      .describe(
-        'Date as ISO String for when to rehide questions to students after assessment completion',
-      ),
-  })
-  .optional();
-
-const HideScoreDateControlJsonSchema = z
-  .object({
-    showAgainDate: z
-      .string()
-      .optional()
-      .describe('Date as ISO String for when to reveal hidden scores after assessment completion'),
   })
   .optional();
 
@@ -87,18 +61,28 @@ const AfterCompleteJsonSchema = z
       .describe(
         'Whether to enable settings controlling question visibility after assessment completion',
       ),
-    hideQuestionsDateControl: HideQuestionsDateControlJsonSchema.describe(
-      'Settings controlling question visibility after assessment completion',
-    ),
+    showQuestionsAgainDate: z
+      .boolean()
+      .optional()
+      .describe(
+        'Date as ISO String for when to unhide questions to students after assessment completion',
+      ),
+    hideQuestionsAgainDate: z
+      .boolean()
+      .optional()
+      .describe(
+        'Date as ISO String for when to rehide questions to students after unhiding questions after assessment completion',
+      ),
     hideScore: z
       .boolean()
       .optional()
       .describe(
         'Whether to enable settings controlling score visibility after assessment completion',
       ),
-    hideScoreDateControl: HideScoreDateControlJsonSchema.describe(
-      'Settings controlling score visibility after assessment completion',
-    ),
+    showScoreAgainDate: z
+      .boolean()
+      .optional()
+      .describe('Date as ISO String for when to reveal hidden scores after assessment completion'),
   })
   .optional();
 
