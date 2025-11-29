@@ -70,6 +70,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ai-sdk/anthropic@npm:^2.0.49":
+  version: 2.0.49
+  resolution: "@ai-sdk/anthropic@npm:2.0.49"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@ai-sdk/provider-utils": "npm:3.0.17"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/7aedd5b4be51c4601f54361de47db60fa03a3d1926957771294961cc6c88aac6eddcd1529324bc2a71734d36f35103225619f2aedf0c01c99f678e97e2bfff50
+  languageName: node
+  linkType: hard
+
 "@ai-sdk/gateway@npm:2.0.7":
   version: 2.0.7
   resolution: "@ai-sdk/gateway@npm:2.0.7"
@@ -83,15 +95,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/openai@npm:^2.0.64":
-  version: 2.0.64
-  resolution: "@ai-sdk/openai@npm:2.0.64"
+"@ai-sdk/google@npm:^2.0.42":
+  version: 2.0.42
+  resolution: "@ai-sdk/google@npm:2.0.42"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.16"
+    "@ai-sdk/provider-utils": "npm:3.0.17"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/fde91951ca5f2612458d618fd2b8a6e29a8cae61f1bda45816258c697af5ec6f047dbd3acc1fcc921db6e39dfa3158799f0e66f737bcd40f5f0cdd10be74d2a7
+  checksum: 10c0/44a7988aa2fe6e5d80e66b4bc5921aa2693be357eeb1d0b06c07b10de9460e5389ce24b25b03847e6fa449b4fa71fcffefc8837df62e47b4cf009f8e097c26ef
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/openai@npm:^2.0.73":
+  version: 2.0.73
+  resolution: "@ai-sdk/openai@npm:2.0.73"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@ai-sdk/provider-utils": "npm:3.0.17"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/59b9873f5280b377e81b61bd1145654140f78433eac20e1bcb3a5c2844cb270e7fda23547f0811de86baf05b1eaaccf465d748759f4bd44bb840f80aaf03fc74
   languageName: node
   linkType: hard
 
@@ -105,6 +129,19 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10c0/0922af1864b31aed4704174683d356c482199bf691c3d1a3e27cdedd574eec2249ea386b1081023d301a87e38dea09ec259ee45c5889316f7eed0de0a6064a49
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider-utils@npm:3.0.17":
+  version: 3.0.17
+  resolution: "@ai-sdk/provider-utils@npm:3.0.17"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@standard-schema/spec": "npm:^1.0.0"
+    eventsource-parser: "npm:^3.0.6"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/1bae6dc4cacd0305b6aa152f9589bbd61c29f150155482c285a77f83d7ed416d52bc2aa7fdaba2e5764530392d9e8f799baea34a63dce6c72ecd3de364dc62d1
   languageName: node
   linkType: hard
 
@@ -4225,7 +4262,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
   dependencies:
-    "@ai-sdk/openai": "npm:^2.0.64"
+    "@ai-sdk/anthropic": "npm:^2.0.49"
+    "@ai-sdk/google": "npm:^2.0.42"
+    "@ai-sdk/openai": "npm:^2.0.73"
     "@aws-sdk/client-auto-scaling": "npm:^3.926.0"
     "@aws-sdk/client-cloudwatch": "npm:^3.926.0"
     "@aws-sdk/client-ec2": "npm:^3.926.0"
@@ -4591,7 +4630,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@sentry/core": "npm:^10.23.0"
-    "@sentry/node-core": "npm:^10.23.0"
+    "@sentry/node-core": "npm:^10.27.0"
     "@types/node": "npm:^22.19.0"
     execa: "npm:^9.6.0"
     tsx: "npm:^4.20.6"
@@ -5089,45 +5128,45 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/core@npm:10.23.0, @sentry/core@npm:^10.23.0":
-  version: 10.23.0
-  resolution: "@sentry/core@npm:10.23.0"
-  checksum: 10c0/902d1c1ea6cdeaea04f9e9baa02f816013b5f2840a4797742c28f5a1237330af5c051aea8fde84015cd3aafd6eed0ee4e5c96a78c49504cf6277d67e23764d88
+"@sentry/core@npm:10.27.0, @sentry/core@npm:^10.23.0":
+  version: 10.27.0
+  resolution: "@sentry/core@npm:10.27.0"
+  checksum: 10c0/4562abd3f786d6ebfcb7282905dd5c31dadf92e250d1425c34a6dbf683c0df1306ef4d5b2a389a9a8c25106312d8e476325829aac5194051275e7c6817ac3a48
   languageName: node
   linkType: hard
 
-"@sentry/node-core@npm:^10.23.0":
-  version: 10.23.0
-  resolution: "@sentry/node-core@npm:10.23.0"
+"@sentry/node-core@npm:^10.27.0":
+  version: 10.27.0
+  resolution: "@sentry/node-core@npm:10.27.0"
   dependencies:
     "@apm-js-collab/tracing-hooks": "npm:^0.3.1"
-    "@sentry/core": "npm:10.23.0"
-    "@sentry/opentelemetry": "npm:10.23.0"
-    import-in-the-middle: "npm:^1.14.2"
+    "@sentry/core": "npm:10.27.0"
+    "@sentry/opentelemetry": "npm:10.27.0"
+    import-in-the-middle: "npm:^2"
   peerDependencies:
     "@opentelemetry/api": ^1.9.0
-    "@opentelemetry/context-async-hooks": ^1.30.1 || ^2.1.0
-    "@opentelemetry/core": ^1.30.1 || ^2.1.0
+    "@opentelemetry/context-async-hooks": ^1.30.1 || ^2.1.0 || ^2.2.0
+    "@opentelemetry/core": ^1.30.1 || ^2.1.0 || ^2.2.0
     "@opentelemetry/instrumentation": ">=0.57.1 <1"
-    "@opentelemetry/resources": ^1.30.1 || ^2.1.0
-    "@opentelemetry/sdk-trace-base": ^1.30.1 || ^2.1.0
+    "@opentelemetry/resources": ^1.30.1 || ^2.1.0 || ^2.2.0
+    "@opentelemetry/sdk-trace-base": ^1.30.1 || ^2.1.0 || ^2.2.0
     "@opentelemetry/semantic-conventions": ^1.37.0
-  checksum: 10c0/0790e59327c44e7cb554fe9959b7eccfec70dbac2188c61c6ade5e08d67d29998933d2c6b49948bcdd6486f7cd501d56579bc0ec4497b395b4cc306a99128265
+  checksum: 10c0/7d517150ef709386e5e0017345bd92b5872d7f59a5fd5b642829040ec81509b876bfec562f3aa7b10eab0d5d8748cdf35ea110a61a47f873a020bbe71b761c12
   languageName: node
   linkType: hard
 
-"@sentry/opentelemetry@npm:10.23.0":
-  version: 10.23.0
-  resolution: "@sentry/opentelemetry@npm:10.23.0"
+"@sentry/opentelemetry@npm:10.27.0":
+  version: 10.27.0
+  resolution: "@sentry/opentelemetry@npm:10.27.0"
   dependencies:
-    "@sentry/core": "npm:10.23.0"
+    "@sentry/core": "npm:10.27.0"
   peerDependencies:
     "@opentelemetry/api": ^1.9.0
-    "@opentelemetry/context-async-hooks": ^1.30.1 || ^2.1.0
-    "@opentelemetry/core": ^1.30.1 || ^2.1.0
-    "@opentelemetry/sdk-trace-base": ^1.30.1 || ^2.1.0
+    "@opentelemetry/context-async-hooks": ^1.30.1 || ^2.1.0 || ^2.2.0
+    "@opentelemetry/core": ^1.30.1 || ^2.1.0 || ^2.2.0
+    "@opentelemetry/sdk-trace-base": ^1.30.1 || ^2.1.0 || ^2.2.0
     "@opentelemetry/semantic-conventions": ^1.37.0
-  checksum: 10c0/b9c79457a7238e7466144b9688c09ffdc3abd04b47d11b24463876efa842a7d985b4ed3da85ae8cef54cc44d0f3a9978a9aff842ec5aa62be7a41386ec1d73d7
+  checksum: 10c0/da083071b1b13fddb562718236e8785ccf5df2d91004d117c683f70328264ad9be3e33012b6104fa7de2f9002de81d3380233d4c59027c8c8a9bd8e873a47d5d
   languageName: node
   linkType: hard
 
@@ -12321,19 +12360,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"import-in-the-middle@npm:^1.14.2":
-  version: 1.14.2
-  resolution: "import-in-the-middle@npm:1.14.2"
-  dependencies:
-    acorn: "npm:^8.14.0"
-    acorn-import-attributes: "npm:^1.9.5"
-    cjs-module-lexer: "npm:^1.2.2"
-    module-details-from-path: "npm:^1.0.3"
-  checksum: 10c0/ee614a09d3772ad39f8005d798458e541cbfb897b8f97623f4bac527eecc51984586cfbf8f195715df5c463ec0b7fce8086489dc12f758ffe5ea485b8a29da01
-  languageName: node
-  linkType: hard
-
-"import-in-the-middle@npm:^2.0.0":
+"import-in-the-middle@npm:^2, import-in-the-middle@npm:^2.0.0":
   version: 2.0.0
   resolution: "import-in-the-middle@npm:2.0.0"
   dependencies:
@@ -14742,9 +14769,9 @@ __metadata:
   linkType: hard
 
 "node-forge@npm:^1.2.1":
-  version: 1.3.1
-  resolution: "node-forge@npm:1.3.1"
-  checksum: 10c0/e882819b251a4321f9fc1d67c85d1501d3004b4ee889af822fd07f64de3d1a8e272ff00b689570af0465d65d6bf5074df9c76e900e0aff23e60b847f2a46fbe8
+  version: 1.3.2
+  resolution: "node-forge@npm:1.3.2"
+  checksum: 10c0/1def35652c93a588718a6d0d0b4f33e3e7de283aa6f4c00d01d1605d6ccce23fb3b59bcbfb6434014acd23a251cfcc2736052b406f53d94e1b19c09d289d0176
   languageName: node
   linkType: hard
 
