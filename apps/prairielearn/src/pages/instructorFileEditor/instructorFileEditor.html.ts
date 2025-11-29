@@ -6,7 +6,7 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import type { FileEdit } from '../../lib/db-types.js';
-import type { FileMetadata } from '../../lib/editorUtil.types.js';
+import type { FileMetadata } from '../../lib/editorUtil.shared.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
 import type { UntypedResLocals } from '../../lib/res-locals.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';

@@ -371,8 +371,8 @@ function ViewTypeMenu({ resLocals }: { resLocals: UntypedResLocals }) {
   } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the authenticated user is an administrator.
-  if (course?.example_course && !authz_data?.authn_is_administrator) {
+  // user if the authenticated user is an administrator or we are in development mode.
+  if (course?.example_course && !config.devMode && !authz_data?.authn_is_administrator) {
     return '';
   }
 
@@ -565,7 +565,7 @@ function AuthnOverrides({
   const { authz_data, urlPrefix, course, course_instance } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the authenticated user is an administrator.
+  // user if the authenticated user is an administrator or we are in development mode.
   if (course?.example_course && !config.devMode && !authz_data?.authn_is_administrator) {
     return '';
   }
