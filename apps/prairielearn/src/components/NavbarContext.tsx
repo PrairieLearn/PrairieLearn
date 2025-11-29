@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { type NavPage, type NavSubPage, type TabInfo } from './Navbar.types.js';
 

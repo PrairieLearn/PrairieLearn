@@ -4,7 +4,7 @@ import { type HtmlValue, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { isEnterprise } from '../lib/license.js';
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';

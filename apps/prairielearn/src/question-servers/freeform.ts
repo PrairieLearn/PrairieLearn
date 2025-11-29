@@ -24,7 +24,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { assertNever } from '../lib/types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {

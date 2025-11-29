@@ -1,4 +1,4 @@
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { PageLayout } from './PageLayout.js';
 

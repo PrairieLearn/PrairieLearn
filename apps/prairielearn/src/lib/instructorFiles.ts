@@ -4,7 +4,7 @@ import * as error from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 
-import type { UntypedResLocals } from './res-locals.js';
+import type { UntypedResLocals } from './res-locals.types.js';
 
 export interface InstructorFilePaths {
   coursePath: string;

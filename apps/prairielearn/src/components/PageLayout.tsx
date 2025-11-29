@@ -6,7 +6,7 @@ import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';

@@ -10,7 +10,7 @@ import { config } from '../lib/config.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import * as filePaths from '../lib/file-paths.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import {
   type GenerateResultData,

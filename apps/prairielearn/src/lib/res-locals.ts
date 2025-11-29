@@ -22,6 +22,7 @@ import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
 } from './question-render.types.js';
+import type { UntypedResLocals } from './res-locals.types.js';
 import type { Prettify } from './types.js';
 
 export type UntypedResLocals = Record<string, any>;

@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { type User } from '../lib/db-types.js';
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import type { NavContext } from './Navbar.types.js';
 import { PageLayout } from './PageLayout.js';

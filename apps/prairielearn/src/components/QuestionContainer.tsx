@@ -17,7 +17,7 @@ import type {
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
