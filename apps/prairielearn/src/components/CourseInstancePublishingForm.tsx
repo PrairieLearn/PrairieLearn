@@ -3,13 +3,13 @@ import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { useFormContext } from 'react-hook-form';
 
-import { FriendlyDate } from '../../../components/FriendlyDate.js';
-import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import {
   dateToPlainDateTime,
   nowRoundedToSeconds,
   plainDateTimeStringToDate,
-} from '../utils/dateUtils.js';
+} from '../pages/instructorInstanceAdminPublishing/utils/dateUtils.js';
+
+import { FriendlyDate } from './FriendlyDate.js';
 
 type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
 
@@ -47,21 +47,24 @@ export interface PublishingFormValues {
  * PublishingFormValues.
  *
  * @param params
- * @param params.courseInstance - The course instance to edit.
+ * @param params.displayTimezone - The timezone to display the dates in.
  * @param params.canEdit - Whether the user can edit the publishing settings.
  * @param params.originalStartDate - The original start date of the course instance.
  * @param params.originalEndDate - The original end date of the course instance.
+ * @param params.showButtons - Whether to show the buttons to save and cancel.
  */
 export function CourseInstancePublishingForm({
-  courseInstance,
+  displayTimezone,
   canEdit,
   originalStartDate,
   originalEndDate,
+  showButtons = true,
 }: {
-  courseInstance: StaffCourseInstance;
+  displayTimezone: string;
   canEdit: boolean;
   originalStartDate: Date | null;
   originalEndDate: Date | null;
+  showButtons?: boolean;
 }) {
   const originalStatus = computeStatus(originalStartDate, originalEndDate);
 
@@ -84,7 +87,7 @@ export function CourseInstancePublishingForm({
     setSelectedStatus(newStatus);
 
     const now = nowRoundedToSeconds();
-    const nowTemporal = dateToPlainDateTime(now, courseInstance.display_timezone);
+    const nowTemporal = dateToPlainDateTime(now, displayTimezone);
 
     const oneWeekLater = nowTemporal.add({ weeks: 1 });
     const eighteenWeeksLater = nowTemporal.add({ weeks: 18 });
@@ -101,21 +104,15 @@ export function CourseInstancePublishingForm({
         // If the original dates from the form put the course instance in an unpublished state,
         // use those dates.
         if (originalStartDate && originalEndDate && now >= originalEndDate) {
-          updatedStartDate = dateToPlainDateTime(
-            originalStartDate,
-            courseInstance.display_timezone,
-          );
-          updatedEndDate = dateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
+          updatedStartDate = dateToPlainDateTime(originalStartDate, displayTimezone);
+          updatedEndDate = dateToPlainDateTime(originalEndDate, displayTimezone);
           break;
         }
 
         // If the original start date was in the past, use that.
         // Otherwise, we are transitioning from 'scheduled publish' to 'unpublished'. Drop both dates.
         if (originalStartDate && originalStartDate < now) {
-          updatedStartDate = dateToPlainDateTime(
-            originalStartDate,
-            courseInstance.display_timezone,
-          );
+          updatedStartDate = dateToPlainDateTime(originalStartDate, displayTimezone);
           updatedEndDate = nowTemporal;
         } else {
           updatedStartDate = null;
@@ -127,20 +124,14 @@ export function CourseInstancePublishingForm({
         // If the original dates from the form put the course instance in a scheduled publish state,
         // use those dates.
         if (originalStartDate && originalEndDate && now <= originalStartDate) {
-          updatedStartDate = dateToPlainDateTime(
-            originalStartDate,
-            courseInstance.display_timezone,
-          );
-          updatedEndDate = dateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
+          updatedStartDate = dateToPlainDateTime(originalStartDate, displayTimezone);
+          updatedEndDate = dateToPlainDateTime(originalEndDate, displayTimezone);
           break;
         }
 
         if (originalStartDate && now <= originalStartDate) {
           // Try to re-use the original start date if it is in the future.
-          updatedStartDate = dateToPlainDateTime(
-            originalStartDate,
-            courseInstance.display_timezone,
-          );
+          updatedStartDate = dateToPlainDateTime(originalStartDate, displayTimezone);
         } else if (
           currentStartDate === null ||
           Temporal.PlainDateTime.compare(currentStartDate, nowTemporal) <= 0
@@ -150,7 +141,7 @@ export function CourseInstancePublishingForm({
 
         if (originalEndDate && now <= originalEndDate) {
           // Try to re-use the original end date if it is in the future.
-          updatedEndDate = dateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
+          updatedEndDate = dateToPlainDateTime(originalEndDate, displayTimezone);
         } else if (
           currentEndDate === null ||
           Temporal.PlainDateTime.compare(currentEndDate, nowTemporal) <= 0 ||
@@ -164,10 +155,7 @@ export function CourseInstancePublishingForm({
       case 'published': {
         if (originalStartDate && now >= originalStartDate) {
           // Try to re-use the original start date if it is in the past.
-          updatedStartDate = dateToPlainDateTime(
-            originalStartDate,
-            courseInstance.display_timezone,
-          );
+          updatedStartDate = dateToPlainDateTime(originalStartDate, displayTimezone);
         } else if (
           currentStartDate === null ||
           // If the current start date is in the future, set it to now.
@@ -178,7 +166,7 @@ export function CourseInstancePublishingForm({
 
         if (originalEndDate && now <= originalEndDate) {
           // Try to re-use the original end date if it is in the future.
-          updatedEndDate = dateToPlainDateTime(originalEndDate, courseInstance.display_timezone);
+          updatedEndDate = dateToPlainDateTime(originalEndDate, displayTimezone);
         } else if (
           currentEndDate === null ||
           // If the current end date is in the past, set it to 18 weeks from now.
@@ -209,7 +197,7 @@ export function CourseInstancePublishingForm({
         return 'Start date is required for scheduled publishing';
       }
       // Check if start date is in the future
-      const startDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
+      const startDateTime = plainDateTimeStringToDate(value, displayTimezone);
       if (startDateTime <= nowRoundedToSeconds()) {
         return 'Start date must be in the future for scheduled publishing';
       }
@@ -224,11 +212,8 @@ export function CourseInstancePublishingForm({
       }
       // Check if end date is after start date
       if (start_date) {
-        const startDateTime = plainDateTimeStringToDate(
-          start_date,
-          courseInstance.display_timezone,
-        );
-        const endDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
+        const startDateTime = plainDateTimeStringToDate(start_date, displayTimezone);
+        const endDateTime = plainDateTimeStringToDate(value, displayTimezone);
         if (endDateTime <= startDateTime) {
           return 'End date must be after start date';
         }
@@ -272,16 +257,14 @@ export function CourseInstancePublishingForm({
                   <>
                     <br />
                     The course{' '}
-                    {plainDateTimeStringToDate(
-                      endDate,
-                      courseInstance.display_timezone,
-                    ).getTime() === originalEndDate?.getTime() && originalStatus === 'unpublished'
+                    {plainDateTimeStringToDate(endDate, displayTimezone).getTime() ===
+                      originalEndDate?.getTime() && originalStatus === 'unpublished'
                       ? 'was'
                       : 'will be'}{' '}
                     unpublished at{' '}
                     <FriendlyDate
-                      date={plainDateTimeStringToDate(endDate, courseInstance.display_timezone)}
-                      timezone={courseInstance.display_timezone}
+                      date={plainDateTimeStringToDate(endDate, displayTimezone)}
+                      timezone={displayTimezone}
                       tooltip={true}
                       options={{ timeFirst: true }}
                     />
@@ -322,14 +305,14 @@ export function CourseInstancePublishingForm({
                   The course will be published at{' '}
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(startDate)}
-                    timezone={courseInstance.display_timezone}
+                    timezone={displayTimezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
                   />{' '}
                   and will be unpublished at{' '}
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(endDate)}
-                    timezone={courseInstance.display_timezone}
+                    timezone={displayTimezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
                   />
@@ -365,7 +348,7 @@ export function CourseInstancePublishingForm({
                         deps: ['end_date'],
                       })}
                     />
-                    <span class="input-group-text">{courseInstance.display_timezone}</span>
+                    <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.start_date && (
                     <div class="text-danger small mt-1">{errors.start_date.message}</div>
@@ -399,7 +382,7 @@ export function CourseInstancePublishingForm({
                         validate: validateEndDate,
                       })}
                     />
-                    <span class="input-group-text">{courseInstance.display_timezone}</span>
+                    <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
                     <div class="text-danger small mt-1">{errors.end_date.message}</div>
@@ -436,23 +419,21 @@ export function CourseInstancePublishingForm({
               {startDate && endDate && (
                 <div class="ms-4 mt-1 small text-muted">
                   The course{' '}
-                  {plainDateTimeStringToDate(
-                    startDate,
-                    courseInstance.display_timezone,
-                  ).getTime() === originalStartDate?.getTime() && originalStatus === 'published'
+                  {plainDateTimeStringToDate(startDate, displayTimezone).getTime() ===
+                    originalStartDate?.getTime() && originalStatus === 'published'
                     ? 'was'
                     : 'will be'}{' '}
                   published at{' '}
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(startDate)}
-                    timezone={courseInstance.display_timezone}
+                    timezone={displayTimezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
                   />{' '}
                   and will be unpublished at{' '}
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(endDate)}
-                    timezone={courseInstance.display_timezone}
+                    timezone={displayTimezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
                   />
@@ -488,7 +469,7 @@ export function CourseInstancePublishingForm({
                         validate: validateEndDate,
                       })}
                     />
-                    <span class="input-group-text">{courseInstance.display_timezone}</span>
+                    <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
                     <div class="text-danger small mt-1">{errors.end_date.message}</div>
@@ -500,7 +481,7 @@ export function CourseInstancePublishingForm({
         </div>
       </div>
 
-      {canEdit && (
+      {canEdit && showButtons && (
         <div class="d-flex gap-2">
           <button type="submit" class="btn btn-primary" disabled={!isDirty}>
             Save

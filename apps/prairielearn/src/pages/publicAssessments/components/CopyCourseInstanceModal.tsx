@@ -1,7 +1,12 @@
-import { useState } from 'preact/hooks';
-import { Modal } from 'react-bootstrap';
+import { useRef, useState } from 'preact/hooks';
+import { Modal, Overlay, Tooltip } from 'react-bootstrap';
+import { FormProvider, useForm } from 'react-hook-form';
 import z from 'zod';
 
+import {
+  CourseInstancePublishingForm,
+  type PublishingFormValues,
+} from '../../../components/CourseInstancePublishingForm.js';
 import {
   type PublicCourse,
   type PublicCourseInstance,
@@ -36,7 +41,7 @@ export function CopyCourseInstanceModal({
   const [selectedCourseId, setSelectedCourseId] = useState(
     courseInstanceCopyTargets?.[0]?.id ?? '',
   );
-
+  const buttonRef = useRef<HTMLButtonElement>(null);
   // Calculate question stats
   const questionsToCopy = questionsForCopy.filter((q) => q.should_copy).length;
   const questionsToLink = questionsForCopy.filter((q) => !q.should_copy).length;
@@ -44,26 +49,43 @@ export function CopyCourseInstanceModal({
   // Find the selected course data
   const selectedCourse = courseInstanceCopyTargets?.find((c) => c.id === selectedCourseId);
 
+  const defaultValues: PublishingFormValues = {
+    start_date: '',
+    end_date: '',
+  };
+
+  const methods = useForm<PublishingFormValues>({
+    defaultValues,
+  });
+
   // Don't render anything if copy targets is null
   if (!courseInstanceCopyTargets) {
     return null;
   }
 
   const canCopy = courseInstanceCopyTargets.length > 0;
+  const hasSharingName = course.sharing_name !== null;
 
   return (
     <>
+      <Overlay placement="bottom" show={!hasSharingName && show} target={buttonRef}>
+        <Tooltip show={!hasSharingName && show}>
+          This course has not set a sharing name. You cannot copy this course instance to your
+          course.
+        </Tooltip>
+      </Overlay>
       <button
+        ref={buttonRef}
         class="btn btn-sm btn-outline-light"
         type="button"
         aria-label="Copy course instance"
-        onClick={() => setShow(true)}
+        onClick={() => setShow(!show)}
       >
         <i class="fa fa-clone" />
         <span class="d-none d-sm-inline">Copy course instance</span>
       </button>
 
-      <Modal show={show} onHide={() => setShow(false)}>
+      <Modal show={show && hasSharingName} size="lg" onHide={() => setShow(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Copy course instance</Modal.Title>
         </Modal.Header>
@@ -109,6 +131,17 @@ export function CopyCourseInstanceModal({
                   {course.short_name} for use in your course
                 </li>
               </ul>
+              <hr />
+              <FormProvider {...methods}>
+                <p>Choose the initial status of your new course instance.</p>
+                <CourseInstancePublishingForm
+                  displayTimezone={courseInstance.display_timezone}
+                  canEdit={true}
+                  originalStartDate={null}
+                  originalEndDate={null}
+                  showButtons={false}
+                />
+              </FormProvider>
             </Modal.Body>
 
             <Modal.Footer>

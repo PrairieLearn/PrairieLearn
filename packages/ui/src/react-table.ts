@@ -8,6 +8,8 @@ declare module '@tanstack/react-table' {
     wrapText?: boolean;
     /** If set, this will be used as the label for the column in the column manager. */
     label?: string;
+    /** If true, the column will be automatically sized based on the header content. */
+    autoSize?: boolean;
   }
 }
 
