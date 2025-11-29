@@ -721,10 +721,10 @@ function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint })
     <div>Session ID: ${fingerprint.user_session_id}</div>
     <div>User Agent:</div>
     <ul>
-      ${browser?.name ? html`<li>Browser: ${browser.name} ${browser.version ?? ''}</li>` : ''}
-      ${device?.type ? html`<li>Device Type: ${device.type}</li>` : ''}
-      ${device?.vendor ? html`<li>Device: ${device.vendor} ${device.model ?? ''}</li>` : ''}
-      ${os?.name ? html`<li>OS: ${os.name} ${os.version ?? ''}</li>` : ''}
+      ${browser.name ? html`<li>Browser: ${browser.name} ${browser.version ?? ''}</li>` : ''}
+      ${device.type ? html`<li>Device Type: ${device.type}</li>` : ''}
+      ${device.vendor ? html`<li>Device: ${device.vendor} ${device.model ?? ''}</li>` : ''}
+      ${os.name ? html`<li>OS: ${os.name} ${os.version ?? ''}</li>` : ''}
       <li>Raw: <code>${fingerprint.user_agent}</code></li>
     </ul>
   `;
