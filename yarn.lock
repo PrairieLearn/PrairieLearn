@@ -4434,6 +4434,7 @@ __metadata:
     delegated-events: "npm:^1.1.2"
     dockerode: "npm:^4.0.9"
     domelementtype: "npm:^2.3.0"
+    domhandler: "npm:^5.0.3"
     dompurify: "npm:^3.3.0"
     dropzone: "npm:^5.9.3"
     ejs: "npm:^3.1.10"

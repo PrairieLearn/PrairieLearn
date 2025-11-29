@@ -138,6 +138,7 @@
     "delegated-events": "^1.1.2",
     "dockerode": "^4.0.9",
     "domelementtype": "^2.3.0",
+    "domhandler": "^5.0.3",
     "dompurify": "^3.3.0",
     "dropzone": "^5.9.3",
     "ejs": "^3.1.10",
