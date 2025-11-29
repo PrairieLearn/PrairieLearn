@@ -1465,7 +1465,18 @@ function validateCourseInstance({
     }
   }
 
+  if (courseInstance.selfEnrollment.enabled !== true && courseInstance.allowAccess != null) {
+    errors.push(
+      '"selfEnrollment.enabled" is not configurable when you have access control rules ("allowAccess" is set).',
+    );
+  }
+
   if (courseInstance.selfEnrollment.beforeDate != null) {
+    if (courseInstance.allowAccess != null) {
+      errors.push(
+        '"selfEnrollment.beforeDate" is not configurable when you have access control rules ("allowAccess" is set).',
+      );
+    }
     const date = parseJsonDate(courseInstance.selfEnrollment.beforeDate);
     if (date == null) {
       errors.push('"selfEnrollment.beforeDate" is not a valid date.');
