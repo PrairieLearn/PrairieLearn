@@ -10,7 +10,7 @@ import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function InstructorQuestionPreview({
   normalPreviewUrl,

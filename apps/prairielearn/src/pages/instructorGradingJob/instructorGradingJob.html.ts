@@ -6,7 +6,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.js';
 import { Navbar } from '../../components/Navbar.js';
 import { GradingJobSchema, QuestionSchema, UserSchema, VariantSchema } from '../../lib/db-types.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const GradingJobRowSchema = z.object({
   grading_job: GradingJobSchema,
