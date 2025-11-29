@@ -1,5 +1,10 @@
 {
-  "skip": ["localhost:3000", "us.prairielearn.com/pl/api/v1"],
+  "skip": [
+    "localhost:3000",
+    "us.prairielearn.com/pl/api/v1",
+    "github.com",
+    "prairielearn.readthedocs.io/en/latest"
+  ],
   "requireHttps": true,
   "recurse": true,
   "format": "json"
