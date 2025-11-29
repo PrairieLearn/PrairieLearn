@@ -21,7 +21,7 @@ import {
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const PAGE_SIZE = 100;
 

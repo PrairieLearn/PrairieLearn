@@ -17,7 +17,7 @@ import {
   checkAssessmentInstanceBelongsToCourseInstance,
   getCourseOwners,
 } from '../../lib/course.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';

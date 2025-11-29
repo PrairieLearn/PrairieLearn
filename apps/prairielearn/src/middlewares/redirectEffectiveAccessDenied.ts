@@ -1,7 +1,7 @@
 import { type ErrorRequestHandler, type NextFunction, type Request, type Response } from 'express';
 
 import { idsEqual } from '../lib/id.js';
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 const redirects = [
   {

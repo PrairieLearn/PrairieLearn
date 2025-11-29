@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course, type CourseInstance } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 import { formatStripePrice } from '../../lib/billing/stripe.js';
 

@@ -4,7 +4,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { WorkspaceLogSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
   date_formatted: z.string(),

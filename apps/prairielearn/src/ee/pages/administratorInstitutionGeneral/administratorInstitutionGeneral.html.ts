@@ -5,7 +5,7 @@ import { type HtmlValue, html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { type Timezone, formatTimezone } from '../../../lib/timezone.shared.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
 

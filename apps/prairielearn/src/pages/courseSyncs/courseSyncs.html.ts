@@ -14,7 +14,7 @@ import {
   QuestionSchema,
   UserSchema,
 } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const ImageRowSchema = z.object({
   image: z.string(),

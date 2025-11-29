@@ -16,7 +16,7 @@ import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/as
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { User } from '../../lib/db-types.js';
 import { getRoleNamesForUser } from '../../lib/groups.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function StudentInstanceQuestion({
   resLocals,

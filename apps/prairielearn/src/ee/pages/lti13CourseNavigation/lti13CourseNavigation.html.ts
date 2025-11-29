@@ -4,7 +4,7 @@ import { HeadContents } from '../../../components/HeadContents.js';
 import { Modal } from '../../../components/Modal.js';
 import { Navbar } from '../../../components/Navbar.js';
 import { type Course } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { STUDENT_ROLE } from '../../lib/lti13.js';
 
 export function Lti13CourseNavigationInstructor({

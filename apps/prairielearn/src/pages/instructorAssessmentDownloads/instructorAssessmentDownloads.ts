@@ -26,7 +26,7 @@ import {
   VariantSchema,
 } from '../../lib/db-types.js';
 import { getGroupConfig } from '../../lib/groups.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {

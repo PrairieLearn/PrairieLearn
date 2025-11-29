@@ -20,7 +20,7 @@ import {
   IdSchema,
 } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import {
   type AssessmentRow,

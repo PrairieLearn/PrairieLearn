@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 
 import type { AdministratorQuerySpecs } from '../../admin_queries/lib/util.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export interface AdministratorQuery extends AdministratorQuerySpecs {
   error?: any;

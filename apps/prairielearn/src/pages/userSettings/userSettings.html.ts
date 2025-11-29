@@ -8,7 +8,7 @@ import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserS
 import { type Purchase } from '../../ee/lib/billing/purchases.js';
 import { IdSchema, type Institution, type User } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const AccessTokenSchema = z.object({
   created_at: z.string(),

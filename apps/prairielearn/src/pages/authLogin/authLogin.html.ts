@@ -8,7 +8,7 @@ import { assetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import type { AuthnProvider } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export interface InstitutionAuthnProvider {
   name: string;

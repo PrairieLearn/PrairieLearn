@@ -25,8 +25,6 @@ import type {
 import type { UntypedResLocals } from './res-locals.types.js';
 import type { Prettify } from './types.js';
 
-export type UntypedResLocals = Record<string, any>;
-
 export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig {
   __csrf_token: string;
 }

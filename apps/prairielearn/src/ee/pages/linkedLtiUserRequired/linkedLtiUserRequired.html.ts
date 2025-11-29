@@ -3,7 +3,7 @@ import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import type { Lti13Instance } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export function LinkedLtiUserRequired({
   instancesWithMissingIdentities,

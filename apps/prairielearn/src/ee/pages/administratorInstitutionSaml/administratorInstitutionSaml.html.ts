@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export function AdministratorInstitutionSaml({
   institution,

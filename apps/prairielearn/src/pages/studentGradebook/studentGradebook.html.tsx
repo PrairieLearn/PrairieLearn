@@ -2,7 +2,7 @@ import { Fragment } from 'preact/jsx-runtime';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { Scorebar } from '../../components/Scorebar.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export interface StudentGradebookTableRow {
   assessment_id: string;

@@ -6,7 +6,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function PublicQuestionPreview({
   resLocals,

@@ -8,7 +8,7 @@ import { config } from '../../lib/config.js';
 import type { FileEdit } from '../../lib/db-types.js';
 import type { FileMetadata } from '../../lib/editorUtil.shared.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 

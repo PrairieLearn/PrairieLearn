@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 import type { AdministratorNetworksRow } from './administratorNetworks.js';
 

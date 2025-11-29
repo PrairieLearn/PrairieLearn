@@ -5,7 +5,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { NewsItemSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const NewsItemRowSchema = NewsItemSchema.extend({
   unread: z.boolean(),

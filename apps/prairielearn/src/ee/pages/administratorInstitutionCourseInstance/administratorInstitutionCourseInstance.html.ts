@@ -8,7 +8,7 @@ import {
   type Institution,
   type PlanGrant,
 } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
 
 export function AdministratorInstitutionCourseInstance({

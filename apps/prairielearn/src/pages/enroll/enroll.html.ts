@@ -8,7 +8,7 @@ import { Modal } from '../../components/Modal.js';
 import { Navbar } from '../../components/Navbar.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { EnrollmentSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),

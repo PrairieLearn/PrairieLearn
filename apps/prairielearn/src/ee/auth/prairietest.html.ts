@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const AuthPrairieTest = ({
   jwt,

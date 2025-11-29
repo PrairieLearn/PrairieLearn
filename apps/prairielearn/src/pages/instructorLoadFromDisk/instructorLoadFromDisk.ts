@@ -12,7 +12,7 @@ import { logChunkChangesToJob, updateChunksForCourse } from '../../lib/chunks.js
 import { config } from '../../lib/config.js';
 import { CourseSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
 

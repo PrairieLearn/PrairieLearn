@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type User } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export function Terms({ user, resLocals }: { user: User; resLocals: UntypedResLocals }) {
   return PageLayout({

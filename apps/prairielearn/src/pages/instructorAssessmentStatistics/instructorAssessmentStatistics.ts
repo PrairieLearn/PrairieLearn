@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { updateAssessmentStatistics } from '../../lib/assessment.js';
 import { AssessmentSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {

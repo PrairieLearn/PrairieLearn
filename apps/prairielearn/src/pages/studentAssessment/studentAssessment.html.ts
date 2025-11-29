@@ -5,7 +5,7 @@ import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.
 import { PageLayout } from '../../components/PageLayout.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
 import { type GroupInfo } from '../../lib/groups.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function StudentAssessment({
   resLocals,

@@ -8,7 +8,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,

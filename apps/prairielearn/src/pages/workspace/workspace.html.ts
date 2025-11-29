@@ -4,7 +4,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { assetPath, compiledScriptTag } from '../../lib/assets.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function Workspace({
   pageTitle,

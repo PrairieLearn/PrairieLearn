@@ -4,7 +4,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 

@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
-import type { UntypedResLocals } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function AdministratorSettings({ resLocals }: { resLocals: UntypedResLocals }) {
   const showAiSettings =

@@ -9,7 +9,7 @@ import { ScorebarHtml } from '../components/Scorebar.js';
 import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.js';
 import type { Assessment, AssessmentInstance, AssessmentSet } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 export function StudentAssessmentAccess({
   resLocals,
