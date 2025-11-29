@@ -9,8 +9,8 @@ import {
 
 interface StudentHomePageCourse {
   course_instance: StudentCourseInstance;
-  course_short_name: string;
-  course_title: string;
+  course_short_name: string | null;
+  course_title: string | null;
   enrollment: StudentEnrollment;
 }
 

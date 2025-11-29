@@ -6,6 +6,7 @@ import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   type StaffInstitution,
+  StudentCourseInstanceSchema,
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
 import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
@@ -29,7 +30,7 @@ export const InstructorHomePageCourseSchema = z.object({
 type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
 
 export const StudentHomePageCourseSchema = z.object({
-  course_instance: RawStudentCourseInstanceSchema,
+  course_instance: StudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
   enrollment: StudentEnrollmentSchema,
