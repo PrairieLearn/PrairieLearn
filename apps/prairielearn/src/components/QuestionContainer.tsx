@@ -17,6 +17,7 @@ import type {
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
@@ -37,7 +38,7 @@ export function QuestionContainer({
   questionCopyTargets = null,
   aiGradingInfo,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
@@ -778,7 +779,7 @@ function QuestionPanel({
   aiGradingPreviewUrl,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
@@ -884,7 +885,7 @@ function SubmissionList({
   submissionCount,
   renderSubmissionSearchParams,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   submissions: SubmissionForRender[];
@@ -916,7 +917,7 @@ function CopyQuestionModal({
   resLocals,
 }: {
   questionCopyTargets: CopyTarget[] | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const { question, course } = resLocals;
   if (questionCopyTargets == null) return '';
