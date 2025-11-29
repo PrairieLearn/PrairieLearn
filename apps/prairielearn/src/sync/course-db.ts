@@ -454,8 +454,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
         const errorText = betterAjvErrors(schema, json, validate.errors, {
           indent: 2,
         });
-        const errorTextString = String(errorText); // hack to fix incorrect type in better-ajv-errors/typings.d.ts
-        infofile.addError(result, errorTextString);
+        infofile.addError(result, errorText);
         return result;
       }
       return infofile.makeInfoFile({
@@ -556,7 +555,7 @@ export async function loadCourseInfo({
     const duplicateEntryIds = new Set<string>();
 
     (info![fieldName] ?? []).forEach((entry) => {
-      const entryId = entry[entryIdentifier];
+      const entryId = entry[entryIdentifier as keyof typeof entry];
       if (known.has(entryId)) {
         duplicateEntryIds.add(entryId);
       }
@@ -573,7 +572,7 @@ export async function loadCourseInfo({
 
     if (defaults) {
       defaults.forEach((defaultEntry) => {
-        const defaultEntryId = defaultEntry[entryIdentifier];
+        const defaultEntryId = defaultEntry[entryIdentifier as keyof typeof defaultEntry];
         if (!known.has(defaultEntryId)) {
           known.set(defaultEntryId, defaultEntry);
         }

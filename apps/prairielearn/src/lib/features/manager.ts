@@ -9,7 +9,20 @@ import { config } from '../config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'];
+interface UnvalidatedFeatureContext {
+  institution_id?: string | null;
+  course_id?: string | null;
+  course_instance_id?: string | null;
+  user_id?: string | null;
+}
+
+type FeatureContextKey = 'institution_id' | 'course_id' | 'course_instance_id';
+
+const CONTEXT_HIERARCHY: FeatureContextKey[] = [
+  'institution_id',
+  'course_id',
+  'course_instance_id',
+];
 const DEFAULT_CONTEXT = {
   institution_id: null,
   course_id: null,
@@ -59,7 +72,7 @@ export class FeatureManager<FeatureName extends string> {
     this.als = new AsyncLocalStorage<FeatureOverrides>();
   }
 
-  private validateFeature(name: FeatureName, context: FeatureContext) {
+  private validateFeature(name: FeatureName, context: UnvalidatedFeatureContext) {
     if (!this.features.has(name)) {
       throw new Error(`Unknown feature: ${name}`);
     }
@@ -81,7 +94,7 @@ export class FeatureManager<FeatureName extends string> {
    * @param context A context to use when evaluating the feature.
    * @returns Whether or not the feature is enabled
    */
-  async enabled(name: FeatureName, context: FeatureContext = {}): Promise<boolean> {
+  async enabled(name: FeatureName, context: UnvalidatedFeatureContext = {}): Promise<boolean> {
     this.validateFeature(name, context);
 
     // Allow features to be overridden by `runWithOverrides`.
@@ -109,7 +122,7 @@ export class FeatureManager<FeatureName extends string> {
     // Allow features to be enabled in dev mode via `options.devModeFeatures`
     // in `infoCourse.json`.
     if (config.devMode && 'course_id' in context) {
-      const course = await selectCourseById(context.course_id);
+      const course = await selectCourseById(context.course_id!);
       const devModeFeatures = course.options?.devModeFeatures;
 
       if (Array.isArray(devModeFeatures)) {
@@ -238,10 +251,10 @@ export class FeatureManager<FeatureName extends string> {
     }
   }
 
-  validateContext(context: object): FeatureContext {
+  validateContext(context: UnvalidatedFeatureContext): FeatureContext {
     let hasAllParents = true;
     CONTEXT_HIERARCHY.forEach((key, index) => {
-      const hasKey = !!context[key];
+      const hasKey = !!context[key as keyof typeof context];
       if (hasKey && !hasAllParents) {
         const missingKeys = CONTEXT_HIERARCHY.slice(0, index - 1);
         throw new Error(`Missing required context keys: ${missingKeys.join(', ')}`);
