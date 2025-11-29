@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import fetch, { type Response } from 'node-fetch';
+import fetch from 'node-fetch';
 import { io } from 'socket.io-client';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -28,11 +28,8 @@ const mockStudents = [
   { authUid: 'student4', authName: 'Student User 4', authUin: '00000004' },
 ];
 
-async function waitForExternalGrader($questionsPage: cheerio.CheerioAPI): Promise<void> {
-  const { variantId, variantToken } = $questionsPage('.question-container').data() as {
-    variantId: string;
-    variantToken: string;
-  };
+async function waitForExternalGrader($questionsPage): Promise<void> {
+  const { variantId, variantToken } = $questionsPage('.question-container').data();
   const socket = io(`http://localhost:${config.serverPort}/external-grading`);
 
   return new Promise<void>((resolve, reject) => {
@@ -91,12 +88,12 @@ function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
 }
 
 describe('Grading method(s)', { timeout: 80_000 }, function () {
-  let $hm1Body: cheerio.CheerioAPI;
-  let iqUrl: string;
-  let gradeRes: Response;
-  let iqId: number;
-  let questionsPage: string;
-  let $questionsPage: cheerio.CheerioAPI;
+  let $hm1Body;
+  let iqUrl;
+  let gradeRes;
+  let iqId;
+  let questionsPage;
+  let $questionsPage;
 
   beforeAll(helperServer.before());
 
@@ -276,10 +273,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
 
           // Now that the grading job is done, we can check the results.
           const submissionBody = $questionsPage('.js-submission-body').first();
-          const dynamicRenderUrl = new URL(
-            submissionBody.attr('data-dynamic-render-url')!,
-            siteUrl,
-          );
+          const dynamicRenderUrl = new URL(submissionBody.attr('data-dynamic-render-url'), siteUrl);
           dynamicRenderUrl.searchParams.set('render_score_panels', 'true');
           const dynamicRenderPanels = await fetch(dynamicRenderUrl).then((res) => {
             assert.ok(res.ok);
@@ -369,10 +363,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
 
           // Now that the grading job is done, we can check the results.
           const submissionBody = $questionsPage('.js-submission-body').first();
-          const dynamicRenderUrl = new URL(
-            submissionBody.attr('data-dynamic-render-url')!,
-            siteUrl,
-          );
+          const dynamicRenderUrl = new URL(submissionBody.attr('data-dynamic-render-url'), siteUrl);
           dynamicRenderUrl.searchParams.set('render_score_panels', 'true');
           const dynamicRenderPanels = await fetch(dynamicRenderUrl).then((res) => {
             assert.ok(res.ok);

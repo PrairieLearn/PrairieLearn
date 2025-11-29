@@ -16,7 +16,7 @@ import { selectAssessmentByTid } from '../models/assessment.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export interface TestExamQuestion {
+interface TestExamQuestion {
   qid: string;
   type: 'Freeform' | 'Calculation';
   maxPoints: number;
@@ -85,7 +85,7 @@ export function startExam(locals: Record<string, any>, examTid: keyof typeof exa
       exam.questions.forEach(function (question) {
         for (const prop in question) {
           if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
-            delete question[prop as keyof TestExamQuestion];
+            delete question[prop];
           }
         }
         question.points = 0;

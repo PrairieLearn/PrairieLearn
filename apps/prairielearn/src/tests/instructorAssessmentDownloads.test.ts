@@ -1,38 +1,14 @@
 /* eslint-disable @typescript-eslint/dot-notation */
 import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
-import type { Element } from 'domhandler';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as helperExam from './helperExam.js';
-import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 
-const locals = {} as {
-  $: cheerio.CheerioAPI;
-  shouldHaveButtons: string[];
-  postAction: string;
-  question: TestExamQuestion;
-  expectedResult: {
-    submission_score: number;
-    submission_correct: boolean;
-    instance_question_points: number;
-    instance_question_score_perc: number;
-    assessment_instance_points: number;
-    assessment_instance_score_perc: number;
-  };
-  instructorAssessmentDownloadsUrl: string;
-  courseInstanceBaseUrl: string;
-  assessment_id: string;
-  siteUrl: string;
-  assessment_instance: {
-    score_perc: number;
-    points: number;
-  };
-  getSubmittedAnswer: (variant: any) => object;
-};
+const locals: Record<string, any> = {};
 
 const assessmentPoints = 5;
 
@@ -41,8 +17,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
 
   afterAll(helperServer.after);
 
-  let elemList: cheerio.Cheerio<Element>;
-  let page: string;
+  let elemList, page;
 
   helperExam.startExam(locals, 'exam1-automaticTestSuite');
 
@@ -61,7 +36,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
           assessment_instance_score_perc:
             (assessmentPoints / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
-        locals.getSubmittedAnswer = function (variant: any) {
+        locals.getSubmittedAnswer = function (variant) {
           return {
             c: variant.true_answer.c,
           };

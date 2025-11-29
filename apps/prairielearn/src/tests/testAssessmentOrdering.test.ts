@@ -5,7 +5,6 @@ import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 
 import * as helperClient from './helperClient.js';
-import type { CheerioResponse } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import {
   COURSE_INSTANCE_ID,
@@ -15,8 +14,8 @@ import {
 } from './sync/util.js';
 
 describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }, function () {
-  let courseDir: string;
-  let assessmentBadges: string[];
+  let courseDir;
+  let assessmentBadges;
 
   const course = getCourseData();
   course.course.assessmentSets = [
@@ -85,7 +84,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
     return response;
   }
 
-  function testHeadingOrder(response: CheerioResponse, assessmentHeadings: string[]) {
+  function testHeadingOrder(response, assessmentHeadings) {
     const headings = response.$('table th[data-testid="assessment-group-heading"]');
     assert.lengthOf(headings, assessmentHeadings.length);
     headings.each((i, heading) => {
@@ -94,7 +93,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
     });
   }
 
-  function extractAssessmentSetBadgeText(response: CheerioResponse) {
+  function extractAssessmentSetBadgeText(response) {
     const badgeText: string[] = [];
     response.$('table [data-testid="assessment-set-badge"]').each((i, badge) => {
       badgeText.push(response.$(badge).text().trim());

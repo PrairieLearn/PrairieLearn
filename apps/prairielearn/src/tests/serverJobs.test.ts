@@ -8,7 +8,7 @@ import { createServerJob, getJobSequence } from '../lib/server-jobs.js';
 import * as helperServer from './helperServer.js';
 
 function disableLoggingForTests() {
-  let originalSilent: boolean;
+  let originalSilent;
   beforeAll(() => {
     originalSilent = logger.silent;
     logger.silent = true;

@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import type { DataNode, Element } from 'domhandler';
 import fetchCookie, { type CookieJar } from 'fetch-cookie';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
@@ -8,13 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
-import {
-  type InstanceQuestion,
-  InstanceQuestionSchema,
-  type User,
-  UserSchema,
-  type Variant,
-} from '../lib/db-types.js';
+import { InstanceQuestionSchema, UserSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';
@@ -93,17 +86,10 @@ describe('Access control', { timeout: 20000 }, function () {
     return cookies;
   }
 
-  let user: User;
-  let page: string;
-  let $: cheerio.CheerioAPI;
-  let elemList: cheerio.Cheerio<Element>;
-  let assessment_id: string;
-  let __csrf_token: string;
-  let assessmentUrl: string;
-  let q1Url: string;
-  let questionData: any;
-  let variant: Variant;
-  let instance_question: InstanceQuestion;
+  let user, page, $, elemList;
+  let assessment_id;
+  let __csrf_token;
+  let assessmentUrl, q1Url, questionData, variant, instance_question;
 
   /**********************************************************************/
 
@@ -344,9 +330,7 @@ describe('Access control', { timeout: 20000 }, function () {
     });
     it('base64 data should parse to JSON', function () {
       questionData = JSON.parse(
-        decodeURIComponent(
-          Buffer.from((elemList[0].children[0] as DataNode).data, 'base64').toString(),
-        ),
+        decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()),
       );
     });
     it('should have a variant_id in the questionData', function () {

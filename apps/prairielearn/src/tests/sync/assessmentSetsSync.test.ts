@@ -20,10 +20,7 @@ function checkAssessmentSet(
 ) {
   assert.isOk(syncedAssessmentSet);
   for (const key of Object.keys(assessmentSet)) {
-    assert.equal(
-      syncedAssessmentSet[key as keyof AssessmentSet],
-      assessmentSet[key as keyof AssessmentSet],
-    );
+    assert.equal(syncedAssessmentSet[key], assessmentSet[key]);
   }
 }
 

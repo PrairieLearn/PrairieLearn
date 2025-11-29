@@ -5,7 +5,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { type Question, QuestionSchema } from '../lib/db-types.js';
+import { QuestionSchema } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
 import {
@@ -66,10 +66,10 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
 
   afterAll(helperServer.after);
 
-  let questionData: { id: string; qid: string; title: string }[];
+  let questionData;
 
   describe('the database', function () {
-    let questions: Question[];
+    let questions;
     it('should contain questions', async () => {
       questions = await sqldb.queryRows(sql.select_questions, QuestionSchema);
       if (questions.length === 0) {
@@ -87,18 +87,14 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
   });
 
   describe('GET ' + questionsUrlCourse, function () {
-    let parsedPage: cheerio.CheerioAPI;
+    let parsedPage;
     it('should load successfully and contain question data', async () => {
       const res = await fetch(questionsUrlCourse);
       assert.equal(res.status, 200);
       parsedPage = cheerio.load(await res.text());
     });
     it('should contain question data', function () {
-      questionData = parsedPage('#questionsTable').data('data') as {
-        id: string;
-        qid: string;
-        title: string;
-      }[];
+      questionData = parsedPage('#questionsTable').data('data');
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
@@ -114,7 +110,7 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
   });
 
   describe('GET ' + questionsUrl, function () {
-    let parsedPage: cheerio.CheerioAPI;
+    let parsedPage;
     it('should load successfully', async () => {
       const res = await fetch(questionsUrl);
       assert.equal(res.status, 200);
@@ -122,11 +118,7 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
       parsedPage = cheerio.load(page);
     });
     it('should contain question data', function () {
-      questionData = parsedPage('#questionsTable').data('data') as {
-        id: string;
-        qid: string;
-        title: string;
-      }[];
+      questionData = parsedPage('#questionsTable').data('data');
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });

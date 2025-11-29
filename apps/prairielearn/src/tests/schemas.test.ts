@@ -3,15 +3,15 @@ import { assert, describe, it } from 'vitest';
 
 import { ajvSchemas } from '../schemas/index.js';
 
-const isObject = (a: any) => !!a && a.constructor === Object;
+const isObject = (a) => !!a && a.constructor === Object;
 
-const validateRequired = (obj: any) => {
+const validateRequired = (obj) => {
   const errors = validateRequiredRecursive(obj);
   if (errors.length === 0) return null;
   return errors;
 };
 
-const validateRequiredRecursive = (obj: any, path = '') => {
+const validateRequiredRecursive = (obj, path = '') => {
   if (!isObject(obj)) return [];
   let errors: string[] = [];
   if ('properties' in obj && 'required' in obj) {
@@ -36,7 +36,7 @@ for (const schemaName of Object.keys(ajvSchemas)) {
   if (schemaName === 'default') continue;
 
   describe(`${schemaName} schema`, () => {
-    const schema = ajvSchemas[schemaName as keyof typeof ajvSchemas];
+    const schema = ajvSchemas[schemaName];
     it('compiles', () => {
       const ajv = new Ajv();
       const validate = ajv.compile(schema);
