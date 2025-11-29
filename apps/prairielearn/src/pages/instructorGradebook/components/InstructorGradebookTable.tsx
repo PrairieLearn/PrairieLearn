@@ -60,7 +60,6 @@ const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
 const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = ['joined'];
 
 const columnHelper = createColumnHelper<GradebookRow>();
-const queryClient = new QueryClient();
 
 /**
  * Recursively extracts leaf column IDs from column definitions.
@@ -526,6 +525,7 @@ export function InstructorGradebookTable({
   isDevMode: boolean;
   courseInstanceId: string;
 } & GradebookTableProps) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>

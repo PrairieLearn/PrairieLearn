@@ -515,7 +515,7 @@ export const InstructorStudents = ({
   search: string;
   isDevMode: boolean;
 } & StudentsCardProps) => {
-  const queryClient = new QueryClient();
+  const [queryClient] = useState(() => new QueryClient());
 
   return (
     <NuqsAdapter search={search}>
