@@ -64,7 +64,7 @@ const config: KnipConfig = {
         'src/lib/no-deprecated-sql.d.ts',
         'src/ee/pages/instructorAiGenerateDraftEditor/RichTextEditor/extensions/react-rendered-component-sample.tsx',
 
-        'apps/prairielearn/src/lib/client/safe-db-types.ts',
+        'src/lib/client/safe-db-types.ts',
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },

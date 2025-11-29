@@ -70,7 +70,7 @@ export function AssessmentBadgeHtml({
   );
 }
 
-/** @typeignore */
+/** @lintignore */
 export function AssessmentBadgeList({
   assessments,
   hideLink = false,

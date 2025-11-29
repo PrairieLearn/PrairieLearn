@@ -10,7 +10,7 @@ interface ICanonicalLogger {
   data(): Record<string, any>;
 }
 
-export class CanonicalLogger implements ICanonicalLogger {
+class CanonicalLogger implements ICanonicalLogger {
   private _data: Record<string, any> = {};
 
   append(entries: Record<string, any>) {

@@ -223,7 +223,7 @@ export async function dropTemplate(): Promise<void> {
  * @param params.beforeMigration A function to run before the migration.
  * @param params.afterMigration A function to run after the migration.
  *
- * @typeignore
+ * @lintignore
  */
 export async function testMigration<T>({
   name,

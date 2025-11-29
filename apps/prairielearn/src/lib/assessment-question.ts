@@ -49,7 +49,7 @@ const RawStaffAssessmentQuestionRowSchema = AssessmentQuestionRowMetaSchema.exte
   StaffAssessmentQuestionSqlSchema.shape,
 );
 
-/** @typeignore */
+/** @lintignore */
 export const StaffAssessmentQuestionRowSchema =
   RawStaffAssessmentQuestionRowSchema.brand<'StaffAssessmentQuestionRow'>();
 export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionRowSchema>;

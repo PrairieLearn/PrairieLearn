@@ -533,7 +533,7 @@ export default tseslint.config([
       'jsdoc/check-tag-names': [
         'error',
         {
-          definedTags: ['typeignore'],
+          definedTags: ['lintignore'],
           enableFixer: true,
           inlineTags: ['link', 'linkcode', 'linkplain', 'tutorial'],
           typed: true,

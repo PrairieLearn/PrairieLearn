@@ -4844,6 +4844,7 @@ __metadata:
   dependencies:
     "@prairielearn/browser-utils": "workspace:^"
     "@prairielearn/preact-cjs": "workspace:^"
+    "@prairielearn/run": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@tanstack/react-table": "npm:^8.21.3"
     "@tanstack/react-virtual": "npm:^3.13.12"
