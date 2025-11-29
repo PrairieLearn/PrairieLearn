@@ -337,20 +337,22 @@ a.badge {
 
 /** override bootstrap's code styles with a github-like style */
 code,
-.user-output {
+.user-output,
+.user-output-invalid {
   color: var(--bs-body-color);
   background: var(--bs-secondary-bg);
   padding: 0.2em 0.4em;
   border-radius: 6px;
 }
 
+/** These additional styles are kept for compatibility reasons. */
 .user-output,
 .user-output-invalid {
   display: inline;
   font-size: 14px;
-  display: inline;
   white-space: pre;
   line-height: 28px;
+  border-radius: 2px;
 }
 
 .user-output-invalid {
