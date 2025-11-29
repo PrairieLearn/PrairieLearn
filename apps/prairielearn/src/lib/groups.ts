@@ -40,7 +40,7 @@ const RoleAssignmentSchema = z.object({
   role_name: z.string(),
   group_role_id: z.string(),
 });
-type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
+export type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
 
 const GroupRoleWithCountSchema = GroupRoleSchema.extend({
   count: z.number(),

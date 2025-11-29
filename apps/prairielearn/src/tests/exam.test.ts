@@ -18,7 +18,18 @@ const locals = {} as AttachFileLocals &
     assessmentInstanceUrl: string;
     shouldHaveButtons: string[];
     postAction: string;
-    question: TestExamQuestion;
+    question: TestExamQuestion & {
+      /**
+       * Saved variant data for this question. This is stored per-question rather than
+       * on `locals` directly because partial credit tests iterate over multiple questions,
+       * storing and restoring variants independently. If stored on `locals.savedVariant`,
+       * each subsequent question's store would overwrite the previous one, causing the
+       * wrong variant to be restored later.
+       */
+      savedVariant?: Variant;
+      /** Saved CSRF token for this question. */
+      questionSavedCsrfToken?: string;
+    };
     expectedResult: {
       submission_score?: number | null;
       submission_correct?: boolean | null;
@@ -1862,16 +1873,16 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
             helperQuestion.getInstanceQuestion(locals);
             describe('saving submission data', function () {
               it('should succeed', function () {
-                locals.savedVariant = structuredClone(locals.variant);
-                locals.questionSavedCsrfToken = locals.__csrf_token;
+                locals.question.savedVariant = structuredClone(locals.variant);
+                locals.question.questionSavedCsrfToken = locals.__csrf_token;
               });
             });
           } else if (questionTest.action === 'save-stored-fail') {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'save';
-                locals.variant = structuredClone(locals.savedVariant);
-                locals.__csrf_token = locals.questionSavedCsrfToken;
+                locals.variant = structuredClone(locals.question.savedVariant)!;
+                locals.__csrf_token = locals.question.questionSavedCsrfToken!;
               });
             });
             helperQuestion.postInstanceQuestionAndFail(locals, 400);
@@ -1879,8 +1890,8 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'grade';
-                locals.variant = structuredClone(locals.savedVariant);
-                locals.__csrf_token = locals.questionSavedCsrfToken;
+                locals.variant = structuredClone(locals.question.savedVariant)!;
+                locals.__csrf_token = locals.question.questionSavedCsrfToken!;
               });
             });
             helperQuestion.postInstanceQuestionAndFail(locals, 400);

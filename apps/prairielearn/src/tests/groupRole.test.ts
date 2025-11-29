@@ -22,6 +22,7 @@ import {
 import {
   type GroupInfo,
   type GroupRoleWithCount,
+  type RoleAssignment,
   getGroupRoleReassignmentsAfterLeave,
 } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -1878,6 +1879,10 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
         count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
           .length,
       }));
+      locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
+        string,
+        RoleAssignment[]
+      >;
 
       // Get role reassignments if second user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
@@ -1920,7 +1925,10 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
         count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
           .length,
       }));
-
+      locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
+        string,
+        RoleAssignment[]
+      >;
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
@@ -1966,7 +1974,10 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
         count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
           .length,
       }));
-
+      locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
+        string,
+        RoleAssignment[]
+      >;
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
@@ -2040,7 +2051,10 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
         count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
           .length,
       }));
-
+      locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
+        string,
+        RoleAssignment[]
+      >;
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
@@ -2088,7 +2102,10 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
         .length,
     }));
-
+    locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
+      string,
+      RoleAssignment[]
+    >;
     // Get role reassignments if second user leaves
     const result = getGroupRoleReassignmentsAfterLeave(
       locals.groupInfo,
@@ -2119,7 +2136,10 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
         .length,
     }));
-
+    locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
+      string,
+      RoleAssignment[]
+    >;
     // Get role reassignments if second user leaves
     const result = getGroupRoleReassignmentsAfterLeave(
       locals.groupInfo,
