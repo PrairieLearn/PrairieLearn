@@ -8,7 +8,7 @@ if __name__ == "__main__":
     for link in data["links"]:
         if "BROKEN" in link["state"]:
             has_broken_links = True
-            print(link["url"])
+            print(f"Broken link: {link['url']}")
 
     if has_broken_links:
         sys.exit(1)
