@@ -1,3 +1,4 @@
+import type { Column } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { type JSX, useMemo, useState } from 'preact/compat';
 import Dropdown from 'react-bootstrap/Dropdown';
@@ -14,49 +15,48 @@ function computeSelected<T extends readonly any[]>(
 }
 
 function defaultRenderValueLabel<T>({ value }: { value: T }) {
-  return <span>{String(value)}</span>;
+  return <span class="text-nowrap">{String(value)}</span>;
 }
 /**
- * A component that allows the user to filter a categorical column. State is managed by the parent component.
+ * A component that allows the user to filter a categorical column.
  * The filter mode always defaults to "include".
  *
  * @param params
- * @param params.columnId - The ID of the column
- * @param params.columnLabel - The label of the column, e.g. "Status"
+ * @param params.column - The TanStack Table column object
  * @param params.allColumnValues - The values to filter by
  * @param params.renderValueLabel - A function that renders the label for a value
- * @param params.columnValuesFilter - The current state of the column filter
- * @param params.setColumnValuesFilter - A function that sets the state of the column filter
  */
-export function CategoricalColumnFilter<T extends readonly any[]>({
-  columnId,
-  columnLabel,
+export function CategoricalColumnFilter<TData, TValue>({
+  column,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
-  columnValuesFilter,
-  setColumnValuesFilter,
 }: {
-  columnId: string;
-  columnLabel: string;
-  allColumnValues: T;
-  renderValueLabel?: (props: { value: T[number]; isSelected: boolean }) => JSX.Element;
-  columnValuesFilter: T[number][];
-  setColumnValuesFilter: (value: T[number][]) => void;
+  column: Column<TData, TValue>;
+  allColumnValues: TValue[] | readonly TValue[];
+  renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => JSX.Element;
 }) {
   const [mode, setMode] = useState<'include' | 'exclude'>('include');
 
-  const selected = useMemo(
-    () => computeSelected(allColumnValues, mode, new Set(columnValuesFilter)),
-    [mode, columnValuesFilter, allColumnValues],
-  );
+  const columnId = column.id;
 
-  const apply = (newMode: 'include' | 'exclude', newSelected: Set<T[number]>) => {
+  const label =
+    column.columnDef.meta?.label ??
+    (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
+
+  const columnValuesFilter = column.getFilterValue() as TValue[] | undefined;
+
+  const selected = useMemo(() => {
+    return computeSelected(allColumnValues, mode, new Set(columnValuesFilter));
+  }, [mode, allColumnValues, columnValuesFilter]);
+
+  const apply = (newMode: 'include' | 'exclude', newSelected: Set<TValue>) => {
     const selected = computeSelected(allColumnValues, newMode, newSelected);
     setMode(newMode);
-    setColumnValuesFilter(Array.from(selected));
+    const newValue = Array.from(selected);
+    column.setFilterValue(newValue);
   };
 
-  const toggleSelected = (value: T[number]) => {
+  const toggleSelected = (value: TValue) => {
     const set = new Set(selected);
     if (set.has(value)) {
       set.delete(value);
@@ -72,8 +72,8 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
         variant="link"
         class="text-muted p-0"
         id={`filter-${columnId}`}
-        aria-label={`Filter ${columnLabel.toLowerCase()}`}
-        title={`Filter ${columnLabel.toLowerCase()}`}
+        aria-label={`Filter ${label.toLowerCase()}`}
+        title={`Filter ${label.toLowerCase()}`}
       >
         <i
           class={clsx('bi', selected.size > 0 ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
@@ -83,7 +83,7 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
       <Dropdown.Menu class="p-0">
         <div class="p-3 pb-0">
           <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="fw-semibold">{columnLabel}</div>
+            <div class="fw-semibold text-nowrap">{label}</div>
             <button
               type="button"
               class={clsx('btn btn-link btn-sm text-decoration-none', {
@@ -152,7 +152,7 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
                     id={`${columnId}-${value}`}
                     onChange={() => toggleSelected(value)}
                   />
-                  <label class="form-check-label" for={`${columnId}-${value}`}>
+                  <label class="form-check-label fw-normal" for={`${columnId}-${value}`}>
                     {renderValueLabel({
                       value,
                       isSelected,

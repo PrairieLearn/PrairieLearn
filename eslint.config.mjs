@@ -285,6 +285,9 @@ export default tseslint.config([
           ([ruleName, severity]) => [ruleName, severity === 'off' ? 'off' : 'error'],
         ),
       ),
+      // We want to be able to use `useState` without the setter function for
+      // https://tkdodo.eu/blog/react-query-fa-qs#2-the-queryclient-is-not-stable
+      '@eslint-react/naming-convention/use-state': 'off',
       '@eslint-react/no-forbidden-props': [
         'error',
         {
@@ -665,6 +668,23 @@ export default tseslint.config([
     files: ['apps/prairielearn/src/tests/**/*', 'scripts/**/*', 'contrib/**/*'],
     rules: {
       'no-console': 'off',
+    },
+  },
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              importNames: ['OverlayTrigger'],
+              message: 'Use OverlayTrigger from @prairielearn/ui.',
+              name: 'react-bootstrap',
+            },
+          ],
+        },
+      ],
     },
   },
   {
