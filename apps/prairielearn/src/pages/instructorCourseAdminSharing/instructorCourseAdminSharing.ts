@@ -5,6 +5,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { Course } from '../../lib/db-types.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { updateCourseSharingName } from '../../models/course.js';
@@ -17,7 +18,7 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function selectCanChooseSharingName(course) {
+async function selectCanChooseSharingName(course: Course) {
   return (
     course.sharing_name === null ||
     !(await sqldb.queryOptionalRow(

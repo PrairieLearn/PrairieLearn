@@ -2,8 +2,9 @@ import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../components/HeadContents.js';
 import { Navbar } from '../components/Navbar.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
-export function AccessDenied({ resLocals }: { resLocals: Record<string, any> }) {
+export function AccessDenied({ resLocals }: { resLocals: UntypedResLocals }) {
   return html`
     <!doctype html>
     <html lang="en">
