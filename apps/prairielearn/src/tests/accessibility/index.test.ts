@@ -372,7 +372,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
 ];
 
-function shouldSkipPath(path: string) {
+function shouldSkipPath(path) {
   return SKIP_ROUTES.some((r) => {
     if (typeof r === 'string') {
       return r === path;

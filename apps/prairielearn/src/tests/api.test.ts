@@ -3,51 +3,10 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import * as helperExam from './helperExam.js';
-import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 
-const locals = {} as {
-  shouldHaveButtons: string[];
-  postAction: string;
-  question: TestExamQuestion;
-  expectedResult: {
-    submission_score: number;
-    submission_correct: boolean;
-    instance_question_points: number;
-    instance_question_score_perc: number;
-    assessment_instance_points: number;
-    assessment_instance_score_perc: number;
-  };
-  getSubmittedAnswer: (variant: any) => object;
-  settingsUrl: string;
-  baseUrl: string;
-  api_token: string;
-  assessment_id: string;
-  __csrf_token: string;
-  __action: string;
-  course_sync_job_sequence_id: string;
-  apiUrl: string;
-  apiCourseInstanceUrl: string;
-  apiPublicCourseInstanceUrl: string;
-  apiAssessmentsUrl: string;
-  apiAssessmentUrl: string;
-  apiAssessmentInstancesUrl: string;
-  apiAssessmentInstanceUrl: string;
-  apiSubmissionsUrl: string;
-  apiSubmissionUrl: string;
-  apiGradebookUrl: string;
-  apiInstanceQuestionUrl: string;
-  apiAssessmentInstanceLogUrl: string;
-  apiAssessmentAccessRulesUrl: string;
-  apiCourseInstanceAccessRulesUrl: string;
-  apiCourseInstanceInfoUrl: string;
-  apiCourseSyncUrl: string;
-  apiCourseSyncJobUrl: string;
-  apiCourseUrl: string;
-  assessment_instance_id: string;
-  submission_id: string;
-};
+const locals: Record<string, any> = {};
 
 const assessmentPoints = 5;
 
@@ -107,7 +66,7 @@ describe('API', { timeout: 60_000 }, function () {
       assert.isString(csrfToken);
 
       // Store CSRF token for later requests
-      locals.__csrf_token = csrfToken!;
+      locals.__csrf_token = csrfToken;
 
       // Validate the action input
       const actionInput = data$('form input[name="__action"]').get(0);
@@ -116,7 +75,7 @@ describe('API', { timeout: 60_000 }, function () {
 
       // Persist the action for later
       // TODO: just hardcode this!
-      locals.__action = action!;
+      locals.__action = action;
 
       // Validate that there's an input for the token name
       assert.lengthOf(data$('form input[name="token_name"]'), 1);
@@ -188,7 +147,7 @@ describe('API', { timeout: 60_000 }, function () {
 
         const json = (await res.json()) as any;
 
-        const assessment = json.find((o: any) => o.assessment_name === 'exam1-automaticTestSuite');
+        const assessment = json.find((o) => o.assessment_name === 'exam1-automaticTestSuite');
         assert.exists(assessment);
         assert.equal(assessment.assessment_label, 'E1');
 
@@ -303,9 +262,9 @@ describe('API', { timeout: 60_000 }, function () {
       assert.equal(res.status, 200);
 
       const json = (await res.json()) as any;
-      const user = json.find((o: any) => o.user_uid === 'dev@example.com');
+      const user = json.find((o) => o.user_uid === 'dev@example.com');
       assert.exists(user);
-      const assessment = user.assessments.find((o: any) => o.assessment_label === 'E1');
+      const assessment = user.assessments.find((o) => o.assessment_label === 'E1');
       assert.exists(assessment);
       assert.equal(assessment.points, assessmentPoints);
       assert.equal(assessment.max_points, helperExam.exam1AutomaticTestSuite.maxPoints);

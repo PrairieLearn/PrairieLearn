@@ -37,14 +37,14 @@ function makeQuestion(courseData: util.CourseData): QuestionJsonInput {
   };
 }
 
-async function findSyncedQuestion(qid: string) {
+async function findSyncedQuestion(qid) {
   const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
   const syncedQuestion = syncedQuestions.find((q) => q.qid === qid);
   assert.isDefined(syncedQuestion);
   return syncedQuestion;
 }
 
-async function findSyncedUndeletedQuestion(qid: string) {
+async function findSyncedUndeletedQuestion(qid) {
   const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
   const syncedQuestion = syncedQuestions.find((q) => q.qid === qid && q.deleted_at == null);
   assert.isDefined(syncedQuestion);

@@ -4,7 +4,6 @@ import nodeUrl from 'node:url';
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
-import { type Element } from 'domhandler';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
@@ -24,8 +23,7 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
-let page: string;
-let elemList: cheerio.Cheerio<Element>;
+let page, elemList;
 
 // Uses course within tests/testFileEditor
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
@@ -323,7 +321,7 @@ describe('test file editor', { timeout: 20_000 }, function () {
   });
 });
 
-function badGet(url: string, expected_status: number, should_parse: boolean) {
+function badGet(url, expected_status, should_parse) {
   describe('GET to edit url with bad path', function () {
     it(`should load with status ${expected_status}`, async () => {
       // `fetch()` pre-normalizes the URL, which means we can't use it to test
@@ -418,12 +416,12 @@ async function deleteCourseFiles() {
 }
 
 function editPost(
-  action: string,
-  fileEditContents: string,
-  url: string,
-  expectedToFindResults: boolean,
-  expectedToFindChoice: boolean,
-  expectedDiskContents: string | null,
+  action,
+  fileEditContents,
+  url,
+  expectedToFindResults,
+  expectedToFindChoice,
+  expectedDiskContents,
 ) {
   describe(`POST to edit url with action ${action}`, function () {
     it('should load successfully', async () => {
@@ -453,11 +451,11 @@ function editPost(
   });
 }
 
-function jsonToContents(json: Record<string, any>) {
+function jsonToContents(json) {
   return JSON.stringify(json, null, 4) + '\n';
 }
 
-function findEditUrl(name: string, selector: string, url: string, expectedEditUrl: string) {
+function findEditUrl(name, selector, url, expectedEditUrl) {
   describe(`GET to ${name}`, function () {
     it('should load successfully', async () => {
       const res = await fetch(url);
@@ -478,10 +476,10 @@ function findEditUrl(name: string, selector: string, url: string, expectedEditUr
 }
 
 function verifyEdit(
-  expectedToFindResults: boolean,
-  expectedToFindChoice: boolean,
-  expectedDraftContents: string,
-  expectedDiskContents: string | null,
+  expectedToFindResults,
+  expectedToFindChoice,
+  expectedDraftContents,
+  expectedDiskContents,
 ) {
   it('should have a CSRF token', function () {
     elemList = locals.$('form[name="editor-form"] input[name="__csrf_token"]');
@@ -524,11 +522,11 @@ function verifyEdit(
 }
 
 function editGet(
-  url: string,
-  expectedToFindResults: boolean,
-  expectedToFindChoice: boolean,
-  expectedDraftContents: string,
-  expectedDiskContents: string | null,
+  url,
+  expectedToFindResults,
+  expectedToFindChoice,
+  expectedDraftContents,
+  expectedDiskContents,
 ) {
   describe('GET to edit url', function () {
     it('should load successfully', async () => {
@@ -548,15 +546,7 @@ function editGet(
   });
 }
 
-function doEdits(data: {
-  url: string;
-  path: string;
-  contentsA: string;
-  contentsB: string;
-  contentsC: string;
-  contentsX: string;
-  isJson: boolean;
-}) {
+function doEdits(data) {
   describe(`edit ${data.path}`, function () {
     // "live" is a clone of origin (this is what's on the production server)
     // "dev" is a clone of origin (this is what's on someone's laptop)
@@ -669,7 +659,7 @@ function doEdits(data: {
   });
 }
 
-function writeAndCommitFileInLive(fileName: string, fileContents: string) {
+function writeAndCommitFileInLive(fileName, fileContents) {
   describe(`commit a change to ${fileName} by exec`, function () {
     it('should write', async () => {
       await fs.writeFile(path.join(courseLiveDir, fileName), fileContents);
@@ -689,7 +679,7 @@ function writeAndCommitFileInLive(fileName: string, fileContents: string) {
   });
 }
 
-function pullAndVerifyFileInDev(fileName: string, fileContents: string) {
+function pullAndVerifyFileInDev(fileName, fileContents) {
   describe(`pull in dev and verify contents of ${fileName}`, function () {
     it('should pull', async () => {
       await execa('git', ['pull'], {
@@ -703,7 +693,7 @@ function pullAndVerifyFileInDev(fileName: string, fileContents: string) {
   });
 }
 
-function pullAndVerifyFileNotInDev(fileName: string) {
+function pullAndVerifyFileNotInDev(fileName) {
   describe(`pull in dev and verify ${fileName} does not exist`, function () {
     it('should pull', async () => {
       await execa('git', ['pull'], {
@@ -717,7 +707,7 @@ function pullAndVerifyFileNotInDev(fileName: string) {
   });
 }
 
-function writeAndPushFileInDev(fileName: string, fileContents: string) {
+function writeAndPushFileInDev(fileName, fileContents) {
   describe(`write ${fileName} in courseDev and push to courseOrigin`, function () {
     it('should write', async () => {
       await fs.writeFile(path.join(courseDevDir, fileName), fileContents);
@@ -743,17 +733,14 @@ function writeAndPushFileInDev(fileName: string, fileContents: string) {
   });
 }
 
-function waitForJobSequence(
-  locals: { job_sequence_id?: string },
-  expectedResult: 'Success' | 'Error',
-) {
+function waitForJobSequence(locals, expectedResult: 'Success' | 'Error') {
   describe('The job sequence', function () {
     it('should have an id', async () => {
       const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
       locals.job_sequence_id = jobSequence.id;
     });
     it('should complete', async () => {
-      await helperServer.waitForJobSequenceStatus(locals.job_sequence_id!, expectedResult);
+      await helperServer.waitForJobSequenceStatus(locals.job_sequence_id, expectedResult);
     });
   });
 }

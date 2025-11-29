@@ -24,8 +24,7 @@ locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
 
-let page: string;
-let elemList;
+let page, elemList;
 
 const question = [{ qid: 'addNumbers', type: 'Freeform', maxPoints: 5 }];
 const questions = _.keyBy(question, 'qid');
@@ -204,7 +203,7 @@ describe('assessment instance group synchronization test', function () {
         assessment_instance_points: 1,
         assessment_instance_score_perc: (1 / 10) * 100,
       };
-      locals.getSubmittedAnswer = function (variant: any) {
+      locals.getSubmittedAnswer = function (variant) {
         return {
           F: variant.true_answer.F,
         };

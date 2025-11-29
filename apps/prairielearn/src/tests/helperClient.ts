@@ -4,7 +4,7 @@ import { assert } from 'vitest';
 
 import { config } from '../lib/config.js';
 
-export interface CheerioResponse extends Response {
+interface CheerioResponse extends Response {
   $: cheerio.CheerioAPI;
 }
 

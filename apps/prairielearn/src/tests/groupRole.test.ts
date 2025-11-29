@@ -14,16 +14,10 @@ import { config } from '../lib/config.js';
 import {
   AssessmentSchema,
   GroupConfigSchema,
-  type GroupRole,
   GroupRoleSchema,
   GroupUserRoleSchema,
-  type User,
 } from '../lib/db-types.js';
-import {
-  type GroupInfo,
-  type GroupRoleWithCount,
-  getGroupRoleReassignmentsAfterLeave,
-} from '../lib/groups.js';
+import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { type GroupRoleJsonInput } from '../schemas/index.js';
@@ -35,33 +29,7 @@ import { syncCourseData } from './sync/util.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let elemList;
-const locals = { siteUrl: 'http://localhost:' + config.serverPort } as {
-  siteUrl: string;
-  baseUrl: string;
-  courseInstanceUrl: string;
-  assessmentsUrl: string;
-  courseDir: string;
-  $: cheerio.CheerioAPI;
-  __csrf_token: string;
-  manager: GroupRole;
-  recorder: GroupRole;
-  reflector: GroupRole;
-  contributor: GroupRole;
-  roleUpdates: { roleId: string; groupUserId: string }[];
-  groupRoles: GroupRole[];
-  assessment_id: string;
-  assessmentUrl: string;
-  assessment_id_without_roles: string;
-  assessmentUrlWithoutRoles: string;
-  studentUsers: (User & { name: string })[];
-  group_name: string;
-  joinCode: string;
-  assignerRoleUpdate: { roleId: string; groupUserId: string };
-  groupId: string;
-  groupName: string;
-  groupMembers: User[];
-  groupInfo: GroupInfo;
-};
+const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
@@ -127,7 +95,7 @@ async function leaveGroup(assessmentUrl: string) {
 }
 
 async function verifyRoleAssignmentsInDatabase(
-  roleAssignments: { roleId: string; groupUserId: string }[],
+  roleAssignments: { roleId: number; groupUserId: number }[],
   assessmentId: string,
 ) {
   const expected = roleAssignments
@@ -194,9 +162,9 @@ async function updateGroupRoles(
   assert.lengthOf(elemList, roleUpdates.length);
 
   // Grab IDs of checkboxes to construct update request
-  const checkedElementIds: Record<string, string> = {};
+  const checkedElementIds = {};
   for (let i = 0; i < elemList.length; i++) {
-    checkedElementIds[elemList[`${i}`].attribs.id] = 'on';
+    checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
   }
   const res = await fetch(assessmentUrl, {
     method: 'POST',
@@ -278,7 +246,6 @@ describe(
     });
 
     test.sequential('can insert/get 5 users into/from the DB', async function () {
-      // @ts-expect-error We forced name to be a string
       locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
       assert.lengthOf(locals.studentUsers, 5);
     });
@@ -487,7 +454,7 @@ describe(
         { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
       ];
 
-      const checkedElementIds: Record<string, string> = {};
+      const checkedElementIds = {};
       for (const { roleId, groupUserId } of roleUpdates) {
         checkedElementIds[`user_role_${groupUserId}-${roleId}`] = 'on';
       }
@@ -1233,7 +1200,7 @@ const changeGroupRolesConfig = async (courseDir: string, groupRoles: GroupRoleJs
 describe('Test group role reassignments with role of minimum > 1', function () {
   let tempTestCourseDir: tmp.DirectoryResult;
   let assessmentId: string;
-  let assessmentUrl: string;
+  let assessmentUrl;
 
   beforeAll(function () {
     storedConfig.authUid = config.authUid;
@@ -1307,7 +1274,6 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     locals.contributor = contributor;
 
     // Insert/get 5 users into/from the DB
-    // @ts-expect-error We forced name to be a string
     locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
     assert.lengthOf(locals.studentUsers, 5);
 
@@ -1828,7 +1794,6 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
   });
 
   test.sequential('should insert/get 5 users into/from the DB', async function () {
-    // @ts-expect-error We forced name to be a string
     locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
     assert.lengthOf(locals.studentUsers, 5);
   });
@@ -1840,20 +1805,21 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       ...user,
       group_name: locals.groupName,
     }));
+    locals.rolesInfo = {
+      roleAssignments: {},
+      groupRoles: locals.groupRoles,
+      validationErrors: [],
+      disabledRoles: [],
+      rolesAreBalanced: true,
+      usersWithoutRoles: [],
+    };
     locals.groupInfo = {
       groupMembers: locals.groupMembers,
       groupSize: locals.groupMembers.length,
       groupName: locals.groupName,
       joinCode: locals.joinCode,
       start: false,
-      rolesInfo: {
-        roleAssignments: {},
-        groupRoles: locals.groupRoles as GroupRoleWithCount[],
-        validationErrors: [],
-        disabledRoles: [],
-        rolesAreBalanced: true,
-        usersWithoutRoles: [],
-      },
+      rolesInfo: locals.rolesInfo,
     };
   });
 
@@ -1873,11 +1839,12 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
           group_role_id: locals.recorder.id,
         },
       ];
-      locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
+      locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
         count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
           .length,
       }));
+      locals.rolesInfo.roleAssignments = roleAssignments;
 
       // Get role reassignments if second user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
@@ -1915,11 +1882,12 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
           group_role_id: locals.contributor.id,
         },
       ];
-      locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
+      locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
         count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
           .length,
       }));
+      locals.rolesInfo.roleAssignments = roleAssignments;
 
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
@@ -1961,11 +1929,12 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
           group_role_id: locals.contributor.id,
         },
       ];
-      locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
+      locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
         count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
           .length,
       }));
+      locals.rolesInfo.roleAssignments = roleAssignments;
 
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
@@ -2035,11 +2004,12 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
           group_role_id: locals.contributor.id,
         },
       ];
-      locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
+      locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
         count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
           .length,
       }));
+      locals.rolesInfo.roleAssignments = roleAssignments;
 
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
@@ -2083,11 +2053,12 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
         group_role_id: locals.contributor.id,
       },
     ];
-    locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
+    locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
       ...role,
       count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
         .length,
     }));
+    locals.rolesInfo.roleAssignments = roleAssignments;
 
     // Get role reassignments if second user leaves
     const result = getGroupRoleReassignmentsAfterLeave(
@@ -2114,11 +2085,12 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
         group_role_id: locals.manager.id,
       },
     ];
-    locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
+    locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
       ...role,
       count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
         .length,
     }));
+    locals.rolesInfo.roleAssignments = roleAssignments;
 
     // Get role reassignments if second user leaves
     const result = getGroupRoleReassignmentsAfterLeave(
