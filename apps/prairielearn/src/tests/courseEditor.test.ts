@@ -265,10 +265,12 @@ const testEditData: EditData[] = [
     formSelector: 'body',
     dynamicPostInfo: getCourseInstanceCreatePostInfo,
     action: 'add_course_instance',
-    info: 'courseInstances/New_1/infoCourseInstance.json',
+    info: 'courseInstances/New/infoCourseInstance.json',
     data: {
       short_name: 'New',
       long_name: 'New',
+      start_date: '',
+      end_date: '',
     },
     files: new Set([
       'README.md',
@@ -278,7 +280,7 @@ const testEditData: EditData[] = [
       'questions/test/question/info.json',
       'questions/test/question/question.html',
       'questions/test/question/server.py',
-      'courseInstances/New_1/infoCourseInstance.json',
+      'courseInstances/New/infoCourseInstance.json',
     ]),
   },
   {

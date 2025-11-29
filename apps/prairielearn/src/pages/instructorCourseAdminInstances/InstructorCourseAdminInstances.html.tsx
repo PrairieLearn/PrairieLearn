@@ -1,16 +1,19 @@
-import { Temporal } from '@js-temporal/polyfill';
+import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
 import { Button, Popover } from 'react-bootstrap';
 
-import { formatDate, formatDateYMDHM } from '@prairielearn/formatter';
+import { formatDate } from '@prairielearn/formatter';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { SyncProblemButton } from '../../components/SyncProblemButton.js';
 import type { StaffCourse } from '../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
 import { CreateCourseInstanceModal } from './components/CreateCourseInstanceModal.js';
 import { EmptyState } from './components/EmptyState.js';
 import type { InstructorCourseAdminInstanceRow } from './instructorCourseAdminInstances.shared.js';
+
+const queryClient = new QueryClient();
 
 function renderPopoverStartDate(courseInstanceId: string) {
   // React Bootstrap's OverlayTrigger expects the overlay prop to be JSX (or a render function)
@@ -67,52 +70,33 @@ function renderPopoverEndDate(courseInstanceId: string) {
   );
 }
 
-export function InstructorCourseAdminInstances({
-  courseInstances,
-  course,
-  canEditCourse,
-  needToSync,
-  csrfToken,
-  urlPrefix,
-}: {
+interface InstructorCourseAdminInstancesInnerProps {
   courseInstances: InstructorCourseAdminInstanceRow[];
   course: StaffCourse;
   canEditCourse: boolean;
   needToSync: boolean;
   csrfToken: string;
   urlPrefix: string;
-}) {
+}
+
+export function InstructorCourseAdminInstancesInner({
+  courseInstances,
+  course,
+  canEditCourse,
+  needToSync,
+  csrfToken,
+  urlPrefix,
+}: InstructorCourseAdminInstancesInnerProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const canCreateInstances = canEditCourse && !course.example_course && !needToSync;
-  const initialStartDate = Temporal.Now.zonedDateTimeISO(course.display_timezone).with({
-    hour: 0,
-    minute: 1,
-    second: 0,
-  });
-  const initialStartDateFormatted = formatDateYMDHM(
-    new Date(initialStartDate.epochMilliseconds),
-    course.display_timezone,
-  );
 
-  const initialEndDate = initialStartDate.add({ months: 4 }).with({
-    hour: 23,
-    minute: 59,
-    second: 0,
-  });
-  const initialEndDateFormatted = formatDateYMDHM(
-    new Date(initialEndDate.epochMilliseconds),
-    course.display_timezone,
-  );
   return (
     <>
       <CreateCourseInstanceModal
         show={showCreateModal}
-        courseShortName={course.short_name!}
+        course={course}
         csrfToken={csrfToken}
-        timezone={course.display_timezone}
-        initialStartDateFormatted={initialStartDateFormatted}
-        initialEndDateFormatted={initialEndDateFormatted}
         onHide={() => setShowCreateModal(false)}
       />
 
@@ -237,4 +221,13 @@ export function InstructorCourseAdminInstances({
   );
 }
 
+export function InstructorCourseAdminInstances({
+  ...props
+}: InstructorCourseAdminInstancesInnerProps) {
+  return (
+    <QueryClientProviderDebug client={queryClient}>
+      <InstructorCourseAdminInstancesInner {...props} />
+    </QueryClientProviderDebug>
+  );
+}
 InstructorCourseAdminInstances.displayName = 'InstructorCourseAdminInstances';
