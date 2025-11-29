@@ -435,7 +435,7 @@ export function assertSnapshotsMatch(
  */
 export function assertSnapshotSubset(
   snapshotA: Record<string, any[]>,
-  snapshotB: Record<string, any>,
+  snapshotB: Record<string, any[]>,
   ignoredKeys: string[] = [],
 ) {
   // Sanity check - make sure both snapshots have the same keys
@@ -447,7 +447,7 @@ export function assertSnapshotSubset(
     if (ignoredKeys.includes(key)) continue;
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map((s) => stringify(s)));
-    const setB = new Set(snapshotB[key].map((s: keyof typeof snapshotB) => stringify(s)));
+    const setB = new Set(snapshotB[key].map((s) => stringify(s)));
     assert(
       [...setA].every((entry) => setB.has(entry)),
       `Snapshot of ${key} is not a subset`,
