@@ -202,7 +202,7 @@ router.post(
       if (!/^[-A-Za-z0-9_/]+$/.test(short_name)) {
         throw new error.HttpStatusError(
           400,
-          'Short name must contain only letters, numbers, dashes, and underscores, with no spaces',
+          'Short name must contain only letters, numbers, dashes, underscores, and forward slashes, with no spaces',
         );
       }
 
