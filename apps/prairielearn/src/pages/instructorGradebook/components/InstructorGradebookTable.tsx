@@ -525,6 +525,7 @@ export function InstructorGradebookTable({
   isDevMode: boolean;
   courseInstanceId: string;
 } & GradebookTableProps) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
