@@ -24,7 +24,7 @@ export type AdministratorQuerySpecs = z.infer<typeof AdministratorQuerySpecsSche
 
 export interface AdministratorQueryResult {
   rows: Record<string, any>[];
-  columns: string[];
+  columns: readonly string[];
 }
 
 export async function runLegacySqlAdminQuery(

@@ -1,21 +1,18 @@
 import { useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
-import z from 'zod';
 
 import { EnrollmentCodeForm } from '../../../components/EnrollmentCodeForm.js';
 import {
-  RawStudentCourseInstanceSchema,
-  RawStudentCourseSchema,
-  StudentEnrollmentSchema,
+  type StudentCourseInstance,
+  type StudentEnrollment,
 } from '../../../lib/client/safe-db-types.js';
 
-const StudentHomePageCourseSchema = z.object({
-  course_instance: RawStudentCourseInstanceSchema,
-  course_short_name: RawStudentCourseSchema.shape.short_name,
-  course_title: RawStudentCourseSchema.shape.title,
-  enrollment: StudentEnrollmentSchema,
-});
-type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+interface StudentHomePageCourse {
+  course_instance: StudentCourseInstance;
+  course_short_name: string;
+  course_title: string;
+  enrollment: StudentEnrollment;
+}
 
 export function StudentCoursesCard({
   studentCourses,

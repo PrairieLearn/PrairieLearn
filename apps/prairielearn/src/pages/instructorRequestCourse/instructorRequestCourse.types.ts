@@ -8,6 +8,7 @@ export const CourseRequestRowSchema = z.object({
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Lti13CourseRequestInputSchema = z
   .object({
     'cr-firstname': z.string(),

@@ -199,15 +199,12 @@ const questionOptionsCalculation = prairielearnZodToJsonSchema(
   },
 ) as JSONSchemaType<QuestionOptionsCalculationJson>;
 
-const questionOptionsCheckbox = prairielearnZodToJsonSchema(
-  QuestionOptionsCheckboxJsonSchema,
-  {
-    name: 'Checkbox question options',
-    nameStrategy: 'title',
-    target: 'jsonSchema7',
-    definitions: { CommentJsonSchema },
-  },
-) as JSONSchemaType<QuestionOptionsCheckboxJson>;
+const questionOptionsCheckbox = prairielearnZodToJsonSchema(QuestionOptionsCheckboxJsonSchema, {
+  name: 'Checkbox question options',
+  nameStrategy: 'title',
+  target: 'jsonSchema7',
+  definitions: { CommentJsonSchema },
+}) as JSONSchemaType<QuestionOptionsCheckboxJson>;
 
 const questionOptionsFile = prairielearnZodToJsonSchema(QuestionOptionsFileJsonSchema, {
   name: 'File question options',

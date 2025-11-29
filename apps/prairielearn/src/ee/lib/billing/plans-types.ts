@@ -1,11 +1,6 @@
-const PLAN_FEATURE_NAMES = [
-  'course-instance-access',
-  'external-grading',
-  'workspaces',
-] as const;
 export const PLAN_NAMES = ['basic', 'compute', 'everything'] as const;
 
-export type PlanFeatureName = (typeof PLAN_FEATURE_NAMES)[number];
+export type PlanFeatureName = 'course-instance-access' | 'external-grading' | 'workspaces';
 export type PlanName = (typeof PLAN_NAMES)[number];
 
 interface Plan {
