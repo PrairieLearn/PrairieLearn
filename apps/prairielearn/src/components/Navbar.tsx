@@ -3,7 +3,7 @@ import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { assertNever } from '../lib/types.js';
 import type { Override } from '../middlewares/authzCourseOrInstance.js';
 

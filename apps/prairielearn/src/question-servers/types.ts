@@ -1,5 +1,5 @@
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import type { ElementExtensionJson } from '../schemas/index.js';
 
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';

@@ -22,7 +22,7 @@ import {
 import { gradeVariant } from './grading.js';
 import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
-import type { UntypedResLocals } from './res-locals.js';
+import type { UntypedResLocals } from './res-locals.types.js';
 import { createServerJob } from './server-jobs.js';
 
 const debug = debugfn('prairielearn:assessment');

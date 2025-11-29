@@ -8,7 +8,8 @@ import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
-import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.types.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
 
 import {

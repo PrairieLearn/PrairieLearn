@@ -2,7 +2,7 @@ import z from 'zod';
 
 import type { HtmlValue } from '@prairielearn/html';
 
-import type { UntypedResLocals } from '../lib/res-locals.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 export const NavbarTypeSchema = z
   .enum([

@@ -18,7 +18,7 @@ import type {
 } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
-import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.types.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 

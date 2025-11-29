@@ -6,7 +6,7 @@ import { run } from '@prairielearn/run';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { type InstanceQuestionGroup, type Issue, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.types.js';
 
 import {
   AutoPointsSection,

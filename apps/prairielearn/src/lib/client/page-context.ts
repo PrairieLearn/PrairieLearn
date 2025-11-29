@@ -5,7 +5,7 @@ import { run } from '@prairielearn/run';
 import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 import { SelectUserSchema } from '../authn.types.js';
 import { PageAuthzDataSchema } from '../authz-data-lib.js';
-import type { UntypedResLocals } from '../res-locals.js';
+import type { UntypedResLocals } from '../res-locals.types.js';
 
 import {
   RawStaffAssessmentSchema,
