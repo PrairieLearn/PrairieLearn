@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
 import { Alert } from 'react-bootstrap';
 
@@ -22,8 +22,6 @@ import {
 } from './components/GradingConflictModal.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
-
-const queryClient = new QueryClient();
 
 export interface AssessmentQuestionManualGradingProps {
   hasCourseInstancePermissionEdit: boolean;
@@ -75,6 +73,7 @@ function AssessmentQuestionManualGradingInner({
   questionTitle,
   questionNumber,
 }: AssessmentQuestionManualGradingInnerProps) {
+  const queryClient = useQueryClient();
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
 
@@ -182,6 +181,7 @@ export function AssessmentQuestionManualGrading({
   isDevMode,
   ...innerProps
 }: AssessmentQuestionManualGradingProps) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
