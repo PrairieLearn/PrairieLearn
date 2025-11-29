@@ -198,7 +198,7 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        res.status(500).json({ job_sequence_id: serverJob.jobSequenceId });
+        res.status(400).json({ job_sequence_id: serverJob.jobSequenceId });
         return;
       }
 

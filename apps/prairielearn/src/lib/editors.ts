@@ -1250,6 +1250,10 @@ export class CourseInstanceAddEditor extends Editor {
     debug('CourseInstanceAddEditor: write()');
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
+    // At this point, upstream code should have already validated
+    // the short name to match a regex like /^[-A-Za-z0-9_/]+$/.
+
+    // If upstream code has not done this, that could lead to a path traversal attack.
     const courseInstancePath = path.join(courseInstancesPath, this.short_name);
 
     // Ensure that the new course instance folder path is fully contained in the course instances directory
@@ -1270,36 +1274,35 @@ export class CourseInstanceAddEditor extends Editor {
 
     debug('Write infoCourseInstance.json');
 
-    let publishing: { startDate?: string; endDate?: string } | undefined = undefined;
+    const publishing = {
+      startDate: this.start_access_date
+        ? formatDate(
+            new Date(this.start_access_date.epochMilliseconds),
+            this.course.display_timezone,
+            {
+              includeTz: false,
+            },
+          )
+        : undefined,
+      endDate: this.end_access_date
+        ? formatDate(
+            new Date(this.end_access_date.epochMilliseconds),
+            this.course.display_timezone,
+            {
+              includeTz: false,
+            },
+          )
+        : undefined,
+    };
 
-    if (this.start_access_date || this.end_access_date) {
-      publishing = {
-        startDate: this.start_access_date
-          ? formatDate(
-              new Date(this.start_access_date.epochMilliseconds),
-              this.course.display_timezone,
-              {
-                includeTz: false,
-              },
-            )
-          : undefined,
-        endDate: this.end_access_date
-          ? formatDate(
-              new Date(this.end_access_date.epochMilliseconds),
-              this.course.display_timezone,
-              {
-                includeTz: false,
-              },
-            )
-          : undefined,
-      };
-    }
-
-    const infoJson = {
+    const infoJson: Record<string, any> = {
       uuid: this.uuid,
       longName: this.long_name,
-      publishing: (publishing?.startDate ?? publishing?.endDate) ? publishing : undefined,
     };
+
+    if (publishing.startDate || publishing.endDate) {
+      infoJson.publishing = publishing;
+    }
 
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
