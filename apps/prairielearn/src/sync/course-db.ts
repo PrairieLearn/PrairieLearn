@@ -2,6 +2,7 @@ import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
+// @ts-expect-error No types for better-ajv-errors (see https://github.com/atlassian/better-ajv-errors/issues/176)
 import betterAjvErrors from 'better-ajv-errors';
 import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
@@ -454,7 +455,8 @@ export async function loadInfoFile<T extends { uuid: string }>({
         const errorText = betterAjvErrors(schema, json, validate.errors, {
           indent: 2,
         });
-        infofile.addError(result, errorText);
+        const errorTextString = String(errorText); // hack to fix incorrect type in better-ajv-errors/typings.d.ts
+        infofile.addError(result, errorTextString);
         return result;
       }
       return infofile.makeInfoFile({
