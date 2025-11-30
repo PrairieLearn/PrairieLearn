@@ -51,6 +51,12 @@ export async function selectAndAuthzAssessmentInstance(req: Request, res: Respon
     SelectAndAuthzAssessmentInstanceSchema,
   );
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
+
+  // TODO: consider row.assessment.modern_access_control
+
+  if (!row.authz_result.authorized) {
+    throw new error.HttpStatusError(403, 'Access denied');
+  }
   Object.assign(res.locals, row);
 }
 
