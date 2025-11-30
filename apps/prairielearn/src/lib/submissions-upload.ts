@@ -56,6 +56,7 @@ const BaseSubmissionCsvRowSchema = z.object({
   Feedback: ZodStringToJson,
   'Rubric Grading': ZodStringToJson,
   'Auto points': z.coerce.number().optional(),
+  'Manual points': z.coerce.number().optional(),
 });
 
 const IndividualSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({

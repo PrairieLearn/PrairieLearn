@@ -15,7 +15,7 @@ export default (function (err, req, res, _next) {
     response_id: res.locals.response_id,
   });
   res.status(statusCode).send({
-    message: status[statusCode],
+    message: status[statusCode as keyof typeof status],
     status: statusCode,
   });
 } satisfies ErrorRequestHandler);

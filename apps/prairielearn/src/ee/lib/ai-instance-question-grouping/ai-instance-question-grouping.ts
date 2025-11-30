@@ -287,7 +287,7 @@ export async function aiInstanceQuestionGrouping({
     const instance_question_grouping_successes = await async.mapLimit(
       selectedInstanceQuestions,
       PARALLEL_INSTANCE_QUESTION_GROUPING_LIMIT,
-      async (instanceQuestion) => {
+      async (instanceQuestion: InstanceQuestion) => {
         const logs: AIGradingLog[] = [];
         const logger: AIGradingLogger = {
           info: (msg: string) => {

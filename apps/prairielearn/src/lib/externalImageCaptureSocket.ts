@@ -21,12 +21,10 @@ export function init() {
 }
 
 export function connection(socket: Socket) {
-  socket.on('joinExternalImageCapture', (msg, callback) => {
+  socket.on('joinExternalImageCapture', (msg: StatusMessage, callback) => {
     if (!ensureProps(msg, ['variant_id', 'variant_token', 'file_name'])) {
       return callback(null);
     }
-
-    msg = msg as StatusMessage;
 
     if (!validateMessageContent(msg)) {
       return callback(null);
@@ -34,12 +32,10 @@ export function connection(socket: Socket) {
 
     void socket.join(`variant-${msg.variant_id}-file-${msg.file_name}`);
 
-    socket.on('externalImageCaptureAck', (msg, callback) => {
+    socket.on('externalImageCaptureAck', (msg: StatusMessage, callback) => {
       if (!ensureProps(msg, ['variant_id', 'variant_token', 'file_name'])) {
         return callback(null);
       }
-
-      msg = msg as StatusMessage;
 
       if (!validateMessageContent(msg)) {
         return callback(null);

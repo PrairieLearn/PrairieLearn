@@ -117,7 +117,7 @@ async function launchFlow(req: Request, res: Response) {
   };
 
   // https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request
-  const requestParameters = {
+  const requestParameters: Record<string, string> = {
     scope: 'openid',
     response_type: 'id_token',
     client_id: lti13_instance.client_params.client_id,
@@ -133,7 +133,7 @@ async function launchFlow(req: Request, res: Response) {
   // https://www.imsglobal.org/spec/lti/v1p3#additional-login-parameters
   for (const key of ['lti_message_hint', 'lti_deployment_id']) {
     if (key in parameters) {
-      requestParameters[key] = parameters[key];
+      requestParameters[key] = parameters[key] as string;
     }
   }
 

@@ -513,7 +513,7 @@ export async function selectAssessmentInstanceLog(
     { assessment_instance_id, include_files },
     InstanceLogSchema,
   );
-  const fingerprintNumbers = {};
+  const fingerprintNumbers: Record<string, number> = {};
   let i = 1;
   log.forEach((row) => {
     if (row.client_fingerprint) {
