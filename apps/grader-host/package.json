@@ -39,6 +39,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/async": "^3.2.25",
     "@types/dockerode": "^3.3.45",
     "@types/fs-extra": "^11.0.4",

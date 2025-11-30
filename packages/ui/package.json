@@ -19,6 +19,7 @@
   "dependencies": {
     "@prairielearn/browser-utils": "workspace:^",
     "@prairielearn/preact-cjs": "workspace:^",
+    "@prairielearn/run": "workspace:^",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
     "@tanstack/table-core": "^8.21.3",

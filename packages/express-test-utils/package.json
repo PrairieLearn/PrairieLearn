@@ -14,5 +14,8 @@
   },
   "dependencies": {
     "@types/express": "^4.17.25"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^"
   }
 }
