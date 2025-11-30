@@ -156,7 +156,6 @@ interface StudentsCardProps {
   enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
-  urlPrefix: string;
 }
 
 type ColumnId =
@@ -174,7 +173,6 @@ function StudentsCard({
   students: initialStudents,
   timezone,
   csrfToken,
-  urlPrefix,
 }: StudentsCardProps) {
   const queryClient = useQueryClient();
 
@@ -290,7 +288,7 @@ function StudentsCard({
         header: 'UID',
         cell: (info) => {
           return (
-            <a href={getStudentEnrollmentUrl(urlPrefix, info.row.original.enrollment.id)}>
+            <a href={getStudentEnrollmentUrl(courseInstance.id, info.row.original.enrollment.id)}>
               {info.getValue()}
             </a>
           );
@@ -356,7 +354,7 @@ function StudentsCard({
         },
       }),
     ],
-    [timezone, urlPrefix],
+    [timezone, courseInstance.id],
   );
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
@@ -512,13 +510,12 @@ export const InstructorStudents = ({
   enrollmentManagementEnabled,
   csrfToken,
   isDevMode,
-  urlPrefix,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
   search: string;
   isDevMode: boolean;
 } & StudentsCardProps) => {
-  const queryClient = new QueryClient();
+  const [queryClient] = useState(() => new QueryClient());
 
   return (
     <NuqsAdapter search={search}>
@@ -531,7 +528,6 @@ export const InstructorStudents = ({
           students={students}
           timezone={timezone}
           csrfToken={csrfToken}
-          urlPrefix={urlPrefix}
         />
       </QueryClientProviderDebug>
     </NuqsAdapter>

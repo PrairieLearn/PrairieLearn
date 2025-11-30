@@ -7,6 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { updateAssessmentStatistics } from '../../lib/assessment.js';
 import { AssessmentSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {
@@ -20,7 +21,7 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function getFilenames(locals: Record<string, any>): Filenames {
+function getFilenames(locals: UntypedResLocals): Filenames {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,

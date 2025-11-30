@@ -1250,30 +1250,11 @@ export class CourseInstanceAddEditor extends Editor {
     debug('CourseInstanceAddEditor: write()');
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
-    debug('Get all existing long names');
-    const oldNamesLong = await sqldb.queryRows(
-      sql.select_course_instances_with_course,
-      { course_id: this.course.id },
-      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
-      // course instances, which should always have a non-null long name.
-      z.string(),
-    );
+    // At this point, upstream code should have already validated
+    // the short name to match a regex like /^[-A-Za-z0-9_/]+$/.
 
-    debug('Get all existing short names');
-    const oldNamesShort = await getExistingShortNames(
-      courseInstancesPath,
-      'infoCourseInstance.json',
-    );
-
-    debug('Generate short_name and long_name');
-    const { shortName, longName } = getUniqueNames({
-      shortNames: oldNamesShort,
-      longNames: oldNamesLong,
-      shortName: this.short_name,
-      longName: this.long_name,
-    });
-
-    const courseInstancePath = path.join(courseInstancesPath, shortName);
+    // If upstream code has not done this, that could lead to a path traversal attack.
+    const courseInstancePath = path.join(courseInstancesPath, this.short_name);
 
     // Ensure that the new course instance folder path is fully contained in the course instances directory
     if (!contains(courseInstancesPath, courseInstancePath)) {
@@ -1293,36 +1274,35 @@ export class CourseInstanceAddEditor extends Editor {
 
     debug('Write infoCourseInstance.json');
 
-    let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
-
-    if (this.start_access_date || this.end_access_date) {
-      allowAccess = {
-        startDate: this.start_access_date
-          ? formatDate(
-              new Date(this.start_access_date.epochMilliseconds),
-              this.course.display_timezone,
-              {
-                includeTz: false,
-              },
-            )
-          : undefined,
-        endDate: this.end_access_date
-          ? formatDate(
-              new Date(this.end_access_date.epochMilliseconds),
-              this.course.display_timezone,
-              {
-                includeTz: false,
-              },
-            )
-          : undefined,
-      };
-    }
-
-    const infoJson = {
-      uuid: this.uuid,
-      longName,
-      allowAccess: allowAccess !== undefined ? [allowAccess] : [],
+    const publishing = {
+      startDate: this.start_access_date
+        ? formatDate(
+            new Date(this.start_access_date.epochMilliseconds),
+            this.course.display_timezone,
+            {
+              includeTz: false,
+            },
+          )
+        : undefined,
+      endDate: this.end_access_date
+        ? formatDate(
+            new Date(this.end_access_date.epochMilliseconds),
+            this.course.display_timezone,
+            {
+              includeTz: false,
+            },
+          )
+        : undefined,
     };
+
+    const infoJson: Record<string, any> = {
+      uuid: this.uuid,
+      longName: this.long_name,
+    };
+
+    if (publishing.startDate || publishing.endDate) {
+      infoJson.publishing = publishing;
+    }
 
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
@@ -1334,7 +1314,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `add course instance ${shortName}`,
+      commitMessage: `add course instance ${this.short_name}`,
     };
   }
 }

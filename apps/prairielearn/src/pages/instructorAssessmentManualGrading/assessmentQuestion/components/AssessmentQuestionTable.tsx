@@ -395,6 +395,7 @@ export function AssessmentQuestionTable({
         hasCourseInstancePermissionEdit,
         urlPrefix,
         csrfToken,
+        courseInstanceId: courseInstance.id,
         createCheckboxProps,
         scrollRef,
         onEditPointsSuccess: () => {
@@ -414,6 +415,7 @@ export function AssessmentQuestionTable({
       hasCourseInstancePermissionEdit,
       urlPrefix,
       csrfToken,
+      courseInstance.id,
       createCheckboxProps,
       scrollRef,
       queryClientInstance,

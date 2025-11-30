@@ -32,7 +32,7 @@ export function CategoricalColumnFilter<TData, TValue>({
   renderValueLabel = defaultRenderValueLabel,
 }: {
   column: Column<TData, TValue>;
-  allColumnValues: TValue[];
+  allColumnValues: TValue[] | readonly TValue[];
   renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => JSX.Element;
 }) {
   const [mode, setMode] = useState<'include' | 'exclude'>('include');
