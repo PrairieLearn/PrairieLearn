@@ -551,11 +551,11 @@ export async function selectRubricForGrading(
 }
 
 export async function selectRubricAdditionalContext(
-  rubric_id: string
+  assessment_question_id: string
 ): Promise<string> {
   return await queryRow(
     sql.select_rubric_additional_context,
-    { assessment_question_id: rubric_id },
+    { assessment_question_id },
     z.string()
   );
 }

@@ -360,6 +360,7 @@ const PostBodySchema = z.union([
     min_points: z.coerce.number(),
     max_extra_points: z.coerce.number(),
     tag_for_manual_grading: z.boolean().default(false),
+    ai_grading_additional_context: z.string().optional(),
     rubric_items: z
       .array(
         z.object({
