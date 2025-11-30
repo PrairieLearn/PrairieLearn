@@ -133,7 +133,7 @@ async function testDuplicate(entityName: 'tags' | 'topics') {
   const syncedEntities = await util.dumpTableWithSchema(entityName, schema);
   const syncedEntity = syncedEntities.find((as) => as.name === newEntity1.name);
   checkEntity(syncedEntity, newEntity2);
-  const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+  const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
   const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
   assert.isDefined(syncedCourse);
   assert.isNotNull(syncedCourse.sync_warnings);
