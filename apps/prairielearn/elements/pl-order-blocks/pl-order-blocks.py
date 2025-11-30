@@ -670,9 +670,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     block["ordering_feedback"] = ""
 
         if order_blocks_options.partial_credit is PartialCreditType.NONE:
-            if num_initial_correct == true_answer_length:
+            if (
+                num_initial_correct == true_answer_length
+                and len(submission) == true_answer_length
+            ):
                 final_score = 1
-            elif num_initial_correct < true_answer_length:
+            else:
                 final_score = 0
         elif order_blocks_options.partial_credit is PartialCreditType.LCS:
             edit_distance = lcs_partial_credit(
