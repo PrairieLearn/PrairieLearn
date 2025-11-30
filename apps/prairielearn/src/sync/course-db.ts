@@ -17,6 +17,7 @@ import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
+import type { AccessControlJson } from '../schemas/accessControl.js'; // TODO: I don't think this is the proper way to do this, but I'm not sure how to get the type her otherwise
 import {
   type AssessmentJson,
   type AssessmentSetJson,
@@ -190,6 +191,7 @@ type InfoFile<T> = infofile.InfoFile<T>;
 export interface CourseInstanceData {
   courseInstance: InfoFile<CourseInstanceJson>;
   assessments: Record<string, InfoFile<AssessmentJson>>;
+  assessmentAccessControl?: Record<string, InfoFile<AccessControlJson>[]>;
 }
 
 export interface CourseData {
@@ -267,6 +269,16 @@ export async function loadFullCourse(
       sharingEnabled,
     });
 
+    // load access control rules for each assessment
+    const assessmentAccessControl: Record<string, InfoFile<AccessControlJson>[]> = {};
+    for (const assessmentDirectory of Object.keys(assessments)) {
+      assessmentAccessControl[assessmentDirectory] = await loadAccessControl({
+        coursePath,
+        courseInstanceDirectory,
+        assessmentDirectory,
+      });
+    }
+
     for (const assessment of Object.values(assessments)) {
       if (assessment.data?.set) {
         assessmentSetsInUse.add(assessment.data.set);
@@ -276,6 +288,7 @@ export async function loadFullCourse(
     courseInstances[courseInstanceDirectory] = {
       courseInstance,
       assessments,
+      assessmentAccessControl,
     };
   }
 
@@ -342,6 +355,18 @@ export function writeErrorsAndWarningsForCourseData(
         'infoAssessment.json',
       );
       writeErrorsAndWarningsForInfoFileIfNeeded(assessmentPath, assessment, writeLine);
+
+      const accessControlRules = courseInstanceData.assessmentAccessControl?.[aid] ?? []; // TODO: get access control warnings??
+      accessControlRules.forEach((rule, index) => {
+        const accessControlPath = path.posix.join(
+          'courseInstances',
+          ciid,
+          'assessments',
+          aid,
+          `accessControl.json[${index}]`,
+        );
+        writeErrorsAndWarningsForInfoFileIfNeeded(accessControlPath, rule, writeLine);
+      });
     });
   });
 }
@@ -352,7 +377,15 @@ export function courseDataHasErrors(courseData: CourseData): boolean {
   if (
     Object.values(courseData.courseInstances).some((courseInstance) => {
       if (infofile.hasErrors(courseInstance.courseInstance)) return true;
-      return Object.values(courseInstance.assessments).some(infofile.hasErrors);
+      if (Object.values(courseInstance.assessments).some(infofile.hasErrors)) return true;
+      if (
+        Object.values(courseInstance.assessmentAccessControl ?? {}).some(
+          (rules) => rules.some(infofile.hasErrors), // TODO: add access control; is this right??
+        )
+      ) {
+        return true;
+      }
+      return false;
     })
   ) {
     return true;
@@ -366,7 +399,15 @@ export function courseDataHasErrorsOrWarnings(courseData: CourseData): boolean {
   if (
     Object.values(courseData.courseInstances).some((courseInstance) => {
       if (infofile.hasErrorsOrWarnings(courseInstance.courseInstance)) return true;
-      return Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings);
+      if (Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings)) return true;
+      if (
+        Object.values(courseInstance.assessmentAccessControl ?? {}).some(
+          (rules) => rules.some(infofile.hasErrorsOrWarnings), // TODO: add access control; is this right??
+        )
+      ) {
+        return true;
+      }
+      return false;
     })
   ) {
     return true;
@@ -1565,6 +1606,195 @@ function validateCourseInstance({
   return { warnings, errors };
 }
 
+export function validateAccessControlArray({
+  accessControlJsonArray,
+}: {
+  accessControlJsonArray: AccessControlJson[];
+}): {
+  index: number;
+  warnings: string[];
+  errors: string[];
+}[] {
+  const results = accessControlJsonArray.map((accessControlJson, index) => {
+    const { warnings, errors } = validateAccessControl({ accessControlJson });
+
+    return {
+      index,
+      warnings,
+      errors,
+    };
+  });
+
+  // count assignment-level rules (rules with no targets or empty targets array)
+  const assignmentLevelRules = accessControlJsonArray.filter(
+    (rule) => !rule.targets || rule.targets.length === 0,
+  );
+
+  // require exactly one assignment-level rule, add error to all rules if this check fails
+  if (assignmentLevelRules.length === 0) {
+    const errorMessage =
+      'No assignment-level rule found. Exactly one assignment-level rule (without targets) is required per assessment.';
+    results.forEach((result) => {
+      result.errors.push(errorMessage);
+    });
+  } else if (assignmentLevelRules.length > 1) {
+    const errorMessage = `Found ${assignmentLevelRules.length} assignment-level rules (rules without targets). Exactly one assignment-level rule is required per assessment.`;
+    results.forEach((result) => {
+      result.errors.push(errorMessage);
+    });
+  }
+
+  // check that only assignment-level rule specifies prairieTestControl
+  accessControlJsonArray.forEach((rule, index) => {
+    const isAssignmentLevel = !rule.targets || rule.targets.length === 0;
+    const hasPrairieTestControl = rule.prairieTestControl !== undefined;
+
+    if (!isAssignmentLevel && hasPrairieTestControl) {
+      results[index].errors.push(
+        'Only the assignment-level rule (without targets) is allowed to specify prairieTestControl.',
+      );
+    }
+  });
+
+  return results;
+}
+
+/** TODO: Rewrite this as we no longer use enabled in the JSON */
+export function validateAccessControl({
+  accessControlJson,
+}: {
+  accessControlJson: AccessControlJson;
+}): { warnings: string[]; errors: string[] } {
+  const warnings: string[] = [];
+  const errors: string[] = [];
+
+  const enabledFieldPairs = [
+    // dateControl fields
+    { enabledField: 'dateControl.releaseDateEnabled', valueField: 'dateControl.releaseDate' },
+    { enabledField: 'dateControl.dueDateEnabled', valueField: 'dateControl.dueDate' },
+    { enabledField: 'dateControl.earlyDeadlinesEnabled', valueField: 'dateControl.earlyDeadlines' },
+    { enabledField: 'dateControl.lateDeadlinesEnabled', valueField: 'dateControl.lateDeadlines' },
+    {
+      enabledField: 'dateControl.durationMinutesEnabled',
+      valueField: 'dateControl.durationMinutes',
+    },
+    { enabledField: 'dateControl.passwordEnabled', valueField: 'dateControl.password' },
+    {
+      enabledField: 'dateControl.afterLastDeadline.creditEnabled',
+      valueField: 'dateControl.afterLastDeadline.credit',
+    },
+
+    // afterComplete fields
+    {
+      enabledField: 'afterComplete.hideQuestionsDateControl.showAgainDateEnabled',
+      valueField: 'afterComplete.hideQuestionsDateControl.showAgainDate',
+    },
+    {
+      enabledField: 'afterComplete.hideQuestionsDateControl.hideAgainDateEnabled',
+      valueField: 'afterComplete.hideQuestionsDateControl.hideAgainDate',
+    },
+    {
+      enabledField: 'afterComplete.hideScoreDateControl.showAgainDateEnabled',
+      valueField: 'afterComplete.hideScoreDateControl.showAgainDate',
+    },
+  ];
+
+  // list of all date fields
+  const dateFields = [
+    'dateControl.releaseDate',
+    'dateControl.dueDate',
+    'afterComplete.hideQuestionsDateControl.showAgainDate',
+    'afterComplete.hideQuestionsDateControl.hideAgainDate',
+    'afterComplete.hideScoreDateControl.showAgainDate',
+  ];
+
+  // list of all enabled fields that cannot be null at assignment level; extract just the enabled fields from the pairs
+  const assignmentLevelEnabledFields = enabledFieldPairs.map((pair) => pair.enabledField);
+
+  // path => object value
+  const getNestedValue = (obj: any, path: string): any => {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+  };
+
+  // validate that enabled fields don't have values when enabled is null
+  const validateEnabledFieldConstraints = (data: AccessControlJson, errors: string[]) => {
+    for (const { enabledField, valueField } of enabledFieldPairs) {
+      const enabledValue = getNestedValue(data, enabledField);
+      const fieldValue = getNestedValue(data, valueField);
+
+      if (enabledValue === null && fieldValue !== undefined) {
+        errors.push(`When ${enabledField} is null, ${valueField} cannot be populated`);
+      }
+    }
+  };
+
+  // validate assignment-level constraints: no null enabled fields allowed
+  const validateAssignmentLevelConstraints = (data: AccessControlJson, errors: string[]) => {
+    const isAssignmentLevel = !data?.targets || data.targets.length === 0;
+
+    if (isAssignmentLevel) {
+      for (const enabledFieldPath of assignmentLevelEnabledFields) {
+        const enabledValue = getNestedValue(data, enabledFieldPath);
+
+        if (enabledValue === null) {
+          errors.push(
+            `Assignment-level permissions cannot have null *Enabled fields (found null ${enabledFieldPath})`,
+          );
+        }
+      }
+    }
+  };
+
+  // validate that all date fields contain valid dates
+  const validateDateFields = (data: AccessControlJson, errors: string[]) => {
+    for (const dateFieldPath of dateFields) {
+      const dateValue = getNestedValue(data, dateFieldPath);
+
+      if (dateValue !== undefined && dateValue !== null) {
+        const parsedDate = parseJsonDate(dateValue);
+        if (parsedDate === null) {
+          errors.push(`Invalid date format for ${dateFieldPath}: "${dateValue}"`);
+        }
+      }
+    }
+
+    // validate dates in earlyDeadlines and lateDeadlines arrays
+    const earlyDeadlines = getNestedValue(data, 'dateControl.earlyDeadlines');
+    if (Array.isArray(earlyDeadlines)) {
+      earlyDeadlines.forEach((deadline, index) => {
+        if (deadline?.date) {
+          const parsedDate = parseJsonDate(deadline.date);
+          if (parsedDate === null) {
+            errors.push(
+              `Invalid date format for dateControl.earlyDeadlines[${index}].date: "${deadline.date}"`,
+            );
+          }
+        }
+      });
+    }
+
+    const lateDeadlines = getNestedValue(data, 'dateControl.lateDeadlines');
+    if (Array.isArray(lateDeadlines)) {
+      lateDeadlines.forEach((deadline, index) => {
+        if (deadline?.date) {
+          const parsedDate = parseJsonDate(deadline.date);
+          if (parsedDate === null) {
+            errors.push(
+              `Invalid date format for dateControl.lateDeadlines[${index}].date: "${deadline.date}"`,
+            );
+          }
+        }
+      });
+    }
+  };
+
+  validateEnabledFieldConstraints(accessControlJson, errors);
+  validateAssignmentLevelConstraints(accessControlJson, errors);
+  validateDateFields(accessControlJson, errors);
+
+  return { warnings, errors };
+}
+
 /**
  * Loads all questions in a course directory.
  */
@@ -1660,4 +1890,92 @@ export async function loadAssessments({
       `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`,
   );
   return assessments;
+}
+
+/**
+ * Loads access control rules for an assessment.
+ */
+export async function loadAccessControl({
+  coursePath,
+  courseInstanceDirectory,
+  assessmentDirectory,
+}: {
+  coursePath: string;
+  courseInstanceDirectory: string;
+  assessmentDirectory: string;
+}): Promise<InfoFile<AccessControlJson>[]> {
+  const filePath = path.join(
+    coursePath,
+    'courseInstances',
+    courseInstanceDirectory,
+    'assessments',
+    assessmentDirectory,
+    'accessControl.json',
+  );
+
+  try {
+    const contents = await fs.readFile(filePath, 'utf8');
+    const json = JSON.parse(contents);
+
+    if (!Array.isArray(json)) {
+      return [
+        infofile.makeError('accessControl.json must contain an array of access control rules'),
+      ];
+    }
+
+    // parse with Zod schema
+    const parsedRules: { result: z.SafeParseReturnType<any, AccessControlJson>; index: number }[] =
+      json.map((ruleJson, index) => ({
+        result: schemas.AccessControlJsonSchema.safeParse(ruleJson),
+        index,
+      }));
+
+    // separate successfully parsed rules from those with parse errors
+    const successfullyParsedRules: AccessControlJson[] = [];
+    const infoFiles: InfoFile<AccessControlJson>[] = [];
+
+    parsedRules.forEach(({ result, index }) => {
+      if (result.success) {
+        successfullyParsedRules.push(result.data);
+        infoFiles.push(
+          infofile.makeInfoFile<AccessControlJson>({
+            data: result.data,
+          }),
+        );
+      } else {
+        const errors = result.error.issues.map(
+          (e) => `Rule ${index + 1}: ${e.path.join('.')}: ${e.message}`,
+        );
+        infoFiles.push(infofile.makeError(errors.join('\n')));
+      }
+    });
+
+    // TODO: Is this the behaviour we want? Should we fail entirely if we encounter any validation error?
+    // run validation on successfully parsed rules (includes multi-rule validation)
+    if (successfullyParsedRules.length > 0) {
+      const validationResults = validateAccessControlArray({
+        accessControlJsonArray: successfullyParsedRules,
+      });
+
+      // apply validation results to corresponding infoFiles
+      let successfulRuleIndex = 0;
+      infoFiles.forEach((infoFile, _) => {
+        // only apply validation to successfully parsed rules
+        if (infoFile.data) {
+          const validationResult = validationResults[successfulRuleIndex];
+          infofile.addErrors(infoFile, validationResult.errors);
+          infofile.addWarnings(infoFile, validationResult.warnings);
+          successfulRuleIndex++;
+        }
+      });
+    }
+
+    return infoFiles;
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      // file doesn't exist, return empty array (access control is optional)
+      return [];
+    }
+    return [infofile.makeError(`Error reading accessControl.json: ${err.message}`)];
+  }
 }
