@@ -168,6 +168,8 @@ jobs:
         run: make lint-d2
       - name: Check for warnings in documentation
         run: make build-docs
+      - name: Check for link issues in documentation
+        run: make lint-docs-links
       # Ran after the docs build, so we can lint the generated HTML.
       - name: Run the HTML linter
         run: make lint-html
