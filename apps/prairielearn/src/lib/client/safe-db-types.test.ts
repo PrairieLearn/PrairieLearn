@@ -233,6 +233,7 @@ const minimalStaffAssessmentInstance: z.input<typeof StaffAssessmentInstanceSche
   open: null,
   points: null,
   score_perc: null,
+  score_perc_pending: 0,
   user_id: null,
 };
 
@@ -255,6 +256,7 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
   open: null,
   points: null,
   score_perc: null,
+  score_perc_pending: 0,
   user_id: null,
 };
 
