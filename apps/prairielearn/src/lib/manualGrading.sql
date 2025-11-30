@@ -233,6 +233,13 @@ SET
 WHERE
   id = $rubric_id;
 
+-- BLOCK update_rubric_ai_grading_additional_context
+UPDATE rubrics
+SET 
+  ai_grading_additional_context = $ai_grading_additional_context
+WHERE
+  id = $rubric_id;
+
 -- BLOCK update_assessment_question_rubric_id
 UPDATE assessment_questions
 SET

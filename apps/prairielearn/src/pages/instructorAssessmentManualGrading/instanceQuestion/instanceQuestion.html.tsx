@@ -36,6 +36,7 @@ export function InstanceQuestion({
   lastGrader,
   selectedInstanceQuestionGroup,
   aiGradingEnabled,
+  aiGradingAdditionalContextEnabled,
   aiGradingMode,
   aiGradingInfo,
   aiGradingStats,
@@ -49,6 +50,7 @@ export function InstanceQuestion({
   lastGrader: User | null;
   selectedInstanceQuestionGroup: InstanceQuestionGroup | null;
   aiGradingEnabled: boolean;
+  aiGradingAdditionalContextEnabled: boolean;
   aiGradingMode: boolean;
   /**
    * `aiGradingInfo` is defined when
@@ -179,6 +181,10 @@ export function InstanceQuestion({
             rubricData={rubric_data}
             csrfToken={__csrf_token}
             aiGradingStats={aiGradingStats}
+            aiGradingAdditionalContextEnabled={aiGradingAdditionalContextEnabled}
+            initialAiGradingAdditionalContext={
+              rubric_data?.ai_grading_additional_context ?? null
+            }
             context={{
               course_short_name: resLocals.course.short_name,
               course_instance_short_name: resLocals.course_instance.short_name,

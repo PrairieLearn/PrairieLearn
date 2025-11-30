@@ -226,6 +226,7 @@ export async function populateManualGradingData(submission: Record<string, any>)
  * @param rubric_items - An array of items available for grading. The `order` property is used to determine the order of the items. If an item has an `id` property that corresponds to an existing rubric item, it is updated, otherwise it is inserted.
  * @param tag_for_manual_grading - If true, tags all currently graded instance questions to be graded again using the new rubric values. If false, existing gradings are recomputed if necessary, but their grading status is retained.
  * @param authn_user_id - The user_id of the logged in user.
+ * @param ai_grading_additional_context - Additional context to provide to the AI model during grading.
  */
 export async function updateAssessmentQuestionRubric(
   assessment: Assessment,
@@ -238,6 +239,7 @@ export async function updateAssessmentQuestionRubric(
   rubric_items: RubricItemInput[],
   tag_for_manual_grading: boolean,
   authn_user_id: string,
+  ai_grading_additional_context?: string
 ): Promise<void> {
   // Basic validation: points and description must exist, description must be within size limits
   if (use_rubric) {
@@ -297,13 +299,21 @@ export async function updateAssessmentQuestionRubric(
       );
     } else {
       // Rubric already exists, update its settings
-      await sqldb.execute(sql.update_rubric, {
-        rubric_id: new_rubric_id,
-        starting_points,
-        min_points,
-        max_extra_points,
-        replace_auto_points,
-      });
+      await sqldb.runInTransactionAsync(async () => {
+        await sqldb.execute(sql.update_rubric, {
+          rubric_id: new_rubric_id,
+          starting_points,
+          min_points,
+          max_extra_points,
+          replace_auto_points
+        });
+        if (ai_grading_additional_context !== undefined) {
+          await sqldb.execute(sql.update_rubric_ai_grading_additional_context, {
+            rubric_id: new_rubric_id,
+            ai_grading_additional_context,
+          });
+        }
+      })
     }
 
     if (new_rubric_id !== current_rubric_id) {

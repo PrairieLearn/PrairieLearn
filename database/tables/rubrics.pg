@@ -1,4 +1,5 @@
 columns
+    ai_grading_additional_context: text
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     deleted_at: timestamp with time zone
     id: bigint not null default nextval('rubrics_id_seq'::regclass)

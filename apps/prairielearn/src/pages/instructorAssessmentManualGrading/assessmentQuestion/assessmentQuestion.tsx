@@ -65,6 +65,10 @@ router.get(
       'ai-grading-model-selection',
       res.locals,
     );
+    const aiGradingAdditionalContextEnabled = await features.enabledFromLocals(
+      'ai-grading-additional-context',
+      res.locals,
+    );
 
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
@@ -150,6 +154,7 @@ router.get(
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
                 aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                aiGradingAdditionalContextEnabled={aiGradingAdditionalContextEnabled}
                 initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
@@ -291,9 +296,15 @@ router.post(
           throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
         }
 
+        const ai_grading_additional_context_enabled = await features.enabledFromLocals(
+          'ai-grading-additional-context',
+          res.locals
+        );
+  
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
+
         const job_sequence_id = await aiGrade({
           question: res.locals.question,
           course: res.locals.course,
@@ -306,6 +317,7 @@ router.post(
           model_id,
           mode: 'selected',
           instance_question_ids,
+          ai_grading_additional_context_enabled,
         });
 
         res.send({ job_sequence_id });
@@ -416,6 +428,11 @@ router.post(
         throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
       }
 
+      const ai_grading_additional_context_enabled = await features.enabledFromLocals(
+        'ai-grading-additional-context',
+        res.locals
+      );
+
       const job_sequence_id = await aiGrade({
         question: res.locals.question,
         course: res.locals.course,
@@ -431,6 +448,7 @@ router.post(
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';
           throw new Error(`Unknown action: ${req.body.__action}`);
         }),
+        ai_grading_additional_context_enabled,
       });
 
       res.json({ job_sequence_id });
@@ -494,6 +512,10 @@ router.post(
       res.json({ num_deleted });
       return;
     } else if (req.body.__action === 'modify_rubric_settings') {
+      const aiGradingAdditionalContextEnabled = await features.enabledFromLocals(
+        'ai-grading-additional-context',
+        res.locals,
+      );
       try {
         await manualGrading.updateAssessmentQuestionRubric(
           res.locals.assessment,
@@ -506,6 +528,7 @@ router.post(
           req.body.rubric_items,
           req.body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
+          aiGradingAdditionalContextEnabled ? req.body.ai_grading_additional_context : undefined,
         );
         res.redirect(req.originalUrl);
       } catch (err) {
