@@ -302,7 +302,7 @@ export async function uploadSubmissions(
           IdSchema,
         );
 
-        let manual_rubric_data: InstanceQuestionScoreInput['manual_rubric_data'] | null = null;
+        let manual_rubric_data: InstanceQuestionScoreInput['manual_rubric_data'] = null;
 
         if (assessmentQuestion.manual_rubric_id) {
           const rubric_items = await sqldb.queryRows(
