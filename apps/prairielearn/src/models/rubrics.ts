@@ -1,13 +1,14 @@
-import { loadSqlEquiv, queryRow, queryRows } from "@prairielearn/postgres";
-import { RubricItemSchema, RubricSchema, type Rubric, type RubricItem } from "../lib/db-types.js";
+import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+
+import { type Rubric, type RubricItem, RubricItemSchema, RubricSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectCompleteRubric(assessment_question_id: string): Promise<{
-    rubric: Rubric;
+    rubric: Rubric | null;
     rubric_items: RubricItem[];
 }> {
-    const rubric = await queryRow(
+    const rubric = await queryOptionalRow(
         sql.select_rubric,
         {
             assessment_question_id
@@ -15,16 +16,23 @@ export async function selectCompleteRubric(assessment_question_id: string): Prom
         RubricSchema
     );
 
+    if (!rubric) {
+        return {
+            rubric: null,
+            rubric_items: []
+        };
+    };
+
     const rubric_items = await queryRows(
         sql.select_rubric_items,
         {
             assessment_question_id
         },
         RubricItemSchema
-    )
+    );
 
     return {
         rubric,
         rubric_items
-    }
+    };
 }

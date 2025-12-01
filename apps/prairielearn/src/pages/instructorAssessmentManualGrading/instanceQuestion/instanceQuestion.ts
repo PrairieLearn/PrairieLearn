@@ -36,6 +36,7 @@ import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/que
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
@@ -216,6 +217,14 @@ router.get(
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
 
+    const {
+      rubric
+    } = await selectCompleteRubric(instance_question.assessment_question_id);
+
+    if (rubric == null) {
+      throw new error.HttpStatusError(500, 'Rubric not found for assessment question.');
+    }
+
     res.send(
       InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
@@ -230,6 +239,7 @@ router.get(
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
+        grader_guidelines: rubric.grader_guidelines,
         skipGradedSubmissions: req.session.skip_graded_submissions,
       }),
     );
@@ -354,7 +364,7 @@ const PostBodySchema = z.union([
     min_points: z.coerce.number(),
     max_extra_points: z.coerce.number(),
     tag_for_manual_grading: z.boolean().default(false),
-    ai_grading_additional_context: z.string().optional(),
+    grader_guidelines: z.string().nullable(),
     rubric_items: z
       .array(
         z.object({
@@ -601,8 +611,8 @@ router.post(
           body.max_extra_points,
           body.rubric_items,
           body.tag_for_manual_grading,
-          res.locals.authn_user.user_id,
-          body.ai_grading_additional_context,
+          body.grader_guidelines,
+          res.locals.authn_user.user_id
         );
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {

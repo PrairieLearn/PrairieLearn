@@ -225,8 +225,8 @@ export async function populateManualGradingData(submission: Record<string, any>)
  * @param max_extra_points - The maximum number of points to assign based on a rubric beyond the question's assigned points (ceiling). Computed points from rubric items over the assigned points are never assigned more than this, even if items bring the total to more than this value, unless an adjustment is used.
  * @param rubric_items - An array of items available for grading. The `order` property is used to determine the order of the items. If an item has an `id` property that corresponds to an existing rubric item, it is updated, otherwise it is inserted.
  * @param tag_for_manual_grading - If true, tags all currently graded instance questions to be graded again using the new rubric values. If false, existing gradings are recomputed if necessary, but their grading status is retained.
+ * @param grader_guidelines - General guidance and instructions for applying and interpreting the rubric.
  * @param authn_user_id - The user_id of the logged in user.
- * @param ai_grading_additional_context - Additional context to provide to the AI model during grading.
  */
 export async function updateAssessmentQuestionRubric(
   assessment: Assessment,
@@ -238,8 +238,8 @@ export async function updateAssessmentQuestionRubric(
   max_extra_points: number,
   rubric_items: RubricItemInput[],
   tag_for_manual_grading: boolean,
-  authn_user_id: string,
-  ai_grading_additional_context?: string
+  grader_guidelines: string | null,
+  authn_user_id: string
 ): Promise<void> {
   // Basic validation: points and description must exist, description must be within size limits
   if (use_rubric) {
@@ -305,7 +305,7 @@ export async function updateAssessmentQuestionRubric(
           starting_points,
           min_points,
           max_extra_points,
-          ai_grading_additional_context,
+          grader_guidelines,
           replace_auto_points
         });
       })

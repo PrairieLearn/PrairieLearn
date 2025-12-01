@@ -28,14 +28,14 @@ export function RubricSettings({
   rubricData,
   csrfToken,
   aiGradingStats,
-  initialAiGradingAdditionalContext,
+  initialGraderGuidelines,
   context,
 }: {
   assessmentQuestion: AssessmentQuestion;
   rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
-  initialAiGradingAdditionalContext: string | null;
+  initialGraderGuidelines: string | null;
   context: Record<string, any>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
@@ -59,7 +59,6 @@ export function RubricSettings({
   });
 
   // Define states
-  const [aiGradingAdditionalContext, setAiGradingAdditionalContext] = useState<string>(initialAiGradingAdditionalContext ?? '');
   const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubricItemDataMerged);
   const [replaceAutoPoints, setReplaceAutoPoints] = useState<boolean>(
     rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
@@ -68,6 +67,8 @@ export function RubricSettings({
   const [minPoints, setMinPoints] = useState<number>(rubricData?.min_points ?? 0);
   const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubricData?.max_extra_points ?? 0);
   const [tagForGrading, setTagForGrading] = useState<boolean>(false);
+  const [graderGuidelines, setGraderGuidelines] = useState<string>(initialGraderGuidelines ?? '');
+
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
@@ -194,7 +195,7 @@ export function RubricSettings({
       max_points: assessmentQuestion.max_points,
       max_manual_points: assessmentQuestion.max_manual_points,
       max_auto_points: assessmentQuestion.max_auto_points,
-      ai_grading_additional_context: aiGradingAdditionalContext,
+      grader_guidelines: graderGuidelines,
       rubric_items: rubricItems.map((it, idx) => ({
         order: idx,
         points: it.points ? Number(it.points) : null,
@@ -291,8 +292,8 @@ export function RubricSettings({
       }
       setRubricItems(scaledRubricItems);
 
-      if (parsedData.ai_grading_additional_context) {
-        setAiGradingAdditionalContext(parsedData.ai_grading_additional_context);
+      if (parsedData.grader_guidelines) {
+        setGraderGuidelines(parsedData.grader_guidelines);
       }
 
       resetImportModal();
@@ -337,7 +338,7 @@ export function RubricSettings({
       starting_points: startingPoints,
       min_points: minPoints,
       max_extra_points: maxExtraPoints,
-      ai_grading_additional_context: aiGradingAdditionalContext,
+      grader_guidelines: graderGuidelines,
       rubric_items: rubricItems.map((it, idx) => ({
         id: it.id,
         order: idx,
@@ -626,18 +627,17 @@ export function RubricSettings({
               </div>
             </div>
             <div class="mb-3 col-12 col-md-6 col-xl-5">
-              <label class="form-label" for="ai-grading-additional-context">
+              <label class="form-label" for="grader-guidelines">
                 Grader guidelines (not shown to students)
               </label> 
               <textarea
-                id="ai-grading-additional-context"
+                id="grader-guidelines"
+                name="grader-guidelines"
                 class="form-control"
                 rows={5}
-                name="ai-grading-additional-context"
-                aria-describedby="ai_grading_additional_context_help"
-                value={aiGradingAdditionalContext}
+                value={graderGuidelines}
                 onChange={(e) =>
-                  setAiGradingAdditionalContext((e.target as HTMLTextAreaElement).value)
+                  setGraderGuidelines((e.target as HTMLTextAreaElement).value)
                 }
               />
             </div>  

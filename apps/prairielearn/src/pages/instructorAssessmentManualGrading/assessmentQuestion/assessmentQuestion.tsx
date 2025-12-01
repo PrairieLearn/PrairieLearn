@@ -506,8 +506,8 @@ router.post(
           req.body.max_extra_points,
           req.body.rubric_items,
           req.body.tag_for_manual_grading,
-          res.locals.authn_user.user_id,
-          req.body.ai_grading_additional_context
+          req.body.grader_guidelines,
+          res.locals.authn_user.user_id
         );
         res.redirect(req.originalUrl);
       } catch (err) {

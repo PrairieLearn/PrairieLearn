@@ -229,15 +229,8 @@ SET
   min_points = $min_points,
   max_extra_points = $max_extra_points,
   replace_auto_points = $replace_auto_points,
-  ai_grading_additional_context = $ai_grading_additional_context,
+  grader_guidelines = $grader_guidelines,
   modified_at = CURRENT_TIMESTAMP
-WHERE
-  id = $rubric_id;
-
--- BLOCK update_rubric_ai_grading_additional_context
-UPDATE rubrics
-SET 
-  ai_grading_additional_context = $ai_grading_additional_context
 WHERE
   id = $rubric_id;
 

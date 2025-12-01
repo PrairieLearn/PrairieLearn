@@ -333,7 +333,7 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
-        additional_context: rubric.ai_grading_additional_context,
+        grader_guidelines: rubric?.grader_guidelines ?? null,
         model_id,
       });
 

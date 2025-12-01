@@ -80,7 +80,7 @@ export async function generatePrompt({
   submitted_answer,
   example_submissions,
   rubric_items,
-  additional_context,
+  grader_guidelines,
   model_id,
 }: {
   questionPrompt: string;
@@ -89,7 +89,7 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
-  additional_context?: string | null;
+  grader_guidelines: string | null;
   model_id: AiGradingModelId;
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
@@ -232,15 +232,15 @@ export async function generatePrompt({
     }
   }
 
-  if (additional_context) {
+  if (grader_guidelines) {
     input.push(
       {
         role: systemRoleAfterUserMessage,
-        content: 'The instructor has provided the following additional instructions for grading:',
+        content: 'The instructor has provided the following general guidelines for grading:',
       },
       {
         role: 'user',
-        content: additional_context,
+        content: grader_guidelines,
       },
     );
   }
@@ -537,16 +537,6 @@ export async function selectClosestSubmissionInfo({
       limit,
     },
     GradedExampleSchema,
-  );
-}
-
-export async function selectRubricAdditionalContext(
-  assessment_question_id: string
-): Promise<string> {
-  return await queryRow(
-    sql.select_rubric_additional_context,
-    { assessment_question_id },
-    z.string()
   );
 }
 

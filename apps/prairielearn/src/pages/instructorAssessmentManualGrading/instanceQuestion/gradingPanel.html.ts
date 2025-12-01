@@ -30,6 +30,7 @@ export function GradingPanel({
   custom_manual_points,
   grading_job,
   aiGradingInfo,
+  grader_guidelines,
   showInstanceQuestionGroup = false,
   selectedInstanceQuestionGroup = null,
   instanceQuestionGroups,
@@ -40,11 +41,13 @@ export function GradingPanel({
   graders?: User[] | null;
   disable?: boolean;
   skip_text?: string;
+  grading_guidelines?: string | null;
   custom_points?: number;
   custom_auto_points?: number;
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  grader_guidelines?: string | null;
   showInstanceQuestionGroup?: boolean;
   selectedInstanceQuestionGroup?: InstanceQuestionGroup | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
@@ -191,6 +194,14 @@ export function GradingPanel({
               </li>
             `
           : ''}
+        ${grader_guidelines ? html`
+          <li class="list-group-item">
+            <div class="mb-1">Guidelines:</div>
+            <div>
+              ${grader_guidelines}
+            </div>
+          </li>
+        ` : ''}
         <li class="list-group-item">
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.replace_auto_points ||

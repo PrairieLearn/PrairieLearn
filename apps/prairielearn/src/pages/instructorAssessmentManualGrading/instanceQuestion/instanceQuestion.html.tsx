@@ -39,7 +39,9 @@ export function InstanceQuestion({
   aiGradingMode,
   aiGradingInfo,
   aiGradingStats,
+  grader_guidelines,
   instanceQuestionGroups,
+
   skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
@@ -58,6 +60,7 @@ export function InstanceQuestion({
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
   aiGradingStats: AiGradingGeneralStats | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
+  grader_guidelines?: string | null;
   skipGradedSubmissions: boolean;
 }) {
   const instanceQuestionGroupsExist = instanceQuestionGroups
@@ -179,9 +182,7 @@ export function InstanceQuestion({
             rubricData={rubric_data}
             csrfToken={__csrf_token}
             aiGradingStats={aiGradingStats}
-            initialAiGradingAdditionalContext={
-              rubric_data?.ai_grading_additional_context ?? null
-            }
+            initialGraderGuidelines={rubric_data?.grader_guidelines ?? ''}
             context={{
               course_short_name: resLocals.course.short_name,
               course_instance_short_name: resLocals.course_instance.short_name,
@@ -200,6 +201,7 @@ export function InstanceQuestion({
             conflict_grading_job,
             graders,
             lastGrader,
+            grader_guidelines,
             skipGradedSubmissions,
           })
         : ''}
@@ -221,6 +223,7 @@ export function InstanceQuestion({
                 resLocals,
                 context: 'main',
                 graders,
+                grader_guidelines,
                 aiGradingInfo,
                 selectedInstanceQuestionGroup,
                 showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
@@ -271,12 +274,14 @@ function ConflictGradingJobModal({
   conflict_grading_job,
   graders,
   lastGrader,
+  grader_guidelines,
   skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
+  grader_guidelines?: string | null;
   skipGradedSubmissions: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
@@ -316,6 +321,7 @@ function ConflictGradingJobModal({
                     skip_text: 'Accept existing score',
                     context: 'existing',
                     showInstanceQuestionGroup: false,
+                    grader_guidelines,
                     skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>
@@ -343,6 +349,7 @@ function ConflictGradingJobModal({
                     context: 'conflicting',
                     graders,
                     showInstanceQuestionGroup: false,
+                    grader_guidelines,
                     skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>

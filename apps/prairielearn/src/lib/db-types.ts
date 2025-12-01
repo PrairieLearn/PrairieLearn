@@ -1259,9 +1259,9 @@ export const QuestionTagSchema = z.object({
 export type QuestionTag = z.infer<typeof QuestionTagSchema>;
 
 export const RubricSchema = z.object({
-  ai_grading_additional_context: z.string().nullable(),
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
+  grader_guidelines: z.string().nullable(),
   id: IdSchema,
   max_extra_points: z.number(),
   min_points: z.number(),
