@@ -429,6 +429,7 @@ function StudentsCard({
                 : null,
             };
           },
+          hasSelection: false,
         }}
         headerButtons={
           <>

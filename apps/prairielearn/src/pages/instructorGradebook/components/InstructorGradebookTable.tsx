@@ -489,6 +489,7 @@ function GradebookTable({
           },
           pluralLabel: "users' grades",
           singularLabel: "user's grades",
+          hasSelection: false,
         }}
         columnManagerButtons={
           <PresetFilterDropdown
