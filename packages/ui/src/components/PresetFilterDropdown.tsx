@@ -55,29 +55,29 @@ function filtersMatchPreset(current: ColumnFiltersState, preset: ColumnFiltersSt
   return true;
 }
 
-interface PresetFilterDropdownProps<TData> {
-  /** The TanStack Table instance */
-  table: Table<TData>;
-  /** Mapping of option names to their filter configurations */
-  options: Record<string, ColumnFiltersState>;
-  /** Label prefix for the dropdown button (e.g., "Filter") */
-  label?: string;
-  /** Callback when an option is selected, useful for side effects like column visibility */
-  onSelect?: (optionName: string) => void;
-}
-
 /**
  * A dropdown component that allows users to select from preset filter configurations.
  * The selected state is derived from the table's current column filters.
  * If no preset matches, a "Custom" option is shown as selected.
+ *
+ * Currently, this component expects that the filters states are arrays.
  */
-export function PresetFilterDropdown<TData>({
+export function PresetFilterDropdown<OptionName extends string, TData>({
   table,
   options,
   label = 'Filter',
   onSelect,
-}: PresetFilterDropdownProps<TData>) {
-  const relevantColumnIds = useMemo(() => getRelevantColumnIds(options), [options]);
+}: {
+  /** The TanStack Table instance */
+  table: Table<TData>;
+  /** Mapping of option names to their filter configurations */
+  options: Record<OptionName, ColumnFiltersState>;
+  /** Label prefix for the dropdown button (e.g., "Filter") */
+  label?: string;
+  /** Callback when an option is selected, useful for side effects like column visibility */
+  onSelect?: (optionName: OptionName) => void;
+}) {
+  const relevantColumnIds = getRelevantColumnIds(options);
 
   const currentRelevantFilters = useMemo(
     () => getRelevantFilters(table, relevantColumnIds),
@@ -85,16 +85,16 @@ export function PresetFilterDropdown<TData>({
   );
 
   // Find which option matches the current filters
-  const selectedOption = useMemo(() => {
+  const selectedOption = useMemo<OptionName | null>(() => {
     for (const [optionName, presetFilters] of Object.entries(options)) {
-      if (filtersMatchPreset(currentRelevantFilters, presetFilters)) {
-        return optionName;
+      if (filtersMatchPreset(currentRelevantFilters, presetFilters as ColumnFiltersState)) {
+        return optionName as OptionName;
       }
     }
     return null; // No preset matches - custom filter state
   }, [options, currentRelevantFilters]);
 
-  const handleOptionClick = (optionName: string) => {
+  const handleOptionClick = (optionName: OptionName) => {
     const presetFilters = options[optionName];
 
     // Get current filters, removing any that are in our relevant columns
@@ -105,7 +105,11 @@ export function PresetFilterDropdown<TData>({
     // This ensures the table's onColumnFiltersChange handler can sync the cleared state
     const clearedFilters = Array.from(relevantColumnIds)
       .filter((colId) => !presetFilters.some((f) => f.id === colId))
-      .map((colId) => ({ id: colId, value: [] }));
+      .map((colId) => ({
+        id: colId,
+        // TODO: This expects that we are only clearing filters whose state is an array.
+        value: [],
+      }));
 
     // Combine preserved filters with the new preset filters and cleared filters
     const newFilters = [...preservedFilters, ...presetFilters, ...clearedFilters];
@@ -131,7 +135,7 @@ export function PresetFilterDropdown<TData>({
               as="button"
               type="button"
               active={isSelected}
-              onClick={() => handleOptionClick(optionName)}
+              onClick={() => handleOptionClick(optionName as OptionName)}
             >
               <i class={`bi ${isSelected ? 'bi-check-circle-fill' : 'bi-circle'} me-2`} />
               {optionName}

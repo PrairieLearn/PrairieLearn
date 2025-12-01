@@ -17,6 +17,7 @@ import {
   checkAssessmentInstanceBelongsToCourseInstance,
   getCourseOwners,
 } from '../../lib/course.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -33,7 +34,7 @@ import {
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-function buildCsvFilename(locals: Record<string, any>) {
+function buildCsvFilename(locals: UntypedResLocals) {
   return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
 }
 
@@ -167,12 +168,13 @@ router.get(
 
       const stringifier = stringifyStream<GradebookRow>({
         header: true,
-        columns: ['UID', 'UIN', 'Name', 'Role', ...assessments.map((a) => a.label)],
+        columns: ['UID', 'Name', 'UIN', 'Role', 'Enrollment', ...assessments.map((a) => a.label)],
         transform: (record) => [
           record.uid,
           record.uin,
           record.user_name,
           record.role,
+          record.enrollment?.status ?? null,
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           ...assessments.map((a) => record.scores[a.assessment_id]?.score_perc ?? null),
         ],

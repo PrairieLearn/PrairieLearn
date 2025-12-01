@@ -27,19 +27,17 @@ import {
   CategoricalColumnFilter,
   type NumericColumnFilterValue,
   NumericInputColumnFilter,
+  NuqsAdapter,
   PresetFilterDropdown,
   TanstackTableCard,
   numericColumnFilterFn,
-} from '@prairielearn/ui';
-
-import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
-import {
-  NuqsAdapter,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsNumericFilter,
   parseAsSortingState,
-} from '../../../lib/client/nuqs.js';
+} from '@prairielearn/ui';
+
+import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type EnumEnrollmentStatus, EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
@@ -60,7 +58,6 @@ const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
 const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = ['joined'];
 
 const columnHelper = createColumnHelper<GradebookRow>();
-const queryClient = new QueryClient();
 
 /**
  * Recursively extracts leaf column IDs from column definitions.
@@ -284,7 +281,7 @@ function GradebookTable({
       // Enrollment Status column
       columnHelper.accessor((row) => row.enrollment?.status, {
         id: 'enrollment_status',
-        header: 'Status',
+        header: 'Enrollment',
         cell: (info) => {
           const status = info.getValue();
           return status ? <EnrollmentStatusIcon type="text" status={status} /> : '—';
@@ -368,10 +365,10 @@ function GradebookTable({
   // Extract only leaf column IDs (exclude group columns)
   const allColumnIds = extractLeafColumnIds(columns);
 
-  // Set default visibility: hide UID, UIN, Role, and enrollment_status columns by default
+  // Set default visibility: hide name, UIN, role, and enrollment status columns by default
   const defaultColumnVisibility = Object.fromEntries(
     allColumnIds.map((id) => {
-      if (['user_name', 'uin', 'role', 'enrollment_status'].includes(id)) {
+      if (['uin', 'role', 'enrollment_status'].includes(id)) {
         return [id, false];
       }
       return [id, true];
@@ -383,14 +380,15 @@ function GradebookTable({
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
 
-  const handleEnrollmentFilterSelect = (optionName: string) => {
-    if (optionName === 'Joined Students') {
-      void setColumnVisibility((prev) => ({ ...prev, role: false, enrollment_status: false }));
-    } else if (optionName === 'Students') {
-      void setColumnVisibility((prev) => ({ ...prev, enrollment_status: true, role: false }));
+  const handleEnrollmentFilterSelect = (
+    optionName: 'All students' | 'All students & staff' | 'Joined students',
+  ) => {
+    if (optionName === 'All students') {
+      void setColumnVisibility((prev) => ({ ...prev, role: false, enrollment_status: true }));
+    } else if (optionName === 'All students & staff') {
+      void setColumnVisibility((prev) => ({ ...prev, enrollment_status: true, role: true }));
     } else {
-      // Students & Staff: Show both
-      void setColumnVisibility((prev) => ({ ...prev, role: true, enrollment_status: true }));
+      void setColumnVisibility((prev) => ({ ...prev, role: false, enrollment_status: false }));
     }
   };
 
@@ -487,12 +485,12 @@ function GradebookTable({
             table={table}
             label="Filter"
             options={{
-              'Joined Students': [
+              'Joined students': [
                 { id: 'enrollment_status', value: ['joined'] },
                 { id: 'role', value: ['Student'] },
               ],
-              Students: [{ id: 'role', value: ['Student'] }],
-              'Students & Staff': [],
+              'All students': [{ id: 'role', value: ['Student'] }],
+              'All students & staff': [],
             }}
             onSelect={handleEnrollmentFilterSelect}
           />
@@ -525,6 +523,7 @@ export function InstructorGradebookTable({
   isDevMode: boolean;
   courseInstanceId: string;
 } & GradebookTableProps) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>

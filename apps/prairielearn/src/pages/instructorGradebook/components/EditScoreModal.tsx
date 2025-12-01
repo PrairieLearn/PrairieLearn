@@ -52,7 +52,6 @@ export function EditScoreButton({
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['gradebook'] });
-      setScoreInput(currentScore.toString());
       setShow(false);
     },
   });
@@ -63,7 +62,6 @@ export function EditScoreButton({
   };
 
   const handleClose = () => {
-    setScoreInput(currentScore.toString());
     editScoreMutation.reset();
     setShow(false);
   };
