@@ -299,13 +299,14 @@ router.get(
   typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
     try {
       const locals = await prepareLocalsForRender({}, res.locals);
-      const gradingPanel = GradingPanel({
-        ...locals,
-        context: 'main',
-      }).toString();
       const rubric_data = await manualGrading.selectRubricData({
         assessment_question: res.locals.assessment_question,
       });
+      const gradingPanel = GradingPanel({
+        ...locals,
+        grader_guidelines: rubric_data?.grader_guidelines,
+        context: 'main',
+      }).toString();
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
       res.json({
         gradingPanel,

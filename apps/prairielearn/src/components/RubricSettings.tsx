@@ -443,6 +443,7 @@ export function RubricSettings({
       defaultStartingPoints.current = rubricData?.starting_points ?? 0;
       defaultMinPoints.current = rubricData?.min_points ?? 0;
       defaultMaxExtraPoints.current = rubricData?.max_extra_points ?? 0;
+      defaultGraderGuidelines.current = rubricData?.grader_guidelines ?? '';
       setWasUsingRubric(Boolean(rubricData));
       setModifiedAt(rubricData ? new Date(rubricData.modified_at) : null);
       onCancel();
@@ -459,6 +460,7 @@ export function RubricSettings({
       <input type="hidden" name="starting_points" value={startingPoints} />
       <input type="hidden" name="max_extra_points" value={maxExtraPoints} />
       <input type="hidden" name="min_points" value={minPoints} />
+      <input type="hidden" name="grader_guidelines" value={graderGuidelines} />
       <div class="card-header collapsible-card-header d-flex align-items-center">
         <h2>Rubric settings</h2>
         <button

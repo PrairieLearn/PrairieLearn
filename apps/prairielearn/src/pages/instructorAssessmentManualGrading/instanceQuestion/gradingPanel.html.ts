@@ -198,7 +198,7 @@ export function GradingPanel({
           ? html`
               <li class="list-group-item">
                 <div class="mb-1">Guidelines:</div>
-                <div>${grader_guidelines}</div>
+                <p class="my-3" style="white-space: pre-line;">${grader_guidelines}</p>
               </li>
             `
           : ''}
