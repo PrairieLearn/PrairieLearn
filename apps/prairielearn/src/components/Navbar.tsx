@@ -144,7 +144,7 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${resLocals.has_enhanced_navigation && isInPageLayout
+    ${isInPageLayout
       ? FlashMessages()
       : html`
           <div class="${marginBottom ? 'mb-3' : ''}">
@@ -174,7 +174,7 @@ function NavbarByType({
   } else if (navbarType === 'public') {
     return NavbarPublic({ resLocals });
   } else {
-    if (resLocals.has_enhanced_navigation && isInPageLayout) {
+    if (isInPageLayout) {
       return NavbarButtons({
         resLocals,
         navPage,

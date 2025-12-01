@@ -94,7 +94,7 @@ export function PageLayout({
   const contentString = asHtmlSafe(content);
   const postContentString = asHtmlSafe(postContent);
 
-  if (resLocals.has_enhanced_navigation && resolvedOptions.enableEnhancedNav) {
+  if (resolvedOptions.enableEnhancedNav) {
     // The side navbar is only available if the user is on an course instructor page.
     const sideNavEnabled = resLocals.course && navContext.type === 'instructor';
 
@@ -112,7 +112,7 @@ export function PageLayout({
     // If additional navigation capabilities are not needed, such as on the
     // course staff and sync pages, then the context navigation is not shown.
     if (navContext.page === 'course_admin') {
-      const navPageTabs = getNavPageTabs(true);
+      const navPageTabs = getNavPageTabs();
 
       const courseAdminSettingsNavSubPages = navPageTabs.course_admin.flatMap(
         (tab) => tab.activeSubPage,
@@ -125,7 +125,7 @@ export function PageLayout({
         showContextNavigation = false;
       }
     } else if (navContext.page === 'instance_admin') {
-      const navPageTabs = getNavPageTabs(true);
+      const navPageTabs = getNavPageTabs();
 
       const instanceAdminSettingsNavSubPages = navPageTabs.instance_admin.flatMap(
         (tab) => tab.activeSubPage,

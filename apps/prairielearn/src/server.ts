@@ -1910,17 +1910,6 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
 
   app.use(
-    '/pl/administrator',
-    asyncHandler(async (req, res, next) => {
-      const usesLegacyNavigation = await features.enabled('legacy-navigation', {
-        user_id: res.locals.authn_user.user_id,
-      });
-      res.locals.has_enhanced_navigation = !usesLegacyNavigation;
-      next();
-    }),
-  );
-
-  app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
   );
