@@ -446,8 +446,6 @@ function StudentsCard({
           </>
         }
         globalFilter={{
-          value: globalFilter,
-          setValue: setGlobalFilter,
           placeholder: 'Search by UID, name, email...',
         }}
         tableOptions={{
