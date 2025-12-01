@@ -228,4 +228,3 @@ export const parseAsNumericFilter = createParser<NumericColumnFilterValue>({
     return a.filterValue === b.filterValue && a.emptyOnly === b.emptyOnly;
   },
 });
-
