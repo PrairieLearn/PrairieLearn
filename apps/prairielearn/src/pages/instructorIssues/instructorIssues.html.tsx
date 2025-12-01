@@ -21,6 +21,7 @@ import {
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const PAGE_SIZE = 100;
 
@@ -66,7 +67,7 @@ export function InstructorIssues({
   closedCount,
   chosenPage,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   issues: IssueComputedRow[];
   filterQuery: string;
   openFilteredIssuesCount: number;

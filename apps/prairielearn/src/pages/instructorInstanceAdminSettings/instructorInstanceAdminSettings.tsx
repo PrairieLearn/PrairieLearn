@@ -18,6 +18,8 @@ import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrors
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
+import { config } from '../../lib/config.js';
+import type { Course } from '../../lib/db-types.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
@@ -35,6 +37,7 @@ import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
+import { plainDateTimeStringToDate } from '../instructorInstanceAdminPublishing/utils/dateUtils.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
@@ -59,7 +62,11 @@ router.get(
       accessType: 'instructor',
     });
 
-    const shortNames = await sqldb.queryRows(sql.short_names, { course_id: course.id }, z.string());
+    const names = await sqldb.queryRows(
+      sql.select_names,
+      { course_id: course.id },
+      z.object({ short_name: z.string(), long_name: z.string().nullable() }),
+    );
     const enrollmentCount = await sqldb.queryRow(
       sql.select_enrollment_count,
       { course_instance_id: courseInstance.id },
@@ -94,7 +101,7 @@ router.get(
     }
 
     const instanceGHLink = courseRepoContentUrl(
-      res.locals.course,
+      course,
       `courseInstances/${courseInstance.short_name}`,
     );
 
@@ -133,9 +140,10 @@ router.get(
                 navPage={navPage}
                 hasEnhancedNavigation={has_enhanced_navigation}
                 canEdit={canEdit}
+                course={course}
                 courseInstance={courseInstance}
                 institution={institution}
-                shortNames={shortNames}
+                names={names}
                 availableTimezones={availableTimezones}
                 origHash={origHash}
                 instanceGHLink={instanceGHLink}
@@ -144,6 +152,7 @@ router.get(
                 selfEnrollLink={selfEnrollLink}
                 enrollmentManagementEnabled={enrollmentManagementEnabled}
                 infoCourseInstancePath={infoCourseInstancePath}
+                isDevMode={config.devMode}
               />
             </Hydrate>
             <Hydrate>
@@ -163,35 +172,102 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    const {
+      course_instance: courseInstance,
+      course,
+      institution,
+      urlPrefix,
+    } = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
+
     if (req.body.__action === 'copy_course_instance') {
-      const courseInstancesPath = path.join(res.locals.course.path, 'courseInstances');
+      const { short_name, long_name, start_date, end_date } = z
+        .object({
+          short_name: z.string().trim(),
+          long_name: z.string().trim(),
+          start_date: z.string(),
+          end_date: z.string(),
+        })
+        .parse(req.body);
+
+      if (!short_name) {
+        throw new error.HttpStatusError(400, 'Short name is required');
+      }
+      if (!long_name) {
+        throw new error.HttpStatusError(400, 'Long name is required');
+      }
+
+      if (!/^[-A-Za-z0-9_/]+$/.test(short_name)) {
+        throw new error.HttpStatusError(
+          400,
+          'Short name must contain only letters, numbers, dashes, underscores, and forward slashes, with no spaces',
+        );
+      }
+
+      const existingNames = await sqldb.queryRows(
+        sql.select_names,
+        { course_id: course.id },
+        z.object({ short_name: z.string(), long_name: z.string().nullable() }),
+      );
+      const existingShortNames = existingNames.map((name) => name.short_name.toLowerCase());
+      const existingLongNames = existingNames
+        .map((name) => name.long_name?.toLowerCase())
+        .filter((name) => name != null);
+
+      if (existingShortNames.includes(short_name.toLowerCase())) {
+        throw new error.HttpStatusError(
+          400,
+          'A course instance with this short name already exists',
+        );
+      }
+
+      if (existingLongNames.includes(long_name.toLowerCase())) {
+        throw new error.HttpStatusError(
+          400,
+          'A course instance with this long name already exists',
+        );
+      }
+
+      const updatedCourseInstance = {
+        ...courseInstance,
+        short_name,
+        long_name,
+        publishing_start_date:
+          start_date.length > 0
+            ? plainDateTimeStringToDate(start_date, courseInstance.display_timezone)
+            : null,
+        publishing_end_date:
+          end_date.length > 0
+            ? plainDateTimeStringToDate(end_date, courseInstance.display_timezone)
+            : null,
+      };
+
+      // First, use the editor to copy the course instance
+      const courseInstancesPath = path.join(course.path, 'courseInstances');
       const editor = new CourseInstanceCopyEditor({
         locals: res.locals as any,
-        from_course: res.locals.course,
-        from_path: path.join(courseInstancesPath, res.locals.course_instance.short_name),
-        course_instance: res.locals.course_instance,
+        from_course: course,
+        from_path: path.join(courseInstancesPath, courseInstance.short_name),
+        course_instance: updatedCourseInstance,
       });
 
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.status(500).json({ job_sequence_id: serverJob.jobSequenceId });
         return;
       }
 
-      const courseInstance = await selectCourseInstanceByUuid({
+      const copiedInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
-        course: res.locals.course,
+        course: course as unknown as Course, // TODO: We need to write up proper model functions for Courses.
       });
 
-      flash(
-        'success',
-        'Course instance copied successfully. You are new viewing your copy of the course instance.',
-      );
-      res.redirect(
-        '/pl/course_instance/' + courseInstance.id + '/instructor/instance_admin/settings',
-      );
+      res.status(200).json({ course_instance_id: copiedInstance.id });
+      return;
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
         locals: res.locals as any,
@@ -200,22 +276,15 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-        res.redirect(`/pl/course/${res.locals.course.id}/course_admin/instances`);
+        res.redirect(`/pl/course/${course.id}/course_admin/instances`);
       } catch {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'update_configuration') {
-      const { course_instance: courseInstanceContext, course: courseContext } = extractPageContext(
-        res.locals,
-        {
-          pageType: 'courseInstance',
-          accessType: 'instructor',
-        },
-      );
       const infoCourseInstancePath = path.join(
-        courseContext.path,
+        course.path,
         'courseInstances',
-        courseInstanceContext.short_name,
+        courseInstance.short_name,
         'infoCourseInstance.json',
       );
 
@@ -244,7 +313,7 @@ router.post(
       courseInstanceInfo.timezone = propertyValueWithDefault(
         courseInstanceInfo.timezone,
         parsedBody.display_timezone,
-        courseContext.display_timezone,
+        course.display_timezone,
       );
       courseInstanceInfo.groupAssessmentsBy = propertyValueWithDefault(
         courseInstanceInfo.groupAssessmentsBy,
@@ -295,14 +364,6 @@ router.post(
           selfEnrollmentRestrictToInstitution ??
           selfEnrollmentBeforeDate) !== undefined;
 
-      const {
-        course_instance: courseInstance,
-        course,
-        institution,
-      } = extractPageContext(res.locals, {
-        pageType: 'courseInstance',
-        accessType: 'instructor',
-      });
       const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
         institution_id: institution.id,
         course_id: course.id,
@@ -310,7 +371,19 @@ router.post(
       });
       // Only write self enrollment settings if they are not the default values.
       // When JSON.stringify is used, undefined values are not included in the JSON object.
-      if (hasSelfEnrollmentSettings && enrollmentManagementEnabled) {
+      if (hasSelfEnrollmentSettings) {
+        if (!enrollmentManagementEnabled) {
+          throw new error.HttpStatusError(
+            400,
+            'Self enrollment settings cannot be changed when enrollment management is not enabled.',
+          );
+        }
+        if (!courseInstance.modern_publishing) {
+          throw new error.HttpStatusError(
+            400,
+            'Self enrollment settings cannot be changed when modern publishing is not enabled.',
+          );
+        }
         courseInstanceInfo.selfEnrollment = {
           enabled: selfEnrollmentEnabled,
           useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
@@ -335,7 +408,7 @@ router.post(
       const editor = new MultiEditor(
         {
           locals: res.locals as any,
-          description: `Update course instance: ${res.locals.course_instance.short_name}`,
+          description: `Update course instance: ${courseInstance.short_name}`,
         },
         [
           new FileModifyEditor({
@@ -359,13 +432,13 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return res.redirect(urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
       flash('success', 'Course instance configuration updated successfully');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'generate_enrollment_code') {
       await sqldb.execute(sql.update_enrollment_code, {
-        course_instance_id: res.locals.course_instance.id,
+        course_instance_id: courseInstance.id,
         enrollment_code: await uniqueEnrollmentCode(),
       });
       flash('success', 'Self-enrollment key generated successfully');

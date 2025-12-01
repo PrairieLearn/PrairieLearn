@@ -5,6 +5,7 @@ import { run } from '@prairielearn/run';
 import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 import { SelectUserSchema } from '../authn.types.js';
 import { PageAuthzDataSchema } from '../authz-data-lib.js';
+import type { UntypedResLocals } from '../res-locals.types.js';
 
 import {
   RawStaffAssessmentSchema,
@@ -200,7 +201,7 @@ export function extractPageContext<
   AccessType extends 'student' | 'instructor',
   WithAuthz extends boolean = true,
 >(
-  resLocals: Record<string, any>,
+  resLocals: UntypedResLocals,
   options: {
     pageType: PageType;
     accessType: AccessType;

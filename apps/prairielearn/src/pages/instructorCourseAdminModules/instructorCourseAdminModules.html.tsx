@@ -1,16 +1,17 @@
 import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 
-import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
+import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type AssessmentModule } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function InstructorCourseAdminModules({
   resLocals,
   modules,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   modules: AssessmentModule[];
 }) {
   return PageLayout({
@@ -52,7 +53,7 @@ export function InstructorCourseAdminModules({
                     <td class="align-middle">${module.number}</td>
                     <td>${module.name}</td>
                     <td class="align-middle">
-                      ${AssessmentModuleHeading({ assessment_module: module })}
+                      ${AssessmentModuleHeadingHtml({ assessment_module: module })}
                     </td>
                   </tr>
                 `;

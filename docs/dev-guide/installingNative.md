@@ -157,6 +157,7 @@ Most of these prerequisites can be installed using the package manager of your O
 
   ```sh
   make deps
+  make e2e-deps
   ```
 
   The above command installs everything. Alternatively, you can run each step individually:
@@ -165,6 +166,7 @@ Most of these prerequisites can be installed using the package manager of your O
   yarn
   make build
   make python-deps
+  make e2e-deps
   ```
 
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):

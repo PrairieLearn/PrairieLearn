@@ -1,9 +1,10 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
 import { Alert } from 'react-bootstrap';
 
+import { NuqsAdapter } from '@prairielearn/ui';
+
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
-import { NuqsAdapter } from '../../../lib/client/nuqs.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
@@ -23,8 +24,6 @@ import {
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
-const queryClient = new QueryClient();
-
 export interface AssessmentQuestionManualGradingProps {
   hasCourseInstancePermissionEdit: boolean;
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
@@ -36,6 +35,7 @@ export interface AssessmentQuestionManualGradingProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingEnabled: boolean;
+  aiGradingModelSelectionEnabled: boolean;
   initialAiGradingMode: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
@@ -64,6 +64,7 @@ function AssessmentQuestionManualGradingInner({
   assessmentQuestion,
   questionQid,
   aiGradingEnabled,
+  aiGradingModelSelectionEnabled,
   initialAiGradingMode,
   rubricData,
   instanceQuestionGroups,
@@ -73,6 +74,7 @@ function AssessmentQuestionManualGradingInner({
   questionTitle,
   questionNumber,
 }: AssessmentQuestionManualGradingInnerProps) {
+  const queryClient = useQueryClient();
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
 
@@ -144,6 +146,7 @@ function AssessmentQuestionManualGradingInner({
         assessmentQuestion={assessmentQuestion}
         questionQid={questionQid}
         aiGradingMode={aiGradingMode}
+        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
         rubricData={rubricData}
         instanceQuestionGroups={instanceQuestionGroups}
         courseStaff={courseStaff}
@@ -179,6 +182,7 @@ export function AssessmentQuestionManualGrading({
   isDevMode,
   ...innerProps
 }: AssessmentQuestionManualGradingProps) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>

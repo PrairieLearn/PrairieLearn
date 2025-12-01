@@ -8,15 +8,15 @@ Consider **[adding the question or issue](https://github.com/PrairieLearn/Prairi
 
 There are three different ways to let a student re-attempt or continue an exam:
 
-1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](accessControl/index.md) with their UID.
+1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](assessment/accessControl.md) with their UID.
 
-2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](accessControl/index.md) with their UID.
+2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](assessment/accessControl.md) with their UID.
 
 3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
 
 ## How do I give students access to view their exams after they are over?
 
-To allow students to see their entire exam after it is over, you can add an [access rule](accessControl/index.md) like this:
+To allow students to see their entire exam after it is over, you can add an [access rule](assessment/accessControl.md) like this:
 
 ```json title="infoAssessment.json"
 {
@@ -102,7 +102,7 @@ Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/inf
 }
 ```
 
-See [Access control](accessControl/index.md) for more details.
+See [Access control](assessment/accessControl.md) for more details.
 
 ## Why does a user have the role of None?
 
@@ -126,7 +126,7 @@ then the feature can be disabled by specifying in the `infoAssessment.json`:
 }
 ```
 
-See [Auto-closing Exam assessments](assessment/index.md#auto-closing-exam-assessments)
+See [Auto-closing Exam assessments](assessment/configuration.md#auto-closing-exam-assessments)
 for more details.
 
 ## How can we provide a cheat sheet for exams held in a testing center?
@@ -191,7 +191,7 @@ To resolve this issue, first check the name of the folder inside `questions/`
 and, then, check the question name listed in `infoAssessments.json`. Either
 rename the folder or change the name listed in assessments to be the same.
 
-See [Directory Structure](question/index.md#directory-structure) for more details.
+See [Directory Structure](question/overview.md#directory-structure) for more details.
 
 ## Why do I have a Syntax Error in my JSON file?
 
@@ -239,7 +239,7 @@ For example, this error would be triggered under:
 }
 ```
 
-See [Question Specification](assessment/index.md#question-specification) for more details.
+See [Question Specification](assessment/configuration.md#question-specification) for more details.
 
 ## Why is the UUID used in multiple questions?
 
@@ -298,7 +298,7 @@ To address this, there are a variety of different ways. In particular, we have:
 
 ## Why do special characters like `<` and `>` break my question display?
 
-The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more with [this escaping tool](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements.md#pl-code-element). Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
+The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more with [this escaping tool](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements/pl-code.md). Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
 
 ## Why can't I connect to PrairieLearn with Docker Toolbox?
 
@@ -306,7 +306,7 @@ Docker Toolbox is no longer supported. [Docker Community Edition](https://www.do
 
 ## How can I make a block that can be re-used in many questions?
 
-If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can use the [`<pl-template>` element](./elements.md#pl-template-element). This element allows you to define a template in one place and then use it in many questions.
+If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can use the [`<pl-template>` element](./elements/pl-template.md). This element allows you to define a template in one place and then use it in many questions.
 
 !!! danger
 
@@ -314,7 +314,7 @@ If you have a block of text that you want to re-use in many questions, possibly 
 
 ## How can I hide the correct answer when students see their grading results?
 
-Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question/index.md#metadata-infojson).
+Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question/overview.md#metadata-infojson).
 
 For more granular control, some elements in PL have their own options for specifying whether to hide individual correct answers (for example, `pl-checkbox` has a `hide-answer-panel` attribute). Not all element types offer this as an attribute (e.g., `pl-multiple-choice` currently does not). However, to hide the correct answer for any kind of element, you can surround the particular graded pl-element with `pl-hide-in-panel` in the `question.html` file.
 
@@ -326,11 +326,11 @@ For example:
 </pl-hide-in-panel>
 ```
 
-For more information on this granular technique, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).
+For more information on this granular technique, see [the documentation for pl-hide-in-panel](elements/pl-hide-in-panel.md).
 
 ## I forgot to set `"credit":100` and now my students all have 0%. How do I fix this?
 
-PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points, but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](accessControl/index.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
+PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points, but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](assessment/accessControl.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
 
 To fix student scores without requiring them to answer another question you can:
 
@@ -396,4 +396,4 @@ There are a few possible ways to address these cases:
 
 - Alternatively, you can remove the `group_name` column altogether. While the column is used to match a row to a specific submission, if the column is not found, the row can be identified with other columns such as the `submission_id`.
 
-One way to avoid this problem is to remove the ability for students to specify their own group names. This can be done by [setting `"studentGroupChooseName": false`](./assessment/index.md#enabling-group-work-for-collaborative-assessments) in the assessment configuration. When this option is set, all student-created groups are named with a default pattern of `groupXXX`, where `XXX` is an integer number. This pattern does not typically cause issues with spreadsheet applications.
+One way to avoid this problem is to remove the ability for students to specify their own group names. This can be done by [setting `"studentGroupChooseName": false`](./assessment/configuration.md#enabling-group-work-for-collaborative-assessments) in the assessment configuration. When this option is set, all student-created groups are named with a default pattern of `groupXXX`, where `XXX` is an integer number. This pattern does not typically cause issues with spreadsheet applications.
