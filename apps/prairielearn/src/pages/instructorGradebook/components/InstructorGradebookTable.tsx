@@ -27,19 +27,17 @@ import {
   CategoricalColumnFilter,
   type NumericColumnFilterValue,
   NumericInputColumnFilter,
+  NuqsAdapter,
   PresetFilterDropdown,
   TanstackTableCard,
   numericColumnFilterFn,
-} from '@prairielearn/ui';
-
-import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
-import {
-  NuqsAdapter,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsNumericFilter,
   parseAsSortingState,
-} from '../../../lib/client/nuqs.js';
+} from '@prairielearn/ui';
+
+import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type EnumEnrollmentStatus, EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
