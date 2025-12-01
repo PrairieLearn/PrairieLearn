@@ -47,7 +47,7 @@ export const SharingSetRowSchema = z.object({
   name: z.string(),
   in_set: z.boolean(),
 });
-type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
+export type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
 
 export function InstructorQuestionSettings({
   resLocals,
@@ -74,7 +74,7 @@ export function InstructorQuestionSettings({
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
-  sharingSetsIn: SharingSetRow[];
+  sharingSetsIn: SharingSetRow[] | undefined;
   editableCourses: CourseWithPermissions[];
   infoPath: string;
   origHash: string;
@@ -609,7 +609,7 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                   <div data-testid="shared-with">
                     ${QuestionSharing({
                       question: resLocals.question,
-                      sharingSetsIn,
+                      sharingSetsIn: sharingSetsIn ?? [],
                     })}
                   </div>
                 </div>

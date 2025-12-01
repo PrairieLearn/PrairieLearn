@@ -2,8 +2,9 @@ import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
 import { Alert } from 'react-bootstrap';
 
+import { NuqsAdapter } from '@prairielearn/ui';
+
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
-import { NuqsAdapter } from '../../../lib/client/nuqs.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
   StaffAssessment,

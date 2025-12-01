@@ -606,11 +606,11 @@ export async function linkAssessment(
 export function findValueByKey(obj: unknown, targetKey: string): unknown {
   if (typeof obj !== 'object' || obj === null) return undefined;
   if (Object.hasOwn(obj, targetKey)) {
-    return obj[targetKey];
+    return (obj as Record<string, unknown>)[targetKey];
   }
   for (const key in obj) {
-    if (typeof obj[key] === 'object') {
-      const result = findValueByKey(obj[key], targetKey);
+    if (typeof (obj as Record<string, unknown>)[key] === 'object') {
+      const result = findValueByKey((obj as Record<string, unknown>)[key], targetKey);
       if (result !== undefined) {
         return result;
       }
@@ -834,8 +834,11 @@ class Lti13ContextMembership {
     if (user.lti13_sub !== null) {
       return this.#membershipsBySub[user.lti13_sub] ?? null;
     }
-    for (const match of ['uid', 'email']) {
-      const memberResults = this.#membershipsByEmail[user[match]];
+    for (const match of ['uid', 'email'] as const) {
+      const key = user[match];
+      if (key == null) continue;
+
+      const memberResults = this.#membershipsByEmail[key];
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!memberResults) continue;
