@@ -234,3 +234,7 @@ If a question uses more than one method for grading, options 3 and 4 override op
 ## Accessibility
 
 See the [question accessibility documentation](accessibility.md) for more information about how to ensure your questions are accessible to all students, including those using screen readers or other assistive technologies.
+
+## Custom templates
+
+Creating a question with a QID starting with `template/` will create a question that can be used as a template for other questions in the UI.
