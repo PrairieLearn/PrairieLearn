@@ -18,8 +18,6 @@ import { CopyCourseInstanceModal } from './components/CopyCourseInstanceModal.js
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 import type { SettingsFormValues } from './instructorInstanceAdminSettings.types.js';
 
-const queryClient = new QueryClient();
-
 export function InstructorInstanceAdminSettings({
   csrfToken,
   urlPrefix,
@@ -59,6 +57,8 @@ export function InstructorInstanceAdminSettings({
   infoCourseInstancePath: string;
   isDevMode: boolean;
 }) {
+  const [queryClient] = useState(() => new QueryClient());
+
   const [showCopyModal, setShowCopyModal] = useState(false);
 
   const shortNames = names.map((name) => name.short_name);
