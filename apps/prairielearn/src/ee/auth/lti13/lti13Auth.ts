@@ -131,9 +131,10 @@ async function launchFlow(req: Request, res: Response) {
 
   // If these parameters were offered, they must be included back:
   // https://www.imsglobal.org/spec/lti/v1p3#additional-login-parameters
-  for (const key of ['lti_message_hint', 'lti_deployment_id']) {
-    if (key in parameters) {
-      requestParameters[key] = parameters[key] as string;
+  for (const key of ['lti_message_hint', 'lti_deployment_id'] as const) {
+    const value = parameters[key];
+    if (value != null) {
+      requestParameters[key] = value;
     }
   }
 

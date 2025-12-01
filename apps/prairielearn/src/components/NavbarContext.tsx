@@ -16,11 +16,12 @@ export function ContextNavigation({
 }) {
   if (!navPage) return '';
 
-  const navPagesTabs = getNavPageTabs(resLocals.has_enhanced_navigation);
-  const navPageTabs = navPagesTabs[navPage as keyof typeof navPagesTabs];
+  const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = getNavPageTabs(
+    resLocals.has_enhanced_navigation,
+  );
+  const navPageTabs = navPagesTabs[navPage];
 
   // Some navPages do not have tabs
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!navPageTabs) return '';
 
   return html`
