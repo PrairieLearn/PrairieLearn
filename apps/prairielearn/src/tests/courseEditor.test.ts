@@ -265,10 +265,12 @@ const testEditData: EditData[] = [
     formSelector: 'body',
     dynamicPostInfo: getCourseInstanceCreatePostInfo,
     action: 'add_course_instance',
-    info: 'courseInstances/New_1/infoCourseInstance.json',
+    info: 'courseInstances/New/infoCourseInstance.json',
     data: {
       short_name: 'New',
       long_name: 'New',
+      start_date: '',
+      end_date: '',
     },
     files: new Set([
       'README.md',
@@ -278,7 +280,7 @@ const testEditData: EditData[] = [
       'questions/test/question/info.json',
       'questions/test/question/question.html',
       'questions/test/question/server.py',
-      'courseInstances/New_1/infoCourseInstance.json',
+      'courseInstances/New/infoCourseInstance.json',
     ]),
   },
   {
@@ -302,7 +304,7 @@ const testEditData: EditData[] = [
     action: 'copy_course_instance',
     data: {
       short_name: 'Fa18_copy1',
-      long_name: 'Fall 2018',
+      long_name: 'Fall 2018 (Copy 1)',
       start_date: '',
       end_date: '',
     },
@@ -335,7 +337,7 @@ const testEditData: EditData[] = [
   },
 ];
 
-function getPostInfoFromCopyOption(form) {
+function getPostInfoFromCopyOption(form: cheerio.Cheerio<any>) {
   const option = form.find('select[name="to_course_id"] option[value="1"]');
   return { csrfToken: option.attr('data-csrf-token'), url: option.attr('data-copy-url') };
 }

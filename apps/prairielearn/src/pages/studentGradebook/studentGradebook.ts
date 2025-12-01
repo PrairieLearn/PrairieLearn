@@ -12,6 +12,7 @@ import {
   computeLabel,
   computeTitle,
 } from '../../lib/gradebook.shared.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
 
@@ -19,7 +20,7 @@ import { StudentGradebook, type StudentGradebookTableRow } from './studentGradeb
 
 const router = Router();
 
-function buildCsvFilename(locals: Record<string, any>) {
+function buildCsvFilename(locals: UntypedResLocals) {
   return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
 }
 

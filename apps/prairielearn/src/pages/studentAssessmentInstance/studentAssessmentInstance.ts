@@ -5,7 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
-import { AssessmentInstanceSchema } from '../../lib/db-types.js';
+import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
   canUserAssignGroupRoles,
@@ -16,6 +16,7 @@ import {
   updateGroupRoles,
 } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
@@ -33,7 +34,7 @@ const sql = loadSqlEquiv(import.meta.url);
 router.use(selectAndAuthzAssessmentInstance);
 router.use(studentAssessmentAccess);
 
-async function ensureUpToDate(locals: Record<string, any>) {
+async function ensureUpToDate(locals: UntypedResLocals) {
   const updated = await assessment.updateAssessmentInstance(
     locals.assessment_instance.id,
     locals.authn_user.user_id,
@@ -107,7 +108,7 @@ async function processDeleteFile(req: Request, res: Response) {
   }
 
   // Check the requested file belongs to the current assessment instance
-  const validFiles = (res.locals.file_list ?? []).filter((file) =>
+  const validFiles = (res.locals.file_list ?? []).filter((file: File) =>
     idsEqual(file.id, req.body.file_id),
   );
   if (validFiles.length === 0) {
