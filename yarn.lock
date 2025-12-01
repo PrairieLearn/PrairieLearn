@@ -4397,6 +4397,7 @@ __metadata:
     "@types/streamifier": "npm:^0.1.2"
     "@types/tar": "npm:^6.1.13"
     "@types/tmp": "npm:^0.2.6"
+    "@types/ua-parser-js": "npm:^0.7.39"
     "@types/unzipper": "npm:^0.10.11"
     "@vitest/coverage-v8": "npm:^4.0.7"
     "@viz-js/viz": "npm:^3.20.0"
@@ -7351,6 +7352,13 @@ __metadata:
   version: 2.0.7
   resolution: "@types/trusted-types@npm:2.0.7"
   checksum: 10c0/4c4855f10de7c6c135e0d32ce462419d8abbbc33713b31d294596c0cc34ae1fa6112a2f9da729c8f7a20707782b0d69da3b1f8df6645b0366d08825ca1522e0c
+  languageName: node
+  linkType: hard
+
+"@types/ua-parser-js@npm:^0.7.39":
+  version: 0.7.39
+  resolution: "@types/ua-parser-js@npm:0.7.39"
+  checksum: 10c0/fea522f42dfc2854d9c93144a13c3db3bbe1c791458451db06d46bec7e1dbbe945d1542e02bb38378e39a04bdb7810b43e2ead26f9e6c250832e187312522708
   languageName: node
   linkType: hard
 

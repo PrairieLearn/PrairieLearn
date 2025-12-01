@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 1.5.0
+
+### Minor Changes
+
+- bd5f2a1: Add a generic PresetFilterDropdown for customizable multi-column filters
+
 ## 1.4.0
 
 ### Minor Changes
