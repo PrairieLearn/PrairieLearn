@@ -19,8 +19,12 @@ export function LegacyAccessRuleCard({
     <>
       <div class="alert alert-warning" role="alert">
         <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy
-        <code>allowAccess</code> system. To use the new publishing system, you must first remove all
-        <code>allowAccess</code> rules from the course configuration.
+        <code>allowAccess</code> system. To use the new publishing system, you must first{' '}
+        <a href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess">
+          remove the
+          <code>allowAccess</code> section
+        </a>{' '}
+        from your course instance configuration.
       </div>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
