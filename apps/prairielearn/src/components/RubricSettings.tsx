@@ -28,14 +28,12 @@ export function RubricSettings({
   rubricData,
   csrfToken,
   aiGradingStats,
-  initialGraderGuidelines,
   context,
 }: {
   assessmentQuestion: AssessmentQuestion;
   rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
-  initialGraderGuidelines: string | null;
   context: Record<string, any>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
@@ -67,7 +65,7 @@ export function RubricSettings({
   const [minPoints, setMinPoints] = useState<number>(rubricData?.min_points ?? 0);
   const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubricData?.max_extra_points ?? 0);
   const [tagForGrading, setTagForGrading] = useState<boolean>(false);
-  const [graderGuidelines, setGraderGuidelines] = useState<string>(initialGraderGuidelines ?? '');
+  const [graderGuidelines, setGraderGuidelines] = useState<string>(rubricData?.grader_guidelines ?? '');
 
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -86,7 +84,7 @@ export function RubricSettings({
   const defaultStartingPoints = useRef<number>(rubricData?.starting_points ?? 0);
   const defaultMinPoints = useRef<number>(rubricData?.min_points ?? 0);
   const defaultMaxExtraPoints = useRef<number>(rubricData?.max_extra_points ?? 0);
-  const defaultGraderGuidelines = useRef<string>(initialGraderGuidelines ?? '');
+  const defaultGraderGuidelines = useRef<string>(rubricData?.grader_guidelines ?? '');
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {

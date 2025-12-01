@@ -236,7 +236,7 @@ export async function generatePrompt({
     input.push(
       {
         role: systemRoleAfterUserMessage,
-        content: 'The instructor has provided the following general guidelines for grading:',
+        content: 'The instructor has provided the following grader guidelines:',
       },
       {
         role: 'user',

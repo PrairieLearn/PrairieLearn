@@ -610,7 +610,6 @@ export function AssessmentQuestionTable({
           rubricData={rubricData}
           csrfToken={csrfToken}
           aiGradingStats={aiGradingStats}
-          initialGraderGuidelines={rubricData?.grader_guidelines ?? null}
           context={{
             course_short_name: course.short_name,
             course_instance_short_name: courseInstance.short_name,
