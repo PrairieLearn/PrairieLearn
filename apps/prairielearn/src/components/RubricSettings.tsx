@@ -294,9 +294,7 @@ export function RubricSettings({
       }
       setRubricItems(scaledRubricItems);
 
-      if (parsedData.grader_guidelines) {
-        setGraderGuidelines(parsedData.grader_guidelines);
-      }
+      setGraderGuidelines(parsedData.grader_guidelines ?? '');
 
       resetImportModal();
     } catch {
