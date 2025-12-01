@@ -456,7 +456,6 @@ export function RubricSettings({
       <input type="hidden" name="starting_points" value={startingPoints} />
       <input type="hidden" name="max_extra_points" value={maxExtraPoints} />
       <input type="hidden" name="min_points" value={minPoints} />
-      <input type="hidden" name="grader_guidelines" value={graderGuidelines} />
       <div class="card-header collapsible-card-header d-flex align-items-center">
         <h2>Rubric settings</h2>
         <button

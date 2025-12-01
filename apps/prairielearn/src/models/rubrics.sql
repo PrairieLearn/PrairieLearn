@@ -15,4 +15,6 @@ FROM
   JOIN rubrics AS r ON r.id = ri.rubric_id
   JOIN assessment_questions AS aq ON aq.manual_rubric_id = r.id
 WHERE
-  aq.id = $assessment_question_id;
+  aq.id = $assessment_question_id
+ORDER BY
+  ri.number;

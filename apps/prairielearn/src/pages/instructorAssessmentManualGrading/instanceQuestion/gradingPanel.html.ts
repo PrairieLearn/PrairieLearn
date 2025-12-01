@@ -40,7 +40,6 @@ export function GradingPanel({
   graders?: User[] | null;
   disable?: boolean;
   skip_text?: string;
-  grading_guidelines?: string | null;
   custom_points?: number;
   custom_auto_points?: number;
   custom_manual_points?: number;

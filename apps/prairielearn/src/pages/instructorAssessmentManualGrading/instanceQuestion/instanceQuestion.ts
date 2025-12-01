@@ -304,7 +304,6 @@ router.get(
       });
       const gradingPanel = GradingPanel({
         ...locals,
-        grader_guidelines: rubric_data?.grader_guidelines,
         context: 'main',
       }).toString();
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);

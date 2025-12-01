@@ -222,7 +222,6 @@ export function InstanceQuestion({
                 resLocals,
                 context: 'main',
                 graders,
-                grader_guidelines,
                 aiGradingInfo,
                 selectedInstanceQuestionGroup,
                 showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
@@ -273,7 +272,6 @@ function ConflictGradingJobModal({
   conflict_grading_job,
   graders,
   lastGrader,
-  grader_guidelines,
   skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
@@ -320,7 +318,6 @@ function ConflictGradingJobModal({
                     skip_text: 'Accept existing score',
                     context: 'existing',
                     showInstanceQuestionGroup: false,
-                    grader_guidelines,
                     skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>
@@ -348,7 +345,6 @@ function ConflictGradingJobModal({
                     context: 'conflicting',
                     graders,
                     showInstanceQuestionGroup: false,
-                    grader_guidelines,
                     skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>
