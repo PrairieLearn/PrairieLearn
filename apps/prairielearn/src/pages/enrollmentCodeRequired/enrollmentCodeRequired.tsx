@@ -88,7 +88,8 @@ router.get(
       // Enrollment code is correct
       code?.toUpperCase() === enrollmentCode.toUpperCase() ||
       // Existing enrollments can transition immediately
-      existingEnrollment
+      // Students who rejected the invitation are treated as if they had no status.
+      (existingEnrollment && ['joined', 'invited', 'removed'].includes(existingEnrollment.status))
     ) {
       if (code?.toUpperCase() === enrollmentCode.toUpperCase() || canJoin) {
         // Authorize the user for the course instance

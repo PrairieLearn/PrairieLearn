@@ -70,12 +70,13 @@ export default asyncHandler(async (req, res, next) => {
   const selfEnrollmentAllowed =
     selfEnrollmentEnabled && !selfEnrollmentExpired && institutionRestrictionSatisfied;
 
-  // If the user is not enrolled, and self-enrollment is allowed, then they can enroll.
-  // If the user is enrolled and is invited/rejected/joined/removed, then they can join.
-  const canSelfEnroll = selfEnrollmentAllowed && existingEnrollment == null;
-  const canJoin =
-    existingEnrollment != null &&
-    ['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status);
+  // If the user is not enrolled, or is invited/rejected, and self-enrollment is allowed, then they can enroll.
+  // If the user is enrolled and is joined/removed, then they have access.
+  const canSelfEnroll =
+    selfEnrollmentAllowed &&
+    (existingEnrollment == null || ['invited', 'rejected'].includes(existingEnrollment.status));
+  const hasPreviouslyJoined =
+    existingEnrollment != null && ['joined', 'removed'].includes(existingEnrollment.status);
 
   if (
     idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&
@@ -84,7 +85,7 @@ export default asyncHandler(async (req, res, next) => {
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment
   ) {
-    if (canSelfEnroll || canJoin) {
+    if (canSelfEnroll || hasPreviouslyJoined) {
       await ensureEnrollment({
         institution: res.locals.institution,
         course: res.locals.course,

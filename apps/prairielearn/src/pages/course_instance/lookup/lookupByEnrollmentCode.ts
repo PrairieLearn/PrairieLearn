@@ -69,7 +69,10 @@ router.get(
     if (existingEnrollment) {
       if (!['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status)) {
         throw new HttpStatusError(403, 'You are blocked from accessing this course');
-      } else {
+      }
+
+      // If the user rejected the invitation, we treat them as if they had no status.
+      if (['invited', 'joined', 'removed'].includes(existingEnrollment.status)) {
         // If the user had some other prior enrollment state, return the course instance ID.
         res.json({
           course_instance_id: courseInstance.id,

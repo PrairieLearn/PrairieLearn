@@ -94,17 +94,18 @@ export function OverviewCard({
                     </button>
                   </form>
                 )}
-                {enrollment.status === 'invited' && (
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary d-flex flex-row align-items-center gap-1"
-                    data-bs-toggle="modal"
-                    data-bs-target="#cancelInvitationModal"
-                  >
-                    <i class="fas fa-times" aria-hidden="true" />
-                    <span>Cancel invitation</span>
-                  </button>
-                )}
+                {enrollment.status === 'invited' ||
+                  (enrollment.status === 'rejected' && (
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary d-flex flex-row align-items-center gap-1"
+                      data-bs-toggle="modal"
+                      data-bs-target="#cancelInvitationModal"
+                    >
+                      <i class="fas fa-times" aria-hidden="true" />
+                      <span>Cancel invitation</span>
+                    </button>
+                  ))}
                 {enrollment.status === 'removed' && (
                   <form method="POST">
                     <input type="hidden" name="__csrf_token" value={csrfToken} />
