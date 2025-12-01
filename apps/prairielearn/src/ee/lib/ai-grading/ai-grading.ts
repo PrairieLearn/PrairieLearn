@@ -42,8 +42,7 @@ import {
   selectEmbeddingForSubmission,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
-  selectLastVariantAndSubmission,
-  selectRubricAdditionalContext
+  selectLastVariantAndSubmission
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -69,7 +68,6 @@ export async function aiGrade({
   mode,
   instance_question_ids,
   model_id,
-  ai_grading_additional_context_enabled
 }: {
   question: Question;
   course: Course;
@@ -86,7 +84,6 @@ export async function aiGrade({
    */
   instance_question_ids?: string[];
   model_id: AiGradingModelId;
-  ai_grading_additional_context_enabled: boolean;
 }): Promise<string> {
   const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
   const { model, embeddingModel } = run(() => {

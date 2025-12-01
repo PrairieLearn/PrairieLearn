@@ -305,14 +305,9 @@ export async function updateAssessmentQuestionRubric(
           starting_points,
           min_points,
           max_extra_points,
+          ai_grading_additional_context,
           replace_auto_points
         });
-        if (ai_grading_additional_context !== undefined) {
-          await sqldb.execute(sql.update_rubric_ai_grading_additional_context, {
-            rubric_id: new_rubric_id,
-            ai_grading_additional_context,
-          });
-        }
       })
     }
 

@@ -79,7 +79,6 @@ export interface AssessmentQuestionTableProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
-  aiGradingAdditionalContextEnabled: boolean;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState | null) => void;
   mutations: {
@@ -159,7 +158,6 @@ export function AssessmentQuestionTable({
   course,
   courseInstance,
   aiGradingStats,
-  aiGradingAdditionalContextEnabled,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
@@ -610,7 +608,6 @@ export function AssessmentQuestionTable({
           rubricData={rubricData}
           csrfToken={csrfToken}
           aiGradingStats={aiGradingStats}
-          aiGradingAdditionalContextEnabled={aiGradingAdditionalContextEnabled}
           initialAiGradingAdditionalContext={
             rubricData?.ai_grading_additional_context ?? null
           }

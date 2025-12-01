@@ -229,6 +229,7 @@ SET
   min_points = $min_points,
   max_extra_points = $max_extra_points,
   replace_auto_points = $replace_auto_points,
+  ai_grading_additional_context = $ai_grading_additional_context,
   modified_at = CURRENT_TIMESTAMP
 WHERE
   id = $rubric_id;

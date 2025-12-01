@@ -28,7 +28,6 @@ export function RubricSettings({
   rubricData,
   csrfToken,
   aiGradingStats,
-  aiGradingAdditionalContextEnabled,
   initialAiGradingAdditionalContext,
   context,
 }: {
@@ -36,7 +35,6 @@ export function RubricSettings({
   rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
-  aiGradingAdditionalContextEnabled: boolean;
   initialAiGradingAdditionalContext: string | null;
   context: Record<string, any>;
 }) {
@@ -196,7 +194,7 @@ export function RubricSettings({
       max_points: assessmentQuestion.max_points,
       max_manual_points: assessmentQuestion.max_manual_points,
       max_auto_points: assessmentQuestion.max_auto_points,
-      ai_grading_additional_context: aiGradingAdditionalContextEnabled ? aiGradingAdditionalContext : null,
+      ai_grading_additional_context: aiGradingAdditionalContext,
       rubric_items: rubricItems.map((it, idx) => ({
         order: idx,
         points: it.points ? Number(it.points) : null,
@@ -293,7 +291,7 @@ export function RubricSettings({
       }
       setRubricItems(scaledRubricItems);
 
-      if (aiGradingAdditionalContextEnabled && parsedData.ai_grading_additional_context) {
+      if (parsedData.ai_grading_additional_context) {
         setAiGradingAdditionalContext(parsedData.ai_grading_additional_context);
       }
 
@@ -627,25 +625,22 @@ export function RubricSettings({
                 </div>
               </div>
             </div>
-
-            {aiGradingAdditionalContextEnabled && (
-              <div class="mb-3 col-12 col-md-6 col-xl-5">
-                <label class="form-label" for="ai-grading-additional-context">
-                  Grader guidelines (not shown to students)
-                </label> 
-                <textarea
-                  id="ai-grading-additional-context"
-                  class="form-control"
-                  rows={5}
-                  name="ai-grading-additional-context"
-                  aria-describedby="ai_grading_additional_context_help"
-                  value={aiGradingAdditionalContext}
-                  onChange={(e) =>
-                    setAiGradingAdditionalContext((e.target as HTMLTextAreaElement).value)
-                  }
-                />
-              </div>  
-            )}
+            <div class="mb-3 col-12 col-md-6 col-xl-5">
+              <label class="form-label" for="ai-grading-additional-context">
+                Grader guidelines (not shown to students)
+              </label> 
+              <textarea
+                id="ai-grading-additional-context"
+                class="form-control"
+                rows={5}
+                name="ai-grading-additional-context"
+                aria-describedby="ai_grading_additional_context_help"
+                value={aiGradingAdditionalContext}
+                onChange={(e) =>
+                  setAiGradingAdditionalContext((e.target as HTMLTextAreaElement).value)
+                }
+              />
+            </div>  
           </div>
         </div>
 
