@@ -4092,7 +4092,7 @@ __metadata:
     "@vitest/coverage-v8": "npm:^4.0.7"
     dompurify: "npm:^3.3.0"
     jsdom: "npm:^27.1.0"
-    marked: "npm:^16.4.1"
+    marked: "npm:^17.0.1"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.20.6"
     typescript: "npm:^5.9.3"
@@ -4106,7 +4106,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@vitest/coverage-v8": "npm:^4.0.7"
-    marked: "npm:^16.4.1"
+    marked: "npm:^17.0.1"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.20.6"
     typescript: "npm:^5.9.3"
@@ -4477,7 +4477,7 @@ __metadata:
     lodash: "npm:^4.17.21"
     loopbench: "npm:^2.0.0"
     lru-cache: "npm:^11.2.2"
-    marked: "npm:^16.4.1"
+    marked: "npm:^17.0.1"
     mathjax: "npm:^3.2.2"
     mathlive: "npm:^0.108.2"
     memorystream: "npm:^0.3.1"
@@ -13647,12 +13647,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked@npm:^16.4.1":
-  version: 16.4.1
-  resolution: "marked@npm:16.4.1"
+"marked@npm:^17.0.1":
+  version: 17.0.1
+  resolution: "marked@npm:17.0.1"
   bin:
     marked: bin/marked.js
-  checksum: 10c0/2b5bc04db3453e493ea78758f1fe5006d725ec90aab9bf991242b0820a069d9748e2ac26fb0e2603848a409649c77900e599f3f66d251d0f7e5f606576090a54
+  checksum: 10c0/0197337aad33882308cea52d2c86d7b830a89be729a4010a26a488ae1c224cdc7520b8cce056832a81a127fc39a3827f45e3865c1ff257324cb553cb06ce0e57
   languageName: node
   linkType: hard
 

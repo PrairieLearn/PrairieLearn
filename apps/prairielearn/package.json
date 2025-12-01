@@ -179,7 +179,7 @@
     "lodash": "^4.17.21",
     "loopbench": "^2.0.0",
     "lru-cache": "^11.2.2",
-    "marked": "^16.4.1",
+    "marked": "^17.0.1",
     "mathjax": "^3.2.2",
     "mathlive": "^0.108.2",
     "memorystream": "^0.3.1",
