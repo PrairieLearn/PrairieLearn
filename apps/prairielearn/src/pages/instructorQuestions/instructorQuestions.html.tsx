@@ -5,6 +5,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type CourseInstance } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
@@ -20,7 +21,7 @@ export const QuestionsPage = ({
   course_instances: CourseInstance[];
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) => {
   return PageLayout({
     resLocals,

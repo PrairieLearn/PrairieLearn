@@ -8,6 +8,7 @@ import { config } from '../../lib/config.js';
 import type { FileEdit } from '../../lib/db-types.js';
 import type { FileMetadata } from '../../lib/editorUtil.shared.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 
@@ -36,7 +37,7 @@ export function InstructorFileEditor({
   paths,
   draftEdit,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   editorData: FileEditorData;
   paths: InstructorFilePaths;
   draftEdit: DraftEdit | null;
