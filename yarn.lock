@@ -4532,7 +4532,7 @@ __metadata:
     socket.io-client: "npm:^4.8.1"
     streamifier: "npm:^0.1.1"
     strip-ansi: "npm:^7.1.2"
-    stripe: "npm:^19.3.0"
+    stripe: "npm:^20.0.0"
     superjson: "npm:^2.2.5"
     tablesorter: "npm:^2.32.0"
     tar: "npm:^7.5.2"
@@ -17613,9 +17613,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stripe@npm:^19.3.0":
-  version: 19.3.0
-  resolution: "stripe@npm:19.3.0"
+"stripe@npm:^20.0.0":
+  version: 20.0.0
+  resolution: "stripe@npm:20.0.0"
   dependencies:
     qs: "npm:^6.11.0"
   peerDependencies:
@@ -17623,7 +17623,7 @@ __metadata:
   peerDependenciesMeta:
     "@types/node":
       optional: true
-  checksum: 10c0/c21a0bd26315d143a225162fafe5ed907f8f1c011d366fd21d24cf1b4a7f927b027bbffa89120fa4abba7bbddaf2836ec90142e8f1465142fea484e8b9cc8faf
+  checksum: 10c0/4225ff1f03a77bbaffa9fb2c6ceb421ffb16f37a9a6f6c554e56c96f38646e340bb2deca405b7d8e9338b975791b6fac650ab75775fac58a70e77c3dd9b7e231
   languageName: node
   linkType: hard
 
