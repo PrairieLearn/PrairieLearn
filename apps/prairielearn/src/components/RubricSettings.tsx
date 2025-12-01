@@ -86,6 +86,7 @@ export function RubricSettings({
   const defaultStartingPoints = useRef<number>(rubricData?.starting_points ?? 0);
   const defaultMinPoints = useRef<number>(rubricData?.min_points ?? 0);
   const defaultMaxExtraPoints = useRef<number>(rubricData?.max_extra_points ?? 0);
+  const defaultGraderGuidelines = useRef<string>(initialGraderGuidelines ?? '');
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
@@ -183,6 +184,7 @@ export function RubricSettings({
     setStartingPoints(defaultStartingPoints.current);
     setMinPoints(defaultMinPoints.current);
     setMaxExtraPoints(defaultMaxExtraPoints.current);
+    setGraderGuidelines(defaultGraderGuidelines.current);
     setSettingsError(null);
   };
 
