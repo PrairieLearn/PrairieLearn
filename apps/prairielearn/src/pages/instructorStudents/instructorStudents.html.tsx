@@ -21,19 +21,17 @@ import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
+  NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
   TanstackTableEmptyState,
+  parseAsColumnPinningState,
+  parseAsColumnVisibilityStateWithColumns,
+  parseAsSortingState,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
-import {
-  NuqsAdapter,
-  parseAsColumnPinningState,
-  parseAsColumnVisibilityStateWithColumns,
-  parseAsSortingState,
-} from '../../lib/client/nuqs.js';
 import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';

@@ -329,7 +329,9 @@ export function generateSubmissionMessage({
           throw new Error('No file name found.');
         }
 
-        const fileData = submitted_answer._files?.find((file) => file.name === fileName);
+        const fileData = submitted_answer._files?.find(
+          (file: { name: string; contents: string }) => file.name === fileName,
+        );
 
         if (fileData) {
           // fileData.contents does not contain the MIME type header, so we add it.
