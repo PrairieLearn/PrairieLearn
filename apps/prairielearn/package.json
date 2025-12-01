@@ -144,7 +144,7 @@
     "ejs": "^3.1.10",
     "es-main": "^1.4.0",
     "execa": "^9.6.1",
-    "express": "^4.21.2",
+    "express": "^4.22.0",
     "express-async-handler": "^1.2.0",
     "fabric": "4.6.0-browser",
     "fast-glob": "^3.3.3",
