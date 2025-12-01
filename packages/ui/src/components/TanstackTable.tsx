@@ -521,7 +521,7 @@ export function TanstackTableCard<RowDataModel>({
   // Debounce the filter update
   const debouncedSetFilter = useDebouncedCallback((value: string) => {
     table.setGlobalFilter(value);
-  }, 300);
+  }, 150);
 
   // Focus the search input when Ctrl+F is pressed
   useEffect(() => {
