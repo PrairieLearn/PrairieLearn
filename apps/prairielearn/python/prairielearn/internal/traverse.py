@@ -109,26 +109,18 @@ def traverse_and_replace(
                 fragments = lxml.html.fragments_fromstring(new_elements)
                 new_elements = fragments
 
-            if new_elements == []:
-                # If element's replacement result is empty, still process the
-                # tail_stack, adding the current element's tail if necessary
-                if element.tail is not None:
-                    count_stack[-1] += 1
-                    work_stack.append(element.tail)
-
-            elif isinstance(new_elements, list):
-                # Modify count stack for new elements and decrement for element that was replaced
-                count_stack[-1] += len(new_elements) - 1
-
+            if isinstance(new_elements, list):
                 # Add element tail before processing replaced element
                 if element.tail is not None:
                     count_stack[-1] += 1
                     work_stack.append(element.tail)
 
-                # Extend and go to the next iteration
-                work_stack.extend(reversed(new_elements))
-
-                continue
+                # If there are new elements, extend and go to the next iteration
+                if len(new_elements) > 0:
+                    # Modify count stack for new elements and decrement for element that was replaced
+                    count_stack[-1] += len(new_elements) - 1
+                    work_stack.extend(reversed(new_elements))
+                    continue
 
             elif isinstance(new_elements, lxml.html.HtmlComment):
                 result.append(lxml.html.tostring(new_elements, encoding="unicode"))
