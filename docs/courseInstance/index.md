@@ -165,7 +165,7 @@ To migrate from `allowAccess` to publishing extensions:
       "hideInEnrollPage": /* current value of hideInEnrollPage */,
       "selfEnrollment": { /* None of these settings are modifiable in the old system */
         "enabled": true,
-        "restrictToInstitution": false,
+        "restrictToInstitution": true, /* The previous system did not have this restriction */
         "beforeDate": null,
         "useEnrollmentCode": false,
       }
