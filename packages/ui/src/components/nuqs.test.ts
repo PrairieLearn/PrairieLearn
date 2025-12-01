@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
+  parseAsNumericFilter,
   parseAsSortingState,
 } from './nuqs.js';
 
@@ -166,3 +167,111 @@ describe('parseAsColumnPinningState', () => {
     expect(parser.eq({ left: ['a'], right: [] }, { left: ['a', 'b'], right: [] })).toBe(false);
   });
 });
+
+describe('parseAsNumericFilter', () => {
+  describe('parse', () => {
+    it('parses gte format', () => {
+      expect(parseAsNumericFilter.parse('gte_5')).toEqual({ filterValue: '>=5', emptyOnly: false });
+    });
+    it('parses lte format', () => {
+      expect(parseAsNumericFilter.parse('lte_10')).toEqual({
+        filterValue: '<=10',
+        emptyOnly: false,
+      });
+    });
+    it('parses gt format', () => {
+      expect(parseAsNumericFilter.parse('gt_3')).toEqual({ filterValue: '>3', emptyOnly: false });
+    });
+    it('parses lt format', () => {
+      expect(parseAsNumericFilter.parse('lt_7')).toEqual({ filterValue: '<7', emptyOnly: false });
+    });
+    it('parses eq format', () => {
+      expect(parseAsNumericFilter.parse('eq_5')).toEqual({ filterValue: '=5', emptyOnly: false });
+    });
+    it('parses empty keyword', () => {
+      expect(parseAsNumericFilter.parse('empty')).toEqual({ filterValue: '', emptyOnly: true });
+    });
+    it('returns default for invalid format', () => {
+      expect(parseAsNumericFilter.parse('invalid')).toEqual({ filterValue: '', emptyOnly: false });
+    });
+    it('returns default for empty string', () => {
+      expect(parseAsNumericFilter.parse('')).toEqual({ filterValue: '', emptyOnly: false });
+    });
+    it('returns default for undefined', () => {
+      expect(parseAsNumericFilter.parse(undefined as any)).toEqual({
+        filterValue: '',
+        emptyOnly: false,
+      });
+    });
+    it('parses decimal values', () => {
+      expect(parseAsNumericFilter.parse('gte_3.14')).toEqual({
+        filterValue: '>=3.14',
+        emptyOnly: false,
+      });
+    });
+    it('parses negative values', () => {
+      expect(parseAsNumericFilter.parse('lt_-5')).toEqual({ filterValue: '<-5', emptyOnly: false });
+    });
+  });
+
+  describe('serialize', () => {
+    it('serializes >= format', () => {
+      expect(parseAsNumericFilter.serialize({ filterValue: '>=5', emptyOnly: false })).toBe(
+        'gte_5',
+      );
+    });
+    it('serializes <= format', () => {
+      expect(parseAsNumericFilter.serialize({ filterValue: '<=10', emptyOnly: false })).toBe(
+        'lte_10',
+      );
+    });
+    it('serializes > format', () => {
+      expect(parseAsNumericFilter.serialize({ filterValue: '>3', emptyOnly: false })).toBe('gt_3');
+    });
+    it('serializes < format', () => {
+      expect(parseAsNumericFilter.serialize({ filterValue: '<7', emptyOnly: false })).toBe('lt_7');
+    });
+    it('serializes = format', () => {
+      expect(parseAsNumericFilter.serialize({ filterValue: '=5', emptyOnly: false })).toBe('eq_5');
+    });
+    it('serializes emptyOnly as empty', () => {
+      expect(parseAsNumericFilter.serialize({ filterValue: '', emptyOnly: true })).toBe('empty');
+    });
+    it('serializes empty filterValue as empty', () => {
+      expect(parseAsNumericFilter.serialize({ filterValue: '', emptyOnly: false })).toBe('empty');
+    });
+    it('returns null for invalid filterValue', () => {
+      expect(parseAsNumericFilter.serialize({ filterValue: 'invalid', emptyOnly: false })).toBe(
+        null,
+      );
+    });
+  });
+
+  describe('eq', () => {
+    it('returns true for equal values', () => {
+      expect(
+        parseAsNumericFilter.eq(
+          { filterValue: '>=5', emptyOnly: false },
+          { filterValue: '>=5', emptyOnly: false },
+        ),
+      ).toBe(true);
+    });
+    it('returns false for different filterValue', () => {
+      expect(
+        parseAsNumericFilter.eq(
+          { filterValue: '>=5', emptyOnly: false },
+          { filterValue: '>=10', emptyOnly: false },
+        ),
+      ).toBe(false);
+    });
+    it('returns false for different emptyOnly', () => {
+      expect(
+        parseAsNumericFilter.eq(
+          { filterValue: '', emptyOnly: true },
+          { filterValue: '', emptyOnly: false },
+        ),
+      ).toBe(false);
+    });
+  });
+});
+
