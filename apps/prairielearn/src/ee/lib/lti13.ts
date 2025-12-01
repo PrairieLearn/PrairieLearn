@@ -834,9 +834,9 @@ class Lti13ContextMembership {
     if (user.lti13_sub !== null) {
       return this.#membershipsBySub[user.lti13_sub] ?? null;
     }
-    for (const match of ['uid', 'email']) {
-      const key = user[match as 'uid' | 'email'];
-      if (key === null) continue;
+    for (const match of ['uid', 'email'] as const) {
+      const key = user[match];
+      if (key == null) continue;
 
       const memberResults = this.#membershipsByEmail[key];
 

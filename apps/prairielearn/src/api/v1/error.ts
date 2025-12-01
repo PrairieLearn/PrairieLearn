@@ -15,7 +15,8 @@ export default (function (err, req, res, _next) {
     response_id: res.locals.response_id,
   });
   res.status(statusCode).send({
-    message: status[statusCode as keyof typeof status],
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    message: status[statusCode as keyof typeof status] ?? 'Unknown status code',
     status: statusCode,
   });
 } satisfies ErrorRequestHandler);
