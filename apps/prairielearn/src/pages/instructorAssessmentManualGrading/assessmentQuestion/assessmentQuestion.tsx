@@ -431,7 +431,7 @@ router.post(
           if (req.body.__action === 'ai_grade_assessment_graded') return 'human_graded';
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';
           throw new Error(`Unknown action: ${req.body.__action}`);
-        })
+        }),
       });
 
       res.json({ job_sequence_id });
@@ -507,7 +507,7 @@ router.post(
           req.body.rubric_items,
           req.body.tag_for_manual_grading,
           req.body.grader_guidelines,
-          res.locals.authn_user.user_id
+          res.locals.authn_user.user_id,
         );
         res.redirect(req.originalUrl);
       } catch (err) {

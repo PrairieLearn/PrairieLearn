@@ -629,18 +629,16 @@ export function RubricSettings({
             <div class="mb-3 col-12 col-md-6 col-xl-5">
               <label class="form-label" for="grader-guidelines">
                 Grader guidelines (not shown to students)
-              </label> 
+              </label>
               <textarea
                 id="grader-guidelines"
                 name="grader-guidelines"
                 class="form-control"
                 rows={5}
                 value={graderGuidelines}
-                onChange={(e) =>
-                  setGraderGuidelines((e.target as HTMLTextAreaElement).value)
-                }
+                onChange={(e) => setGraderGuidelines((e.target as HTMLTextAreaElement).value)}
               />
-            </div>  
+            </div>
           </div>
         </div>
 

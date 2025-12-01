@@ -1,4 +1,2 @@
-ALTER TABLE
-    rubrics
-ADD COLUMN
-    grader_guidelines TEXT;
+ALTER TABLE rubrics
+ADD COLUMN grader_guidelines TEXT;

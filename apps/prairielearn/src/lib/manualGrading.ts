@@ -239,7 +239,7 @@ export async function updateAssessmentQuestionRubric(
   rubric_items: RubricItemInput[],
   tag_for_manual_grading: boolean,
   grader_guidelines: string | null,
-  authn_user_id: string
+  authn_user_id: string,
 ): Promise<void> {
   // Basic validation: points and description must exist, description must be within size limits
   if (use_rubric) {
@@ -306,9 +306,9 @@ export async function updateAssessmentQuestionRubric(
           min_points,
           max_extra_points,
           grader_guidelines,
-          replace_auto_points
+          replace_auto_points,
         });
-      })
+      });
     }
 
     if (new_rubric_id !== current_rubric_id) {

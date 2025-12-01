@@ -217,13 +217,7 @@ router.get(
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
 
-    const {
-      rubric
-    } = await selectCompleteRubric(instance_question.assessment_question_id);
-
-    if (rubric == null) {
-      throw new error.HttpStatusError(500, 'Rubric not found for assessment question.');
-    }
+    const { rubric } = await selectCompleteRubric(instance_question.assessment_question_id);
 
     res.send(
       InstanceQuestionPage({
@@ -239,7 +233,7 @@ router.get(
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
-        grader_guidelines: rubric.grader_guidelines,
+        grader_guidelines: rubric?.grader_guidelines,
         skipGradedSubmissions: req.session.skip_graded_submissions,
       }),
     );
@@ -612,7 +606,7 @@ router.post(
           body.rubric_items,
           body.tag_for_manual_grading,
           body.grader_guidelines,
-          res.locals.authn_user.user_id
+          res.locals.authn_user.user_id,
         );
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {

@@ -194,14 +194,14 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${grader_guidelines ? html`
-          <li class="list-group-item">
-            <div class="mb-1">Guidelines:</div>
-            <div>
-              ${grader_guidelines}
-            </div>
-          </li>
-        ` : ''}
+        ${grader_guidelines
+          ? html`
+              <li class="list-group-item">
+                <div class="mb-1">Guidelines:</div>
+                <div>${grader_guidelines}</div>
+              </li>
+            `
+          : ''}
         <li class="list-group-item">
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.replace_auto_points ||

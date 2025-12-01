@@ -42,7 +42,7 @@ import {
   selectEmbeddingForSubmission,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
-  selectLastVariantAndSubmission
+  selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -320,11 +320,8 @@ export async function aiGrade({
         gradedExampleInfo += `\n- ${example.instance_question_id}`;
       }
       logger.info(gradedExampleInfo);
-      
-      const {
-        rubric,
-        rubric_items
-      } = await selectCompleteRubric(assessment_question.id);
+
+      const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
       const input = await generatePrompt({
         questionPrompt,

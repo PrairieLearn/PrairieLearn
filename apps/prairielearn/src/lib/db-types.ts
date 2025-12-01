@@ -1267,7 +1267,7 @@ export const RubricSchema = z.object({
   min_points: z.number(),
   modified_at: DateFromISOString,
   replace_auto_points: z.boolean(),
-  starting_points: z.number()
+  starting_points: z.number(),
 });
 export type Rubric = z.infer<typeof RubricSchema>;
 

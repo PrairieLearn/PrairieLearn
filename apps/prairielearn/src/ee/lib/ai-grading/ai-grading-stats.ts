@@ -16,9 +16,7 @@ import {
 import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
 import { selectCompleteRubric } from '../../../models/rubrics.js';
-import {
-  selectInstanceQuestionsForAssessmentQuestion
-} from './ai-grading-util.js';
+import { selectInstanceQuestionsForAssessmentQuestion } from './ai-grading-util.js';
 import type { AiGradingGeneralStats, WithAIGradingStats } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -125,9 +123,7 @@ export async function fillInstanceQuestionColumnEntries<
       const manualItems = manualGradingJob.rubric_items;
       const aiItems = aiGradingJob.rubric_items;
 
-      const {
-        rubric_items: allRubricItems
-      } = await selectCompleteRubric(assessment_question.id);
+      const { rubric_items: allRubricItems } = await selectCompleteRubric(assessment_question.id);
 
       const tpItems = manualItems
         .filter((item) => rubricListIncludes(aiItems, item))
@@ -168,9 +164,7 @@ export async function calculateAiGradingStats(
     assessment_question_id: assessment_question.id,
   });
 
-  const {
-    rubric_items
-  } = await selectCompleteRubric(assessment_question.id);
+  const { rubric_items } = await selectCompleteRubric(assessment_question.id);
 
   const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
 

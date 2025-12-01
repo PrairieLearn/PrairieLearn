@@ -147,7 +147,7 @@ export function AssessmentQuestionTable({
   csrfToken,
   instanceQuestionsInfo: initialInstanceQuestionsInfo,
   urlPrefix,
-  assessment, 
+  assessment,
   assessmentQuestion,
   questionQid,
   aiGradingMode,
@@ -608,9 +608,7 @@ export function AssessmentQuestionTable({
           rubricData={rubricData}
           csrfToken={csrfToken}
           aiGradingStats={aiGradingStats}
-          initialGraderGuidelines={
-            rubricData?.grader_guidelines ?? null
-          }
+          initialGraderGuidelines={rubricData?.grader_guidelines ?? null}
           context={{
             course_short_name: course.short_name,
             course_instance_short_name: courseInstance.short_name,

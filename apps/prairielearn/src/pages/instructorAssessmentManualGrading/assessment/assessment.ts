@@ -181,7 +181,7 @@ router.post(
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
           model_id,
-          mode: 'all'
+          mode: 'all',
         });
       }
       flash('success', 'AI grading successfully initiated.');
