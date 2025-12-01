@@ -55,6 +55,7 @@ export function Lti13Test({
 }
 
 export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any> }) {
+  const isAssignmentSelection = parameters?.target_link_uri.endsWith('assignment_selection');
   return html`
     <!doctype html>
     <html lang="en">
@@ -63,7 +64,8 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
       </head>
       <body>
         <main id="content" class="m-3">
-          <form id="interceptForm" method="POST" action="" target="_blank">
+          <!-- We have to use a named target here for window.opener to work. -->
+          <form id="interceptForm" method="POST" action="" target="PrairieLearnFromIframe">
             ${Object.entries(parameters).map(
               ([key, value]) =>
                 html`<input type="hidden" name="${key}" value="${String(value)}" />`,
@@ -72,19 +74,59 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
               Open PrairieLearn in a new window
             </button>
           </form>
-          <div id="message">If there are login errors, reload this page to start again.</div>
+          <div id="message">
+            <p>If there are login errors, reload this page to start again.</p>
+            ${isAssignmentSelection
+              ? html`<p>Come back here when finished to complete the assignment linking.</p>`
+              : ''}
+          </div>
 
           <script>
             const form = document.getElementById('interceptForm');
             const button = document.getElementById('submitButton');
             const messageDiv = document.getElementById('message');
 
+            let childRef = null;
+
             form.addEventListener('submit', function () {
+              childRef = window.open('', 'PrairieLearnFromIframe');
               button.disabled = true;
               button.textContent = 'Opened PrairieLearn in a new window';
               messageDiv.textContent = 'Reload this page to access PrairieLearn again.';
             });
           </script>
+          ${isAssignmentSelection
+            ? html`
+                <script>
+                  window.addEventListener('message', function (event) {
+                    if (event.origin !== window.location.origin || event.source !== childRef) {
+                      console.warn('Blocked message from untrusted source: ', event.origin);
+                      return;
+                    }
+
+                    const responseForm = document.createElement('form');
+                    responseForm.method = 'POST';
+                    responseForm.action = event.data.return_url;
+
+                    const JWT = document.createElement('input');
+                    JWT.type = 'hidden';
+                    JWT.name = 'JWT';
+                    JWT.value = event.data.JWT;
+                    responseForm.appendChild(JWT);
+
+                    const submit = document.createElement('button');
+                    submit.type = 'submit';
+                    submit.textContent = 'Finish the process';
+                    submit.className = 'btn btn-primary';
+                    responseForm.appendChild(submit);
+
+                    messageDiv.replaceWith(responseForm);
+
+                    responseForm.submit(); // Make this non-interactive
+                  });
+                </script>
+              `
+            : ''}
         </main>
       </body>
     </html>
