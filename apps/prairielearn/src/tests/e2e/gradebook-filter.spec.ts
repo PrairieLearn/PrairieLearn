@@ -95,13 +95,6 @@ test.describe('Gradebook numeric filter', () => {
       .catch(() => 'Not found');
     console.log('Showing text:', showingTextDebug);
 
-    // Look for any error alerts
-    const alerts = await page.locator('.alert').all();
-    for (const alert of alerts) {
-      const alertText = await alert.textContent();
-      console.log('Alert found:', alertText);
-    }
-
     // Wait for table to load (it may take a moment to populate)
     const tableBody = page.locator('tbody').first();
     await expect(tableBody.locator('tr')).toHaveCount(7, { timeout: 10000 });
