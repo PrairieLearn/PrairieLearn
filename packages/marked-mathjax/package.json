@@ -17,7 +17,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@vitest/coverage-v8": "^4.0.14",
-    "marked": "^16.4.1",
+    "marked": "^17.0.1",
     "mathjax": "^3.2.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
