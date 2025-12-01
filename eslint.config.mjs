@@ -364,6 +364,9 @@ export default tseslint.config([
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
 
+      // We are disabling the test for a reason.
+      'vitest/no-disabled-tests': ['off'],
+
       // This gives a lot of false positives; we sometimes author tests that
       // have the assertion in a helper function. We could refactor them in
       // the future, but for now we'll disable this rule.

@@ -80,7 +80,7 @@ export interface AssessmentQuestionTableProps {
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
-  onSetConflictModalState: (modalState: ConflictModalState | null) => void;
+  onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: {
     batchActionMutation: ReturnType<typeof useManualGradingActions>['batchActionMutation'];
     handleBatchAction: ReturnType<typeof useManualGradingActions>['handleBatchAction'];
