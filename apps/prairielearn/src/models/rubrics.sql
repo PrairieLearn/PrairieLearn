@@ -11,10 +11,10 @@ WHERE
 SELECT
   ri.*
 FROM
-  rubric_items AS ri
-  JOIN rubrics AS r ON r.id = ri.rubric_id
-  JOIN assessment_questions AS aq ON aq.manual_rubric_id = r.id
+  assessment_questions AS aq
+  JOIN rubric_items AS ri ON aq.manual_rubric_id = ri.rubric_id
 WHERE
   aq.id = $assessment_question_id
+  AND ri.deleted_at IS NULL
 ORDER BY
   ri.number;
