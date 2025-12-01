@@ -238,4 +238,4 @@ See the [question accessibility documentation](accessibility.md) for more inform
 ## Custom templates
 
 Creating a question with a QID starting with `template/` will create a question that can be used as a template for other questions.
-This template question can be used as a starting point for a new question by selecting it in the "Create Question" modal.
+This template question can be used as a starting point for a new question by selecting it in the "Create Question" modal (accessible from the "Questions" tab in the course menu).
