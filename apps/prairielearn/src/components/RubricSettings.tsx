@@ -65,7 +65,9 @@ export function RubricSettings({
   const [minPoints, setMinPoints] = useState<number>(rubricData?.min_points ?? 0);
   const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubricData?.max_extra_points ?? 0);
   const [tagForGrading, setTagForGrading] = useState<boolean>(false);
-  const [graderGuidelines, setGraderGuidelines] = useState<string>(rubricData?.grader_guidelines ?? '');
+  const [graderGuidelines, setGraderGuidelines] = useState<string>(
+    rubricData?.grader_guidelines ?? '',
+  );
 
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);

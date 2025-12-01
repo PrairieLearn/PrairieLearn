@@ -13,9 +13,9 @@ import {
   type RubricItem,
   RubricItemSchema,
 } from '../../../lib/db-types.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
-import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { selectInstanceQuestionsForAssessmentQuestion } from './ai-grading-util.js';
 import type { AiGradingGeneralStats, WithAIGradingStats } from './types.js';
 

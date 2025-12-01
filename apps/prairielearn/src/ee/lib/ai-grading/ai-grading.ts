@@ -27,9 +27,9 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
-import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
