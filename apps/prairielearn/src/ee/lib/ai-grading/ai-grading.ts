@@ -29,6 +29,7 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
@@ -42,8 +43,7 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricAdditionalContext,
-  selectRubricForGrading
+  selectRubricAdditionalContext
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -323,10 +323,11 @@ export async function aiGrade({
         gradedExampleInfo += `\n- ${example.instance_question_id}`;
       }
       logger.info(gradedExampleInfo);
-
-      const rubric_items = await selectRubricForGrading(assessment_question.id);
-
-      const additional_context = ai_grading_additional_context_enabled ? (await selectRubricAdditionalContext(assessment_question.id)) : undefined;
+      
+      const {
+        rubric,
+        rubric_items
+      } = await selectCompleteRubric(assessment_question.id);
 
       const input = await generatePrompt({
         questionPrompt,
@@ -335,7 +336,7 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
-        additional_context,
+        additional_context: rubric.ai_grading_additional_context,
         model_id,
       });
 

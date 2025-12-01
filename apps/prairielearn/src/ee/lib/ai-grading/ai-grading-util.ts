@@ -540,16 +540,6 @@ export async function selectClosestSubmissionInfo({
   );
 }
 
-export async function selectRubricForGrading(
-  assessment_question_id: string,
-): Promise<RubricItem[]> {
-  return await queryRows(
-    sql.select_rubric_for_grading,
-    { assessment_question_id },
-    RubricItemSchema,
-  );
-}
-
 export async function selectRubricAdditionalContext(
   assessment_question_id: string
 ): Promise<string> {
