@@ -1,2 +1,4 @@
+# debuginfod requires network connectivity, which is usually disabled. Turn off to avoid warnings.
 set debuginfod enabled off
+# ASLR (Address Space Layout Randomization) cannot be disabled in a regular Docker container. Turn off to avoid warnings.
 set disable-randomization off

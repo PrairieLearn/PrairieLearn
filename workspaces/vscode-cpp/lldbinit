@@ -1,1 +1,2 @@
+# ASLR cannot be disabled in a container.
 settings set target.disable-aslr false

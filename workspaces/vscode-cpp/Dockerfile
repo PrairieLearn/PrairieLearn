@@ -31,8 +31,8 @@ RUN arch="$(uname -m)" && \
     --install-extension ms-vscode.makefile-tools \
     --install-extension /tmp/codelldb-linux.vsix \
     && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs /tmp/codelldb-linux.vsix \
-    # Merge existing settings with new settings
-    && cp /home/coder/.local/share/code-server/User/settings.json /tmp/old_settings.json \
-    && jq -s '.[0] + .[1]' /tmp/old_settings.json /tmp/new_settings.json > /home/coder/.local/share/code-server/User/settings.json \
-    && rm /tmp/old_settings.json /tmp/new_settings.json
+    # Merge vscode-base settings with vscode-cpp settings
+    && cp /home/coder/.local/share/code-server/User/settings.json /tmp/base_settings.json \
+    && jq -s '.[0] + .[1]' /tmp/base_settings.json /tmp/new_settings.json > /home/coder/.local/share/code-server/User/settings.json \
+    && rm /tmp/base_settings.json /tmp/new_settings.json
 
