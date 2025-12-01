@@ -111,7 +111,7 @@ const tableOptions = {
 
 This package provides utilities for integrating [nuqs](https://nuqs.47ng.com/) (type-safe URL query state management) with server-side rendering and TanStack Table.
 
-#### NuqsAdapter
+### NuqsAdapter
 
 `nuqs` needs to be aware of the current state of the URL search parameters during both server-side and client-side rendering. The `NuqsAdapter` component handles this by using a custom adapter on the server that reads from a provided `search` prop, while on the client it uses nuqs's built-in React adapter that reads directly from `location.search`.
 
@@ -124,7 +124,7 @@ import { NuqsAdapter } from '@prairielearn/ui';
 </NuqsAdapter>;
 ```
 
-#### TanStack Table State Parsers
+### TanStack Table State Parsers
 
 The package provides custom parsers for syncing TanStack Table state with URL query parameters:
 
