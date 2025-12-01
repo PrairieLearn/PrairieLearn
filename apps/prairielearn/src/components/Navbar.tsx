@@ -3,7 +3,9 @@ import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { assertNever } from '../lib/types.js';
+import type { Override } from '../middlewares/authzCourseOrInstance.js';
 
 import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
@@ -19,7 +21,7 @@ export function Navbar({
   isInPageLayout = false,
   sideNavEnabled = false,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
@@ -159,7 +161,7 @@ function NavbarByType({
   navbarType,
   isInPageLayout,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navSubPage: NavSubPage;
   navbarType: NavbarType;
@@ -180,8 +182,9 @@ function NavbarByType({
       });
     } else {
       switch (navbarType) {
-        case 'plain':
         case undefined:
+        case 'plain':
+        case 'administrator':
           return NavbarPlain({ resLocals, navPage });
         case 'instructor':
           return NavbarInstructor({ resLocals, navPage, navSubPage });
@@ -201,7 +204,7 @@ function UserDropdownMenu({
   navPage,
   navbarType,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navbarType: NavbarType;
 }) {
@@ -355,7 +358,7 @@ function FlashMessages() {
   );
 }
 
-function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
+function ViewTypeMenu({ resLocals }: { resLocals: UntypedResLocals }) {
   const {
     viewType,
     course,
@@ -368,8 +371,8 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the authenticated user is an administrator.
-  if (course?.example_course && !authz_data?.authn_is_administrator) {
+  // user if the authenticated user is an administrator or we are in development mode.
+  if (course?.example_course && !config.devMode && !authz_data?.authn_is_administrator) {
     return '';
   }
 
@@ -556,13 +559,13 @@ function AuthnOverrides({
   resLocals,
   navbarType,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navbarType: NavbarType;
 }) {
   const { authz_data, urlPrefix, course, course_instance } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the authenticated user is an administrator.
+  // user if the authenticated user is an administrator or we are in development mode.
   if (course?.example_course && !config.devMode && !authz_data?.authn_is_administrator) {
     return '';
   }
@@ -618,7 +621,7 @@ function AuthnOverrides({
           <div class="dropdown-item-text">
             <div class="list-group small text-nowrap">
               ${authz_data.overrides.map(
-                (override) => html`
+                (override: Override) => html`
                   <div class="list-group-item list-group-item-warning small p-2">
                     <div class="d-flex flex-row justify-content-between align-items-center">
                       <div class="p-0 me-4">
@@ -652,7 +655,7 @@ function AuthnOverrides({
   `;
 }
 
-function NavbarPlain({ resLocals, navPage }: { resLocals: Record<string, any>; navPage: NavPage }) {
+function NavbarPlain({ resLocals, navPage }: { resLocals: UntypedResLocals; navPage: NavPage }) {
   if (!resLocals.is_administrator) return '';
 
   return html`
@@ -692,7 +695,7 @@ function NavbarButtons({
   navPage,
   navbarType,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navbarType: NavbarType;
 }) {
@@ -781,13 +784,7 @@ function NavbarButtons({
   `;
 }
 
-function NavbarStudent({
-  resLocals,
-  navPage,
-}: {
-  resLocals: Record<string, any>;
-  navPage: NavPage;
-}) {
+function NavbarStudent({ resLocals, navPage }: { resLocals: UntypedResLocals; navPage: NavPage }) {
   const { course, course_instance, assessment_instance, assessment_instance_label, urlPrefix } =
     resLocals;
 
@@ -820,7 +817,7 @@ function NavbarInstructor({
   navPage,
   navSubPage,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navSubPage?: NavSubPage;
 }) {
@@ -1052,7 +1049,7 @@ function NavbarInstructor({
   `;
 }
 
-function NavbarPublic({ resLocals }: { resLocals: Record<string, any> }) {
+function NavbarPublic({ resLocals }: { resLocals: UntypedResLocals }) {
   const { course, urlPrefix } = resLocals;
   return html`
     <li class="nav-item btn-group">
@@ -1067,7 +1064,7 @@ function NavbarPublic({ resLocals }: { resLocals: Record<string, any> }) {
   `;
 }
 
-function NavbarInstitution({ resLocals }: { resLocals: Record<string, any> }) {
+function NavbarInstitution({ resLocals }: { resLocals: UntypedResLocals }) {
   const { institution } = resLocals;
 
   return html`
@@ -1079,7 +1076,7 @@ function NavbarInstitution({ resLocals }: { resLocals: Record<string, any> }) {
   `;
 }
 
-function NavbarAdministratorInstitution({ resLocals }: { resLocals: Record<string, any> }) {
+function NavbarAdministratorInstitution({ resLocals }: { resLocals: UntypedResLocals }) {
   const { institution } = resLocals;
 
   return html`

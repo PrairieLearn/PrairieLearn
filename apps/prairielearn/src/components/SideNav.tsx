@@ -4,6 +4,7 @@ import { type HtmlValue, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { isEnterprise } from '../lib/license.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
@@ -23,12 +24,12 @@ interface SideNavTabInfo {
   checkActiveSubPageForPages?: NavPage[];
   /** For the side nav tab to be active, the navSubPage must be in activeSubPages. */
   activeSubPages: NavSubPage[];
-  urlSuffix: string | ((resLocals: Record<string, any>) => string);
+  urlSuffix: string | ((resLocals: UntypedResLocals) => string);
   iconClasses: string;
   tabLabel: string;
   tabTooltip?: string;
-  htmlSuffix?: (resLocals: Record<string, any>) => HtmlValue;
-  renderCondition?: (resLocals: Record<string, any>) => boolean;
+  htmlSuffix?: (resLocals: UntypedResLocals) => HtmlValue;
+  renderCondition?: (resLocals: UntypedResLocals) => boolean;
 }
 
 const sideNavPagesTabs = {
@@ -150,7 +151,7 @@ const sideNavPagesTabs = {
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['settings', 'access', 'lti', 'billing'],
+      activeSubPages: ['settings', 'publishing', 'lti', 'billing'],
       urlSuffix: '/instance_admin/settings',
       iconClasses: 'fas fa-cog',
       tabLabel: 'Instance settings',
@@ -163,10 +164,14 @@ export function SideNav({
   resLocals,
   page,
   subPage,
+  sideNavExpanded,
+  persistToggleState = true,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   page: NavPage;
   subPage: NavSubPage;
+  sideNavExpanded: boolean;
+  persistToggleState?: boolean;
 }) {
   // We recompute `urlPrefix` instead of using the one from `resLocals` because
   // it may not be populated correctly in the case of an access error, specifically
@@ -189,6 +194,8 @@ export function SideNav({
       page,
       subPage,
       urlPrefix,
+      sideNavExpanded,
+      persistToggleState,
     })}
     ${resLocals.course_instance
       ? CourseInstanceNav({
@@ -196,6 +203,7 @@ export function SideNav({
           page,
           subPage,
           urlPrefix,
+          sideNavExpanded,
         })
       : ''}
   `;
@@ -206,11 +214,15 @@ function CourseNav({
   page,
   subPage,
   urlPrefix,
+  sideNavExpanded,
+  persistToggleState,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   page: NavPage;
   subPage: NavSubPage;
   urlPrefix: string;
+  sideNavExpanded: boolean;
+  persistToggleState: boolean;
 }) {
   const courseSideNavPageTabs = sideNavPagesTabs.course_admin;
 
@@ -222,14 +234,12 @@ function CourseNav({
         type="button"
         data-bs-toggle="tooltip"
         data-bs-placement="right"
-        data-bs-title="${resLocals.side_nav_expanded ? 'Collapse side nav' : 'Expand side nav'}"
+        data-bs-title="${sideNavExpanded ? 'Collapse side nav' : 'Expand side nav'}"
+        data-persist-toggle-state="${persistToggleState ? 'true' : 'false'}"
       >
         <i
           id="side-nav-toggler-icon"
-          class="${clsx(
-            'bi',
-            resLocals.side_nav_expanded ? 'bi-arrow-bar-left' : 'bi-arrow-bar-right',
-          )}"
+          class="${clsx('bi', sideNavExpanded ? 'bi-arrow-bar-left' : 'bi-arrow-bar-right')}"
         ></i>
       </button>
     </div>
@@ -270,6 +280,7 @@ function CourseNav({
           navSubPage: subPage,
           tabInfo,
           urlPrefix,
+          sideNavExpanded,
         }),
       )}
     </div>
@@ -281,11 +292,13 @@ function CourseInstanceNav({
   page,
   subPage,
   urlPrefix,
+  sideNavExpanded,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   page: NavPage;
   subPage: NavSubPage;
   urlPrefix: string;
+  sideNavExpanded: boolean;
 }) {
   const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
   return html`
@@ -332,6 +345,7 @@ function CourseInstanceNav({
                 navSubPage: subPage,
                 tabInfo,
                 urlPrefix,
+                sideNavExpanded,
               }),
             )
           : ''}
@@ -346,12 +360,14 @@ function SideNavLink({
   navSubPage,
   tabInfo,
   urlPrefix,
+  sideNavExpanded,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navSubPage: NavSubPage;
   tabInfo: SideNavTabInfo;
   urlPrefix: string;
+  sideNavExpanded: boolean;
 }) {
   const {
     activePages,
@@ -373,8 +389,6 @@ function SideNavLink({
   if (isActive && (!checkActiveSubPageForPages || checkActiveSubPageForPages.includes(navPage))) {
     isActive = activeSubPages.includes(navSubPage);
   }
-
-  const sideNavExpanded = resLocals.side_nav_expanded;
 
   return html`
     <a

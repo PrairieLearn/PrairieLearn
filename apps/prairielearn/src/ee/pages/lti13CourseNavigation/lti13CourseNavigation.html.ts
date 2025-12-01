@@ -3,6 +3,7 @@ import { html } from '@prairielearn/html';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { STUDENT_ROLE } from '../../lib/lti13.js';
 
 export function Lti13CourseNavigationInstructor({
@@ -12,7 +13,7 @@ export function Lti13CourseNavigationInstructor({
   lti13_instance_id,
 }: {
   courseName: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   courses: Course[];
   lti13_instance_id: string;
 }): string {
@@ -111,7 +112,7 @@ export function Lti13CourseNavigationNotReady({
   ltiRoles,
 }: {
   courseName: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   ltiRoles: string[];
 }): string {
   return PageLayout({
@@ -158,7 +159,7 @@ export function Lti13CourseNavigationDone({
   resLocals,
   lti13_instance_id,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   lti13_instance_id: string;
 }): string {
   return PageLayout({

@@ -29,7 +29,7 @@
   "dependencies": {
     "@types/tar-stream": "^3.1.4",
     "get-stream": "^9.0.1",
-    "node-gyp": "^11.5.0",
+    "node-gyp": "^12.1.0",
     "preact-compat": "^3.19.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -40,7 +40,7 @@
     "@eslint-react/eslint-plugin": "^2.3.1",
     "@html-eslint/eslint-plugin": "^0.47.1",
     "@playwright/test": "^1.56.1",
-    "@postgrestools/postgrestools": "^0.17.2",
+    "@postgres-language-server/cli": "^0.17.2",
     "@stylistic/eslint-plugin": "^5.5.0",
     "@tanstack/eslint-plugin-query": "^5.91.2",
     "@vitest/coverage-v8": "^4.0.7",

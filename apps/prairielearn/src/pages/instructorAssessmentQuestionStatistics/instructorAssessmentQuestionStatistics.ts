@@ -13,6 +13,7 @@ import {
   updateAssessmentStatistics,
 } from '../../lib/assessment.js';
 import { AssessmentSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
@@ -25,7 +26,7 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function makeStatsCsvFilename(locals) {
+function makeStatsCsvFilename(locals: UntypedResLocals) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,

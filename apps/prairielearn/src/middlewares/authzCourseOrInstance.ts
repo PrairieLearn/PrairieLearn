@@ -35,7 +35,7 @@ import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-interface Override {
+export interface Override {
   name: string;
   value: string;
   cookie: string;
@@ -414,8 +414,14 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  // If this is an example course, only allow overrides if the user is an administrator.
-  if (authnCourse.example_course && !res.locals.is_administrator && overrides.length > 0) {
+  // If we're working with an example course, only allow changing the effective
+  // user if the authenticated user is an administrator or we are in development mode.
+  if (
+    authnCourse.example_course &&
+    !res.locals.is_administrator &&
+    !config.devMode &&
+    overrides.length > 0
+  ) {
     clearOverrideCookies(res, overrides);
 
     throw new AugmentedError('Access denied', {

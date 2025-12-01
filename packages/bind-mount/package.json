@@ -16,7 +16,7 @@
   "dependencies": {
     "bindings": "^1.5.0",
     "nan": "^2.23.1",
-    "node-gyp": "^11.5.0"
+    "node-gyp": "^12.1.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

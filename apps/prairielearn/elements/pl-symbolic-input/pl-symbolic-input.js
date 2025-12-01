@@ -367,7 +367,7 @@
           },
           {
             class: 'small',
-            latex: '\\frac{#@}{#0}',
+            latex: '\\frac{#@}{#?}',
             width: 1.3,
             variants: [{ class: 'small', latex: '\\frac{1}{#@}' }],
           },
@@ -382,17 +382,17 @@
           '\\pi',
         ],
         [
-          { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#0}' },
+          { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#@}' },
           logAsLn
             ? {
                 class: 'small',
                 latex: '\\ln',
-                insert: '\\ln({#0})',
+                insert: '\\operatorname{ln}\\left({#@}\\right)',
               }
             : {
                 class: 'small',
                 latex: '\\log',
-                insert: '\\log({#0})',
+                insert: '\\operatorname{log}\\left({#@}\\right)',
               },
           { class: 'small', latex: '!' },
           '[separator]',
@@ -406,9 +406,9 @@
           imaginaryUnit,
         ],
         [
-          { class: 'small', latex: '|#0|', insert: '|{#0}|' },
-          { class: 'small', latex: '\\min', insert: '\\min({#0})' },
-          { class: 'small', latex: '\\max', insert: '\\max({#0})' },
+          { class: 'small', latex: '|#@|', insert: '|{#@}|' },
+          { class: 'small', latex: '\\min', insert: '\\operatorname{min}\\left({#@}\\right)' },
+          { class: 'small', latex: '\\max', insert: '\\operatorname{max}\\left({#@}\\right)' },
           '[separator]',
           '1',
           '2',
@@ -420,7 +420,7 @@
           {
             class: 'small',
             latex: '\\mathrm{sign}',
-            insert: '\\operatorname{sign}({#0})',
+            insert: '\\operatorname{sign}\\left({#@}\\right)',
           },
         ],
         [
@@ -429,19 +429,27 @@
                 class: 'small',
                 latex: '\\sin',
 
-                insert: '\\sin({#0})',
+                insert: '\\operatorname{sin}\\left({#@}\\right)',
                 variants: [
-                  { class: 'small', latex: '\\csc', insert: '\\csc({#0})' },
-                  { class: 'small', latex: '\\arcsin', insert: '\\arcsin({#0})' },
+                  {
+                    class: 'small',
+                    latex: '\\csc',
+                    insert: '\\operatorname{csc}\\left({#@}\\right)',
+                  },
+                  {
+                    class: 'small',
+                    latex: '\\arcsin',
+                    insert: '\\operatorname{arcsin}\\left({#@}\\right)',
+                  },
                   {
                     class: 'small',
                     latex: '\\mathrm{sinh}',
-                    insert: '\\operatorname{sinh}({#0})',
+                    insert: '\\operatorname{sinh}\\left({#@}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{asinh}',
-                    insert: '\\operatorname{asinh}({#0})',
+                    insert: '\\operatorname{asinh}\\left({#@}\\right)',
                   },
                 ],
               }
@@ -450,19 +458,27 @@
             ? {
                 class: 'small',
                 latex: '\\cos',
-                insert: '\\cos({#0})',
+                insert: '\\operatorname{cos}\\left({#@}\\right)',
                 variants: [
-                  { class: 'small', latex: '\\sec', insert: '\\sec({#0})' },
-                  { class: 'small', latex: '\\arccos', insert: '\\arccos({#0})' },
+                  {
+                    class: 'small',
+                    latex: '\\sec',
+                    insert: '\\operatorname{sec}\\left({#@}\\right)',
+                  },
+                  {
+                    class: 'small',
+                    latex: '\\arccos',
+                    insert: '\\operatorname{arccos}\\left({#@}\\right)',
+                  },
                   {
                     class: 'small',
                     latex: '\\mathrm{cosh}',
-                    insert: '\\operatorname{cosh}({#0})',
+                    insert: '\\operatorname{cosh}\\left({#@}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{acosh}',
-                    insert: '\\operatorname{acosh}({#0})',
+                    insert: '\\operatorname{acosh}\\left({#@}\\right)',
                   },
                 ],
               }
@@ -471,24 +487,32 @@
             ? {
                 class: 'small',
                 latex: '\\tan',
-                insert: '\\tan({#0})',
+                insert: '\\operatorname{tan}\\left({#@}\\right)',
                 variants: [
-                  { class: 'small', latex: '\\cot', insert: '\\cot({#0})' },
-                  { class: 'small', latex: '\\arctan', insert: '\\arctan({#0})' },
+                  {
+                    class: 'small',
+                    latex: '\\cot',
+                    insert: '\\operatorname{cot}\\left({#@}\\right)',
+                  },
+                  {
+                    class: 'small',
+                    latex: '\\arctan',
+                    insert: '\\operatorname{arctan}\\left({#@}\\right)',
+                  },
                   {
                     class: 'small',
                     latex: '\\mathrm{tanh}',
-                    insert: '\\operatorname{tanh}({#0})',
+                    insert: '\\operatorname{tanh}\\left({#@}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{atanh}',
-                    insert: '\\operatorname{atanh}({#0})',
+                    insert: '\\operatorname{atanh}\\left({#@}\\right)',
                   },
                   {
                     class: 'small',
                     latex: '\\mathrm{arctan2}',
-                    insert: '\\operatorname{arctan2}({#0})',
+                    insert: '\\operatorname{arctan2}\\left({#@}\\right)',
                   },
                 ],
               }
@@ -510,35 +534,6 @@
     });
 
     setUpSymbolicInputMacros(mf);
-
-    // Additional shortcuts for instant replacement inside the pl-symbolic-input box
-    mf.inlineShortcuts = {
-      '**': {
-        value: '{#@}^{#?}',
-      },
-      '*': {
-        value: '\\cdot',
-      },
-      '|': {
-        value: '|{#0}|',
-      },
-      // Prevent double | key presses being replaced by absabs
-      '||': {
-        value: '|{#0}|',
-      },
-      sqrt: {
-        value: '\\sqrt{#0}',
-      },
-      pi: {
-        value: '\\pi',
-      },
-      infty: {
-        value: '\\infty',
-      },
-      infinity: {
-        value: '\\infty',
-      },
-    };
 
     // Disable auto-complete suggestions for macros
     mf.popoverPolicy = 'off';
@@ -638,12 +633,35 @@
       ([letter, unicode]) => (macros[letter] = String.fromCodePoint(Number.parseInt(unicode, 16))),
     );
 
-    mf.macros = macros;
-
-    mf.onInlineShortcut = (mf, s) => {
-      if (customFunctions.has(s)) return `\\${s}({#0})`;
-      if (greekLetters.has(s) || greekLettersToUnicode.has(s)) return `\\${s}`;
-      return '';
+    // Additional shortcuts for instant replacement inside the pl-symbolic-input box
+    const inlineShortcuts = {
+      '**': {
+        value: '{#@}^{#?}',
+      },
+      '*': {
+        value: '\\cdot',
+      },
+      '|': {
+        value: '|{#@}|',
+      },
+      sqrt: {
+        value: '\\sqrt{#@}',
+      },
+      pi: {
+        value: '\\pi',
+      },
+      infty: {
+        value: '\\infty',
+      },
+      infinity: {
+        value: '\\infty',
+      },
     };
+    [...customFunctions].forEach((f) => (inlineShortcuts[f] = `\\operatorname{${f}}`));
+    [...greekLettersToUnicode.keys()].forEach((l) => (inlineShortcuts[l] = `\\${l}`));
+    [...greekLetters].forEach((l) => (inlineShortcuts[l] = `\\${l}`));
+
+    mf.macros = macros;
+    mf.inlineShortcuts = inlineShortcuts;
   }
 })();

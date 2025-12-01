@@ -5,6 +5,7 @@ import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.
 import { PageLayout } from '../../components/PageLayout.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
 import { type GroupInfo } from '../../lib/groups.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function StudentAssessment({
   resLocals,
@@ -13,7 +14,7 @@ export function StudentAssessment({
   userCanAssignRoles,
   customHonorCode,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   groupConfig?: GroupConfig;
   groupInfo?: GroupInfo | null;
   userCanAssignRoles?: boolean;
@@ -38,9 +39,9 @@ export function StudentAssessment({
     `,
     content: html`
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>${assessment_set.abbreviation}${assessment.number}: ${assessment.title}</h1>
-          ${assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
+          ${assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
         </div>
 
         <div class="card-body">
@@ -167,7 +168,7 @@ function StudentGroupControls({
   userCanAssignRoles = false,
   resLocals,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   groupConfig?: GroupConfig;
   groupInfo?: GroupInfo | null;
   userCanAssignRoles?: boolean;

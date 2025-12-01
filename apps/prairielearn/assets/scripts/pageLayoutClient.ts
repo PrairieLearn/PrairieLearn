@@ -31,6 +31,9 @@ onDocumentReady(() => {
     return;
   }
 
+  const persistToggleState =
+    sideNavTogglerButton.getAttribute('data-persist-toggle-state') !== 'false';
+
   sideNavTogglerButton.addEventListener('click', async () => {
     const sideNavExpanded = !appContainerDiv.classList.contains('collapsed');
 
@@ -77,16 +80,18 @@ onDocumentReady(() => {
       new window.bootstrap.Tooltip(sideNavTogglerButton);
     }
 
-    // Update the side nav expanded state
-    await fetch('/pl/side_nav/settings', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        side_nav_expanded: !sideNavExpanded,
-      }),
-    });
+    if (persistToggleState) {
+      // Update the side nav expanded state
+      await fetch('/pl/side_nav/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          side_nav_expanded: !sideNavExpanded,
+        }),
+      });
+    }
   });
 
   sideNavMobileButton.addEventListener('click', () => {
