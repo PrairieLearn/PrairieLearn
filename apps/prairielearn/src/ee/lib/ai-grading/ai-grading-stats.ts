@@ -74,7 +74,7 @@ export async function fillInstanceQuestionColumnEntries<
     await selectInstanceQuestionGroups({
       assessmentQuestionId: assessment_question.id,
     })
-  ).reduce((acc, curr) => {
+  ).reduce<Record<string, string>>((acc, curr) => {
     acc[curr.id] = curr.instance_question_group_name;
     return acc;
   }, {});

@@ -303,6 +303,7 @@
     "@types/streamifier": "^0.1.2",
     "@types/tar": "^6.1.13",
     "@types/tmp": "^0.2.6",
+    "@types/ua-parser-js": "^0.7.39",
     "@types/unzipper": "^0.10.11",
     "@vitest/coverage-v8": "^4.0.7",
     "axe-core": "^4.11.0",
