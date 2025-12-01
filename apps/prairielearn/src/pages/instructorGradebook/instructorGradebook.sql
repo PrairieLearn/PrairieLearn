@@ -100,15 +100,10 @@ WITH
       u.uid,
       u.uin,
       u.name AS user_name,
-      e.id AS enrollment_id,
       users_get_displayed_role (u.user_id, $course_instance_id) AS role
     FROM
       user_ids
       JOIN users AS u ON (u.user_id = user_ids.user_id)
-      LEFT JOIN enrollments AS e ON (
-        e.user_id = u.user_id
-        AND e.course_instance_id = $course_instance_id
-      )
   ),
   user_scores AS (
     -- Aggregate scores for each user
