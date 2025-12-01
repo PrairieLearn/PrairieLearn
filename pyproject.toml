@@ -10,7 +10,7 @@ dependencies = [
   "automata-lib==9.1.2",
   "chevron==0.14.0",
   "coloraide==6.0",
-  "Faker==37.12.0",
+  "Faker==38.2.0",
   "jinja2==3.1.6",
   "lxml==6.0.2",
   "matplotlib==3.10.7",
