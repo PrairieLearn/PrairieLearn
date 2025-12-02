@@ -18,7 +18,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^22.19.1",
     "@vitest/coverage-v8": "^4.0.14",
-    "express": "^4.21.2",
+    "express": "^4.22.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.14"
