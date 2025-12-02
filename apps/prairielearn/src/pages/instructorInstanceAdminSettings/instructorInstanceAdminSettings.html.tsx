@@ -76,11 +76,11 @@ export function InstructorInstanceAdminSettings({
       !!courseInstance.self_enrollment_enabled_before_date,
     self_enrollment_enabled_before_date: courseInstance.self_enrollment_enabled_before_date
       ? Temporal.Instant.fromEpochMilliseconds(
-        courseInstance.self_enrollment_enabled_before_date.getTime(),
-      )
-        .toZonedDateTimeISO(courseInstance.display_timezone)
-        .toPlainDateTime()
-        .toString()
+          courseInstance.self_enrollment_enabled_before_date.getTime(),
+        )
+          .toZonedDateTimeISO(courseInstance.display_timezone)
+          .toPlainDateTime()
+          .toString()
       : '',
   };
 
