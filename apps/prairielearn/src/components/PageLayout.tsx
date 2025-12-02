@@ -268,6 +268,7 @@ export function PageLayout({
                 navPage: navContext.page,
                 navSubPage: navContext.subPage,
                 navbarType: navContext.type,
+                isInPageLayout: true,
               })
             : ''}
           ${preContentString}

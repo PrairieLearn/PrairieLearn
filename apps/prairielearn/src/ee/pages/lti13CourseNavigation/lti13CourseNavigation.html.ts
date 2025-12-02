@@ -25,7 +25,8 @@ export function Lti13CourseNavigationInstructor({
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
-        ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })} ${TerminologyModal()}
+        ${Navbar({ resLocals, navPage: 'lti13_course_navigation', navbarType: 'plain' })}
+        ${TerminologyModal()}
         <main id="content" class="container mb-4">
           <h1>Welcome to PrairieLearn</h1>
           <p>
@@ -125,7 +126,7 @@ export function Lti13CourseNavigationNotReady({
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
-        ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })}
+        ${Navbar({ resLocals, navPage: 'lti13_course_navigation', navbarType: 'plain' })}
         <main id="content" class="container mb-4">
           <h1 class="h1">Welcome to PrairieLearn</h1>
           <h2 class="h2">... but your course isn't ready yet!</h2>
@@ -176,7 +177,7 @@ export function Lti13CourseNavigationDone({
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
-        ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })}
+        ${Navbar({ resLocals, navPage: 'lti13_course_navigation', navbarType: 'plain' })}
         <main id="content" class="container mb-4">
           <h1 class="h1">Welcome to PrairieLearn</h1>
 

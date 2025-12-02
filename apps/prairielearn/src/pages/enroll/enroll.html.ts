@@ -97,7 +97,7 @@ export function EnrollLtiMessage({
         ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
       </head>
       <body>
-        ${Navbar({ resLocals, navPage: 'enroll' })}
+        ${Navbar({ resLocals, navPage: 'enroll', navbarType: 'plain' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
