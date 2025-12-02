@@ -28,7 +28,7 @@ import { idsEqual } from './id.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class GroupOperationError extends Error {
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = 'GroupOperationError';
   }
@@ -40,12 +40,12 @@ const RoleAssignmentSchema = z.object({
   role_name: z.string(),
   group_role_id: z.string(),
 });
-type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
+export type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
 
 const GroupRoleWithCountSchema = GroupRoleSchema.extend({
   count: z.number(),
 });
-type GroupRoleWithCount = z.infer<typeof GroupRoleWithCountSchema>;
+export type GroupRoleWithCount = z.infer<typeof GroupRoleWithCountSchema>;
 
 interface RolesInfo {
   roleAssignments: Record<string, RoleAssignment[]>;
