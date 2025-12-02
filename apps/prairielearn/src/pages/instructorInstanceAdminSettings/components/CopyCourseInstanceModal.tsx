@@ -22,22 +22,18 @@ export function CopyCourseInstanceModal({
   onHide,
   csrfToken,
   courseInstance,
-  initialShortName,
-  initialLongName,
   courseShortName,
 }: {
   show: boolean;
   onHide: () => void;
   csrfToken: string;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  initialShortName: string;
-  initialLongName: string;
   courseShortName: string;
 }) {
   const methods = useForm<CopyFormValues>({
     defaultValues: {
-      short_name: initialShortName,
-      long_name: initialLongName,
+      short_name: '',
+      long_name: '',
       start_date: '',
       end_date: '',
     },
@@ -127,6 +123,7 @@ export function CopyCourseInstanceModal({
                 type="text"
                 class="form-control"
                 aria-describedby="copy-long-name-help"
+                placeholder={courseInstance.long_name ?? undefined}
                 {...register('long_name', {
                   required: 'Long name is required',
                 })}
@@ -152,6 +149,7 @@ export function CopyCourseInstanceModal({
                 type="text"
                 class="form-control font-monospace"
                 aria-describedby="copy-short-name-help"
+                placeholder={courseInstance.short_name}
                 {...register('short_name', {
                   required: 'Short name is required',
                   pattern: {
