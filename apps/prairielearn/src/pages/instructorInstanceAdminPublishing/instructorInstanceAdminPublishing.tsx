@@ -14,7 +14,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
+import { type AuthzData, assertHasInstanceRole } from '../../lib/authz-data-lib.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
@@ -58,7 +58,7 @@ export async function selectPublishingExtensionsWithUsersByCourseInstance({
   authzData: AuthzData;
   requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
 }) {
-  assertHasRole(authzData, requestedRole);
+  assertHasInstanceRole(authzData, requestedRole);
   return await queryRows(
     sql.select_publishing_extensions_with_users_by_course_instance,
     { course_instance_id: courseInstance.id },

@@ -18,6 +18,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
+import type { PageAuthzData } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
@@ -855,12 +856,14 @@ class Lti13ContextMembership {
 }
 
 export async function updateLti13Scores({
-  course_instance,
+  courseInstance,
+  authzData,
   unsafe_assessment_id,
   instance,
   job,
 }: {
-  course_instance: CourseInstance;
+  courseInstance: CourseInstance;
+  authzData: PageAuthzData;
   unsafe_assessment_id: string | number;
   instance: Lti13CombinedInstance;
   job: ServerJob;
@@ -894,8 +897,10 @@ export async function updateLti13Scores({
   );
 
   const courseStaff = await selectUsersWithCourseInstanceAccess({
-    course_instance,
-    minimal_role: 'Student Data Viewer',
+    courseInstance,
+    minimalRole: 'Student Data Viewer',
+    requestedRole: 'Any',
+    authzData,
   });
   const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));
 

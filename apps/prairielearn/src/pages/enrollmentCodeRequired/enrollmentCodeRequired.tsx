@@ -6,7 +6,7 @@ import { run } from '@prairielearn/run';
 
 import { EnrollmentPage } from '../../components/EnrollmentPage.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { hasRole } from '../../lib/authz-data-lib.js';
+import { hasInstanceRole } from '../../lib/authz-data-lib.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
@@ -33,7 +33,7 @@ router.get(
     // Lookup if they have an existing enrollment
     const existingEnrollment = await run(async () => {
       // We don't want to 403 instructors
-      if (!hasRole(res.locals.authz_data, 'Student')) return null;
+      if (!hasInstanceRole(res.locals.authz_data, 'Student')) return null;
       return await selectOptionalEnrollmentByUid({
         uid: res.locals.authn_user.uid,
         courseInstance,

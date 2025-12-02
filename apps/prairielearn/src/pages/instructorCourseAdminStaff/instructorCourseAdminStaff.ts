@@ -8,6 +8,7 @@ import { type HtmlSafeString, html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { type User } from '../../lib/db-types.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
@@ -51,12 +52,15 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
+    const { authz_data: authzData } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course: res.locals.course,
-      user_id: res.locals.user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+      authzData,
+      requestedRole: 'Owner',
     });
 
     const courseUsers = await sqldb.queryRows(
@@ -88,7 +92,12 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_own) {
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    if (!authzData.has_course_permission_own) {
       throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
     }
 
@@ -109,11 +118,9 @@ router.post(
       // Verify the course instance id associated with the requested course instance
       // role is valid (should such a role have been requested)
       const course_instances = await selectCourseInstancesWithStaffAccess({
-        course: res.locals.course,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
-        is_administrator: res.locals.is_administrator,
-        authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+        course,
+        authzData,
+        requestedRole: 'Owner',
       });
       let course_instance: CourseInstanceAuthz | undefined;
       if (req.body.course_instance_id) {
@@ -153,7 +160,7 @@ router.post(
             course_id: res.locals.course.id,
             uid,
             course_role: req.body.course_role,
-            authn_user_id: res.locals.authz_data.authn_user.user_id,
+            authn_user_id: authzData.authn_user.user_id,
           });
         } catch (err) {
           logger.verbose(`Failed to insert course permission for uid: ${uid}`, err);
@@ -172,7 +179,7 @@ router.post(
             user_id: user.user_id,
             course_instance_id: course_instance.id,
             course_instance_role: req.body.course_instance_role,
-            authn_user_id: res.locals.authz_data.authn_user.user_id,
+            authn_user_id: authzData.authn_user.user_id,
           });
         } catch (err) {
           logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, err);
@@ -267,10 +274,7 @@ ${given_cp_and_cip.join(',\n')}
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_permissions_update_role') {
-      if (
-        idsEqual(req.body.user_id, res.locals.user.user_id) &&
-        !res.locals.authz_data.is_administrator
-      ) {
+      if (idsEqual(req.body.user_id, res.locals.user.user_id) && !authzData.is_administrator) {
         throw new error.HttpStatusError(
           403,
           'Owners cannot change their own course content access',
@@ -279,7 +283,7 @@ ${given_cp_and_cip.join(',\n')}
 
       if (
         idsEqual(req.body.user_id, res.locals.authn_user.user_id) &&
-        !res.locals.authz_data.is_administrator
+        !authzData.is_administrator
       ) {
         throw new error.HttpStatusError(
           403,
@@ -302,14 +306,11 @@ ${given_cp_and_cip.join(',\n')}
         course_id: res.locals.course.id,
         user_id: req.body.user_id,
         course_role: req.body.course_role,
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: authzData.authn_user.user_id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_permissions_delete') {
-      if (
-        idsEqual(req.body.user_id, res.locals.user.user_id) &&
-        !res.locals.authz_data.is_administrator
-      ) {
+      if (idsEqual(req.body.user_id, res.locals.user.user_id) && !authzData.is_administrator) {
         throw new error.HttpStatusError(
           403,
           'Owners cannot remove themselves from the course staff',
@@ -318,7 +319,7 @@ ${given_cp_and_cip.join(',\n')}
 
       if (
         idsEqual(req.body.user_id, res.locals.authn_user.user_id) &&
-        !res.locals.authz_data.is_administrator
+        !authzData.is_administrator
       ) {
         throw new error.HttpStatusError(
           403,
@@ -329,7 +330,7 @@ ${given_cp_and_cip.join(',\n')}
       await deleteCoursePermissions({
         course_id: res.locals.course.id,
         user_id: req.body.user_id,
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: authzData.authn_user.user_id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_instance_permissions_update_role_or_delete') {
@@ -340,10 +341,8 @@ ${given_cp_and_cip.join(',\n')}
 
       const course_instances = await selectCourseInstancesWithStaffAccess({
         course: res.locals.course,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
-        is_administrator: res.locals.is_administrator,
-        authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+        authzData,
+        requestedRole: 'Owner',
       });
 
       if (req.body.course_instance_id) {
@@ -361,7 +360,7 @@ ${given_cp_and_cip.join(',\n')}
           user_id: req.body.user_id,
           course_instance_id: req.body.course_instance_id,
           course_instance_role: req.body.course_instance_role,
-          authn_user_id: res.locals.authz_data.authn_user.user_id,
+          authn_user_id: authzData.authn_user.user_id,
         });
         res.redirect(req.originalUrl);
       } else if (req.body.course_instance_role === 'None' || !req.body.course_instance_role) {
@@ -370,7 +369,7 @@ ${given_cp_and_cip.join(',\n')}
           course_id: res.locals.course.id,
           user_id: req.body.user_id,
           course_instance_id: req.body.course_instance_id,
-          authn_user_id: res.locals.authz_data.authn_user.user_id,
+          authn_user_id: authzData.authn_user.user_id,
         });
         res.redirect(req.originalUrl);
       } else {
@@ -386,10 +385,8 @@ ${given_cp_and_cip.join(',\n')}
 
       const course_instances = await selectCourseInstancesWithStaffAccess({
         course: res.locals.course,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
-        is_administrator: res.locals.is_administrator,
-        authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+        authzData,
+        requestedRole: 'Owner',
       });
 
       if (req.body.course_instance_id) {
@@ -401,32 +398,32 @@ ${given_cp_and_cip.join(',\n')}
       }
 
       await insertCourseInstancePermissions({
-        course_id: res.locals.course.id,
+        course_id: course.id,
         user_id: req.body.user_id,
         course_instance_id: req.body.course_instance_id,
         course_instance_role: 'Student Data Viewer',
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: authzData.authn_user.user_id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_non_owners') {
       debug('Delete non-owners');
       await deleteCoursePermissionsForNonOwners({
         course_id: res.locals.course.id,
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: authzData.authn_user.user_id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_no_access') {
       debug('Delete users with no access');
       await deleteCoursePermissionsForUsersWithoutAccess({
         course_id: res.locals.course.id,
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: authzData.authn_user.user_id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'remove_all_student_data_access') {
       debug('Remove all student data access');
       await deleteAllCourseInstancePermissionsForCourse({
         course_id: res.locals.course.id,
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: authzData.authn_user.user_id,
       });
       res.redirect(req.originalUrl);
     } else {

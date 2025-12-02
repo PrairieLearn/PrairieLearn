@@ -20,6 +20,8 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import type { AuthzData } from '../../../lib/authz-data-lib.js';
+import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   AiGradingJobSchema,
   DateFromISOString,
@@ -86,7 +88,10 @@ async function prepareLocalsForRender(
   }
 
   const graders = await selectCourseInstanceGraderStaff({
-    course_instance: resLocals.course_instance,
+    courseInstance: resLocals.course_instance,
+    // TODO: Consider parsing this upstream and updating the types passed in.
+    authzData: resLocals.authz_data as unknown as AuthzData,
+    requestedRole: 'None',
   });
   return { resLocals, conflict_grading_job, graders };
 }
@@ -386,7 +391,15 @@ const PostBodySchema = z.union([
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+    const { authz_data: authzData, course_instance: courseInstance } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'courseInstance',
+        accessType: 'instructor',
+      },
+    );
+
+    if (!authzData.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
@@ -417,7 +430,7 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.user_id,
+          authzData.user.user_id,
         );
 
       if (modified_at_conflict) {
@@ -428,7 +441,7 @@ router.post(
         await sqldb.execute(sql.close_issues_for_instance_question, {
           issue_ids: body.unsafe_issue_ids_close,
           instance_question_id: res.locals.instance_question.id,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: authzData.user.user_id,
         });
       }
 
@@ -563,7 +576,7 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.user_id,
+          authzData.user.user_id,
         );
 
         if (modified_at_conflict) {
@@ -582,7 +595,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: authzData.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           use_instance_question_groups: true,
@@ -600,7 +613,7 @@ router.post(
           body.max_extra_points,
           body.rubric_items,
           body.tag_for_manual_grading,
-          res.locals.authn_user.user_id,
+          authzData.user.user_id,
         );
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {
@@ -611,7 +624,9 @@ router.post(
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
-          course_instance: res.locals.course_instance,
+          courseInstance,
+          authzData,
+          requestedRole: 'None',
         });
         if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
           throw new error.HttpStatusError(
@@ -645,7 +660,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: authzData.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           use_instance_question_groups,

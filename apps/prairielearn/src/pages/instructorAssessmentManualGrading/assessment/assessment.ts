@@ -22,6 +22,7 @@ import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-
 import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
+import { extractPageContext } from '../../../lib/client/page-context.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
@@ -39,6 +40,13 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
+    const { authz_data: authzData, course_instance: courseInstance } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'courseInstance',
+        accessType: 'instructor',
+      },
+    );
     const questions = await queryRows(
       sql.select_questions_manual_grading,
       {
@@ -49,7 +57,9 @@ router.get(
     );
     const num_open_instances = questions[0]?.num_open_instances || 0;
     const courseStaff = await selectCourseInstanceGraderStaff({
-      course_instance: res.locals.course_instance,
+      courseInstance,
+      authzData,
+      requestedRole: 'None',
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     res.send(
@@ -67,7 +77,14 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+    const { authz_data: authzData, course_instance: courseInstance } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'courseInstance',
+        accessType: 'instructor',
+      },
+    );
+    if (!authzData.has_course_instance_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     if (req.body.__action === 'assign_graders') {
@@ -82,7 +99,9 @@ router.post(
       const allowedGraderIds = new Set(
         (
           await selectCourseInstanceGraderStaff({
-            course_instance: res.locals.course_instance,
+            courseInstance,
+            authzData,
+            requestedRole: 'None',
           })
         ).map((user) => user.user_id),
       );

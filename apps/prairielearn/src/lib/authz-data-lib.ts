@@ -147,6 +147,16 @@ export type CourseInstanceRole =
   // The role 'Any' is equivalent to 'Student' OR 'Student Data Viewer' OR 'Student Data Editor'
   | 'Any';
 
+export type CourseRole =
+  | 'System'
+  | 'None'
+  | 'Previewer'
+  | 'Viewer'
+  | 'Editor'
+  | 'Owner'
+  // The role 'Any' is equivalent to 'Previewer' OR 'Viewer' OR 'Editor' OR 'Owner'
+  | 'Any';
+
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {
     authn_user: {
@@ -166,7 +176,48 @@ export function isDangerousFullSystemAuthz(
   return authzData.user.user_id === null;
 }
 
-export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
+export function hasCourseRole(authzData: AuthzData, requestedRole: CourseRole): boolean {
+  // You must set the requestedRole to 'System' when you use dangerousFullSystemAuthz.
+  if (isDangerousFullSystemAuthz(authzData)) {
+    return ['System', 'Any'].includes(requestedRole);
+  }
+
+  if (
+    (requestedRole === 'Previewer' || requestedRole === 'Any') &&
+    authzData.has_course_permission_preview
+  ) {
+    return true;
+  }
+
+  if (
+    (requestedRole === 'Viewer' || requestedRole === 'Any') &&
+    authzData.has_course_permission_view
+  ) {
+    return true;
+  }
+
+  if (
+    (requestedRole === 'Editor' || requestedRole === 'Any') &&
+    authzData.has_course_permission_edit
+  ) {
+    return true;
+  }
+
+  if (
+    (requestedRole === 'Owner' || requestedRole === 'Any') &&
+    authzData.has_course_permission_own
+  ) {
+    return true;
+  }
+
+  if (requestedRole === 'None') {
+    return true;
+  }
+
+  return false;
+}
+
+export function hasInstanceRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
   // You must set the requestedRole to 'System' when you use dangerousFullSystemAuthz.
   if (isDangerousFullSystemAuthz(authzData)) {
     return ['System', 'Any'].includes(requestedRole);
@@ -217,7 +268,7 @@ export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole)
  * @param requestedRole - The requested role from the caller of the model function.
  * @param allowedRoles - The allowed roles for the model function.
  */
-export function assertHasRole(
+export function assertHasInstanceRole(
   authzData: AuthzData,
   requestedRole: CourseInstanceRole,
   allowedRoles?: CourseInstanceRole[],
@@ -229,7 +280,36 @@ export function assertHasRole(
     );
   }
 
-  if (!hasRole(authzData, requestedRole)) {
+  if (!hasInstanceRole(authzData, requestedRole)) {
+    throw new HttpStatusError(403, 'Access denied');
+  }
+}
+
+/**
+ * Asserts that the user has the requested role. It also asserts that
+ * the requested role is one of the allowed roles.
+ * If the model function enforces `requestedRole` at the type level, `allowedRoles` is not needed.
+ *
+ * For staff roles, it checks that you have at least the requested role.
+ * role. If you have a more permissive role, you are allowed to perform the action.
+ *
+ * @param authzData - The authorization data of the user.
+ * @param requestedRole - The requested role from the caller of the model function.
+ * @param allowedRoles - The allowed roles for the model function.
+ */
+export function assertHasCourseRole(
+  authzData: AuthzData,
+  requestedRole: CourseRole,
+  allowedRoles?: CourseRole[],
+): void {
+  if (allowedRoles && requestedRole !== 'Any' && !allowedRoles.includes(requestedRole)) {
+    // This suggests the code was called incorrectly (internal error).
+    throw new Error(
+      `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
+    );
+  }
+
+  if (!hasCourseRole(authzData, requestedRole)) {
     throw new HttpStatusError(403, 'Access denied');
   }
 }

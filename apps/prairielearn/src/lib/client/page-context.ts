@@ -5,6 +5,7 @@ import { run } from '@prairielearn/run';
 import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 import { SelectUserSchema } from '../authn.types.js';
 import { PageAuthzDataSchema } from '../authz-data-lib.js';
+import type { Course, CourseInstance } from '../db-types.js';
 import type { UntypedResLocals } from '../res-locals.types.js';
 
 import {
@@ -187,6 +188,11 @@ export type PageContext<
 
 export type PlainPageContext = PageContext<'plain', 'student' | 'instructor', false>;
 export type PageContextWithAuthzData = PageContext<'plain', 'student' | 'instructor', true>;
+
+export type CourseInstanceContext =
+  | CourseInstance
+  | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
+export type CourseContext = Course | PageContext<'course', 'student' | 'instructor'>['course'];
 
 /**
  * Extract page context from res.locals with hierarchical inclusion.

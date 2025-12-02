@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 import { NavbarCourseInstanceSwitcher } from './navbarCourseInstanceSwitcher.html.js';
@@ -12,12 +13,15 @@ const router = Router({
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
     const course_instances = await selectCourseInstancesWithStaffAccess({
-      course: res.locals.course,
-      user_id: res.locals.user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+      course,
+      authzData,
+      requestedRole: 'Any',
     });
 
     res.send(

@@ -5,6 +5,8 @@ import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString, html, joinHtml } from '@prairielearn/html';
 import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
+import type { PageAuthzData } from '../../../lib/authz-data-lib.js';
+import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   type Course,
   CourseInstanceSchema,
@@ -43,23 +45,15 @@ function prettyCourseName(ltiClaim: Lti13Claim) {
 
 async function courseInstancesAllowedToLink({
   course,
-  user_id,
-  authn_user_id,
-  is_administrator,
-  authn_is_administrator,
+  authzData,
 }: {
   course: Course;
-  user_id: string;
-  authn_user_id: string;
-  is_administrator: boolean;
-  authn_is_administrator: boolean;
+  authzData: PageAuthzData;
 }) {
   const course_instances = await selectCourseInstancesWithStaffAccess({
     course,
-    user_id,
-    authn_user_id,
-    is_administrator,
-    authn_is_administrator,
+    authzData,
+    requestedRole: 'Any',
   });
 
   return course_instances.filter((ci) => ci.has_course_instance_permission_edit);
@@ -83,6 +77,11 @@ async function coursesAllowedToLink({
 router.get(
   '/course_instances',
   asyncHandler(async (req, res) => {
+    const { authz_data: authzData } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+    });
+
     const courses = await coursesAllowedToLink({
       user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.is_administrator,
@@ -100,10 +99,7 @@ router.get(
 
     const course_instances = await courseInstancesAllowedToLink({
       course,
-      user_id: res.locals.authn_user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authn_is_administrator,
+      authzData,
     });
 
     let options: HtmlSafeString;
@@ -213,6 +209,10 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const ltiClaim = new Lti13Claim(req);
+    const { authz_data: authzData } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+    });
 
     // Map passed and auth lti13_instance_id through institution to course instance, or fail
     const course_instance = await queryOptionalRow(
@@ -231,10 +231,7 @@ router.post(
 
     const courseInstancesAllowed = await courseInstancesAllowedToLink({
       course: await selectCourseById(course_instance.course_id),
-      user_id: res.locals.authn_user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authn_is_administrator,
+      authzData,
     });
     const hasCourseInstanceAllowed = courseInstancesAllowed.some(
       (ci) => ci.id === course_instance.id,

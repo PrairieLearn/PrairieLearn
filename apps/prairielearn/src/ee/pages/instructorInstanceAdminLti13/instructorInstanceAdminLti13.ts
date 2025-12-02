@@ -14,6 +14,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   AssessmentSchema,
   Lti13AssessmentSchema,
@@ -134,24 +135,34 @@ router.get(
 router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+    const {
+      authz_data: authzData,
+      course,
+      course_instance: courseInstance,
+      institution,
+    } = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
+    const { user, authn_user: authnUser } = authzData;
+    if (!authzData.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     const instance = await queryRow(
       sql.select_combined_lti13_instance,
       {
-        course_instance_id: res.locals.course_instance.id,
+        course_instance_id: courseInstance.id,
         lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
       },
       Lti13CombinedInstanceSchema,
     );
 
     const serverJobOptions = {
-      courseId: res.locals.course.id,
-      courseInstanceId: res.locals.course_instance.id,
-      userId: res.locals.user.user_id,
-      authnUserId: res.locals.authn_user.user_id,
+      courseId: course.id,
+      courseInstanceId: courseInstance.id,
+      userId: user.user_id,
+      authnUserId: authnUser.user_id,
       type: 'lti13',
       description: 'Some LTI operation',
     };
@@ -161,17 +172,17 @@ router.post(
         const deleted_lti13_course_instance = await queryRow(
           sql.delete_lti13_course_instance,
           {
-            course_instance_id: res.locals.course_instance.id,
+            course_instance_id: courseInstance.id,
             lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
           },
           Lti13CourseInstanceSchema,
         );
         await insertAuditLog({
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: authnUser.user_id,
           table_name: 'lti13_course_instances',
           action: 'delete',
-          institution_id: res.locals.institution.id,
-          course_id: res.locals.course.id,
+          institution_id: institution.id,
+          course_id: course.id,
           course_instance_id: deleted_lti13_course_instance.course_instance_id,
           row_id: deleted_lti13_course_instance.id,
           old_state: deleted_lti13_course_instance,
@@ -180,7 +191,7 @@ router.post(
 
       // Redirect away so they don't get an error page
       res.redirect(
-        `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/assessments`,
+        `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/assessments`,
       );
     } else if (req.body.__action === 'poll_lti13_assessments') {
       serverJobOptions.description = 'Synchronize assignment metadata from LMS';
@@ -233,7 +244,7 @@ router.post(
           lti13_course_instance_id: instance.lti13_course_instance.id,
           course_instance_id: instance.lti13_course_instance.course_instance_id,
           group_id,
-          assessments_group_by: res.locals.course_instance.assessments_group_by,
+          assessments_group_by: courseInstance.assessments_group_by,
         },
         Lti13AssessmentSchema,
       );
@@ -245,7 +256,7 @@ router.post(
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'bulk_create_assessments') {
       const group_id =
-        res.locals.course_instance.assessments_group_by === 'Set'
+        courseInstance.assessments_group_by === 'Set'
           ? req.body.assessment_set_id || null
           : req.body.assessment_module_id || null;
 
@@ -254,7 +265,7 @@ router.post(
         {
           course_instance_id: instance.lti13_course_instance.course_instance_id,
           group_id,
-          assessments_group_by: res.locals.course_instance.assessments_group_by,
+          assessments_group_by: courseInstance.assessments_group_by,
         },
         AssessmentSchema.extend({
           label: z.string(),
@@ -286,7 +297,7 @@ router.post(
         sql.select_assessment_in_course_instance,
         {
           unsafe_assessment_id: req.body.unsafe_assessment_id,
-          course_instance_id: res.locals.course_instance.id,
+          course_instance_id: courseInstance.id,
         },
         AssessmentSchema,
       );
@@ -296,7 +307,8 @@ router.post(
 
       serverJob.executeInBackground(async (job) => {
         await updateLti13Scores({
-          course_instance: res.locals.course_instance,
+          courseInstance,
+          authzData,
           unsafe_assessment_id: assessment.id,
           instance,
           job,

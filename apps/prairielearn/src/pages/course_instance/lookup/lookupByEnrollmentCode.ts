@@ -4,7 +4,7 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { hasRole } from '../../../lib/authz-data-lib.js';
+import { hasInstanceRole } from '../../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
 import type { User } from '../../../lib/db-types.js';
 import { selectOptionalCourseInstanceIdByEnrollmentCode } from '../../../models/course-instances.js';
@@ -53,7 +53,7 @@ router.get(
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    if (!hasRole(authzData, 'Student')) {
+    if (!hasInstanceRole(authzData, 'Student')) {
       throw new HttpStatusError(404, 'Only students can look up course instances');
     }
 
