@@ -10,7 +10,6 @@ import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import type { NavPage } from '../../components/Navbar.types.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { getNamesForCopy } from '../../lib/editorUtil.shared.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
@@ -62,14 +61,6 @@ export function InstructorInstanceAdminSettings({
   const [showCopyModal, setShowCopyModal] = useState(false);
 
   const shortNames = names.map((name) => name.short_name);
-  const longNames = names.map((name) => name.long_name).filter((longName) => longName !== null);
-
-  const { shortName: initialShortName, longName: initialLongName } = getNamesForCopy(
-    courseInstance.short_name,
-    shortNames,
-    courseInstance.long_name ?? null,
-    longNames,
-  );
 
   const defaultValues: SettingsFormValues = {
     ciid: courseInstance.short_name,
@@ -85,11 +76,11 @@ export function InstructorInstanceAdminSettings({
       !!courseInstance.self_enrollment_enabled_before_date,
     self_enrollment_enabled_before_date: courseInstance.self_enrollment_enabled_before_date
       ? Temporal.Instant.fromEpochMilliseconds(
-          courseInstance.self_enrollment_enabled_before_date.getTime(),
-        )
-          .toZonedDateTimeISO(courseInstance.display_timezone)
-          .toPlainDateTime()
-          .toString()
+        courseInstance.self_enrollment_enabled_before_date.getTime(),
+      )
+        .toZonedDateTimeISO(courseInstance.display_timezone)
+        .toPlainDateTime()
+        .toString()
       : '',
   };
 
@@ -330,8 +321,6 @@ export function InstructorInstanceAdminSettings({
           csrfToken={csrfToken}
           courseShortName={course.short_name}
           courseInstance={courseInstance}
-          initialShortName={initialShortName}
-          initialLongName={initialLongName}
           onHide={() => setShowCopyModal(false)}
         />
       </div>
