@@ -22,16 +22,12 @@ export function CopyCourseInstanceModal({
   onHide,
   csrfToken,
   courseInstance,
-  initialShortName,
-  initialLongName,
   courseShortName,
 }: {
   show: boolean;
   onHide: () => void;
   csrfToken: string;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-  initialShortName: string;
-  initialLongName: string;
   courseShortName: string;
 }) {
   const methods = useForm<CopyFormValues>({
