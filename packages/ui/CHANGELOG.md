@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 1.6.0
+
+### Minor Changes
+
+- 20f25f7: Add nuqs utilities for URL query state management with server-side rendering support. Includes `NuqsAdapter` component and TanStack Table state parsers (`parseAsSortingState`, `parseAsColumnVisibilityStateWithColumns`, `parseAsColumnPinningState`, `parseAsNumericFilter`).
+
 ## 1.5.0
 
 ### Minor Changes
