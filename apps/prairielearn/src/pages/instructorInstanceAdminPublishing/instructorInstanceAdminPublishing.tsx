@@ -211,6 +211,7 @@ router.get(
                 showComments={showComments}
                 courseInstance={courseInstance}
                 hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+                urlPrefix={res.locals.urlPrefix}
               />
             )}
           </>

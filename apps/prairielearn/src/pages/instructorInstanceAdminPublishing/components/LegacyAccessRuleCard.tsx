@@ -3,24 +3,43 @@ import { run } from '@prairielearn/run';
 
 import { CommentPopover } from '../../../components/CommentPopover.js';
 import type { CourseInstance, CourseInstanceAccessRule } from '../../../lib/db-types.js';
+import { encodePathNoNormalize } from '../../../lib/uri-util.shared.js';
 
 export function LegacyAccessRuleCard({
   accessRules,
   showComments,
   courseInstance,
   hasCourseInstancePermissionView,
+  urlPrefix,
 }: {
   accessRules: CourseInstanceAccessRule[];
   showComments: boolean;
   courseInstance: CourseInstance;
   hasCourseInstancePermissionView: boolean;
+  urlPrefix: string;
 }) {
+  const infoCourseInstancePath = courseInstance.short_name
+    ? `courseInstances/${courseInstance.short_name}/infoCourseInstance.json`
+    : null;
   return (
     <>
       <div class="alert alert-warning" role="alert">
         <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy
         <code>allowAccess</code> system. To use the new publishing system, you must first remove all
-        <code>allowAccess</code> rules from the course configuration.
+        <code>allowAccess</code> rules from the{' '}
+        {infoCourseInstancePath ? (
+          <a
+            data-testid="edit-course-instance-configuration-link"
+            href={encodePathNoNormalize(
+              `${urlPrefix}/instance_admin/file_edit/${infoCourseInstancePath}`,
+            )}
+          >
+            course instance configuration
+          </a>
+        ) : (
+          'course instance configuration'
+        )}
+        .
       </div>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
