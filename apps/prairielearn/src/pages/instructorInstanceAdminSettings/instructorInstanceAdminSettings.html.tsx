@@ -60,7 +60,7 @@ export function InstructorInstanceAdminSettings({
 
   const [showCopyModal, setShowCopyModal] = useState(false);
 
-  const shortNames = names.map((name) => name.short_name);
+  const shortNames = new Set(names.map((name) => name.short_name));
 
   const defaultValues: SettingsFormValues = {
     ciid: courseInstance.short_name,
@@ -138,7 +138,7 @@ export function InstructorInstanceAdminSettings({
                   pattern: /^[-A-Za-z0-9_/]+$/,
                   validate: {
                     duplicate: (value) => {
-                      if (shortNames.includes(value) && value !== defaultValues.ciid) {
+                      if (shortNames.has(value) && value !== defaultValues.ciid) {
                         return 'This ID is already in use';
                       }
                       return true;
