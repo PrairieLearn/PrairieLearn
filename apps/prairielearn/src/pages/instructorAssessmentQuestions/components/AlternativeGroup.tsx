@@ -18,7 +18,7 @@ export function AlternativeGroup({
   editMode,
   urlPrefix,
   hasCoursePermissionPreview,
-  hasCourseInstancePermissionEdit,
+  canEdit,
   showAdvanceScorePercCol,
   assessmentType,
   handleEditQuestion,
@@ -34,7 +34,7 @@ export function AlternativeGroup({
   editMode: boolean;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
-  hasCourseInstancePermissionEdit: boolean;
+  canEdit: boolean;
   showAdvanceScorePercCol: boolean;
   assessmentType: EnumAssessmentType;
   handleEditQuestion: ({
@@ -84,7 +84,7 @@ export function AlternativeGroup({
               editMode={editMode}
               urlPrefix={urlPrefix}
               hasCoursePermissionPreview={hasCoursePermissionPreview}
-              hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+              canEdit={canEdit}
               showAdvanceScorePercCol={showAdvanceScorePercCol}
               assessmentType={assessmentType}
               handleEditQuestion={handleEditQuestion}
@@ -109,7 +109,7 @@ export function AlternativeGroup({
               editMode={editMode}
               urlPrefix={urlPrefix}
               hasCoursePermissionPreview={hasCoursePermissionPreview}
-              hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+              canEdit={canEdit}
               showAdvanceScorePercCol={showAdvanceScorePercCol}
               assessmentType={assessmentType}
               handleEditQuestion={handleEditQuestion}

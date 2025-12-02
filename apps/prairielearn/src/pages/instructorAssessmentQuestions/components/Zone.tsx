@@ -17,7 +17,7 @@ export function Zone({
   editMode,
   urlPrefix,
   hasCoursePermissionPreview,
-  hasCourseInstancePermissionEdit,
+  canEdit,
   showAdvanceScorePercCol,
   assessmentType,
   handleAddQuestion,
@@ -33,7 +33,7 @@ export function Zone({
   editMode: boolean;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
-  hasCourseInstancePermissionEdit: boolean;
+  canEdit: boolean;
   showAdvanceScorePercCol: boolean;
   assessmentType: EnumAssessmentType;
   handleAddQuestion: (zoneNumber: number) => void;
@@ -43,12 +43,14 @@ export function Zone({
     zoneNumber,
     alternativeGroupNumber,
     alternativeNumber,
+    handleAddQuestion,
   }: {
     question: ZoneQuestionJson | QuestionAlternativeJson;
     alternativeGroup?: ZoneQuestionJson;
     zoneNumber: number;
     alternativeGroupNumber: number;
     alternativeNumber?: number;
+    handleAddQuestion: (zoneNumber: number) => void;
   }) => void;
   handleDeleteQuestion: (
     zoneNumber: number,
@@ -61,7 +63,13 @@ export function Zone({
 }) {
   return (
     <>
-      <ZoneHeader zone={zone} zoneNumber={zoneNumber} nTableCols={nTableCols} />
+      <ZoneHeader
+        zone={zone}
+        zoneNumber={zoneNumber}
+        nTableCols={nTableCols}
+        editMode={editMode}
+        handleAddQuestion={handleAddQuestion}
+      />
       {zone.questions.map((alternativeGroup, index) => (
         <AlternativeGroup
           key={alternativeGroup.id}
@@ -73,7 +81,7 @@ export function Zone({
           editMode={editMode}
           urlPrefix={urlPrefix}
           hasCoursePermissionPreview={hasCoursePermissionPreview}
-          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+          canEdit={canEdit}
           showAdvanceScorePercCol={showAdvanceScorePercCol}
           assessmentType={assessmentType}
           handleEditQuestion={handleEditQuestion}
@@ -82,15 +90,6 @@ export function Zone({
           getNextQuestionNumber={getNextQuestionNumber}
         />
       ))}
-      {editMode && (
-        <tr>
-          <td colspan={nTableCols}>
-            <button class="btn btn-sm" type="button" onClick={() => handleAddQuestion(zoneNumber)}>
-              <i class="fa fa-add" aria-hidden="true" /> Add question to zone
-            </button>
-          </td>
-        </tr>
-      )}
     </>
   );
 }

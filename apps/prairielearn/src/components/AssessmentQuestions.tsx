@@ -52,22 +52,39 @@ export function ZoneHeader({
   zone,
   zoneNumber,
   nTableCols,
+  editMode,
+  handleAddQuestion,
 }: {
   zone: ZoneAssessmentJson;
   zoneNumber: number;
   nTableCols: number;
+  editMode?: boolean;
+  handleAddQuestion?: (zoneNumber: number) => void;
 }) {
   return (
     <tr>
       <th colspan={nTableCols + 1}>
-        Zone {zoneNumber}. {zone.title}{' '}
-        {zone.numberChoose == null
-          ? '(Choose all questions)'
-          : zone.numberChoose === 1
-            ? '(Choose 1 question)'
-            : `(Choose ${zone.numberChoose} questions)`}
-        {zone.maxPoints != null ? ` (maximum ${zone.maxPoints} points)` : ''}
-        {zone.bestQuestions != null ? ` (best ${zone.bestQuestions} questions)` : ''}
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            Zone {zoneNumber}. {zone.title}{' '}
+            {zone.numberChoose == null
+              ? '(Choose all questions)'
+              : zone.numberChoose === 1
+                ? '(Choose 1 question)'
+                : `(Choose ${zone.numberChoose} questions)`}
+            {zone.maxPoints != null ? ` (maximum ${zone.maxPoints} points)` : ''}
+            {zone.bestQuestions != null ? ` (best ${zone.bestQuestions} questions)` : ''}
+          </div>
+          {editMode && (
+            <button
+              class="btn btn-sm btn-primary-outline"
+              type="button"
+              onClick={() => handleAddQuestion?.(zoneNumber)}
+            >
+              <i class="fa fa-add" aria-hidden="true" /> Add question to zone
+            </button>
+          )}
+        </div>
       </th>
     </tr>
   );

@@ -84,7 +84,7 @@ export function AssessmentQuestion({
   editMode,
   urlPrefix,
   hasCoursePermissionPreview,
-  hasCourseInstancePermissionEdit,
+  canEdit,
   showAdvanceScorePercCol,
   assessmentType,
   handleEditQuestion,
@@ -104,7 +104,7 @@ export function AssessmentQuestion({
   editMode: boolean;
   urlPrefix: string;
   hasCoursePermissionPreview?: boolean;
-  hasCourseInstancePermissionEdit: boolean;
+  canEdit: boolean;
   showAdvanceScorePercCol: boolean;
   assessmentType: EnumAssessmentType;
   handleEditQuestion: ({
@@ -151,7 +151,7 @@ export function AssessmentQuestion({
   return (
     <Fragment>
       <tr>
-        {editMode ? (
+        {editMode && (
           <>
             <td class="align-content-center">
               <button
@@ -187,8 +187,6 @@ export function AssessmentQuestion({
               </button>
             </td>
           </>
-        ) : (
-          ''
         )}
         <td>
           <Title
@@ -267,30 +265,32 @@ export function AssessmentQuestion({
             );
           })}
         </td>
-        <td class="text-end">
-          <Dropdown>
-            <Dropdown.Toggle
-              variant="secondary"
-              class="dropdown-toggle btn-xs"
-              id={`question-actions-${questionData.question.qid}`}
-            >
-              Action
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              {hasCourseInstancePermissionEdit ? (
-                <Dropdown.Item
-                  as="button"
-                  type="button"
-                  onClick={() => handleResetButtonClick(questionData.assessment_question.id)}
-                >
-                  Reset question variants
-                </Dropdown.Item>
-              ) : (
-                <Dropdown.Item disabled>Must have editor permission</Dropdown.Item>
-              )}
-            </Dropdown.Menu>
-          </Dropdown>
-        </td>
+        {!editMode && (
+          <td class="text-end">
+            <Dropdown>
+              <Dropdown.Toggle
+                variant="secondary"
+                class="dropdown-toggle btn-xs"
+                id={`question-actions-${questionData.question.qid}`}
+              >
+                Action
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                {canEdit ? (
+                  <Dropdown.Item
+                    as="button"
+                    type="button"
+                    onClick={() => handleResetButtonClick(questionData.assessment_question.id)}
+                  >
+                    Reset question variants
+                  </Dropdown.Item>
+                ) : (
+                  <Dropdown.Item disabled>Must have editor permission</Dropdown.Item>
+                )}
+              </Dropdown.Menu>
+            </Dropdown>
+          </td>
+        )}
       </tr>
     </Fragment>
   );

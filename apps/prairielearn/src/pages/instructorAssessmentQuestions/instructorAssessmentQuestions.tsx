@@ -290,6 +290,10 @@ router.get(
       accessType: 'instructor',
     });
 
+    const canEdit =
+      pageContext.authz_data.has_course_instance_permission_edit &&
+      !res.locals.course.example_course;
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -320,11 +324,7 @@ router.get(
                 assessment={pageContext.assessment}
                 assessmentSetName={pageContext.assessment_set.name}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                hasCourseInstancePermissionEdit={
-                  // TODO: This should never be undefined on this page. Ideally we fix
-                  // this up in the `extractPageContext` function types.
-                  pageContext.authz_data.has_course_instance_permission_edit ?? false
-                }
+                canEdit={canEdit}
                 csrfToken={res.locals.__csrf_token}
                 origHash={origHash}
                 editorEnabled={editorEnabled}

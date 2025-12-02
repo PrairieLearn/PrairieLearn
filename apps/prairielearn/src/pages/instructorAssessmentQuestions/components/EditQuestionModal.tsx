@@ -308,6 +308,7 @@ export function EditQuestionModal({
                 class="form-control"
                 id="triesPerVariantInput"
                 name="triesPerVariant"
+                step="1"
                 value={
                   localQuestion.triesPerVariant !== undefined
                     ? localQuestion.triesPerVariant

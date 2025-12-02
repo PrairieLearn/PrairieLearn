@@ -149,7 +149,7 @@ export function InstructorAssessmentQuestionsTable({
   assessment,
   assessmentSetName,
   hasCoursePermissionPreview,
-  hasCourseInstancePermissionEdit,
+  canEdit,
   csrfToken,
   origHash,
   editorEnabled,
@@ -160,7 +160,7 @@ export function InstructorAssessmentQuestionsTable({
   assessmentSetName: string;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
-  hasCourseInstancePermissionEdit: boolean;
+  canEdit: boolean;
   csrfToken: string;
   origHash: string;
   editorEnabled: boolean;
@@ -408,7 +408,7 @@ export function InstructorAssessmentQuestionsTable({
             {assessmentSetName} {assessment.number}: Questions
           </h1>
           <div class="ms-auto">
-            {editorEnabled && hasCourseInstancePermissionEdit && origHash ? (
+            {editorEnabled && canEdit && origHash ? (
               <EditModeButtons
                 csrfToken={csrfToken}
                 origHash={origHash}
@@ -425,7 +425,7 @@ export function InstructorAssessmentQuestionsTable({
           <table class="table table-sm table-hover" aria-label="Assessment questions">
             <thead>
               <tr>
-                {editMode ? (
+                {editMode && (
                   <>
                     <th>
                       <span class="visually-hidden">Edit</span>
@@ -434,8 +434,6 @@ export function InstructorAssessmentQuestionsTable({
                       <span class="visually-hidden">Delete</span>
                     </th>
                   </>
-                ) : (
-                  ''
                 )}
                 <th>
                   <span class="visually-hidden">Name</span>
@@ -449,7 +447,7 @@ export function InstructorAssessmentQuestionsTable({
                 <th>Mean score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
-                <th class="text-end">Actions</th>
+                {!editMode && <th class="text-end">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -464,7 +462,7 @@ export function InstructorAssessmentQuestionsTable({
                     editMode={editMode}
                     urlPrefix={urlPrefix}
                     hasCoursePermissionPreview={hasCoursePermissionPreview}
-                    hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+                    canEdit={canEdit}
                     showAdvanceScorePercCol={showAdvanceScorePercCol}
                     assessmentType={assessmentType}
                     handleAddQuestion={handleAddQuestion}
