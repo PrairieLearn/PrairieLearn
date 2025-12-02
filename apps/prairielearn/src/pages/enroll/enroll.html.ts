@@ -3,9 +3,7 @@ import { z } from 'zod';
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.js';
 import { Modal } from '../../components/Modal.js';
-import { Navbar } from '../../components/Navbar.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { EnrollmentSchema } from '../../lib/db-types.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
@@ -90,44 +88,39 @@ export function EnrollLtiMessage({
   ltiInfo: any;
   resLocals: UntypedResLocals;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
-      </head>
-      <body>
-        ${Navbar({ resLocals, navPage: 'enroll', navbarType: 'plain' })}
-        <main id="content" class="container">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              Logout and log back in to see more courses
-            </div>
-            <div class="card-body">
-              <p>
-                Your PrairieLearn login is currently tied to
-                <strong>${ltiInfo.plc_short_name} ${ltiInfo.ci_long_name}</strong> and cannot be
-                used to enroll in other courses.
-              </p>
-              <p>To see more courses:</p>
-              <ol>
-                <li>
-                  Log out by selecting your name in the top right menu and selecting "Log out".
-                </li>
-                <li>Sign-in again with your normal login.</li>
-                <li>Return to this enroll page to see the list of courses.</li>
-              </ol>
-              <p>
-                Note: When you revisit the main ${ltiInfo.plc_short_name} course site and come back
-                to PrairieLearn from it, it will take over your login again. You might consider
-                using different web browsers for that course from your other PrairieLearn courses.
-              </p>
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Enrollment - Courses',
+    navContext: {
+      type: 'plain',
+      page: 'enroll',
+    },
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Logout and log back in to see more courses
+        </div>
+        <div class="card-body">
+          <p>
+            Your PrairieLearn login is currently tied to
+            <strong>${ltiInfo.plc_short_name} ${ltiInfo.ci_long_name}</strong> and cannot be used to
+            enroll in other courses.
+          </p>
+          <p>To see more courses:</p>
+          <ol>
+            <li>Log out by selecting your name in the top right menu and selecting "Log out".</li>
+            <li>Sign-in again with your normal login.</li>
+            <li>Return to this enroll page to see the list of courses.</li>
+          </ol>
+          <p>
+            Note: When you revisit the main ${ltiInfo.plc_short_name} course site and come back to
+            PrairieLearn from it, it will take over your login again. You might consider using
+            different web browsers for that course from your other PrairieLearn courses.
+          </p>
+        </div>
+      </div>
+    `,
+  });
 }
 
 export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: UntypedResLocals }) {
