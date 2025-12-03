@@ -8,6 +8,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
@@ -96,10 +97,15 @@ router.get(
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async function (req, res) {
-    if (!res.locals.authz_data.has_course_permission_preview) {
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    if (!authzData.has_course_permission_preview) {
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get view permissions.
-      const courseOwners = await getCourseOwners(res.locals.course.id);
+      const courseOwners = await getCourseOwners(course.id);
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
@@ -117,35 +123,31 @@ router.get(
     }
 
     const courseInstances = await selectCourseInstancesWithStaffAccess({
-      course: res.locals.course,
-      user_id: res.locals.user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+      course,
+      authzData,
+      requiredRole: ['Previewer', 'Student Data Viewer'],
     });
 
     const questions = await selectQuestionsForCourse(
-      res.locals.course.id,
+      course.id,
       courseInstances.map((ci) => ci.id),
     );
 
     const templateQuestions = await getTemplateQuestions(questions);
 
-    const courseDirExists = await fs.pathExists(res.locals.course.path);
+    const courseDirExists = await fs.pathExists(course.path);
     res.send(
       QuestionsPage({
         questions,
         templateQuestions,
         course_instances: courseInstances,
         showAddQuestionButton:
-          res.locals.authz_data.has_course_permission_edit &&
-          !res.locals.course.example_course &&
-          courseDirExists,
+          authzData.has_course_permission_edit && !course.example_course && courseDirExists,
         showAiGenerateQuestionButton:
-          res.locals.authz_data.has_course_permission_edit &&
-          !res.locals.course.example_course &&
+          authzData.has_course_permission_edit &&
+          !course.example_course &&
           isEnterprise() &&
-          (await features.enabledFromLocals('ai-question-generation', res.locals)),
+          (await features.enabledFromLocals('ai-question-generation', authzData)),
         resLocals: res.locals,
       }),
     );
