@@ -176,7 +176,7 @@ describe('Course instance syncing', () => {
           publishing_start_date: null,
           publishing_end_date: null,
         },
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: [],
       },
       {
@@ -186,7 +186,7 @@ describe('Course instance syncing', () => {
           },
         },
         db: null,
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: ['"publishing.startDate" is required if "publishing.endDate" is specified.'],
       },
       {
@@ -201,7 +201,7 @@ describe('Course instance syncing', () => {
           publishing_start_date: date,
           publishing_end_date: date,
         },
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: [],
       },
       {
@@ -211,7 +211,7 @@ describe('Course instance syncing', () => {
           },
         },
         db: null,
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: ['"publishing.endDate" is required if "publishing.startDate" is specified.'],
       },
       {
@@ -222,7 +222,7 @@ describe('Course instance syncing', () => {
           },
         },
         db: null,
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: ['"publishing.startDate" is not a valid date.'],
       },
       {
@@ -232,7 +232,7 @@ describe('Course instance syncing', () => {
           },
         },
         db: null,
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: [
           '"publishing.startDate" is required if "publishing.endDate" is specified.',
           '"publishing.endDate" is not a valid date.',
@@ -246,7 +246,7 @@ describe('Course instance syncing', () => {
           },
         },
         db: null,
-        warnings: ['"publishing" is not configurable yet.'],
+        warnings: [],
         errors: ['"publishing.startDate" must be before "publishing.endDate".'],
       },
     ];
@@ -802,6 +802,8 @@ describe('Course instance syncing', () => {
       it(`self-enrollment configuration #${i++}`, async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.selfEnrollment = json;
+        // You can't configure selfEnrollment and allowAccess at the same time.
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = undefined;
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
 
         const courseDir = await util.writeCourseToTempDirectory(courseData);

@@ -15,11 +15,11 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.0",
-    "@vitest/coverage-v8": "^4.0.7",
-    "tsx": "^4.20.6",
+    "@types/node": "^22.19.1",
+    "@vitest/coverage-v8": "^4.0.14",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.7"
+    "vitest": "^4.0.14"
   },
   "sideEffects": false
 }

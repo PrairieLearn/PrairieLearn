@@ -1,8 +1,8 @@
 # `@prairielearn/ui`
 
-UI components and styles shared between PrairieLearn and PrairieTest.
+UI components, utilities, and styles shared between PrairieLearn and PrairieTest.
 
-## Examples
+## UI Component Examples
 
 ### TanstackTableCard
 
@@ -14,9 +14,11 @@ import { TanstackTableCard } from '@prairielearn/ui';
 <TanstackTableCard
   table={table}
   title="Students"
+  className="h-100"
+  singularLabel="student"
+  pluralLabel="students"
   downloadButtonOptions={{
     filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
-    singularLabel: 'student',
     mapRowToData: (row) => {
       return {
         uid: row.user?.uid ?? row.enrollment.pending_uid,
@@ -30,6 +32,7 @@ import { TanstackTableCard } from '@prairielearn/ui';
           : null,
       };
     },
+    hasSelection: false,
   }}
   headerButtons={
     <>
@@ -57,7 +60,7 @@ import { TanstackTableCard } from '@prairielearn/ui';
 You should also include the CSS file in your page:
 
 ```css
-@import url('@prairielearn/ui/components/TanstackTable.css');
+@import url('@prairielearn/ui/components/styles.css');
 ```
 
 ### CategoricalColumnFilter
@@ -103,4 +106,62 @@ const tableOptions = {
     ),
   },
 };
+```
+
+## nuqs Utilities
+
+This package provides utilities for integrating [nuqs](https://nuqs.47ng.com/) (type-safe URL query state management) with server-side rendering and TanStack Table.
+
+### NuqsAdapter
+
+`nuqs` needs to be aware of the current state of the URL search parameters during both server-side and client-side rendering. The `NuqsAdapter` component handles this by using a custom adapter on the server that reads from a provided `search` prop, while on the client it uses nuqs's built-in React adapter that reads directly from `location.search`.
+
+```tsx
+import { NuqsAdapter } from '@prairielearn/ui';
+
+// Wrap your component that uses nuqs hooks
+<NuqsAdapter search={new URL(req.url).search}>
+  <MyTableComponent />
+</NuqsAdapter>;
+```
+
+### TanStack Table State Parsers
+
+The package provides custom parsers for syncing TanStack Table state with URL query parameters:
+
+- **`parseAsSortingState`**: Syncs table sorting state with the URL. Format: `col:asc` or `col1:asc,col2:desc` for multi-column sorting.
+- **`parseAsColumnVisibilityStateWithColumns(allColumns, defaultValueRef?)`**: Syncs column visibility. Parses comma-separated visible column IDs.
+- **`parseAsColumnPinningState`**: Syncs left-pinned columns. Format: `col1,col2,col3`.
+- **`parseAsNumericFilter`**: Syncs numeric filter values. URL format: `gte_5`, `lte_10`, `gt_3`, `lt_7`, `eq_5`, `empty`.
+
+```tsx
+import {
+  parseAsSortingState,
+  parseAsColumnVisibilityStateWithColumns,
+  parseAsColumnPinningState,
+  parseAsNumericFilter,
+} from '@prairielearn/ui';
+import { useQueryState } from 'nuqs';
+
+// Sorting state synced to URL
+const [sorting, setSorting] = useQueryState('sort', parseAsSortingState.withDefault([]));
+
+// Column visibility synced to URL
+const allColumns = ['name', 'email', 'status'];
+const [columnVisibility, setColumnVisibility] = useQueryState(
+  'cols',
+  parseAsColumnVisibilityStateWithColumns(allColumns).withDefault({}),
+);
+
+// Column pinning synced to URL
+const [columnPinning, setColumnPinning] = useQueryState(
+  'pin',
+  parseAsColumnPinningState.withDefault({ left: [], right: [] }),
+);
+
+// Numeric filter synced to URL
+const [scoreFilter, setScoreFilter] = useQueryState(
+  'score',
+  parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
+);
 ```

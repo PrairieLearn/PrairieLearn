@@ -4,11 +4,81 @@ import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
+import { renderHtml } from '@prairielearn/preact';
+import { run } from '@prairielearn/run';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../src/lib/base64-util.js';
+import { type FileMetadata, FileType } from '../../src/lib/editorUtil.shared.js';
 
 import { configureAceBasePaths } from './lib/ace.js';
 import './lib/verboseToggle.js';
+
+/**
+ * Error codes for save validation issues.
+ */
+enum SaveErrorCode {
+  INVALID_JSON = 'INVALID_JSON',
+  UUID_CHANGED = 'UUID_CHANGED',
+  UUID_REMOVED = 'UUID_REMOVED',
+}
+
+/**
+ * Modal content component for invalid JSON error.
+ */
+function InvalidJsonModalContent() {
+  return (
+    <div class="alert alert-danger d-flex flex-column align-items-start mb-0">
+      <div class="d-flex flex-row align-items-start gap-2 mb-1">
+        <i class="bi bi-x-circle-fill fs-6" />
+        <strong>Invalid JSON</strong>
+      </div>
+      <div>
+        This file contains invalid JSON syntax and cannot be saved. Please fix the errors before
+        saving.
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Modal content component for UUID change warning.
+ */
+function UuidChangeModalContent({
+  errorCode,
+  originalUuid,
+  newUuid,
+}: {
+  errorCode: SaveErrorCode.UUID_CHANGED | SaveErrorCode.UUID_REMOVED;
+  originalUuid?: string;
+  newUuid?: string;
+}) {
+  return (
+    <>
+      <div class="alert alert-warning d-flex flex-column mb-3">
+        <div class="d-flex flex-row align-items-start gap-2 mb-1">
+          <i class="bi bi-exclamation-triangle-fill fs-6" />
+          <strong>UUID change</strong>
+        </div>
+        <div>
+          {run(() => {
+            if (errorCode === SaveErrorCode.UUID_CHANGED && originalUuid && newUuid) {
+              return (
+                <>
+                  The UUID in this file was changed from <code>"{originalUuid}"</code> to{' '}
+                  <code>"{newUuid}"</code>.
+                </>
+              );
+            } else if (errorCode === SaveErrorCode.UUID_REMOVED) {
+              return <>The UUID was removed from this file.</>;
+            }
+            return <>The UUID was modified.</>;
+          })}
+        </div>
+      </div>
+      <div>Clicking "Confirm save" will save this file with its original UUID.</div>
+    </>
+  );
+}
 
 /**
  * Given an Ace cursor position (consisting of a row and column) and the lines
@@ -44,6 +114,9 @@ class InstructorFileEditor {
   saveElement?: HTMLButtonElement | null;
   inputContentsElement?: HTMLInputElement | null;
   editor: ace.Ace.Editor;
+  fileMetadata?: FileMetadata;
+  aceMode?: string;
+  private abortController?: AbortController;
 
   constructor({
     element,
@@ -52,6 +125,7 @@ class InstructorFileEditor {
     readOnly = false,
     contents,
     diskContents,
+    fileMetadata,
   }: {
     element: HTMLElement;
     saveElement?: HTMLButtonElement | null;
@@ -59,6 +133,7 @@ class InstructorFileEditor {
     readOnly?: boolean;
     contents?: string;
     diskContents?: string;
+    fileMetadata?: FileMetadata;
   }) {
     this.element = element;
     const editorElement = element.querySelector<HTMLElement>('.editor');
@@ -68,6 +143,8 @@ class InstructorFileEditor {
 
     this.saveElement = saveElement;
     this.inputContentsElement = element.querySelector('input[name=file_edit_contents]');
+    this.fileMetadata = fileMetadata;
+    this.aceMode = aceMode;
     this.editor = ace.edit(editorElement, {
       minLines: 10,
       maxLines: Infinity,
@@ -98,8 +175,167 @@ class InstructorFileEditor {
       window.bootstrap.Toast.getOrCreateInstance('#js-json-reformat-error', { delay: 5000 });
       document
         .querySelector<HTMLButtonElement>('.js-reformat-file')
-        ?.addEventListener('click', () => this.reformatJSONFile());
+        ?.addEventListener('click', async () => await this.reformatJSONFile());
     }
+
+    // Override the save button click to show confirmation modal if needed
+    this.saveElement?.addEventListener('click', async (e) => await this.handleSaveClick(e));
+  }
+
+  /**
+   * Handles the save button click, showing a confirmation modal if there are issues,
+   * or proceeding with the save if the user has already confirmed.
+   */
+  async handleSaveClick(event: MouseEvent) {
+    const errorResult = this.checkForSaveIssues();
+
+    if (errorResult) {
+      event.preventDefault();
+      this.showConfirmationModal(errorResult);
+      return;
+    }
+
+    // Otherwise, continue with the save
+  }
+
+  /**
+   * Restores the original UUID in the editor contents when the user confirms save.
+   */
+  async restoreOriginalUuid() {
+    if (!this.fileMetadata?.uuid) return;
+
+    const currentContents = this.editor.getValue();
+    const parsedContent = JSON.parse(currentContents);
+    if (
+      typeof parsedContent === 'object' &&
+      parsedContent !== null &&
+      !Array.isArray(parsedContent)
+    ) {
+      // Restore the original UUID. We delete and then spread so that the original UUID
+      // appears at the top of the JSON object.
+      delete parsedContent.uuid;
+      const restoredContents = JSON.stringify({ uuid: this.fileMetadata.uuid, ...parsedContent });
+      this.editor.setValue(restoredContents);
+      await this.reformatJSONFile();
+    }
+  }
+
+  /**
+   * Checks for issues that would require confirmation before saving.
+   *
+   * @returns An error result object or null if there are no issues.
+   */
+  checkForSaveIssues(): {
+    errorCode: SaveErrorCode;
+    originalUuid?: string;
+    newUuid?: string;
+  } | null {
+    const currentContents = this.editor.getValue();
+
+    if (this.fileMetadata && this.fileMetadata.type !== FileType.File) {
+      try {
+        const parsedContent = JSON.parse(currentContents);
+
+        if (
+          typeof parsedContent !== 'object' ||
+          parsedContent == null ||
+          Array.isArray(parsedContent)
+        ) {
+          return { errorCode: SaveErrorCode.INVALID_JSON };
+        } else if (this.fileMetadata.uuid) {
+          if ('uuid' in parsedContent) {
+            if (parsedContent.uuid !== this.fileMetadata.uuid) {
+              return {
+                errorCode: SaveErrorCode.UUID_CHANGED,
+                originalUuid: this.fileMetadata.uuid,
+                newUuid: parsedContent.uuid,
+              };
+            }
+          } else {
+            return {
+              errorCode: SaveErrorCode.UUID_REMOVED,
+              originalUuid: this.fileMetadata.uuid,
+            };
+          }
+        }
+      } catch {
+        return { errorCode: SaveErrorCode.INVALID_JSON };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Shows a confirmation modal based on the error code.
+   *
+   * @param errorResult - The error result containing error code and related data.
+   * @param errorResult.errorCode - The type of save error that occurred.
+   * @param errorResult.originalUuid - The original UUID value (for UUID errors).
+   * @param errorResult.newUuid - The new UUID value (for UUID_CHANGED errors).
+   */
+  showConfirmationModal(errorResult: {
+    errorCode: SaveErrorCode;
+    originalUuid?: string;
+    newUuid?: string;
+  }) {
+    const modalElement = document.getElementById('save-confirmation-modal')!;
+    const modalTitle = modalElement.querySelector('.modal-title')!;
+    const modalBody = modalElement.querySelector('.modal-body')!;
+    const confirmButton = modalElement.querySelector<HTMLButtonElement>('#confirm-save-button')!;
+    const cancelButton = modalElement.querySelector<HTMLButtonElement>('#cancel-save-button')!;
+
+    const { errorCode, originalUuid, newUuid } = errorResult;
+
+    // Restore original modal styles
+    modalTitle.textContent = 'Confirm save';
+    confirmButton.style.display = '';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.className = 'btn btn-secondary';
+
+    // Update modal content based on error code
+    switch (errorCode) {
+      case SaveErrorCode.INVALID_JSON:
+        modalBody.innerHTML = renderHtml(<InvalidJsonModalContent />).toString();
+        modalTitle.textContent = 'Cannot save';
+        confirmButton.style.display = 'none';
+        cancelButton.textContent = 'OK';
+        cancelButton.className = 'btn btn-primary';
+        break;
+
+      case SaveErrorCode.UUID_CHANGED:
+      case SaveErrorCode.UUID_REMOVED:
+        modalBody.innerHTML = renderHtml(
+          <UuidChangeModalContent
+            errorCode={errorCode}
+            originalUuid={originalUuid}
+            newUuid={newUuid}
+          />,
+        ).toString();
+        modalTitle.textContent = 'Confirm save';
+        confirmButton.style.display = '';
+        cancelButton.textContent = 'Cancel';
+        cancelButton.className = 'btn btn-secondary';
+        break;
+    }
+
+    const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement);
+    modal.show();
+
+    // Abort any previous listener
+    this.abortController?.abort();
+    // Set up a new abort controller
+    this.abortController = new AbortController();
+
+    confirmButton.addEventListener(
+      'click',
+      async () => {
+        modal.hide();
+        await this.restoreOriginalUuid();
+        this.saveElement?.click();
+      },
+      { signal: this.abortController.signal },
+    );
   }
 
   setEditorContents(contents: string) {
@@ -178,6 +414,9 @@ onDocumentReady(() => {
         // last "unsuccessful" edit.
         diskContents: diskEditorElement?.dataset.contents ?? draftEditorElement.dataset.contents,
         saveElement: document.querySelector<HTMLButtonElement>('#file-editor-save-button'),
+        fileMetadata: draftEditorElement.dataset.fileMetadata
+          ? JSON.parse(draftEditorElement.dataset.fileMetadata)
+          : undefined,
       })
     : null;
 
@@ -187,6 +426,9 @@ onDocumentReady(() => {
       aceMode: diskEditorElement.dataset.aceMode,
       readOnly: true,
       contents: diskEditorElement.dataset.contents,
+      fileMetadata: diskEditorElement.dataset.fileMetadata
+        ? JSON.parse(diskEditorElement.dataset.fileMetadata)
+        : undefined,
     });
   }
 

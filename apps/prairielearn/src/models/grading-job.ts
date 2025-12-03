@@ -1,18 +1,17 @@
 import z from 'zod';
 
 import {
-  callRow,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
 import {
   type GradingJob,
   GradingJobSchema,
   IdSchema,
-  SprocAssessmentInstancesGradeSchema,
   type Submission,
   SubmissionSchema,
 } from '../lib/db-types.js';
@@ -82,11 +81,7 @@ export async function insertGradingJob({
       }),
     );
     if (assessment_instance_id != null) {
-      await callRow(
-        'assessment_instances_grade',
-        [assessment_instance_id, authn_user_id, credit],
-        SprocAssessmentInstancesGradeSchema,
-      );
+      await updateAssessmentInstanceGrade({ assessment_instance_id, authn_user_id, credit });
     }
     return grading_job;
   });
@@ -116,14 +111,14 @@ export async function updateGradingJobAfterGrading({
   /** null => now() */
   finish_time?: Date | null;
   /** null => no change */
-  submitted_answer?: Submission['submitted_answer'] | null;
+  submitted_answer?: Submission['submitted_answer'];
   format_errors?: Submission['format_errors'];
   gradable: Submission['gradable'];
   broken: Submission['broken'];
   /** null => no change */
-  params?: Submission['params'] | null;
+  params?: Submission['params'];
   /** null => no change */
-  true_answer?: Submission['true_answer'] | null;
+  true_answer?: Submission['true_answer'];
   feedback?: Submission['feedback'];
   partial_scores?: Submission['partial_scores'];
   score?: Submission['score'];
@@ -190,22 +185,19 @@ export async function updateGradingJobAfterGrading({
       GradingJobSchema,
     );
 
-    if (gradable) {
-      await callRow('variants_update_after_grading', [variant_id, gradingJob.correct], z.unknown());
-      if (instance_question_id != null && assessment_instance_id != null) {
-        await updateInstanceQuestionGrade({
-          variant_id,
-          instance_question_id,
-          submissionScore: gradingJob.score ?? 0,
-          grading_job_id,
-          authn_user_id: gradingJob.auth_user_id,
-        });
-        await callRow(
-          'assessment_instances_grade',
-          [assessment_instance_id, gradingJob.auth_user_id, credit],
-          SprocAssessmentInstancesGradeSchema,
-        );
-      }
+    if (gradable && instance_question_id != null && assessment_instance_id != null) {
+      await updateInstanceQuestionGrade({
+        variant_id,
+        instance_question_id,
+        submissionScore: gradingJob.score ?? 0,
+        grading_job_id,
+        authn_user_id: gradingJob.auth_user_id,
+      });
+      await updateAssessmentInstanceGrade({
+        assessment_instance_id,
+        authn_user_id: gradingJob.auth_user_id,
+        credit,
+      });
     }
 
     return gradingJob;

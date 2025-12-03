@@ -12,6 +12,7 @@ import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import {
   type ConstructedCourseOrInstanceSuccessContext,
   type CourseOrInstanceContextData,
+  type PlainAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
 } from '../lib/authz-data-lib.js';
@@ -29,12 +30,12 @@ import {
 } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
-import type { Result } from '../lib/types.js';
+import { type Result, withBrand } from '../lib/types.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-interface Override {
+export interface Override {
   name: string;
   value: string;
   cookie: string;
@@ -413,8 +414,14 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  // If this is an example course, only allow overrides if the user is an administrator.
-  if (authnCourse.example_course && !res.locals.is_administrator && overrides.length > 0) {
+  // If we're working with an example course, only allow changing the effective
+  // user if the authenticated user is an administrator or we are in development mode.
+  if (
+    authnCourse.example_course &&
+    !res.locals.is_administrator &&
+    !config.devMode &&
+    overrides.length > 0
+  ) {
     clearOverrideCookies(res, overrides);
 
     throw new AugmentedError('Access denied', {
@@ -552,9 +559,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // are required.
     if (effectiveAuthResult === null) {
       return {
-        authzData: {
+        authzData: withBrand<PlainAuthzData>({
           user: effectiveUserData ? effectiveUserData.user : authnAuthzData.user,
-          is_administrator: false,
           course_role: 'None' as EnumCourseRole,
           ...calculateCourseRolePermissions('None'),
           ...(req.params.course_instance_id
@@ -567,7 +573,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
             : {}),
           mode: authnAuthzData.mode,
           mode_reason: authnAuthzData.mode_reason,
-        },
+        }),
         course: authnCourse,
         institution: authnInstitution,
         courseInstance: authnCourseInstance,

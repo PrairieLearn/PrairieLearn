@@ -1,3 +1,5 @@
+import { setImmediate } from 'node:timers/promises';
+
 import * as async from 'async';
 import _ from 'lodash';
 import mustache from 'mustache';
@@ -10,6 +12,7 @@ import { run } from '@prairielearn/run';
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
+import { updateAssessmentInstanceGrade } from './assessment-grading.js';
 import {
   type Assessment,
   type AssessmentQuestion,
@@ -17,7 +20,6 @@ import {
   IdSchema,
   RubricItemSchema,
   RubricSchema,
-  SprocAssessmentInstancesGradeSchema,
   type Submission,
 } from './db-types.js';
 import { idsEqual } from './id.js';
@@ -141,7 +143,8 @@ export async function nextInstanceQuestionUrl({
 /**
  * Selects a variety of rubric data for a given assessment question.
  * If a submission is provided, the rubric items are rendered
- * as Mustache templates with the submission's data.
+ * as Mustache templates with the submission's data. Empty strings
+ * are skipped to avoid unnecessary processing.
  */
 export async function selectRubricData({
   assessment_question,
@@ -170,18 +173,20 @@ export async function selectRubricData({
       submitted_answers: submission.submitted_answer,
     };
 
-    await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
-      item.description_rendered = await markdownToHtml(
-        mustache.render(item.description || '', mustache_data),
-        { inline: true },
-      );
-      item.explanation_rendered = await markdownToHtml(
-        mustache.render(item.explanation || '', mustache_data),
-      );
-      item.grader_note_rendered = await markdownToHtml(
-        mustache.render(item.grader_note || '', mustache_data),
-      );
-    });
+    for (const item of rubric_data?.rubric_items || []) {
+      item.description_rendered = item.description
+        ? markdownToHtml(mustache.render(item.description || '', mustache_data), { inline: true })
+        : '';
+      item.explanation_rendered = item.explanation
+        ? markdownToHtml(mustache.render(item.explanation || '', mustache_data))
+        : '';
+      item.grader_note_rendered = item.grader_note
+        ? markdownToHtml(mustache.render(item.grader_note || '', mustache_data))
+        : '';
+
+      // Yield to the event loop to avoid blocking too long.
+      await setImmediate();
+    }
   }
 
   return rubric_data;
@@ -204,9 +209,7 @@ export async function populateManualGradingData(submission: Record<string, any>)
     );
   }
   if (submission.feedback?.manual) {
-    submission.feedback_manual_html = await markdownToHtml(
-      submission.feedback?.manual?.toString() || '',
-    );
+    submission.feedback_manual_html = markdownToHtml(submission.feedback?.manual?.toString() || '');
   }
 }
 
@@ -680,17 +683,12 @@ export async function updateInstanceQuestionScore(
         is_ai_graded,
       });
 
-      await sqldb.callRow(
-        'assessment_instances_grade',
-        [
-          current_submission.assessment_instance_id,
-          authn_user_id,
-          100, // credit
-          false, // only_log_if_score_updated
-          true, // allow_decrease
-        ],
-        SprocAssessmentInstancesGradeSchema,
-      );
+      await updateAssessmentInstanceGrade({
+        assessment_instance_id: current_submission.assessment_instance_id,
+        authn_user_id,
+        credit: 100,
+        allowDecrease: true,
+      });
 
       // TODO: this ends up running inside a transaction. This is not good.
       await ltiOutcomes.updateScore(current_submission.assessment_instance_id);

@@ -138,16 +138,46 @@ WITH
     RETURNING
       *
   ),
+  question_data AS (
+    SELECT
+      s.variant_id,
+      q.single_variant,
+      a.type AS assessment_type,
+      aq.tries_per_variant
+    FROM
+      updated_submission AS s
+      JOIN variants AS v ON (v.id = s.variant_id)
+      JOIN questions AS q ON (q.id = v.question_id)
+      LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+      LEFT JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+      LEFT JOIN assessments AS a ON (a.id = aq.assessment_id)
+  ),
   updated_variant AS (
     UPDATE variants AS v
     SET
       params = COALESCE($params::jsonb, v.params),
       true_answer = COALESCE($true_answer::jsonb, v.true_answer),
+      num_tries = CASE
+        WHEN $gradable THEN v.num_tries + 1
+        ELSE v.num_tries
+      END,
+      -- Close the variant if it's on a homework assessment, if it's not of a
+      -- question with only one variant, and if the max num tries has been reached
+      open = CASE
+        WHEN $gradable
+        AND qd.assessment_type = 'Homework'
+        AND NOT qd.single_variant
+        AND (
+          v.num_tries + 1 >= qd.tries_per_variant
+          OR $correct
+        ) THEN FALSE
+        ELSE v.open
+      END,
       modified_at = now()
     FROM
-      updated_submission AS s
+      question_data AS qd
     WHERE
-      v.id = s.variant_id
+      v.id = qd.variant_id
     RETURNING
       v.*
   ),
