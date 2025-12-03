@@ -69,7 +69,6 @@ async function startServerSubprocess(
         clearTimeout(timeout);
         resolve();
       } else {
-        console.log('Server output:', output);
         process.stdout.write(output);
       }
     };

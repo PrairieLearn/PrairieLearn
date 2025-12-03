@@ -112,7 +112,6 @@ router.get(
         </Hydrate>
       </>
     );
-    console.log(content.constructor);
 
     res.send(
       PageLayout({
