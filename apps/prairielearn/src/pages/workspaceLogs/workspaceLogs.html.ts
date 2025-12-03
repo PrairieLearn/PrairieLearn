@@ -100,7 +100,6 @@ export function WorkspaceVersionLogs({
     },
     options: {
       enableEnhancedNav: false,
-      paddingBottom: true,
     },
     content: html`
       <h1 class="mb-4">Workspace version logs</h1>
