@@ -31,11 +31,20 @@ const EXPECTED_STUDENTS_ABOVE_90 = TEST_STUDENTS.filter(
   (s) => s.score !== null && s.score > 90,
 ).length;
 
+const AssessmentInfoSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+});
+
+// Will be set during test setup
+let assessmentLabel: string;
+
 /**
  * Creates test students with assessment scores for gradebook filter testing.
+ * Returns the assessment label for use in tests.
  */
-async function createTestData() {
-  const assessmentId = await sqldb.queryRow(sql.select_first_assessment, {}, z.string());
+async function createTestData(): Promise<string> {
+  const assessment = await sqldb.queryRow(sql.select_first_assessment, {}, AssessmentInfoSchema);
 
   for (const student of TEST_STUDENTS) {
     const userId = await sqldb.queryRow(
@@ -48,18 +57,21 @@ async function createTestData() {
 
     if (student.score !== null) {
       await sqldb.execute(sql.insert_assessment_instance, {
-        assessment_id: assessmentId,
+        assessment_id: assessment.id,
         user_id: userId,
         score_perc: student.score,
       });
     }
   }
+
+  return assessment.label;
 }
 
 test.describe('Gradebook numeric filter', () => {
-  test.beforeEach(async () => {
+  // Request baseURL to ensure the worker fixture (and database) is initialized
+  test.beforeAll(async () => {
     await syncCourse(EXAMPLE_COURSE_PATH);
-    await createTestData();
+    assessmentLabel = await createTestData();
   });
 
   test('filters table rows when using numeric filter input', async ({ page }) => {
@@ -70,8 +82,10 @@ test.describe('Gradebook numeric filter', () => {
     const tableBody = page.locator('tbody').first();
     await expect(tableBody.locator('tr')).toHaveCount(TEST_STUDENTS.length, { timeout: 10000 });
 
-    // Find an assessment column with the filter button
-    const filterButton = page.locator('thead th button[aria-label^="Filter "]').first();
+    // Find the filter button for the assessment we inserted data into
+    const filterButton = page.locator(
+      `button[aria-label="Filter ${assessmentLabel.toLowerCase()}"]`,
+    );
     await expect(filterButton).toBeVisible();
 
     // Open the filter dropdown and apply a filter
@@ -99,14 +113,21 @@ test.describe('Gradebook numeric filter', () => {
     const tableBody = page.locator('tbody').first();
     await expect(tableBody.locator('tr')).toHaveCount(TEST_STUDENTS.length, { timeout: 10000 });
 
-    // Find the assessment column index by looking for a cell with a percentage
-    const headerCells = page.locator('thead th');
-    const headerCount = await headerCells.count();
+    // Find the filter button and its column index for the assessment we inserted data into
+    const filterButton = page.locator(
+      `button[aria-label="Filter ${assessmentLabel.toLowerCase()}"]`,
+    );
+    await expect(filterButton).toBeVisible();
+
+    // Get the column index by finding the header cell containing the filter button
+    const allHeaders = page.locator('thead th');
+    const headerCount = await allHeaders.count();
 
     let assessmentColumnIndex = -1;
     for (let i = 0; i < headerCount; i++) {
-      const filterBtn = headerCells.nth(i).locator('button[aria-label^="Filter "]');
-      if ((await filterBtn.count()) > 0) {
+      const header = allHeaders.nth(i);
+      const btn = header.locator(`button[aria-label="Filter ${assessmentLabel.toLowerCase()}"]`);
+      if ((await btn.count()) > 0) {
         assessmentColumnIndex = i;
         break;
       }
@@ -114,9 +135,6 @@ test.describe('Gradebook numeric filter', () => {
     expect(assessmentColumnIndex).toBeGreaterThanOrEqual(0);
 
     // Apply the filter
-    const filterButton = headerCells
-      .nth(assessmentColumnIndex)
-      .locator('button[aria-label^="Filter "]');
     await filterButton.click();
     await page.getByPlaceholder('e.g., >0, <5, =10').fill('>90');
     await page.keyboard.press('Escape');

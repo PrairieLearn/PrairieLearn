@@ -1,12 +1,14 @@
 -- BLOCK select_first_assessment
 SELECT
-  id
+  a.id,
+  aset.abbreviation || a.number AS label
 FROM
-  assessments
+  assessments AS a
+  JOIN assessment_sets AS aset ON aset.id = a.assessment_set_id
 WHERE
-  course_instance_id = 1
+  a.course_instance_id = 1
 ORDER BY
-  id
+  a.id
 LIMIT
   1;
 
