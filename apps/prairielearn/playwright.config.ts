@@ -16,6 +16,8 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
 
+  snapshotPathTemplate: '{testDir}/{testFilePath}.snapshots/{testName}{ext}',
+
   projects: [
     {
       name: 'chromium',
