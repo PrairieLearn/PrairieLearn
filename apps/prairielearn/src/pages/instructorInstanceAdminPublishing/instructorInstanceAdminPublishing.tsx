@@ -52,13 +52,13 @@ const sql = loadSqlEquiv(import.meta.url);
 export async function selectPublishingExtensionsWithUsersByCourseInstance({
   courseInstance,
   authzData,
-  requestedRole,
+  requiredRole,
 }: {
   courseInstance: CourseInstance;
   authzData: AuthzData;
-  requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  requiredRole: ('System' | 'Student Data Viewer' | 'Student Data Editor')[];
 }) {
-  assertHasRole(authzData, requestedRole);
+  assertHasRole(authzData, requiredRole);
   return await queryRows(
     sql.select_publishing_extensions_with_users_by_course_instance,
     { course_instance_id: courseInstance.id },
@@ -84,7 +84,7 @@ router.get(
     const accessControlExtensions = await selectPublishingExtensionsWithUsersByCourseInstance({
       courseInstance: res.locals.course_instance,
       authzData: res.locals.authz_data,
-      requestedRole: 'Student Data Viewer',
+      requiredRole: ['Student Data Viewer'],
     });
     res.json(accessControlExtensions);
   }),
@@ -117,7 +117,7 @@ router.get(
     const validRecords = await selectUsersAndEnrollmentsByUidsInCourseInstance({
       uids,
       courseInstance: res.locals.course_instance,
-      requestedRole: 'Student Data Viewer',
+      requiredRole: ['Student Data Viewer'],
       authzData: res.locals.authz_data,
     });
     const validUids = new Set(validRecords.map((record) => record.user.uid));
@@ -133,7 +133,7 @@ router.get(
     const publishingExtensions = await selectPublishingExtensionsWithUsersByCourseInstance({
       courseInstance: res.locals.course_instance,
       authzData: res.locals.authz_data,
-      requestedRole: 'Student Data Viewer',
+      requiredRole: ['Student Data Viewer'],
     });
 
     const {
@@ -358,7 +358,7 @@ router.post(
         await selectUsersAndEnrollmentsByUidsInCourseInstance({
           uids: body.uids,
           courseInstance,
-          requestedRole: 'Student Data Viewer',
+          requiredRole: ['Student Data Viewer'],
           authzData,
         })
       ).map((record) => record.enrollment);
@@ -372,7 +372,7 @@ router.post(
           name: body.name,
           courseInstance,
           authzData,
-          requestedRole: 'Student Data Viewer',
+          requiredRole: ['Student Data Viewer'],
         });
 
         if (existingExtension) {
@@ -389,7 +389,7 @@ router.post(
         endDate: plainDateTimeStringToDate(body.end_date, courseInstance.display_timezone),
         enrollments,
         authzData,
-        requestedRole: 'Student Data Editor',
+        requiredRole: ['Student Data Editor'],
       });
 
       res.sendStatus(204);
@@ -408,7 +408,7 @@ router.post(
       const extension = await selectPublishingExtensionById({
         id: body.extension_id,
         courseInstance,
-        requestedRole: 'Student Data Viewer',
+        requiredRole: ['Student Data Viewer'],
         authzData,
       });
 
@@ -416,7 +416,7 @@ router.post(
         extension,
         courseInstance,
         authzData,
-        requestedRole: 'Student Data Editor',
+        requiredRole: ['Student Data Editor'],
       });
 
       res.sendStatus(204);
@@ -464,7 +464,7 @@ router.post(
           name: body.name,
           courseInstance,
           authzData,
-          requestedRole: 'Student Data Viewer',
+          requiredRole: ['Student Data Viewer'],
         });
 
         if (existingExtension && existingExtension.id !== body.extension_id) {
@@ -479,7 +479,7 @@ router.post(
         const extension = await selectPublishingExtensionById({
           id: body.extension_id,
           courseInstance,
-          requestedRole: 'Student Data Viewer',
+          requiredRole: ['Student Data Viewer'],
           authzData,
         });
 
@@ -488,7 +488,7 @@ router.post(
             uids: body.uids,
             courseInstance,
             authzData,
-            requestedRole: 'Student Data Viewer',
+            requiredRole: ['Student Data Viewer'],
           })
         ).map((record) => record.enrollment);
 
@@ -503,13 +503,13 @@ router.post(
             ? plainDateTimeStringToDate(body.end_date, courseInstance.display_timezone)
             : null,
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
 
         const currentEnrollments = await selectEnrollmentsForPublishingExtension({
           extension,
           authzData,
-          requestedRole: 'Student Data Viewer',
+          requiredRole: ['Student Data Viewer'],
         });
         const desiredEnrollmentsIds = new Set(desiredEnrollments.map((e) => e.id));
         const currentEnrollmentsIds = new Set(currentEnrollments.map((e) => e.id));
@@ -523,7 +523,7 @@ router.post(
             courseInstancePublishingExtension: extension,
             enrollment,
             authzData,
-            requestedRole: 'Student Data Editor',
+            requiredRole: ['Student Data Editor'],
           });
         }
 
@@ -532,7 +532,7 @@ router.post(
             courseInstancePublishingExtension: extension,
             enrollment,
             authzData,
-            requestedRole: 'Student Data Editor',
+            requiredRole: ['Student Data Editor'],
           });
         }
       });
