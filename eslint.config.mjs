@@ -749,7 +749,7 @@ export default tseslint.config([
   },
   {
     // Enforce JSX import source comment in e2e test files.
-    files: ['apps/prairielearn/src/tests/e2e/**/*.tsx'],
+    files: ['apps/prairielearn/src/tests/e2e/**/*.{ts,tsx}'],
     rules: {
       // We need to ensure that Preact is used for JSX, not playwright's own JSX implementation.
       // https://github.com/microsoft/playwright/issues/26936

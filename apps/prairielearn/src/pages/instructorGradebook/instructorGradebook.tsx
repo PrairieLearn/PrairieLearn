@@ -1,3 +1,5 @@
+/** @jsxImportSource @prairielearn/preact-cjs */
+
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
@@ -88,6 +90,30 @@ router.get(
       GradebookRowSchema,
     );
 
+    const content = (
+      <>
+        <CourseInstanceSyncErrorsAndWarnings
+          authzData={res.locals.authz_data}
+          courseInstance={course_instance}
+          course={course}
+          urlPrefix={urlPrefix}
+        />
+        <Hydrate fullHeight>
+          <InstructorGradebookTable
+            csrfToken={__csrf_token}
+            courseAssessments={courseAssessments}
+            gradebookRows={gradebookRows}
+            urlPrefix={urlPrefix}
+            csvFilename={csvFilename}
+            courseInstanceId={course_instance.id}
+            search={getUrl(req).search}
+            isDevMode={process.env.NODE_ENV === 'development'}
+          />
+        </Hydrate>
+      </>
+    );
+    console.log(content.constructor);
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -101,28 +127,7 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        content: (
-          <>
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
-              courseInstance={course_instance}
-              course={course}
-              urlPrefix={urlPrefix}
-            />
-            <Hydrate fullHeight>
-              <InstructorGradebookTable
-                csrfToken={__csrf_token}
-                courseAssessments={courseAssessments}
-                gradebookRows={gradebookRows}
-                urlPrefix={urlPrefix}
-                csvFilename={csvFilename}
-                courseInstanceId={course_instance.id}
-                search={getUrl(req).search}
-                isDevMode={process.env.NODE_ENV === 'development'}
-              />
-            </Hydrate>
-          </>
-        ),
+        content,
         postContent: [RoleDescriptionModal()],
       }),
     );
