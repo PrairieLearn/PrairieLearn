@@ -9,7 +9,7 @@ import * as helperDb from '../tests/helperDb.js';
 import * as DbSchemas from './db-types.js';
 import { TableNames } from './db-types.js';
 
-const schemaNameOverrides = {
+const schemaNameOverrides: Record<string, string | null> = {
   // https://github.com/PrairieLearn/PrairieLearn/issues/12428
   courses: null,
   pl_courses: 'CourseSchema',
@@ -63,7 +63,7 @@ describe('Database Schema Sync Test', () => {
         continue;
       }
 
-      const schema = DbSchemas[schemaName];
+      const schema = (DbSchemas as Record<string, unknown>)[schemaName];
       if (schema === undefined) {
         throw new Error(`No schema mapping for table: ${tableName}`);
       }
@@ -111,12 +111,12 @@ describe('Database Schema Sync Test', () => {
     const remainingSchemaNames = _.difference(TableNames, nonPtTables);
     if (remainingTableNames.length > 0) {
       throw new Error(
-        `table definitions missing from TableNameSchema: ${remainingTableNames.join(', ')}`,
+        `table definitions missing from TableNames: ${remainingTableNames.join(', ')}`,
       );
     }
     if (remainingSchemaNames.length > 0) {
       throw new Error(
-        `tables listed in TableNameSchema but not in database: ${remainingSchemaNames.join(', ')}`,
+        `tables listed in TableNames but not in database: ${remainingSchemaNames.join(', ')}`,
       );
     }
   });

@@ -23,7 +23,10 @@ function checkAssessmentModule(
 ) {
   assert.isOk(syncedAssessmentModule);
   for (const key of Object.keys(assessmentModule)) {
-    assert.equal(syncedAssessmentModule[key], assessmentModule[key]);
+    assert.equal(
+      syncedAssessmentModule[key as keyof AssessmentModule],
+      assessmentModule[key as keyof AssessmentModule],
+    );
   }
 }
 

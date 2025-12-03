@@ -1,35 +1,35 @@
 import { type ErrorRequestHandler, type NextFunction, type Request, type Response } from 'express';
 
 import { idsEqual } from '../lib/id.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 const redirects = [
   {
     // try to redirect to the instructor course instance
-    canRedirect: (resLocals: Record<string, any>) => {
+    canRedirect: (resLocals: UntypedResLocals) => {
       return (
         resLocals.course_instance?.id &&
         (resLocals.authz_data?.has_course_instance_permission_view ||
           resLocals.authz_data?.has_course_permission_preview)
       );
     },
-    buildRedirect: (resLocals: Record<string, any>) =>
-      `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance.id}/instructor`,
+    buildRedirect: (resLocals: UntypedResLocals) =>
+      `/pl/course_instance/${resLocals.course_instance.id}/instructor`,
   },
   {
     // try to redirect to the instructor course
-    canRedirect: (resLocals: Record<string, any>) => {
+    canRedirect: (resLocals: UntypedResLocals) => {
       return resLocals.course?.id && resLocals.authz_data?.has_course_permission_preview;
     },
-    buildRedirect: (resLocals: Record<string, any>) =>
-      `${resLocals.plainUrlPrefix}/course/${resLocals.course.id}`,
+    buildRedirect: (resLocals: UntypedResLocals) => `/pl/course/${resLocals.course.id}`,
   },
   {
     // try to redirect to the student course instance
-    canRedirect: (resLocals: Record<string, any>) => {
+    canRedirect: (resLocals: UntypedResLocals) => {
       return resLocals.course_instance?.id && resLocals.authz_data?.has_student_access;
     },
-    buildRedirect: (resLocals: Record<string, any>) =>
-      `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance.id}`,
+    buildRedirect: (resLocals: UntypedResLocals) =>
+      `/pl/course_instance/${resLocals.course_instance.id}`,
   },
 ];
 
@@ -57,8 +57,8 @@ export function getRedirectForEffectiveAccessDenied(res: Response): string | nul
   // we are only interested in cases where we are emulating a different user
   if (idsEqual(res.locals.authn_user.user_id, res.locals.user.user_id)) return null;
 
-  // check that we have a plainUrlPrefix
-  if (res.locals.plainUrlPrefix == null) return null;
+  // check that we have a urlPrefix
+  if (res.locals.urlPrefix == null) return null;
 
   for (const redirect of redirects) {
     if (redirect.canRedirect(res.locals)) {

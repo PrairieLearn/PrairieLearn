@@ -119,7 +119,7 @@ def get_multigraph_info(
 class AnswerOptions:
     """
     Collects and validates <pl-answer> tag options
-    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element)
+    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/pl-order-blocks)
     """
 
     tag: str
@@ -223,7 +223,7 @@ class AnswerOptions:
 class OrderBlocksOptions:
     """
     Collects and validates <pl-order-block> question options.
-    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element)
+    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/pl-order-blocks)
     """
 
     answers_name: str
