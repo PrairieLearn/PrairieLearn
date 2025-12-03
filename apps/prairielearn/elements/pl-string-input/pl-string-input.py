@@ -95,7 +95,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
-    prefill = pl.get_string_attrib(element, "prefill", PLACEHOLDER_DEFAULT)
+    prefill = pl.get_string_attrib(element, "prefill", PREFILL_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
