@@ -1,8 +1,11 @@
+import z from 'zod';
+
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
+  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -22,10 +25,7 @@ import {
   hasRole,
   isDangerousFullSystemAuthz,
 } from '../lib/authz-data-lib.js';
-import {
-  type StaffCourseInstanceContext,
-  type StudentCourseInstanceContext,
-} from '../lib/client/page-context.js';
+import type { PageContext } from '../lib/client/page-context.js';
 import {
   type Course,
   type CourseInstance,
@@ -33,6 +33,7 @@ import {
   EnrollmentSchema,
   type EnumEnrollmentStatus,
   type Institution,
+  UserSchema,
 } from '../lib/db-types.js';
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
@@ -47,8 +48,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 type CourseInstanceContext =
   | CourseInstance
-  | StudentCourseInstanceContext['course_instance']
-  | StaffCourseInstanceContext['course_instance'];
+  | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
 
 function assertEnrollmentStatus(
   enrollment: Enrollment,
@@ -133,14 +133,15 @@ async function _enrollUserInCourseInstance({
 
 /**
  * Ensures that the user is enrolled in the given course instance. If the
- * enrollment already exists, this is a no-op.
+ * enrollment already exists, this is a no-op. This function does not check
+ * enterprise enrollment eligibility, and should not be used directly outside of tests.
  *
  * If the user was in the 'removed', 'invited' or 'rejected' status, this will set the
  * enrollment status to 'joined'.
  *
  * If the user was 'blocked', this will throw an error.
  */
-export async function ensureEnrollment({
+export async function ensureUncheckedEnrollment({
   userId,
   authzData,
   courseInstance,
@@ -226,7 +227,7 @@ export async function ensureEnrollment({
  * instance enrollment limit to be exceeded.
  *
  */
-export async function ensureCheckedEnrollment({
+export async function ensureEnrollment({
   institution,
   course,
   courseInstance,
@@ -265,7 +266,7 @@ export async function ensureCheckedEnrollment({
     }
   }
 
-  await ensureEnrollment({
+  await ensureUncheckedEnrollment({
     courseInstance,
     userId: authzData.user.user_id,
     requestedRole,
@@ -337,12 +338,9 @@ export async function generateAndEnrollUsers({
     const courseInstance = await selectCourseInstanceById(course_instance_id);
     const users = await generateUsers(count);
     for (const user of users) {
-      await ensureEnrollment({
+      await ensureUncheckedEnrollment({
         courseInstance,
         userId: user.user_id,
-        // Typically, model code should never set requestedRole,
-        // but this function is only used in test code where we don't care about
-        // the role the caller requests.
         requestedRole: 'System',
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
@@ -350,6 +348,31 @@ export async function generateAndEnrollUsers({
     }
     return users;
   });
+}
+
+/**
+ * Gets enrollments and associated users for the given UIDs in a course instance.
+ */
+export async function selectUsersAndEnrollmentsByUidsInCourseInstance({
+  uids,
+  courseInstance,
+  requestedRole,
+  authzData,
+}: {
+  uids: string[];
+  courseInstance: CourseInstanceContext;
+  requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor';
+  authzData: AuthzData;
+}) {
+  assertHasRole(authzData, requestedRole);
+  return await queryRows(
+    sql.select_enrollments_by_uids_in_course_instance,
+    { uids, course_instance_id: courseInstance.id },
+    z.object({
+      enrollment: EnrollmentSchema,
+      user: UserSchema,
+    }),
+  );
 }
 
 export async function selectEnrollmentById({
@@ -360,7 +383,7 @@ export async function selectEnrollmentById({
 }: {
   id: string;
   courseInstance: CourseInstanceContext;
-  requestedRole: 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  requestedRole: 'System' | 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
   authzData: AuthzData;
 }) {
   assertHasRole(authzData, requestedRole);

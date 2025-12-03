@@ -5,7 +5,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
-import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.js';
+import { EditQuestionPointsScoreButtonHtml } from '../../components/EditQuestionPointsScore.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
@@ -21,6 +21,7 @@ import {
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -72,7 +73,7 @@ export function InstructorAssessmentInstance({
   instance_questions,
   assessmentInstanceLog,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   logCsvFilename: string;
   assessment_instance_stats: AssessmentInstanceStats[];
   assessment_instance_date_formatted: string;
@@ -169,7 +170,7 @@ export function InstructorAssessmentInstance({
                 <th>Instance</th>
                 <td colspan="2">
                   ${resLocals.assessment_instance.number} (<a
-                    href="${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance
+                    href="/pl/course_instance/${resLocals.course_instance
                       .id}/assessment_instance/${resLocals.assessment_instance.id}"
                     >student view</a
                   >)
@@ -357,8 +358,8 @@ export function InstructorAssessmentInstance({
                   <tr>
                     <td>
                       S-${instance_question.question_number}. (<a
-                        href="${resLocals.plainUrlPrefix}/course_instance/${resLocals
-                          .course_instance.id}/instance_question/${instance_question.id}/"
+                        href="/pl/course_instance/${resLocals.course_instance
+                          .id}/instance_question/${instance_question.id}/"
                         >student view</a
                       >)
                     </td>
@@ -380,7 +381,7 @@ export function InstructorAssessmentInstance({
                         component: 'auto',
                       })}
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? EditQuestionPointsScoreButtonHtml({
                             field: 'auto_points',
                             instance_question,
                             assessment_question: instance_question.assessment_question,
@@ -396,7 +397,7 @@ export function InstructorAssessmentInstance({
                         component: 'manual',
                       })}
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? EditQuestionPointsScoreButtonHtml({
                             field: 'manual_points',
                             instance_question,
                             assessment_question: instance_question.assessment_question,
@@ -412,7 +413,7 @@ export function InstructorAssessmentInstance({
                         component: 'total',
                       })}
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? EditQuestionPointsScoreButtonHtml({
                             field: 'points',
                             instance_question,
                             assessment_question: instance_question.assessment_question,
@@ -426,7 +427,7 @@ export function InstructorAssessmentInstance({
                     </td>
                     <td style="width: 1em;">
                       ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? EditQuestionPointsScoreButton({
+                        ? EditQuestionPointsScoreButtonHtml({
                             field: 'score_perc',
                             instance_question,
                             assessment_question: instance_question.assessment_question,
@@ -645,8 +646,7 @@ export function InstructorAssessmentInstance({
                         ? row.variant_id
                           ? html`
                               <a
-                                href="${resLocals.plainUrlPrefix}/course_instance/${resLocals
-                                  .course_instance
+                                href="/pl/course_instance/${resLocals.course_instance
                                   .id}/instance_question/${row.instance_question_id}/?variant_id=${row.variant_id}"
                               >
                                 S-${row.student_question_number}#${row.variant_number}
@@ -706,7 +706,7 @@ export function InstructorAssessmentInstance({
 }
 
 function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint }) {
-  const { browser, device, os } = UAParser(fingerprint.user_agent);
+  const { browser, device, os } = UAParser(fingerprint.user_agent ?? undefined);
   return html`
     <div>
       IP Address:
@@ -721,16 +721,16 @@ function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint })
     <div>Session ID: ${fingerprint.user_session_id}</div>
     <div>User Agent:</div>
     <ul>
-      ${browser?.name ? html`<li>Browser: ${browser.name} ${browser.version ?? ''}</li>` : ''}
-      ${device?.type ? html`<li>Device Type: ${device.type}</li>` : ''}
-      ${device?.vendor ? html`<li>Device: ${device.vendor} ${device.model ?? ''}</li>` : ''}
-      ${os?.name ? html`<li>OS: ${os.name} ${os.version ?? ''}</li>` : ''}
+      ${browser.name ? html`<li>Browser: ${browser.name} ${browser.version ?? ''}</li>` : ''}
+      ${device.type ? html`<li>Device Type: ${device.type}</li>` : ''}
+      ${device.vendor ? html`<li>Device: ${device.vendor} ${device.model ?? ''}</li>` : ''}
+      ${os.name ? html`<li>OS: ${os.name} ${os.version ?? ''}</li>` : ''}
       <li>Raw: <code>${fingerprint.user_agent}</code></li>
     </ul>
   `;
 }
 
-function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) {
+function EditTotalPointsForm({ resLocals }: { resLocals: UntypedResLocals }) {
   return html`
     <form name="edit-total-points-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_points" />
@@ -765,7 +765,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
   `;
 }
 
-function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> }) {
+function EditTotalScorePercForm({ resLocals }: { resLocals: UntypedResLocals }) {
   return html`
     <form name="edit-total-score-perc-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_score_perc" />
