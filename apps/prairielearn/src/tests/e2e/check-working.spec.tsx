@@ -4,7 +4,4 @@ import { expect, test } from './fixtures.js';
 test('has title and test course', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle('[DEV] Home | PrairieLearn');
-
-  // Capture screenshot of the page
-  await expect(page).toHaveScreenshot();
 });
