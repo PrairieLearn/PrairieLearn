@@ -9,7 +9,6 @@ import html from '@html-eslint/eslint-plugin';
 import htmlParser from '@html-eslint/parser';
 import stylistic from '@stylistic/eslint-plugin';
 import pluginQuery from '@tanstack/eslint-plugin-query';
-import header from '@tony.ganchev/eslint-plugin-header'; // See https://github.com/Stuk/eslint-plugin-header/issues/59
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -99,7 +98,6 @@ export default tseslint.config([
     },
 
     plugins: {
-      header,
       'import-x': importX,
       jsdoc,
       'jsx-a11y-x': jsxA11yX,
@@ -745,16 +743,6 @@ export default tseslint.config([
       '@html-eslint/require-img-alt': 'off',
       // Issue in 'pl-matrix-input'
       '@html-eslint/no-nested-interactive': 'off',
-    },
-  },
-  {
-    // Enforce JSX import source comment in e2e test files.
-    files: ['apps/prairielearn/src/tests/e2e/**/*.tsx'],
-    rules: {
-      // We need to ensure that Preact is used for JSX, not playwright's own JSX implementation.
-      // https://github.com/microsoft/playwright/issues/26936
-      // https://github.com/microsoft/playwright/blob/0e881eb3ed3682a1f3e40f3e6029a0103d4916f6/packages/playwright/bundles/babel/src/babelBundleImpl.ts#L74
-      'header/header': ['error', 'block', '* @jsxImportSource @prairielearn/preact-cjs ', 2],
     },
   },
   globalIgnores([
