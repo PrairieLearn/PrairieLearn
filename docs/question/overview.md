@@ -23,6 +23,10 @@ To create a new question through the PrairieLearn web interface:
    - **Template**: You can select one of PrairieLearn's pre-built question templates to use as a starting point, or [create your own template](#custom-templates). Templates provide pre-configured structures that can speed up question creation.
 4. Enter a Question ID (QID) for your new question and click **Create**.
 
+!!! tip
+
+    Avoid using term names (e.g. `Spring20/questionName`) or assessment names (e.g. `exam3/question12`) in your question directory structure, as these can make it harder to find and reuse questions across assessments and terms. One potential folder structure you could consider is `topic/subtopic/question`.
+
 ## Directory structure
 
 Questions are all stored inside the `questions` directory (or any subfolder) for a course. Each question is a single directory that contains all the files for that question. The name of the full question directory relative to `questions` is the QID (the "question ID") for that question. For example, here are three different questions:
@@ -57,10 +61,6 @@ questions
         +-- info.json         # metadata for the "subfolder/nestedQuestion" question
         `-- question.html
 ```
-
-!!! tip
-
-    Avoid using term names (e.g. `Spring20/questionName`) or assessment names (e.g. `exam3/question12`) in your question directory structure, as these can make it harder to find and reuse questions across assessments and terms. One potential folder structure you could consider is `topic/subtopic/question`.
 
 PrairieLearn assumes independent questions; nothing ties them together. However, each question could have multiple parts (inputs that are validated together).
 
