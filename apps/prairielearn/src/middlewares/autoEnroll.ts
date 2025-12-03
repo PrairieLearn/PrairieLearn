@@ -42,23 +42,11 @@ export default asyncHandler(async (req, res, next) => {
   // Check if the self-enrollment institution restriction is satisfied
   const institutionRestrictionSatisfied =
     res.locals.authn_user.institution_id === res.locals.course.institution_id ||
-    // If enrollment management is not yet enabled, instructors have no way to
-    // configure this restriction, so we'll ignore it. This is critical for workflows
-    // where courses use `institution: Any` in course instance access rules to permit
-    // non-institution users to access course instances.
-    //
-    // Note that skipping this check won't arbitrarily allow non-institution users to
-    // access course instances. We still rely on course instance access rules to gate
-    // access for users outside of a specific institution. If those access rules aren't
-    // satisfied, the user won't get as far as this middleware.
-    //
-    // TODO: we need to reconsider this before enrollment management is enabled by default.
-    // Specifically, we need to consider what'll happen when a course instance has
-    // enrollment management enabled and is still using legacy access rules, and specifically
-    // those with `institution: Any`. In that case, there would be effectively two ways to
-    // control institution self-enrollment restrictions: via access rules, and via the
-    // self-enrollment restriction flag. This could be confusing.
     !enrollmentManagementEnabled ||
+    // The default value for self-enrollment restriction is true.
+    // In the old system (before publishing was introduced), the default was false.
+    // So if publishing is not set up, we should ignore the restriction.
+    !courseInstance.modern_publishing ||
     !courseInstance.self_enrollment_restrict_to_institution;
 
   // If we have self-enrollment enabled, and it is before the enabled before date,
