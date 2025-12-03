@@ -5,7 +5,7 @@ import { queryRow } from '@prairielearn/postgres';
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
 import * as helperDb from '../../tests/helperDb.js';
@@ -71,21 +71,21 @@ describe('getEnrollmentCountsForInstitution', () => {
       email: 'paid2@example.com',
     });
 
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: freeUser.user_id,
       requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: paidUser1.user_id,
       requestedRole: 'System',
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance,
       userId: paidUser2.user_id,
       requestedRole: 'System',
@@ -162,7 +162,7 @@ describe('getEnrollmentCountsForCourse', () => {
       email: 'student@example.com',
     });
     const firstCourseInstance = await selectCourseInstanceById('1');
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
       requestedRole: 'System',
@@ -185,7 +185,7 @@ describe('getEnrollmentCountsForCourse', () => {
     });
 
     const firstCourseInstance = await selectCourseInstanceById('1');
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
       requestedRole: 'System',
@@ -218,7 +218,7 @@ describe('getEnrollmentCountsForCourse', () => {
     });
 
     const firstCourseInstance = await selectCourseInstanceById('1');
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
       requestedRole: 'System',
@@ -268,7 +268,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       email: 'student@example.com',
     });
     const firstCourseInstance = await selectCourseInstanceById('1');
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
       requestedRole: 'System',
@@ -291,7 +291,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     });
 
     const firstCourseInstance = await selectCourseInstanceById('1');
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
       requestedRole: 'System',
@@ -324,7 +324,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     });
 
     const firstCourseInstance = await selectCourseInstanceById('1');
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
       requestedRole: 'System',

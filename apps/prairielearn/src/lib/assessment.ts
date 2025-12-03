@@ -26,6 +26,7 @@ import {
 import { gradeVariant } from './grading.js';
 import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
+import type { UntypedResLocals } from './res-locals.types.js';
 import { createServerJob } from './server-jobs.js';
 
 const debug = debugfn('prairielearn:assessment');
@@ -511,7 +512,7 @@ export async function selectAssessmentInstanceLog(
     { assessment_instance_id, include_files },
     InstanceLogSchema,
   );
-  const fingerprintNumbers = {};
+  const fingerprintNumbers: Record<string, number> = {};
   let i = 1;
   log.forEach((row) => {
     if (row.client_fingerprint) {
@@ -526,8 +527,8 @@ export async function selectAssessmentInstanceLog(
 }
 
 export async function selectAssessmentInstanceLogCursor(
-  assessment_instance_id,
-  include_files,
+  assessment_instance_id: string,
+  include_files: boolean,
 ): Promise<sqldb.CursorIterator<InstanceLogEntry>> {
   return sqldb.queryCursor(
     sql.assessment_instance_log,
@@ -617,7 +618,7 @@ export async function deleteAllAssessmentInstancesForAssessment(
  *
  * @returns Whether or not the user should be allowed to delete the assessment instance.
  */
-export function canDeleteAssessmentInstance(resLocals): boolean {
+export function canDeleteAssessmentInstance(resLocals: UntypedResLocals): boolean {
   return (
     // Check for permissions.
     (resLocals.authz_data.authn_has_course_permission_preview ||

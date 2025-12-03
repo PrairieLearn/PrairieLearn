@@ -4,5 +4,4 @@ export interface QuestionsTableData {
   showAiGenerateQuestionButton: boolean;
   qidPrefix: string | undefined;
   urlPrefix: string;
-  plainUrlPrefix: string;
 }

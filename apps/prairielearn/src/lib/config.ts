@@ -73,8 +73,6 @@ export const ConfigSchema = z.object({
     .array(z.string())
     .default([...STANDARD_COURSE_DIRS, EXAMPLE_COURSE_PATH, TEST_COURSE_PATH]),
   courseRepoDefaultBranch: z.string().default('master'),
-  urlPrefix: z.string().default('/pl'),
-  homeUrl: z.string().default('/'),
   assetsPrefix: z
     .string()
     .default('/assets')
@@ -570,6 +568,8 @@ export const ConfigSchema = z.object({
   aiGradingOpenAiOrganization: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
+  aiGradingGoogleApiKey: z.string().nullable().default(null),
+  aiGradingAnthropicApiKey: z.string().nullable().default(null),
   /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
@@ -597,16 +597,34 @@ export const ConfigSchema = z.object({
   pythonVenvSearchPaths: z.string().array().default(['.venv']),
   costPerMillionTokens: z
     .object({
-      'gpt-5-2025-08-07': TokenPricingSchema,
-      'gpt-5-mini-2025-08-07': TokenPricingSchema,
       'gpt-4o-2024-11-20': TokenPricingSchema,
+      'gpt-5-mini-2025-08-07': TokenPricingSchema,
+      'gpt-5-2025-08-07': TokenPricingSchema,
+      'gpt-5.1-2025-11-13': TokenPricingSchema,
+      'gemini-2.5-flash': TokenPricingSchema,
+      'gemini-3-pro-preview': TokenPricingSchema,
+      'claude-opus-4-5': TokenPricingSchema,
+      'claude-haiku-4-5': TokenPricingSchema,
+      'claude-sonnet-4-5': TokenPricingSchema,
     })
     .default({
-      // Prices current as of 2025-09-25. Values obtained from
-      // https://openai.com/api/pricing/
-      'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, output: 10 },
-      'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, output: 2 },
+      // Prices current as of 2025-11-26. Values obtained from
+      // https://platform.openai.com/docs/pricing
       'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, output: 10 },
+      'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, output: 2 },
+      'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, output: 10 },
+      'gpt-5.1-2025-11-13': { input: 1.25, cachedInput: 0.125, output: 10 },
+
+      // Prices current as of 2025-11-25. Values obtained from
+      // https://ai.google.dev/gemini-api/docs/pricing
+      'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, output: 2.5 },
+      'gemini-3-pro-preview': { input: 2, cachedInput: 0.2, output: 12 },
+
+      // Prices current as of 2025-11-25. Values obtained from
+      // https://www.claude.com/pricing#api
+      'claude-haiku-4-5': { input: 1, cachedInput: 0.1, output: 5 },
+      'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, output: 15 },
+      'claude-opus-4-5': { input: 5, cachedInput: 0.5, output: 25 },
     }),
 });
 
@@ -657,8 +675,12 @@ export function resetConfig() {
   loader.reset();
 }
 
-export function setLocalsFromConfig(locals: Record<string, any>) {
-  locals.urlPrefix = config.urlPrefix;
-  locals.plainUrlPrefix = config.urlPrefix;
+export interface ResLocalsConfig {
+  urlPrefix: string;
+  navbarType: 'plain' | 'student' | 'instructor' | 'public';
+}
+
+export function setLocalsFromConfig(locals: Partial<ResLocalsConfig>) {
+  locals.urlPrefix = '/pl';
   locals.navbarType = 'plain';
 }

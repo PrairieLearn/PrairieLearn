@@ -7,7 +7,7 @@ import { hasRole } from '../lib/authz-data-lib.js';
 import type { CourseInstance } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
-import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
+import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
   // If the user does not currently have access to the course, but could if
@@ -85,7 +85,7 @@ export default asyncHandler(async (req, res, next) => {
     !res.locals.authz_data.authn_has_student_access_with_enrollment
   ) {
     if (canSelfEnroll || canJoin) {
-      await ensureCheckedEnrollment({
+      await ensureEnrollment({
         institution: res.locals.institution,
         course: res.locals.course,
         courseInstance,

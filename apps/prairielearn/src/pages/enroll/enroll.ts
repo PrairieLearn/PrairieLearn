@@ -11,7 +11,7 @@ import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
-import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
 import {
   CourseInstanceRowSchema,
@@ -43,7 +43,7 @@ router.get('/', [
     }
 
     const courseInstances = await queryRows(
-      sql.select_course_instances,
+      sql.select_course_instances_legacy_access,
       {
         user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,
@@ -87,7 +87,7 @@ router.post('/', [
 
     if (req.body.__action === 'enroll') {
       // We don't have authzData yet
-
+      // TODO: see #13275
       const existingEnrollment = await run(async () => {
         return await selectOptionalEnrollmentByUid({
           uid: res.locals.authn_user.uid,
@@ -109,8 +109,9 @@ router.post('/', [
       // Abuse the middleware to authorize the user for the course instance.
       req.params.course_instance_id = course_instance.id;
       await authzCourseOrInstance(req, res);
+      // Now we have authzData
 
-      await ensureCheckedEnrollment({
+      await ensureEnrollment({
         institution,
         course,
         courseInstance: course_instance,

@@ -15,8 +15,8 @@ import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { assertNever } from '../../lib/types.js';
-import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -369,9 +369,10 @@ const SKIP_ROUTES = [
 
   // API routes.
   '/pl/course_instance/lookup',
+  '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
 ];
 
-function shouldSkipPath(path) {
+function shouldSkipPath(path: string) {
   return SKIP_ROUTES.some((r) => {
     if (typeof r === 'string') {
       return r === path;
@@ -427,12 +428,9 @@ describe('accessibility', () => {
       IdSchema,
     );
 
-    const courseInstance = await selectOptionalCourseInstanceById(
-      STATIC_ROUTE_PARAMS.course_instance_id,
-    );
-    assert.isNotNull(courseInstance);
+    const courseInstance = await selectCourseInstanceById(STATIC_ROUTE_PARAMS.course_instance_id);
 
-    const enrollment = await ensureEnrollment({
+    const enrollment = await ensureUncheckedEnrollment({
       courseInstance,
       userId: user_id,
       requestedRole: 'System',

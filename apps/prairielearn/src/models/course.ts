@@ -258,7 +258,13 @@ export async function updateCourseShowGettingStarted({
 /**
  * Update the `sharing_name` column for a course.
  */
-export async function updateCourseSharingName({ course_id, sharing_name }): Promise<void> {
+export async function updateCourseSharingName({
+  course_id,
+  sharing_name,
+}: {
+  course_id: string;
+  sharing_name: string;
+}): Promise<void> {
   await execute(sql.update_course_sharing_name, {
     course_id,
     sharing_name,

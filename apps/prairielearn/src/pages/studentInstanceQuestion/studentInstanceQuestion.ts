@@ -9,7 +9,7 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { type File, IdSchema } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
@@ -153,7 +153,7 @@ async function processDeleteFile(req: Request, res: Response) {
 
   // Check the requested file belongs to the current instance question
   const validFiles =
-    res.locals.file_list?.filter((file) => idsEqual(file.id, req.body.file_id)) ?? [];
+    res.locals.file_list?.filter((file: File) => idsEqual(file.id, req.body.file_id)) ?? [];
   if (validFiles.length === 0) {
     throw new HttpStatusError(404, `No such file_id: ${req.body.file_id}`);
   }
