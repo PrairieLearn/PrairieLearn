@@ -1,5 +1,4 @@
-/** @jsxImportSource @prairielearn/preact-cjs */
-
+import type { Locator } from '@playwright/test';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -69,49 +68,40 @@ test.describe('Gradebook numeric filter', () => {
     // Wait for the gradebook page to load
     await expect(page).toHaveTitle(/Gradebook/);
 
-    // Check current URL to make sure we're on the right page
-    console.log('Current URL:', page.url());
-
-    // Take a screenshot to see what's on the page
-    await page.screenshot({ path: 'gradebook-debug.png', fullPage: true });
-
-    // Log page content for debugging
-    const bodyHtml = await page.locator('body').innerHTML();
-    console.log('Page body (first 2000 chars):', bodyHtml.slice(0, 2000));
-
-    // Look for "Showing" text that appears when there are rows
-    const showingTextDebug = await page
-      .locator('text=/Showing/')
-      .textContent()
-      .catch(() => 'Not found');
-    console.log('Showing text:', showingTextDebug);
-
     // Wait for table to load - the default filter shows only "Student" role with "joined" status
     const tableBody = page.locator('tbody').first();
     await expect(tableBody.locator('tr')).toHaveCount(7, { timeout: 10000 });
 
-    // Find the first assessment filter button (should be HW1 or similar)
-    const firstFilterButton = page.locator('button[aria-label*="Filter"]').first();
-    await expect(firstFilterButton).toBeVisible({ timeout: 10000 });
-
-    // Get the column index of the filtered column by finding its header
-    const filterButtonAriaLabel = await firstFilterButton.getAttribute('aria-label');
+    // Find a column that has actual numeric scores (contains '%')
+    // We need to find which column has our test data
     const allHeaders = await page.locator('thead th').all();
     let columnIndex = -1;
+    let assessmentFilterButton: Locator | null = null;
+
+    // Look for an assessment column that has scores (not all dashes)
     for (let i = 0; i < allHeaders.length; i++) {
       const header = allHeaders[i];
-      const hasFilterButton = await header
-        .locator(`button[aria-label="${filterButtonAriaLabel}"]`)
-        .count();
-      if (hasFilterButton > 0) {
+      // Check if this header has a numeric filter button (assessment columns have these)
+      const filterButton = header.locator('button[aria-label^="Filter "]');
+      const filterCount = await filterButton.count();
+      if (filterCount === 0) continue;
+
+      // Check if any row in this column has a percentage value
+      const firstCellWithPercent = tableBody.locator(`tr td:nth-child(${i + 1})`).first();
+      const cellText = await firstCellWithPercent.textContent();
+      if (cellText?.includes('%')) {
         columnIndex = i;
+        assessmentFilterButton = filterButton;
         break;
       }
     }
+
     expect(columnIndex).toBeGreaterThanOrEqual(0);
+    expect(assessmentFilterButton).not.toBeNull();
+    await expect(assessmentFilterButton!).toBeVisible({ timeout: 10000 });
 
     // Click to open the filter dropdown
-    await firstFilterButton.click();
+    await assessmentFilterButton!.click();
 
     // Find the numeric filter input
     const filterInput = page.getByPlaceholder('e.g., >0, <5, =10');
@@ -130,7 +120,7 @@ test.describe('Gradebook numeric filter', () => {
     await page.waitForTimeout(500);
 
     // The filter icon should now be filled (active)
-    const filterIcon = firstFilterButton.locator('i');
+    const filterIcon = assessmentFilterButton!.locator('i');
     await expect(filterIcon).toHaveClass(/bi-funnel-fill/);
 
     // Verify that the number of rows has changed (should be exactly 3 students with scores > 90)
