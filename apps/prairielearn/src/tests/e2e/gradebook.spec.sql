@@ -39,12 +39,3 @@ INSERT INTO
   )
 VALUES
   ($assessment_id, $user_id, $score_perc, $score_perc, 100);
-
--- BLOCK count_enrollments
-SELECT
-  COUNT(*)::integer
-FROM
-  enrollments
-WHERE
-  course_instance_id = 1;
-
