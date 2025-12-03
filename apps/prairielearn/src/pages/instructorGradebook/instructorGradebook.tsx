@@ -8,7 +8,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
+import { setAssessmentInstanceScore } from '../../lib/assessment.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import {
   checkAssessmentInstanceBelongsToCourseInstance,
@@ -147,7 +147,7 @@ router.post(
         req.body.assessment_instance_id,
         res.locals.course_instance.id,
       );
-      await updateAssessmentInstanceScore(
+      await setAssessmentInstanceScore(
         req.body.assessment_instance_id,
         req.body.score_perc,
         res.locals.authn_user.user_id,

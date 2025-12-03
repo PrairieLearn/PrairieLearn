@@ -93,6 +93,7 @@ FROM
 -- BLOCK select_variant_for_grading_job_update
 SELECT
   s.credit,
+  v.id AS variant_id,
   iq.id AS instance_question_id,
   ai.id AS assessment_instance_id,
   EXISTS (

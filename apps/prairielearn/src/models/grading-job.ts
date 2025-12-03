@@ -8,14 +8,15 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
 import {
   type GradingJob,
   GradingJobSchema,
   IdSchema,
-  SprocAssessmentInstancesGradeSchema,
   type Submission,
   SubmissionSchema,
 } from '../lib/db-types.js';
+import { updateInstanceQuestionGrade } from '../lib/question-points.js';
 
 import { lockSubmission } from './submission.js';
 
@@ -34,6 +35,7 @@ export function gradingJobStatus(gradingJob: GradingJob | null): GradingJobStatu
 
 const VariantForGradingJobUpdateSchema = z.object({
   credit: SubmissionSchema.shape.credit,
+  variant_id: IdSchema,
   instance_question_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema.nullable(),
   has_newer_submission: z.boolean(),
@@ -80,11 +82,7 @@ export async function insertGradingJob({
       }),
     );
     if (assessment_instance_id != null) {
-      await callRow(
-        'assessment_instances_grade',
-        [assessment_instance_id, authn_user_id, credit],
-        SprocAssessmentInstancesGradeSchema,
-      );
+      await updateAssessmentInstanceGrade({ assessment_instance_id, authn_user_id, credit });
     }
     return grading_job;
   });
@@ -140,12 +138,17 @@ export async function updateGradingJobAfterGrading({
     // re-grades.
     if (originalGradingJob.graded_at != null) return originalGradingJob;
 
-    const { has_newer_submission, instance_question_id, assessment_instance_id, credit } =
-      await queryRow(
-        sql.select_variant_for_grading_job_update,
-        { submission_id: originalGradingJob.submission_id },
-        VariantForGradingJobUpdateSchema,
-      );
+    const {
+      has_newer_submission,
+      instance_question_id,
+      assessment_instance_id,
+      variant_id,
+      credit,
+    } = await queryRow(
+      sql.select_variant_for_grading_job_update,
+      { submission_id: originalGradingJob.submission_id },
+      VariantForGradingJobUpdateSchema,
+    );
 
     // Bail out if there's a newer submission, regardless of grading status.
     // This only applies to student questions - that is, where there's an
@@ -184,16 +187,18 @@ export async function updateGradingJobAfterGrading({
     );
 
     if (gradable && instance_question_id != null && assessment_instance_id != null) {
-      await callRow(
-        'instance_questions_grade',
-        [instance_question_id, gradingJob.score, gradingJob.id, gradingJob.auth_user_id],
-        z.unknown(),
-      );
-      await callRow(
-        'assessment_instances_grade',
-        [assessment_instance_id, gradingJob.auth_user_id, credit],
-        SprocAssessmentInstancesGradeSchema,
-      );
+      await updateInstanceQuestionGrade({
+        variant_id,
+        instance_question_id,
+        submissionScore: gradingJob.score ?? 0,
+        grading_job_id,
+        authn_user_id: gradingJob.auth_user_id,
+      });
+      await updateAssessmentInstanceGrade({
+        assessment_instance_id,
+        authn_user_id: gradingJob.auth_user_id,
+        credit,
+      });
     }
 
     return gradingJob;

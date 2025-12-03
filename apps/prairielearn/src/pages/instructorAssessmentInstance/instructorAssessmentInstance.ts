@@ -12,8 +12,8 @@ import {
   type InstanceLogEntry,
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
-  updateAssessmentInstancePoints,
-  updateAssessmentInstanceScore,
+  setAssessmentInstancePoints,
+  setAssessmentInstanceScore,
 } from '../../lib/assessment.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
@@ -169,7 +169,7 @@ router.post(
     // TODO: parse req.body with Zod
 
     if (req.body.__action === 'edit_total_points') {
-      await updateAssessmentInstancePoints(
+      await setAssessmentInstancePoints(
         res.locals.assessment_instance.id,
         req.body.points,
         res.locals.authn_user.user_id,
@@ -177,7 +177,7 @@ router.post(
       await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_total_score_perc') {
-      await updateAssessmentInstanceScore(
+      await setAssessmentInstanceScore(
         res.locals.assessment_instance.id,
         req.body.score_perc,
         res.locals.authn_user.user_id,
