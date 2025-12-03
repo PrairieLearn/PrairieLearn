@@ -42,7 +42,7 @@
                 placeholder="{{placeholder}}"
                 {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
                 {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
-            >{{raw_submitted_answer}}</textarea>
+            >{{^raw_submitted_answer}}{{{prefill}}}{{/raw_submitted_answer}}{{raw_submitted_answer}}</textarea>
     {{/multiline}}
     {{^multiline}}
         <span class="input-group pl-string-input">
@@ -59,6 +59,7 @@
                 autocomplete="off"
                 autocorrect="off"
                 {{^editable}}disabled{{/editable}}
+                {{^raw_submitted_answer}}value="{{{prefill}}}"{{/raw_submitted_answer}}
                 {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
                 placeholder="{{placeholder}}"
                 {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}

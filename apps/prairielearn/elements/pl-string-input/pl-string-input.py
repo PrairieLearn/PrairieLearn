@@ -34,6 +34,7 @@ DISPLAY_DEFAULT = DisplayType.INLINE
 REMOVE_LEADING_TRAILING_DEFAULT = False
 REMOVE_SPACES_DEFAULT = False
 PLACEHOLDER_DEFAULT = None
+PREFILL_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 IGNORE_CASE_DEFAULT = False
 SIZE_DEFAULT = 35
@@ -60,6 +61,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-blank",
         "ignore-case",
         "placeholder",
+        "prefill",
         "size",
         "show-help-text",
         "normalize-to-ascii",
@@ -93,6 +95,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
+    prefill = pl.get_string_attrib(element, "prefill", PLACEHOLDER_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
@@ -138,6 +141,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "editable": editable,
             "info": info,
             "placeholder": placeholder,
+            "prefill": prefill,
             "size": pl.get_integer_attrib(element, "size", SIZE_DEFAULT),
             "show_info": show_help_text,
             "uuid": pl.get_uuid(),
