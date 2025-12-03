@@ -1,7 +1,6 @@
 import z from 'zod';
 
 import {
-  callRow,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
