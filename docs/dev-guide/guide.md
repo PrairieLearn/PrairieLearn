@@ -513,9 +513,12 @@ const enrollment = await selectEnrollment({
 
     ```typescript
     export async function selectEnrollmentById({
+      // The ID of the enrollment to look up. This ID is unvalidated and comes from the request body.
       id,
+      // The course instance from res.locals
       courseInstance,
       requiredRole,
+      // The authorization data from res.locals
       authzData,
     }: {
       id: string;
@@ -534,7 +537,9 @@ const enrollment = await selectEnrollment({
     }
     ```
 
-This is good, because in order to perform an update, you need to pass in a full row object, and a request body won't have enough information for this. Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks. For example, in the above example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance. It will throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollment`). This also forced the caller to prove access to the course instance in order to read the enrollment record.
+In the above example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance. It will throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollment`). This also forced the caller to prove access to the course instance in order to read the enrollment record.
+
+This is good, because in order to perform an update, you need to pass in a full row object, and a request body won't have enough information for this. Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks.
 
 Once you have a full row object, you have asserted that the caller is authorized to _read_ the record. You will also need to assert that the caller is authorized to _write_ the record. In the below example, we set `requiredRole` to `['Student']`, so the caller must be a student to update the enrollment status.
 
@@ -550,6 +555,8 @@ await updateEnrollmentStatus({
 ```
 
 In this example, instructors are not allowed to join a course instance for the student. The model function would note that the `requiredRole` parameter is `['Student']`, but the current user is an instructor, so it would throw an error.
+
+### Bypassing authorization checks
 
 In some cases, you may not have access to `authzData`, e.g. if you are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullSystemAuthz` function to build a dummy `authzData` object that allows you to perform the action as the system. This should be used sparingly.
 
