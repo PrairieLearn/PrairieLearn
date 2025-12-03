@@ -43,7 +43,6 @@
     "@postgres-language-server/cli": "^0.17.2",
     "@stylistic/eslint-plugin": "^5.6.1",
     "@tanstack/eslint-plugin-query": "^5.91.2",
-    "@tony.ganchev/eslint-plugin-header": "^3.1.11",
     "@vitest/coverage-v8": "^4.0.14",
     "@vitest/eslint-plugin": "^1.5.1",
     "dependency-cruiser": "^17.3.2",

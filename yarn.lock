@@ -6485,15 +6485,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tony.ganchev/eslint-plugin-header@npm:^3.1.11":
-  version: 3.1.11
-  resolution: "@tony.ganchev/eslint-plugin-header@npm:3.1.11"
-  peerDependencies:
-    eslint: ">=7.7.0"
-  checksum: 10c0/a00eccd5fb96b0636aeaa149d6af3c8c30abc84af68802c9cf1183c6595ee87f7f12219a49889dab8f4dcbe6574082fd5bc715110e496934b2df0882aa32928b
-  languageName: node
-  linkType: hard
-
 "@trpc/client@npm:^11.7.2":
   version: 11.7.2
   resolution: "@trpc/client@npm:11.7.2"
@@ -16020,7 +16011,6 @@ __metadata:
     "@postgres-language-server/cli": "npm:^0.17.2"
     "@stylistic/eslint-plugin": "npm:^5.6.1"
     "@tanstack/eslint-plugin-query": "npm:^5.91.2"
-    "@tony.ganchev/eslint-plugin-header": "npm:^3.1.11"
     "@types/tar-stream": "npm:^3.1.4"
     "@vitest/coverage-v8": "npm:^4.0.14"
     "@vitest/eslint-plugin": "npm:^1.5.1"
