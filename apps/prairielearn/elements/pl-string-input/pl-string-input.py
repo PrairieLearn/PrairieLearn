@@ -100,7 +100,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
 
     if raw_submitted_answer is None:
-        raw_submitted_answer = pl.get_string_attrib(element, "initial-value", INITIAL_VALUE_DEFAULT)
+        raw_submitted_answer = pl.get_string_attrib(
+            element, "initial-value", INITIAL_VALUE_DEFAULT
+        )
     multiline = pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT)
     score = data["partial_scores"].get(name, {"score": None}).get("score", None)
     parse_error = data["format_errors"].get(name)
