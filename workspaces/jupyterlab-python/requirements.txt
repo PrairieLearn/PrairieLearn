@@ -1,6 +1,6 @@
 automata-lib==9.1.2
-beautifulsoup4==4.14.2
-bokeh==3.8.0
+beautifulsoup4==4.14.3
+bokeh==3.8.1
 colormath==3.0.0
 defusedxml==0.7.1
 Faker==38.2.0

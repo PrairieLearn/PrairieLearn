@@ -16,7 +16,15 @@ import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { OverlayTrigger, TanstackTableCard, useShiftClickCheckbox } from '@prairielearn/ui';
+import {
+  OverlayTrigger,
+  TanstackTableCard,
+  parseAsColumnPinningState,
+  parseAsColumnVisibilityStateWithColumns,
+  parseAsNumericFilter,
+  parseAsSortingState,
+  useShiftClickCheckbox,
+} from '@prairielearn/ui';
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
 import {
@@ -25,12 +33,6 @@ import {
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
-import {
-  parseAsColumnPinningState,
-  parseAsColumnVisibilityStateWithColumns,
-  parseAsNumericFilter,
-  parseAsSortingState,
-} from '../../../../lib/client/nuqs.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
@@ -80,7 +82,7 @@ export interface AssessmentQuestionTableProps {
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
-  onSetConflictModalState: (modalState: ConflictModalState | null) => void;
+  onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: {
     batchActionMutation: ReturnType<typeof useManualGradingActions>['batchActionMutation'];
     handleBatchAction: ReturnType<typeof useManualGradingActions>['handleBatchAction'];
