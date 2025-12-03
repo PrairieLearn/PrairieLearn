@@ -12,6 +12,17 @@ A question is made up of three main components:
 2. **`question.html`**: The HTML template that defines the question. This is where you write the question text and define the input elements. Reference the [question template documentation](template.md) for more details.
 3. **`server.py`**: This is where you write the logic for generating random values, grading student responses, and any other server-side code. This file is optional, but it is necessary for any question that has non-trivial randomization or custom grading behavior. Reference the [server documentation](server.md) for more details.
 
+## Creating a question
+
+To create a new question through the PrairieLearn web interface:
+
+1. Navigate to the **Questions** tab in your course.
+2. Click the **Add Question** button.
+3. Choose a starting point:
+   - **Blank question**: Creates an empty question with just the essential files.
+   - **Template**: You can select one of PrairieLearn's pre-built question templates to use as a starting point, or [create your own template](#custom-templates). Templates provide pre-configured structures that can speed up question creation.
+4. Enter a Question ID (QID) for your new question and click **Create**.
+
 ## Directory structure
 
 Questions are all stored inside the `questions` directory (or any subfolder) for a course. Each question is a single directory that contains all the files for that question. The name of the full question directory relative to `questions` is the QID (the "question ID") for that question. For example, here are three different questions:
