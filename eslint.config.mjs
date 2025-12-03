@@ -541,6 +541,7 @@ export default tseslint.config([
       'jsdoc/check-tag-names': [
         'error',
         {
+          // We turn this on to allow the Playwright + Preact fix enforced by the `header/header` rule.
           // https://babeljs.io/docs/en/babel-plugin-transform-react-jsx/
           jsxTags: true,
         },
@@ -750,6 +751,9 @@ export default tseslint.config([
     // Enforce JSX import source comment in e2e test files.
     files: ['apps/prairielearn/src/tests/e2e/**/*.tsx'],
     rules: {
+      // We need to ensure that Preact is used for JSX, not playwright's own JSX implementation.
+      // https://github.com/microsoft/playwright/issues/26936
+      // https://github.com/microsoft/playwright/blob/0e881eb3ed3682a1f3e40f3e6029a0103d4916f6/packages/playwright/bundles/babel/src/babelBundleImpl.ts#L74
       'header/header': ['error', 'block', '* @jsxImportSource @prairielearn/preact-cjs ', 2],
     },
   },
