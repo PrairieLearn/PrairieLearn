@@ -489,24 +489,24 @@ function GradebookTable({
           singularLabel: "user's grades",
           hasSelection: false,
         }}
-        columnManagerButtons={
-          <PresetFilterDropdown
-            table={table}
-            label="Filter"
-            options={{
-              'Joined students': [
-                { id: 'enrollment_status', value: ['joined'] },
-                { id: 'role', value: ['Student'] },
-              ],
-              'All students': [{ id: 'role', value: ['Student'] }],
-              'All students & staff': [],
-            }}
-            onSelect={handleEnrollmentFilterSelect}
-          />
-        }
+        columnManager={{
+          buttons: (
+            <PresetFilterDropdown
+              table={table}
+              label="Filter"
+              options={{
+                'Joined students': [
+                  { id: 'enrollment_status', value: ['joined'] },
+                  { id: 'role', value: ['Student'] },
+                ],
+                'All students': [{ id: 'role', value: ['Student'] }],
+                'All students & staff': [],
+              }}
+              onSelect={handleEnrollmentFilterSelect}
+            />
+          ),
+        }}
         globalFilter={{
-          value: globalFilter,
-          setValue: setGlobalFilter,
           placeholder: 'Search by UID, name...',
         }}
         tableOptions={{

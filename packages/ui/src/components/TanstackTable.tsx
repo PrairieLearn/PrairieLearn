@@ -3,10 +3,11 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Cell, Header, Row, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
 import type { ComponentChildren } from 'preact';
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
+import { useDebouncedCallback } from 'use-debounce';
 
 import type { ComponentProps } from '@prairielearn/preact-cjs';
 import { run } from '@prairielearn/run';
@@ -472,12 +473,11 @@ export function TanstackTable<RowDataModel>({
  * @param params.singularLabel - The singular label for a single row in the table, e.g. "student"
  * @param params.pluralLabel - The plural label for multiple rows in the table, e.g. "students"
  * @param params.headerButtons - The buttons to display in the header
- * @param params.columnManagerButtons - The buttons to display next to the column manager (View button)
- * @param params.columnManagerTopContent - Optional content to display at the top of the column manager (View) dropdown menu
- * @param params.globalFilter - State management for the global filter
- * @param params.globalFilter.value
- * @param params.globalFilter.setValue
- * @param params.globalFilter.placeholder
+ * @param params.columnManager - Optional configuration for the column manager. See {@link ColumnManager} for more details.
+ * @param params.columnManager.buttons - The buttons to display next to the column manager (View button)
+ * @param params.columnManager.topContent - Optional content to display at the top of the column manager (View) dropdown menu
+ * @param params.globalFilter - Configuration for the global filter
+ * @param params.globalFilter.placeholder - Placeholder text for the search input
  * @param params.tableOptions - Specific options for the table. See {@link TanstackTableProps} for more details.
  * @param params.downloadButtonOptions - Specific options for the download button. See {@link TanstackTableDownloadButtonProps} for more details.
  */
@@ -487,8 +487,7 @@ export function TanstackTableCard<RowDataModel>({
   singularLabel,
   pluralLabel,
   headerButtons,
-  columnManagerButtons,
-  columnManagerTopContent,
+  columnManager,
   globalFilter,
   tableOptions,
   downloadButtonOptions,
@@ -500,11 +499,11 @@ export function TanstackTableCard<RowDataModel>({
   singularLabel: string;
   pluralLabel: string;
   headerButtons?: JSX.Element;
-  columnManagerButtons?: JSX.Element;
-  columnManagerTopContent?: JSX.Element;
+  columnManager?: {
+    buttons?: JSX.Element;
+    topContent?: JSX.Element;
+  };
   globalFilter: {
-    value: string;
-    setValue: (value: string) => void;
     placeholder: string;
   };
   tableOptions: Partial<Omit<TanstackTableProps<RowDataModel>, 'table'>>;
@@ -514,6 +513,15 @@ export function TanstackTableCard<RowDataModel>({
   > & { pluralLabel?: string; singularLabel?: string };
 } & Omit<ComponentProps<'div'>, 'class'>) {
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const [inputValue, setInputValue] = useState(
+    () => (table.getState().globalFilter as string) ?? '',
+  );
+
+  // Debounce the filter update
+  const debouncedSetFilter = useDebouncedCallback((value: string) => {
+    table.setGlobalFilter(value);
+  }, 150);
 
   // Focus the search input when Ctrl+F is pressed
   useEffect(() => {
@@ -559,20 +567,26 @@ export function TanstackTableCard<RowDataModel>({
             class="form-control pl-ui-tanstack-table-search-input pl-ui-tanstack-table-focusable-shadow"
             aria-label={globalFilter.placeholder}
             placeholder={globalFilter.placeholder}
-            value={globalFilter.value}
+            value={inputValue}
             autoComplete="off"
             onInput={(e) => {
               if (!(e.target instanceof HTMLInputElement)) return;
-              globalFilter.setValue(e.target.value);
+              const value = e.target.value;
+              setInputValue(value);
+              debouncedSetFilter(value);
             }}
           />
-          {globalFilter.value && (
+          {inputValue && (
             <OverlayTrigger overlay={<Tooltip>Clear search</Tooltip>}>
               <button
                 type="button"
                 class="btn btn-floating-icon"
                 aria-label="Clear search"
-                onClick={() => globalFilter.setValue('')}
+                onClick={() => {
+                  setInputValue('');
+                  debouncedSetFilter.cancel();
+                  table.setGlobalFilter('');
+                }}
               >
                 <i class="bi bi-x-circle-fill" aria-hidden="true" />
               </button>
@@ -580,8 +594,8 @@ export function TanstackTableCard<RowDataModel>({
           )}
         </div>
         <div class="d-flex flex-wrap flex-row align-items-center gap-2">
-          <ColumnManager table={table} topContent={columnManagerTopContent} />
-          {columnManagerButtons}
+          <ColumnManager table={table} topContent={columnManager?.topContent} />
+          {columnManager?.buttons}
         </div>
         <div class="ms-auto text-muted text-nowrap">
           Showing {displayedCount} of {totalCount} {totalCount === 1 ? singularLabel : pluralLabel}
