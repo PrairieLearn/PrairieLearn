@@ -28,13 +28,13 @@ export default asyncHandler(async (req, res, next) => {
   // We select by user UID so that we can find invited/rejected enrollments as well
   const existingEnrollment = await run(async () => {
     // We only want to even try to lookup enrollment information if the user is a student.
-    if (!hasRole(res.locals.authz_data, 'Student')) {
+    if (!hasRole(res.locals.authz_data, ['Student'])) {
       return null;
     }
     return await selectOptionalEnrollmentByUid({
       uid: res.locals.authn_user.uid,
       courseInstance,
-      requestedRole: 'Student',
+      requiredRole: ['Student'],
       authzData: res.locals.authz_data,
     });
   });
@@ -90,7 +90,7 @@ export default asyncHandler(async (req, res, next) => {
         course: res.locals.course,
         courseInstance,
         authzData: res.locals.authz_data,
-        requestedRole: 'Student',
+        requiredRole: ['Student'],
         actionDetail: 'implicit_joined',
       });
 
