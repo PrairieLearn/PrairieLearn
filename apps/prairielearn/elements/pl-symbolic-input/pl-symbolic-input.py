@@ -36,6 +36,7 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
 PLACEHOLDER_DEFAULT = "symbolic expression"
 SHOW_SCORE_DEFAULT = True
+INITIAL_VALUE_DEFAULT = None
 SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
 # This timeout is chosen to allow multiple sympy-based elements to grade on one page,
 # while not exceeding the global timeout enforced for Python execution.
@@ -66,6 +67,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "display-simplified-expression",
         "show-score",
         "suffix",
+        "initial-value",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -224,10 +226,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
+    initial_value = pl.get_string_attrib(
+        element, "initial-value", INITIAL_VALUE_DEFAULT
+    )
     raw_submitted_answer_latex = data["raw_submitted_answers"].get(
         name + "-latex", None
     )
     raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+    if raw_submitted_answer is None:
+        raw_submitted_answer = initial_value
+    if raw_submitted_answer_latex is None:
+        raw_submitted_answer_latex = initial_value
 
     score = data["partial_scores"].get(name, {}).get("score")
 

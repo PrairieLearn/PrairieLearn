@@ -14,11 +14,12 @@
         <p> Within this question, you can observe the default behavior of the <a
                 href="https://prairielearn.readthedocs.io/en/latest/elements/pl-units-input"><code>pl-units-input</code></a>
             element. The submitted answer and reference solutions will be first be converted to base units and then
-            compared. Submitting units of incorrect dimensionality will not be given any credit.
+            compared. Submitting units of incorrect dimensionality will not be given any credit. The attribute
+            <code>initial-value</code> fills the input the first time it renders to provide a suggested starting point.
         </p>
         <p> What is the length of a meter stick? </p>
     </pl-question-panel>
-    <pl-units-input aria-label="Length with units" answers-name="c_1" correct-answer="1m"></pl-units-input>
+    <pl-units-input aria-label="Length with units" answers-name="c_1" correct-answer="1m" initial-value="1 m"></pl-units-input>
 </pl-card>
 
 <pl-card>

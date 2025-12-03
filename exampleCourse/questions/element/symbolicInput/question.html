@@ -1,8 +1,9 @@
 <pl-card header="An example in which complex numbers are not allowed (&lt;code&gt;allow-complex=&quot;false&quot;&lt;/code&gt;)">
     <pl-question-panel>
         <p>Suppose $$y = a x + b.$$ Assuming that $a \neq 0$, solve for $x$.</p>
+        <p>The attribute <code>initial-value</code> pre-fills the input the first time it is rendered so students can begin from a suggested expression.</p>
     </pl-question-panel>
-    <pl-symbolic-input aria-label="Symbolic expression for x" answers-name="x" variables="a, b, y" label="$x=$"></pl-symbolic-input>
+    <pl-symbolic-input aria-label="Symbolic expression for x" answers-name="x" variables="a, b, y" label="$x=$" initial-value="(y - b)/a"></pl-symbolic-input>
 </pl-card>
 
 <pl-card header="An example in which complex numbers are allowed (&lt;code&gt;allow-complex=&quot;true&quot;&lt;/code&gt;)">
