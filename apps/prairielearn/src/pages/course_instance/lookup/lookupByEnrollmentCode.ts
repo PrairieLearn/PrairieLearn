@@ -53,7 +53,7 @@ router.get(
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    if (!hasRole(authzData, 'Student')) {
+    if (!hasRole(authzData, ['Student'])) {
       throw new HttpStatusError(404, 'Only students can look up course instances');
     }
 
@@ -62,7 +62,7 @@ router.get(
     const existingEnrollment = await selectOptionalEnrollmentByUid({
       uid: res.locals.authn_user.uid,
       courseInstance,
-      requestedRole: 'Student',
+      requiredRole: ['Student'],
       authzData,
     });
 

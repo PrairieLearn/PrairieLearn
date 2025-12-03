@@ -224,7 +224,7 @@ async function selectUserInCourseInstance({
       courseInstance,
       userId: user.user_id,
       // The function can be called by a student or instructor
-      requestedRole: 'Any',
+      requiredRole: ['Student', 'Student Data Viewer'],
       authzData,
     }))
   ) {

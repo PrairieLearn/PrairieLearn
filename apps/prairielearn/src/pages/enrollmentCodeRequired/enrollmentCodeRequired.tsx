@@ -33,11 +33,11 @@ router.get(
     // Lookup if they have an existing enrollment
     const existingEnrollment = await run(async () => {
       // We don't want to 403 instructors
-      if (!hasRole(res.locals.authz_data, 'Student')) return null;
+      if (!hasRole(res.locals.authz_data, ['Student'])) return null;
       return await selectOptionalEnrollmentByUid({
         uid: res.locals.authn_user.uid,
         courseInstance,
-        requestedRole: 'Student',
+        requiredRole: ['Student'],
         authzData: res.locals.authz_data,
       });
     });
@@ -101,7 +101,7 @@ router.get(
           course: res.locals.course,
           courseInstance: res.locals.course_instance,
           authzData: res.locals.authz_data,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           actionDetail: 'implicit_joined',
         });
       }

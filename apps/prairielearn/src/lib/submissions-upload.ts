@@ -119,7 +119,7 @@ export async function uploadSubmissions(
       courseInstance: course_instance,
       actionDetail: 'implicit_joined',
       authzData: dangerousFullSystemAuthz(),
-      requestedRole: 'System',
+      requiredRole: ['System'],
     });
     return user;
   });

@@ -140,12 +140,9 @@ export type AuthzData = AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUs
 
 export type CourseInstanceRole =
   | 'System'
-  | 'None'
   | 'Student'
   | 'Student Data Viewer'
-  | 'Student Data Editor'
-  // The role 'Any' is equivalent to 'Student' OR 'Student Data Viewer' OR 'Student Data Editor'
-  | 'Any';
+  | 'Student Data Editor';
 
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {
@@ -166,16 +163,17 @@ export function isDangerousFullSystemAuthz(
   return authzData.user.user_id === null;
 }
 
-export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
-  // You must set the requestedRole to 'System' when you use dangerousFullSystemAuthz.
-  if (isDangerousFullSystemAuthz(authzData)) {
-    return ['System', 'Any'].includes(requestedRole);
+export function hasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]): boolean {
+  // You must include 'System' in the requiredRole when you use dangerousFullSystemAuthz.
+  const hasSystemAuthz = isDangerousFullSystemAuthz(authzData);
+  if (hasSystemAuthz) {
+    return requiredRole.includes('System');
   }
 
   if (
-    (requestedRole === 'Student' || requestedRole === 'Any') &&
+    requiredRole.includes('Student') &&
     authzData.has_student_access &&
-    // If the user is an instructor, and the requestedRole is student, this should fail.
+    // If the user is an instructor, and the requiredRole is student, this should fail.
     // We want to prevent instructors from calling functions that are only meant for students.
     //
     // This can happen if the instructor is in 'Student view' (with access restrictions) as well.
@@ -185,20 +183,16 @@ export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole)
   }
 
   if (
-    (requestedRole === 'Student Data Viewer' || requestedRole === 'Any') &&
+    requiredRole.includes('Student Data Viewer') &&
     authzData.has_course_instance_permission_view
   ) {
     return true;
   }
 
   if (
-    (requestedRole === 'Student Data Editor' || requestedRole === 'Any') &&
+    requiredRole.includes('Student Data Editor') &&
     authzData.has_course_instance_permission_edit
   ) {
-    return true;
-  }
-
-  if (requestedRole === 'None') {
     return true;
   }
 
@@ -206,30 +200,66 @@ export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole)
 }
 
 /**
- * Asserts that the user has the requested role. It also asserts that
- * the requested role is one of the allowed roles.
- * If the model function enforces `requestedRole` at the type level, `allowedRoles` is not needed.
+ * Asserts that the requiredRole passed by the caller is allowed for the type of action being performed by the model function.
  *
- * For staff roles, it checks that you have at least the requested role.
- * role. If you have a more permissive role, you are allowed to perform the action.
+ * Most model functions enforce the required role at the type level, so this function is not needed.
+ * For model functions in which the authorization required depends on the action, this function can be used to
+ * check, at runtime, that the role is allowed for the action.
+ *
+ * This function is called by the model function to assert that the role is allowed for the model function.
+ *
+ * @param requiredRole The potential roles.
+ * @param permittedRoles The roles permitted for the action.
+ */
+export function assertRoleIsPermitted(
+  requiredRole: CourseInstanceRole[],
+  permittedRoles: CourseInstanceRole[],
+): void {
+  // Assert that requiredRole is a subset of allowedRoles
+  for (const role of requiredRole) {
+    if (!permittedRoles.includes(role)) {
+      throw new Error(
+        `Required role "${role}" is not permitted for this action. Permitted roles: "${permittedRoles.join('", "')}"`,
+      );
+    }
+  }
+}
+/**
+ * Asserts that the user has the required role. If requiredRole is a list of multiple roles,
+ * it asserts that the user has at least one of the required roles.
+ *
+ * @example
+ *
+ * ```typescript
+ * function myModelFunction(... : { authzData: AuthzData, requiredRole: ('Student' | 'Student Data Viewer' | 'Student Data Editor')[] }): void {
+ *   assertHasRole(authzData, requiredRole);
+ * }
+ *
+ * myModelFunction({ authzData, requiredRole: ['Student', 'Student Data Viewer'] });
+ * ```
+ *
+ * In this call, the model function requires that the user must be a Student, Student Data Viewer, or Student Data Editor.
+ *
+ * The caller of the model function wants to assert that the user is either a Student or Student Data Viewer.
+ *
+ * @example
+ * ```typescript
+ * function myModelFunction(... : { authzData: AuthzData, requiredRole: ('Student Data Viewer' | 'Student Data Editor')[] }): void {
+ *   assertHasRole(authzData, requiredRole);
+ * }
+ *
+ * myModelFunction({ authzData, requiredRole: ['Student Data Viewer'] });
+ * ```
+ *
+ * In this call, the model function requires that the user must be a Student Data Viewer or Student Data Editor.
+ *
+ * The caller of the model function wants to assert that the user has the Student Data Viewer role.
  *
  * @param authzData - The authorization data of the user.
- * @param requestedRole - The requested role from the caller of the model function.
- * @param allowedRoles - The allowed roles for the model function.
+ * @param requiredRole - The required role by the model function. Provided by the caller of the model function.
  */
-export function assertHasRole(
-  authzData: AuthzData,
-  requestedRole: CourseInstanceRole,
-  allowedRoles?: CourseInstanceRole[],
-): void {
-  if (allowedRoles && requestedRole !== 'Any' && !allowedRoles.includes(requestedRole)) {
-    // This suggests the code was called incorrectly (internal error).
-    throw new Error(
-      `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
-    );
-  }
-
-  if (!hasRole(authzData, requestedRole)) {
+export function assertHasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]): void {
+  if (!hasRole(authzData, requiredRole)) {
     throw new HttpStatusError(403, 'Access denied');
   }
 }
