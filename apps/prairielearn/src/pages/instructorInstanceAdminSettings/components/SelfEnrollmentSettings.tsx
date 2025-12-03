@@ -371,12 +371,16 @@ export function SelfEnrollmentSettings({
           />
         )}
         <label class="form-check-label" for="disable_self_enrollment_after_date">
-          Forbid self-enrollment after specified date
+          Self-enrollment cutoff date
         </label>
+        <div class="small text-muted">
+          If set, self-enrollment will be disabled after this date. We recommend setting this to the
+          University-imposed deadline for students to add courses.
+        </div>
 
         <input
           type="datetime-local"
-          aria-label="Self-enrollment enabled before date"
+          aria-label="Self-enrollment cutoff date"
           class={clsx('form-control mt-2', selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid')}
           disabled={!canEdit || !selfEnrollmentEnabledBeforeDateEnabled || !hasModernPublishing}
           step="1"

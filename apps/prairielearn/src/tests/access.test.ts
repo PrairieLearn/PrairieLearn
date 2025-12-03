@@ -134,7 +134,7 @@ describe('Access control', { timeout: 20000 }, function () {
       await ensureUncheckedEnrollment({
         userId: user.user_id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });

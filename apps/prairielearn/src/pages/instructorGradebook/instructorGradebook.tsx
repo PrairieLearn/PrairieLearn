@@ -1,13 +1,8 @@
-/** @jsxImportSource @prairielearn/preact-cjs */
-
-import { pipeline } from 'node:stream/promises';
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -19,7 +14,6 @@ import {
   checkAssessmentInstanceBelongsToCourseInstance,
   getCourseOwners,
 } from '../../lib/course.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -29,16 +23,11 @@ import { RoleDescriptionModal } from './components/RoleDescriptionModal.js';
 import {
   AssessmentInstanceScoreResultSchema,
   CourseAssessmentRowSchema,
-  type GradebookRow,
   GradebookRowSchema,
 } from './instructorGradebook.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
-
-function buildCsvFilename(locals: UntypedResLocals) {
-  return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
-}
 
 router.get(
   '/',
@@ -78,7 +67,7 @@ router.get(
       return;
     }
 
-    const csvFilename = buildCsvFilename(res.locals);
+    const filenameBase = courseInstanceFilenamePrefix(course_instance, course) + 'gradebook';
     const courseAssessments = await queryRows(
       sql.course_assessments,
       { course_instance_id: course_instance.id },
@@ -88,29 +77,6 @@ router.get(
       sql.user_scores,
       { course_id: course.id, course_instance_id: course_instance.id },
       GradebookRowSchema,
-    );
-
-    const content = (
-      <>
-        <CourseInstanceSyncErrorsAndWarnings
-          authzData={res.locals.authz_data}
-          courseInstance={course_instance}
-          course={course}
-          urlPrefix={urlPrefix}
-        />
-        <Hydrate fullHeight>
-          <InstructorGradebookTable
-            csrfToken={__csrf_token}
-            courseAssessments={courseAssessments}
-            gradebookRows={gradebookRows}
-            urlPrefix={urlPrefix}
-            csvFilename={csvFilename}
-            courseInstanceId={course_instance.id}
-            search={getUrl(req).search}
-            isDevMode={process.env.NODE_ENV === 'development'}
-          />
-        </Hydrate>
-      </>
     );
 
     res.send(
@@ -126,7 +92,28 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        content,
+        content: (
+          <>
+            <CourseInstanceSyncErrorsAndWarnings
+              authzData={res.locals.authz_data}
+              courseInstance={course_instance}
+              course={course}
+              urlPrefix={urlPrefix}
+            />
+            <Hydrate fullHeight>
+              <InstructorGradebookTable
+                csrfToken={__csrf_token}
+                courseAssessments={courseAssessments}
+                gradebookRows={gradebookRows}
+                urlPrefix={urlPrefix}
+                filenameBase={filenameBase}
+                courseInstanceId={course_instance.id}
+                search={getUrl(req).search}
+                isDevMode={process.env.NODE_ENV === 'development'}
+              />
+            </Hydrate>
+          </>
+        ),
         postContent: [RoleDescriptionModal()],
       }),
     );
@@ -145,50 +132,6 @@ router.get(
       GradebookRowSchema,
     );
     res.json(userScores);
-  }),
-);
-
-router.get(
-  '/:filename',
-  asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
-
-    if (req.params.filename === buildCsvFilename(res.locals)) {
-      const assessments = await queryRows(
-        sql.course_assessments,
-        { course_instance_id: res.locals.course_instance.id },
-        CourseAssessmentRowSchema,
-      );
-      const userScoresCursor = await queryCursor(
-        sql.user_scores,
-        {
-          course_id: res.locals.course.id,
-          course_instance_id: res.locals.course_instance.id,
-        },
-        GradebookRowSchema,
-      );
-
-      const stringifier = stringifyStream<GradebookRow>({
-        header: true,
-        columns: ['UID', 'Name', 'UIN', 'Role', 'Enrollment', ...assessments.map((a) => a.label)],
-        transform: (record) => [
-          record.uid,
-          record.uin,
-          record.user_name,
-          record.role,
-          record.enrollment?.status ?? null,
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          ...assessments.map((a) => record.scores[a.assessment_id]?.score_perc ?? null),
-        ],
-      });
-
-      res.attachment(req.params.filename);
-      await pipeline(userScoresCursor.stream(100), stringifier, res);
-    } else {
-      throw new HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
-    }
   }),
 );
 
