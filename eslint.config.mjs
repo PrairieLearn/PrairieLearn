@@ -9,6 +9,7 @@ import html from '@html-eslint/eslint-plugin';
 import htmlParser from '@html-eslint/parser';
 import stylistic from '@stylistic/eslint-plugin';
 import pluginQuery from '@tanstack/eslint-plugin-query';
+import header from '@tony.ganchev/eslint-plugin-header'; // See https://github.com/Stuk/eslint-plugin-header/issues/59
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -98,6 +99,7 @@ export default tseslint.config([
     },
 
     plugins: {
+      header,
       'import-x': importX,
       jsdoc,
       'jsx-a11y-x': jsxA11yX,
@@ -536,6 +538,13 @@ export default tseslint.config([
       ],
       ...jsdoc.configs['flat/recommended-typescript-error'].rules,
       'jsdoc/check-line-alignment': 'error',
+      'jsdoc/check-tag-names': [
+        'error',
+        {
+          // https://babeljs.io/docs/en/babel-plugin-transform-react-jsx/
+          jsxTags: true,
+        },
+      ],
       'jsdoc/convert-to-jsdoc-comments': [
         'error',
         {
@@ -735,6 +744,13 @@ export default tseslint.config([
       '@html-eslint/require-img-alt': 'off',
       // Issue in 'pl-matrix-input'
       '@html-eslint/no-nested-interactive': 'off',
+    },
+  },
+  {
+    // Enforce JSX import source comment in e2e test files.
+    files: ['apps/prairielearn/src/tests/e2e/**/*.tsx'],
+    rules: {
+      'header/header': ['error', 'block', '* @jsxImportSource @prairielearn/preact-cjs ', 2],
     },
   },
   globalIgnores([

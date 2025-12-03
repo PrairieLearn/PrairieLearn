@@ -49,6 +49,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
             postgresqlUser: setupResults.user,
             postgresqlDatabase: setupResults.database,
             postgresqlHost: setupResults.host,
+            devMode: true, // We need this to start up the asset server.
           };
           await fs.writeFile(tmpFile.path, JSON.stringify(config, null, 2));
 
