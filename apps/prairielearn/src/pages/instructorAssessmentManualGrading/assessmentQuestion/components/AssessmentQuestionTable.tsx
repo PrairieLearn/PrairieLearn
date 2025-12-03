@@ -897,6 +897,7 @@ export function AssessmentQuestionTable({
             'Graded By': row.last_grader_name || '',
             'Modified At': row.instance_question.modified_at.toISOString(),
           }),
+          hasSelection: true,
         }}
       />
 

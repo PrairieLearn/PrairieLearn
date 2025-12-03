@@ -498,7 +498,7 @@ export function TanstackTableCard<RowDataModel>({
   title: string;
   singularLabel: string;
   pluralLabel: string;
-  headerButtons: JSX.Element;
+  headerButtons?: JSX.Element;
   columnManager?: {
     buttons?: JSX.Element;
     topContent?: JSX.Element;
@@ -510,7 +510,7 @@ export function TanstackTableCard<RowDataModel>({
   downloadButtonOptions?: Omit<
     TanstackTableDownloadButtonProps<RowDataModel>,
     'table' | 'singularLabel' | 'pluralLabel'
-  >;
+  > & { pluralLabel?: string; singularLabel?: string };
 } & Omit<ComponentProps<'div'>, 'class'>) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 

@@ -32,6 +32,7 @@ import { TanstackTableCard } from '@prairielearn/ui';
           : null,
       };
     },
+    hasSelection: false,
   }}
   headerButtons={
     <>
