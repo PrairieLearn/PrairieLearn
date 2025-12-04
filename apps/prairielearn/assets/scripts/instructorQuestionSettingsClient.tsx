@@ -7,6 +7,7 @@ import { renderHtml } from '@prairielearn/preact';
 import { TagBadge } from '../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../src/components/TopicBadge.js';
 import { type Tag, type Topic } from '../../src/lib/db-types.js';
+import { SHORT_NAME_PATTERN } from '../../src/lib/short-name.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';
@@ -127,8 +128,17 @@ onDocumentReady(() => {
     });
   }
 
-  qidField.addEventListener('input', () => validateId({ input: qidField, otherIds: otherQids }));
-  qidField.addEventListener('change', () => validateId({ input: qidField, otherIds: otherQids }));
+  const qidValidation = (input: HTMLInputElement) => {
+    if (input.value === input.defaultValue) {
+      qidField.removeAttribute('pattern');
+      return;
+    } else {
+      input.setAttribute('pattern', SHORT_NAME_PATTERN);
+    }
+    validateId({ input, otherIds: otherQids });
+  };
+  qidField.addEventListener('input', () => qidValidation(qidField));
+  qidField.addEventListener('change', () => qidValidation(qidField));
 
   workspaceEnvironmentInput?.addEventListener('input', (e) => {
     validateJsonInput(e.target as HTMLInputElement);

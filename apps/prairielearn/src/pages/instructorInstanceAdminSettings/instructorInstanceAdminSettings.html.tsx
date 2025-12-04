@@ -10,6 +10,7 @@ import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import type { NavPage } from '../../components/Navbar.types.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { SHORT_NAME_PATTERN, SHORT_NAME_REGEX } from '../../lib/short-name.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
@@ -130,12 +131,12 @@ export function InstructorInstanceAdminSettings({
                 class={clsx('form-control font-monospace', errors.ciid && 'is-invalid')}
                 id="ciid"
                 aria-invalid={errors.ciid ? 'true' : 'false'}
-                pattern="[\-A-Za-z0-9_\/]+"
+                pattern={SHORT_NAME_PATTERN}
                 disabled={!canEdit}
                 required
                 {...register('ciid', {
                   required: 'CIID is required',
-                  pattern: /^[-A-Za-z0-9_/]+$/,
+                  pattern: SHORT_NAME_REGEX,
                   validate: {
                     duplicate: (value) => {
                       if (shortNames.has(value) && value !== defaultValues.ciid) {

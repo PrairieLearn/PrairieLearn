@@ -1,6 +1,8 @@
 import clsx from 'clsx';
 import { useMemo, useRef, useState } from 'preact/hooks';
 
+import { SHORT_NAME_PATTERN } from '../lib/short-name.js';
+
 interface SelectableCardProps {
   id: string;
   title: string;
@@ -213,7 +215,7 @@ export function CreateQuestionModalContents({
           class="form-control"
           id="qid"
           name="qid"
-          pattern="[\-A-Za-z0-9_\/]+"
+          pattern={SHORT_NAME_PATTERN}
           aria-describedby="qid_help"
           required
         />

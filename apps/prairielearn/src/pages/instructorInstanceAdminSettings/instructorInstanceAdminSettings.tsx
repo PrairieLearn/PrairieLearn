@@ -32,6 +32,7 @@ import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { isValidShortName } from '../../lib/short-name.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
@@ -199,7 +200,7 @@ router.post(
         throw new error.HttpStatusError(400, 'Long name is required');
       }
 
-      if (!/^[-A-Za-z0-9_/]+$/.test(short_name)) {
+      if (!isValidShortName(short_name)) {
         throw new error.HttpStatusError(
           400,
           'Short name must contain only letters, numbers, dashes, underscores, and forward slashes, with no spaces',
@@ -294,7 +295,7 @@ router.post(
       if (!req.body.ciid) {
         throw new error.HttpStatusError(400, `Invalid CIID (was falsy): ${req.body.ciid}`);
       }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.ciid)) {
+      if (!isValidShortName(req.body.ciid)) {
         throw new error.HttpStatusError(
           400,
           `Invalid CIID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.ciid}`,

@@ -143,7 +143,6 @@ export function InstructorQuestionSettings({
                 id="qid"
                 name="qid"
                 value="${resLocals.question.qid}"
-                pattern="[\\-A-Za-z0-9_\\/]+"
                 data-other-values="${qids.join(',')}"
                 ${canEdit ? '' : 'disabled'}
               />

@@ -37,6 +37,7 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
+import { isValidShortName } from '../../lib/short-name.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
@@ -168,7 +169,7 @@ router.post(
         })
         .parse(req.body);
 
-      if (!/^[-A-Za-z0-9_/]+$/.test(body.qid)) {
+      if (!isValidShortName(body.qid) && body.qid !== res.locals.question.qid) {
         throw new error.HttpStatusError(
           400,
           `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
