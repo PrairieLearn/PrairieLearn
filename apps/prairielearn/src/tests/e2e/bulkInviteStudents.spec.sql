@@ -9,7 +9,7 @@ SET
 RETURNING
   user_id;
 
--- BLOCK insert_enrollment
+-- BLOCK insert_joined_enrollment
 INSERT INTO
   enrollments (
     user_id,
@@ -18,7 +18,18 @@ INSERT INTO
     first_joined_at
   )
 VALUES
-  ($user_id, 1, $status, NOW())
+  ($user_id, 1, 'joined', NOW())
+ON CONFLICT DO NOTHING;
+
+-- BLOCK insert_invited_enrollment
+INSERT INTO
+  enrollments (
+    course_instance_id,
+    status,
+    pending_uid
+  )
+VALUES
+  (1, 'invited', $pending_uid)
 ON CONFLICT DO NOTHING;
 
 -- BLOCK enable_modern_publishing
@@ -30,14 +41,18 @@ WHERE
 
 -- BLOCK enable_enrollment_management_feature
 INSERT INTO
-  feature_grants (feature, institution_id)
+  feature_grants (name, institution_id)
 VALUES
   ('enrollment-management', '1')
 ON CONFLICT DO NOTHING;
 
 -- BLOCK set_dev_user_as_admin
-UPDATE users
-SET
-  is_administrator = TRUE
+INSERT INTO
+  administrators (user_id)
+SELECT
+  user_id
+FROM
+  users
 WHERE
-  uid = 'dev@example.com';
+  uid = 'dev@example.com'
+ON CONFLICT DO NOTHING;

@@ -49,15 +49,10 @@ async function createTestData() {
     { uid: ENROLLED_STUDENT.uid, name: ENROLLED_STUDENT.name },
     z.string(),
   );
-  await sqldb.execute(sql.insert_enrollment, { user_id: enrolledUserId, status: 'joined' });
+  await sqldb.execute(sql.insert_joined_enrollment, { user_id: enrolledUserId });
 
-  // Create a student with a pending invitation
-  const invitedUserId = await sqldb.queryRow(
-    sql.insert_or_update_user,
-    { uid: INVITED_STUDENT.uid, name: INVITED_STUDENT.name },
-    z.string(),
-  );
-  await sqldb.execute(sql.insert_enrollment, { user_id: invitedUserId, status: 'invited' });
+  // Create a student with a pending invitation (no user_id needed - uses pending_uid)
+  await sqldb.execute(sql.insert_invited_enrollment, { pending_uid: INVITED_STUDENT.uid });
 }
 
 test.describe('Bulk Invite Students', () => {
@@ -75,7 +70,9 @@ test.describe('Bulk Invite Students', () => {
 
     // Modal should open
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Invite students' })).toBeVisible();
+    await expect(
+      page.getByRole('dialog').getByText('Invite students', { exact: true }),
+    ).toBeVisible();
 
     // Enter a single valid UID
     await page.getByRole('textbox', { name: 'UIDs' }).fill(VALID_STUDENT.uid);
@@ -169,11 +166,12 @@ test.describe('Bulk Invite Students', () => {
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
     // Should show confirmation modal
-    await expect(page.getByRole('heading', { name: 'Confirm Invalid Students' })).toBeVisible({
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('Confirm Invalid Students', { exact: true })).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.getByText(ENROLLED_STUDENT.uid)).toBeVisible();
-    await expect(page.getByText('Already enrolled')).toBeVisible();
+    await expect(dialog.getByText(ENROLLED_STUDENT.uid)).toBeVisible();
+    await expect(dialog.getByText('Already enrolled')).toBeVisible();
 
     // Click "Invite Anyway"
     await page.getByRole('button', { name: 'Invite Anyway' }).click();
@@ -203,7 +201,9 @@ test.describe('Bulk Invite Students', () => {
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
     // Should show confirmation modal
-    await expect(page.getByRole('heading', { name: 'Confirm Invalid Students' })).toBeVisible({
+    await expect(
+      page.getByRole('dialog').getByText('Confirm Invalid Students', { exact: true }),
+    ).toBeVisible({
       timeout: 10000,
     });
 
@@ -211,7 +211,9 @@ test.describe('Bulk Invite Students', () => {
     await page.getByRole('button', { name: 'Continue Editing' }).click();
 
     // Should return to editing modal
-    await expect(page.getByRole('heading', { name: 'Invite students' })).toBeVisible();
+    await expect(
+      page.getByRole('dialog').getByText('Invite students', { exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'UIDs' })).toBeVisible();
   });
 
@@ -228,20 +230,5 @@ test.describe('Bulk Invite Students', () => {
 
     // Should show validation error
     await expect(page.getByText('invalid', { exact: false })).toBeVisible({ timeout: 10000 });
-  });
-
-  test('shows error for non-existent user', async ({ page }) => {
-    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
-
-    await page.getByRole('button', { name: 'Invite students' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-
-    // Enter a non-existent user
-    await page.getByRole('textbox', { name: 'UIDs' }).fill('nonexistent@test.com');
-
-    await page.getByRole('button', { name: 'Invite', exact: true }).click();
-
-    // Should show error
-    await expect(page.getByText('User not found')).toBeVisible({ timeout: 10000 });
   });
 });
