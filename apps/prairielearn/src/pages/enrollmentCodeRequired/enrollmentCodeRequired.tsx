@@ -8,6 +8,7 @@ import { EnrollmentPage } from '../../components/EnrollmentPage.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { hasRole } from '../../lib/authz-data-lib.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { features } from '../../lib/features/index.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
@@ -33,11 +34,11 @@ router.get(
     // Lookup if they have an existing enrollment
     const existingEnrollment = await run(async () => {
       // We don't want to 403 instructors
-      if (!hasRole(res.locals.authz_data, 'Student')) return null;
+      if (!hasRole(res.locals.authz_data, ['Student'])) return null;
       return await selectOptionalEnrollmentByUid({
         uid: res.locals.authn_user.uid,
         courseInstance,
-        requestedRole: 'Student',
+        requiredRole: ['Student'],
         authzData: res.locals.authz_data,
       });
     });
@@ -46,15 +47,25 @@ router.get(
       existingEnrollment == null ||
       !['joined', 'invited', 'removed'].includes(existingEnrollment.status);
 
-    const selfEnrollmentEnabled = courseInstance.self_enrollment_enabled;
+    const enrollmentManagementEnabled = await features.enabledFromLocals(
+      'enrollment-management',
+      res.locals,
+    );
 
     const institutionRestrictionSatisfied =
-      !courseInstance.self_enrollment_restrict_to_institution ||
-      res.locals.authn_user.institution_id === res.locals.course.institution_id;
+      res.locals.authn_user.institution_id === res.locals.course.institution_id ||
+      !enrollmentManagementEnabled ||
+      // The default value for self-enrollment restriction is true.
+      // In the old system (before publishing was introduced), the default was false.
+      // So if publishing is not set up, we should ignore the restriction.
+      !courseInstance.modern_publishing ||
+      !courseInstance.self_enrollment_restrict_to_institution;
 
     const selfEnrollmentExpired =
       courseInstance.self_enrollment_enabled_before_date != null &&
       new Date() >= courseInstance.self_enrollment_enabled_before_date;
+
+    const selfEnrollmentEnabled = courseInstance.self_enrollment_enabled;
 
     if (!selfEnrollmentEnabled && needsToSelfEnroll) {
       res
@@ -113,7 +124,7 @@ router.get(
           course: res.locals.course,
           courseInstance: res.locals.course_instance,
           authzData: res.locals.authz_data,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           actionDetail: 'implicit_joined',
         });
       }

@@ -86,7 +86,7 @@ export async function calculateModernCourseInstanceStudentAccess(
   // so we need to use system auth to get the enrollment.
   const enrollment = await selectOptionalEnrollmentByUserId({
     userId,
-    requestedRole: 'System',
+    requiredRole: ['System'],
     authzData: dangerousFullSystemAuthz(),
     courseInstance,
   });
@@ -123,7 +123,7 @@ export async function calculateModernCourseInstanceStudentAccess(
     // Our current authzData would say we can't access this, but we are actually building up
     // authzData with this function, so we use system auth to get the latest extension.
     authzData: dangerousFullSystemAuthz(),
-    requestedRole: 'System',
+    requiredRole: ['System'],
   });
 
   // Check if we have access via extension.

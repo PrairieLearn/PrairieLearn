@@ -32,6 +32,7 @@ import { TanstackTableCard } from '@prairielearn/ui';
           : null,
       };
     },
+    hasSelection: false,
   }}
   headerButtons={
     <>
@@ -48,8 +49,6 @@ import { TanstackTableCard } from '@prairielearn/ui';
     </>
   }
   globalFilter={{
-    value: globalFilter,
-    setValue: setGlobalFilter,
     placeholder: 'Search by UID, name, email...',
   }}
   tableOptions={tableOptions}
