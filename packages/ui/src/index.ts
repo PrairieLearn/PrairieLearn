@@ -20,3 +20,10 @@ export { useShiftClickCheckbox } from './components/useShiftClickCheckbox.js';
 export { useAutoSizeColumns } from './components/useAutoSizeColumns.js';
 export { OverlayTrigger, type OverlayTriggerProps } from './components/OverlayTrigger.js';
 export { PresetFilterDropdown } from './components/PresetFilterDropdown.js';
+export {
+  NuqsAdapter,
+  parseAsSortingState,
+  parseAsColumnVisibilityStateWithColumns,
+  parseAsColumnPinningState,
+  parseAsNumericFilter,
+} from './components/nuqs.js';

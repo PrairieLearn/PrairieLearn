@@ -433,7 +433,7 @@ describe('accessibility', () => {
     const enrollment = await ensureUncheckedEnrollment({
       courseInstance,
       userId: user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
