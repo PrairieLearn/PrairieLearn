@@ -350,6 +350,64 @@ describe('Self-enrollment settings transitions', () => {
     );
   });
 
+  it('does not allow rejected user to self-enroll via the assessments endpoint when self-enrollment is disabled', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: false,
+      restrictToInstitution: false,
+    });
+
+    const rejectedUser = await getOrCreateUser({
+      uid: 'rejected@example.com',
+      name: 'Rejected Student',
+      uin: 'rejected1',
+      email: 'rejected@example.com',
+      institutionId: '1',
+    });
+
+    await execute(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uid)
+       VALUES ($course_instance_id, 'rejected', $pending_uid)`,
+      {
+        course_instance_id: '1',
+        pending_uid: rejectedUser.uid,
+      },
+    );
+
+    await withUser(
+      {
+        uid: rejectedUser.uid,
+        name: rejectedUser.name,
+        uin: rejectedUser.uin,
+        email: rejectedUser.email,
+      },
+      async () => {
+        const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
+          pendingUid: rejectedUser.uid,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
+        });
+        assert.isNotNull(initialEnrollment);
+        assert.equal(initialEnrollment.status, 'rejected');
+
+        const response = await fetch(assessmentsUrl);
+        assert.equal(response.status, 403);
+
+        const finalEnrollment = await selectOptionalEnrollmentByPendingUid({
+          pendingUid: rejectedUser.uid,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
+        });
+        assert.isNotNull(finalEnrollment);
+        assert.equal(finalEnrollment.status, 'rejected');
+        assert.isNotNull(finalEnrollment.pending_uid);
+      },
+    );
+  });
+
   it('does not allow blocked user to self-enroll via the assessments endpoint', async () => {
     await deleteEnrollmentsInCourseInstance('1');
     await updateCourseInstanceSettings('1', {
@@ -396,6 +454,56 @@ describe('Self-enrollment settings transitions', () => {
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'blocked');
+      },
+    );
+  });
+
+  it('redirects to join page when enrollment code is required and a rejected user goes to assessments endpoint', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: true,
+      selfEnrollmentUseEnrollmentCode: true,
+      restrictToInstitution: false,
+    });
+
+    const rejectedUser = await getOrCreateUser({
+      uid: 'rejected@example.com',
+      name: 'Rejected Student',
+      uin: 'rejected1',
+      email: 'rejected@example.com',
+      institutionId: '1',
+    });
+
+    await execute(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uid)
+       VALUES ($course_instance_id, 'rejected', $pending_uid)`,
+      {
+        course_instance_id: '1',
+        pending_uid: rejectedUser.uid,
+      },
+    );
+
+    await withUser(
+      {
+        uid: rejectedUser.uid,
+        name: rejectedUser.name,
+        uin: rejectedUser.uin,
+        email: rejectedUser.email,
+      },
+      async () => {
+        // Check the user got redirected to the join page
+        const response = await fetch(assessmentsUrl, { redirect: 'manual' });
+        assert.equal(response.status, 302);
+        assert.isTrue(response.headers.get('location')?.includes('/join'));
+
+        // Check that user is still not enrolled
+        const finalEnrollment = await selectOptionalEnrollmentByUserId({
+          userId: rejectedUser.user_id,
+          courseInstance,
+          requestedRole: 'System',
+          authzData: dangerousFullSystemAuthz(),
+        });
+        assert.isNull(finalEnrollment);
       },
     );
   });
