@@ -64,10 +64,7 @@ export function ExtensionTableRow({
                     {studentsToShow.map((user, index) => (
                       <div key={user.uid}>
                         <a
-                          href={getStudentEnrollmentUrl(
-                            `/pl/course_instance/${courseInstance.id}/instructor`,
-                            user.enrollment_id,
-                          )}
+                          href={getStudentEnrollmentUrl(courseInstance.id, user.enrollment_id)}
                           class="text-decoration-none"
                         >
                           {user.name || '—'}

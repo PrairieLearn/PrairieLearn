@@ -51,7 +51,7 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
     await ensureUncheckedEnrollment({
       userId: studentOneUser.user_id,
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -60,7 +60,7 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
     await ensureUncheckedEnrollment({
       userId: studentTwoUser.user_id,
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });

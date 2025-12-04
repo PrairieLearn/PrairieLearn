@@ -4,6 +4,8 @@ import * as error from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 
+import type { UntypedResLocals } from './res-locals.types.js';
+
 export interface InstructorFilePaths {
   coursePath: string;
   courseId: string;
@@ -32,7 +34,7 @@ export interface InstructorFilePaths {
 }
 
 function getContextPaths(
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): Pick<
   InstructorFilePaths,
   | 'rootPath'
@@ -104,7 +106,7 @@ function getContextPaths(
  */
 export function getPaths(
   requestedPath: string | undefined,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): InstructorFilePaths {
   const coursePath: string = locals.course.path;
   const courseId: string = locals.course.id;

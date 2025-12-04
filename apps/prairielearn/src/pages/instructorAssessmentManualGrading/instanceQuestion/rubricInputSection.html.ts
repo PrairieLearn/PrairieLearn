@@ -3,13 +3,14 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import type { AssessmentQuestion, RubricGradingItem, RubricItem } from '../../../lib/db-types.js';
 import { type RubricData, type RubricGradingData } from '../../../lib/manualGrading.types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export function RubricInputSection({
   resLocals,
   disable,
   aiGradingInfo,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   disable: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {

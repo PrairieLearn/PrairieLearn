@@ -165,7 +165,7 @@ async function createTestSubmission(
 function compareSubmissions(expected_submission: Submission, test_submission: Submission): Error[] {
   const courseIssues: Error[] = [];
 
-  const checkEqual = (name, var1, var2) => {
+  const checkEqual = (name: string, var1: any, var2: any) => {
     const json1 = jsonStringifySafe(var1);
     const json2 = jsonStringifySafe(var2);
     if (!_.isEqual(var1, var2)) {

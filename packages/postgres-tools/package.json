@@ -29,8 +29,8 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
-    "@types/lodash": "^4.17.20",
-    "@types/node": "^22.19.0",
+    "@types/lodash": "^4.17.21",
+    "@types/node": "^22.19.1",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9"
   }

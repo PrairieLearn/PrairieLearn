@@ -3,6 +3,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import type { NewsItem } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function NewsItem({
   resLocals,
@@ -10,7 +11,7 @@ export function NewsItem({
   newsItemHtml,
   userIsInstructor,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   newsItem: NewsItem;
   newsItemHtml: string;
   userIsInstructor: boolean;

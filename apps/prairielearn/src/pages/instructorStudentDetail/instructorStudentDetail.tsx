@@ -139,7 +139,7 @@ router.post(
     const enrollment = await selectEnrollmentById({
       id: enrollment_id,
       courseInstance,
-      requestedRole: 'Student Data Editor',
+      requiredRole: ['Student Data Editor'],
       authzData,
     });
 
@@ -152,7 +152,7 @@ router.post(
           enrollment,
           status: 'blocked',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;
@@ -165,7 +165,7 @@ router.post(
           enrollment,
           status: 'joined',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;
@@ -178,7 +178,7 @@ router.post(
           enrollment,
           actionDetail: 'invitation_deleted',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(`/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`);
         break;
@@ -203,7 +203,7 @@ router.post(
           enrollment,
           pendingUid,
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;

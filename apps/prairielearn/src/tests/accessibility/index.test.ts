@@ -372,7 +372,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
 ];
 
-function shouldSkipPath(path) {
+function shouldSkipPath(path: string) {
   return SKIP_ROUTES.some((r) => {
     if (typeof r === 'string') {
       return r === path;
@@ -433,7 +433,7 @@ describe('accessibility', () => {
     const enrollment = await ensureUncheckedEnrollment({
       courseInstance,
       userId: user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });

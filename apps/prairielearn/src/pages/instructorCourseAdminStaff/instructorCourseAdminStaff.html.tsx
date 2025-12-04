@@ -13,6 +13,7 @@ import {
   type User,
   UserSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 const CourseInstanceRoleRowSchema = z.object({
   id: CourseInstanceSchema.shape.id,
@@ -49,7 +50,7 @@ export function InstructorCourseAdminStaff({
   uidsLimit,
   githubAccessLink,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   courseInstances: CourseInstance[];
   courseUsers: CourseUsersRow[];
   uidsLimit: number;

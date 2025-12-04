@@ -115,14 +115,14 @@ export async function updateGradingJobAfterGrading({
   /** null => now() */
   finish_time?: Date | null;
   /** null => no change */
-  submitted_answer?: Submission['submitted_answer'] | null;
+  submitted_answer?: Submission['submitted_answer'];
   format_errors?: Submission['format_errors'];
   gradable: Submission['gradable'];
   broken: Submission['broken'];
   /** null => no change */
-  params?: Submission['params'] | null;
+  params?: Submission['params'];
   /** null => no change */
-  true_answer?: Submission['true_answer'] | null;
+  true_answer?: Submission['true_answer'];
   feedback?: Submission['feedback'];
   partial_scores?: Submission['partial_scores'];
   score?: Submission['score'];

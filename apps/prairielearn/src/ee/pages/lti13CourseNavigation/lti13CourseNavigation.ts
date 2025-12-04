@@ -23,8 +23,12 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
-function prettyCourseName(ltiClaim) {
+function prettyCourseName(ltiClaim: Lti13Claim) {
   const context = ltiClaim.context;
+
+  if (!context) {
+    return '(no context)';
+  }
 
   if (context.label && context.title) {
     return `${context.label}: ${context.title}`;

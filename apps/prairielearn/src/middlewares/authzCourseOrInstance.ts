@@ -35,7 +35,7 @@ import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-interface Override {
+export interface Override {
   name: string;
   value: string;
   cookie: string;

@@ -29,6 +29,7 @@ type RequiredProperty<T> = { [P in keyof T]-?: NonNullable<T[P]> };
  */
 export type WithRequiredKeys<T, RequiredKeys extends keyof T> = Omit<
   T,
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   RequiredKeys | NullableKeys<T>
 > &
   RequiredProperty<Pick<T, RequiredKeys>> &

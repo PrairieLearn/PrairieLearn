@@ -10,11 +10,15 @@ import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpen
 import { PageLayout } from '../../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import {
+  AI_GRADING_MODEL_IDS,
+  type AiGradingModelId,
+  DEFAULT_AI_GRADING_MODEL,
+} from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
-  type AiGradingProvider,
   deleteAiGradingJobs,
   setAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
@@ -57,8 +61,8 @@ router.get(
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const aiGradingProviderSelectionEnabled = await features.enabledFromLocals(
-      'ai-grading-provider-selection',
+    const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
+      'ai-grading-model-selection',
       res.locals,
     );
 
@@ -145,7 +149,7 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
-                aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
+                aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                 initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
@@ -266,9 +270,25 @@ router.post(
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
         }
 
-        const provider = req.body.provider as AiGradingProvider | undefined;
-        if (!provider) {
-          throw new error.HttpStatusError(400, 'No AI grading provider specified');
+        const model_id = req.body.model_id as AiGradingModelId | undefined;
+        if (!model_id) {
+          throw new error.HttpStatusError(400, 'No AI grading model specified');
+        }
+
+        const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
+          'ai-grading-model-selection',
+          res.locals,
+        );
+
+        if (!aiGradingModelSelectionEnabled && model_id !== DEFAULT_AI_GRADING_MODEL) {
+          throw new error.HttpStatusError(
+            403,
+            `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
+          );
+        }
+
+        if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
+          throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
         }
 
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
@@ -283,7 +303,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
-          provider,
+          model_id,
           mode: 'selected',
           instance_question_ids,
         });
@@ -375,9 +395,25 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const provider = req.body.provider as AiGradingProvider | undefined;
-      if (!provider) {
-        throw new error.HttpStatusError(400, 'No AI grading provider specified');
+      const model_id = req.body.model_id as AiGradingModelId | undefined;
+      if (!model_id) {
+        throw new error.HttpStatusError(400, 'No AI grading model specified');
+      }
+
+      const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
+        'ai-grading-model-selection',
+        res.locals,
+      );
+
+      if (!aiGradingModelSelectionEnabled && model_id !== DEFAULT_AI_GRADING_MODEL) {
+        throw new error.HttpStatusError(
+          403,
+          `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
+        );
+      }
+
+      if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
+        throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
       }
 
       const job_sequence_id = await aiGrade({
@@ -389,7 +425,7 @@ router.post(
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
-        provider,
+        model_id,
         mode: run(() => {
           if (req.body.__action === 'ai_grade_assessment_graded') return 'human_graded';
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';

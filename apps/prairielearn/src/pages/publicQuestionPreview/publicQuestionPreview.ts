@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
@@ -18,7 +18,7 @@ import { PublicQuestionPreview } from './publicQuestionPreview.html.js';
 
 const router = Router({ mergeParams: true });
 
-async function setLocals(req, res) {
+async function setLocals(req: Request, res: Response) {
   res.locals.user = UserSchema.parse(res.locals.authn_user);
   res.locals.authz_data = { user: res.locals.user };
   res.locals.course = await selectCourseById(req.params.course_id);

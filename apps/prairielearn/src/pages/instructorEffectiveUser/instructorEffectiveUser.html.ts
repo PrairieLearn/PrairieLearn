@@ -9,6 +9,7 @@ import {
   CoursePermissionSchema,
   UserSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const CourseRolesSchema = z.object({
   available_course_roles: CoursePermissionSchema.shape.course_role.unwrap().array(),
@@ -24,7 +25,7 @@ export function InstructorEffectiveUser({
   ipAddress,
   courseRoles,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   ipAddress: string | undefined;
   courseRoles: CourseRoles;
 }) {

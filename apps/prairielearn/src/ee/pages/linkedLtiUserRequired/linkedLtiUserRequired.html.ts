@@ -3,13 +3,14 @@ import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import type { Lti13Instance } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export function LinkedLtiUserRequired({
   instancesWithMissingIdentities,
   resLocals,
 }: {
   instancesWithMissingIdentities: { lti13_instance: Lti13Instance; lti13_user_id: string | null }[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     pageTitle: 'Missing LTI connection',

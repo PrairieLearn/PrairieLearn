@@ -13,7 +13,7 @@ import { config } from '../lib/config.js';
 import * as opsbot from '../lib/opsbot.js';
 
 // After loading the queue url for the first time, we'll cache it here
-const QUEUE_URLS = {};
+const QUEUE_URLS: Record<string, string | undefined> = {};
 
 export async function run() {
   if (!opsbot.canSendMessages()) return;

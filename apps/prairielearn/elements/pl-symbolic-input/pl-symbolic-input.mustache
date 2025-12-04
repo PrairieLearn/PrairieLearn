@@ -189,7 +189,7 @@ ${{a_sub}}$
     data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
     title="Original Input" 
     {{^raw_submitted_answer_latex}}
-    data-bs-content="Parsed from <samp class=user-output>{{raw_submitted_answer}}</samp>"
+    data-bs-content="Parsed from <samp class=&#34;user-output&#34;>{{raw_submitted_answer}}</samp>"
     {{/raw_submitted_answer_latex}}
     {{#raw_submitted_answer_latex}}
     data-bs-content='Parsed from 
@@ -223,29 +223,29 @@ ${{a_tru}}$
 {{/answer}}
 
 {{#format}}
-<p><strong>General format information:</strong><br>Your answer must be a symbolic expression. All numbers must be rational - so, <code class="user-output">1/2</code> instead of <code class="user-output">0.5</code>.
+<p><strong>General format information:</strong><br>Your answer must be a symbolic expression. All numbers must be rational - so, <code>1/2</code> instead of <code>0.5</code>.
 {{^allow_complex}}Complex numbers are not allowed.{{/allow_complex}}</p>
 <!-- From https://stackoverflow.com/a/14417521/2923069 -->
 {{#variables.0}}
 <p>
     <strong>Allowable variables:</strong><br>
-    {{#variables}} <code class="user-output">{{.}}</code> &nbsp; {{/variables}}
+    {{#variables}} <code>{{.}}</code> &nbsp; {{/variables}}
 </p>
 {{/variables.0}}
 {{#constants.0}}
 <p>
     <strong>Allowable constants:</strong><br>
-    {{#constants}} <code class="user-output">{{.}}</code> &nbsp; {{/constants}}
+    {{#constants}} <code>{{.}}</code> &nbsp; {{/constants}}
 </p>
 {{/constants.0}}
 {{#operators.0}}
 <p>
     <strong>Allowable operators:</strong><br>
-    {{#operators}} <code class="user-output">{{.}}</code> &nbsp; {{/operators}}
+    {{#operators}} <code>{{.}}</code> &nbsp; {{/operators}}
 </p>
 {{/operators.0}}
 
-<p>Note that either <code class="user-output">^</code> or <code class="user-output">**</code> can be used for exponentiation.</p>
+<p>Note that either <code>^</code> or <code>**</code> can be used for exponentiation.</p>
 {{/format}}
 
 {{#format_error}}

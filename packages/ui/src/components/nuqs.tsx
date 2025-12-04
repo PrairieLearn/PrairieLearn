@@ -7,7 +7,7 @@ import {
 import { NuqsAdapter as NuqsReactAdapter } from 'nuqs/adapters/react';
 import React from 'preact/compat';
 
-import type { NumericColumnFilterValue } from '@prairielearn/ui';
+import type { NumericColumnFilterValue } from './NumericInputColumnFilter.js';
 
 const AdapterContext = React.createContext('');
 

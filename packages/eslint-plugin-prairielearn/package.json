@@ -13,15 +13,15 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@typescript-eslint/utils": "^8.46.3"
+    "@typescript-eslint/utils": "^8.48.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.0",
-    "@typescript-eslint/rule-tester": "^8.46.3",
-    "@vitest/coverage-v8": "^4.0.7",
-    "tsx": "^4.20.6",
+    "@types/node": "^22.19.1",
+    "@typescript-eslint/rule-tester": "^8.48.0",
+    "@vitest/coverage-v8": "^4.0.14",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.7"
+    "vitest": "^4.0.14"
   }
 }

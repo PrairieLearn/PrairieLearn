@@ -2,16 +2,68 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { SubmissionSchema } from '../lib/db-types.js';
+import { SubmissionSchema, type Variant } from '../lib/db-types.js';
 
 import * as helperAttachFiles from './helperAttachFiles.js';
+import type { AttachFileLocals, DownloadAttachedFileLocals } from './helperAttachFiles.js';
 import * as helperExam from './helperExam.js';
+import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const locals: Record<string, any> = {};
+const locals = {} as AttachFileLocals &
+  DownloadAttachedFileLocals & {
+    assessmentInstanceUrl: string;
+    shouldHaveButtons: string[];
+    postAction: string;
+    question: TestExamQuestion & {
+      /**
+       * Saved variant data for this question. This is stored per-question rather than
+       * on `locals` directly because partial credit tests iterate over multiple questions,
+       * storing and restoring variants independently. If stored on `locals.savedVariant`,
+       * each subsequent question's store would overwrite the previous one, causing the
+       * wrong variant to be restored later.
+       */
+      savedVariant?: Variant;
+      /** Saved CSRF token for this question. */
+      questionSavedCsrfToken?: string;
+    };
+    expectedResult: {
+      submission_score?: number | null;
+      submission_correct?: boolean | null;
+      instance_question_points?: number;
+      instance_question_score_perc?: number;
+      instance_question_auto_points?: number;
+      instance_question_manual_points?: number;
+      assessment_instance_points?: number;
+      assessment_instance_score_perc?: number;
+      instance_question_stats?: {
+        first_submission_score: number | null;
+        last_submission_score: number | null;
+        submission_score_array: (number | null)[];
+        incremental_submission_score_array: (number | null)[];
+        incremental_submission_points_array: (number | null)[];
+      };
+    };
+    questionBaseUrl: string;
+    variant: Variant;
+    savedVariant: Variant;
+    getSubmittedAnswer: (variant: any) => object;
+    csvData: string;
+    expectedFeedback: {
+      submission_id: string | null;
+      qid: string;
+      feedback: { manual?: string; msg?: string } | null;
+    };
+    questionSavedCsrfToken: string;
+    submission_id_for_feedback: string;
+    submission_id_preserve0: string;
+    submission_id_preserve1: string;
+    submission_id_preserveN: string;
+    totalPoints: number;
+  };
 
 // each outer entry is a whole exam session
 // each inner entry is a list of question submissions
@@ -1794,7 +1846,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
               }
               locals.postAction = questionTest.action;
               locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions[questionTest.qid];
-              locals.question.points += questionTest.sub_points;
+              locals.question.points! += questionTest.sub_points;
               locals.totalPoints += questionTest.sub_points;
               locals.expectedResult = {
                 submission_score: questionTest.action === 'save' ? null : questionTest.score / 100,
@@ -1802,7 +1854,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
                   questionTest.action === 'save' ? null : questionTest.score === 100,
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
-                  (locals.question.points / locals.question.maxPoints) * 100,
+                  (locals.question.points! / locals.question.maxPoints) * 100,
                 instance_question_auto_points: locals.question.points,
                 instance_question_manual_points: 0,
                 assessment_instance_points: locals.totalPoints,
@@ -1829,8 +1881,8 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'save';
-                locals.variant = structuredClone(locals.question.savedVariant);
-                locals.__csrf_token = locals.question.questionSavedCsrfToken;
+                locals.variant = structuredClone(locals.question.savedVariant)!;
+                locals.__csrf_token = locals.question.questionSavedCsrfToken!;
               });
             });
             helperQuestion.postInstanceQuestionAndFail(locals, 400);
@@ -1838,8 +1890,8 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'grade';
-                locals.variant = structuredClone(locals.question.savedVariant);
-                locals.__csrf_token = locals.question.questionSavedCsrfToken;
+                locals.variant = structuredClone(locals.question.savedVariant)!;
+                locals.__csrf_token = locals.question.questionSavedCsrfToken!;
               });
             });
             helperQuestion.postInstanceQuestionAndFail(locals, 400);

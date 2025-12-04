@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { stringify } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
@@ -7,6 +6,8 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { updateAssessmentStatistics } from '../../lib/assessment.js';
 import { AssessmentSchema } from '../../lib/db-types.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {
@@ -20,7 +21,7 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function getFilenames(locals: Record<string, any>): Filenames {
+function getFilenames(locals: UntypedResLocals): Filenames {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
@@ -37,7 +38,7 @@ function getFilenames(locals: Record<string, any>): Filenames {
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     await updateAssessmentStatistics(res.locals.assessment.id);
 
     // re-fetch assessment to get updated statistics
@@ -86,7 +87,7 @@ router.get(
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     const filenames = getFilenames(res.locals);
 
     await updateAssessmentStatistics(res.locals.assessment.id);

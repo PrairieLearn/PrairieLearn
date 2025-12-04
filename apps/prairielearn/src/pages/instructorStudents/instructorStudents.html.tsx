@@ -1,8 +1,11 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
+  type Header,
   type SortingState,
+  type Updater,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
@@ -18,19 +21,17 @@ import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
+  NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
   TanstackTableEmptyState,
+  parseAsColumnPinningState,
+  parseAsColumnVisibilityStateWithColumns,
+  parseAsSortingState,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
-import {
-  NuqsAdapter,
-  parseAsColumnPinningState,
-  parseAsColumnVisibilityStateWithColumns,
-  parseAsSortingState,
-} from '../../lib/client/nuqs.js';
 import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
@@ -153,8 +154,14 @@ interface StudentsCardProps {
   enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
-  urlPrefix: string;
 }
+
+type ColumnId =
+  | 'user_uid'
+  | 'user_name'
+  | 'enrollment_status'
+  | 'user_email'
+  | 'enrollment_first_joined_at';
 
 function StudentsCard({
   authzData,
@@ -164,7 +171,6 @@ function StudentsCard({
   students: initialStudents,
   timezone,
   csrfToken,
-  urlPrefix,
 }: StudentsCardProps) {
   const queryClient = useQueryClient();
 
@@ -186,7 +192,7 @@ function StudentsCard({
   const [lastInvitation, setLastInvitation] = useState<StaffEnrollment | null>(null);
 
   // The individual column filters are the source of truth, and this is derived from them.
-  const columnFilters = useMemo(() => {
+  const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
     return [
       {
         id: 'enrollment_status',
@@ -194,6 +200,28 @@ function StudentsCard({
       },
     ];
   }, [enrollmentStatusFilter]);
+
+  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
+    return {
+      user_uid: undefined,
+      user_name: undefined,
+      enrollment_status: setEnrollmentStatusFilter,
+      user_email: undefined,
+      enrollment_first_joined_at: undefined,
+    };
+  }, [setEnrollmentStatusFilter]);
+
+  // Sync TanStack column filter changes back to URL
+  const handleColumnFiltersChange = useMemo(
+    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
+      const newFilters =
+        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      for (const filter of newFilters) {
+        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
+      }
+    },
+    [columnFilters, columnFilterSetters],
+  );
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
@@ -258,7 +286,7 @@ function StudentsCard({
         header: 'UID',
         cell: (info) => {
           return (
-            <a href={getStudentEnrollmentUrl(urlPrefix, info.row.original.enrollment.id)}>
+            <a href={getStudentEnrollmentUrl(courseInstance.id, info.row.original.enrollment.id)}>
               {info.getValue()}
             </a>
           );
@@ -324,7 +352,7 @@ function StudentsCard({
         },
       }),
     ],
-    [timezone, urlPrefix],
+    [timezone, courseInstance.id],
   );
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
@@ -352,6 +380,7 @@ function StudentsCard({
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
+    onColumnFiltersChange: handleColumnFiltersChange,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
@@ -398,6 +427,7 @@ function StudentsCard({
                 : null,
             };
           },
+          hasSelection: false,
         }}
         headerButtons={
           <>
@@ -417,22 +447,21 @@ function StudentsCard({
           </>
         }
         globalFilter={{
-          value: globalFilter,
-          setValue: setGlobalFilter,
           placeholder: 'Search by UID, name, email...',
         }}
         tableOptions={{
           filters: {
-            enrollment_status: ({ header }) => (
+            enrollment_status: ({
+              header,
+            }: {
+              header: Header<StudentRow, StudentRow['enrollment']['status']>;
+            }) => (
               <CategoricalColumnFilter
-                columnId={header.column.id}
-                columnLabel="Status"
+                column={header.column}
                 allColumnValues={STATUS_VALUES}
                 renderValueLabel={({ value }) => (
                   <EnrollmentStatusIcon type="text" status={value} />
                 )}
-                columnValuesFilter={enrollmentStatusFilter}
-                setColumnValuesFilter={setEnrollmentStatusFilter}
               />
             ),
           },
@@ -478,13 +507,12 @@ export const InstructorStudents = ({
   enrollmentManagementEnabled,
   csrfToken,
   isDevMode,
-  urlPrefix,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
   search: string;
   isDevMode: boolean;
 } & StudentsCardProps) => {
-  const queryClient = new QueryClient();
+  const [queryClient] = useState(() => new QueryClient());
 
   return (
     <NuqsAdapter search={search}>
@@ -497,7 +525,6 @@ export const InstructorStudents = ({
           students={students}
           timezone={timezone}
           csrfToken={csrfToken}
-          urlPrefix={urlPrefix}
         />
       </QueryClientProviderDebug>
     </NuqsAdapter>

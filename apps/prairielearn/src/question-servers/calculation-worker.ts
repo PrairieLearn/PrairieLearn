@@ -42,7 +42,7 @@ async function loadServer(questionServerPath: string, coursePath: string): Promi
   return new Promise((resolve, reject) => {
     configRequire(
       [questionServerPath],
-      function (server) {
+      function (server: any) {
         if (server === undefined) {
           reject(new Error(`Could not load ${path.basename(questionServerPath)}`));
         }

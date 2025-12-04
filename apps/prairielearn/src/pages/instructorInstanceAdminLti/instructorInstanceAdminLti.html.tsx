@@ -9,6 +9,7 @@ import { config } from '../../lib/config.js';
 import { AssessmentSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const LtiDataSchema = z.object({
   assessments: z
@@ -62,7 +63,7 @@ export function InstructorInstanceAdminLti({
   assessments: LtiData['assessments'];
   lti_credentials: LtiData['lti_credentials'];
   lti_links: LtiData['lti_links'];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,

@@ -11,6 +11,7 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 import { AccessControl } from './components/AccessControl.js';
 
@@ -37,7 +38,7 @@ export function InstructorAssessmentAccess({
   accessRules,
   enhancedAccessControl,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   accessRules: AssessmentAccessRules[];
   enhancedAccessControl: boolean;
 }) {

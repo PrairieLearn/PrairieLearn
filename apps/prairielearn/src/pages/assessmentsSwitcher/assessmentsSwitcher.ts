@@ -13,7 +13,7 @@ const router = Router({ mergeParams: true });
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const subPage = req.query.subPage as NavSubPage | undefined;
+    const subPage = req.query.subPage as NavSubPage;
 
     // Target subpage for the assessment dropdown links
     const targetSubPage = run(() => {

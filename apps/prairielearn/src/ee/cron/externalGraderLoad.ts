@@ -48,6 +48,8 @@ const ExternalGraderLoadStatsSchema = z.object({
   timestamp_formatted: z.string(),
 });
 
+type ExternalGraderLoadStats = z.infer<typeof ExternalGraderLoadStatsSchema>;
+
 export async function run() {
   if (!config.runningInEc2) return;
 
@@ -70,7 +72,7 @@ async function getLoadStats() {
   );
 }
 
-async function sendStatsToCloudWatch(stats) {
+async function sendStatsToCloudWatch(stats: ExternalGraderLoadStats) {
   const dimensions = [{ Name: 'By Queue', Value: config.externalGradingJobsQueueName }];
   const timestamp = new Date(stats.timestamp_formatted);
 
@@ -379,7 +381,7 @@ async function sendStatsToCloudWatch(stats) {
   });
 }
 
-async function setAutoScalingGroupCapacity(stats) {
+async function setAutoScalingGroupCapacity(stats: ExternalGraderLoadStats) {
   if (!config.externalGradingAutoScalingGroupName) return;
   if (!Number.isInteger(stats.desired_instances)) return;
   if (stats.desired_instances < 1 || stats.desired_instances > 1e6) return;

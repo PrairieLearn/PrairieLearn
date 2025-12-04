@@ -2,6 +2,8 @@ import z from 'zod';
 
 import type { HtmlValue } from '@prairielearn/html';
 
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
+
 export const NavbarTypeSchema = z
   .enum([
     'plain',
@@ -61,9 +63,9 @@ export interface NavContext {
 
 export interface TabInfo {
   activeSubPage: NavSubPage | NavSubPage[];
-  urlSuffix: string | ((resLocals: Record<string, any>) => string);
+  urlSuffix: string | ((resLocals: UntypedResLocals) => string);
   iconClasses: string;
   tabLabel: string;
-  htmlSuffix?: (resLocals: Record<string, any>) => HtmlValue;
-  renderCondition?: (resLocals: Record<string, any>) => boolean;
+  htmlSuffix?: (resLocals: UntypedResLocals) => HtmlValue;
+  renderCondition?: (resLocals: UntypedResLocals) => boolean;
 }

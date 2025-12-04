@@ -58,7 +58,7 @@ export default asyncHandler(async (req, res, next) => {
   // Check if user is already enrolled or blocked
   const existingEnrollment = await selectOptionalEnrollmentByUserId({
     userId: res.locals.authn_user.user_id,
-    requestedRole: 'Student',
+    requiredRole: ['Student'],
     authzData: res.locals.authz_data,
     courseInstance,
   });

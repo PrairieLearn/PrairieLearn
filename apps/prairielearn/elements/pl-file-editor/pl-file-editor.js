@@ -28,6 +28,10 @@ window.PLFileEditor = function (uuid, options) {
   this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
 
   if (options.aceMode) {
+    if (options.aceModePath) {
+      // Retrieve the mode from a custom path (course or question-specific).
+      ace.config.setModuleUrl(options.aceMode, options.aceModePath);
+    }
     this.editor.getSession().setMode(options.aceMode);
   }
 

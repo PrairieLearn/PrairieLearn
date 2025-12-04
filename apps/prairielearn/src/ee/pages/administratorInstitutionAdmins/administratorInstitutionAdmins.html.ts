@@ -2,13 +2,14 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Institution } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export function AdministratorInstitutionAdmins({
   institution,
   resLocals,
 }: {
   institution: Institution;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals: {

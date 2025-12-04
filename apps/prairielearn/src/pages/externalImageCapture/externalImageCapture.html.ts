@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function ExternalImageCapture({
   variantId,
@@ -10,7 +11,7 @@ export function ExternalImageCapture({
 }: {
   variantId: string;
   fileName: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,

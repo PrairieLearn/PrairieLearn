@@ -7,6 +7,8 @@ import { config } from '../../lib/config.js';
 import {
   CourseInstancePermissionSchema,
   CoursePermissionSchema,
+  type EnumCourseInstanceRole,
+  type EnumCourseRole,
   SprocUsersSelectOrInsertSchema,
   UserSchema,
 } from '../../lib/db-types.js';
@@ -16,7 +18,16 @@ import * as helperServer from '../helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function checkPermissions(users) {
+interface TestUser {
+  uid: string;
+  name?: string;
+  uin?: string | null;
+  email?: string;
+  cr?: EnumCourseRole | null;
+  cir?: EnumCourseInstanceRole | null;
+}
+
+async function checkPermissions(users: TestUser[]) {
   const result = await sqldb.queryRows(
     sql.select_permissions,
     {
@@ -45,7 +56,12 @@ async function checkPermissions(users) {
   });
 }
 
-function updatePermissions(users, uid, cr, cir) {
+function updatePermissions(
+  users: TestUser[],
+  uid: string,
+  cr: EnumCourseRole | null,
+  cir: EnumCourseInstanceRole | null,
+) {
   let user = users.find((user) => user.uid === uid);
   if (!user) {
     user = { uid };
@@ -55,15 +71,23 @@ function updatePermissions(users, uid, cr, cir) {
   user.cir = cir;
 }
 
-function runTest(context) {
+interface TestContext {
+  siteUrl: string;
+  baseUrl: string;
+  pageUrl: string;
+  userId: string;
+  __csrf_token: string;
+}
+
+function runTest(context: TestContext) {
   context.pageUrl = `${context.baseUrl}/course_admin/staff`;
-  context.userId = 2;
+  context.userId = '2';
 
   const headers = {
     cookie: 'pl_test_user=test_instructor',
   };
 
-  const users = [
+  const users: TestUser[] = [
     {
       uid: 'instructor@example.com',
       name: 'Instructor User',
@@ -595,19 +619,23 @@ function runTest(context) {
 }
 
 describe('course admin access page through course route', { timeout: 60_000 }, function () {
-  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
-  context.baseUrl = `${context.siteUrl}/pl/course/1`;
+  const siteUrl = `http://localhost:${config.serverPort}`;
 
-  runTest(context);
+  runTest({
+    siteUrl,
+    baseUrl: `${siteUrl}/pl/course/1`,
+  } as TestContext);
 });
 
 describe(
   'course admin access page through course instance route',
   { timeout: 60_000 },
   function () {
-    const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
-    context.baseUrl = `${context.siteUrl}/pl/course_instance/1/instructor`;
+    const siteUrl = `http://localhost:${config.serverPort}`;
 
-    runTest(context);
+    runTest({
+      siteUrl,
+      baseUrl: `${siteUrl}/pl/course_instance/1/instructor`,
+    } as TestContext);
   },
 );

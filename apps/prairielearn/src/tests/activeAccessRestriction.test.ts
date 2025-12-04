@@ -78,7 +78,7 @@ describe(
       await ensureUncheckedEnrollment({
         userId: user.user_id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });

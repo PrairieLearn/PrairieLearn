@@ -160,7 +160,7 @@ router.post(
         courseInstance,
         actionDetail: 'implicit_joined',
         authzData,
-        requestedRole: 'Student',
+        requiredRole: ['Student'],
       });
     }
 

@@ -92,7 +92,7 @@ router.post('/', [
         return await selectOptionalEnrollmentByUid({
           uid: res.locals.authn_user.uid,
           courseInstance: course_instance,
-          requestedRole: 'System',
+          requiredRole: ['System'],
           authzData: dangerousFullSystemAuthz(),
         });
       });
@@ -115,7 +115,7 @@ router.post('/', [
         institution,
         course,
         courseInstance: course_instance,
-        requestedRole: 'Student',
+        requiredRole: ['Student'],
         authzData: res.locals.authz_data,
         actionDetail: 'explicit_joined',
       });

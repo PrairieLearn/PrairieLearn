@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
@@ -18,7 +19,7 @@ export function AdministratorInstitutionLti13({
   institution: Institution;
   lti13Instances: Lti13Instance[];
   instance: Lti13Instance | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   platform_defaults: LTI13InstancePlatforms;
   canonicalHost: string;
 }): string {
@@ -76,7 +77,7 @@ export function AdministratorInstitutionLti13({
 
 function LTI13Instance(
   instance: Lti13Instance | null,
-  resLocals: Record<string, any>,
+  resLocals: UntypedResLocals,
   platform_defaults: LTI13InstancePlatforms,
   canonicalHost: string,
 ) {

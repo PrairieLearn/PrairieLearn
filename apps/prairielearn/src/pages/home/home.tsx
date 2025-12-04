@@ -204,7 +204,7 @@ router.post(
         const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
           uid,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           authzData,
         });
         if (
@@ -220,7 +220,7 @@ router.post(
           course,
           courseInstance,
           authzData,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           actionDetail: 'invitation_accepted',
         });
         break;
@@ -229,7 +229,7 @@ router.post(
         const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
           uid,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           authzData,
         });
 
@@ -242,7 +242,7 @@ router.post(
           enrollment,
           status: 'rejected',
           authzData,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
         });
         break;
       }
@@ -250,7 +250,7 @@ router.post(
         const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
           uid,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           authzData,
         });
 
@@ -263,7 +263,7 @@ router.post(
           enrollment,
           status: 'removed',
           authzData,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
         });
         break;
       }

@@ -58,41 +58,19 @@ describe('authzData', () => {
     describe('dangerous full system authz', () => {
       it('returns true for system/any role when using dangerous full authz', () => {
         const dangerousAuthz = dangerousFullSystemAuthz();
-        const goodRoles: CourseInstanceRole[] = ['System', 'Any'];
+        const goodRoles: CourseInstanceRole[] = ['System'];
         const badRoles: CourseInstanceRole[] = [
-          'None',
           'Student',
           'Student Data Viewer',
           'Student Data Editor',
         ];
 
         for (const role of goodRoles) {
-          assert.isTrue(hasRole(dangerousAuthz, role), `Should return true for role: ${role}`);
+          assert.isTrue(hasRole(dangerousAuthz, [role]), `Should return true for role: ${role}`);
         }
         for (const role of badRoles) {
-          assert.isFalse(hasRole(dangerousAuthz, role), `Should return false for role: ${role}`);
+          assert.isFalse(hasRole(dangerousAuthz, [role]), `Should return false for role: ${role}`);
         }
-      });
-    });
-    describe('None role', () => {
-      it('returns true for None role regardless of permissions', () => {
-        const authzData = createMockAuthzData({
-          has_student_access: false,
-          has_course_instance_permission_view: false,
-          has_course_instance_permission_edit: false,
-        });
-
-        assert.isTrue(hasRole(authzData, 'None'));
-      });
-
-      it('returns true for None role even with all permissions', () => {
-        const authzData = createMockAuthzData({
-          has_student_access: true,
-          has_course_instance_permission_view: true,
-          has_course_instance_permission_edit: true,
-        });
-
-        assert.isTrue(hasRole(authzData, 'None'));
       });
     });
 
@@ -103,7 +81,7 @@ describe('authzData', () => {
           course_instance_role: 'None',
         });
 
-        assert.isTrue(hasRole(authzData, 'Student'));
+        assert.isTrue(hasRole(authzData, ['Student']));
       });
 
       it('returns false when user has student access but course_instance_role is not None', () => {
@@ -112,7 +90,7 @@ describe('authzData', () => {
           course_instance_role: 'Student Data Viewer',
         });
 
-        assert.isFalse(hasRole(authzData, 'Student'));
+        assert.isFalse(hasRole(authzData, ['Student']));
       });
 
       it('returns false when user does not have student access', () => {
@@ -121,7 +99,7 @@ describe('authzData', () => {
           course_instance_role: 'None',
         });
 
-        assert.isFalse(hasRole(authzData, 'Student'));
+        assert.isFalse(hasRole(authzData, ['Student']));
       });
     });
 
@@ -131,7 +109,7 @@ describe('authzData', () => {
           has_course_instance_permission_view: true,
         });
 
-        assert.isTrue(hasRole(authzData, 'Student Data Viewer'));
+        assert.isTrue(hasRole(authzData, ['Student Data Viewer']));
       });
 
       it('returns false when user does not have course instance permission view', () => {
@@ -139,7 +117,7 @@ describe('authzData', () => {
           has_course_instance_permission_view: false,
         });
 
-        assert.isFalse(hasRole(authzData, 'Student Data Viewer'));
+        assert.isFalse(hasRole(authzData, ['Student Data Viewer']));
       });
     });
 
@@ -149,7 +127,7 @@ describe('authzData', () => {
           has_course_instance_permission_edit: true,
         });
 
-        assert.isTrue(hasRole(authzData, 'Student Data Editor'));
+        assert.isTrue(hasRole(authzData, ['Student Data Editor']));
       });
 
       it('returns false when user does not have course instance permission edit', () => {
@@ -157,55 +135,7 @@ describe('authzData', () => {
           has_course_instance_permission_edit: false,
         });
 
-        assert.isFalse(hasRole(authzData, 'Student Data Editor'));
-      });
-    });
-
-    describe('Any role', () => {
-      it('returns true when user has student access and course_instance_role is None', () => {
-        const authzData = createMockAuthzData({
-          has_student_access: true,
-          course_instance_role: 'None',
-        });
-
-        assert.isTrue(hasRole(authzData, 'Any'));
-      });
-
-      it('returns true when user has course instance permission view', () => {
-        const authzData = createMockAuthzData({
-          has_course_instance_permission_view: true,
-        });
-
-        assert.isTrue(hasRole(authzData, 'Any'));
-      });
-
-      it('returns true when user has course instance permission edit', () => {
-        const authzData = createMockAuthzData({
-          has_course_instance_permission_edit: true,
-        });
-
-        assert.isTrue(hasRole(authzData, 'Any'));
-      });
-
-      it('returns false when user has no permissions', () => {
-        const authzData = createMockAuthzData({
-          has_student_access: false,
-          has_course_instance_permission_view: false,
-          has_course_instance_permission_edit: false,
-        });
-
-        assert.isFalse(hasRole(authzData, 'Any'));
-      });
-
-      it('returns false when user has student access but course_instance_role is not None', () => {
-        const authzData = createMockAuthzData({
-          has_student_access: true,
-          course_instance_role: 'Student Data Viewer',
-          has_course_instance_permission_view: false,
-          has_course_instance_permission_edit: false,
-        });
-
-        assert.isFalse(hasRole(authzData, 'Any'));
+        assert.isFalse(hasRole(authzData, ['Student Data Editor']));
       });
     });
 
@@ -217,7 +147,7 @@ describe('authzData', () => {
         });
 
         // When course_instance_role is undefined, it's not equal to 'None', so Student role should fail
-        assert.isFalse(hasRole(authzData, 'Student'));
+        assert.isFalse(hasRole(authzData, ['Student']));
       });
 
       it('handles undefined permissions', () => {
@@ -227,11 +157,9 @@ describe('authzData', () => {
           has_course_instance_permission_edit: undefined,
         });
 
-        assert.isTrue(hasRole(authzData, 'None'));
-        assert.isFalse(hasRole(authzData, 'Student'));
-        assert.isFalse(hasRole(authzData, 'Student Data Viewer'));
-        assert.isFalse(hasRole(authzData, 'Student Data Editor'));
-        assert.isFalse(hasRole(authzData, 'Any'));
+        assert.isFalse(hasRole(authzData, ['Student']));
+        assert.isFalse(hasRole(authzData, ['Student Data Viewer']));
+        assert.isFalse(hasRole(authzData, ['Student Data Editor']));
       });
     });
 
@@ -242,8 +170,8 @@ describe('authzData', () => {
           has_course_instance_permission_edit: false,
         });
 
-        assert.isTrue(hasRole(authzData, 'Student Data Viewer'));
-        assert.isFalse(hasRole(authzData, 'Student Data Editor'));
+        assert.isTrue(hasRole(authzData, ['Student Data Viewer']));
+        assert.isFalse(hasRole(authzData, ['Student Data Editor']));
       });
     });
   });

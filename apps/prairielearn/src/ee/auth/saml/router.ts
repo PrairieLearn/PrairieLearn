@@ -1,6 +1,6 @@
 import util from 'node:util';
 
-import { Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import passport from 'passport';
 
@@ -32,7 +32,7 @@ router.get('/login', (req, res, next) => {
   })(req, res, next);
 });
 
-function authenticate(req, res): Promise<any> {
+function authenticate(req: Request, res: Response): Promise<any> {
   return new Promise((resolve, reject) => {
     passport.authenticate(
       'saml',
@@ -40,7 +40,8 @@ function authenticate(req, res): Promise<any> {
         failureRedirect: '/pl',
         session: false,
       },
-      (err, user) => {
+      // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+      (err: any, user: Express.User | false | null) => {
         if (err) {
           reject(err);
         } else {

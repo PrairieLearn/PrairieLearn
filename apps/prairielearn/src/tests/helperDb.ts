@@ -47,7 +47,7 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
     errorOnUnusedParameters: true,
   };
 
-  function idleErrorHandler(err) {
+  function idleErrorHandler(err: Error) {
     throw err;
   }
   await sqldb.initAsync(pgConfig, idleErrorHandler);

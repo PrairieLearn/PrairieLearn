@@ -8,6 +8,7 @@ import {
   type Institution,
   type PlanGrant,
 } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
 
 export function AdministratorInstitutionCourseInstance({
@@ -21,7 +22,7 @@ export function AdministratorInstitutionCourseInstance({
   course: Course;
   course_instance: CourseInstance;
   planGrants: PlanGrant[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals: { ...resLocals, institution },

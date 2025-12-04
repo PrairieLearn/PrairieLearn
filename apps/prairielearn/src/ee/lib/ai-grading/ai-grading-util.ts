@@ -19,13 +19,7 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import {
-  type AnthropicAIModelId,
-  type GoogleAIModelId,
-  type OpenAIModelId,
-  calculateResponseCost,
-  formatPrompt,
-} from '../../../lib/ai.js';
+import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
   type Course,
@@ -50,11 +44,9 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
-const sql = loadSqlEquiv(import.meta.url);
+import type { AiGradingModelId } from './ai-grading-models.shared.js';
 
-export const AI_GRADING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAIModelId;
-export const AI_GRADING_GOOGLE_MODEL = 'gemini-2.5-flash' satisfies GoogleAIModelId;
-export const AI_GRADING_ANTHROPIC_MODEL = 'claude-haiku-4-5' satisfies AnthropicAIModelId;
+const sql = loadSqlEquiv(import.meta.url);
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -69,16 +61,17 @@ export const GradedExampleSchema = z.object({
 });
 export type GradedExample = z.infer<typeof GradedExampleSchema>;
 
-export type AiGradingProvider = 'openai' | 'google' | 'anthropic';
-
 /**
- * Providers whose models we use for AI grading support system messages after the first user message.
+ * Models supporting system messages after the first user message.
  * As of November 2025,
- * - OpenAI GPT 5-mini supports this.
- * - Google Gemini 2.5-flash does not support this.
- * - Anthropic Claude Haiku 4.5 does not support this.
+ * - OpenAI GPT 5-mini and GPT 5.1 support this.
+ * - Google Gemini 2.5-flash and Gemini 3 Pro Preview do not support this.
+ * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.5, and Claude Opus 4.5 do not support this.
  */
-const PROVIDERS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingProvider>(['openai']);
+const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
+  'gpt-5-mini-2025-08-07',
+  'gpt-5.1-2025-11-13',
+]);
 
 export async function generatePrompt({
   questionPrompt,
@@ -87,7 +80,7 @@ export async function generatePrompt({
   submitted_answer,
   example_submissions,
   rubric_items,
-  provider,
+  model_id,
 }: {
   questionPrompt: string;
   questionAnswer: string;
@@ -95,11 +88,11 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
-  provider: AiGradingProvider;
+  model_id: AiGradingModelId;
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
 
-  const systemRoleAfterUserMessage = PROVIDERS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(provider)
+  const systemRoleAfterUserMessage = MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(model_id)
     ? 'system'
     : 'user';
 
@@ -321,7 +314,9 @@ export function generateSubmissionMessage({
           throw new Error('No file name found.');
         }
 
-        const fileData = submitted_answer._files?.find((file) => file.name === fileName);
+        const fileData = submitted_answer._files?.find(
+          (file: { name: string; contents: string }) => file.name === fileName,
+        );
 
         if (fileData) {
           // fileData.contents does not contain the MIME type header, so we add it.
@@ -471,6 +466,7 @@ export async function selectRubricGradingItems(
 export async function insertAiGradingJob({
   grading_job_id,
   job_sequence_id,
+  model_id,
   prompt,
   response,
   course_id,
@@ -478,6 +474,7 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
+  model_id: AiGradingModelId;
   prompt: ModelMessage[];
   response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
@@ -488,10 +485,10 @@ export async function insertAiGradingJob({
     job_sequence_id,
     prompt: JSON.stringify(prompt),
     completion: response,
-    model: AI_GRADING_OPENAI_MODEL,
+    model: model_id,
     prompt_tokens: response.usage.inputTokens ?? 0,
     completion_tokens: response.usage.outputTokens ?? 0,
-    cost: calculateResponseCost({ model: AI_GRADING_OPENAI_MODEL, usage: response.usage }),
+    cost: calculateResponseCost({ model: model_id, usage: response.usage }),
     course_id,
     course_instance_id,
   });

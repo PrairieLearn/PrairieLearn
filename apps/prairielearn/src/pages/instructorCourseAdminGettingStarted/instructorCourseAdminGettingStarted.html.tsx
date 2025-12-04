@@ -4,13 +4,14 @@ import { renderHtml } from '@prairielearn/preact';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import type { GettingStartedTaskInfo } from '../../lib/getting-started.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function InstructorCourseAdminGettingStarted({
   tasks,
   resLocals,
 }: {
   tasks: GettingStartedTaskInfo[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,

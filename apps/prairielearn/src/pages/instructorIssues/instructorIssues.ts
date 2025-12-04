@@ -241,7 +241,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_matching') {
-      const issueIds = req.body.unsafe_issue_ids.split(',').filter((id) => id !== '');
+      const issueIds = req.body.unsafe_issue_ids.split(',').filter((id: string) => id !== '');
       const closedCount = await queryRow(
         sql.close_issues,
         {

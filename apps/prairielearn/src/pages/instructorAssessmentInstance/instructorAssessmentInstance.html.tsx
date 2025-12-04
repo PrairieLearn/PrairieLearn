@@ -21,6 +21,7 @@ import {
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -72,7 +73,7 @@ export function InstructorAssessmentInstance({
   instance_questions,
   assessmentInstanceLog,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   logCsvFilename: string;
   assessment_instance_stats: AssessmentInstanceStats[];
   assessment_instance_date_formatted: string;
@@ -705,7 +706,7 @@ export function InstructorAssessmentInstance({
 }
 
 function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint }) {
-  const { browser, device, os } = UAParser(fingerprint.user_agent);
+  const { browser, device, os } = UAParser(fingerprint.user_agent ?? undefined);
   return html`
     <div>
       IP Address:
@@ -720,16 +721,16 @@ function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint })
     <div>Session ID: ${fingerprint.user_session_id}</div>
     <div>User Agent:</div>
     <ul>
-      ${browser?.name ? html`<li>Browser: ${browser.name} ${browser.version ?? ''}</li>` : ''}
-      ${device?.type ? html`<li>Device Type: ${device.type}</li>` : ''}
-      ${device?.vendor ? html`<li>Device: ${device.vendor} ${device.model ?? ''}</li>` : ''}
-      ${os?.name ? html`<li>OS: ${os.name} ${os.version ?? ''}</li>` : ''}
+      ${browser.name ? html`<li>Browser: ${browser.name} ${browser.version ?? ''}</li>` : ''}
+      ${device.type ? html`<li>Device Type: ${device.type}</li>` : ''}
+      ${device.vendor ? html`<li>Device: ${device.vendor} ${device.model ?? ''}</li>` : ''}
+      ${os.name ? html`<li>OS: ${os.name} ${os.version ?? ''}</li>` : ''}
       <li>Raw: <code>${fingerprint.user_agent}</code></li>
     </ul>
   `;
 }
 
-function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) {
+function EditTotalPointsForm({ resLocals }: { resLocals: UntypedResLocals }) {
   return html`
     <form name="edit-total-points-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_points" />
@@ -764,7 +765,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
   `;
 }
 
-function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> }) {
+function EditTotalScorePercForm({ resLocals }: { resLocals: UntypedResLocals }) {
   return html`
     <form name="edit-total-score-perc-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_score_perc" />

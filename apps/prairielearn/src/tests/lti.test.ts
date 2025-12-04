@@ -78,7 +78,7 @@ describe('LTI', { timeout: 20_000 }, function () {
       const enrollment = await selectOptionalEnrollmentByUserId({
         courseInstance: await selectCourseInstanceById('1'),
         userId: user.user_id,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isOk(enrollment);

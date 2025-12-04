@@ -3,6 +3,7 @@ import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export interface Filenames {
   scoresCsvFilename: string;
@@ -35,7 +36,7 @@ export function InstructorAssessmentDownloads({
   resLocals,
   filenames,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   filenames: Filenames;
 }) {
   const identity = resLocals.assessment.group_work ? 'group' : 'student';

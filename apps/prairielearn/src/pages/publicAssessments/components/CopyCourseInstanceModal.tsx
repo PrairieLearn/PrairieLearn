@@ -133,9 +133,13 @@ export function CopyCourseInstanceModal({
               </ul>
               <hr />
               <FormProvider {...methods}>
-                <p>Choose the initial status of your new course instance.</p>
+                <h3 class="h5">Publishing settings</h3>
+                <p class="text-muted small">
+                  Choose the initial publishing status for your new course instance. This can be
+                  changed later.
+                </p>
                 <CourseInstancePublishingForm
-                  courseInstance={courseInstance}
+                  displayTimezone={courseInstance.display_timezone}
                   canEdit={true}
                   originalStartDate={null}
                   originalEndDate={null}

@@ -98,7 +98,7 @@ describe('Homepage enrollment actions', () => {
       const enrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(enrollment);
@@ -121,7 +121,7 @@ describe('Homepage enrollment actions', () => {
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);
@@ -171,7 +171,7 @@ describe('Homepage enrollment actions', () => {
       const enrollment = await selectOptionalEnrollmentByPendingUid({
         pendingUid: user.uid,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(enrollment);
@@ -194,7 +194,7 @@ describe('Homepage enrollment actions', () => {
       const finalEnrollment = await selectOptionalEnrollmentByPendingUid({
         pendingUid: user.uid,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);
@@ -267,7 +267,7 @@ describe('Homepage enrollment actions', () => {
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);
@@ -317,7 +317,7 @@ describe('Homepage enrollment actions', () => {
       const rejectedEnrollment = await selectOptionalEnrollmentByPendingUid({
         pendingUid: user.uid,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(rejectedEnrollment);
@@ -340,7 +340,7 @@ describe('Homepage enrollment actions', () => {
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);
@@ -389,7 +389,7 @@ describe('Homepage enrollment actions', () => {
       const enrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(enrollment);
@@ -412,7 +412,7 @@ describe('Homepage enrollment actions', () => {
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: user.user_id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);

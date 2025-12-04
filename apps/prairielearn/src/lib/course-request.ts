@@ -1,3 +1,4 @@
+import type { Request, Response } from 'express';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -51,7 +52,7 @@ export async function selectPendingCourseRequests() {
   return await selectCourseRequests(false);
 }
 
-export async function updateCourseRequest(req, res) {
+export async function updateCourseRequest(req: Request, res: Response) {
   let action = req.body.approve_deny_action;
   if (action === 'deny') {
     action = 'denied';
@@ -67,7 +68,7 @@ export async function updateCourseRequest(req, res) {
   res.redirect(req.originalUrl);
 }
 
-export async function createCourseFromRequest(req, res) {
+export async function createCourseFromRequest(req: Request, res: Response) {
   await execute(sql.update_course_request, {
     id: req.body.request_id,
     user_id: res.locals.authn_user.user_id,

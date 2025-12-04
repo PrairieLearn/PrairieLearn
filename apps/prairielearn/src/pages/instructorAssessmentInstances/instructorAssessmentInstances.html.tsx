@@ -5,8 +5,9 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
-export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record<string, any> }) {
+export function InstructorAssessmentInstances({ resLocals }: { resLocals: UntypedResLocals }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Instances',

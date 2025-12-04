@@ -14,7 +14,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.14.0",
+    "@grpc/grpc-js": "^1.14.1",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/core": "^2.2.0",
     "@opentelemetry/exporter-metrics-otlp-grpc": "^0.208.0",
@@ -27,8 +27,8 @@
     "@opentelemetry/instrumentation-express": "^0.57.0",
     "@opentelemetry/instrumentation-http": "^0.208.0",
     "@opentelemetry/instrumentation-ioredis": "^0.56.0",
-    "@opentelemetry/instrumentation-pg": "^0.61.0",
-    "@opentelemetry/instrumentation-redis": "^0.57.0",
+    "@opentelemetry/instrumentation-pg": "^0.61.1",
+    "@opentelemetry/instrumentation-redis": "^0.57.1",
     "@opentelemetry/resource-detector-aws": "^2.8.0",
     "@opentelemetry/resources": "^2.2.0",
     "@opentelemetry/sdk-metrics": "^2.2.0",
@@ -40,10 +40,10 @@
   "devDependencies": {
     "@opentelemetry/context-async-hooks": "^2.2.0",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.0",
-    "@vitest/coverage-v8": "^4.0.7",
-    "tsx": "^4.20.6",
+    "@types/node": "^22.19.1",
+    "@vitest/coverage-v8": "^4.0.14",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.7"
+    "vitest": "^4.0.14"
   }
 }

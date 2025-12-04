@@ -12,7 +12,7 @@ If you want to make a larger change, such as implementing a new feature, changin
 
 Before you start contributing, you'll need to [fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) the repo.
 
-Once you've forked, you'll need to clone your fork and set up your development environment. Depending on your preferred workflow, you can [develop "natively" directly on your computer](https://prairielearn.readthedocs.io/en/latest/installingNative/) (preferred) or [develop inside of a Docker container](https://prairielearn.readthedocs.io/en/latest/installingLocal/) that has all the dependencies pre-installed.
+Once you've forked, you'll need to clone your fork and set up your development environment. Depending on your preferred workflow, you can [develop "natively" directly on your computer](https://prairielearn.readthedocs.io/en/latest/dev-guide/installingNative/) (preferred) or [develop inside of a Docker container](https://prairielearn.readthedocs.io/en/latest/dev-guide/installingLocal/) that has all the dependencies pre-installed.
 
 ## Development
 

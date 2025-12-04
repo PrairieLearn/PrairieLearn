@@ -10,6 +10,7 @@ import {
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const AdministratorQueryRunParamsSchema = z.object({
   name: z.string(),
@@ -35,7 +36,7 @@ export function AdministratorQuery({
   info,
   recent_query_runs,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   query_run_id: string | null;
   query_run: QueryRun | null;
   queryFilename: string;

@@ -109,7 +109,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await ensureUncheckedEnrollment({
       userId: studentId,
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -589,7 +589,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       await ensureUncheckedEnrollment({
         courseInstance,
         userId: user.user_id,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });

@@ -22,6 +22,7 @@ import {
   type Topic,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
@@ -46,7 +47,7 @@ export const SharingSetRowSchema = z.object({
   name: z.string(),
   in_set: z.boolean(),
 });
-type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
+export type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
 
 export function InstructorQuestionSettings({
   resLocals,
@@ -65,7 +66,7 @@ export function InstructorQuestionSettings({
   courseTopics,
   courseTags,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionTestPath: string;
   questionTestCsrfToken: string;
   questionGHLink: string | null;
@@ -73,7 +74,7 @@ export function InstructorQuestionSettings({
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
-  sharingSetsIn: SharingSetRow[];
+  sharingSetsIn: SharingSetRow[] | undefined;
   editableCourses: CourseWithPermissions[];
   infoPath: string;
   origHash: string;
@@ -608,7 +609,7 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                   <div data-testid="shared-with">
                     ${QuestionSharing({
                       question: resLocals.question,
-                      sharingSetsIn,
+                      sharingSetsIn: sharingSetsIn ?? [],
                     })}
                   </div>
                 </div>
