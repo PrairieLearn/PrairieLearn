@@ -183,7 +183,8 @@ function NavbarByType({
       // TODO: Remove this once `instructorAiGenerateDraftEditor.html.tsx` uses PageLayout.
       return NavbarInstructor({ resLocals, navPage, navSubPage });
     } else {
-      // This should be impossible.
+      // The only page that isn't in a PageLayout and hit by other checks
+      // is `instructorAiGenerateDraftEditor.html.tsx`, which has navbarType `instructor`.
       throw new Error(`Invalid navbar type: ${navbarType}`);
     }
   }
