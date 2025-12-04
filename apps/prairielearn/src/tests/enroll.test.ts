@@ -386,7 +386,7 @@ describe('Self-enrollment settings transitions', () => {
         const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
           pendingUid: rejectedUser.uid,
           courseInstance,
-          requestedRole: 'System',
+          requiredRole: ['System'],
           authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(initialEnrollment);
@@ -398,7 +398,7 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByPendingUid({
           pendingUid: rejectedUser.uid,
           courseInstance,
-          requestedRole: 'System',
+          requiredRole: ['System'],
           authzData: dangerousFullSystemAuthz(),
         });
         assert.isNotNull(finalEnrollment);
@@ -500,7 +500,7 @@ describe('Self-enrollment settings transitions', () => {
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           userId: rejectedUser.user_id,
           courseInstance,
-          requestedRole: 'System',
+          requiredRole: ['System'],
           authzData: dangerousFullSystemAuthz(),
         });
         assert.isNull(finalEnrollment);
