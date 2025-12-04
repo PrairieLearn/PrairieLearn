@@ -178,21 +178,22 @@ router.post(
     const body = BodySchema.parse(req.body);
 
     const {
-      authn_user: { uid, user_id: userId },
+      authn_user: { uid },
     } = extractPageContext(res.locals, {
       pageType: 'plain',
       accessType: 'student',
       withAuthzData: false,
     });
 
-    const { authzData, courseInstance } = await constructCourseOrInstanceContext({
-      user: res.locals.authn_user,
-      course_id: null,
-      course_instance_id: body.course_instance_id,
-      ip: req.ip ?? null,
-      req_date: res.locals.req_date,
-      is_administrator: res.locals.is_administrator,
-    });
+    const { authzData, courseInstance, institution, course } =
+      await constructCourseOrInstanceContext({
+        user: res.locals.authn_user,
+        course_id: null,
+        course_instance_id: body.course_instance_id,
+        ip: req.ip ?? null,
+        req_date: res.locals.req_date,
+        is_administrator: res.locals.is_administrator,
+      });
 
     if (authzData === null || courseInstance === null) {
       throw new HttpStatusError(403, 'Access denied');
@@ -203,7 +204,7 @@ router.post(
         const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
           uid,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           authzData,
         });
         if (
@@ -215,10 +216,11 @@ router.post(
         }
 
         await ensureEnrollment({
+          institution,
+          course,
           courseInstance,
-          userId,
           authzData,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           actionDetail: 'invitation_accepted',
         });
         break;
@@ -227,7 +229,7 @@ router.post(
         const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
           uid,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           authzData,
         });
 
@@ -240,7 +242,7 @@ router.post(
           enrollment,
           status: 'rejected',
           authzData,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
         });
         break;
       }
@@ -248,7 +250,7 @@ router.post(
         const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
           uid,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           authzData,
         });
 
@@ -261,7 +263,7 @@ router.post(
           enrollment,
           status: 'removed',
           authzData,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
         });
         break;
       }

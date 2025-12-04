@@ -89,7 +89,7 @@ interface FileGenerationError {
  * Internal error type for tracking submission with format issues.
  */
 export class SubmissionFormatError extends Error {
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = 'SubmissionFormatError';
   }

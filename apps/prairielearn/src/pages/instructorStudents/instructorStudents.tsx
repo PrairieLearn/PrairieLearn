@@ -2,7 +2,6 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
@@ -12,6 +11,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { getUrl } from '../../lib/url.js';
@@ -68,7 +68,7 @@ router.get(
     const enrollment = await selectOptionalEnrollmentByUid({
       courseInstance,
       uid,
-      requestedRole: 'Student Data Viewer',
+      requiredRole: ['Student Data Viewer'],
       authzData: res.locals.authz_data,
     });
     const staffEnrollment = StaffEnrollmentSchema.nullable().parse(enrollment);
@@ -119,7 +119,7 @@ router.post(
     const existingEnrollment = await selectOptionalEnrollmentByUid({
       courseInstance,
       uid: body.uid,
-      requestedRole: 'Student Data Viewer',
+      requiredRole: ['Student Data Viewer'],
       authzData: res.locals.authz_data,
     });
 
@@ -136,7 +136,7 @@ router.post(
     const enrollment = await inviteStudentByUid({
       courseInstance,
       uid: body.uid,
-      requestedRole: 'Student Data Editor',
+      requiredRole: ['Student Data Editor'],
       authzData: res.locals.authz_data,
     });
 
@@ -180,7 +180,6 @@ router.get(
       return;
     }
 
-    // For now, this is a development-only feature, so that can can get PRs merged without affecting users.
     const enrollmentManagementEnabled =
       (await features.enabled('enrollment-management', {
         institution_id: institution.id,
@@ -207,7 +206,6 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        headContent: compiledStylesheetTag('tanstackTable.css'),
         content: (
           <>
             <CourseInstanceSyncErrorsAndWarnings
@@ -222,7 +220,7 @@ router.get(
             <Hydrate fullHeight>
               <InstructorStudents
                 enrollmentManagementEnabled={enrollmentManagementEnabled}
-                isDevMode={process.env.NODE_ENV === 'development'}
+                isDevMode={config.devMode}
                 authzData={authz_data}
                 students={students}
                 search={search}
@@ -230,7 +228,6 @@ router.get(
                 courseInstance={courseInstance}
                 course={course}
                 csrfToken={csrfToken}
-                urlPrefix={urlPrefix}
               />
             </Hydrate>
           </>
