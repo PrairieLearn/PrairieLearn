@@ -97,6 +97,10 @@ By default, only students that belong to the course's institution can access the
 
 ### Migrating from `allowAccess`
 
+!!! note
+
+    Most users will not need to migrate from `allowAccess` to publishing manually. Copying or creating a course instance in the UI will automatically switch to the new publishing system. If you would like to migrate manually, you can follow the steps below.
+
 To migrate from `allowAccess` to publishing extensions:
 
 ??? example "Sample old `allowAccess` configuration"
@@ -165,7 +169,7 @@ To migrate from `allowAccess` to publishing extensions:
       "hideInEnrollPage": /* current value of hideInEnrollPage */,
       "selfEnrollment": { /* None of these settings are modifiable in the old system */
         "enabled": true,
-        "restrictToInstitution": false,
+        "restrictToInstitution": true, /* If publishing is not set up, this value is ignored. */
         "beforeDate": null,
         "useEnrollmentCode": false,
       }
@@ -205,10 +209,6 @@ By default, only students that belong to the course's institution can access the
 #### Rotating enrollment codes
 
 If an enrollment code was spread to students outside of your course, you may want to revoke it. You can do this by clicking "Generate new self-enrollment link" on the "Settings" tab of the course instance. This will generate a new self-enrollment link and self-enrollment code and deactivate the old one.
-
-!!! tip "Removing existing students from a course instance"
-
-    If you want to remove students from a course instance, you can do this by visiting the individual student page and clicking the "Block" button. They will immediately be removed from the course instance and will no longer be able to enroll themselves in the course instance. If you later click "Unblock" on their page, they will be immediately re-enrolled in the course instance.
 
 #### Disabling self-enrollment after a certain date
 
@@ -253,6 +253,16 @@ Some instructors may wish to hide their course from the list of available course
     **`hideInEnrollPage` is not a security setting**. Students may still enroll in the course instance if they get access to the URL, such as from a friend.
 
     This feature will be removed in January 2026 in favor of the new self-enrollment system.
+
+### Individual student management
+
+#### Inviting students
+
+Students can be invited to a course instance by an instructor. Instructors can invite students to a course instance by visiting the "Students" tab of the course instance and clicking the "Invite" button. Invites will show up on the student's PrairieLearn homepage. If a student rejects an invitation, they can still join via a link to the course. However, the invitation will not show up on their homepage until they are re-invited. If an invited student accesses any link to the course (regardless of the current self-enrollment settings), they will automatically join the course.
+
+#### Blocking students
+
+If you want to remove students from a course instance, you can do this by visiting the individual student page and clicking the "Block" button. They will immediately be removed from the course instance and will no longer be able to enroll themselves in the course instance. If you later click "Unblock" on their page, they will be immediately re-enrolled in the course instance.
 
 ## Assessment page organization
 

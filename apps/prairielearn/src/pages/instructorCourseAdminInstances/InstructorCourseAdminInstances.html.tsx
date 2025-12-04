@@ -13,8 +13,6 @@ import { CreateCourseInstanceModal } from './components/CreateCourseInstanceModa
 import { EmptyState } from './components/EmptyState.js';
 import type { InstructorCourseAdminInstanceRow } from './instructorCourseAdminInstances.shared.js';
 
-const queryClient = new QueryClient();
-
 function renderPopoverStartDate(courseInstanceId: string) {
   // React Bootstrap's OverlayTrigger expects the overlay prop to be JSX (or a render function)
   // so we don't make this a component.
@@ -224,6 +222,7 @@ export function InstructorCourseAdminInstancesInner({
 export function InstructorCourseAdminInstances({
   ...props
 }: InstructorCourseAdminInstancesInnerProps) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <QueryClientProviderDebug client={queryClient}>
       <InstructorCourseAdminInstancesInner {...props} />

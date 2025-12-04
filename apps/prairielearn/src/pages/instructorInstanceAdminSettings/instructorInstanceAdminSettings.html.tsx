@@ -10,15 +10,12 @@ import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import type { NavPage } from '../../components/Navbar.types.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { getNamesForCopy } from '../../lib/editorUtil.shared.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
 import { CopyCourseInstanceModal } from './components/CopyCourseInstanceModal.js';
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 import type { SettingsFormValues } from './instructorInstanceAdminSettings.types.js';
-
-const queryClient = new QueryClient();
 
 export function InstructorInstanceAdminSettings({
   csrfToken,
@@ -59,17 +56,11 @@ export function InstructorInstanceAdminSettings({
   infoCourseInstancePath: string;
   isDevMode: boolean;
 }) {
+  const [queryClient] = useState(() => new QueryClient());
+
   const [showCopyModal, setShowCopyModal] = useState(false);
 
-  const shortNames = names.map((name) => name.short_name);
-  const longNames = names.map((name) => name.long_name).filter((longName) => longName !== null);
-
-  const { shortName: initialShortName, longName: initialLongName } = getNamesForCopy(
-    courseInstance.short_name,
-    shortNames,
-    courseInstance.long_name ?? null,
-    longNames,
-  );
+  const shortNames = new Set(names.map((name) => name.short_name));
 
   const defaultValues: SettingsFormValues = {
     ciid: courseInstance.short_name,
@@ -147,7 +138,7 @@ export function InstructorInstanceAdminSettings({
                   pattern: /^[-A-Za-z0-9_/]+$/,
                   validate: {
                     duplicate: (value) => {
-                      if (shortNames.includes(value) && value !== defaultValues.ciid) {
+                      if (shortNames.has(value) && value !== defaultValues.ciid) {
                         return 'This ID is already in use';
                       }
                       return true;
@@ -330,8 +321,6 @@ export function InstructorInstanceAdminSettings({
           csrfToken={csrfToken}
           courseShortName={course.short_name}
           courseInstance={courseInstance}
-          initialShortName={initialShortName}
-          initialLongName={initialLongName}
           onHide={() => setShowCopyModal(false)}
         />
       </div>

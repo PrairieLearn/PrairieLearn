@@ -1,5 +1,27 @@
 # @prairielearn/ui
 
+## 1.7.0
+
+### Minor Changes
+
+- 8326968: Debounce global filter in TanstackTable, clean up column manager API
+
+### Patch Changes
+
+- 037c174: Add back support for singularLabel and pluralLabel to TanstackTableCard, make `headerButtons` optional, add `hasSelection` to TanstackTableDownloadButton
+
+## 1.6.0
+
+### Minor Changes
+
+- 20f25f7: Add nuqs utilities for URL query state management with server-side rendering support. Includes `NuqsAdapter` component and TanStack Table state parsers (`parseAsSortingState`, `parseAsColumnVisibilityStateWithColumns`, `parseAsColumnPinningState`, `parseAsNumericFilter`).
+
+## 1.5.0
+
+### Minor Changes
+
+- bd5f2a1: Add a generic PresetFilterDropdown for customizable multi-column filters
+
 ## 1.4.0
 
 ### Minor Changes
