@@ -51,7 +51,7 @@ Run `make format-python` / `make lint-python` from the root directory to format/
 
 ### Library usage conventions
 
-- Use `tanstack-query` for API calls.
+- Use `@tanstack/react-query` for API calls.
 - Use `react-hook-form` for form handling.
 
 ### User interface conventions
