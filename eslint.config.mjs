@@ -536,6 +536,14 @@ export default tseslint.config([
       ],
       ...jsdoc.configs['flat/recommended-typescript-error'].rules,
       'jsdoc/check-line-alignment': 'error',
+      'jsdoc/check-tag-names': [
+        'error',
+        {
+          // We turn this on to allow the Playwright + Preact fix enforced by the `header/header` rule.
+          // https://babeljs.io/docs/en/babel-plugin-transform-react-jsx/
+          jsxTags: true,
+        },
+      ],
       'jsdoc/convert-to-jsdoc-comments': [
         'error',
         {
