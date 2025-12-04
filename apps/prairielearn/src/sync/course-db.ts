@@ -557,7 +557,8 @@ export async function loadCourseInfo({
     const duplicateEntryIds = new Set<string>();
 
     (info![fieldName] ?? []).forEach((entry) => {
-      const entryId = entry[entryIdentifier as keyof typeof entry];
+      // @ts-expect-error - Legacy code that is not type-safe.
+      const entryId = entry[entryIdentifier];
       if (known.has(entryId)) {
         duplicateEntryIds.add(entryId);
       }
@@ -574,7 +575,8 @@ export async function loadCourseInfo({
 
     if (defaults) {
       defaults.forEach((defaultEntry) => {
-        const defaultEntryId = defaultEntry[entryIdentifier as keyof typeof defaultEntry];
+        // @ts-expect-error - Legacy code that is not type-safe.
+        const defaultEntryId = defaultEntry[entryIdentifier];
         if (!known.has(defaultEntryId)) {
           known.set(defaultEntryId, defaultEntry);
         }
