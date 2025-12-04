@@ -25,7 +25,12 @@ RETURNING
 
 -- BLOCK insert_enrollment
 INSERT INTO
-  enrollments (user_id, course_instance_id, status, first_joined_at)
+  enrollments (
+    user_id,
+    course_instance_id,
+    status,
+    first_joined_at
+  )
 VALUES
   ($user_id, 1, 'joined', NOW())
 ON CONFLICT DO NOTHING;
@@ -40,4 +45,10 @@ INSERT INTO
     max_points
   )
 VALUES
-  ($assessment_id, $user_id, $score_perc, $score_perc, 100);
+  (
+    $assessment_id,
+    $user_id,
+    $score_perc,
+    $score_perc,
+    100
+  );
