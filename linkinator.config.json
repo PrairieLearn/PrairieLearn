@@ -8,5 +8,7 @@
   ],
   "requireHttps": true,
   "recurse": true,
+  "retry": true,
+  "retryErrors": true,
   "format": "json"
 }
