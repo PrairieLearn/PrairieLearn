@@ -147,7 +147,7 @@ router.get(
           authzData.has_course_permission_edit &&
           !course.example_course &&
           isEnterprise() &&
-          (await features.enabledFromLocals('ai-question-generation', authzData)),
+          (await features.enabledFromLocals('ai-question-generation', res.locals)),
         resLocals: res.locals,
       }),
     );
