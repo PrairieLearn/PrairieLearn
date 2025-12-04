@@ -69,14 +69,14 @@ async function startServerSubprocess(
         clearTimeout(timeout);
         resolve();
       } else {
-        console.log(output);
+        process.stdout.write(output);
       }
     };
 
     serverProcess.stdout.on('data', checkOutput);
     serverProcess.stderr.on('data', (data) => {
       const output = data.toString();
-      console.error(output);
+      process.stderr.write(output);
     });
 
     serverProcess.on('error', (err) => {
@@ -145,7 +145,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 
       // Initialize the database with the test utils.
       const { setupDatabases, after: destroyDatabases } = await import('../helperDb.js');
-      const setupResults = await setupDatabases({ configurePool: false });
+      const setupResults = await setupDatabases({ configurePool: true });
 
       await tmp.withFile(
         async (tmpFile) => {
@@ -157,6 +157,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
             postgresqlHost: setupResults.host,
             devMode: true, // We need this to start up the asset server.
           };
+
           await fs.writeFile(tmpFile.path, JSON.stringify(config, null, 2));
 
           const { kill } = await startServerSubprocess(tmpFile.path);
