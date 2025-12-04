@@ -73,11 +73,16 @@ export function InviteStudentModal({
 
     let resp: Response | null = null;
     try {
-      resp = await fetch(`${window.location.pathname}/invitation/check?${params.toString()}`);
+      resp = await fetch(`${window.location.pathname}/invitation/check?${params.toString()}`, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
     } catch {
       return 'Failed to validate UIDs';
     }
 
+    // TODO: Handle error messages from the server more gracefully.
     if (!resp.ok) return 'Failed to validate UIDs';
 
     const { success, data } = z
@@ -89,20 +94,20 @@ export function InviteStudentModal({
       (uid) => !data.invalidUids.some((invalid) => invalid.uid === uid),
     );
 
-    // If all UIDs are invalid, show inline error
     if (validUids.length === 0) {
       if (uids.length === 1) {
         // Single UID case - show specific error
         return data.invalidUids[0].reason;
       }
       // Multiple UIDs, all invalid
-      return 'None of the UIDs can be invited. Please check that all users exist and are not already enrolled.';
+      return 'None of the UIDs can be invited. Please check that all users are not already invited or enrolled already, and are not instructors.';
     }
 
     // If some valid and some invalid, show confirmation modal
     if (data.invalidUids.length > 0) {
       setStage({ type: 'confirming', invalidUids: data.invalidUids, validUids });
-      return false; // Prevents form submission but doesn't show error
+      // Prevents form submission but don't set an error message on the main form
+      return false;
     }
 
     return true;
@@ -136,7 +141,7 @@ export function InviteStudentModal({
     return (
       <Modal show={show} backdrop="static" onHide={() => setStage({ type: 'editing' })}>
         <Modal.Header closeButton>
-          <Modal.Title>Confirm Invalid Students</Modal.Title>
+          <Modal.Title>Confirm invalid students</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p>The following UIDs cannot be invited:</p>
@@ -148,8 +153,8 @@ export function InviteStudentModal({
             ))}
           </div>
           <p>
-            Do you want to continue editing, or invite the {stage.validUids.length} valid{' '}
-            {stage.validUids.length === 1 ? 'student' : 'students'} anyway?
+            Do you want to continue editing, or invite just the {stage.validUids.length} valid{' '}
+            {stage.validUids.length === 1 ? 'student' : 'students'}?
           </p>
           {saveMutation.isError && (
             <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
@@ -166,7 +171,7 @@ export function InviteStudentModal({
             disabled={saveMutation.isPending}
             onClick={() => setStage({ type: 'editing' })}
           >
-            Continue Editing
+            Continue editing
           </button>
           <button
             type="button"

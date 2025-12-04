@@ -92,21 +92,29 @@ router.get(
 
     const { course_instance: courseInstance } = pageContext;
 
-    // Accept comma-separated UIDs in query parameter
-    const uidsString = typeof req.query.uids === 'string' ? req.query.uids : '';
-    const uids: string[] = [
-      ...new Set(
-        uidsString
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0),
+    const EmailsSchema = z.array(z.string().trim().email()).min(1, 'At least one UID is required');
+    const QuerySchema = z.object({
+      uids: z.preprocess(
+        (val) =>
+          typeof val === 'string'
+            ? [
+                ...new Set(
+                  val
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter((s) => s.length > 0),
+                ),
+              ]
+            : val,
+        EmailsSchema,
       ),
-    ];
+    });
+    const queryParams = QuerySchema.parse(req.query);
 
     const invalidUids: { uid: string; reason: string }[] = [];
 
-    for (const uid of uids) {
-      // TODO: Do we want to do this in a batch?
+    for (const uid of queryParams.uids) {
+      // TODO: For a potential performance improvement, we could do this as a batch.
 
       const user = await selectOptionalUserByUid(uid);
       if (user) {
