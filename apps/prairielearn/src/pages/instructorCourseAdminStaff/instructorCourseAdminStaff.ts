@@ -392,7 +392,7 @@ ${given_cp_and_cip.join(',\n')}
       const course_instances = await selectCourseInstancesWithStaffAccess({
         course,
         authzData,
-        requiredRole: ['Previewer', 'Student Data Viewer'],
+        requiredRole: ['Owner'],
       });
 
       if (req.body.course_instance_id) {
