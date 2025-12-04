@@ -106,22 +106,20 @@ router.get(
     const invalidUids: { uid: string; reason: string }[] = [];
 
     for (const uid of uids) {
-      // Check if user exists
-      const user = await selectOptionalUserByUid(uid);
-      if (user == null) {
-        invalidUids.push({ uid, reason: 'User not found' });
-        continue;
-      }
+      // TODO: Do we want to do this in a batch?
 
-      // Check if user is an instructor
-      const isInstructor = await callRow(
-        'users_is_instructor_in_course_instance',
-        [user.user_id, courseInstance.id],
-        z.boolean(),
-      );
-      if (isInstructor) {
-        invalidUids.push({ uid, reason: 'User is an instructor' });
-        continue;
+      const user = await selectOptionalUserByUid(uid);
+      if (user) {
+        // Check if user is an instructor
+        const isInstructor = await callRow(
+          'users_is_instructor_in_course_instance',
+          [user.user_id, courseInstance.id],
+          z.boolean(),
+        );
+        if (isInstructor) {
+          invalidUids.push({ uid, reason: 'User is an instructor' });
+          continue;
+        }
       }
 
       // Check enrollment status
@@ -188,17 +186,16 @@ router.post(
 
     // Process all invitations in a single transaction
     const staffEnrollments = await runInTransactionAsync(async () => {
-      const enrollments = [];
-      for (const uid of body.uids) {
+      const enrollments = body.uids.map(async (uid) => {
         const enrollment = await inviteStudentByUid({
           courseInstance,
           uid,
           requiredRole: ['Student Data Editor'],
           authzData: res.locals.authz_data,
         });
-        enrollments.push(StaffEnrollmentSchema.parse(enrollment));
-      }
-      return enrollments;
+        return StaffEnrollmentSchema.parse(enrollment);
+      });
+      return Promise.all(enrollments);
     });
 
     res.json({ data: staffEnrollments });

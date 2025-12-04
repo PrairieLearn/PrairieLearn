@@ -41,4 +41,3 @@ SET
   is_administrator = TRUE
 WHERE
   uid = 'dev@example.com';
-
