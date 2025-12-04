@@ -15,8 +15,15 @@ router.post(
   asyncHandler(async (req, res) => {
     const { start_date, end_date, course_instance_id } = z
       .object({
-        start_date: z.string(),
-        end_date: z.string(),
+        // This works around a bug in Chrome where seconds are omitted from the input value when they're 0.
+        // We would normally solve this on the client side, but this page does a HTML POST, so transformations
+        // done via react-hook-form don't work.
+
+        // https://stackoverflow.com/questions/19504018/show-seconds-on-input-type-date-local-in-chrome
+        // https://issues.chromium.org/issues/41159420
+
+        start_date: z.string().transform((v) => (v.length === 16 ? `${v}:00` : v)),
+        end_date: z.string().transform((v) => (v.length === 16 ? `${v}:00` : v)),
         course_instance_id: z.string(),
       })
       .parse(req.body);
