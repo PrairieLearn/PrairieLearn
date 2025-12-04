@@ -55,7 +55,7 @@ async function createTestData() {
   await sqldb.execute(sql.insert_invited_enrollment, { pending_uid: INVITED_STUDENT.uid });
 }
 
-test.describe('Bulk Invite Students', () => {
+test.describe('Bulk invite students', () => {
   test.beforeAll(async () => {
     await syncCourse(EXAMPLE_COURSE_PATH);
     await createTestData();
@@ -165,23 +165,19 @@ test.describe('Bulk Invite Students', () => {
 
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
-    // Should show confirmation modal
     const dialog = page.getByRole('dialog');
-    await expect(dialog.getByText('Confirm Invalid Students', { exact: true })).toBeVisible({
+    await expect(dialog.getByText('Confirm invalid students', { exact: true })).toBeVisible({
       timeout: 10000,
     });
     await expect(dialog.getByText(ENROLLED_STUDENT.uid)).toBeVisible();
     await expect(dialog.getByText('Already enrolled')).toBeVisible();
 
-    // Click "Invite Anyway"
-    await page.getByRole('button', { name: 'Invite Anyway' }).click();
+    await page.getByRole('button', { name: 'Invite anyway' }).click();
 
-    // Should close modal and show success
     await expect(page.getByText('was invited successfully')).toBeVisible({ timeout: 10000 });
   });
 
   test('can continue editing from confirmation modal', async ({ page }) => {
-    // Create another fresh valid student for this test
     await sqldb.queryRow(
       sql.insert_or_update_user,
       { uid: 'another_fresh@test.com', name: 'Another Fresh Student' },
@@ -193,24 +189,21 @@ test.describe('Bulk Invite Students', () => {
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
-    // Enter mix of valid and invalid UIDs
+    // Mix of valid and invalid UIDs
     await page
       .getByRole('textbox', { name: 'UIDs' })
       .fill(`another_fresh@test.com\n${ENROLLED_STUDENT.uid}`);
 
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
-    // Should show confirmation modal
     await expect(
-      page.getByRole('dialog').getByText('Confirm Invalid Students', { exact: true }),
+      page.getByRole('dialog').getByText('Confirm invalid students', { exact: true }),
     ).toBeVisible({
       timeout: 10000,
     });
 
-    // Click "Continue Editing"
-    await page.getByRole('button', { name: 'Continue Editing' }).click();
+    await page.getByRole('button', { name: 'Continue editing' }).click();
 
-    // Should return to editing modal
     await expect(
       page.getByRole('dialog').getByText('Invite students', { exact: true }),
     ).toBeVisible();
@@ -223,12 +216,10 @@ test.describe('Bulk Invite Students', () => {
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
-    // Enter an invalid email format
     await page.getByRole('textbox', { name: 'UIDs' }).fill('not-an-email');
 
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
-    // Should show validation error
     await expect(page.getByText('invalid', { exact: false })).toBeVisible({ timeout: 10000 });
   });
 });

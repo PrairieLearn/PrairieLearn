@@ -23,11 +23,7 @@ ON CONFLICT DO NOTHING;
 
 -- BLOCK insert_invited_enrollment
 INSERT INTO
-  enrollments (
-    course_instance_id,
-    status,
-    pending_uid
-  )
+  enrollments (course_instance_id, status, pending_uid)
 VALUES
   (1, 'invited', $pending_uid)
 ON CONFLICT DO NOTHING;
