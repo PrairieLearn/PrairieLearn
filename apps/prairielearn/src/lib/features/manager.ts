@@ -121,8 +121,8 @@ export class FeatureManager<FeatureName extends string> {
 
     // Allow features to be enabled in dev mode via `options.devModeFeatures`
     // in `infoCourse.json`.
-    if (config.devMode && 'course_id' in context) {
-      const course = await selectCourseById(context.course_id!);
+    if (config.devMode && context.course_id != null) {
+      const course = await selectCourseById(context.course_id);
       const devModeFeatures = course.options?.devModeFeatures;
 
       if (Array.isArray(devModeFeatures)) {
@@ -254,7 +254,7 @@ export class FeatureManager<FeatureName extends string> {
   validateContext(context: UnvalidatedFeatureContext): FeatureContext {
     let hasAllParents = true;
     CONTEXT_HIERARCHY.forEach((key, index) => {
-      const hasKey = !!context[key as keyof typeof context];
+      const hasKey = !!context[key];
       if (hasKey && !hasAllParents) {
         const missingKeys = CONTEXT_HIERARCHY.slice(0, index - 1);
         throw new Error(`Missing required context keys: ${missingKeys.join(', ')}`);

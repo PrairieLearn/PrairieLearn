@@ -430,8 +430,7 @@ export function connection(socket: Socket) {
         return;
       }
 
-      // @ts-expect-error - THIS IS OUTSTANDING BAD CODE.
-      void socket.join('jobSequence-' + msg.job_id);
+      void socket.join('jobSequence-' + msg.job_sequence_id);
       queryRow(
         sql.select_job_sequence,
         { job_sequence_id: msg.job_sequence_id },

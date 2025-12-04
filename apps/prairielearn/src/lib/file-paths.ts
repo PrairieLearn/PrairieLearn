@@ -90,7 +90,7 @@ export async function questionFilePath(
       'client.js': 'Client.js',
       'server.js': 'Server.js',
     };
-    if (filename in filenameToSuffix) {
+    if (!(filename in filenameToSuffix)) {
       // no default for this file type, so try clientFilesCourse
       const rootPathCourse = path.join(coursePath, 'clientFilesCourse');
       const fullPathCourse = path.join(rootPathCourse, filename);
@@ -105,8 +105,7 @@ export async function questionFilePath(
         throw new Error(`File not found at "${fullPath}" or "${fullPathCourse}"`);
       }
     } else {
-      // THIS IS OUTSTANDING BAD CODE.
-      const defaultFilename = question.type + undefined;
+      const defaultFilename = question.type;
       const fullDefaultFilePath = path.join(QUESTION_DEFAULTS_PATH, defaultFilename);
 
       if (await fs.pathExists(fullDefaultFilePath)) {

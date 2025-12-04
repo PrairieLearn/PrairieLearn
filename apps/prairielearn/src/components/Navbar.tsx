@@ -993,9 +993,8 @@ function NavbarInstructor({
                         ></a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                           ${assessments.map(
-                            // TODO: Type this.
-                            // I can't find a type that matches this usage.
-                            (a: any) => html`
+                            // @ts-expect-error - This is legacy code that will be removed soon.
+                            (a) => html`
                               <a
                                 class="dropdown-item ${navPage === 'assessment' &&
                                 assessment.id === a.id
