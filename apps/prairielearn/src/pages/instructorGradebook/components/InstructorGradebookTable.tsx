@@ -85,7 +85,7 @@ interface GradebookTableProps {
   gradebookRows: GradebookRow[];
   urlPrefix: string;
   courseInstanceId: string;
-  csvFilename: string;
+  filenameBase: string;
 }
 
 function GradebookTable({
@@ -94,7 +94,7 @@ function GradebookTable({
   gradebookRows: initialGradebookRows,
   urlPrefix,
   courseInstanceId,
-  csvFilename,
+  filenameBase,
 }: GradebookTableProps) {
   const tableRef = useRef<HTMLDivElement>(null);
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
@@ -469,35 +469,44 @@ function GradebookTable({
         pluralLabel="users"
         // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="h-100"
-        headerButtons={
-          <button
-            type="button"
-            class="btn btn-sm btn-light"
-            onClick={() => {
-              window.location.href = `${urlPrefix}/instance_admin/gradebook/${csvFilename}`;
-            }}
-          >
-            <i class="fa fa-download" aria-hidden="true" /> Download
-          </button>
-        }
-        columnManagerButtons={
-          <PresetFilterDropdown
-            table={table}
-            label="Filter"
-            options={{
-              'Joined students': [
-                { id: 'enrollment_status', value: ['joined'] },
-                { id: 'role', value: ['Student'] },
-              ],
-              'All students': [{ id: 'role', value: ['Student'] }],
-              'All students & staff': [],
-            }}
-            onSelect={handleEnrollmentFilterSelect}
-          />
-        }
+        downloadButtonOptions={{
+          filenameBase,
+          mapRowToData: (row: GradebookRow) => {
+            const data: Record<string, string | number | null> = {
+              UID: row.uid,
+              Name: row.user_name,
+              UIN: row.uin,
+              Role: row.role,
+              Enrollment: row.enrollment?.status ?? null,
+            };
+            for (const assessment of courseAssessments) {
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+              data[assessment.label] = row.scores[assessment.assessment_id]?.score_perc ?? null;
+            }
+            return data;
+          },
+          pluralLabel: "users' grades",
+          singularLabel: "user's grades",
+          hasSelection: false,
+        }}
+        columnManager={{
+          buttons: (
+            <PresetFilterDropdown
+              table={table}
+              label="Filter"
+              options={{
+                'Joined students': [
+                  { id: 'enrollment_status', value: ['joined'] },
+                  { id: 'role', value: ['Student'] },
+                ],
+                'All students': [{ id: 'role', value: ['Student'] }],
+                'All students & staff': [],
+              }}
+              onSelect={handleEnrollmentFilterSelect}
+            />
+          ),
+        }}
         globalFilter={{
-          value: globalFilter,
-          setValue: setGlobalFilter,
           placeholder: 'Search by UID, name...',
         }}
         tableOptions={{
@@ -514,7 +523,7 @@ export function InstructorGradebookTable({
   courseAssessments,
   gradebookRows,
   urlPrefix,
-  csvFilename,
+  filenameBase,
   search,
   isDevMode,
   courseInstanceId,
@@ -532,7 +541,7 @@ export function InstructorGradebookTable({
           courseAssessments={courseAssessments}
           gradebookRows={gradebookRows}
           urlPrefix={urlPrefix}
-          csvFilename={csvFilename}
+          filenameBase={filenameBase}
           courseInstanceId={courseInstanceId}
         />
       </QueryClientProviderDebug>

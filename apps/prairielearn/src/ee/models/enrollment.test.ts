@@ -74,21 +74,21 @@ describe('getEnrollmentCountsForInstitution', () => {
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: freeUser.user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: paidUser1.user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
     await ensureUncheckedEnrollment({
       courseInstance,
       userId: paidUser2.user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -165,7 +165,7 @@ describe('getEnrollmentCountsForCourse', () => {
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -188,7 +188,7 @@ describe('getEnrollmentCountsForCourse', () => {
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -221,7 +221,7 @@ describe('getEnrollmentCountsForCourse', () => {
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -271,7 +271,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -294,7 +294,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -327,7 +327,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
       userId: user.user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });

@@ -178,13 +178,16 @@ jobs:
           git config --global user.name "Dev User"
           git config --global safe.directory '*'
 
-      - name: Test JavaScript code
+      - name: Vitest suite
         run: |
           make start-support
           yarn test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           SHARDED_TESTS: true
+
+      - name: Playwright suite
+        run: |
+          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
       - name: Upload Vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
