@@ -97,6 +97,10 @@ By default, only students that belong to the course's institution can access the
 
 ### Migrating from `allowAccess`
 
+!!! note
+
+    Most users will not need to migrate from `allowAccess` to publishing manually. Copying or creating a course instance in the UI will automatically switch to the new publishing system. If you would like to migrate manually, you can follow the steps below.
+
 To migrate from `allowAccess` to publishing extensions:
 
 ??? example "Sample old `allowAccess` configuration"

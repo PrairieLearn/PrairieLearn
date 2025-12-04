@@ -231,7 +231,7 @@ export function SelfEnrollmentSettings({
           self-enrollment settings, you must first{' '}
           <a href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess">
             migrate to publishing
-          </a>{' '}
+          </a>
           .
         </div>
       ) : null}
