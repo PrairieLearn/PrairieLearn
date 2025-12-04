@@ -200,7 +200,12 @@ export function PageLayout({
               `
             : ''}
           <div class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}">
-            <div class="app-main-container d-flex flex-column">
+            <div
+              class="${clsx(
+                sideNavEnabled ? 'app-main-container' : 'h-100 w-100',
+                'd-flex flex-column',
+              )}"
+            >
               ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
                 ? AssessmentNavigation({
                     courseInstanceId: resLocals.course_instance.id,
