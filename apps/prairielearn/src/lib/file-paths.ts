@@ -105,7 +105,8 @@ export async function questionFilePath(
         throw new Error(`File not found at "${fullPath}" or "${fullPathCourse}"`);
       }
     } else {
-      const defaultFilename = question.type;
+      // THIS IS OUTSTANDING BAD CODE.
+      const defaultFilename = question.type + undefined;
       const fullDefaultFilePath = path.join(QUESTION_DEFAULTS_PATH, defaultFilename);
 
       if (await fs.pathExists(fullDefaultFilePath)) {
