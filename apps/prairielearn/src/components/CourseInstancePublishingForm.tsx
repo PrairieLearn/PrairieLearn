@@ -35,6 +35,15 @@ function computeStatus(startDate: Date | null, endDate: Date | null): Publishing
   return 'unpublished';
 }
 
+function normalizeDateTimeLocal(value: string): string {
+  // This works around a bug in Chrome where seconds are omitted from the input value when they're 0.
+  // Note that this transformation will only work with a client-side POST.
+
+  // https://stackoverflow.com/questions/19504018/show-seconds-on-input-type-date-local-in-chrome
+  // https://issues.chromium.org/issues/41159420
+  return value.length === 16 ? `${value}:00` : value;
+}
+
 export interface PublishingFormValues {
   start_date: string;
   end_date: string;
@@ -345,6 +354,7 @@ export function CourseInstancePublishingForm({
                       disabled={!canEdit}
                       {...register('start_date', {
                         validate: validateStartDate,
+                        setValueAs: normalizeDateTimeLocal,
                         deps: ['end_date'],
                       })}
                     />
@@ -380,6 +390,7 @@ export function CourseInstancePublishingForm({
                       disabled={!canEdit}
                       {...register('end_date', {
                         validate: validateEndDate,
+                        setValueAs: normalizeDateTimeLocal,
                       })}
                     />
                     <span class="input-group-text">{displayTimezone}</span>
@@ -467,6 +478,7 @@ export function CourseInstancePublishingForm({
                       disabled={!canEdit}
                       {...register('end_date', {
                         validate: validateEndDate,
+                        setValueAs: normalizeDateTimeLocal,
                       })}
                     />
                     <span class="input-group-text">{displayTimezone}</span>
