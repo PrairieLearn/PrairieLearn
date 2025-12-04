@@ -77,11 +77,11 @@ router.get(
       return;
     }
 
-    const canJoin =
+    // Check if the user is enrolled, but is in a status where they cannot rejoin the course.
+    if (
       existingEnrollment != null &&
-      ['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status);
-
-    if (existingEnrollment && !canJoin) {
+      !['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status)
+    ) {
       res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
       return;
     }

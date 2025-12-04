@@ -71,10 +71,10 @@ export default asyncHandler(async (req, res, next) => {
     selfEnrollmentEnabled && !selfEnrollmentExpired && institutionRestrictionSatisfied;
 
   // If the user is not enrolled, or is invited/rejected, and self-enrollment is allowed, then they can enroll.
-  // If the user is enrolled and is joined/removed, then they have access.
   const canSelfEnroll =
     selfEnrollmentAllowed &&
     (existingEnrollment == null || ['invited', 'rejected'].includes(existingEnrollment.status));
+  // If the user is enrolled and is joined/removed, then they have access.
   const hasPreviouslyJoined =
     existingEnrollment != null && ['joined', 'removed'].includes(existingEnrollment.status);
 
