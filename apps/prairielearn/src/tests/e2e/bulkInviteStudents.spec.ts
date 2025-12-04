@@ -1,0 +1,247 @@
+import { z } from 'zod';
+
+import * as sqldb from '@prairielearn/postgres';
+
+import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import { syncCourse } from '../helperCourse.js';
+
+import { expect, test } from './fixtures.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+interface TestUser {
+  uid: string;
+  name: string;
+}
+
+// Test users for various scenarios
+const VALID_STUDENT: TestUser = { uid: 'valid_student@test.com', name: 'Valid Student' };
+const VALID_STUDENT_2: TestUser = { uid: 'valid_student2@test.com', name: 'Valid Student 2' };
+const VALID_STUDENT_3: TestUser = { uid: 'valid_student3@test.com', name: 'Valid Student 3' };
+const ENROLLED_STUDENT: TestUser = { uid: 'enrolled_student@test.com', name: 'Enrolled Student' };
+const INVITED_STUDENT: TestUser = { uid: 'invited_student@test.com', name: 'Invited Student' };
+
+/**
+ * Creates test users and sets up the database for testing bulk invitations.
+ */
+async function createTestData() {
+  // Enable modern publishing for the course instance
+  await sqldb.execute(sql.enable_modern_publishing, {});
+
+  // Enable the enrollment-management feature flag
+  await sqldb.execute(sql.enable_enrollment_management_feature, {});
+
+  // Make the dev user an administrator (required for enrollment management)
+  await sqldb.execute(sql.set_dev_user_as_admin, {});
+
+  // Create valid students (not enrolled)
+  for (const student of [VALID_STUDENT, VALID_STUDENT_2, VALID_STUDENT_3]) {
+    await sqldb.queryRow(
+      sql.insert_or_update_user,
+      { uid: student.uid, name: student.name },
+      z.string(),
+    );
+  }
+
+  // Create an already enrolled student
+  const enrolledUserId = await sqldb.queryRow(
+    sql.insert_or_update_user,
+    { uid: ENROLLED_STUDENT.uid, name: ENROLLED_STUDENT.name },
+    z.string(),
+  );
+  await sqldb.execute(sql.insert_enrollment, { user_id: enrolledUserId, status: 'joined' });
+
+  // Create a student with a pending invitation
+  const invitedUserId = await sqldb.queryRow(
+    sql.insert_or_update_user,
+    { uid: INVITED_STUDENT.uid, name: INVITED_STUDENT.name },
+    z.string(),
+  );
+  await sqldb.execute(sql.insert_enrollment, { user_id: invitedUserId, status: 'invited' });
+}
+
+test.describe('Bulk Invite Students', () => {
+  test.beforeAll(async () => {
+    await syncCourse(EXAMPLE_COURSE_PATH);
+    await createTestData();
+  });
+
+  test('can invite a single valid student', async ({ page }) => {
+    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+    await expect(page).toHaveTitle(/Students/);
+
+    // Click the invite button
+    await page.getByRole('button', { name: 'Invite students' }).click();
+
+    // Modal should open
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Invite students' })).toBeVisible();
+
+    // Enter a single valid UID
+    await page.getByRole('textbox', { name: 'UIDs' }).fill(VALID_STUDENT.uid);
+
+    // Click invite
+    await page.getByRole('button', { name: 'Invite', exact: true }).click();
+
+    // Should show success message
+    await expect(page.getByText(`${VALID_STUDENT.uid} was invited successfully`)).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Modal should be closed
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+  });
+
+  test('can invite multiple valid students', async ({ page }) => {
+    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+
+    await page.getByRole('button', { name: 'Invite students' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    // Enter multiple UIDs
+    await page
+      .getByRole('textbox', { name: 'UIDs' })
+      .fill(`${VALID_STUDENT_2.uid}\n${VALID_STUDENT_3.uid}`);
+
+    await page.getByRole('button', { name: 'Invite', exact: true }).click();
+
+    // Should show success message for multiple students
+    await expect(page.getByText('2 students were invited successfully')).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
+  test('shows inline error for single invalid student', async ({ page }) => {
+    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+
+    await page.getByRole('button', { name: 'Invite students' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    // Enter an already enrolled student
+    await page.getByRole('textbox', { name: 'UIDs' }).fill(ENROLLED_STUDENT.uid);
+
+    await page.getByRole('button', { name: 'Invite', exact: true }).click();
+
+    // Should show inline error
+    await expect(page.getByText('Already enrolled')).toBeVisible({ timeout: 10000 });
+
+    // Modal should still be open
+    await expect(page.getByRole('dialog')).toBeVisible();
+  });
+
+  test('shows inline error when all students are invalid', async ({ page }) => {
+    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+
+    await page.getByRole('button', { name: 'Invite students' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    // Enter multiple invalid UIDs
+    await page
+      .getByRole('textbox', { name: 'UIDs' })
+      .fill(`${ENROLLED_STUDENT.uid}\n${INVITED_STUDENT.uid}`);
+
+    await page.getByRole('button', { name: 'Invite', exact: true }).click();
+
+    // Should show inline error about none being invitable
+    await expect(page.getByText('None of the UIDs can be invited', { exact: false })).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
+  test('shows confirmation modal when some UIDs are valid and some invalid', async ({ page }) => {
+    // Create a fresh valid student for this test
+    await sqldb.queryRow(
+      sql.insert_or_update_user,
+      { uid: 'fresh_student@test.com', name: 'Fresh Student' },
+      z.string(),
+    );
+
+    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+
+    await page.getByRole('button', { name: 'Invite students' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    // Enter mix of valid and invalid UIDs
+    await page
+      .getByRole('textbox', { name: 'UIDs' })
+      .fill(`fresh_student@test.com\n${ENROLLED_STUDENT.uid}`);
+
+    await page.getByRole('button', { name: 'Invite', exact: true }).click();
+
+    // Should show confirmation modal
+    await expect(page.getByRole('heading', { name: 'Confirm Invalid Students' })).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByText(ENROLLED_STUDENT.uid)).toBeVisible();
+    await expect(page.getByText('Already enrolled')).toBeVisible();
+
+    // Click "Invite Anyway"
+    await page.getByRole('button', { name: 'Invite Anyway' }).click();
+
+    // Should close modal and show success
+    await expect(page.getByText('was invited successfully')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('can continue editing from confirmation modal', async ({ page }) => {
+    // Create another fresh valid student for this test
+    await sqldb.queryRow(
+      sql.insert_or_update_user,
+      { uid: 'another_fresh@test.com', name: 'Another Fresh Student' },
+      z.string(),
+    );
+
+    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+
+    await page.getByRole('button', { name: 'Invite students' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    // Enter mix of valid and invalid UIDs
+    await page
+      .getByRole('textbox', { name: 'UIDs' })
+      .fill(`another_fresh@test.com\n${ENROLLED_STUDENT.uid}`);
+
+    await page.getByRole('button', { name: 'Invite', exact: true }).click();
+
+    // Should show confirmation modal
+    await expect(page.getByRole('heading', { name: 'Confirm Invalid Students' })).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Click "Continue Editing"
+    await page.getByRole('button', { name: 'Continue Editing' }).click();
+
+    // Should return to editing modal
+    await expect(page.getByRole('heading', { name: 'Invite students' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'UIDs' })).toBeVisible();
+  });
+
+  test('shows error for invalid email format', async ({ page }) => {
+    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+
+    await page.getByRole('button', { name: 'Invite students' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    // Enter an invalid email format
+    await page.getByRole('textbox', { name: 'UIDs' }).fill('not-an-email');
+
+    await page.getByRole('button', { name: 'Invite', exact: true }).click();
+
+    // Should show validation error
+    await expect(page.getByText('invalid', { exact: false })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('shows error for non-existent user', async ({ page }) => {
+    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+
+    await page.getByRole('button', { name: 'Invite students' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    // Enter a non-existent user
+    await page.getByRole('textbox', { name: 'UIDs' }).fill('nonexistent@test.com');
+
+    await page.getByRole('button', { name: 'Invite', exact: true }).click();
+
+    // Should show error
+    await expect(page.getByText('User not found')).toBeVisible({ timeout: 10000 });
+  });
+});

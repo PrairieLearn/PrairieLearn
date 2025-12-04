@@ -1,4 +1,4 @@
-import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -189,7 +189,6 @@ function StudentsCard({
       DEFAULT_ENROLLMENT_STATUS_FILTER,
     ),
   );
-  const [lastInvitation, setLastInvitation] = useState<StaffEnrollment | null>(null);
 
   // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
@@ -244,40 +243,40 @@ function StudentsCard({
   });
 
   const [showInvite, setShowInvite] = useState(false);
+  const [lastInvitedUids, setLastInvitedUids] = useState<string[]>([]);
 
-  const inviteMutation = useMutation({
-    mutationKey: ['invite-uid'],
-    mutationFn: async (uid: string): Promise<StaffEnrollment> => {
-      const body = new URLSearchParams({
-        __action: 'invite_by_uid',
-        __csrf_token: csrfToken,
-        uid,
-      });
-      const res = await fetch(window.location.href, {
-        method: 'POST',
-        body,
-        headers: {
-          Accept: 'application/json',
-        },
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        let message = 'Failed to invite';
-        try {
-          if (typeof json?.error === 'string') message = json.error;
-        } catch {
-          // ignore parse errors, and just use the default message
-        }
-        throw new Error(message);
+  const inviteStudents = async (uids: string[]): Promise<StaffEnrollment[]> => {
+    const body = new URLSearchParams({
+      __action: 'invite_by_uid',
+      __csrf_token: csrfToken,
+      uids: uids.join(','),
+    });
+    const res = await fetch(window.location.href, {
+      method: 'POST',
+      body,
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      let message = 'Failed to invite';
+      try {
+        if (typeof json?.error === 'string') message = json.error;
+      } catch {
+        // ignore parse errors, and just use the default message
       }
-      return StaffEnrollmentSchema.parse(json.data);
-    },
-    onSuccess: async () => {
-      // Force a refetch of the enrollments query to ensure the new student is included
-      await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
-      setShowInvite(false);
-    },
-  });
+      throw new Error(message);
+    }
+    const enrollments = z.array(StaffEnrollmentSchema).parse(json.data);
+
+    // Force a refetch of the enrollments query to ensure the new students are included
+    await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+    setShowInvite(false);
+    setLastInvitedUids(uids);
+
+    return enrollments;
+  };
 
   const columns = useMemo(
     () => [
@@ -400,9 +399,11 @@ function StudentsCard({
 
   return (
     <>
-      {lastInvitation && (
-        <Alert variant="success" dismissible onClose={() => setLastInvitation(null)}>
-          {lastInvitation.pending_uid} was invited successfully.
+      {lastInvitedUids.length > 0 && (
+        <Alert variant="success" dismissible onClose={() => setLastInvitedUids([])}>
+          {lastInvitedUids.length === 1
+            ? `${lastInvitedUids[0]} was invited successfully.`
+            : `${lastInvitedUids.length} students were invited successfully.`}
         </Alert>
       )}
       <TanstackTableCard
@@ -439,7 +440,7 @@ function StudentsCard({
                   onClick={() => setShowInvite(true)}
                 >
                   <i class="bi bi-person-plus me-2" aria-hidden="true" />
-                  Invite student
+                  Invite students
                 </Button>
                 <CopyEnrollmentLinkButton courseInstance={courseInstance} />
               </>
@@ -484,10 +485,7 @@ function StudentsCard({
       <InviteStudentModal
         show={showInvite}
         onHide={() => setShowInvite(false)}
-        onSubmit={async ({ uid }) => {
-          const enrollment = await inviteMutation.mutateAsync(uid);
-          setLastInvitation(enrollment);
-        }}
+        onSubmit={inviteStudents}
       />
     </>
   );

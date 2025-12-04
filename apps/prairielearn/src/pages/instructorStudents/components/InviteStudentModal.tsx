@@ -1,13 +1,24 @@
+import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
+import { useState } from 'preact/compat';
 import { Alert, Modal } from 'react-bootstrap';
-import { type SubmitHandler, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import type { StaffEnrollment } from '../../../lib/client/safe-db-types.js';
 
 interface InviteStudentForm {
-  uid: string;
+  uids: string;
 }
+
+interface InvalidUidInfo {
+  uid: string;
+  reason: string;
+}
+
+type ModalStage =
+  | { type: 'editing' }
+  | { type: 'confirming'; invalidUids: InvalidUidInfo[]; validUids: string[] };
 
 export function InviteStudentModal({
   show,
@@ -16,102 +27,205 @@ export function InviteStudentModal({
 }: {
   show: boolean;
   onHide: () => void;
-  onSubmit: SubmitHandler<InviteStudentForm>;
+  onSubmit: (uids: string[]) => Promise<StaffEnrollment[]>;
 }) {
+  const [stage, setStage] = useState<ModalStage>({ type: 'editing' });
+
   const {
     register,
     handleSubmit,
     clearErrors,
     reset,
-    setError,
-    formState: { errors, isSubmitting, isValidating },
+    formState: { errors },
   } = useForm<InviteStudentForm>({
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
-    defaultValues: { uid: '' },
+    defaultValues: { uids: '' },
   });
 
+  const parseUids = (value: string): string[] => {
+    return [
+      ...new Set(
+        value
+          .split(/[\n,\s]+/)
+          .map((uid) => uid.trim())
+          .filter((uid) => uid.length > 0),
+      ),
+    ];
+  };
+
+  const validateUids = async (value: string): Promise<string | boolean> => {
+    const uids = parseUids(value);
+
+    if (uids.length === 0) {
+      return 'At least one UID is required';
+    }
+
+    const invalidEmails = uids.filter((uid) => !z.string().email().safeParse(uid).success);
+
+    if (invalidEmails.length > 0) {
+      return `The following UIDs were invalid: "${invalidEmails.join('", "')}"`;
+    }
+
+    // Check with server for enrollment status
+    const params = new URLSearchParams();
+    params.append('uids', uids.join(','));
+
+    let resp: Response | null = null;
+    try {
+      resp = await fetch(`${window.location.pathname}/invitation/check?${params.toString()}`);
+    } catch {
+      return 'Failed to validate UIDs';
+    }
+
+    if (!resp.ok) return 'Failed to validate UIDs';
+
+    const { success, data } = z
+      .object({ invalidUids: z.array(z.object({ uid: z.string(), reason: z.string() })) })
+      .safeParse(await resp.json());
+    if (!success) return 'Failed to check UIDs';
+
+    const validUids = uids.filter(
+      (uid) => !data.invalidUids.some((invalid) => invalid.uid === uid),
+    );
+
+    // If all UIDs are invalid, show inline error
+    if (validUids.length === 0) {
+      if (uids.length === 1) {
+        // Single UID case - show specific error
+        return data.invalidUids[0].reason;
+      }
+      // Multiple UIDs, all invalid
+      return 'None of the UIDs can be invited. Please check that all users exist and are not already enrolled.';
+    }
+
+    // If some valid and some invalid, show confirmation modal
+    if (data.invalidUids.length > 0) {
+      setStage({ type: 'confirming', invalidUids: data.invalidUids, validUids });
+      return false; // Prevents form submission but doesn't show error
+    }
+
+    return true;
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async (uids: string[]) => {
+      return onSubmit(uids);
+    },
+    onSuccess: () => {
+      setStage({ type: 'editing' });
+      reset();
+      onHide();
+    },
+  });
+
+  const onFormSubmit = async (data: InviteStudentForm) => {
+    const uids = parseUids(data.uids);
+    void saveMutation.mutate(uids);
+  };
+
   const onClose = () => {
+    setStage({ type: 'editing' });
     reset();
     clearErrors();
+    saveMutation.reset();
     onHide();
   };
+
+  if (stage.type === 'confirming') {
+    return (
+      <Modal show={show} backdrop="static" onHide={() => setStage({ type: 'editing' })}>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Invalid Students</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>The following UIDs cannot be invited:</p>
+          <div class="mb-3 p-3 bg-light border rounded">
+            {stage.invalidUids.map((invalid) => (
+              <div key={invalid.uid}>
+                <strong>{invalid.uid}</strong>: {invalid.reason}
+              </div>
+            ))}
+          </div>
+          <p>
+            Do you want to continue editing, or invite the {stage.validUids.length} valid{' '}
+            {stage.validUids.length === 1 ? 'student' : 'students'} anyway?
+          </p>
+          {saveMutation.isError && (
+            <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
+              {saveMutation.error instanceof Error
+                ? saveMutation.error.message
+                : 'An error occurred'}
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            disabled={saveMutation.isPending}
+            onClick={() => setStage({ type: 'editing' })}
+          >
+            Continue Editing
+          </button>
+          <button
+            type="button"
+            class="btn btn-warning"
+            disabled={saveMutation.isPending}
+            onClick={() => {
+              void saveMutation.mutate(stage.validUids);
+            }}
+          >
+            {saveMutation.isPending ? 'Inviting...' : 'Invite Anyway'}
+          </button>
+        </Modal.Footer>
+      </Modal>
+    );
+  }
 
   return (
     <Modal show={show} backdrop="static" onHide={onClose}>
       <Modal.Header closeButton>
-        <Modal.Title>Invite student</Modal.Title>
+        <Modal.Title>Invite students</Modal.Title>
       </Modal.Header>
 
-      <form
-        onSubmit={handleSubmit(async (data, event) => {
-          event.preventDefault();
-          try {
-            await onSubmit(data);
-          } catch (error) {
-            // errors with root as the key will not persist with each submission
-            setError('root.serverError', {
-              message: error instanceof Error ? error.message : 'Unknown error',
-            });
-          }
-        })}
-      >
+      <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
-          {errors.root?.serverError && (
-            <Alert
-              variant="danger"
-              dismissible
-              onClose={() => {
-                clearErrors('root.serverError');
-              }}
-            >
-              {errors.root.serverError.message}
+          {saveMutation.isError && (
+            <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
+              {saveMutation.error instanceof Error
+                ? saveMutation.error.message
+                : 'An error occurred'}
             </Alert>
           )}
-          <div class="mb-3">
-            <label for="invite-uid" class="form-label">
-              UID
+          <div class="mb-0">
+            <label for="invite-uids" class="form-label">
+              UIDs
             </label>
-            <input
-              id="invite-uid"
-              class={clsx('form-control', errors.uid && 'is-invalid')}
-              type="email"
-              placeholder="Enter UID"
-              aria-invalid={errors.uid ? 'true' : 'false'}
-              {...register('uid', {
-                validate: async (uid) => {
-                  if (!uid) return 'UID is required';
-                  if (!z.string().email().safeParse(uid).success) return 'Invalid UID';
-
-                  const params = new URLSearchParams({ uid });
-                  const res = await fetch(
-                    `${window.location.pathname}/enrollment.json?${params.toString()}`,
-                    {
-                      headers: {
-                        Accept: 'application/json',
-                      },
-                    },
-                  );
-                  if (!res.ok) return 'Failed to fetch enrollment';
-                  const data: StaffEnrollment | null = await res.json();
-                  if (data) {
-                    if (data.status === 'joined') return 'This student is already enrolled';
-                    if (data.status === 'invited') return 'This student has a pending invitation';
-                  }
-
-                  return true;
-                },
+            <textarea
+              id="invite-uids"
+              class={clsx('form-control', errors.uids && 'is-invalid')}
+              rows={5}
+              placeholder="One UID per line, or comma/space separated"
+              aria-invalid={errors.uids ? 'true' : 'false'}
+              {...register('uids', {
+                validate: validateUids,
               })}
             />
-            {errors.uid?.message && <div class="invalid-feedback">{errors.uid.message}</div>}
+            {errors.uids?.message && <div class="invalid-feedback">{errors.uids.message}</div>}
           </div>
         </Modal.Body>
         <Modal.Footer>
-          <button type="button" class="btn btn-secondary" disabled={isSubmitting} onClick={onClose}>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            disabled={saveMutation.isPending}
+            onClick={onClose}
+          >
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary" disabled={isSubmitting || isValidating}>
-            Invite
+          <button type="submit" class="btn btn-primary" disabled={saveMutation.isPending}>
+            {saveMutation.isPending ? 'Inviting...' : 'Invite'}
           </button>
         </Modal.Footer>
       </form>

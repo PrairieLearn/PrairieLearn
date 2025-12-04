@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { callRow, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -76,6 +76,78 @@ router.get(
   }),
 );
 
+// Validate a list of UIDs for bulk invitation.
+// Returns the list of UIDs that cannot be invited (invalidUids) with reasons.
+router.get(
+  '/invitation/check',
+  asyncHandler(async (req, res) => {
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
+
+    if (!pageContext.authz_data.has_course_instance_permission_edit) {
+      throw new HttpStatusError(403, 'Access denied (must be course instance editor)');
+    }
+
+    const { course_instance: courseInstance } = pageContext;
+
+    // Accept comma-separated UIDs in query parameter
+    const uidsString = typeof req.query.uids === 'string' ? req.query.uids : '';
+    const uids: string[] = [
+      ...new Set(
+        uidsString
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0),
+      ),
+    ];
+
+    const invalidUids: { uid: string; reason: string }[] = [];
+
+    for (const uid of uids) {
+      // Check if user exists
+      const user = await selectOptionalUserByUid(uid);
+      if (user == null) {
+        invalidUids.push({ uid, reason: 'User not found' });
+        continue;
+      }
+
+      // Check if user is an instructor
+      const isInstructor = await callRow(
+        'users_is_instructor_in_course_instance',
+        [user.user_id, courseInstance.id],
+        z.boolean(),
+      );
+      if (isInstructor) {
+        invalidUids.push({ uid, reason: 'User is an instructor' });
+        continue;
+      }
+
+      // Check enrollment status
+      const existingEnrollment = await selectOptionalEnrollmentByUid({
+        courseInstance,
+        uid,
+        requiredRole: ['Student Data Viewer'],
+        authzData: res.locals.authz_data,
+      });
+
+      if (existingEnrollment) {
+        if (existingEnrollment.status === 'joined') {
+          invalidUids.push({ uid, reason: 'Already enrolled' });
+          continue;
+        }
+        if (existingEnrollment.status === 'invited') {
+          invalidUids.push({ uid, reason: 'Already has a pending invitation' });
+          continue;
+        }
+      }
+    }
+
+    res.json({ invalidUids });
+  }),
+);
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -93,56 +165,43 @@ router.post(
 
     const { course_instance: courseInstance } = pageContext;
 
+    const EmailsSchema = z.array(z.string().trim().email()).min(1, 'At least one UID is required');
+
     const BodySchema = z.object({
-      uid: z.string().min(1),
+      uids: z.preprocess(
+        (val) =>
+          typeof val === 'string'
+            ? [
+                ...new Set(
+                  val
+                    .split(/[\n,\s]+/)
+                    .map((s) => s.trim())
+                    .filter((s) => s.length > 0),
+                ),
+              ]
+            : val,
+        EmailsSchema,
+      ),
       __action: z.literal('invite_by_uid'),
     });
     const body = BodySchema.parse(req.body);
 
-    const user = await selectOptionalUserByUid(body.uid);
-
-    if (user == null) {
-      throw new HttpStatusError(400, 'User not found');
-    }
-
-    const isInstructor = await callRow(
-      'users_is_instructor_in_course_instance',
-      [user.user_id, courseInstance.id],
-      z.boolean(),
-    );
-
-    if (isInstructor) {
-      throw new HttpStatusError(400, 'The user is an instructor');
-    }
-
-    // Try to find an existing enrollment so we can error gracefully.
-    const existingEnrollment = await selectOptionalEnrollmentByUid({
-      courseInstance,
-      uid: body.uid,
-      requiredRole: ['Student Data Viewer'],
-      authzData: res.locals.authz_data,
+    // Process all invitations in a single transaction
+    const staffEnrollments = await runInTransactionAsync(async () => {
+      const enrollments = [];
+      for (const uid of body.uids) {
+        const enrollment = await inviteStudentByUid({
+          courseInstance,
+          uid,
+          requiredRole: ['Student Data Editor'],
+          authzData: res.locals.authz_data,
+        });
+        enrollments.push(StaffEnrollmentSchema.parse(enrollment));
+      }
+      return enrollments;
     });
 
-    if (existingEnrollment) {
-      if (existingEnrollment.status === 'joined') {
-        throw new HttpStatusError(400, 'The user is already enrolled');
-      }
-
-      if (existingEnrollment.status === 'invited') {
-        throw new HttpStatusError(400, 'The user has an existing invitation');
-      }
-    }
-
-    const enrollment = await inviteStudentByUid({
-      courseInstance,
-      uid: body.uid,
-      requiredRole: ['Student Data Editor'],
-      authzData: res.locals.authz_data,
-    });
-
-    const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
-
-    res.json({ data: staffEnrollment });
+    res.json({ data: staffEnrollments });
   }),
 );
 
