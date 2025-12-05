@@ -95,17 +95,7 @@ router.get(
     const EmailsSchema = z.array(z.string().trim().email()).min(1, 'At least one UID is required');
     const QuerySchema = z.object({
       uids: z.preprocess(
-        (val) =>
-          typeof val === 'string'
-            ? [
-                ...new Set(
-                  val
-                    .split(',')
-                    .map((s) => s.trim())
-                    .filter((s) => s.length > 0),
-                ),
-              ]
-            : val,
+        (val) => (typeof val === 'string' ? [...new Set(val.split(','))] : val),
         EmailsSchema,
       ),
     });
@@ -195,6 +185,35 @@ router.post(
     // Process all invitations in a single transaction
     const staffEnrollments = await runInTransactionAsync(async () => {
       const enrollments = body.uids.map(async (uid) => {
+        const user = await selectOptionalUserByUid(uid);
+        if (user) {
+          // Check if user is an instructor
+          const isInstructor = await callRow(
+            'users_is_instructor_in_course_instance',
+            [user.user_id, courseInstance.id],
+            z.boolean(),
+          );
+          if (isInstructor) {
+            throw new HttpStatusError(400, `User ${uid} is an instructor`);
+          }
+        }
+
+        const existingEnrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requiredRole: ['Student Data Viewer'],
+          authzData: res.locals.authz_data,
+        });
+
+        if (existingEnrollment) {
+          if (existingEnrollment.status === 'joined') {
+            throw new HttpStatusError(400, `User ${uid} is already enrolled`);
+          }
+          if (existingEnrollment.status === 'invited') {
+            throw new HttpStatusError(400, `User ${uid} already has a pending invitation`);
+          }
+        }
+
         const enrollment = await inviteStudentByUid({
           courseInstance,
           uid,

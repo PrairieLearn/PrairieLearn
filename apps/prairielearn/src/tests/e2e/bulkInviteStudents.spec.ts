@@ -1,6 +1,5 @@
-import { z } from 'zod';
-
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { syncCourse } from '../helperCourse.js';
@@ -36,18 +35,14 @@ async function createTestData() {
 
   // Create valid students (not enrolled)
   for (const student of [VALID_STUDENT, VALID_STUDENT_2, VALID_STUDENT_3]) {
-    await sqldb.queryRow(
-      sql.insert_or_update_user,
-      { uid: student.uid, name: student.name },
-      z.string(),
-    );
+    await sqldb.executeRow(sql.insert_or_update_user, { uid: student.uid, name: student.name });
   }
 
   // Create an already enrolled student
   const enrolledUserId = await sqldb.queryRow(
     sql.insert_or_update_user,
     { uid: ENROLLED_STUDENT.uid, name: ENROLLED_STUDENT.name },
-    z.string(),
+    IdSchema,
   );
   await sqldb.execute(sql.insert_joined_enrollment, { user_id: enrolledUserId });
 
@@ -147,11 +142,10 @@ test.describe('Bulk invite students', () => {
 
   test('shows confirmation modal when some UIDs are valid and some invalid', async ({ page }) => {
     // Create a fresh valid student for this test
-    await sqldb.queryRow(
-      sql.insert_or_update_user,
-      { uid: 'fresh_student@test.com', name: 'Fresh Student' },
-      z.string(),
-    );
+    await sqldb.executeRow(sql.insert_or_update_user, {
+      uid: 'fresh_student@test.com',
+      name: 'Fresh Student',
+    });
 
     await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
 
@@ -178,11 +172,10 @@ test.describe('Bulk invite students', () => {
   });
 
   test('can continue editing from confirmation modal', async ({ page }) => {
-    await sqldb.queryRow(
-      sql.insert_or_update_user,
-      { uid: 'another_fresh@test.com', name: 'Another Fresh Student' },
-      z.string(),
-    );
+    await sqldb.executeRow(sql.insert_or_update_user, {
+      uid: 'another_fresh@test.com',
+      name: 'Another Fresh Student',
+    });
 
     await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
 

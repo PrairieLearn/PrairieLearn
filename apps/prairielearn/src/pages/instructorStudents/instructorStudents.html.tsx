@@ -44,7 +44,7 @@ import {
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
-import { InviteStudentModal } from './components/InviteStudentModal.js';
+import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
@@ -482,7 +482,7 @@ function StudentsCard({
           ),
         }}
       />
-      <InviteStudentModal
+      <InviteStudentsModal
         show={showInvite}
         onHide={() => setShowInvite(false)}
         onSubmit={inviteStudents}

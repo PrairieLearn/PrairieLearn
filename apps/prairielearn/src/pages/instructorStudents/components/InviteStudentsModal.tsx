@@ -20,7 +20,7 @@ type ModalStage =
   | { type: 'editing' }
   | { type: 'confirming'; invalidUids: InvalidUidInfo[]; validUids: string[] };
 
-export function InviteStudentModal({
+export function InviteStudentsModal({
   show,
   onHide,
   onSubmit,
@@ -181,7 +181,7 @@ export function InviteStudentModal({
               void saveMutation.mutate(stage.validUids);
             }}
           >
-            {saveMutation.isPending ? 'Inviting...' : 'Invite Anyway'}
+            {saveMutation.isPending ? 'Inviting...' : 'Invite anyway'}
           </button>
         </Modal.Footer>
       </Modal>
