@@ -13,7 +13,13 @@ const router = Router();
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const { start_date, end_date, course_instance_id } = z
+    const {
+      start_date,
+      end_date,
+      course_instance_id,
+      self_enrollment_enabled,
+      self_enrollment_use_enrollment_code,
+    } = z
       .object({
         // This works around a bug in Chrome where seconds are omitted from the input value when they're 0.
         // We would normally solve this on the client side, but this page does a HTML POST, so transformations
@@ -25,6 +31,11 @@ router.post(
         start_date: z.string().transform((v) => (v.length === 16 ? `${v}:00` : v)),
         end_date: z.string().transform((v) => (v.length === 16 ? `${v}:00` : v)),
         course_instance_id: z.string(),
+        // HTML form checkboxes send "on" when checked and are absent (undefined) when unchecked
+        self_enrollment_enabled: z.preprocess((val) => val === 'on', z.boolean()).optional(),
+        self_enrollment_use_enrollment_code: z
+          .preprocess((val) => val === 'on', z.boolean())
+          .optional(),
       })
       .parse(req.body);
 
@@ -47,6 +58,14 @@ router.post(
           }
         : undefined;
 
+    const resolvedSelfEnrollment =
+      self_enrollment_enabled !== undefined
+        ? {
+            enabled: self_enrollment_enabled,
+            useEnrollmentCode: self_enrollment_use_enrollment_code,
+          }
+        : undefined;
+
     const fileTransferId = await copyCourseInstanceBetweenCourses({
       fromCourse: course,
       fromCourseInstance: courseInstance,
@@ -54,6 +73,7 @@ router.post(
       userId: res.locals.user.user_id,
       metadataOverrides: {
         publishing: resolvedPublishing,
+        selfEnrollment: resolvedSelfEnrollment,
       },
     });
 

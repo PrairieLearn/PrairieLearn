@@ -42,7 +42,7 @@ export function CourseInstanceSelfEnrollmentForm() {
         </div>
       </div>
 
-      <div class={clsx('mb-3 form-check', !selfEnrollmentEnabled && 'd-none')}>
+      <div class={clsx('mb-3 form-check')}>
         <input
           class="form-check-input"
           type="checkbox"

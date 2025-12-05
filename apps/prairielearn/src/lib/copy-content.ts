@@ -8,7 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { selectCoursesWithEditAccess } from '../models/course.js';
-import type { CourseInstanceJson } from '../schemas/infoCourseInstance.js';
+import type { CourseInstanceJsonInput } from '../schemas/infoCourseInstance.js';
 
 import { config } from './config.js';
 import { type Course, type CourseInstance, type Question, type User } from './db-types.js';
@@ -229,7 +229,7 @@ export async function copyCourseInstanceBetweenCourses({
   toCourseId: string;
   fromCourseInstance: CourseInstance;
   userId: string;
-  metadataOverrides: Partial<CourseInstanceJson>;
+  metadataOverrides: Partial<CourseInstanceJsonInput>;
 }) {
   if (!fromCourseInstance.short_name) {
     throw new Error(`Course Instance ${fromCourseInstance.long_name} does not have a short_name`);

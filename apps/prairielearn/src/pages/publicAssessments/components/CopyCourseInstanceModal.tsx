@@ -8,6 +8,10 @@ import {
   type PublishingFormValues,
 } from '../../../components/CourseInstancePublishingForm.js';
 import {
+  CourseInstanceSelfEnrollmentForm,
+  type SelfEnrollmentFormValues,
+} from '../../../components/CourseInstanceSelfEnrollmentForm.js';
+import {
   type PublicCourse,
   type PublicCourseInstance,
   RawPublicQuestionSchema,
@@ -49,12 +53,16 @@ export function CopyCourseInstanceModal({
   // Find the selected course data
   const selectedCourse = courseInstanceCopyTargets?.find((c) => c.id === selectedCourseId);
 
-  const defaultValues: PublishingFormValues = {
+  interface CopyFormValues extends PublishingFormValues, SelfEnrollmentFormValues {}
+
+  const defaultValues: CopyFormValues = {
     start_date: '',
     end_date: '',
+    self_enrollment_enabled: courseInstance.self_enrollment_enabled,
+    self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
   };
 
-  const methods = useForm<PublishingFormValues>({
+  const methods = useForm<CopyFormValues>({
     defaultValues,
   });
 
@@ -145,6 +153,14 @@ export function CopyCourseInstanceModal({
                   originalEndDate={null}
                   showButtons={false}
                 />
+
+                <hr />
+
+                <h3 class="h5">Self-enrollment settings</h3>
+                <p class="text-muted small">
+                  Configure self-enrollment for your new course instance. This can be changed later.
+                </p>
+                <CourseInstanceSelfEnrollmentForm />
               </FormProvider>
             </Modal.Body>
 
