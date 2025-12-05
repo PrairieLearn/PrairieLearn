@@ -170,7 +170,7 @@ The example above disables the `static` warning (use of static fields applied to
 Similarly, you may set specific options to the `java` command line using the `JDK_JAVA_OPTIONS`. A list of valid options can be found in the [`java` documentation page](https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html#standard-options-for-java). Some options of interest may include:
 
 - `-Dproperty=value` to set system properties that may be retrieved with `System.getProperty(name)`;
-  - This may be useful to set JUnit configuration properties, as described in [the JUnit documentation](https://docs.junit.org/5.14.1/user-guide/#running-tests-config-params). For example, you can set [custom timeout values](https://docs.junit.org/5.14.1/user-guide/#writing-tests-declarative-timeouts-default-timeouts) or set a default [display name generator](https://docs.junit.org/5.14.1/user-guide/#writing-tests-display-name-generator-default).
+  - This may be useful to set JUnit configuration properties, as described in [the JUnit documentation](https://docs.junit.org/5.14.1/user-guide/#running-tests-config-params).
 - `-ea` to enable [Java assertions](https://docs.oracle.com/javase/8/docs/technotes/guides/language/assert.html).
 
 ### Libraries and instructor-provided classes
