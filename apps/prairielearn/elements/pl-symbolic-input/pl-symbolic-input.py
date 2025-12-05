@@ -80,16 +80,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    a_true = None
     if pl.has_attrib(element, "correct-answer"):
         if name in data["correct_answers"]:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
-        a_true = pl.get_string_attrib(element, "correct-answer")
-    elif isinstance(data["correct_answers"][name], str):
-        a_true = str(data["correct_answers"][name])
 
-    # String case
-    if a_true is not None:
+        a_true = pl.get_string_attrib(element, "correct-answer")
+
         variables = psu.get_items_list(
             pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
         )
@@ -104,6 +100,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
         allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
         blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
+        simplify_expression = pl.get_boolean_attrib(
+            element,
+            "display-simplified-expression",
+            DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
+        )
         # Validate that the answer can be parsed before storing
         if a_true.strip() != "":
             try:
@@ -113,6 +114,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     allow_complex=allow_complex,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
+                    simplify_expression=simplify_expression,
                 )
             except psu.BaseSympyError as exc:
                 raise ValueError(
