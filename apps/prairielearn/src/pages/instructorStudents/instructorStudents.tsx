@@ -101,18 +101,16 @@ router.post(
 
     const user = await selectOptionalUserByUid(body.uid);
 
-    if (user == null) {
-      throw new HttpStatusError(400, 'User not found');
-    }
+    if (user) {
+      const isInstructor = await callRow(
+        'users_is_instructor_in_course_instance',
+        [user.user_id, courseInstance.id],
+        z.boolean(),
+      );
 
-    const isInstructor = await callRow(
-      'users_is_instructor_in_course_instance',
-      [user.user_id, courseInstance.id],
-      z.boolean(),
-    );
-
-    if (isInstructor) {
-      throw new HttpStatusError(400, 'The user is an instructor');
+      if (isInstructor) {
+        throw new HttpStatusError(400, 'The user is an instructor');
+      }
     }
 
     // Try to find an existing enrollment so we can error gracefully.

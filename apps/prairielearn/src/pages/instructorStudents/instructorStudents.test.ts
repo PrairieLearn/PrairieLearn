@@ -59,7 +59,7 @@ describe('Instructor Students - Invite by UID', () => {
     assert.isString(csrfToken);
   });
 
-  test.sequential('should return error when user does not exist', async () => {
+  test.sequential('should successfully invite a nonexistent user', async () => {
     const response = await fetch(studentsUrl, {
       method: 'POST',
       headers: {
@@ -74,9 +74,10 @@ describe('Instructor Students - Invite by UID', () => {
       }),
     });
 
-    assert.equal(response.status, 400);
+    assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.error, 'User not found');
+    assert.isObject(data.data);
+    assert.equal(data.data.status, 'invited');
   });
 
   test.sequential('should return error when user is an instructor', async () => {
