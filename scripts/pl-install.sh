@@ -2,6 +2,7 @@
 set -ex
 
 export DEBIAN_FRONTEND=noninteractive
+export PATH="/usr/lib/postgresql/16/bin:$PATH"
 
 apt-get update -y
 apt-get upgrade -y
