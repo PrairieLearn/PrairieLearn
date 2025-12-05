@@ -75,6 +75,7 @@ interface InstructorCourseAdminInstancesInnerProps {
   needToSync: boolean;
   csrfToken: string;
   urlPrefix: string;
+  enrollmentManagementEnabled: boolean;
 }
 
 export function InstructorCourseAdminInstancesInner({
@@ -84,6 +85,7 @@ export function InstructorCourseAdminInstancesInner({
   needToSync,
   csrfToken,
   urlPrefix,
+  enrollmentManagementEnabled,
 }: InstructorCourseAdminInstancesInnerProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -95,6 +97,7 @@ export function InstructorCourseAdminInstancesInner({
         show={showCreateModal}
         course={course}
         csrfToken={csrfToken}
+        enrollmentManagementEnabled={enrollmentManagementEnabled}
         onHide={() => setShowCreateModal(false)}
       />
 
