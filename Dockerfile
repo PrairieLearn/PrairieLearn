@@ -36,8 +36,13 @@ RUN corepack enable && \
 # Copy source code (respects .dockerignore)
 COPY . .
 
-# Build TypeScript code and clean cache
-RUN yarn turbo run build && yarn cache clean
+# Build TypeScript code
+RUN yarn turbo run build
+
+# Prune devDependencies for production - reinstall with only production deps
+RUN rm -rf node_modules && \
+    yarn workspaces focus --all --production && \
+    yarn cache clean
 
 # ==============================================================================
 # Final stage: Runtime image with all services
