@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export PGDATA=${PGDATA:=/var/postgres}
+export PATH="/usr/lib/postgresql/16/bin:$PATH"
 
 if [[ -z "$1" ]]; then
     ACTION=start
@@ -17,7 +18,7 @@ fi
 
 mkdir -p $PGDATA
 chown -f postgres:postgres $PGDATA
-su postgres -c 'pg_ctl status' > /dev/null 2>&1
+su postgres -c "pg_ctl status" > /dev/null 2>&1
 if [[ $? == 4 ]]; then
     echo "Making new postgres database at ${PGDATA}"
     su postgres -c "initdb" > /dev/null 2>&1
