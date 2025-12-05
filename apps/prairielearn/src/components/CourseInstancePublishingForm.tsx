@@ -98,8 +98,10 @@ export function CourseInstancePublishingForm({
     const now = nowRoundedToSeconds();
     const nowTemporal = dateToPlainDateTime(now, displayTimezone);
 
-    const oneWeekLater = nowTemporal.add({ weeks: 1 });
-    const eighteenWeeksLater = nowTemporal.add({ weeks: 18 });
+    const oneWeekLater = nowTemporal.add({ weeks: 1 }).with({ hour: 0, minute: 1, second: 1 });
+    const eighteenWeeksLater = nowTemporal
+      .add({ weeks: 18 })
+      .with({ hour: 23, minute: 59, second: 59 });
 
     const currentStartDate = startDate === '' ? null : Temporal.PlainDateTime.from(startDate);
     const currentEndDate = endDate === '' ? null : Temporal.PlainDateTime.from(endDate);
