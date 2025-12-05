@@ -21,7 +21,6 @@ export function InstructorInstanceAdminSettings({
   csrfToken,
   urlPrefix,
   navPage,
-  hasEnhancedNavigation,
   canEdit,
   course,
   courseInstance,
@@ -40,7 +39,6 @@ export function InstructorInstanceAdminSettings({
   csrfToken: string;
   urlPrefix: string;
   navPage: NavPage;
-  hasEnhancedNavigation: boolean;
   canEdit: boolean;
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
@@ -99,11 +97,7 @@ export function InstructorInstanceAdminSettings({
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-          <h1>
-            {hasEnhancedNavigation
-              ? 'General course instance settings'
-              : 'Course instance settings'}
-          </h1>
+          <h1>General course instance settings</h1>
           <GitHubButton gitHubLink={instanceGHLink ?? null} />
         </div>
         <div class="card-body">

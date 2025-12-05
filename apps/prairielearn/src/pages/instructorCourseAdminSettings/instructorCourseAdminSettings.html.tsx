@@ -49,9 +49,7 @@ export function InstructorCourseAdminSettings({
         <div
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
         >
-          <h1>
-            ${resLocals.has_enhanced_navigation ? 'General course settings' : 'Course Settings'}
-          </h1>
+          <h1>General course settings</h1>
           ${GitHubButtonHtml(courseGHLink)}
         </div>
         <div class="card-body">

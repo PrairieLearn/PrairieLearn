@@ -336,7 +336,6 @@ export interface ResLocalsCourse {
   authz_data: ResLocalsCourseAuthz;
   user: ResLocalsCourseAuthz['user'];
   course_has_course_instances: boolean;
-  has_enhanced_navigation: boolean;
   question_sharing_enabled: boolean;
 }
 
@@ -693,10 +692,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     course: res.locals.course,
   });
 
-  res.locals.has_enhanced_navigation = !(await features.enabledFromLocals(
-    'legacy-navigation',
-    res.locals,
-  ));
   res.locals.question_sharing_enabled = await features.enabledFromLocals(
     'question-sharing',
     res.locals,

@@ -128,7 +128,6 @@ const STUDENT_COURSE = {
 const mockStudentData = {
   course_instance: STUDENT_COURSE_INSTANCE,
   course: STUDENT_COURSE,
-  has_enhanced_navigation: false,
 };
 
 const mockInstructorData = {
@@ -167,7 +166,6 @@ const mockInstructorData = {
     show_getting_started: false,
   },
   institution: TEST_INSTITUTION,
-  has_enhanced_navigation: false,
 };
 
 const STAFF_ASSESSMENT_SET = {
@@ -504,7 +502,6 @@ describe('extractPageContext with courseInstance pageType', () => {
     const studentDataWithExtra = {
       course_instance: { ...mockStudentData.course_instance, extra: 'field' },
       course: { ...mockStudentData.course, another: 'field' },
-      has_enhanced_navigation: false,
       ...createBaseContext(),
       authz_data: createStudentAuthzData(),
     };
@@ -522,7 +519,6 @@ describe('extractPageContext with courseInstance pageType', () => {
       course_instance: { ...mockInstructorData.course_instance, extra: 'field' },
       course: { ...mockInstructorData.course, another: 'field' },
       institution: { ...mockInstructorData.institution, extra: 'field' },
-      has_enhanced_navigation: false,
       ...createBaseContext({ navbarType: 'instructor' }),
       authz_data: createInstructorAuthzData(),
     };

@@ -51,7 +51,6 @@ router.get(
       course_instance: courseInstance,
       course,
       institution,
-      has_enhanced_navigation,
       authz_data,
       urlPrefix,
       navPage,
@@ -137,7 +136,6 @@ router.get(
                 csrfToken={__csrf_token}
                 urlPrefix={urlPrefix}
                 navPage={navPage}
-                hasEnhancedNavigation={has_enhanced_navigation}
                 canEdit={canEdit}
                 course={course}
                 courseInstance={courseInstance}
