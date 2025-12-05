@@ -6,6 +6,7 @@ columns
     max_points: double precision
     points: double precision
     score_perc: double precision
+    score_perc_pending: double precision not null default 0
 
 indexes
     assessment_score_logs_pkey: PRIMARY KEY (id) USING btree (id)
