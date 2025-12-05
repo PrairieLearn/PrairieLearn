@@ -181,6 +181,12 @@ router.post(
       accessType: 'instructor',
     });
 
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: institution.id,
+      course_id: course.id,
+      course_instance_id: courseInstance.id,
+    });
+
     if (req.body.__action === 'copy_course_instance') {
       const {
         short_name,
@@ -268,7 +274,7 @@ router.post(
       );
 
       const resolvedSelfEnrollment =
-        selfEnrollmentEnabled || selfEnrollmentUseEnrollmentCode
+        (selfEnrollmentEnabled || selfEnrollmentUseEnrollmentCode) && enrollmentManagementEnabled
           ? {
               enabled: selfEnrollmentEnabled,
               useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
@@ -399,11 +405,6 @@ router.post(
           selfEnrollmentRestrictToInstitution ??
           selfEnrollmentBeforeDate) !== undefined;
 
-      const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-        institution_id: institution.id,
-        course_id: course.id,
-        course_instance_id: courseInstance.id,
-      });
       // Only write self enrollment settings if they are not the default values.
       // When JSON.stringify is used, undefined values are not included in the JSON object.
       if (hasSelfEnrollmentSettings) {

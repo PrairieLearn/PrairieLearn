@@ -23,11 +23,13 @@ export function CreateCourseInstanceModal({
   onHide,
   course,
   csrfToken,
+  enrollmentManagementEnabled,
 }: {
   show: boolean;
   onHide: () => void;
   course: StaffCourse;
   csrfToken: string;
+  enrollmentManagementEnabled: boolean;
 }) {
   const methods = useForm<CreateFormValues>({
     defaultValues: {
@@ -185,14 +187,18 @@ export function CreateCourseInstanceModal({
               showButtons={false}
             />
 
-            <hr />
+            {enrollmentManagementEnabled && (
+              <>
+                <hr />
 
-            <h3 class="h5">Self-enrollment settings</h3>
-            <p class="text-muted small">
-              Configure self-enrollment for your new course instance. This can be changed later.
-            </p>
+                <h3 class="h5">Self-enrollment settings</h3>
+                <p class="text-muted small">
+                  Configure self-enrollment for your new course instance. This can be changed later.
+                </p>
 
-            <CourseInstanceSelfEnrollmentForm />
+                <CourseInstanceSelfEnrollmentForm />
+              </>
+            )}
           </Modal.Body>
 
           <Modal.Footer>

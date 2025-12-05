@@ -13,6 +13,7 @@ import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarni
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { type Course, CourseInstanceSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import {
   selectCourseInstanceByUuid,
@@ -65,9 +66,17 @@ router.get(
       );
 
     // TODO: We need to land the refactor so I can add the course context as an option.
-    const { course, __csrf_token, authz_data, urlPrefix } = extractPageContext(res.locals, {
-      pageType: 'course',
-      accessType: 'instructor',
+    const { course, institution, __csrf_token, authz_data, urlPrefix } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'course',
+        accessType: 'instructor',
+      },
+    );
+
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: institution.id,
+      course_id: course.id,
     });
 
     res.send(
@@ -97,6 +106,7 @@ router.get(
                 needToSync={needToSync}
                 csrfToken={__csrf_token}
                 urlPrefix={urlPrefix}
+                enrollmentManagementEnabled={enrollmentManagementEnabled}
               />
             </Hydrate>
           </>
