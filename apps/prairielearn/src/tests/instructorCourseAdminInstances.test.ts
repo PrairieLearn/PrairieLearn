@@ -98,8 +98,8 @@ describe('Creating a course instance', () => {
     const courseInstanceInfo = JSON.parse(await getCourseInstanceFileContents('Fa19'));
 
     assert.equal(courseInstanceInfo.longName, 'Fall 2019');
-    assert.equal(courseInstanceInfo.publishing.startDate, '2021-01-01 00:00:00');
-    assert.equal(courseInstanceInfo.publishing.endDate, '2021-01-02 00:00:00');
+    assert.equal(courseInstanceInfo.publishing.startDate, '2021-01-01T00:00:00');
+    assert.equal(courseInstanceInfo.publishing.endDate, '2021-01-02T00:00:00');
   });
   test.sequential('add the same course instance again', async () => {
     const courseInstancePageResponse = await fetchCheerio(
