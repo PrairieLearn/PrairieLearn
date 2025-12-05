@@ -6,13 +6,17 @@ import {
   CourseInstancePublishingForm,
   type PublishingFormValues,
 } from '../../../components/CourseInstancePublishingForm.js';
+import {
+  CourseInstanceSelfEnrollmentForm,
+  type SelfEnrollmentFormValues,
+} from '../../../components/CourseInstanceSelfEnrollmentForm.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import {
   getCourseInstanceEditErrorUrl,
   getCourseInstanceSettingsUrl,
 } from '../../../lib/client/url.js';
 
-interface CopyFormValues extends PublishingFormValues {
+interface CopyFormValues extends PublishingFormValues, SelfEnrollmentFormValues {
   short_name: string;
   long_name: string;
 }
@@ -36,6 +40,8 @@ export function CopyCourseInstanceModal({
       long_name: '',
       start_date: '',
       end_date: '',
+      self_enrollment_enabled: courseInstance.self_enrollment_enabled,
+      self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
     },
     mode: 'onSubmit',
   });
@@ -56,6 +62,8 @@ export function CopyCourseInstanceModal({
         long_name: data.long_name.trim(),
         start_date: data.start_date,
         end_date: data.end_date,
+        self_enrollment_enabled: data.self_enrollment_enabled,
+        self_enrollment_use_enrollment_code: data.self_enrollment_use_enrollment_code,
       };
 
       const resp = await fetch(window.location.pathname, {
@@ -185,6 +193,15 @@ export function CopyCourseInstanceModal({
               originalEndDate={null}
               showButtons={false}
             />
+
+            <hr />
+
+            <h3 class="h5">Self-enrollment settings</h3>
+            <p class="text-muted small">
+              Configure self-enrollment for your new course instance. This can be changed later.
+            </p>
+
+            <CourseInstanceSelfEnrollmentForm />
           </Modal.Body>
 
           <Modal.Footer>

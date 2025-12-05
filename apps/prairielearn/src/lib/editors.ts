@@ -1054,6 +1054,40 @@ export class CourseInstanceCopyEditor extends Editor {
     // We do not want to preserve sharing settings when copying a course instance
     delete infoJson.shareSourcePublicly;
 
+    // Update publishing settings from the course instance
+    if (this.course_instance.publishing_start_date || this.course_instance.publishing_end_date) {
+      infoJson.publishing = {
+        startDate: this.course_instance.publishing_start_date
+          ? formatDate(this.course_instance.publishing_start_date, this.course.display_timezone, {
+              includeTz: false,
+            })
+          : undefined,
+        endDate: this.course_instance.publishing_end_date
+          ? formatDate(this.course_instance.publishing_end_date, this.course.display_timezone, {
+              includeTz: false,
+            })
+          : undefined,
+      };
+    } else {
+      delete infoJson.publishing;
+    }
+
+    // Update selfEnrollment settings from the course instance
+    const selfEnrollmentEnabled = this.course_instance.self_enrollment_enabled;
+    const selfEnrollmentUseEnrollmentCode =
+      this.course_instance.self_enrollment_use_enrollment_code;
+
+    if (selfEnrollmentEnabled || selfEnrollmentUseEnrollmentCode) {
+      infoJson.selfEnrollment = {
+        ...infoJson.selfEnrollment,
+        enabled: selfEnrollmentEnabled,
+        useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+      };
+    } else {
+      // If self-enrollment is disabled and no enrollment code, clear the settings
+      delete infoJson.selfEnrollment;
+    }
+
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
@@ -1209,12 +1243,18 @@ export class CourseInstanceRenameEditor extends Editor {
   }
 }
 
+export interface SelfEnrollmentSettings {
+  enabled?: boolean;
+  useEnrollmentCode?: boolean;
+}
+
 export class CourseInstanceAddEditor extends Editor {
   public readonly uuid: string;
   private short_name: string;
   private long_name: string;
   private start_access_date?: Temporal.ZonedDateTime;
   private end_access_date?: Temporal.ZonedDateTime;
+  private self_enrollment?: SelfEnrollmentSettings;
 
   constructor(
     params: BaseEditorOptions & {
@@ -1222,6 +1262,7 @@ export class CourseInstanceAddEditor extends Editor {
       long_name: string;
       start_access_date?: Temporal.ZonedDateTime;
       end_access_date?: Temporal.ZonedDateTime;
+      self_enrollment?: SelfEnrollmentSettings;
     },
   ) {
     super({
@@ -1244,6 +1285,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     this.start_access_date = params.start_access_date;
     this.end_access_date = params.end_access_date;
+    this.self_enrollment = params.self_enrollment;
   }
 
   async write() {
@@ -1303,6 +1345,8 @@ export class CourseInstanceAddEditor extends Editor {
     if (publishing.startDate || publishing.endDate) {
       infoJson.publishing = publishing;
     }
+
+    infoJson.selfEnrollment = this.self_enrollment;
 
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to

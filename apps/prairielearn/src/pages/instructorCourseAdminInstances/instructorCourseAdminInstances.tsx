@@ -115,12 +115,21 @@ router.post(
     });
 
     if (req.body.__action === 'add_course_instance') {
-      const { short_name, long_name, start_date, end_date } = z
+      const {
+        short_name,
+        long_name,
+        start_date,
+        end_date,
+        self_enrollment_enabled,
+        self_enrollment_use_enrollment_code,
+      } = z
         .object({
           short_name: z.string().trim(),
           long_name: z.string().trim(),
           start_date: z.string(),
           end_date: z.string(),
+          self_enrollment_enabled: z.boolean().optional(),
+          self_enrollment_use_enrollment_code: z.boolean().optional(),
         })
         .parse(req.body);
 
@@ -192,6 +201,13 @@ router.post(
         long_name,
         start_access_date: startAccessDate,
         end_access_date: endAccessDate,
+        self_enrollment:
+          self_enrollment_enabled !== undefined
+            ? {
+                enabled: self_enrollment_enabled,
+                useEnrollmentCode: self_enrollment_use_enrollment_code,
+              }
+            : undefined,
       });
 
       const serverJob = await editor.prepareServerJob();

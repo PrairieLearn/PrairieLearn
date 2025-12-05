@@ -183,12 +183,21 @@ router.post(
     });
 
     if (req.body.__action === 'copy_course_instance') {
-      const { short_name, long_name, start_date, end_date } = z
+      const {
+        short_name,
+        long_name,
+        start_date,
+        end_date,
+        self_enrollment_enabled,
+        self_enrollment_use_enrollment_code,
+      } = z
         .object({
           short_name: z.string().trim(),
           long_name: z.string().trim(),
           start_date: z.string(),
           end_date: z.string(),
+          self_enrollment_enabled: z.boolean().optional(),
+          self_enrollment_use_enrollment_code: z.boolean().optional(),
         })
         .parse(req.body);
 
@@ -242,6 +251,9 @@ router.post(
           end_date.length > 0
             ? plainDateTimeStringToDate(end_date, courseInstance.display_timezone)
             : null,
+        self_enrollment_enabled: self_enrollment_enabled ?? courseInstance.self_enrollment_enabled,
+        self_enrollment_use_enrollment_code:
+          self_enrollment_use_enrollment_code ?? courseInstance.self_enrollment_use_enrollment_code,
       };
 
       // First, use the editor to copy the course instance
