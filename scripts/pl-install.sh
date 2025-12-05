@@ -2,6 +2,7 @@
 set -ex
 
 export DEBIAN_FRONTEND=noninteractive
+export PATH="/usr/lib/postgresql/16/bin:$PATH"
 
 apt-get update -y
 apt-get upgrade -y
@@ -51,7 +52,7 @@ for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 
 echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
-su postgres -c "/usr/lib/postgresql/16/bin/initdb -D /var/postgres"
+su postgres -c "initdb -D /var/postgres"
 
 echo "installing pgvector..."
 apt-get install -y --no-install-recommends postgresql-server-dev-16
