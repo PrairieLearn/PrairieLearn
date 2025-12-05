@@ -84,10 +84,7 @@ The `pl-symbolic-input` question element uses the Python library [SymPy](https:/
 
 Checking for equality is non-trivial as it accounts for a wide range of mathematical equivalences (e.g., `log(10*x)` is considered equal to `log(10)+log(x)`, or `(x+1)**2` is equal to `x**2+2*x+1`). To account for all possible combinations of equivalence rules, [SymPy applies simplifications heuristically](https://docs.sympy.org/latest/tutorials/intro-tutorial/simplification.html) and potentially repeatedly. Unfortunately this means that there is no bound on how long the equality checker might take to finish, and in rare cases it might even get stuck in a non-terminating simplification cycle.
 
-PrairieLearn automatically terminates SymPy's equality check after a few seconds have passed. This check is applied in two cases:
-
-1. The element checks correct answers for convergence during question generation, and raises an error if a correct answer causes a timeout or other error for a trivial equivalence check. This is an indicator that the question is likely to cause similar issues when grading student submissions.
-2. The element marks student submission as invalid during grading if their submission causes a timeout. Note that both correct and incorrect answers can potentially trigger timeouts. Students are presented with an error message that tells them `Your answer did not converge, try a simpler expression.`. If desired, this behavior can be replaced with custom grading code in the [`server.py` file](../question/server.md#step-5-grade) of the question.
+PrairieLearn automatically terminates SymPy's equality check after a few seconds have passed. This check is applied in two cases. The element then marks student submission as invalid during grading if their submission caused a timeout. Note that both correct and incorrect answers can potentially trigger timeouts. Students are presented with an error message that tells them `Your answer did not converge, try a simpler expression.`. If desired, this behavior can be replaced with custom grading code in the [`server.py` file](../question/server.md#step-5-grade) of the question.
 
 #### Preventing non-convergence by adding `additional-simplifications`
 
