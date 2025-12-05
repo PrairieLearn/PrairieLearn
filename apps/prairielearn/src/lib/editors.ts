@@ -952,6 +952,12 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Read infoCourseInstance.json');
     let infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
 
+    // Clear access rules to avoid leaking student PII or unexpectedly
+    // making the copied course instance available to users.
+    // Note: this means that copied course instances will be switched to the modern publishing
+    // system.
+    infoJson.allowAccess = undefined;
+
     const pathsToAdd: string[] = [];
     if (this.is_transfer) {
       if (!this.from_course.sharing_name) {
@@ -964,12 +970,6 @@ export class CourseInstanceCopyEditor extends Editor {
         path.join(this.course.path, 'questions'),
         'info.json',
       );
-
-      // Clear access rules to avoid leaking student PII or unexpectedly
-      // making the copied course instance available to users.
-      // Note: this means that copied course instances will be switched to the modern publishing
-      // system.
-      infoJson.allowAccess = undefined;
 
       const questionsForCopy = await selectQuestionsForCourseInstanceCopy(this.course_instance.id);
       const questionsToLink = new Set(
