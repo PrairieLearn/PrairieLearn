@@ -37,7 +37,6 @@ import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
-import { plainDateTimeStringToDate } from '../instructorInstanceAdminPublishing/utils/dateUtils.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
@@ -232,15 +231,18 @@ router.post(
         ...courseInstance,
         short_name,
         long_name,
-        publishing_start_date:
-          start_date.length > 0
-            ? plainDateTimeStringToDate(start_date, courseInstance.display_timezone)
-            : null,
-        publishing_end_date:
-          end_date.length > 0
-            ? plainDateTimeStringToDate(end_date, courseInstance.display_timezone)
-            : null,
       };
+
+      const startDate = start_date.length > 0 ? start_date : undefined;
+      const endDate = end_date.length > 0 ? end_date : undefined;
+
+      const resolvedPublishing =
+        (startDate ?? endDate)
+          ? {
+              startDate,
+              endDate,
+            }
+          : undefined;
 
       // First, use the editor to copy the course instance
       const courseInstancesPath = path.join(course.path, 'courseInstances');
@@ -249,6 +251,9 @@ router.post(
         from_course: course,
         from_path: path.join(courseInstancesPath, courseInstance.short_name),
         course_instance: updatedCourseInstance,
+        metadataOverrides: {
+          publishing: resolvedPublishing,
+        },
       });
 
       const serverJob = await editor.prepareServerJob();
@@ -350,7 +355,9 @@ router.post(
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
         // We'll only serialize the value if self-enrollment is enabled.
-        parsedBody.self_enrollment_enabled && parsedBody.self_enrollment_enabled_before_date
+        parsedBody.self_enrollment_enabled &&
+          parsedBody.self_enrollment_enabled_before_date_enabled &&
+          parsedBody.self_enrollment_enabled_before_date
           ? parseDateTime(parsedBody.self_enrollment_enabled_before_date)
           : undefined,
         undefined,
