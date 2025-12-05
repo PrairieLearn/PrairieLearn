@@ -18,17 +18,17 @@ fi
 
 mkdir -p $PGDATA
 chown -f postgres:postgres $PGDATA
-su postgres -c "pg_ctl status" > /dev/null 2>&1
+su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl status" > /dev/null 2>&1
 if [[ $? == 4 ]]; then
     echo "Making new postgres database at ${PGDATA}"
-    su postgres -c "initdb" > /dev/null 2>&1
+    su postgres -c "/usr/lib/postgresql/16/bin/initdb" > /dev/null 2>&1
     INIT_RESOLVE=0
     ACTION=start
 fi
 
 # Only locally start postgres if we weren't given a PGHOST environment variable
 if [[ -z "$PGHOST" ]]; then
-    su postgres -c "pg_ctl --silent --log=${PGDATA}/postgresql.log ${ACTION}"
+    su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl --silent --log=${PGDATA}/postgresql.log ${ACTION}"
 fi
 
 if [[ "$ACTION" == "start" ]]; then
@@ -37,5 +37,5 @@ if [[ "$ACTION" == "start" ]]; then
 fi
 
 if [[ $INIT_RESOLVE ]]; then
-    su postgres -c "createuser -s root"
+    su postgres -c "/usr/lib/postgresql/16/bin/createuser -s root"
 fi
