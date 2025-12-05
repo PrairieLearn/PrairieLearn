@@ -59,65 +59,6 @@ describe('Instructor Students - Invite by UID', () => {
     assert.isString(csrfToken);
   });
 
-  test.sequential('should return error when user does not exist', async () => {
-    const response = await fetch(studentsUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Accept: 'application/json',
-        cookie: instructorHeaders.cookie,
-      },
-      body: new URLSearchParams({
-        __action: 'invite_by_uid',
-        __csrf_token: csrfToken,
-        uid: 'nonexistent@example.com',
-      }),
-    });
-
-    assert.equal(response.status, 400);
-    const data = await response.json();
-    assert.equal(data.error, 'User not found');
-  });
-
-  test.sequential('should return error when user is an instructor', async () => {
-    await callRow(
-      'users_select_or_insert',
-      [
-        'another_instructor@example.com',
-        'Another Instructor',
-        'instructor2',
-        'another_instructor@example.com',
-        'dev',
-      ],
-      SprocUsersSelectOrInsertSchema,
-    );
-
-    await insertCoursePermissionsByUserUid({
-      course_id: '1',
-      uid: 'another_instructor@example.com',
-      course_role: 'Viewer',
-      authn_user_id: '1',
-    });
-
-    const response = await fetch(studentsUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Accept: 'application/json',
-        cookie: instructorHeaders.cookie,
-      },
-      body: new URLSearchParams({
-        __action: 'invite_by_uid',
-        __csrf_token: csrfToken,
-        uid: 'another_instructor@example.com',
-      }),
-    });
-
-    assert.equal(response.status, 400);
-    const data = await response.json();
-    assert.equal(data.error, 'The user is an instructor');
-  });
-
   test.sequential('should successfully invite a blocked user', async () => {
     const blockedStudent = await callRow(
       'users_select_or_insert',
@@ -152,14 +93,15 @@ describe('Instructor Students - Invite by UID', () => {
       body: new URLSearchParams({
         __action: 'invite_by_uid',
         __csrf_token: csrfToken,
-        uid: 'blocked_student@example.com',
+        uids: 'blocked_student@example.com',
       }),
     });
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isObject(data.data);
-    assert.equal(data.data.status, 'invited');
+    assert.isArray(data.data);
+    assert.equal(data.data.length, 1);
+    assert.equal(data.data[0].status, 'invited');
   });
 
   test.sequential('should successfully invite a new student', async () => {
@@ -179,25 +121,174 @@ describe('Instructor Students - Invite by UID', () => {
       body: new URLSearchParams({
         __action: 'invite_by_uid',
         __csrf_token: csrfToken,
-        uid: 'new_student@example.com',
+        uids: 'new_student@example.com',
       }),
     });
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isObject(data.data);
-    assert.equal(data.data.status, 'invited');
-    assert.equal(data.data.pending_uid, 'new_student@example.com');
+    assert.isArray(data.data);
+    assert.equal(data.data.length, 1);
+    assert.equal(data.data[0].status, 'invited');
+    assert.equal(data.data[0].pending_uid, 'new_student@example.com');
   });
 
-  test.sequential('should return error when user is already enrolled', async () => {
+  test.sequential('should successfully invite multiple students', async () => {
+    await callRow(
+      'users_select_or_insert',
+      ['bulk_student1@example.com', 'Bulk Student 1', 'bulk1', 'bulk_student1@example.com', 'dev'],
+      SprocUsersSelectOrInsertSchema,
+    );
+
+    await callRow(
+      'users_select_or_insert',
+      ['bulk_student2@example.com', 'Bulk Student 2', 'bulk2', 'bulk_student2@example.com', 'dev'],
+      SprocUsersSelectOrInsertSchema,
+    );
+
+    const response = await fetch(studentsUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+        cookie: instructorHeaders.cookie,
+      },
+      body: new URLSearchParams({
+        __action: 'invite_by_uid',
+        __csrf_token: csrfToken,
+        uids: 'bulk_student1@example.com,bulk_student2@example.com',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    const data = await response.json();
+    assert.isArray(data.data);
+    assert.equal(data.data.length, 2);
+    assert.equal(data.data[0].status, 'invited');
+    assert.equal(data.data[1].status, 'invited');
+  });
+});
+
+describe('Instructor Students - Check Invitation Endpoint', () => {
+  let csrfToken: string;
+
+  beforeAll(helperServer.before());
+
+  afterAll(helperServer.after);
+
+  beforeAll(async () => {
+    await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
+
+    await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
+
+    await callRow(
+      'users_select_or_insert',
+      ['instructor@example.com', 'Test Instructor', 'instructor1', 'instructor@example.com', 'dev'],
+      SprocUsersSelectOrInsertSchema,
+    );
+
+    const instructor = await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'instructor@example.com',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
+
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      course_instance_id: '1',
+      user_id: instructor.user_id,
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: '1',
+    });
+
+    const response = await fetchCheerio(studentsUrl, {
+      headers: instructorHeaders,
+    });
+    assert.equal(response.status, 200);
+    csrfToken = response.$('span#test_csrf_token').text();
+    assert.isString(csrfToken);
+  });
+
+  test.sequential('should return empty invalidUids for valid users', async () => {
+    await callRow(
+      'users_select_or_insert',
+      ['check_valid@example.com', 'Check Valid', 'checkvalid1', 'check_valid@example.com', 'dev'],
+      SprocUsersSelectOrInsertSchema,
+    );
+
+    const params = new URLSearchParams({ uids: 'check_valid@example.com' });
+    const response = await fetch(`${studentsUrl}/invitation/check?${params.toString()}`, {
+      headers: {
+        Accept: 'application/json',
+        cookie: instructorHeaders.cookie,
+      },
+    });
+
+    assert.equal(response.status, 200);
+    const data = await response.json();
+    assert.deepEqual(data.invalidUids, []);
+  });
+
+  test.sequential('should return invalidUids for non-existent user', async () => {
+    const params = new URLSearchParams({ uids: 'nonexistent_check@example.com' });
+    const response = await fetch(`${studentsUrl}/invitation/check?${params.toString()}`, {
+      headers: {
+        Accept: 'application/json',
+        cookie: instructorHeaders.cookie,
+      },
+    });
+
+    assert.equal(response.status, 200);
+    const data = await response.json();
+    assert.equal(data.invalidUids.length, 1);
+    assert.equal(data.invalidUids[0].uid, 'nonexistent_check@example.com');
+    assert.equal(data.invalidUids[0].reason, 'User not found');
+  });
+
+  test.sequential('should return invalidUids for instructor', async () => {
+    await callRow(
+      'users_select_or_insert',
+      [
+        'check_instructor@example.com',
+        'Check Instructor',
+        'checkinst1',
+        'check_instructor@example.com',
+        'dev',
+      ],
+      SprocUsersSelectOrInsertSchema,
+    );
+
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'check_instructor@example.com',
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+
+    const params = new URLSearchParams({ uids: 'check_instructor@example.com' });
+    const response = await fetch(`${studentsUrl}/invitation/check?${params.toString()}`, {
+      headers: {
+        Accept: 'application/json',
+        cookie: instructorHeaders.cookie,
+      },
+    });
+
+    assert.equal(response.status, 200);
+    const data = await response.json();
+    assert.equal(data.invalidUids.length, 1);
+    assert.equal(data.invalidUids[0].uid, 'check_instructor@example.com');
+    assert.equal(data.invalidUids[0].reason, 'User is an instructor');
+  });
+
+  test.sequential('should return invalidUids for enrolled user', async () => {
     const enrolledStudent = await callRow(
       'users_select_or_insert',
       [
-        'enrolled_student@example.com',
-        'Enrolled Student',
-        'enrolled1',
-        'enrolled_student@example.com',
+        'check_enrolled@example.com',
+        'Check Enrolled',
+        'checkenrolled1',
+        'check_enrolled@example.com',
         'dev',
       ],
       SprocUsersSelectOrInsertSchema,
@@ -214,66 +305,48 @@ describe('Instructor Students - Invite by UID', () => {
       EnrollmentSchema,
     );
 
-    const response = await fetch(studentsUrl, {
-      method: 'POST',
+    const params = new URLSearchParams({ uids: 'check_enrolled@example.com' });
+    const response = await fetch(`${studentsUrl}/invitation/check?${params.toString()}`, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
         Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
-      body: new URLSearchParams({
-        __action: 'invite_by_uid',
-        __csrf_token: csrfToken,
-        uid: 'enrolled_student@example.com',
-      }),
     });
 
-    assert.equal(response.status, 400);
+    assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.error, 'The user is already enrolled');
+    assert.equal(data.invalidUids.length, 1);
+    assert.equal(data.invalidUids[0].uid, 'check_enrolled@example.com');
+    assert.equal(data.invalidUids[0].reason, 'Already enrolled');
   });
 
-  test.sequential('should return error when user has an existing invitation', async () => {
-    // Create a student user
+  test.sequential('should return mixed results for multiple UIDs', async () => {
     await callRow(
       'users_select_or_insert',
       [
-        'previously_invited_student@example.com',
-        'Previously Invited Student',
-        'invited1',
-        'previously_invited_student@example.com',
+        'check_mixed_valid@example.com',
+        'Check Mixed Valid',
+        'checkmixed1',
+        'check_mixed_valid@example.com',
         'dev',
       ],
       SprocUsersSelectOrInsertSchema,
     );
 
-    await queryRow(
-      `INSERT INTO enrollments (course_instance_id, status, pending_uid)
-       VALUES ($course_instance_id, 'invited', $pending_uid)
-       RETURNING *`,
-      {
-        course_instance_id: '1',
-        pending_uid: 'previously_invited_student@example.com',
-      },
-      EnrollmentSchema,
-    );
-
-    const response = await fetch(studentsUrl, {
-      method: 'POST',
+    const params = new URLSearchParams({
+      uids: 'check_mixed_valid@example.com,check_enrolled@example.com',
+    });
+    const response = await fetch(`${studentsUrl}/invitation/check?${params.toString()}`, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
         Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
-      body: new URLSearchParams({
-        __action: 'invite_by_uid',
-        __csrf_token: csrfToken,
-        uid: 'previously_invited_student@example.com',
-      }),
     });
 
-    assert.equal(response.status, 400);
+    assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.error, 'The user has an existing invitation');
+    // Only check_enrolled should be invalid
+    assert.equal(data.invalidUids.length, 1);
+    assert.equal(data.invalidUids[0].uid, 'check_enrolled@example.com');
   });
 });
