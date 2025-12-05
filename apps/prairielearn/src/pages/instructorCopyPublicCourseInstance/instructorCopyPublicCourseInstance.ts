@@ -5,6 +5,8 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
+import { propertyValueWithDefault } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 
@@ -13,6 +15,11 @@ const router = Router();
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: res.locals.institution.id,
+      course_id: res.locals.course.id,
+    });
+
     const {
       start_date,
       end_date,
@@ -58,11 +65,24 @@ router.post(
           }
         : undefined;
 
+    const selfEnrollmentEnabled = propertyValueWithDefault(
+      undefined,
+      self_enrollment_enabled,
+      true,
+      { isUIBoolean: true },
+    );
+    const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
+      undefined,
+      self_enrollment_use_enrollment_code,
+      false,
+    );
+
     const resolvedSelfEnrollment =
-      self_enrollment_enabled !== undefined
+      (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined &&
+      enrollmentManagementEnabled
         ? {
-            enabled: self_enrollment_enabled,
-            useEnrollmentCode: self_enrollment_use_enrollment_code,
+            enabled: selfEnrollmentEnabled,
+            useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
           }
         : undefined;
 

@@ -17,6 +17,10 @@ export function CourseInstanceSelfEnrollmentForm() {
   const { register, setValue, control } = useFormContext<SelfEnrollmentFormValues>();
 
   const selfEnrollmentEnabled = useWatch({ control, name: 'self_enrollment_enabled' });
+  const selfEnrollmentUseEnrollmentCode = useWatch({
+    control,
+    name: 'self_enrollment_use_enrollment_code',
+  });
 
   // When self-enrollment is disabled, ensure use_enrollment_code is false
   useEffect(() => {
@@ -49,6 +53,11 @@ export function CourseInstanceSelfEnrollmentForm() {
           id="self_enrollment_use_enrollment_code"
           disabled={!selfEnrollmentEnabled}
           {...register('self_enrollment_use_enrollment_code')}
+        />
+        <input
+          type="hidden"
+          name="self_enrollment_use_enrollment_code"
+          value={selfEnrollmentUseEnrollmentCode ? 'checked' : ''}
         />
         <label class="form-check-label" for="self_enrollment_use_enrollment_code">
           Use enrollment code for self-enrollment

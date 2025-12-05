@@ -262,19 +262,20 @@ router.post(
           : undefined;
 
       const selfEnrollmentEnabled = propertyValueWithDefault(
-        courseInstance.self_enrollment_enabled,
+        undefined,
         self_enrollment_enabled,
         true,
         { isUIBoolean: true },
       );
       const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
-        courseInstance.self_enrollment_use_enrollment_code,
+        undefined,
         self_enrollment_use_enrollment_code,
         false,
       );
 
       const resolvedSelfEnrollment =
-        (selfEnrollmentEnabled || selfEnrollmentUseEnrollmentCode) && enrollmentManagementEnabled
+        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined &&
+        enrollmentManagementEnabled
           ? {
               enabled: selfEnrollmentEnabled,
               useEnrollmentCode: selfEnrollmentUseEnrollmentCode,

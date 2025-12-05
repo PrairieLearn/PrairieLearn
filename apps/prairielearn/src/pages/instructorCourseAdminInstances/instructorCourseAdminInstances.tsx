@@ -12,7 +12,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { type Course, CourseInstanceSchema } from '../../lib/db-types.js';
-import { CourseInstanceAddEditor } from '../../lib/editors.js';
+import { CourseInstanceAddEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import {
@@ -119,9 +119,14 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const { course } = extractPageContext(res.locals, {
+    const { course, institution } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
+    });
+
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: institution.id,
+      course_id: course.id,
     });
 
     if (req.body.__action === 'add_course_instance') {
@@ -206,11 +211,24 @@ router.post(
             }
           : undefined;
 
+      const selfEnrollmentEnabled = propertyValueWithDefault(
+        undefined,
+        self_enrollment_enabled,
+        true,
+        { isUIBoolean: true },
+      );
+      const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
+        undefined,
+        self_enrollment_use_enrollment_code,
+        false,
+      );
+
       const resolvedSelfEnrollment =
-        self_enrollment_enabled !== undefined
+        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined &&
+        enrollmentManagementEnabled
           ? {
-              enabled: self_enrollment_enabled,
-              useEnrollmentCode: self_enrollment_use_enrollment_code,
+              enabled: selfEnrollmentEnabled,
+              useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
             }
           : undefined;
 
