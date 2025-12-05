@@ -22,6 +22,7 @@ import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
 } from './question-render.types.js';
+import type { UntypedResLocals } from './res-locals.types.js';
 import type { Prettify } from './types.js';
 
 export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig {
@@ -54,6 +55,7 @@ export interface ResLocalsForPage {
       ResLocalsCourseInstance &
       ResLocalsInstructorQuestion &
       ResLocalsQuestionRender &
+      ResLocalsAssessment &
       ResLocalsAssessmentQuestion
   >;
   'instance-question': Prettify<
@@ -72,7 +74,7 @@ export interface ResLocalsForPage {
 export type PageType = keyof ResLocalsForPage;
 
 export function getResLocalsForPage<T extends PageType>(
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): ResLocalsForPage[T] {
   return locals as ResLocalsForPage[T];
 }

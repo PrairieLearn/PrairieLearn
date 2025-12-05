@@ -4,7 +4,7 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 import { dangerousFullSystemAuthz } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';
-import { ensureEnrollment } from '../../../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../../../models/enrollment.js';
 import * as helperServer from '../../../tests/helperServer.js';
 import {
   type AuthUser,
@@ -82,10 +82,10 @@ describe('studentCourseInstanceUpgrade', () => {
 
     const user = await getOrCreateUser(studentUser);
     const courseInstance = await selectCourseInstanceById('1');
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -105,10 +105,10 @@ describe('studentCourseInstanceUpgrade', () => {
 
     const user = await getOrCreateUser(studentUser);
     const courseInstance = await selectCourseInstanceById('1');
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
