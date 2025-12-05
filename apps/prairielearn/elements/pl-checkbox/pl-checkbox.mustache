@@ -18,7 +18,7 @@
             {{{feedback}}}
         </div>
         {{/display_feedback}}
-            
+
         {{#display_score_badge}}
             {{#correct}}
                 <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>
@@ -29,7 +29,7 @@
         {{/display_score_badge}}
     </div>
 {{/answers}}
-    
+
 {{#helptext}}
 <div class="d-flex align-items-center gap-2">
     <span>{{{helptext}}}</span>
@@ -48,7 +48,31 @@
 {{/question}}
 
 {{#format}}
-{{{gradingtext}}}
+{{!Include descriptions for each grading method}}
+{{#net-correct}}
+You must select {{{insert_text}}} You will receive a score of <code>100% * (t - f) / n</code>,
+where <code>t</code> is the number of true options that you select, <code>f</code>
+is the number of false options that you select, and <code>n</code> is the total number of true options.
+At minimum, you will receive a score of 0%.
+{{/net-correct}}
+
+{{#each-answer}}
+You must select {{{insert_text}}} You will receive a score of <code>100% * (t + f) / {{num_display_answers}}</code>,
+where <code>t</code> is the number of true options that you select and <code>f</code>
+is the number of false options that you do not select.
+{{/each-answer}}
+
+{{#coverage}}
+You must select {{{insert_text}}} You will receive a score of <code>100% * (t / c) * (t / n)</code>,
+where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options,
+and <code>n</code> is the total number of options you select."
+{{/coverage}}
+
+{{#off}}
+You must select {{{insert_text}}} You will receive a score of 100%
+if you select all options that are true and no options that are false.
+Otherwise, you will receive a score of 0%.
+{{/off}}
 {{/format}}
 
 {{#submission}}
@@ -80,7 +104,7 @@
 
 {{#inline}}<span class="d-inline-block"><ul class="list-inline mb-0">{{/inline}}
 {{^inline}}<div class="d-block"><ul class="list-unstyled mb-0">{{/inline}}
-    
+
 {{#answers}}
     <li {{#inline}}class="list-inline-item"{{/inline}}>
         <div class="d-inline-flex align-items-center">
