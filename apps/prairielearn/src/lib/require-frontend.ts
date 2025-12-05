@@ -7,6 +7,7 @@
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
+// @ts-expect-error - requirejs is not a module
 import requirejs from 'requirejs';
 
 import { logger } from '@prairielearn/logger';
@@ -25,6 +26,7 @@ requirejs.onError = function (err: Error) {
   };
   for (const e in err) {
     if (Object.prototype.hasOwnProperty.call(err, e)) {
+      // @ts-expect-error - @reteps notes this type is incorrect
       data[e] = String(err[e]);
     }
   }
