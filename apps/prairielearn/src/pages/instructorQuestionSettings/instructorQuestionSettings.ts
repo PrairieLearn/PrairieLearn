@@ -21,7 +21,7 @@ import {
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
-import { EnumGradingMethodSchema } from '../../lib/db-types.js';
+import { AuthorSchema, EnumGradingMethodSchema } from '../../lib/db-types.js';
 import {
   FileModifyEditor,
   MultiEditor,
@@ -34,6 +34,11 @@ import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import {
+  isValidAuthorName,
+  isValidEmail,
+  isValidOrcid,
+} from '../../lib/instructorQuestionSettingsCommon.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
@@ -52,6 +57,13 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+interface JSONAuthor {
+  name?: string;
+  email?: string;
+  orcid?: string;
+  originCourse?: string;
+}
 
 // This will not correctly handle any filenames that have a comma in them.
 // Currently, we do not have any such filenames in prod so we don't think that
@@ -328,6 +340,63 @@ router.post(
         questionInfo.externalGradingOptions = undefined;
       }
 
+      // Author data
+      const bodyData = req.body;
+      const keys: string[] = Object.keys(bodyData);
+      const authorKeys = keys.filter((key) => key.includes('author'));
+      const authors: JSONAuthor[] = [];
+      const authorNameKeys = authorKeys.filter((key) => key.includes('author_name_'));
+      const authorNameIndices = authorNameKeys.map((key) => {
+        const lastUnderscore = key.lastIndexOf('_');
+        return Number(key.slice(lastUnderscore + 1));
+      });
+      for (const authorIndex of authorNameIndices) {
+        const name: string | undefined = bodyData['author_name_' + authorIndex];
+        const email: string | undefined = bodyData['author_email_' + authorIndex];
+        const orcid: string | undefined = bodyData['author_orcid_' + authorIndex];
+        const originCourse: string | undefined = bodyData['author_origin_course_' + authorIndex];
+        const newAuthor: JSONAuthor = {};
+        if (
+          (email === undefined || email === '') &&
+          (orcid === undefined || orcid === '') &&
+          (originCourse === undefined || originCourse === '')
+        ) {
+          throw new error.HttpStatusError(
+            400,
+            'Every author must have one of: email, orcid, origin course',
+          );
+        }
+        if (name !== undefined && name !== '') {
+          const nameValid = isValidAuthorName(name);
+          if (!nameValid) {
+            throw new error.HttpStatusError(400, `Invalid input for name: ${name}`);
+          }
+          newAuthor.name = name;
+        }
+        if (email !== undefined && email !== '') {
+          const emailValid = isValidEmail(email);
+          if (!emailValid) {
+            throw new error.HttpStatusError(400, `Invalid email: ${email}`);
+          }
+          newAuthor.email = email;
+        }
+        if (orcid !== undefined && orcid !== '') {
+          const orcidValid = isValidOrcid(orcid);
+          if (!orcidValid) {
+            throw new error.HttpStatusError(400, `Invalid ORCID: ${orcid}`);
+          }
+          newAuthor.orcid = orcid;
+        }
+        if (originCourse !== undefined && originCourse !== '') {
+          newAuthor.originCourse = originCourse;
+        }
+        // Only write author if at least one of the fields is nonnull
+        if (email !== undefined || orcid !== undefined || originCourse !== undefined) {
+          authors.push(newAuthor);
+        }
+      }
+      questionInfo.authors = authors;
+
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
       const qid_new = run(() => {
@@ -496,6 +565,12 @@ router.get(
     const canEdit =
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
+    const authors = await sqldb.queryRows(
+      sql.author_for_qid,
+      { question_id: res.locals.question.id },
+      AuthorSchema,
+    );
+
     res.send(
       InstructorQuestionSettings({
         resLocals: res.locals,
@@ -504,6 +579,7 @@ router.get(
         questionGHLink,
         questionTags,
         qids,
+        authors,
         assessmentsWithQuestion,
         sharingEnabled,
         sharingSetsIn,
