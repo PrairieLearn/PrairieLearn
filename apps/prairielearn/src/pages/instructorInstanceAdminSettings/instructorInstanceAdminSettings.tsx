@@ -393,7 +393,9 @@ router.post(
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
         // We'll only serialize the value if self-enrollment is enabled.
-        parsedBody.self_enrollment_enabled && parsedBody.self_enrollment_enabled_before_date
+        parsedBody.self_enrollment_enabled &&
+          parsedBody.self_enrollment_enabled_before_date_enabled &&
+          parsedBody.self_enrollment_enabled_before_date
           ? parseDateTime(parsedBody.self_enrollment_enabled_before_date)
           : undefined,
         undefined,
