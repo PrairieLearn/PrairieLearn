@@ -104,13 +104,13 @@ The table below lists the possible simplifications that can be provided to the a
 | Simplification | Description                   | Example                          |
 | -------------- | ----------------------------- | -------------------------------- |
 | `expand`       | Expanding polynomials         | `(x + 1)**2` => `x**2 + 2*x + 1` |
-| `power`        | Power simplifications         | `x**a*x**b` => `x**(a + b)`      |
-| `trig`         | Trigonometric simplifications | `sin(x)/cos(x)` => `tan(x)`      |
-| `log`          | Logarithmic simplifications   | `log(x*y)` => `log(x) + log(y)`  |
+| `powsimp`      | Power simplifications         | `x**a*x**b` => `x**(a + b)`      |
+| `trigsimp`     | Trigonometric simplifications | `sin(x)/cos(x)` => `tan(x)`      |
+| `expand_log`   | Logarithmic simplifications   | `log(x*y)` => `log(x) + log(y)`  |
 
 Some specific examples of successful uses of `additional-simplifications` are:
 
-- `(-8*x*sin(8*x)/cos(8*x) + log(cos(8*x)))*cos(8*x)**x` benefitted from `additional-simplifications="trig"`.
+- `(-8*x*sin(8*x)/cos(8*x) + log(cos(8*x)))*cos(8*x)**x` benefitted from `additional-simplifications="trigsimp"`.
 - `7**(x + 8)*log(7)` benefitted from `additional-simplifications="expand"`
 
 !!! note

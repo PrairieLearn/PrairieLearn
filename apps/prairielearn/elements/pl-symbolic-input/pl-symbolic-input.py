@@ -44,9 +44,9 @@ SYMPY_TIMEOUT = 3
 # Additional simplifications supported by SymPy
 SYMPY_ADDITIONAL_SIMPLIFICATIONS = {
     "expand": sympy.expand,
-    "power": sympy.powsimp,
-    "trig": sympy.trigsimp,
-    "log": sympy.expand_log,
+    "powsimp": sympy.powsimp,
+    "trigsimp": sympy.trigsimp,
+    "expand_log": sympy.expand_log,
 }
 
 
