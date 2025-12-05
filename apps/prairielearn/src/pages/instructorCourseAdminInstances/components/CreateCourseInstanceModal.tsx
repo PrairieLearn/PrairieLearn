@@ -37,8 +37,8 @@ export function CreateCourseInstanceModal({
       long_name: '',
       start_date: '',
       end_date: '',
-      self_enrollment_enabled: false,
-      self_enrollment_use_enrollment_code: false,
+      self_enrollment_enabled: true,
+      self_enrollment_use_enrollment_code: true,
     },
     mode: 'onSubmit',
   });
