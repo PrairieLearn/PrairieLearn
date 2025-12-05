@@ -1,5 +1,6 @@
 #!/bin/bash
 
+export PATH="/usr/lib/postgresql/16/bin:$PATH"
 export PGDATA=${PGDATA:=/var/postgres}
 
 if [[ -z "$1" ]]; then
