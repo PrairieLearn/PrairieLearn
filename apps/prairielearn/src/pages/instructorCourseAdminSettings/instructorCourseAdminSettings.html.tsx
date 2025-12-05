@@ -5,6 +5,7 @@ import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 
 export function InstructorCourseAdminSettings({
@@ -17,7 +18,7 @@ export function InstructorCourseAdminSettings({
   origHash,
   courseGHLink,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   aiQuestionGenerationEnabled: boolean;
   aiQuestionGenerationCourseToggleEnabled: boolean;
   coursePathExists: boolean;
@@ -246,7 +247,7 @@ function CourseDirectoryMissingAlert({
   coursePathExists,
   courseInfoExists,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   coursePathExists: boolean;
   courseInfoExists: boolean;
 }) {

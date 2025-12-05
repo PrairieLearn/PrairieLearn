@@ -5,12 +5,13 @@ import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHe
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type AssessmentModule } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function InstructorCourseAdminModules({
   resLocals,
   modules,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   modules: AssessmentModule[];
 }) {
   return PageLayout({

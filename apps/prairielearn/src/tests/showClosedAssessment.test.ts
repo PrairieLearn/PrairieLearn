@@ -55,7 +55,7 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
     await ensureUncheckedEnrollment({
       userId: user.user_id,
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
