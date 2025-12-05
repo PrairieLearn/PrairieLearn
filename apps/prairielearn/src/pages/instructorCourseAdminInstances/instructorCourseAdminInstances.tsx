@@ -172,42 +172,46 @@ router.post(
         );
       }
 
-      let startAccessDate: Temporal.ZonedDateTime | undefined;
-      let endAccessDate: Temporal.ZonedDateTime | undefined;
-
       // Parse dates if provided (empty strings mean unpublished)
-      if (start_date) {
-        startAccessDate = Temporal.PlainDateTime.from(start_date).toZonedDateTime(
+      const startDate = start_date.length > 0 ? start_date : undefined;
+      const endDate = end_date.length > 0 ? end_date : undefined;
+
+      if (startDate && endDate) {
+        const startAccessDate = Temporal.PlainDateTime.from(startDate).toZonedDateTime(
           course.display_timezone,
         );
-      }
-      if (end_date) {
-        endAccessDate = Temporal.PlainDateTime.from(end_date).toZonedDateTime(
+        const endAccessDate = Temporal.PlainDateTime.from(endDate).toZonedDateTime(
           course.display_timezone,
         );
+        if (startAccessDate.epochMilliseconds >= endAccessDate.epochMilliseconds) {
+          throw new error.HttpStatusError(400, 'End date must be after start date');
+        }
       }
 
-      if (
-        startAccessDate &&
-        endAccessDate &&
-        startAccessDate.epochMilliseconds >= endAccessDate.epochMilliseconds
-      ) {
-        throw new error.HttpStatusError(400, 'End date must be after start date');
-      }
+      const resolvedPublishing =
+        (startDate ?? endDate)
+          ? {
+              startDate,
+              endDate,
+            }
+          : undefined;
+
+      const resolvedSelfEnrollment =
+        self_enrollment_enabled !== undefined
+          ? {
+              enabled: self_enrollment_enabled,
+              useEnrollmentCode: self_enrollment_use_enrollment_code,
+            }
+          : undefined;
 
       const editor = new CourseInstanceAddEditor({
         locals: res.locals as any,
         short_name,
         long_name,
-        start_access_date: startAccessDate,
-        end_access_date: endAccessDate,
-        self_enrollment:
-          self_enrollment_enabled !== undefined
-            ? {
-                enabled: self_enrollment_enabled,
-                useEnrollmentCode: self_enrollment_use_enrollment_code,
-              }
-            : undefined,
+        metadataOverrides: {
+          publishing: resolvedPublishing,
+          selfEnrollment: resolvedSelfEnrollment,
+        },
       });
 
       const serverJob = await editor.prepareServerJob();

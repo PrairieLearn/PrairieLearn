@@ -37,7 +37,6 @@ import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
-import { plainDateTimeStringToDate } from '../instructorInstanceAdminPublishing/utils/dateUtils.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
@@ -243,18 +242,38 @@ router.post(
         ...courseInstance,
         short_name,
         long_name,
-        publishing_start_date:
-          start_date.length > 0
-            ? plainDateTimeStringToDate(start_date, courseInstance.display_timezone)
-            : null,
-        publishing_end_date:
-          end_date.length > 0
-            ? plainDateTimeStringToDate(end_date, courseInstance.display_timezone)
-            : null,
-        self_enrollment_enabled: self_enrollment_enabled ?? courseInstance.self_enrollment_enabled,
-        self_enrollment_use_enrollment_code:
-          self_enrollment_use_enrollment_code ?? courseInstance.self_enrollment_use_enrollment_code,
       };
+
+      const startDate = start_date.length > 0 ? start_date : undefined;
+      const endDate = end_date.length > 0 ? end_date : undefined;
+
+      const resolvedPublishing =
+        (startDate ?? endDate)
+          ? {
+              startDate,
+              endDate,
+            }
+          : undefined;
+
+      const selfEnrollmentEnabled = propertyValueWithDefault(
+        courseInstance.self_enrollment_enabled,
+        self_enrollment_enabled,
+        true,
+        { isUIBoolean: true },
+      );
+      const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
+        courseInstance.self_enrollment_use_enrollment_code,
+        self_enrollment_use_enrollment_code,
+        false,
+      );
+
+      const resolvedSelfEnrollment =
+        selfEnrollmentEnabled || selfEnrollmentUseEnrollmentCode
+          ? {
+              enabled: selfEnrollmentEnabled,
+              useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+            }
+          : undefined;
 
       // First, use the editor to copy the course instance
       const courseInstancesPath = path.join(course.path, 'courseInstances');
@@ -263,6 +282,10 @@ router.post(
         from_course: course,
         from_path: path.join(courseInstancesPath, courseInstance.short_name),
         course_instance: updatedCourseInstance,
+        metadataOverrides: {
+          publishing: resolvedPublishing,
+          selfEnrollment: resolvedSelfEnrollment,
+        },
       });
 
       const serverJob = await editor.prepareServerJob();

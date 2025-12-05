@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
-import { type Temporal } from '@js-temporal/polyfill';
 import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
@@ -9,7 +8,6 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -883,6 +881,7 @@ export class CourseInstanceCopyEditor extends Editor {
   private from_course: Course | StaffCourse;
   private from_path: string;
   private is_transfer: boolean;
+  private metadataOverrides?: Record<string, any>;
 
   public readonly uuid: string;
 
@@ -891,6 +890,7 @@ export class CourseInstanceCopyEditor extends Editor {
       from_course: Course | StaffCourse;
       from_path: string;
       course_instance: CourseInstance;
+      metadataOverrides?: Record<string, any>;
     },
   ) {
     const is_transfer = !idsEqual(params.locals.course.id, params.from_course.id);
@@ -902,6 +902,7 @@ export class CourseInstanceCopyEditor extends Editor {
     this.from_course = params.from_course;
     this.from_path = params.from_path;
     this.is_transfer = is_transfer;
+    this.metadataOverrides = params.metadataOverrides;
 
     this.uuid = crypto.randomUUID();
   }
@@ -925,6 +926,7 @@ export class CourseInstanceCopyEditor extends Editor {
       'infoCourseInstance.json',
     );
 
+    // NOTE: The public course instance copy page currently does not support customizing these.
     debug('Generate short_name and long_name');
     let shortName = this.course_instance.short_name;
     let longName = this.course_instance.long_name;
@@ -946,7 +948,7 @@ export class CourseInstanceCopyEditor extends Editor {
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoCourseInstance.json');
-    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
+    let infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
 
     const pathsToAdd: string[] = [];
     if (this.is_transfer) {
@@ -1054,38 +1056,8 @@ export class CourseInstanceCopyEditor extends Editor {
     // We do not want to preserve sharing settings when copying a course instance
     delete infoJson.shareSourcePublicly;
 
-    // Update publishing settings from the course instance
-    if (this.course_instance.publishing_start_date || this.course_instance.publishing_end_date) {
-      infoJson.publishing = {
-        startDate: this.course_instance.publishing_start_date
-          ? formatDate(this.course_instance.publishing_start_date, this.course.display_timezone, {
-              includeTz: false,
-            })
-          : undefined,
-        endDate: this.course_instance.publishing_end_date
-          ? formatDate(this.course_instance.publishing_end_date, this.course.display_timezone, {
-              includeTz: false,
-            })
-          : undefined,
-      };
-    } else {
-      delete infoJson.publishing;
-    }
-
-    // Update selfEnrollment settings from the course instance
-    const selfEnrollmentEnabled = this.course_instance.self_enrollment_enabled;
-    const selfEnrollmentUseEnrollmentCode =
-      this.course_instance.self_enrollment_use_enrollment_code;
-
-    if (selfEnrollmentEnabled || selfEnrollmentUseEnrollmentCode) {
-      infoJson.selfEnrollment = {
-        ...infoJson.selfEnrollment,
-        enabled: selfEnrollmentEnabled,
-        useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
-      };
-    } else {
-      // If self-enrollment is disabled and no enrollment code, clear the settings
-      delete infoJson.selfEnrollment;
+    if (this.metadataOverrides) {
+      infoJson = { ...infoJson, ...this.metadataOverrides };
     }
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
@@ -1243,26 +1215,17 @@ export class CourseInstanceRenameEditor extends Editor {
   }
 }
 
-export interface SelfEnrollmentSettings {
-  enabled?: boolean;
-  useEnrollmentCode?: boolean;
-}
-
 export class CourseInstanceAddEditor extends Editor {
   public readonly uuid: string;
   private short_name: string;
   private long_name: string;
-  private start_access_date?: Temporal.ZonedDateTime;
-  private end_access_date?: Temporal.ZonedDateTime;
-  private self_enrollment?: SelfEnrollmentSettings;
+  private metadataOverrides?: Record<string, any>;
 
   constructor(
     params: BaseEditorOptions & {
       short_name: string;
       long_name: string;
-      start_access_date?: Temporal.ZonedDateTime;
-      end_access_date?: Temporal.ZonedDateTime;
-      self_enrollment?: SelfEnrollmentSettings;
+      metadataOverrides?: Record<string, any>;
     },
   ) {
     super({
@@ -1274,18 +1237,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     this.short_name = params.short_name;
     this.long_name = params.long_name;
-
-    if (
-      params.start_access_date &&
-      params.end_access_date &&
-      params.start_access_date.epochMilliseconds > params.end_access_date.epochMilliseconds
-    ) {
-      throw new HttpStatusError(400, 'Start date must be before end date');
-    }
-
-    this.start_access_date = params.start_access_date;
-    this.end_access_date = params.end_access_date;
-    this.self_enrollment = params.self_enrollment;
+    this.metadataOverrides = params.metadataOverrides;
   }
 
   async write() {
@@ -1316,37 +1268,14 @@ export class CourseInstanceAddEditor extends Editor {
 
     debug('Write infoCourseInstance.json');
 
-    const publishing = {
-      startDate: this.start_access_date
-        ? formatDate(
-            new Date(this.start_access_date.epochMilliseconds),
-            this.course.display_timezone,
-            {
-              includeTz: false,
-            },
-          )
-        : undefined,
-      endDate: this.end_access_date
-        ? formatDate(
-            new Date(this.end_access_date.epochMilliseconds),
-            this.course.display_timezone,
-            {
-              includeTz: false,
-            },
-          )
-        : undefined,
-    };
-
-    const infoJson: Record<string, any> = {
+    let infoJson: Record<string, any> = {
       uuid: this.uuid,
       longName: this.long_name,
     };
 
-    if (publishing.startDate || publishing.endDate) {
-      infoJson.publishing = publishing;
+    if (this.metadataOverrides) {
+      infoJson = { ...infoJson, ...this.metadataOverrides };
     }
-
-    infoJson.selfEnrollment = this.self_enrollment;
 
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
