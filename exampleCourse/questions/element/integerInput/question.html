@@ -21,11 +21,12 @@
         ><code>pl-integer-input</code></a
       >
       element. In particular, the default input field has help text of "integer" as a placeholder
-      as well as a question button.
+      as well as a question button. The attribute <code>initial-value</code> pre-fills the input box
+      the first time it is rendered so students can start from a suggested value.
     </p>
     <p>Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$</p>
   </pl-question-panel>
-  <pl-integer-input aria-label="c" answers-name="c_1"></pl-integer-input>
+  <pl-integer-input aria-label="c" answers-name="c_1" initial-value="{{correct_answers.c_1}}"></pl-integer-input>
 </pl-card>
 
 <pl-card>
