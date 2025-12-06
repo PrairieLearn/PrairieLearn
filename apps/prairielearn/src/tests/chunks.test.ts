@@ -29,6 +29,7 @@ const COURSE: courseDB.CourseData = {
     'complex/question': makeInfoFile(),
   },
   courseInstances: {
+    // @ts-expect-error FIXME FIXME FIXME
     'simple-course-instance': {
       courseInstance: makeInfoFile(),
       assessments: {
@@ -36,6 +37,7 @@ const COURSE: courseDB.CourseData = {
         'complex/assessment': makeInfoFile(),
       },
     },
+    // @ts-expect-error FIXME FIXME FIXME
     'complex/course/instance': {
       courseInstance: makeInfoFile(),
       assessments: {
