@@ -359,6 +359,36 @@ describe('Editing assessment settings', () => {
     assert.ok(await fs.pathExists(assessmentDir));
   });
 
+  test.sequential('change assessment text & max_points', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+    );
+
+    const response = await fetch(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'update_assessment',
+          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
+          text: 'Test Text',
+          max_points: '100'
+        }),
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/assessment\/1\/settings$/);
+  });
+
+  test.sequential('verify assessment text & max_points change', async () => {
+    assessmentLiveInfoPath = path.join(assessmentLiveDir, 'HW2', 'infoAssessment.json');
+    const assessmentLiveInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
+    assert.equal(assessmentLiveInfo.text, 'Test Text');
+    assert.equal(assessmentLiveInfo.maxPoints, 100);
+  });
+
   test.sequential(
     'should not be able to submit if provided assessment id falls outside the correct root directory',
     async () => {
