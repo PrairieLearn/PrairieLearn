@@ -28,14 +28,16 @@ SELECT
   to_jsonb(permissions_course) AS permissions_course
 FROM
   pl_courses AS c
-  JOIN authz_course ($user_id, c.id, $is_administrator, TRUE) AS permissions_course ON TRUE
+  JOIN authz_course ($user_id, c.id) AS permissions_course ON TRUE
 WHERE
   c.deleted_at IS NULL
   -- returns a list of courses that are either example courses or are courses
-  -- in which the user has a non-None course role
+  -- in which the user has a non-None course role.
+  -- If the user is an administrator, return all courses.
   AND (
     (permissions_course ->> 'course_role')::enum_course_role > 'None'
     OR c.example_course IS TRUE
+    OR $is_administrator IS TRUE
   )
 ORDER BY
   c.short_name,
@@ -134,3 +136,11 @@ SET
   sharing_name = $sharing_name
 WHERE
   id = $course_id;
+
+-- BLOCK find_courses_by_sharing_names
+SELECT
+  *
+FROM
+  pl_courses
+WHERE
+  sharing_name = ANY ($sharing_names::text[]);

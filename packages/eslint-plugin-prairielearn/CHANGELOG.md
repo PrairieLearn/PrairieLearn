@@ -1,5 +1,24 @@
 # @prairielearn/eslint-plugin
 
+## 2.2.7
+
+### Patch Changes
+
+- 250af85: Upgrade ESLint dependencies
+- 0425922: Upgrade all JavaScript dependencies
+
+## 2.2.6
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 2.2.5
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
 ## 2.2.4
 
 ### Patch Changes

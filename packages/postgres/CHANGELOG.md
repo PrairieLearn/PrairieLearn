@@ -1,5 +1,36 @@
 # @prairielearn/postgres
 
+## 4.5.0
+
+### Minor Changes
+
+- 3a09ac8: Update function name for test utils
+- 3a09ac8: Return user/database/host from `createDatabase` in test utils
+
+## 4.4.3
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 4.4.2
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 4.4.1
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 4.4.0
+
+### Minor Changes
+
+- eb90b96: Add a `clearSchemasStartingWith` function
+
 ## 4.3.0
 
 ### Minor Changes

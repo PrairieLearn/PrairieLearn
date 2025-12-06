@@ -27,12 +27,24 @@ RETURNING
 
 -- BLOCK select_instance_questions_for_assessment_question
 SELECT
-  *
+  iq.*
 FROM
   instance_questions AS iq
+  JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
 WHERE
   iq.assessment_question_id = $assessment_question_id
-  AND iq.status != 'unanswered';
+  AND iq.status != 'unanswered'
+  AND (
+    NOT $closed_instance_questions_only
+    OR ai.open = FALSE
+  )
+  AND (
+    NOT $ungrouped_instance_questions_only
+    OR (
+      iq.ai_instance_question_group_id IS NULL
+      AND iq.manual_instance_question_group_id IS NULL
+    )
+  );
 
 -- BLOCK insert_ai_grading_job
 INSERT INTO
@@ -332,5 +344,12 @@ FROM
 UPDATE assessment_questions
 SET
   ai_grading_mode = NOT ai_grading_mode
+WHERE
+  id = $assessment_question_id;
+
+-- BLOCK set_ai_grading_mode
+UPDATE assessment_questions
+SET
+  ai_grading_mode = $ai_grading_mode
 WHERE
   id = $assessment_question_id;

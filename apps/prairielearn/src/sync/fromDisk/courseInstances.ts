@@ -8,7 +8,7 @@ import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { type CourseInstanceJson } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
-import { isAccessRuleAccessibleInFuture } from '../dates.js';
+import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
@@ -46,7 +46,7 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
   const accessRules = courseInstance.allowAccess
-    .filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
+    ?.filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
     .map((accessRule) => ({
       uids: accessRule.uids ?? null,
       start_date: accessRule.startDate ?? null,
@@ -58,16 +58,18 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   return {
     uuid: courseInstance.uuid,
     long_name: courseInstance.longName,
-    hide_in_enroll_page: courseInstance.hideInEnrollPage,
+    assessments_group_by: courseInstance.groupAssessmentsBy,
     display_timezone: courseInstance.timezone ?? null,
-    access_rules: accessRules,
+    hide_in_enroll_page: courseInstance.hideInEnrollPage,
+    comment: JSON.stringify(courseInstance.comment),
+    modern_publishing: accessRules == null,
+    publishing_start_date: courseInstance.publishing?.startDate ?? null,
+    publishing_end_date: courseInstance.publishing?.endDate ?? null,
     self_enrollment_enabled: courseInstance.selfEnrollment.enabled,
     self_enrollment_enabled_before_date: courseInstance.selfEnrollment.beforeDate,
-    self_enrollment_enabled_before_date_enabled: courseInstance.selfEnrollment.beforeDateEnabled,
     self_enrollment_use_enrollment_code: courseInstance.selfEnrollment.useEnrollmentCode,
-    assessments_group_by: courseInstance.groupAssessmentsBy,
-    comment: JSON.stringify(courseInstance.comment),
     share_source_publicly: courseInstance.shareSourcePublicly,
+    access_rules: accessRules ?? [],
   };
 }
 
@@ -101,7 +103,7 @@ export async function sync(
       // us avoid emitting errors for very old, unused course instances.
       const instanceInstitutions = new Set(
         courseInstance.data?.allowAccess
-          .filter(isAccessRuleAccessibleInFuture)
+          ?.filter((accessRule) => isDateInFuture(accessRule.endDate))
           .map((accessRule) => accessRule.institution)
           .filter((institution) => institution != null),
       );

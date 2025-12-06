@@ -1,5 +1,38 @@
 # @prairielearn/migrations
 
+## 4.0.3
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+- Updated dependencies [0425922]
+  - @prairielearn/named-locks@3.0.26
+  - @prairielearn/postgres@4.4.3
+  - @prairielearn/logger@2.0.23
+  - @prairielearn/error@2.0.22
+
+## 4.0.2
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/error@2.0.21
+  - @prairielearn/logger@2.0.22
+  - @prairielearn/named-locks@3.0.25
+  - @prairielearn/postgres@4.4.2
+
+## 4.0.1
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/error@2.0.20
+  - @prairielearn/logger@2.0.21
+  - @prairielearn/named-locks@3.0.24
+  - @prairielearn/postgres@4.4.1
+
 ## 4.0.0
 
 ### Major Changes

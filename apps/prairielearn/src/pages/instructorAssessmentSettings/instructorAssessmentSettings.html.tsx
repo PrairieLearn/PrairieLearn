@@ -9,6 +9,7 @@ import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
@@ -22,7 +23,7 @@ export function InstructorAssessmentSettings({
   assessmentModules,
   canEdit,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   origHash: string;
   assessmentGHLink: string | null;
   tids: string[];
@@ -357,8 +358,8 @@ ${resLocals.assessment.honor_code}</textarea
         </div>
         ${canEdit
           ? html`
-              <div class="card-footer d-flex flex-wrap align-items-center">
-                <form name="copy-assessment-form" class="me-2" method="POST">
+              <div class="card-footer d-flex flex-wrap gap-2">
+                <form name="copy-assessment-form" method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                   <button
                     type="submit"

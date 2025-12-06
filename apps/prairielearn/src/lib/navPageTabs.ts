@@ -36,10 +36,10 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
           },
 
           {
-            activeSubPage: 'access',
-            urlSuffix: '/instance_admin/access',
+            activeSubPage: 'publishing',
+            urlSuffix: '/instance_admin/publishing',
             iconClasses: 'far fa-calendar-alt',
-            tabLabel: 'Access',
+            tabLabel: 'Publishing',
           },
 
           {
@@ -61,10 +61,10 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         ]
       : [
           {
-            activeSubPage: 'access',
-            urlSuffix: '/instance_admin/access',
+            activeSubPage: 'publishing',
+            urlSuffix: '/instance_admin/publishing',
             iconClasses: 'far fa-calendar-alt',
-            tabLabel: 'Access',
+            tabLabel: 'Publishing',
           },
           {
             activeSubPage: 'assessments',

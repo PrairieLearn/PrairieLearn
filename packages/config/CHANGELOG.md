@@ -1,5 +1,29 @@
 # @prairielearn/config
 
+## 3.1.11
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+- Updated dependencies [0425922]
+  - @prairielearn/aws-imds@2.0.22
+
+## 3.1.10
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/aws-imds@2.0.21
+
+## 3.1.9
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/aws-imds@2.0.20
+
 ## 3.1.8
 
 ### Patch Changes

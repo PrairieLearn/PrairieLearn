@@ -10,13 +10,15 @@ import type {
   CourseInstance,
   GroupConfig,
   InstanceQuestion,
-  Issue,
   Question,
   User,
   Variant,
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import type { IssueRenderData } from '../lib/question-render.types.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import type { SimpleVariantWithScore } from '../models/variant.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
@@ -37,7 +39,7 @@ export function QuestionContainer({
   questionCopyTargets = null,
   aiGradingInfo,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
@@ -73,7 +75,9 @@ export function QuestionContainer({
       ${question.type !== 'Freeform'
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
-      ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
+      ${issues.map((issue: IssueRenderData) =>
+        IssuePanel({ issue, course_instance, authz_data, is_administrator }),
+      )}
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
@@ -115,7 +119,6 @@ export function QuestionContainer({
       aiGradingInfo?.prompt
         ? AIGradingPrompt({
             prompt: aiGradingInfo.prompt,
-            promptImageUrls: aiGradingInfo.promptImageUrls,
           })
         : ''}
       ${submissions.length > 0
@@ -165,13 +168,7 @@ export function QuestionContainer({
   `;
 }
 
-function AIGradingPrompt({
-  prompt,
-  promptImageUrls,
-}: {
-  prompt: string;
-  promptImageUrls: string[];
-}) {
+function AIGradingPrompt({ prompt }: { prompt: string }) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -189,29 +186,12 @@ function AIGradingPrompt({
           <i class="fa fa-angle-up ms-1 expand-icon"></i>
         </button>
       </div>
-      <div class="js-submission-body js-collapsible-card-body collapse" id="ai-grading-prompt-body">
-        <ul class="list-group list-group-flush">
-          <li class="list-group-item my-0">
-            <h5 class="card-title mt-2 mb-3">Raw prompt</h5>
-            <pre class="mb-0"><code>${prompt}</code></pre>
-          </li>
-          <li class="list-group-item my-0">
-            ${promptImageUrls.length > 0
-              ? html`
-                  <h5 class="card-title mt-2 mb-3">Prompt images</h5>
-                  ${promptImageUrls.map(
-                    (url, index) =>
-                      html`<img
-                        src="${url}"
-                        alt="Image ${index + 1} in the AI grading prompt"
-                        class="img-fluid mb-2"
-                        style="max-height: 600px"
-                      />`,
-                  )}
-                `
-              : ''}
-          </li>
-        </ul>
+      <div
+        class="card-body collapse js-submission-body js-collapsible-card-body"
+        id="ai-grading-prompt-body"
+      >
+        <h5 class="card-title">Raw prompt</h5>
+        <pre class="mb-0"><code>${prompt}</code></pre>
       </div>
     </div>
   `;
@@ -240,7 +220,9 @@ function AIGradingExplanation({ explanation }: { explanation: string }) {
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          <pre class="mb-0" style="white-space: pre-wrap;">${explanation}</pre>
+          <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
+${explanation}</pre
+          >
         </div>
       </div>
     </div>
@@ -253,13 +235,8 @@ export function IssuePanel({
   authz_data,
   is_administrator,
 }: {
-  issue: Issue & {
-    user_name: User['name'];
-    user_email: User['email'];
-    user_uid: User['uid'];
-    formatted_date: string;
-  };
-  course_instance: CourseInstance;
+  issue: IssueRenderData;
+  course_instance?: CourseInstance;
   authz_data: Record<string, any>;
   is_administrator: boolean;
 }) {
@@ -438,7 +415,7 @@ interface QuestionFooterResLocals {
   instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
-  authz_result: Record<string, any>;
+  authz_result: Record<string, any> | null;
   group_config: GroupConfig | null;
   group_info: GroupInfo | null;
   group_role_permissions: {
@@ -610,7 +587,9 @@ export function QuestionFooterContent({
               : showTryAgainButton
                 ? html`
                     <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
-                      ${instance_question_info.previous_variants?.some((variant) => variant.open)
+                      ${instance_question_info.previous_variants?.some(
+                        (variant: SimpleVariantWithScore) => variant.open,
+                      )
                         ? 'Go to latest variant'
                         : 'Try a new variant'}
                     </a>
@@ -800,7 +779,7 @@ function QuestionPanel({
   aiGradingPreviewUrl,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
@@ -906,7 +885,7 @@ function SubmissionList({
   submissionCount,
   renderSubmissionSearchParams,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   submissions: SubmissionForRender[];
@@ -938,14 +917,14 @@ function CopyQuestionModal({
   resLocals,
 }: {
   questionCopyTargets: CopyTarget[] | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const { question, course } = resLocals;
   if (questionCopyTargets == null) return '';
   return Modal({
     id: 'copyQuestionModal',
     title: 'Copy question',
-    formAction: questionCopyTargets[0]?.copy_url ?? '',
+    formAction: questionCopyTargets.at(0)?.copy_url ?? '',
     formClass: 'js-copy-question-form',
     body:
       questionCopyTargets.length === 0
@@ -985,12 +964,12 @@ function CopyQuestionModal({
       <input
         type="hidden"
         name="__csrf_token"
-        value="${questionCopyTargets[0]?.__csrf_token ?? ''}"
+        value="${questionCopyTargets.at(0)?.__csrf_token ?? ''}"
       />
       <input type="hidden" name="question_id" value="${question.id}" />
       <input type="hidden" name="course_id" value="${course.id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      ${questionCopyTargets?.length > 0
+      ${questionCopyTargets.length > 0
         ? html`
             <button type="submit" name="__action" value="copy_question" class="btn btn-primary">
               Copy question

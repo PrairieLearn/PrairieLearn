@@ -46,6 +46,7 @@ import { selectTopicsByCourseId } from '../../models/topics.js';
 import {
   InstructorQuestionSettings,
   SelectedAssessmentsSchema,
+  type SharingSetRow,
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
 
@@ -184,7 +185,7 @@ router.post(
       questionInfo.tags = propertyValueWithDefault(
         questionInfo.tags,
         body.tags,
-        (val) => !val || val.length === 0,
+        (val: any) => !val || val.length === 0,
       );
 
       questionInfo.gradingMethod = propertyValueWithDefault(
@@ -225,7 +226,7 @@ router.post(
         args: propertyValueWithDefault(
           questionInfo.workspaceOptions?.args,
           body.workspace_args,
-          (v) => !v || v.length === 0,
+          (v: any) => !v || v.length === 0,
         ),
         rewriteUrl: propertyValueWithDefault(
           questionInfo.workspaceOptions?.rewriteUrl,
@@ -235,7 +236,7 @@ router.post(
         gradedFiles: propertyValueWithDefault(
           questionInfo.workspaceOptions?.gradedFiles,
           body.workspace_graded_files,
-          (v) => !v || v.length === 0,
+          (v: any) => !v || v.length === 0,
         ),
         enableNetworking: propertyValueWithDefault(
           questionInfo.workspaceOptions?.enableNetworking,
@@ -244,8 +245,8 @@ router.post(
         ),
         environment: propertyValueWithDefault(
           questionInfo.workspaceOptions?.environment,
-          JSON.parse(body.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
-          (val) => !val || Object.keys(val).length === 0,
+          JSON.parse(body.workspace_environment?.replaceAll('\r\n', '\n') || '{}'),
+          (val: any) => !val || Object.keys(val).length === 0,
         ),
       };
 
@@ -258,7 +259,7 @@ router.post(
             propertyValueWithDefault(
               questionInfo.workspaceOptions,
               workspaceOptions,
-              (val) => !val || Object.keys(val).length === 0,
+              (val: any) => !val || Object.keys(val).length === 0,
             ),
           ).filter(([_, value]) => value !== undefined),
         );
@@ -285,12 +286,12 @@ router.post(
         entrypoint: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.entrypoint,
           body.external_grading_entrypoint,
-          (v) => v == null || v.length === 0,
+          (v: any) => v == null || v.length === 0,
         ),
         serverFilesCourse: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.serverFilesCourse,
           body.external_grading_files,
-          (v) => !v || v.length === 0,
+          (v: any) => !v || v.length === 0,
         ),
         timeout: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.timeout,
@@ -305,7 +306,7 @@ router.post(
         environment: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.environment,
           JSON.parse(body.external_grading_environment || '{}'),
-          (val) => !val || Object.keys(val).length === 0,
+          (val: any) => !val || Object.keys(val).length === 0,
         ),
       };
       if (externalGradingOptions.image) {
@@ -314,7 +315,7 @@ router.post(
             propertyValueWithDefault(
               questionInfo.externalGradingOptions,
               externalGradingOptions,
-              (val) => !val || Object.keys(val).length === 0,
+              (val: any) => !val || Object.keys(val).length === 0,
             ),
           ).filter(([_, value]) => value !== undefined),
         );
@@ -379,7 +380,7 @@ router.post(
         const editor = new QuestionCopyEditor({
           locals: res.locals as any,
           from_qid: res.locals.question.qid,
-          from_course_short_name: res.locals.course.short_name,
+          from_course: res.locals.course,
           from_path: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
           is_transfer: false,
         });
@@ -467,7 +468,7 @@ router.get(
 
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
-    let sharingSetsIn;
+    let sharingSetsIn: SharingSetRow[] | undefined;
     if (sharingEnabled) {
       const result = await sqldb.queryRows(
         sql.select_sharing_sets,

@@ -1,5 +1,23 @@
 # @prairielearn/bind-mount
 
+## 1.1.14
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 1.1.13
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 1.1.12
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
 ## 1.1.11
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/config",
-  "version": "3.1.8",
+  "version": "3.1.11",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -9,22 +9,22 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.880.0",
-    "@aws-sdk/client-secrets-manager": "^3.879.0",
+    "@aws-sdk/client-ec2": "^3.940.0",
+    "@aws-sdk/client-secrets-manager": "^3.940.0",
     "@prairielearn/aws-imds": "workspace:^",
-    "fs-extra": "^11.3.1",
+    "fs-extra": "^11.3.2",
     "lodash": "^4.17.21",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
-    "@types/lodash": "^4.17.20",
-    "@types/node": "^22.18.0",
-    "@vitest/coverage-v8": "^3.2.4",
+    "@types/lodash": "^4.17.21",
+    "@types/node": "^22.19.1",
+    "@vitest/coverage-v8": "^4.0.14",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/flash",
-  "version": "2.0.22",
+  "version": "2.0.25",
   "type": "module",
   "repository": {
     "type": "git",
@@ -15,14 +15,14 @@
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
-    "@types/express": "^4.17.23"
+    "@types/express": "^4.17.25"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.18.0",
-    "@vitest/coverage-v8": "^3.2.4",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "@types/node": "^22.19.1",
+    "@vitest/coverage-v8": "^4.0.14",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14"
   }
 }

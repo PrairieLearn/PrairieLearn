@@ -5,7 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
-import { AssessmentInstanceSchema } from '../../lib/db-types.js';
+import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
   canUserAssignGroupRoles,
@@ -16,6 +16,7 @@ import {
   updateGroupRoles,
 } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
@@ -33,7 +34,7 @@ const sql = loadSqlEquiv(import.meta.url);
 router.use(selectAndAuthzAssessmentInstance);
 router.use(studentAssessmentAccess);
 
-async function ensureUpToDate(locals: Record<string, any>) {
+async function ensureUpToDate(locals: UntypedResLocals) {
   const updated = await assessment.updateAssessmentInstance(
     locals.assessment_instance.id,
     locals.authn_user.user_id,
@@ -107,7 +108,7 @@ async function processDeleteFile(req: Request, res: Response) {
   }
 
   // Check the requested file belongs to the current assessment instance
-  const validFiles = (res.locals.file_list ?? []).filter((file) =>
+  const validFiles = (res.locals.file_list ?? []).filter((file: File) =>
     idsEqual(file.id, req.body.file_id),
   );
   if (validFiles.length === 0) {
@@ -230,10 +231,10 @@ router.get(
       );
     }
 
-    res.locals.has_manual_grading_question = instance_question_rows?.some(
+    res.locals.has_manual_grading_question = instance_question_rows.some(
       (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
     );
-    res.locals.has_auto_grading_question = instance_question_rows?.some(
+    res.locals.has_auto_grading_question = instance_question_rows.some(
       (q) => q.max_auto_points || q.auto_points || !q.max_points,
     );
     const assessment_text_templated = assessment.renderText(
@@ -260,7 +261,6 @@ router.get(
     const groupConfig = await getGroupConfig(res.locals.assessment.id);
     const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
     const userCanAssignRoles =
-      groupInfo != null &&
       groupConfig.has_roles &&
       (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
         res.locals.authz_data.has_course_instance_permission_edit);

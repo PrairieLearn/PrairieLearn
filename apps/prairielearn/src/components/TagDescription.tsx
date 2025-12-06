@@ -1,15 +1,13 @@
-import { html } from '@prairielearn/html';
-
 import { type Tag } from '../lib/db-types.js';
 
-export function TagDescription(tag: Tag) {
+export function TagDescription({ tag }: { tag: Tag }) {
   if (!tag.implicit) {
     return tag.description;
   }
 
-  return html`
+  return (
     <span class="text-muted">
-      Auto-generated from use in a question; add this tag to your infoCourse.json file to customize
+      Auto-generated from use in a question; edit this tag to customize
     </span>
-  `;
+  );
 }

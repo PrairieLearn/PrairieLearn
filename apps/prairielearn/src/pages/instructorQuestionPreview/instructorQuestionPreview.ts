@@ -138,7 +138,7 @@ router.get(
     let readmeHtml = '';
     if (questionReadmeExists) {
       const readme = await fs.readFile(questionReadmePath, 'utf8');
-      readmeHtml = await markdownToHtml(readme, { allowHtml: false });
+      readmeHtml = markdownToHtml(readme, { allowHtml: false });
     }
 
     res.send(

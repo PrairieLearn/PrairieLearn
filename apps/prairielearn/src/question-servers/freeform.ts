@@ -24,6 +24,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { assertNever } from '../lib/types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
@@ -64,7 +65,10 @@ interface QuestionProcessingContext {
   course_element_extensions: ElementExtensionNameDirMap;
 }
 
-type ElementExtensionNameDirMap = Record<string, Record<string, ElementExtensionJsonExtension>>;
+export type ElementExtensionNameDirMap = Record<
+  string,
+  Record<string, ElementExtensionJsonExtension>
+>;
 type ElementNameMap = Record<
   string,
   ((ElementCoreJson & { type: 'core' }) | (ElementCourseJson & { type: 'course' })) & {
@@ -75,24 +79,20 @@ type ElementNameMap = Record<
 // Maps core element names to element info
 let coreElementsCache: ElementNameMap = {};
 // Maps course IDs to course element info
-let courseElementsCache: Partial<
-  Record<
-    string,
-    {
-      commit_hash: string | null;
-      data: ElementNameMap;
-    }
-  >
+let courseElementsCache: Record<
+  string,
+  {
+    commit_hash: string | null;
+    data: ElementNameMap;
+  }
 > = {};
 // Maps course IDs to course element extension info
-let courseExtensionsCache: Partial<
-  Record<
-    string,
-    {
-      commit_hash: string | null;
-      data: ElementExtensionNameDirMap;
-    }
-  >
+let courseExtensionsCache: Record<
+  string,
+  {
+    commit_hash: string | null;
+    data: ElementExtensionNameDirMap;
+  }
 > = {};
 
 class CourseIssueError extends Error {
@@ -142,7 +142,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   try {
     files = await fs.readdir(sourceDir);
   } catch (err) {
-    if (err && err.code === 'ENOENT') {
+    if (err?.code === 'ENOENT') {
       // Directory doesn't exist, most likely a course with no elements.
       // Proceed with an empty object.
       return {};
@@ -165,7 +165,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     try {
       rawInfo = await fs.readJSON(elementInfoPath);
     } catch (err) {
-      if (err && err.code === 'ENOENT') {
+      if (err?.code === 'ENOENT') {
         // This must not be an element directory, skip it
         return;
       }
@@ -199,10 +199,11 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
 export async function loadElementsForCourse(course: Course) {
   if (
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     courseElementsCache[course.id]?.commit_hash &&
-    courseElementsCache[course.id]!.commit_hash === course.commit_hash
+    courseElementsCache[course.id].commit_hash === course.commit_hash
   ) {
-    return courseElementsCache[course.id]!.data;
+    return courseElementsCache[course.id].data;
   }
 
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
@@ -293,10 +294,11 @@ async function loadExtensionsForCourse({
   course_dir_host: string;
 }) {
   if (
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     courseExtensionsCache[course.id]?.commit_hash &&
-    courseExtensionsCache[course.id]!.commit_hash === course.commit_hash
+    courseExtensionsCache[course.id].commit_hash === course.commit_hash
   ) {
-    return courseExtensionsCache[course.id]!.data;
+    return courseExtensionsCache[course.id].data;
   }
 
   const extensions = await loadExtensions(
@@ -882,7 +884,7 @@ async function renderPanel(
   variant: Variant,
   submission: Submission | null,
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
   context: QuestionProcessingContext,
 ): Promise<RenderPanelResult> {
   debug(`renderPanel(${panel})`);
@@ -1027,7 +1029,7 @@ async function renderPanelInstrumented(
   variant: Variant,
   question: Question,
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
   context: QuestionProcessingContext,
 ): Promise<RenderPanelResult> {
   return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
@@ -1058,7 +1060,7 @@ export async function render(
   submission: Submission | null,
   submissions: Submission[],
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
@@ -1095,26 +1097,29 @@ export async function render(
       }
 
       if (renderSelection.submissions) {
-        htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
-          const {
-            courseIssues: newCourseIssues,
-            html,
-            renderedElementNames,
-          } = await renderPanelInstrumented(
-            'submission',
-            codeCaller,
-            submission,
-            variant,
-            question,
-            course,
-            locals,
-            context,
-          );
+        htmls.submissionHtmls = await async.mapSeries(
+          submissions,
+          async (submission: Submission) => {
+            const {
+              courseIssues: newCourseIssues,
+              html,
+              renderedElementNames,
+            } = await renderPanelInstrumented(
+              'submission',
+              codeCaller,
+              submission,
+              variant,
+              question,
+              course,
+              locals,
+              context,
+            );
 
-          courseIssues.push(...newCourseIssues);
-          allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-          return html;
-        });
+            courseIssues.push(...newCourseIssues);
+            allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+            return html;
+          },
+        );
       }
 
       if (renderSelection.answer) {

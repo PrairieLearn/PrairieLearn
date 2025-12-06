@@ -1,5 +1,29 @@
 # @prairielearn/html-ejs
 
+## 2.0.22
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+- Updated dependencies [0425922]
+  - @prairielearn/html@4.0.22
+
+## 2.0.21
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/html@4.0.21
+
+## 2.0.20
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/html@4.0.20
+
 ## 2.0.19
 
 ### Patch Changes

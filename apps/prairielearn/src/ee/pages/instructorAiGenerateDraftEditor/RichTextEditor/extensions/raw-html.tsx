@@ -2,7 +2,9 @@ import { Node } from '@tiptap/core';
 import { NodeViewWrapper, type ReactNodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
 import clsx from 'clsx';
 import { type ComponentType, useState } from 'preact/compat';
-import { Card, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Card } from 'react-bootstrap';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 interface RawHtmlAttrs {
   html: string;
@@ -29,13 +31,16 @@ const RawHtmlComponent = (
             {nodes !== null && nodes.length !== 1 ? (
               <OverlayTrigger
                 placement="right"
-                overlay={
-                  <Tooltip>
-                    You must have exactly one parent element, but you have {nodes.length} (
-                    {nodes.join(', ')}). Either remove the extra elements, or combine them into a
-                    single element by wrapping both of them in a single div.
-                  </Tooltip>
-                }
+                tooltip={{
+                  body: (
+                    <>
+                      You must have exactly one parent element, but you have {nodes.length} (
+                      {nodes.join(', ')}). Either remove the extra elements, or combine them into a
+                      single element by wrapping both of them in a single div.
+                    </>
+                  ),
+                  props: { id: 'raw-html-warning-tooltip' },
+                }}
               >
                 <i
                   class="bi bi-exclamation-triangle text-danger"
@@ -47,12 +52,15 @@ const RawHtmlComponent = (
           </div>
           <OverlayTrigger
             placement="left"
-            overlay={
-              <Tooltip>
-                This node type isn't supported by the rich text editor yet. You can edit the
-                underlying HTML here.
-              </Tooltip>
-            }
+            tooltip={{
+              body: (
+                <>
+                  This node type isn't supported by the rich text editor yet. You can edit the
+                  underlying HTML here.
+                </>
+              ),
+              props: { id: 'raw-html-help-tooltip' },
+            }}
           >
             <i class="bi bi-question-circle" aria-label="Raw HTML help" role="img" />
           </OverlayTrigger>

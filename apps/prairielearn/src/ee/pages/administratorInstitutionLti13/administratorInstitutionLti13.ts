@@ -72,6 +72,7 @@ router.get(
     let paramInstance: Lti13Instance | undefined;
 
     // Handle the / (no id passed case)
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (req.params.unsafe_lti13_instance_id === undefined) {
       if (lti13Instances.length > 0) {
         return res.redirect(
@@ -232,9 +233,7 @@ router.post(
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
       flash('success', 'Instance deleted.');
-      return res.redirect(
-        `${config.urlPrefix}/administrator/institution/${req.params.institution_id}/lti13`,
-      );
+      return res.redirect(`/pl/administrator/institution/${req.params.institution_id}/lti13`);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

@@ -36,7 +36,7 @@ const SHARING_QUESTION_QID = 'shared-via-sharing-set';
 const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
 const DRAFT_QUESTION_QID = '__drafts__/draft_1';
 
-function sharingPageUrl(courseId) {
+function sharingPageUrl(courseId: string) {
   return `${baseUrl}/course/${courseId}/course_admin/sharing`;
 }
 
@@ -77,6 +77,7 @@ const gitOptionsLive = {
   cwd: sharingCourseLiveDir,
   env: process.env,
 };
+
 async function commitAndPullSharingCourse() {
   await execa('git', ['add', '-A'], gitOptionsOrigin);
   await execa('git', ['commit', '-m', 'Add sharing set'], gitOptionsOrigin);
@@ -97,7 +98,7 @@ async function ensureInvalidSharingOperationFailsToSync() {
   assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
 }
 
-async function syncSharingCourse(course_id) {
+async function syncSharingCourse(course_id: string) {
   const syncUrl = `${baseUrl}/course/${course_id}/course_admin/syncs`;
   const token = await getCsrfToken(syncUrl);
 
@@ -230,8 +231,8 @@ describe('Question Sharing', function () {
   });
 
   describe('Create a sharing set and add a question to it', () => {
-    let exampleCourseSharingToken;
-    let testCourseSharingToken;
+    let exampleCourseSharingToken: string | null;
+    let testCourseSharingToken: string | null;
 
     test.sequential(
       'Sync course with sharing enabled, disabling validating shared question paths',
@@ -369,7 +370,7 @@ describe('Question Sharing', function () {
           __action: 'course_sharing_set_add',
           __csrf_token: token,
           unsafe_sharing_set_id: sharingSetId,
-          unsafe_course_sharing_token: testCourseSharingToken,
+          unsafe_course_sharing_token: testCourseSharingToken!,
         }),
       });
       assert(res.ok);
@@ -405,7 +406,7 @@ describe('Question Sharing', function () {
           __action: 'course_sharing_set_add',
           __csrf_token: token,
           unsafe_sharing_set_id: '1',
-          unsafe_course_sharing_token: exampleCourseSharingToken,
+          unsafe_course_sharing_token: exampleCourseSharingToken!,
         }),
       });
       assert.equal(res.status, 400);
@@ -421,7 +422,7 @@ describe('Question Sharing', function () {
           __action: 'course_sharing_set_add',
           __csrf_token: token,
           unsafe_sharing_set_id: '1',
-          unsafe_course_sharing_token: exampleCourseSharingToken,
+          unsafe_course_sharing_token: exampleCourseSharingToken!,
         }),
       });
       assert.equal(res.status, 400);
@@ -434,7 +435,7 @@ describe('Question Sharing', function () {
   });
 
   describe('Test Sharing a Question Publicly', function () {
-    let publiclySharedQuestionId;
+    let publiclySharedQuestionId: string;
 
     beforeAll(async () => {
       publiclySharedQuestionId = await sqldb.queryRow(

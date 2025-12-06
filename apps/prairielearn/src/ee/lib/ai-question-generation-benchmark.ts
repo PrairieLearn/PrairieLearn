@@ -1,32 +1,31 @@
 import path from 'node:path';
 
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
+import { type EmbeddingModel, type LanguageModel, generateObject } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { type OpenAI } from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod.mjs';
 import * as tmp from 'tmp-promise';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import type { OpenAIModelId } from '../../lib/ai.js';
 import { config } from '../../lib/config.js';
-import { AiQuestionGenerationPromptSchema } from '../../lib/db-types.js';
+import { AiQuestionGenerationPromptSchema, type User } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import { insertCourse } from '../../models/course.js';
 import { syncDiskToSql } from '../../sync/syncFromDisk.js';
 
 import { generateQuestion } from './aiQuestionGeneration.js';
-import { openAiUserFromAuthn } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.filename);
-
-const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
 
 interface Benchmark {
   prompt: string;
 }
+
+export const QUESTION_BENCHMARKING_OPENAI_MODEL = 'gpt-5-2025-08-07' satisfies OpenAIModelId;
 
 const BENCHMARKS: Benchmark[] = [
   // These are high-quality prompts written or reviewed by a PrairieLearn expert.
@@ -158,17 +157,25 @@ const BENCHMARKS: Benchmark[] = [
 ];
 
 const QuestionGenerationEvaluationSchema = z.object({
-  score: z.number().describe('Score the generated question from 1 (lowest) to 5 (highest).'),
+  score: z
+    .number()
+    .min(1)
+    .max(5)
+    .describe('Score the generated question from 1 (lowest) to 5 (highest).'),
   reasoning: z.string().array().describe('Provide your reasoning for the score.'),
 });
 type QuestionGenerationEvaluation = z.infer<typeof QuestionGenerationEvaluationSchema>;
 
 export async function benchmarkAiQuestionGeneration({
-  client,
-  authnUserId,
+  embeddingModel,
+  generationModel,
+  evaluationModel,
+  user,
 }: {
-  client: OpenAI;
-  authnUserId: string;
+  embeddingModel: EmbeddingModel;
+  generationModel: LanguageModel;
+  evaluationModel: LanguageModel;
+  user: User;
 }): Promise<string> {
   // Safety check: for now, we really only want this to run in dev mode.
   if (!config.devMode) {
@@ -178,7 +185,7 @@ export async function benchmarkAiQuestionGeneration({
   const serverJob = await createServerJob({
     type: 'ai_question_generation_benchmark',
     description: 'Benchmark AI question generation',
-    authnUserId,
+    authnUserId: user.user_id,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -195,7 +202,7 @@ export async function benchmarkAiQuestionGeneration({
     const courseTitle = `AI Question Generation Benchmark ${Date.now()}`;
     const courseName = `ai-question-generation-benchmark-${Date.now()}`;
     await fs.writeJson(path.join(courseDirectory.path, 'infoCourse.json'), {
-      uuid: uuidv4(),
+      uuid: crypto.randomUUID(),
       name: courseName,
       title: courseTitle,
       topics: [],
@@ -212,7 +219,7 @@ export async function benchmarkAiQuestionGeneration({
       path: courseDirectory.path,
       repository: null,
       branch: 'master',
-      authn_user_id: authnUserId,
+      authn_user_id: user.user_id,
     });
 
     // Sync the course to the database so future edits will do their thing.
@@ -236,11 +243,12 @@ export async function benchmarkAiQuestionGeneration({
     for (const benchmark of BENCHMARKS) {
       // Generate a single question.
       const result = await generateQuestion({
-        client,
+        model: generationModel,
+        embeddingModel,
         courseId: course.id,
-        authnUserId,
+        authnUserId: user.user_id,
         prompt: benchmark.prompt,
-        userId: authnUserId,
+        userId: user.user_id,
         hasCoursePermissionEdit: true,
       });
 
@@ -253,7 +261,7 @@ export async function benchmarkAiQuestionGeneration({
       // Log the prompts, responses, and errors for debugging.
       for (const prompt of prompts) {
         job.info('User prompt');
-        job.info('======');
+        job.info('===========');
         job.info(prompt.user_prompt.trimEnd());
         job.info('\n');
 
@@ -262,7 +270,7 @@ export async function benchmarkAiQuestionGeneration({
         job.info(prompt.response.trimEnd());
         job.info('\n');
 
-        if (prompt.errors?.length) {
+        if (prompt.errors.length > 0) {
           job.error('Errors');
           job.error('======');
           job.error(JSON.stringify(prompt.errors, null, 2));
@@ -273,8 +281,7 @@ export async function benchmarkAiQuestionGeneration({
       }
 
       const evaluationResult = await evaluateGeneratedQuestion({
-        client,
-        authnUserId,
+        model: evaluationModel,
         originalSystemPrompt: prompts[0].system_prompt,
         userPrompt: prompts[0].user_prompt,
         html: result.htmlResult ?? '',
@@ -314,15 +321,13 @@ export async function benchmarkAiQuestionGeneration({
 }
 
 async function evaluateGeneratedQuestion({
-  client,
-  authnUserId,
+  model,
   originalSystemPrompt,
   userPrompt,
   html,
   python,
 }: {
-  client: OpenAI;
-  authnUserId: string;
+  model: LanguageModel;
   originalSystemPrompt: string | null;
   userPrompt: string;
   html: string;
@@ -375,18 +380,18 @@ async function evaluateGeneratedQuestion({
     generatedQuestion.push('', 'No Python file was generated.');
   }
 
-  const completion = await client.chat.completions.parse({
-    model: MODEL_NAME,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: generatedQuestion.join('\n') },
-    ],
-    response_format: zodResponseFormat(
-      QuestionGenerationEvaluationSchema,
-      'question_generation_evaluation',
-    ),
-    user: openAiUserFromAuthn(authnUserId),
+  const response = await generateObject({
+    model,
+    system: systemPrompt,
+    prompt: generatedQuestion.join('\n'),
+    schema: QuestionGenerationEvaluationSchema,
+    providerOptions: {
+      openai: {
+        reasoningEffort: 'low',
+        strictJsonSchema: true,
+      } satisfies OpenAIResponsesProviderOptions,
+    },
   });
 
-  return completion.choices[0].message.parsed;
+  return response.object;
 }

@@ -5,7 +5,6 @@ import { z } from 'zod';
 
 import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
-import { config } from '../lib/config.js';
 import {
   type AssessmentQuestion,
   type GradingJob,
@@ -146,18 +145,18 @@ export function SubmissionPanel({
                                 submission.rubric_grading?.rubric_items?.[item.id] ?? null,
                             }),
                           )}
-                        ${submission.rubric_grading?.adjust_points
+                        ${submission.rubric_grading.adjust_points
                           ? html`
                               <div class="mb-2">
                                 <span class="text-muted"> Manual grading adjustment: </span>
                                 <span
-                                  class="text-${submission.rubric_grading?.adjust_points >= 0
+                                  class="text-${submission.rubric_grading.adjust_points >= 0
                                     ? 'success'
                                     : 'danger'}"
                                 >
                                   <strong data-testid="rubric-adjust-points">
-                                    [${(submission.rubric_grading?.adjust_points >= 0 ? '+' : '') +
-                                    submission.rubric_grading?.adjust_points}]
+                                    [${(submission.rubric_grading.adjust_points >= 0 ? '+' : '') +
+                                    submission.rubric_grading.adjust_points}]
                                   </strong>
                                 </span>
                               </div>
@@ -180,7 +179,7 @@ export function SubmissionPanel({
 
       <div class="card mb-4" data-testid="submission-block">
         <div
-          class="card-header bg-light text-dark d-flex align-items-center collapsible-card-header"
+          class="card-header bg-light text-dark d-flex flex-wrap align-items-center collapsible-card-header"
         >
           <div class="me-2">
             <div>
@@ -196,7 +195,7 @@ export function SubmissionPanel({
                 : `${submission.user_uid} submitted at ${submission.formatted_date}`}
             </span>
           </div>
-          <div class="me-auto" data-testid="submission-status">
+          <div class="me-auto align-self-end" data-testid="submission-status">
             ${SubmissionStatusBadge({
               submission,
               question,
@@ -401,8 +400,8 @@ function SubmissionInfoModal({
   const gradingJobStats = buildGradingJobStats(submission.grading_job);
   const gradingJobUrl =
     course_instance_id == null
-      ? `${config.urlPrefix}/course/${course_id}/grading_job/${submission.grading_job?.id}`
-      : `${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${
+      ? `/pl/course/${course_id}/grading_job/${submission.grading_job?.id}`
+      : `/pl/course_instance/${course_instance_id}/instructor/grading_job/${
           submission.grading_job?.id
         }`;
   return Modal({

@@ -1,31 +1,14 @@
-import { z } from 'zod';
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlValue, html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
+import { type CourseRequest } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assertNever } from '../../lib/types.js';
 
-export const CourseRequestRowSchema = z.object({
-  course_request: CourseRequestSchema,
-  approved_by_user: UserSchema.nullable(),
-});
-type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
-
-export const Lti13CourseRequestInputSchema = z
-  .object({
-    'cr-firstname': z.string(),
-    'cr-lastname': z.string(),
-    'cr-email': z.string(),
-    'cr-shortname': z.string(),
-    'cr-title': z.string(),
-    'cr-institution': z.string(),
-  })
-  .nullable();
-export type Lti13CourseRequestInput = z.infer<typeof Lti13CourseRequestInputSchema>;
+import type { CourseRequestRow, Lti13CourseRequestInput } from './instructorRequestCourse.types.js';
 
 export function RequestCourse({
   rows,
@@ -34,7 +17,7 @@ export function RequestCourse({
 }: {
   rows: CourseRequestRow[];
   lti13Info: Lti13CourseRequestInput;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     pageTitle: 'Request a Course',

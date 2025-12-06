@@ -1,9 +1,11 @@
 import assert from 'assert';
 
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
-import { type Issue, type User } from '../../../lib/db-types.js';
+import { type InstanceQuestionGroup, type Issue, type User } from '../../../lib/db-types.js';
+import { idsEqual } from '../../../lib/id.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import {
@@ -28,6 +30,9 @@ export function GradingPanel({
   custom_manual_points,
   grading_job,
   aiGradingInfo,
+  showInstanceQuestionGroup = false,
+  selectedInstanceQuestionGroup = null,
+  instanceQuestionGroups,
   skip_graded_submissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
@@ -40,6 +45,9 @@ export function GradingPanel({
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  showInstanceQuestionGroup?: boolean;
+  selectedInstanceQuestionGroup?: InstanceQuestionGroup | null;
+  instanceQuestionGroups?: InstanceQuestionGroup[];
   skip_graded_submissions?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
@@ -50,10 +58,24 @@ export function GradingPanel({
   assert(resLocals.submission, 'resLocals.submission is missing');
 
   const open_issues: Issue[] = resLocals.issues.filter((issue) => issue.open);
+
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
 
   const showSkipGradedSubmissionsButton = !disable && context === 'main';
+
+  const emptyGroup = {
+    assessment_question_id: resLocals.assessment_question.id,
+    instance_question_group_name: 'No group',
+    instance_question_group_description: 'No group assigned.',
+    id: null,
+  };
+
+  const displayedSelectedGroup = selectedInstanceQuestionGroup ?? emptyGroup;
+
+  const instanceQuestionGroupsWithEmpty = instanceQuestionGroups
+    ? [...instanceQuestionGroups, emptyGroup]
+    : [emptyGroup];
 
   return html`
     <form
@@ -89,6 +111,82 @@ export function GradingPanel({
                     type="checkbox"
                   />
                   <label class="form-check-label" for="use-score-perc">Percentage</label>
+                </div>
+              </li>
+            `
+          : ''}
+        ${showInstanceQuestionGroup && context === 'main'
+          ? html`
+              <li class="list-group-item align-items-center">
+                <label
+                  for="instance-question-group-toggle"
+                  class="form-label d-flex align-items-center gap-2"
+                >
+                  Submission Group:
+                  ${instanceQuestionGroups && instanceQuestionGroups.length > 0
+                    ? html`
+                        <div
+                          id="instance-question-group-description-tooltip"
+                          data-bs-toggle="tooltip"
+                          data-bs-html="true"
+                          data-bs-title="${displayedSelectedGroup.instance_question_group_description}"
+                        >
+                          <i class="fas fa-circle-info text-secondary"></i>
+                        </div>
+                      `
+                    : ''}
+                </label>
+                <div class="dropdown w-100 mb-2" role="combobox">
+                  <button
+                    id="instance-question-group-toggle"
+                    type="button"
+                    class="btn dropdown-toggle border border-gray bg-white d-flex justify-content-between align-items-center w-100"
+                    aria-label="Change selected submission group"
+                    aria-haspopup="listbox"
+                    aria-expanded="false"
+                    data-bs-toggle="dropdown"
+                    data-bs-boundary="window"
+                  >
+                    <span id="instance-question-group-selection-dropdown-span">
+                      ${displayedSelectedGroup.instance_question_group_name}
+                    </span>
+                  </button>
+
+                  <div class="dropdown-menu py-0 overflow-hidden">
+                    <div
+                      id="instance-question-group-selection-dropdown"
+                      style="max-height: 50vh"
+                      class="overflow-auto py-2"
+                      role="listbox"
+                      aria-labelledby="instance-question-group-toggle"
+                    >
+                      ${instanceQuestionGroupsWithEmpty.map((group) => {
+                        const isSelected = run(() => {
+                          if (!group.id) {
+                            return displayedSelectedGroup.id === null;
+                          }
+                          if (!displayedSelectedGroup.id) {
+                            return false;
+                          }
+                          return idsEqual(group.id, displayedSelectedGroup.id);
+                        });
+
+                        return html`
+                          <a
+                            class="dropdown-item ${isSelected ? 'active' : ''}"
+                            role="option"
+                            aria-current="${isSelected ? 'page' : ''}"
+                            href="#"
+                            data-id="${group.id}"
+                            data-name="${group.instance_question_group_name}"
+                            data-description="${group.instance_question_group_description || ''}"
+                          >
+                            ${group.instance_question_group_name}
+                          </a>
+                        `;
+                      })}
+                    </div>
+                  </div>
                 </div>
               </li>
             `
@@ -181,9 +279,69 @@ ${submission.feedback?.manual}</textarea
           <span class="ms-auto">
             ${!disable
               ? html`
+                  ${context === 'main'
+                    ? html`
+                        <div
+                          id="grade-button-with-options"
+                          class="btn-group ${selectedInstanceQuestionGroup ? '' : 'd-none'}"
+                        >
+                          <button
+                            type="submit"
+                            class="btn btn-primary"
+                            name="__action"
+                            value="add_manual_grade"
+                          >
+                            Grade
+                          </button>
+                          <button
+                            id="grade-options-dropdown"
+                            type="button"
+                            class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                            data-bs-toggle="dropdown"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                          ></button>
+                          <div class="dropdown-menu dropdown-menu-end">
+                            <button
+                              type="submit"
+                              class="dropdown-item"
+                              name="__action"
+                              value="add_manual_grade"
+                            >
+                              This instance question
+                            </button>
+
+                            <div class="dropdown-divider"></div>
+
+                            <button
+                              type="submit"
+                              class="dropdown-item"
+                              name="__action"
+                              value="add_manual_grade_for_instance_question_group_ungraded"
+                            >
+                              All ungraded instance questions in submission group
+                            </button>
+                            <button
+                              type="submit"
+                              class="dropdown-item"
+                              name="__action"
+                              value="add_manual_grade_for_instance_question_group"
+                            >
+                              All instance questions in submission group
+                            </button>
+
+                            <div class="dropdown-item-text text-muted small">
+                              AI can make mistakes. Review submission group assignments before
+                              grading.
+                            </div>
+                          </div>
+                        </div>
+                      `
+                    : ''}
                   <button
+                    id="grade-button"
                     type="submit"
-                    class="btn btn-primary"
+                    class="btn btn-primary ${selectedInstanceQuestionGroup ? 'd-none' : ''}"
                     name="__action"
                     value="add_manual_grade"
                   >

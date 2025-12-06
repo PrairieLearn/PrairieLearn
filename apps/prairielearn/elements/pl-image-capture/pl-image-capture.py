@@ -16,6 +16,7 @@ import prairielearn as pl
 from PIL import Image
 
 MOBILE_CAPTURE_ENABLED_DEFAULT = True
+MANUAL_UPLOAD_ENABLED_DEFAULT = False
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -24,7 +25,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(
         element,
         required_attribs=["file-name"],
-        optional_attribs=["mobile-capture-enabled"],
+        optional_attribs=["mobile-capture-enabled", "manual-upload-enabled"],
     )
 
     file_name = pl.get_string_attrib(element, "file-name")
@@ -46,6 +47,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     mobile_capture_enabled = pl.get_boolean_attrib(
         element, "mobile-capture-enabled", MOBILE_CAPTURE_ENABLED_DEFAULT
+    )
+
+    manual_upload_enabled = pl.get_boolean_attrib(
+        element, "manual-upload-enabled", MANUAL_UPLOAD_ENABLED_DEFAULT
     )
 
     submitted_files = data["submitted_answers"].get("_files", [])
@@ -83,6 +88,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "file_name": file_name,
         "editable": data["editable"] and data["panel"] == "question",
         "mobile_capture_enabled": mobile_capture_enabled,
+        "manual_upload_enabled": manual_upload_enabled,
+        "retake_menu_enabled": mobile_capture_enabled or manual_upload_enabled,
     }
 
     image_capture_options = {
@@ -91,6 +98,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "submitted_file_name": submitted_file_name,
         "submission_files_url": data["options"].get("submission_files_url"),
         "mobile_capture_enabled": mobile_capture_enabled,
+        "manual_upload_enabled": manual_upload_enabled,
         "editable": html_params["editable"],
         "external_image_capture_url": external_image_capture_url,
         "external_image_capture_available": external_image_capture_url is not None,
@@ -106,6 +114,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name")
 
+    # On submission, the captured image is stored directly in submitted_answers.
+    # Later, we will move the image to submitted_answers["_files"], and pop
+    # submitted_answers[file_name].
     submitted_file_content = data["submitted_answers"].get(file_name)
 
     if not submitted_file_content:
@@ -148,6 +159,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             return
 
     pl.add_submitted_file(data, file_name, b64_payload)
+
+    # We remove the captured image from submitted_answers to prevent it from
+    # appearing in assessment instance logs.
+    #
+    # Also, in older versions of image capture, the image file was stored directly in submitted_answers.
+    # Popping file_name ensures that we update older submissions that saved the file to
+    # submitted_answers[file_name].
+
+    data["submitted_answers"].pop(file_name, None)
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:

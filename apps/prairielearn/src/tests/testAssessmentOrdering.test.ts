@@ -1,10 +1,11 @@
-import { v4 as uuid } from 'uuid';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
+import { selectCourseById } from '../models/course.js';
 
 import * as helperClient from './helperClient.js';
+import type { CheerioResponse } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import {
   COURSE_INSTANCE_ID,
@@ -14,8 +15,8 @@ import {
 } from './sync/util.js';
 
 describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }, function () {
-  let courseDir;
-  let assessmentBadges;
+  let courseDir: string;
+  let assessmentBadges: string[];
 
   const course = getCourseData();
   course.course.assessmentSets = [
@@ -44,7 +45,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
   ];
   course.courseInstances[COURSE_INSTANCE_ID].assessments = {
     'homework-1': {
-      uuid: uuid(),
+      uuid: crypto.randomUUID(),
       title: 'Homework 1',
       type: 'Homework',
       set: 'Homeworks',
@@ -52,7 +53,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
       number: '1',
     },
     'exam-1': {
-      uuid: uuid(),
+      uuid: crypto.randomUUID(),
       title: 'Exam 1',
       type: 'Exam',
       set: 'Exams',
@@ -60,7 +61,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
       number: '1',
     },
     'homework-2': {
-      uuid: uuid(),
+      uuid: crypto.randomUUID(),
       title: 'Homework 2',
       type: 'Homework',
       set: 'Homeworks',
@@ -68,7 +69,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
       number: '2',
     },
     'exam-2': {
-      uuid: uuid(),
+      uuid: crypto.randomUUID(),
       title: 'Exam 2',
       type: 'Exam',
       set: 'Exams',
@@ -84,7 +85,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
     return response;
   }
 
-  function testHeadingOrder(response, assessmentHeadings) {
+  function testHeadingOrder(response: CheerioResponse, assessmentHeadings: string[]) {
     const headings = response.$('table th[data-testid="assessment-group-heading"]');
     assert.lengthOf(headings, assessmentHeadings.length);
     headings.each((i, heading) => {
@@ -93,7 +94,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
     });
   }
 
-  function extractAssessmentSetBadgeText(response) {
+  function extractAssessmentSetBadgeText(response: CheerioResponse) {
     const badgeText: string[] = [];
     response.$('table [data-testid="assessment-set-badge"]').each((i, badge) => {
       badgeText.push(response.$(badge).text().trim());
@@ -110,7 +111,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
 
   test.sequential('should default to grouping by Set', async function () {
     const courseInstance = await selectCourseInstanceByShortName({
-      course_id: '1',
+      course: await selectCourseById('1'),
       short_name: 'Fa19',
     });
     assert.equal(courseInstance.assessments_group_by, 'Set');

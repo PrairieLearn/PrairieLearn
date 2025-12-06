@@ -37,7 +37,7 @@ export async function runLegacySqlAdminQuery(
   });
   // @ts-expect-error We wanted to discourage the use of queryAsync, but it is still needed here.
   const result = await queryAsync(sql, params);
-  return { rows: result.rows, columns: result.fields.map((field) => field.name) };
+  return { rows: result.rows, columns: result.fields.map((field: { name: string }) => field.name) };
 }
 
 export async function loadAdminQueryModule(query: string): Promise<{
@@ -56,13 +56,13 @@ export async function loadAdminQueryModule(query: string): Promise<{
     module = await import(/* @vite-ignore */ modulePath);
   } catch (err) {
     logger.error(`Failed to load module for query ${query}:`, err);
-    throw new Error(`Query module ${query} could not be imported`);
+    throw new Error(`Query module ${query} could not be imported`, { cause: err });
   }
   try {
     AdministratorQuerySpecsSchema.parse(module.specs);
   } catch (err) {
     logger.error(`Failed to parse specs for query ${query}:`, err);
-    throw new Error(`Query module ${query} does not provide valid specs object`);
+    throw new Error(`Query module ${query} does not provide valid specs object`, { cause: err });
   }
   return module;
 }

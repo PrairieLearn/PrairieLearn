@@ -9,6 +9,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { config } from '../../lib/config.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const UploadJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -21,7 +22,7 @@ export function InstructorAssessmentUploads({
   resLocals,
   uploadJobSequences,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   uploadJobSequences: UploadJobSequence[];
 }) {
   return PageLayout({
@@ -349,6 +350,11 @@ function UploadSubmissionsCsvModal({ csrfToken }: { csrfToken: string }) {
         The download/upload process is lossy. Some information, such as <code>format_errors</code>,
         <code>raw_submitted_answers</code>, whether or not a submission was considered gradable, and
         scores (including manual grading and rubrics) will not be preserved.
+      </p>
+      <p>
+        If the assessment has questions that use <b>manual rubric grading</b>, upload their rubrics
+        before uploading the CSV. The rubrics must be identical to those used when the submissions
+        were downloaded.
       </p>
       <div class="alert alert-danger">
         This will delete all existing assessment instances and submissions for this assessment and

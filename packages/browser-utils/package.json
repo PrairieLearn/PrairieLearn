@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/browser-utils",
-  "version": "2.2.13",
+  "version": "2.6.0",
   "type": "module",
   "repository": {
     "type": "git",
@@ -14,11 +14,12 @@
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
+    "csv-stringify": "^6.6.0",
     "js-base64": "^3.7.8"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   },
   "sideEffects": false
 }

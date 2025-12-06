@@ -60,6 +60,12 @@ WITH
       auto_points = aq.max_auto_points,
       manual_points = aq.max_manual_points,
       score_perc = 100,
+      requires_manual_grading = FALSE,
+      -- If the question was unanswered, the status remains unanswered. Otherwise, it becomes complete.
+      status = CASE
+        WHEN iq.status = 'unanswered' THEN 'unanswered'::enum_instance_question_status
+        ELSE 'complete'::enum_instance_question_status
+      END,
       modified_at = now()
     FROM
       assessment_questions AS aq

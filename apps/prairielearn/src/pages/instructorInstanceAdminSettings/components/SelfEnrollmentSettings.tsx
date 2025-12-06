@@ -1,61 +1,143 @@
+import clsx from 'clsx';
 import { useState } from 'preact/compat';
-import { Button, Form, InputGroup, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, Form, InputGroup, Modal } from 'react-bootstrap';
+import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
 
+import { OverlayTrigger } from '@prairielearn/ui';
+
+import { StudentLinkSharing } from '../../../components/LinkSharing.js';
 import { QRCodeModal } from '../../../components/QRCodeModal.js';
+import type { StaffInstitution } from '../../../lib/client/safe-db-types.js';
+import type { SettingsFormValues } from '../instructorInstanceAdminSettings.types.js';
 
-export function SelfEnrollmentSettings({
-  selfEnrollLink,
-  csrfToken,
-}: {
-  selfEnrollLink: string;
-  csrfToken: string;
-}) {
-  const [showQR, setShowQR] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+async function copyToClipboard(text: string) {
+  await navigator.clipboard.writeText(text);
+}
+
+function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const enrollmentCodeDashed =
+    enrollmentCode.slice(0, 3) + '-' + enrollmentCode.slice(3, 6) + '-' + enrollmentCode.slice(6);
+
   return (
     <div class="mb-3">
-      <label class="form-label" for="self_enrollment_link">
-        Self-enrollment Link
+      <label class="form-label" for="self_enrollment_code">
+        Self-enrollment code
       </label>
       <InputGroup>
-        <Form.Control id="self_enrollment_link" value={selfEnrollLink} disabled />
-        <OverlayTrigger overlay={<Tooltip>Copy</Tooltip>}>
+        <Form.Control
+          id="self_enrollment_code"
+          value={enrollmentCodeDashed}
+          style="font-family: monospace; font-size: 1.1em; letter-spacing: 0.1em;"
+          disabled
+        />
+        <OverlayTrigger
+          tooltip={{
+            body: copied ? 'Copied!' : 'Copy',
+            props: { id: 'self-enrollment-code-copy-tooltip' },
+          }}
+        >
           <Button
             size="sm"
             variant="outline-secondary"
-            aria-label="Copy self-enrollment link"
+            aria-label="Copy self-enrollment code"
             onClick={async () => {
-              await navigator.clipboard.writeText(selfEnrollLink);
+              await copyToClipboard(enrollmentCodeDashed);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
             }}
           >
             <i class="bi bi-clipboard" />
           </Button>
         </OverlayTrigger>
-        <OverlayTrigger overlay={<Tooltip>View QR Code</Tooltip>}>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Self-enrollment Link QR Code"
-            onClick={() => setShowQR(true)}
-          >
-            <i class="bi bi-qr-code-scan" />
-          </Button>
-        </OverlayTrigger>
-        <OverlayTrigger overlay={<Tooltip>Regenerate</Tooltip>}>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Generate new self-enrollment link"
-            onClick={() => setShowConfirm(true)}
-          >
-            <i class="bi-arrow-repeat" />
-          </Button>
-        </OverlayTrigger>
       </InputGroup>
       <small class="form-text text-muted">
-        This is the link that students will use to enroll in the course if self-enrollment is
-        enabled.
+        Students can use this code to enroll in the course by entering it on the homepage or after
+        clicking on any link to the course instance.
       </small>
+    </div>
+  );
+}
+
+function SelfEnrollmentLink({
+  selfEnrollLink,
+  csrfToken,
+  canEdit,
+}: {
+  selfEnrollLink: string;
+  csrfToken: string;
+  canEdit: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  return (
+    <>
+      <div class="mb-3">
+        <label class="form-label" for="self_enrollment_link">
+          Self-enrollment link
+        </label>
+        <InputGroup>
+          <Form.Control id="self_enrollment_link" value={selfEnrollLink} disabled />
+          <OverlayTrigger
+            tooltip={{
+              body: copied ? 'Copied!' : 'Copy',
+              props: { id: 'self-enrollment-link-copy-tooltip' },
+            }}
+          >
+            <Button
+              size="sm"
+              variant="outline-secondary"
+              aria-label="Copy self-enrollment link"
+              onClick={async () => {
+                await copyToClipboard(selfEnrollLink);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              }}
+            >
+              <i class="bi bi-clipboard" />
+            </Button>
+          </OverlayTrigger>
+          <OverlayTrigger
+            tooltip={{
+              body: 'View QR Code',
+              props: { id: 'self-enrollment-link-qr-code-tooltip' },
+            }}
+          >
+            <Button
+              size="sm"
+              variant="outline-secondary"
+              aria-label="Self-enrollment Link QR Code"
+              onClick={() => setShowQR(true)}
+            >
+              <i class="bi bi-qr-code-scan" />
+            </Button>
+          </OverlayTrigger>
+          {canEdit && (
+            <OverlayTrigger
+              tooltip={{
+                body: 'Regenerate',
+                props: { id: 'self-enrollment-link-regenerate-tooltip' },
+              }}
+            >
+              <Button
+                size="sm"
+                variant="outline-secondary"
+                aria-label="Generate new self-enrollment link"
+                onClick={() => setShowConfirm(true)}
+              >
+                <i class="bi bi-arrow-repeat" />
+              </Button>
+            </OverlayTrigger>
+          )}
+        </InputGroup>
+        <small class="form-text text-muted">
+          Students can use this link to immediately enroll in the course. Students can also enroll
+          by entering the enrollment code on any link to the course instance.
+        </small>
+      </div>
+
       <QRCodeModal
         id="selfEnrollmentLinkModal"
         title="Self-enrollment Link QR Code"
@@ -86,6 +168,292 @@ export function SelfEnrollmentSettings({
           </Modal.Footer>
         </form>
       </Modal>
-    </div>
+    </>
+  );
+}
+
+export function SelfEnrollmentSettings({
+  control,
+  trigger,
+  canEdit,
+  hasModernPublishing,
+  enrollmentManagementEnabled,
+  studentLink,
+  selfEnrollLink,
+  enrollmentCode,
+  csrfToken,
+  institution,
+}: {
+  control: Control<SettingsFormValues>;
+  trigger: UseFormTrigger<SettingsFormValues>;
+  canEdit: boolean;
+  hasModernPublishing: boolean;
+  enrollmentManagementEnabled: boolean;
+  studentLink: string;
+  selfEnrollLink: string;
+  enrollmentCode: string;
+  csrfToken: string;
+  institution: StaffInstitution;
+}) {
+  const selfEnrollmentEnabled = useWatch({ control, name: 'self_enrollment_enabled' });
+  const selfEnrollmentUseEnrollmentCode = useWatch({
+    control,
+    name: 'self_enrollment_use_enrollment_code',
+  });
+  const selfEnrollmentRestrictToInstitution = useWatch({
+    control,
+    name: 'self_enrollment_restrict_to_institution',
+  });
+  const selfEnrollmentEnabledBeforeDateEnabled = useWatch({
+    control,
+    name: 'self_enrollment_enabled_before_date_enabled',
+  });
+  const selfEnrollmentEnabledBeforeDate = useWatch({
+    control,
+    name: 'self_enrollment_enabled_before_date',
+  });
+
+  const { invalid: showInEnrollPageInvalid, error: showInEnrollPageError } =
+    control.getFieldState('show_in_enroll_page');
+
+  const {
+    invalid: selfEnrollmentEnabledBeforeDateInvalid,
+    error: selfEnrollmentEnabledBeforeDateError,
+  } = control.getFieldState('self_enrollment_enabled_before_date');
+
+  return (
+    <>
+      <h2 class="h4">Self-enrollment</h2>
+
+      {!hasModernPublishing && enrollmentManagementEnabled ? (
+        <div class="alert alert-warning">
+          You are using access rules to control who can access the course instance. To change the
+          self-enrollment settings, you must first{' '}
+          <a href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess">
+            migrate to publishing
+          </a>
+          .
+        </div>
+      ) : null}
+
+      <div class={clsx('mb-3 form-check', !enrollmentManagementEnabled && 'd-none')}>
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="self_enrollment_enabled"
+          disabled={!canEdit || !hasModernPublishing || !enrollmentManagementEnabled}
+          {...control.register('self_enrollment_enabled', {
+            // Re-run validation on show_in_enroll_page when self-enrollment changes
+            deps: ['show_in_enroll_page'],
+          })}
+        />
+        {(!canEdit || !hasModernPublishing || !enrollmentManagementEnabled) && (
+          <input
+            type="hidden"
+            name="self_enrollment_enabled"
+            value={selfEnrollmentEnabled ? 'checked' : ''}
+          />
+        )}
+        <label class="form-check-label" for="self_enrollment_enabled">
+          Allow self-enrollment
+        </label>
+        <div class="small text-muted">
+          If not checked, students will need to be invited to this course instance.
+        </div>
+      </div>
+
+      <div class="mb-3 form-check">
+        <input
+          class={clsx('form-check-input', showInEnrollPageInvalid && 'is-invalid')}
+          type="checkbox"
+          id="show_in_enroll_page"
+          {...control.register('show_in_enroll_page', {
+            validate: (value, { self_enrollment_enabled }) => {
+              if (!self_enrollment_enabled && value) {
+                return '"Allow self-enrollment" must be checked in order to check "Show on enrollment page"';
+              }
+              return true;
+            },
+          })}
+        />
+        <label class="form-check-label" for="show_in_enroll_page">
+          Show on enrollment page
+        </label>
+        {showInEnrollPageError ? (
+          <div class="invalid-feedback">{showInEnrollPageError.message}</div>
+        ) : (
+          <div class="small text-muted">
+            If not checked, students will need a direct link to the course instance to enroll.
+          </div>
+        )}
+      </div>
+
+      <div
+        class={clsx(
+          'mb-3 form-check',
+          (!enrollmentManagementEnabled || !selfEnrollmentEnabled) && 'd-none',
+        )}
+      >
+        <input
+          class={clsx('form-check-input')}
+          type="checkbox"
+          id="self_enrollment_use_enrollment_code"
+          disabled={
+            !canEdit ||
+            !selfEnrollmentEnabled ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled
+          }
+          {...control.register('self_enrollment_use_enrollment_code')}
+        />
+        {(!canEdit ||
+          !selfEnrollmentEnabled ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled) && (
+          <input
+            type="hidden"
+            name="self_enrollment_use_enrollment_code"
+            value={selfEnrollmentUseEnrollmentCode ? 'checked' : ''}
+          />
+        )}
+        <label class="form-check-label" for="self_enrollment_use_enrollment_code">
+          Use enrollment code for self-enrollment
+        </label>
+        <div class="small text-muted">
+          If not checked, any link to to anything in the course instance will allow self-enrollment.
+        </div>
+      </div>
+
+      <div
+        class={clsx(
+          'mb-3 form-check',
+          (!enrollmentManagementEnabled || !selfEnrollmentEnabled) && 'd-none',
+        )}
+      >
+        <input
+          class={clsx('form-check-input')}
+          type="checkbox"
+          id="self_enrollment_restrict_to_institution"
+          disabled={
+            !canEdit ||
+            !selfEnrollmentEnabled ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled
+          }
+          {...control.register('self_enrollment_restrict_to_institution')}
+        />
+        {(!canEdit ||
+          !selfEnrollmentEnabled ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled) && (
+          <input
+            type="hidden"
+            name="self_enrollment_restrict_to_institution"
+            value={selfEnrollmentRestrictToInstitution ? 'checked' : ''}
+          />
+        )}
+        <label class="form-check-label" for="self_enrollment_restrict_to_institution">
+          Restrict self-enrollment to institution "{institution.long_name}"
+        </label>
+        <div class="small text-muted">
+          If not checked, users from any institution can self-enroll.
+        </div>
+      </div>
+
+      <div
+        class={clsx(
+          'mb-3 form-check',
+          (!enrollmentManagementEnabled || !selfEnrollmentEnabled) && 'd-none',
+        )}
+      >
+        <input
+          class={clsx('form-check-input')}
+          type="checkbox"
+          id="disable_self_enrollment_after_date"
+          disabled={
+            !canEdit ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled ||
+            !selfEnrollmentEnabled
+          }
+          {...control.register('self_enrollment_enabled_before_date_enabled', {
+            onChange: async (event) => {
+              if (!event.target.checked) {
+                await trigger('self_enrollment_enabled_before_date');
+              }
+            },
+          })}
+        />
+        {(!canEdit ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled ||
+          !selfEnrollmentEnabled) && (
+          <input
+            type="hidden"
+            name="self_enrollment_enabled_before_date_enabled"
+            value={selfEnrollmentEnabledBeforeDateEnabled ? 'checked' : ''}
+          />
+        )}
+        <label class="form-check-label" for="disable_self_enrollment_after_date">
+          Self-enrollment cutoff date
+        </label>
+        <div class="small text-muted">
+          If set, self-enrollment will be disabled after this date. We recommend setting this to the
+          University-imposed deadline for students to add courses.
+        </div>
+
+        <input
+          type="datetime-local"
+          aria-label="Self-enrollment cutoff date"
+          class={clsx('form-control mt-2', selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid')}
+          disabled={
+            !canEdit ||
+            !selfEnrollmentEnabledBeforeDateEnabled ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled ||
+            !selfEnrollmentEnabled
+          }
+          step="1"
+          {...control.register('self_enrollment_enabled_before_date', {
+            validate: (value, { self_enrollment_enabled_before_date_enabled }) => {
+              if (self_enrollment_enabled_before_date_enabled && !value) {
+                return 'Date is required';
+              }
+              return true;
+            },
+          })}
+        />
+        {(!canEdit ||
+          !selfEnrollmentEnabledBeforeDateEnabled ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled ||
+          !selfEnrollmentEnabled) && (
+          <input
+            type="hidden"
+            name="self_enrollment_enabled_before_date"
+            value={`${selfEnrollmentEnabledBeforeDate}`}
+          />
+        )}
+        {selfEnrollmentEnabledBeforeDateError && (
+          <div class="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
+        )}
+      </div>
+
+      {selfEnrollmentEnabled && enrollmentManagementEnabled && selfEnrollmentUseEnrollmentCode ? (
+        <>
+          <SelfEnrollmentCode enrollmentCode={enrollmentCode} />
+          <SelfEnrollmentLink
+            selfEnrollLink={selfEnrollLink}
+            csrfToken={csrfToken}
+            canEdit={canEdit}
+          />
+        </>
+      ) : (
+        <StudentLinkSharing
+          studentLink={studentLink}
+          studentLinkMessage={`This is the link that students will use to ${selfEnrollmentEnabled ? 'access the course' : 'accept invitations'}. You can copy this link to share with students.`}
+        />
+      )}
+    </>
   );
 }

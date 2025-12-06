@@ -79,6 +79,7 @@ const OIDCLaunchFlowSchema = z.object({
 
 router.get('/login', asyncHandler(launchFlow));
 router.post('/login', asyncHandler(launchFlow));
+
 async function launchFlow(req: Request, res: Response) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
   // Can be POST or GET
@@ -116,7 +117,7 @@ async function launchFlow(req: Request, res: Response) {
   };
 
   // https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request
-  const requestParameters = {
+  const requestParameters: Record<string, string> = {
     scope: 'openid',
     response_type: 'id_token',
     client_id: lti13_instance.client_params.client_id,
@@ -130,9 +131,10 @@ async function launchFlow(req: Request, res: Response) {
 
   // If these parameters were offered, they must be included back:
   // https://www.imsglobal.org/spec/lti/v1p3#additional-login-parameters
-  for (const key of ['lti_message_hint', 'lti_deployment_id']) {
-    if (key in parameters) {
-      requestParameters[key] = parameters[key];
+  for (const key of ['lti_message_hint', 'lti_deployment_id'] as const) {
+    const value = parameters[key];
+    if (value != null) {
+      requestParameters[key] = value;
     }
   }
 
@@ -327,7 +329,7 @@ router.post(
     });
 
     // Get the target_link out of the LTI request and redirect.
-    res.redirect(ltiClaim.target_link_uri ?? '/pl');
+    res.redirect(ltiClaim.target_link_uri);
   }),
 );
 

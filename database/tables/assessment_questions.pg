@@ -25,8 +25,15 @@ columns
     incremental_submission_score_array_variances: double precision[]
     init_points: double precision
     json_allow_real_time_grading: boolean
+    json_auto_points: jsonb
     json_comment: jsonb
+    json_force_max_points: boolean
     json_grade_rate_minutes: double precision
+    json_manual_points: double precision
+    json_max_auto_points: double precision
+    json_max_points: double precision
+    json_points: jsonb
+    json_tries_per_variant: integer
     last_submission_score_hist: double precision[]
     last_submission_score_variance: double precision
     manual_rubric_id: bigint
@@ -67,5 +74,6 @@ foreign-key constraints
 referenced by
     assessment_question_role_permissions: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     audit_events: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_question_groups: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     submission_grading_context_embeddings: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE

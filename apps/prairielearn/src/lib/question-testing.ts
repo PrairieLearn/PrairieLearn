@@ -165,7 +165,7 @@ async function createTestSubmission(
 function compareSubmissions(expected_submission: Submission, test_submission: Submission): Error[] {
   const courseIssues: Error[] = [];
 
-  const checkEqual = (name, var1, var2) => {
+  const checkEqual = (name: string, var1: any, var2: any) => {
     const json1 = jsonStringifySafe(var1);
     const json2 = jsonStringifySafe(var2);
     if (!_.isEqual(var1, var2)) {
@@ -295,7 +295,6 @@ async function testQuestion(
 
   const question_course = await getQuestionCourse(question, variant_course);
   const instance_question_id = null;
-  const course_instance_id = course_instance?.id || null;
   const options = {};
   const require_open = true;
   const client_fingerprint_id = null;
@@ -306,7 +305,7 @@ async function testQuestion(
       instance_question_id,
       authn_user_id,
       authn_user_id,
-      course_instance_id,
+      course_instance,
       variant_course,
       question_course,
       options,

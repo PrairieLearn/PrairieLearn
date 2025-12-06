@@ -2,7 +2,6 @@ columns
     advance_score_perc: double precision
     allow_issue_reporting: boolean default true
     allow_personal_notes: boolean not null default true
-    allow_real_time_grading: boolean default true
     assessment_module_id: bigint
     assessment_set_id: bigint
     auto_close: boolean default true
@@ -26,6 +25,7 @@ columns
     json_grade_rate_minutes: double precision
     max_bonus_points: double precision
     max_points: double precision
+    modern_access_control: boolean not null default false
     multiple_instance: boolean
     number: text not null default '0'::text
     obj: jsonb

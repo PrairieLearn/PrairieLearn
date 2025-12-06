@@ -4,16 +4,19 @@ import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import fetch from 'node-fetch';
-import { afterAll, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { assertNever } from '../../lib/types.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -156,12 +159,12 @@ async function checkPage(url: string) {
 const STATIC_ROUTE_PARAMS = {
   // These are trivially known because there will only be one course and course
   // instance in the database after syncing the test course.
-  course_id: 1,
-  course_instance_id: 1,
+  course_id: '1',
+  course_instance_id: '1',
 };
 
 function getRouteParams(url: string) {
-  const routeParams = url.match(/:([^/]+)/g);
+  const routeParams = url.match(/:([^?/]+)/g);
 
   if (!routeParams) return [];
 
@@ -363,9 +366,13 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_editor/:question_id',
   '/pl/course/:course_id/ai_generate_editor/:question_id',
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/:job_id',
+
+  // API routes.
+  '/pl/course_instance/lookup',
+  '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
 ];
 
-function shouldSkipPath(path) {
+function shouldSkipPath(path: string) {
   return SKIP_ROUTES.some((r) => {
     if (typeof r === 'string') {
       return r === path;
@@ -421,6 +428,17 @@ describe('accessibility', () => {
       IdSchema,
     );
 
+    const courseInstance = await selectCourseInstanceById(STATIC_ROUTE_PARAMS.course_instance_id);
+
+    const enrollment = await ensureUncheckedEnrollment({
+      courseInstance,
+      userId: user_id,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
+    });
+    assert.isNotNull(enrollment);
+
     await features.enable('question-sharing');
 
     routeParams = {
@@ -429,6 +447,8 @@ describe('accessibility', () => {
       assessment_id,
       question_id,
       user_id,
+      enrollment_id: enrollment.id,
+      code: courseInstance.enrollment_code,
     };
 
     await sqldb.executeRow('UPDATE questions SET share_publicly = true WHERE id = $question_id', {

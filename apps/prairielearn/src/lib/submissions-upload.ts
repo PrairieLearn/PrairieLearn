@@ -1,17 +1,32 @@
-import csvtojson from 'csvtojson';
 import { parseISO } from 'date-fns';
 import memoize from 'p-memoize';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
+import { formatErrorStack } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
+import { truncate } from '@prairielearn/sanitize';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
+import { selectAssessmentQuestions } from './assessment-question.js';
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
-import { AssessmentQuestionSchema, IdSchema } from './db-types.js';
+import { dangerousFullSystemAuthz } from './authz-data-lib.js';
+import { createCsvParser } from './csv.js';
+import {
+  type Assessment,
+  AssessmentQuestionSchema,
+  type Group,
+  IdSchema,
+  RubricItemSchema,
+} from './db-types.js';
+import { createOrAddToGroup, deleteAllGroups } from './groups.js';
+import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -21,11 +36,7 @@ const ZodStringToJson = z.preprocess((val) => {
   return JSON.parse(String(val));
 }, z.record(z.any()).nullable());
 
-const SubmissionCsvRowSchema = z.object({
-  UID: z.string(),
-  // We only use this if someone tries to upload a CSV for a group assessment,
-  // in which case we'll throw an error.
-  'Group name': z.string().optional(),
+const BaseSubmissionCsvRowSchema = z.object({
   'Assessment instance': z.coerce.number().int(),
   Question: z.string(),
   Variant: z.coerce.number().int(),
@@ -42,6 +53,23 @@ const SubmissionCsvRowSchema = z.object({
     .transform((val) => parseISO(val))
     .pipe(z.date()),
   'Submitted answer': ZodStringToJson,
+  Feedback: ZodStringToJson,
+  'Rubric Grading': ZodStringToJson,
+  'Auto points': z.coerce.number().optional(),
+  'Manual points': z.coerce.number().optional(),
+});
+
+const IndividualSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
+  UID: z.string(),
+});
+
+const GroupSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
+  'Group name': z.string(),
+  Usernames: z.preprocess((val) => {
+    if (val === '' || val == null) return [];
+    // CSV exports serialize arrays as JSON
+    return JSON.parse(String(val));
+  }, z.array(z.string())),
 });
 
 /**
@@ -62,7 +90,7 @@ function makeDedupedInserter<T>() {
  * in dev mode.
  */
 export async function uploadSubmissions(
-  assessment_id: string,
+  assessment: Assessment,
   csvFile: Express.Multer.File | null | undefined,
   user_id: string,
   authn_user_id: string,
@@ -71,20 +99,30 @@ export async function uploadSubmissions(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_instance_id, course_id } =
-    await selectAssessmentInfoForJob(assessment_id);
+  const course_instance = await selectCourseInstanceById(assessment.course_instance_id);
+  const { assessment_label, course_id } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
-    courseInstanceId: course_instance_id,
-    assessmentId: assessment_id,
+    courseInstanceId: course_instance.id,
+    assessmentId: assessment.id,
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'upload_submissions',
     description: 'Upload submissions CSV for ' + assessment_label,
   });
 
-  const selectUser = memoize(async (uid: string) => await selectOrInsertUserByUid(uid));
+  const ensureAndEnrollUser = memoize(async (uid: string) => {
+    const user = await selectOrInsertUserByUid(uid);
+    await ensureUncheckedEnrollment({
+      userId: user.user_id,
+      courseInstance: course_instance,
+      actionDetail: 'implicit_joined',
+      authzData: dangerousFullSystemAuthz(),
+      requiredRole: ['System'],
+    });
+    return user;
+  });
   const selectQuestion = memoize(
     async (qid: string) => await selectQuestionByQid({ course_id, qid }),
   );
@@ -92,51 +130,117 @@ export async function uploadSubmissions(
     async (question_id: string) =>
       await sqldb.queryRow(
         sql.select_assessment_question,
-        { assessment_id, question_id },
+        { assessment_id: assessment.id, question_id },
         AssessmentQuestionSchema,
       ),
   );
 
   serverJob.executeInBackground(async (job) => {
     job.info('Deleting all existing assessment instances');
-    await deleteAllAssessmentInstancesForAssessment(assessment_id, authn_user_id);
+    await deleteAllAssessmentInstancesForAssessment(assessment.id, authn_user_id);
+
+    job.info('Deleting all existing groups');
+    await deleteAllGroups(assessment.id, authn_user_id);
 
     job.info('Uploading submissions CSV for ' + assessment_label);
 
     let successCount = 0;
     let errorCount = 0;
 
+    const getOrInsertGroup = makeDedupedInserter<Group>();
     const getOrInsertAssessmentInstance = makeDedupedInserter<string>();
     const getOrInsertInstanceQuestion = makeDedupedInserter<string>();
     const getOrInsertVariant = makeDedupedInserter<string>();
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
+
+    const assessmentQuestions = await selectAssessmentQuestions({
+      assessment_id: assessment.id,
+    });
+
+    // The maximum points of the assessment instance are not available
+    // in the CSV export, so we compute the it using the maximum points of
+    // the assessment questions of the assessment.
+    const maxPoints = assessmentQuestions.reduce(
+      (sum, assessmentQuestion) => sum + (assessmentQuestion.assessment_question.max_points ?? 0),
+      0,
+    );
     const csvStream = streamifier.createReadStream(csvFile.buffer, {
       encoding: 'utf8',
     });
-    const csvConverter = csvtojson();
-    await csvConverter.fromStream(csvStream).subscribe(async (rawJson, number) => {
-      const lineNumber = number + 2;
-      job.verbose(`Processing CSV line ${lineNumber}: ${JSON.stringify(rawJson)}`);
+    const csvParser = createCsvParser(csvStream, {
+      lowercaseHeader: false,
+      maxRecordSize: 1 << 21, // 2MB (should be plenty for a single line)
+    });
+
+    // Detect if this is a group work CSV by checking the first row
+    let isGroupWork: boolean | null = null;
+
+    for await (const { info, record } of csvParser) {
+      job.verbose(`Processing CSV line ${info.lines}`);
 
       try {
-        const row = SubmissionCsvRowSchema.parse(rawJson);
+        // Auto-detect CSV type on first data row
+        if (isGroupWork === null) {
+          isGroupWork = 'Group name' in record && !('UID' in record);
 
-        // For simplicity, we're not handling group work until it's needed.
-        if (row['Group name']) throw new Error('Group work is not supported yet');
+          if (isGroupWork && !assessment.group_work) {
+            throw new Error(
+              'Group work CSV detected, but assessment does not have group work enabled',
+            );
+          } else if (!isGroupWork && assessment.group_work) {
+            throw new Error('Individual work CSV detected, but assessment has group work enabled');
+          }
+        }
 
-        const user = await selectUser(row.UID);
+        const row = isGroupWork
+          ? GroupSubmissionCsvRowSchema.parse(record)
+          : IndividualSubmissionCsvRowSchema.parse(record);
+
+        if ('Usernames' in row && row.Usernames.length === 0) {
+          job.warn(`Skipping group "${row['Group name']}" with no usernames`);
+          continue;
+        }
+
         const question = await selectQuestion(row.Question);
         const assessmentQuestion = await selectAssessmentQuestion(question.id);
 
+        const entity = await run(async () => {
+          if ('UID' in row) {
+            const user = await ensureAndEnrollUser(row.UID);
+            return { type: 'user' as const, user_id: user.user_id };
+          } else {
+            // Create users for all group members concurrently
+            const users = await Promise.all(row.Usernames.map((uid) => ensureAndEnrollUser(uid)));
+
+            const group = await getOrInsertGroup([row['Group name']], async () => {
+              // Use createOrAddToGroup which handles both creating new groups and adding to existing ones
+              return await createOrAddToGroup({
+                course_instance,
+                assessment,
+                group_name: row['Group name'],
+                uids: row.Usernames,
+                authn_user_id,
+                // This function only runs in dev mode, so we can safely ignore permission checks.
+                authzData: dangerousFullSystemAuthz(),
+              });
+            });
+
+            return { type: 'group' as const, group_id: group.id, users };
+          }
+        });
+
+        // Insert assessment instance (for user or group)
+        const entityKey = entity.type === 'user' ? entity.user_id : entity.group_id;
         const assessment_instance_id = await getOrInsertAssessmentInstance(
-          [user.user_id, row['Assessment instance'].toString()],
+          [entityKey, row['Assessment instance'].toString()],
           async () =>
             await sqldb.queryRow(
               sql.insert_assessment_instance,
               {
-                assessment_id,
-                user_id: user.user_id,
+                assessment_id: assessment.id,
+                user_id: entity.type === 'user' ? entity.user_id : null,
+                group_id: entity.type === 'group' ? entity.group_id : null,
                 instance_number: row['Assessment instance'],
               },
               IdSchema,
@@ -164,11 +268,14 @@ export async function uploadSubmissions(
               sql.insert_variant,
               {
                 course_id,
-                course_instance_id,
+                course_instance_id: course_instance.id,
                 instance_question_id,
                 question_id: question.id,
-                authn_user_id: user.user_id,
-                user_id: user.user_id,
+                // For group work, arbitrarily use the first user's ID as the authn_user_id.
+                // This value doesn't really matter, especially in dev mode.
+                authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].user_id,
+                user_id: entity.type === 'user' ? entity.user_id : null,
+                group_id: entity.type === 'group' ? entity.group_id : null,
                 seed: row.Seed,
                 // Despite the fact that these values could change over the course of multiple
                 // submissions, we'll just use the first set of values we encounter. This
@@ -182,7 +289,7 @@ export async function uploadSubmissions(
             ),
         );
 
-        await sqldb.queryRow(
+        const submission_id = await sqldb.queryRow(
           sql.insert_submission,
           {
             variant_id,
@@ -195,10 +302,71 @@ export async function uploadSubmissions(
           IdSchema,
         );
 
+        let manual_rubric_data: InstanceQuestionScoreInput['manual_rubric_data'] = null;
+
+        if (assessmentQuestion.manual_rubric_id) {
+          const rubric_items = await sqldb.queryRows(
+            sql.select_rubric_items,
+            { rubric_id: assessmentQuestion.manual_rubric_id },
+            RubricItemSchema,
+          );
+
+          await sqldb.execute(sql.update_assessment_instance_max_points, {
+            assessment_instance_id,
+            max_points: maxPoints,
+          });
+
+          // This is a best-effort process: we attempt to match uploaded rubric items to an
+          // existing rubric item in the database. If no match is found, the uploaded item
+          // is ignored and not applied.
+          const applied_rubric_item_ids: string[] = [];
+
+          if (row['Rubric Grading']?.items) {
+            for (const { description } of row['Rubric Grading'].items) {
+              const rubric_item = rubric_items.find((ri) => ri.description === description);
+              if (!rubric_item) {
+                continue;
+              }
+              applied_rubric_item_ids.push(rubric_item.id);
+            }
+          }
+          manual_rubric_data = {
+            rubric_id: assessmentQuestion.manual_rubric_id,
+            applied_rubric_items: applied_rubric_item_ids.map((id) => ({
+              rubric_item_id: id,
+            })),
+            adjust_points: row['Rubric Grading']?.adjust_points ?? null,
+          };
+        }
+
+        await updateInstanceQuestionScore(
+          assessment,
+          instance_question_id,
+          submission_id,
+          null,
+          {
+            manual_score_perc: null,
+            manual_points: run(() => {
+              if (assessmentQuestion.manual_rubric_id) {
+                return row['Rubric Grading']?.computed_points ?? null;
+              } else {
+                return row['Manual points'];
+              }
+            }),
+            auto_score_perc: null,
+            auto_points: row['Auto points'] ?? null,
+            feedback: row.Feedback,
+            manual_rubric_data,
+          },
+          authn_user_id,
+        );
+
         successCount++;
       } catch (err) {
         errorCount++;
-        job.error(`Error processing CSV line ${lineNumber}: ${JSON.stringify(rawJson)}`);
+        job.error(
+          `Error processing CSV line ${info.lines}: ${truncate(JSON.stringify(record), 100)}`,
+        );
         if (err instanceof z.ZodError) {
           job.error(
             `Validation Error: ${err.errors
@@ -206,16 +374,16 @@ export async function uploadSubmissions(
               .join(', ')}`,
           );
         } else {
-          job.error(String(err));
+          job.error(formatErrorStack(err));
         }
       }
-    });
+    }
 
     if (errorCount === 0) {
       job.info(`Successfully processed ${successCount} submissions, with no errors`);
     } else {
       job.info(`Successfully processed ${successCount} submissions`);
-      job.error(`Error processing ${errorCount} submissions`);
+      job.fail(`Error processing ${errorCount} submissions`);
     }
   });
 

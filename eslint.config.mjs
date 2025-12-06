@@ -83,7 +83,6 @@ export default tseslint.config([
       // We violate these rules in a lot of places.
       '@html-eslint/id-naming-convention': 'off',
       '@html-eslint/quotes': ['error', 'double', { enforceTemplatedAttrValue: true }],
-      '@html-eslint/require-button-type': 'off',
     },
   },
   {
@@ -201,7 +200,6 @@ export default tseslint.config([
       'require-atomic-updates': 'off',
       'require-await': 'off', // TODO: Consider enabling this
       'require-unicode-regexp': 'off',
-
       'sort-vars': 'off',
 
       // Enforce alphabetical order of import specifiers within each import group.
@@ -287,6 +285,9 @@ export default tseslint.config([
           ([ruleName, severity]) => [ruleName, severity === 'off' ? 'off' : 'error'],
         ),
       ),
+      // We want to be able to use `useState` without the setter function for
+      // https://tkdodo.eu/blog/react-query-fa-qs#2-the-queryclient-is-not-stable
+      '@eslint-react/naming-convention/use-state': 'off',
       '@eslint-react/no-forbidden-props': [
         'error',
         {
@@ -302,6 +303,7 @@ export default tseslint.config([
       'unicorn/no-array-callback-reference': 'off',
       'unicorn/no-array-method-this-argument': 'off',
       'unicorn/no-array-reduce': 'off', // Sometimes, an array reduce is more readable
+      'unicorn/no-array-sort': 'off', // Disabling for the time being to avoid unnecessary diffs
       'unicorn/no-hex-escape': 'off',
       'unicorn/no-lonely-if': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2252261293
       'unicorn/no-null': 'off',
@@ -362,6 +364,9 @@ export default tseslint.config([
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
 
+      // We are disabling the test for a reason.
+      'vitest/no-disabled-tests': ['off'],
+
       // This gives a lot of false positives; we sometimes author tests that
       // have the assertion in a helper function. We could refactor them in
       // the future, but for now we'll disable this rule.
@@ -401,22 +406,6 @@ export default tseslint.config([
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
       '@prairielearn/no-unused-sql-blocks': 'error',
 
-      '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
-
-      // We use empty functions in quite a few places, so we'll disable this rule.
-      '@typescript-eslint/no-empty-function': 'off',
-
-      // Look, sometimes we just want to use `any`.
-      '@typescript-eslint/no-explicit-any': 'off',
-
-      // This was enabled when we upgraded to `@typescript-eslint/*` v6.
-      // TODO: fix the violations so we can enable this rule.
-      '@typescript-eslint/no-dynamic-delete': 'off',
-
-      // We use `!` to assert that a value is not `null` or `undefined`.
-      '@typescript-eslint/no-non-null-assertion': 'off',
-
-      // Replaces the standard `no-unused-vars` rule.
       '@stylistic/jsx-curly-brace-presence': [
         'error',
         { children: 'never', propElementValues: 'always', props: 'never' },
@@ -456,17 +445,35 @@ export default tseslint.config([
         { exceptAfterSingleLine: true },
       ],
       '@stylistic/no-tabs': 'error',
-      '@typescript-eslint/no-unused-vars': [
+      '@stylistic/padding-line-between-statements': [
         'error',
-        {
-          args: 'after-used',
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-        },
+        { blankLine: 'always', next: 'function', prev: '*' },
+        { blankLine: 'always', next: '*', prev: 'import' },
+        { blankLine: 'any', next: 'import', prev: 'import' },
       ],
       // Blocks double-quote strings (unless a single quote is present in the
       // string) and backticks (unless there is a tag or substitution in place).
       '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
+
+      '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
+      // We use empty functions in quite a few places, so we'll disable this rule.
+      '@typescript-eslint/no-empty-function': 'off',
+      // Look, sometimes we just want to use `any`.
+      '@typescript-eslint/no-explicit-any': 'off',
+      // This was enabled when we upgraded to `@typescript-eslint/*` v6.
+      // TODO: fix the violations so we can enable this rule.
+      '@typescript-eslint/no-dynamic-delete': 'off',
+      // We use `!` to assert that a value is not `null` or `undefined`.
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      // Replaces the standard `no-unused-vars` rule.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'after-used',
+          argsIgnorePattern: '^_', // Args can be _
+          varsIgnorePattern: '^_.', // This includes lodash, which should be considered
+        },
+      ],
 
       // https://github.com/TanStack/query/blob/6402d756b702ac560b69a5ce84d6e4e764b96451/packages/eslint-plugin-query/src/index.ts#L43
       ...pluginQuery.configs['flat/recommended'][0].rules,
@@ -529,6 +536,14 @@ export default tseslint.config([
       ],
       ...jsdoc.configs['flat/recommended-typescript-error'].rules,
       'jsdoc/check-line-alignment': 'error',
+      'jsdoc/check-tag-names': [
+        'error',
+        {
+          // We turn this on to allow the Playwright + Preact fix enforced by the `header/header` rule.
+          // https://babeljs.io/docs/en/babel-plugin-transform-react-jsx/
+          jsxTags: true,
+        },
+      ],
       'jsdoc/convert-to-jsdoc-comments': [
         'error',
         {
@@ -571,7 +586,7 @@ export default tseslint.config([
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['vite.config.ts', 'vitest.config.ts'],
+          allowDefaultProject: ['playwright.config.ts', 'vite.config.ts', 'vitest.config.ts'],
         },
         tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
       },
@@ -646,22 +661,6 @@ export default tseslint.config([
     },
   },
   {
-    // TODO: enable this rule for all files.
-    files: [
-      'apps/prairielearn/assets/scripts/**/*.{ts,tsx}',
-      'apps/prairielearn/src/components/**/*.{ts,tsx}',
-      'apps/prairielearn/src/ee/**/*.{ts,tsx}',
-      'apps/prairielearn/src/lib/client/**/*.{ts,tsx}',
-      'apps/prairielearn/src/middlewares/**/*.{ts,tsx}',
-      'apps/prairielearn/src/pages/**/*.{ts,tsx}',
-      'apps/prairielearn/src/server.ts',
-      'apps/prairielearn/*.config.ts',
-    ],
-    rules: {
-      '@typescript-eslint/no-unnecessary-condition': 'off',
-    },
-  },
-  {
     files: ['apps/prairielearn/assets/scripts/**/*', 'apps/prairielearn/elements/**/*.js'],
     languageOptions: {
       globals: {
@@ -680,6 +679,40 @@ export default tseslint.config([
     files: ['apps/prairielearn/src/tests/**/*', 'scripts/**/*', 'contrib/**/*'],
     rules: {
       'no-console': 'off',
+    },
+  },
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              importNames: ['OverlayTrigger'],
+              message: 'Use OverlayTrigger from @prairielearn/ui.',
+              name: 'react-bootstrap',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/prairielearn/src/models/**/*'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/safe-db-types.js'],
+              message:
+                'Import from db-types instead of safe-db-types in the models directory. Otherwise, this code should live in the lib directory.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

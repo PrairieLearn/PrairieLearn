@@ -40,10 +40,6 @@ updates:
       # https://github.com/faisalman/ua-parser-js/issues/680
       - dependency-name: 'ua-parser-js'
         versions: ['>=2']
-      # These upgrades are blocked on Sentry:
-      # https://github.com/getsentry/sentry-javascript/issues/15737
-      # https://github.com/getsentry/sentry-javascript/issues/15213
-      - dependency-name: '@opentelemetry/*'
       # We use Yarn `resolutions` to point these to our Preact compat packages.
       # We don't ever care about which version is actually listed in `package.json` files.
       - dependency-name: 'preact' # https://github.com/PrairieLearn/PrairieLearn/pull/12763
@@ -82,6 +78,15 @@ updates:
       # We're not ready to jump to the latest version of `numpy` yet.
       - dependency-name: 'numpy'
         versions: ['>=2']
+      # The following dependencies have dropped support for Python 3.10 in their
+      # recent versions. Since PrairieLearn still uses Python 3.10 in the question
+      # runtime environment, we need to ignore these updates for now.
+      - dependency-name: 'networkx'
+        versions: ['>=3.5.0']
+      - dependency-name: 'Pint'
+        versions: ['>=0.25']
+      - dependency-name: 'scipy'
+        versions: ['>=1.16.0']
     groups:
       all-patch-minor:
         update-types:

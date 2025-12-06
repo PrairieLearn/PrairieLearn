@@ -16,9 +16,20 @@ WHERE
   AND ci.short_name = $short_name
   AND ci.deleted_at IS NULL;
 
+-- BLOCK select_course_instance_by_enrollment_code
+SELECT
+  ci.*
+FROM
+  course_instances AS ci
+WHERE
+  ci.enrollment_code = $enrollment_code
+  AND ci.deleted_at IS NULL;
+
 -- BLOCK select_course_instances_with_staff_access
 SELECT
   ci.*,
+  d.start_date,
+  d.end_date,
   CASE
     WHEN d.start_date IS NULL THEN '—'
     ELSE format_date_full_compact (d.start_date, ci.display_timezone)
@@ -108,14 +119,6 @@ SELECT
       ci.course_id = $course_id
       AND ci.deleted_at IS NULL
   );
-
--- BLOCK check_course_instance_is_public
-SELECT
-  ci.share_source_publicly
-FROM
-  course_instances AS ci
-WHERE
-  ci.id = $course_instance_id;
 
 -- BLOCK select_course_instance_by_uuid
 SELECT
