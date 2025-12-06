@@ -73,8 +73,8 @@ export async function updateCourseInstanceUsagesForGradingJob({
  * @param param
  * @param param.promptId The ID of the AI question generation prompt.
  * @param param.authnUserId The ID of the user who generated the prompt.
- * @param param.model The OpenAI model used for the prompt.
- * @param param.usage The usage object returned by the OpenAI API.
+ * @param param.model The model used for the prompt.
+ * @param param.usage The usage object returned by the model provider's API.
  */
 export async function updateCourseInstanceUsagesForAiQuestionGeneration({
   promptId,
@@ -91,5 +91,33 @@ export async function updateCourseInstanceUsagesForAiQuestionGeneration({
     prompt_id: promptId,
     authn_user_id: authnUserId,
     cost_ai_question_generation: calculateResponseCost({ model, usage }),
+  });
+}
+
+
+/**
+ * Update the course instance usages for an AI grading prompt.
+ *
+ * @param param
+ * @param param.gradingJobId The ID of the grading job associated with the AI grading.
+ * @param param.authnUserId The ID of the user who initiated the grading.
+ * @param param.model The model used for the prompt.
+ * @param param.usage The usage object returned by model provider's API.
+ */
+export async function updateCourseInstanceUsagesForAiGrading({
+  gradingJobId,
+  authnUserId,
+  model,
+  usage,
+}: {
+  gradingJobId: string;
+  authnUserId: string;
+  model: keyof (typeof config)['costPerMillionTokens'];
+  usage: LanguageModelUsage | undefined;
+}) {
+  await execute(sql.update_course_instance_usages_for_ai_grading, {
+    grading_job_id: gradingJobId,
+    authn_user_id: authnUserId,
+    cost_ai_grading: calculateResponseCost({ model, usage }),
   });
 }
