@@ -20,7 +20,7 @@ RUN groupadd sbuser \
     && rm -rf /usr/lib/jvm/java-25-openjdk-*/lib/libmanagement.so /usr/lib/jvm/java-25-openjdk-*/lib/libmanagement_agent.so /usr/lib/jvm/java-25-openjdk-*/lib/libmanagement_ext.so
 
 COPY libs /javagrader/libs
-COPY JUnitAutograder.java AutograderInfo.java /javagrader/
+COPY JUnitAutograder.java org/prairielearn/autograder/AutograderInfo.java /javagrader/
 
 # Compile the autograder with all warnings enabled, except for serial (missing
 # serialVersionUID) and this-escape (use `this` reference in constructor)
