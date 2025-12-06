@@ -73,30 +73,8 @@ cd /
 curl -LO https://astral.sh/uv/install.sh
 env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 
-# /.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.10
-export UV_PYTHON_INSTALL_DIR=/usr/share/uv/python
-export UV_PYTHON_BIN_DIR=/usr/local/bin
-export UV_PYTHON_DOWNLOADS=manual
-export UV_PYTHON_PREFERENCE=only-managed
-
-# We do manual platform detection so that we can use the "v3" variant on
-# x86_64 Linux, which provides better performance on modern CPUs.
-if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]]; then
-    # https://gregoryszorc.com/docs/python-build-standalone/main/running.html
-    # v3: 64-bit Intel/AMD CPUs approximately newer than Haswell (released in 2013) and Excavator (released in 2015)
-    UV_ARCH="linux-x86_64_v3-gnu"
-elif [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "aarch64" ]]; then
-    UV_ARCH="linux-aarch64-gnu"
-elif [[ "$(uname)" = "Darwin" ]] && [[ "$(uname -m)" = "arm64" ]]; then
-    UV_ARCH="macos-aarch64-none"
-else
-    echo "Unsupported architecture combination" >&2
-    exit 1
-fi
-
-# Installing to a different directory is a preview feature
-uv python install --default --preview "cpython-3.10-${UV_ARCH}"
-uv venv --seed
+# /PrairieLearn/.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.10
+UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.10
 
 # Clear various caches to minimize the final image size.
 dnf clean all
