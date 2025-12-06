@@ -19,10 +19,7 @@ const isRunningOnDist = process.argv
   .slice(2)
   .some((arg) => arg.startsWith('dist/') || arg.includes('/dist/'));
 
-const dockerSmokeTests = [
-  'src/tests/exampleCourseQuestions.test.ts',
-  'src/tests/exampleCourseQuestionsComplete.test.ts',
-];
+const dockerSmokeTests = ['src/tests/exampleCourseQuestions.test.ts'];
 
 export default defineConfig(({ mode }) => {
   // For CI, we want to run a subset of tests natively, and a subset of tests only in Docker.
