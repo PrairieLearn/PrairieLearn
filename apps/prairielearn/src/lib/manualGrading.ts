@@ -299,15 +299,13 @@ export async function updateAssessmentQuestionRubric(
       );
     } else {
       // Rubric already exists, update its settings
-      await sqldb.runInTransactionAsync(async () => {
-        await sqldb.execute(sql.update_rubric, {
-          rubric_id: new_rubric_id,
-          starting_points,
-          min_points,
-          max_extra_points,
-          grader_guidelines,
-          replace_auto_points,
-        });
+      await sqldb.execute(sql.update_rubric, {
+        rubric_id: new_rubric_id,
+        starting_points,
+        min_points,
+        max_extra_points,
+        grader_guidelines,
+        replace_auto_points,
       });
     }
 
