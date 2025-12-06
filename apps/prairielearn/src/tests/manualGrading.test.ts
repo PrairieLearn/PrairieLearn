@@ -394,6 +394,7 @@ function buildRubricSettingsPayload({
     starting_points,
     min_points,
     max_extra_points,
+    grader_guidelines: '',
     rubric_items: rubric_items.map(
       (
         {

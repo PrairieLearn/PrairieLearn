@@ -36,6 +36,7 @@ import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/que
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
@@ -216,6 +217,8 @@ router.get(
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
 
+    const { rubric } = await selectCompleteRubric(instance_question.assessment_question_id);
+
     res.send(
       InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
@@ -230,6 +233,7 @@ router.get(
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
+        grader_guidelines: rubric?.grader_guidelines,
         skipGradedSubmissions: req.session.skip_graded_submissions,
       }),
     );
@@ -295,13 +299,13 @@ router.get(
   typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
     try {
       const locals = await prepareLocalsForRender({}, res.locals);
+      const rubric_data = await manualGrading.selectRubricData({
+        assessment_question: res.locals.assessment_question,
+      });
       const gradingPanel = GradingPanel({
         ...locals,
         context: 'main',
       }).toString();
-      const rubric_data = await manualGrading.selectRubricData({
-        assessment_question: res.locals.assessment_question,
-      });
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
       res.json({
         gradingPanel,
@@ -354,6 +358,7 @@ const PostBodySchema = z.union([
     min_points: z.coerce.number(),
     max_extra_points: z.coerce.number(),
     tag_for_manual_grading: z.boolean().default(false),
+    grader_guidelines: z.string().nullable(),
     rubric_items: z
       .array(
         z.object({
@@ -600,6 +605,7 @@ router.post(
           body.max_extra_points,
           body.rubric_items,
           body.tag_for_manual_grading,
+          body.grader_guidelines,
           res.locals.authn_user.user_id,
         );
         res.redirect(req.baseUrl + '/grading_rubric_panels');
