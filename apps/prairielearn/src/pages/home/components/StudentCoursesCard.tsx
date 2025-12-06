@@ -167,8 +167,8 @@ export function StudentCoursesCard({
         </Modal.Header>
         <Modal.Body>
           <p>
-            Are you sure you want to reject this invitation? You will need to be reinvited if you
-            want to join this class again later.
+            Are you sure you want to reject this invitation? If the course doesn't allow
+            self-enrollment, you will need to be reinvited by an instructor.
           </p>
         </Modal.Body>
         <Modal.Footer>
