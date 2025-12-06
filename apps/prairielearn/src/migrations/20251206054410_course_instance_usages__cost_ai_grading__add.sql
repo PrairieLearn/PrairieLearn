@@ -1,0 +1,2 @@
+ALTER TABLE course_instance_usages
+ADD COLUMN IF NOT EXISTS cost_ai_grading DOUBLE PRECISION NOT NULL DEFAULT 0;
