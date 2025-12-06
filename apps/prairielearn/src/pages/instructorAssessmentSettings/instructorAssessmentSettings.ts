@@ -174,6 +174,7 @@ router.post(
       }
       const normalizedText = req.body.text?.replaceAll('\r\n', '\n');
       assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, normalizedText, '');
+      assessmentInfo.maxPoints = parseInt(req.body.max_points, 10) || undefined;
       assessmentInfo.allowIssueReporting = propertyValueWithDefault(
         assessmentInfo.allowIssueReporting,
         req.body.allow_issue_reporting === 'on',

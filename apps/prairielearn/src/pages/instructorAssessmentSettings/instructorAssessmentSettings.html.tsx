@@ -186,6 +186,20 @@ ${resLocals.assessment.text}</textarea
               </small>
             </div>
             <div class="mb-3">
+              <label class="form-label" for="max_points">Max Points</label>
+              <input
+                class="form-control"
+                type="number"
+                id="max_points"
+                name="max_points"
+                ${canEdit ? '' : 'disabled'}
+                value="${resLocals.assessment.max_points}"
+              />
+              <small class="form-text text-muted">
+                The number of points that must be earned in this assessment to achieve a score of 100%.
+              </small>
+            </div>
+            <div class="mb-3">
               <div class="mb-3 form-check">
                 <input
                   class="form-check-input"
