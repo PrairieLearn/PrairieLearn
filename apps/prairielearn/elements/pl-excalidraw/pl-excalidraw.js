@@ -1,8 +1,12 @@
 // This module is redefined in the import map with the same name
+// @ts-expect-error - no types available for this internal package
 import { ExcalidrawLib, React, ReactDOM } from '@prairielearn/excalidraw-builds';
 
 const elt = React.createElement;
 
+/**
+ * @param {{ unsaved: boolean; readOnly: boolean }} props
+ */
 const Footer = ({ unsaved, readOnly }) => {
   const desc = unsaved ? 'Unsaved' : 'Saved';
   return elt(
@@ -25,9 +29,33 @@ const Footer = ({ unsaved, readOnly }) => {
   );
 };
 
+/**
+ * @typedef {object} ExcalidrawMetadata
+ * @property {boolean} read_only - Whether the drawing is read-only
+ * @property {string} [initial_content] - Initial content for the drawing
+ * @property {object} [scene] - The scene configuration
+ * @property {string} width - The width of the drawing canvas
+ * @property {string} height - The height of the drawing canvas
+ */
+
+/**
+ * @typedef ExcalidrawAPI
+ * @property {() => readonly ExcalidrawElement[]} getSceneElements - Gets the scene elements
+ * @property {() => Record<string, unknown>} getAppState - Gets the app state
+ * @property {() => Record<string, unknown>} getFiles - Gets the files
+ */
+
+/**
+ * @typedef ExcalidrawElement
+ * @property {number} version - The version of the element
+ */
+
+/**
+ * @param {{ sketchName: string; metadata: ExcalidrawMetadata; setHiddenInput: (value: string) => void }} props
+ */
 const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
   const [unsaved, setUnsaved] = React.useState(false);
-  const [lib, setLib] = React.useState(null);
+  const [lib, setLib] = React.useState(/** @type {ExcalidrawAPI | null} */ (null));
   const [sceneVer, setSceneVer] = React.useState(0);
 
   // Autosave
@@ -54,9 +82,9 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
     aiEnabled: false,
     initialData: metadata.scene || {},
     isCollaborating: false,
-    excalidrawAPI: (it) => setLib(it),
+    excalidrawAPI: /** @param {ExcalidrawAPI} it */ (it) => setLib(it),
     viewModeEnabled: metadata.read_only,
-    onChange: (elts) => {
+    onChange: /** @param {readonly ExcalidrawElement[]} elts */ (elts) => {
       const thisVersion = ExcalidrawLib.getSceneVersion(elts);
       if (sceneVer >= thisVersion) return;
       setUnsaved(true);
@@ -86,23 +114,34 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
   );
 };
 
+/**
+ * @typedef ReactRoot
+ * @property {(element: unknown) => void} render - Renders the element
+ */
+
+/**
+ * @param {string} uuid
+ * @param {string} name
+ * @param {ExcalidrawMetadata} metadata
+ * @returns {Promise<{ name: string; state: null; node: HTMLElement | null; root: ReactRoot }>} - The initialized Excalidraw instance
+ */
 export async function initializeExcalidraw(uuid, name, metadata) {
-  const sketch = {};
+  const rootElement = /** @type {HTMLElement} */ (document.getElementById(`excalidraw-${uuid}`));
 
-  const rootElement = document.getElementById(`excalidraw-${uuid}`);
-
-  const hiddenInput = document.getElementById(`excalidraw-input-${uuid}`);
-  const setHiddenInput = (value) => (hiddenInput.value = value);
+  const hiddenInput = /** @type {HTMLInputElement} */ (
+    document.getElementById(`excalidraw-input-${uuid}`)
+  );
+  /** @param {string} value */
+  const setHiddenInput = (value) => {
+    hiddenInput.value = value;
+  };
 
   if (metadata.initial_content) {
     metadata.scene = await ExcalidrawLib.loadFromBlob(new Blob([metadata.initial_content]));
   }
 
-  sketch.name = name;
-  sketch.state = null;
-  sketch.node = rootElement;
-  sketch.root = ReactDOM.createRoot(rootElement);
-  sketch.root.render(
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
     elt(
       React.StrictMode,
       null,
@@ -114,5 +153,10 @@ export async function initializeExcalidraw(uuid, name, metadata) {
     ),
   );
 
-  return sketch;
+  return {
+    name,
+    state: null,
+    node: rootElement,
+    root,
+  };
 }
