@@ -2,7 +2,6 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
@@ -69,7 +68,7 @@ router.get(
     const enrollment = await selectOptionalEnrollmentByUid({
       courseInstance,
       uid,
-      requestedRole: 'Student Data Viewer',
+      requiredRole: ['Student Data Viewer'],
       authzData: res.locals.authz_data,
     });
     const staffEnrollment = StaffEnrollmentSchema.nullable().parse(enrollment);
@@ -120,7 +119,7 @@ router.post(
     const existingEnrollment = await selectOptionalEnrollmentByUid({
       courseInstance,
       uid: body.uid,
-      requestedRole: 'Student Data Viewer',
+      requiredRole: ['Student Data Viewer'],
       authzData: res.locals.authz_data,
     });
 
@@ -137,7 +136,7 @@ router.post(
     const enrollment = await inviteStudentByUid({
       courseInstance,
       uid: body.uid,
-      requestedRole: 'Student Data Editor',
+      requiredRole: ['Student Data Editor'],
       authzData: res.locals.authz_data,
     });
 
@@ -181,7 +180,6 @@ router.get(
       return;
     }
 
-    // For now, this is a development-only feature, so that can can get PRs merged without affecting users.
     const enrollmentManagementEnabled =
       (await features.enabled('enrollment-management', {
         institution_id: institution.id,
@@ -208,7 +206,6 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        headContent: compiledStylesheetTag('tanstackTable.css'),
         content: (
           <>
             <CourseInstanceSyncErrorsAndWarnings
@@ -231,7 +228,6 @@ router.get(
                 courseInstance={courseInstance}
                 course={course}
                 csrfToken={csrfToken}
-                urlPrefix={urlPrefix}
               />
             </Hydrate>
           </>

@@ -4,7 +4,7 @@
  * It should NOT be used yet.
  */
 import { mergeAttributes } from '@tiptap/core';
-import { CodeBlock, type CodeBlockOptions } from '@tiptap/extension-code-block';
+import { CodeBlock } from '@tiptap/extension-code-block';
 import {
   NodeViewContent,
   NodeViewWrapper,
@@ -68,7 +68,7 @@ export const PLCodeBlock = CodeBlock.extend({
     ];
   },
 
-  renderHTML({ HTMLAttributes }: CodeBlockOptions) {
+  renderHTML({ HTMLAttributes }) {
     return ['pl-code', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
   addNodeView() {
