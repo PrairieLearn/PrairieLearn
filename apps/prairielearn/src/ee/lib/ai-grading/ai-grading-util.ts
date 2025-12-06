@@ -98,6 +98,19 @@ export async function generatePrompt({
     ? 'system'
     : 'user';
 
+  const graderGuidelinesMessages = grader_guidelines
+    ? ([
+        {
+          role: systemRoleAfterUserMessage,
+          content: 'The instructor has provided the following grader guidelines:',
+        },
+        {
+          role: 'user',
+          content: grader_guidelines,
+        },
+      ] satisfies ModelMessage[])
+    : [];
+
   // Instructions for grading
   if (rubric_items.length > 0) {
     input.push(
@@ -115,6 +128,7 @@ export async function generatePrompt({
           'Here are the rubric items:',
         ]),
       },
+      ...graderGuidelinesMessages,
       {
         role: 'user',
         content: rubric_items
@@ -132,16 +146,19 @@ export async function generatePrompt({
       },
     );
   } else {
-    input.push({
-      role: 'system',
-      content: formatPrompt([
-        "You are an instructor for a course, and you are grading a student's response to a question.",
-        'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
-        "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
-        'You must include an explanation on why you made these choices.',
-        'Follow any special instructions given by the instructor in the question.',
-      ]),
-    });
+    input.push(
+      {
+        role: 'system',
+        content: formatPrompt([
+          "You are an instructor for a course, and you are grading a student's response to a question.",
+          'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
+          "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
+          'You must include an explanation on why you made these choices.',
+          'Follow any special instructions given by the instructor in the question.',
+        ]),
+      },
+      ...graderGuidelinesMessages,
+    );
   }
 
   input.push(
@@ -230,19 +247,6 @@ export async function generatePrompt({
         });
       }
     }
-  }
-
-  if (grader_guidelines) {
-    input.push(
-      {
-        role: systemRoleAfterUserMessage,
-        content: 'The instructor has provided the following grader guidelines:',
-      },
-      {
-        role: 'user',
-        content: grader_guidelines,
-      },
-    );
   }
 
   input.push(
