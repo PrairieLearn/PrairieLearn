@@ -1,5 +1,21 @@
 # @prairielearn/ui
 
+## 1.7.1
+
+### Patch Changes
+
+- 90c712d: Improve style of table when it is less than viewport width
+
+## 1.7.0
+
+### Minor Changes
+
+- 8326968: Debounce global filter in TanstackTable, clean up column manager API
+
+### Patch Changes
+
+- 037c174: Add back support for singularLabel and pluralLabel to TanstackTableCard, make `headerButtons` optional, add `hasSelection` to TanstackTableDownloadButton
+
 ## 1.6.0
 
 ### Minor Changes

@@ -3,10 +3,10 @@ import { pipeline } from 'node:stream/promises';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { stringifyStream } from '@prairielearn/csv';
+import { stringifyNonblocking } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 
-import { getGradebookRows, getGradebookRowsCursor } from '../../lib/gradebook.js';
+import { getGradebookRows } from '../../lib/gradebook.js';
 import {
   type StudentGradebookRow,
   computeLabel,
@@ -75,7 +75,7 @@ router.get(
       throw new HttpStatusError(404, `Unknown filename: ${req.params.filename}`);
     }
 
-    const cursor = await getGradebookRowsCursor({
+    const rows = await getGradebookRows({
       course_instance_id: res.locals.course_instance.id,
       user_id: res.locals.user.user_id,
       authz_data: res.locals.authz_data,
@@ -83,21 +83,20 @@ router.get(
       auth: 'student',
     });
 
-    const stringifier = stringifyStream<StudentGradebookRow>({
+    const csvData = rows.map((row) => [
+      computeTitle(row),
+      row.assessment_set.heading,
+      row.show_closed_assessment_score ? row.assessment_instance.score_perc?.toFixed(6) : null,
+    ]);
+
+    const stringifier = stringifyNonblocking(csvData, {
       header: true,
       columns: ['Assessment', 'Set', 'Score'],
-      transform(row) {
-        return [
-          computeTitle(row),
-          row.assessment_set.heading,
-          row.show_closed_assessment_score ? row.assessment_instance.score_perc?.toFixed(6) : null,
-        ];
-      },
     });
 
     res.setHeader('Content-Type', 'text/csv');
     res.attachment(buildCsvFilename(res.locals));
-    await pipeline(cursor.stream(100), stringifier, res);
+    await pipeline(stringifier, res);
   }),
 );
 
