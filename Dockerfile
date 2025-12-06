@@ -18,7 +18,7 @@ ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
 # We copy `pyproject.toml` and the `Makefile` since we need to install Python dependencies.
 COPY --parents pyproject.toml Makefile /PrairieLearn/
 
-RUN UV_NO_CACHE=1 make python-deps-core
+RUN make python-deps-core
 
 # This copies in all the `package.json` files in `apps` and `packages`, which
 # Yarn needs to correctly install all dependencies in our workspaces.

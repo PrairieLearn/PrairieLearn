@@ -138,7 +138,7 @@ lint-sql-migrations:
 	@squawk apps/prairielearn/src/migrations/*.sql
 lint-actions:
 	@actionlint
-lint-changpython-deps-coreeset:
+lint-changeset:
 	@yarn changeset status
 
 # Runs additional third-party formatters
