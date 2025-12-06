@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/ui",
-  "version": "1.2.0",
+  "version": "1.7.1",
   "type": "module",
   "repository": {
     "type": "git",
@@ -23,13 +23,15 @@
     "@tanstack/react-virtual": "^3.13.12",
     "@tanstack/table-core": "^8.21.3",
     "clsx": "^2.1.1",
-    "react-bootstrap": "3.0.0-beta.5"
+    "nuqs": "^2.8.2",
+    "react-bootstrap": "3.0.0-beta.5",
+    "use-debounce": "^10.0.6"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.0",
+    "@types/node": "^22.19.1",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.0.7"
+    "vitest": "^4.0.14"
   }
 }

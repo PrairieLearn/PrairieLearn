@@ -3,18 +3,34 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
+  type CourseRole,
+  type InstructorCourseInstanceRole,
+  type PageAuthzData,
+  assertHasRole,
+} from '../lib/authz-data-lib.js';
+import type { PageContext } from '../lib/client/page-context.js';
+import {
   type Course,
   type CourseInstance,
   type CourseInstancePermission,
   CourseInstanceSchema,
+  DateFromISOString,
   UserSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
+type CourseContext = Course | PageContext<'course', 'student' | 'instructor'>['course'];
+
 const sql = loadSqlEquiv(import.meta.url);
 
 const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
+  /** The earliest start date of an access rule. */
+  start_date: DateFromISOString.nullable(),
+  /** The latest end date of an access rule. */
+  end_date: DateFromISOString.nullable(),
+  /** @deprecated Use start_date instead. */
   formatted_start_date: z.string(),
+  /** @deprecated Use end_date instead. */
   formatted_end_date: z.string(),
   has_course_instance_permission_view: z.boolean(),
   has_course_instance_permission_edit: z.boolean(),
@@ -74,30 +90,36 @@ export async function selectOptionalCourseInstanceIdByEnrollmentCode({
  */
 export async function selectCourseInstancesWithStaffAccess({
   course,
-  user_id,
-  authn_user_id,
-  is_administrator,
-  authn_is_administrator,
+  authzData,
+  requiredRole,
 }: {
-  course: Course;
-  user_id: string;
-  authn_user_id: string;
-  is_administrator: boolean;
-  authn_is_administrator: boolean;
+  course: CourseContext;
+  authzData: PageAuthzData;
+  requiredRole: (CourseRole | InstructorCourseInstanceRole)[];
 }) {
+  assertHasRole(authzData, requiredRole);
+
   const authnCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
-    { user_id: authn_user_id, is_administrator: authn_is_administrator, course_id: course.id },
+    {
+      user_id: authzData.user.user_id,
+      is_administrator: authzData.is_administrator,
+      course_id: course.id,
+    },
     CourseInstanceAuthzSchema,
   );
 
-  if (idsEqual(user_id, authn_user_id)) {
+  if (idsEqual(authzData.user.user_id, authzData.authn_user.user_id)) {
     return authnCourseInstances;
   }
 
   const authzCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
-    { user_id, is_administrator, course_id: course.id },
+    {
+      user_id: authzData.user.user_id,
+      is_administrator: authzData.is_administrator,
+      course_id: course.id,
+    },
     CourseInstanceAuthzSchema,
   );
 

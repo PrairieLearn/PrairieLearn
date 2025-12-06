@@ -76,5 +76,4 @@ FROM
   CROSS JOIN file_list AS fl
 WHERE
   ai.id = $assessment_instance_id
-  AND ci.id = $course_instance_id
-  AND aai.authorized;
+  AND ci.id = $course_instance_id;

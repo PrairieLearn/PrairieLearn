@@ -11,7 +11,7 @@ import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
-import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
 import {
   CourseInstanceRowSchema,
@@ -92,7 +92,7 @@ router.post('/', [
         return await selectOptionalEnrollmentByUid({
           uid: res.locals.authn_user.uid,
           courseInstance: course_instance,
-          requestedRole: 'System',
+          requiredRole: ['System'],
           authzData: dangerousFullSystemAuthz(),
         });
       });
@@ -111,11 +111,11 @@ router.post('/', [
       await authzCourseOrInstance(req, res);
       // Now we have authzData
 
-      await ensureCheckedEnrollment({
+      await ensureEnrollment({
         institution,
         course,
         courseInstance: course_instance,
-        requestedRole: 'Student',
+        requiredRole: ['Student'],
         authzData: res.locals.authz_data,
         actionDetail: 'explicit_joined',
       });
