@@ -75,5 +75,8 @@
     "files.insertFinalNewline": true
   },
   "vitest.maximumConfigs": 100,
-  "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff"
+  "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff",
+  "java.project.resourceFilters": ["node_modules", "\\.git", "exampleCourse"],
+  "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
+  "java.project.sourcePaths": ["graders/java"]
 }

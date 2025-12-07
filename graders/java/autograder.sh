@@ -34,6 +34,13 @@ if [ "$?" -ne 0 ]; then
 $STUDENT_COMPILE_OUT"
 fi
 
+if [ -f "/grade/tests/spec.txt" ] ; then
+    echo "Checking class signature against spec.txt"
+    java $JDK_JAVA_OPTIONS -cp "$CLASSPATH" SpecVerification
+    if [ "$?" -ne 0 ]; then exit 0 ; fi
+    # Note: use Class.forName(name, false, loader) to avoid initializing classes
+fi
+
 TEST_COMPILE_OUT=$(javac $TEST_FILES 2>&1)
 if [ "$?" -ne 0 ]; then
     echo "$TEST_COMPILE_OUT"
