@@ -51,7 +51,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function prepareLocalsForRender(
   query: Record<string, any>,
-  resLocals: ResLocalsForPage['instructor-instance-question'],
+  resLocals: ResLocalsForPage<'instructor-instance-question'>,
 ) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
