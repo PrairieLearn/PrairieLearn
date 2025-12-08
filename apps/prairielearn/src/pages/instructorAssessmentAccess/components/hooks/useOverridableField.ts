@@ -1,6 +1,6 @@
 import { type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
 
-import type { AccessControlFormData, OverridableField } from '../types.js';
+import type { AccessControlFormData, DateControlFormData, OverridableField } from '../types.js';
 
 type NamePrefix = 'mainRule' | `overrides.${number}`;
 
@@ -31,6 +31,19 @@ interface UseOverridableFieldResult<T> {
   updateValue: (value: T) => void;
 }
 
+/** Check if any date control field is overridden */
+function hasAnyDateControlOverride(dateControl: DateControlFormData): boolean {
+  return (
+    dateControl.releaseDate.isOverridden ||
+    dateControl.dueDate.isOverridden ||
+    dateControl.earlyDeadlines.isOverridden ||
+    dateControl.lateDeadlines.isOverridden ||
+    dateControl.afterLastDeadline.isOverridden ||
+    dateControl.durationMinutes.isOverridden ||
+    dateControl.password.isOverridden
+  );
+}
+
 /**
  * Hook for managing OverridableField state in react-hook-form.
  * Encapsulates the common pattern of watching and updating overridable fields.
@@ -43,13 +56,22 @@ export function useOverridableField<T>({
   defaultValue,
 }: UseOverridableFieldOptions<T>): UseOverridableFieldResult<T> {
   const isOverrideRule = namePrefix.startsWith('overrides.');
+  const isDateControlField = fieldPath.startsWith('dateControl.');
 
   const fullPath = `${namePrefix}.${fieldPath}` as any;
+  const dateControlEnabledPath = `${namePrefix}.dateControl.enabled` as any;
+  const dateControlPath = `${namePrefix}.dateControl` as any;
 
   const watchedField = useWatch({
     control,
     name: fullPath,
   }) as OverridableField<T> | undefined;
+
+  // Watch dateControl for checking other fields when removing override
+  const watchedDateControl = useWatch({
+    control,
+    name: dateControlPath,
+  }) as DateControlFormData | undefined;
 
   // Provide a fallback if the field hasn't loaded yet
   const field: OverridableField<T> = watchedField ?? {
@@ -72,6 +94,11 @@ export function useOverridableField<T>({
       isEnabled: false,
       value: initialValue ?? defaultValue,
     });
+
+    // When enabling a dateControl field override, also enable dateControl
+    if (isDateControlField && isOverrideRule) {
+      setValue(dateControlEnabledPath, true);
+    }
   };
 
   const removeOverride = () => {
@@ -80,6 +107,21 @@ export function useOverridableField<T>({
       isEnabled: false,
       value: defaultValue,
     });
+
+    // When removing a dateControl field override, check if any other fields are still overridden
+    // If not, disable dateControl
+    if (isDateControlField && isOverrideRule && watchedDateControl) {
+      // Create a copy with this field's override removed to check
+      const fieldName = fieldPath.split('.')[1] as keyof DateControlFormData;
+      const updatedDateControl = {
+        ...watchedDateControl,
+        [fieldName]: { ...watchedDateControl[fieldName], isOverridden: false },
+      } as DateControlFormData;
+
+      if (!hasAnyDateControlOverride(updatedDateControl)) {
+        setValue(dateControlEnabledPath, false);
+      }
+    }
   };
 
   const toggleEnabled = (enabled: boolean) => {

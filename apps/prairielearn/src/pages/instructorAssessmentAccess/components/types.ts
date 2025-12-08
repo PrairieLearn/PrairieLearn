@@ -1,5 +1,11 @@
 import type { AccessControlJson } from '../../../schemas/accessControl.js';
 
+/** Navigation view state for access control form */
+export type AccessControlView =
+  | { type: 'summary' }
+  | { type: 'edit-main' }
+  | { type: 'edit-override'; index: number };
+
 /** Generic type for fields that can be overridden in override rules */
 export interface OverridableField<T> {
   /** Whether the field is overridden. Always true for main rule, can be false for overrides. */
