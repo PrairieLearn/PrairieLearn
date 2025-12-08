@@ -2,7 +2,6 @@ import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import z from 'zod';
 
-import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
@@ -47,10 +46,17 @@ router.get(
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     const courseStaff = z.array(StaffUserSchema).parse(
       await selectCourseInstanceGraderStaff({
-        course_instance: res.locals.course_instance,
+        courseInstance: res.locals.course_instance,
+        authzData: res.locals.authz_data,
+        requiredRole: ['Student Data Viewer'],
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
+      'ai-grading-model-selection',
+      res.locals,
+    );
+
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
     });
@@ -106,7 +112,6 @@ router.get(
           fullWidth: true,
           pageNote: `Question ${number_in_alternative_group}`,
         },
-        headContent: compiledStylesheetTag('tanstackTable.css'),
         content: (
           <>
             <AssessmentSyncErrorsAndWarnings
@@ -135,6 +140,7 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
+                aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                 initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}

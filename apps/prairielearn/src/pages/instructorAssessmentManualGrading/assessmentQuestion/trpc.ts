@@ -5,12 +5,18 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 // TODO: these transitively drag a ton of types into the graph of code that ends
 // up being type-checked in the client bundle, which fails because the client
 // assets have strict mode enabled but the reset of the server code does not.
+import {
+  AI_GRADING_MODEL_IDS,
+  type AiGradingModelId,
+  DEFAULT_AI_GRADING_MODEL,
+} from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { fillInstanceQuestionColumnEntries } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
@@ -153,10 +159,27 @@ const aiGradeInstanceQuestionMutation = t.procedure
   .input(
     z.object({
       selection: z.union([z.literal('all'), z.literal('human_graded'), z.string().array()]),
+      model_id: z.enum(AI_GRADING_MODEL_IDS as [AiGradingModelId, ...AiGradingModelId[]]),
     }),
   )
   .output(z.object({ job_sequence_id: z.string() }))
   .mutation(async (opts) => {
+    if (!(await features.enabledFromLocals('ai-grading', opts.ctx.locals))) {
+      throw new HttpStatusError(403, 'Access denied (feature not available)');
+    }
+
+    const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
+      'ai-grading-model-selection',
+      opts.ctx.locals,
+    );
+
+    if (!aiGradingModelSelectionEnabled && opts.input.model_id !== DEFAULT_AI_GRADING_MODEL) {
+      throw new HttpStatusError(
+        403,
+        `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
+      );
+    }
+
     const job_sequence_id = await aiGrade({
       question: opts.ctx.question,
       // TODO: what to do about this?
@@ -167,6 +190,7 @@ const aiGradeInstanceQuestionMutation = t.procedure
       urlPrefix: opts.ctx.pageContext.urlPrefix,
       authn_user_id: opts.ctx.authn_user.user_id,
       user_id: opts.ctx.user.user_id,
+      model_id: opts.input.model_id,
       mode: run(() => {
         if (Array.isArray(opts.input.selection)) return 'selected';
         return opts.input.selection;
@@ -187,7 +211,9 @@ const setAssignedGraderMutation = t.procedure
     const assigned_grader = opts.input.assigned_grader;
     if (assigned_grader !== null) {
       const courseStaff = await selectCourseInstanceGraderStaff({
-        course_instance: opts.ctx.course_instance,
+        courseInstance: opts.ctx.course_instance,
+        requiredRole: ['Student Data Editor'],
+        authzData: opts.ctx.pageContext.authz_data,
       });
       if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
         throw new TRPCError({

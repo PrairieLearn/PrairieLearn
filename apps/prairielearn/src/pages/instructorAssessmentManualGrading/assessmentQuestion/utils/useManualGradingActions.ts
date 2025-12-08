@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { run } from '@prairielearn/run';
 
+import type { AiGradingModelId } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 
 import { client } from './trpc.js';
@@ -74,11 +75,12 @@ export function useManualGradingActions({ courseInstanceId }: { courseInstanceId
   const gradeSubmissionsMutation = useMutation<
     { job_sequence_id: string },
     Error,
-    { selection: 'all' | 'human_graded' | string[] }
+    { selection: 'all' | 'human_graded' | string[]; model_id: AiGradingModelId }
   >({
-    mutationFn: async ({ selection }) => {
+    mutationFn: async ({ selection, model_id }) => {
       const res = await client.aiGradeInstanceQuestions.mutate({
         selection,
+        model_id,
       });
       return { job_sequence_id: res.job_sequence_id };
     },

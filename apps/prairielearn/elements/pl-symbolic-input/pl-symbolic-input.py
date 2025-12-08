@@ -29,6 +29,7 @@ DISPLAY_LOG_AS_LN_DEFAULT = False
 DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
 ALLOW_TRIG_FUNCTIONS_DEFAULT = True
+ADDITIONAL_SIMPLIFICATIONS_DEFAULT = None
 SIZE_DEFAULT = 35
 SHOW_FORMULA_EDITOR_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
@@ -40,6 +41,13 @@ SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
 # This timeout is chosen to allow multiple sympy-based elements to grade on one page,
 # while not exceeding the global timeout enforced for Python execution.
 SYMPY_TIMEOUT = 3
+# Additional simplifications supported by SymPy
+SYMPY_ADDITIONAL_SIMPLIFICATIONS = {
+    "expand": sympy.expand,
+    "powsimp": sympy.powsimp,
+    "trigsimp": sympy.trigsimp,
+    "expand_log": sympy.expand_log,
+}
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -55,6 +63,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-complex",
         "imaginary-unit-for-display",
         "allow-trig-functions",
+        "additional-simplifications",
         "size",
         "formula-editor",
         "show-help-text",
@@ -76,6 +85,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
 
         a_true = pl.get_string_attrib(element, "correct-answer")
+
         variables = psu.get_items_list(
             pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
         )
@@ -124,6 +134,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     if imaginary_unit not in {"i", "j"}:
         raise ValueError("imaginary-unit-for-display must be either i or j")
+
+    additional_simplifications = psu.get_items_list(
+        pl.get_string_attrib(
+            element, "additional-simplifications", ADDITIONAL_SIMPLIFICATIONS_DEFAULT
+        )
+    )
+    # Note: it is an intentional decision to allow repeats in the list, as this might be (rarely) an
+    # intended way to work around SymPy limitations
+    if not all(
+        item in SYMPY_ADDITIONAL_SIMPLIFICATIONS for item in additional_simplifications
+    ):
+        raise ValueError(
+            "The 'additional-simplifications' contain one of more unsupported simplification(s). Please see the documentation for a full list of supported simplifications."
+        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -537,9 +561,6 @@ def _build_known_tokens(
     """
     Build a list of all multi-character tokens that should be recognized as single units.
 
-    Returns tokens sorted by length (longest first) to handle prefix matching correctly.
-    For example, "acosh" must be checked before "acos" to avoid partial matches.
-
     Returns:
         List of all multi-character tokens that should be recognized as single units.
     """
@@ -564,8 +585,6 @@ def _build_known_tokens(
 
     # Filter out single-letter tokens
     tokens = [token for token in tokens if len(token) > 1]
-
-    tokens.sort(key=len, reverse=True)
 
     return tokens
 
@@ -594,10 +613,33 @@ def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
     Returns:
         The text with spaced tokens merged
     """
-    for token in tokens:
-        spaced_version = " ".join(token)
-        text = text.replace(spaced_version, token)
-    return text
+    result = []
+    i = 0
+    n = len(text)
+
+    # Precompute spaced forms and lengths
+    spaced = [(token, " ".join(token), len(" ".join(token))) for token in tokens]
+
+    # Sort by spaced_token length so longer tokens match first
+    # e.g. "acosh" must be checked before "acos" to avoid partial matches.
+    spaced.sort(key=lambda x: -x[2])
+
+    while i < n:
+        matched = False
+
+        # Try each spaced token
+        for token, spaced_token, length in spaced:
+            if text.startswith(spaced_token, i):
+                result.append(token)
+                i += length
+                matched = True
+                break
+
+        if not matched:
+            result.append(text[i])
+            i += 1
+
+    return "".join(result)
 
 
 def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
@@ -659,6 +701,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
+    additional_simplifications = psu.get_items_list(
+        pl.get_string_attrib(
+            element, "additional-simplifications", ADDITIONAL_SIMPLIFICATIONS_DEFAULT
+        )
+    )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
@@ -705,6 +752,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             a_sub_sympy = psu.json_to_sympy(
                 a_sub, allow_complex=allow_complex, allow_trig_functions=allow_trig
             )
+
+        for simplification in additional_simplifications:
+            simp_f = SYMPY_ADDITIONAL_SIMPLIFICATIONS[simplification]
+            a_sub_sympy = simp_f(a_sub_sympy)
+            a_tru_sympy = simp_f(a_tru_sympy)
+            # Make the type checker happy
+            assert isinstance(a_sub_sympy, sympy.Expr)
+            assert isinstance(a_tru_sympy, sympy.Expr)
 
         return a_tru_sympy.equals(a_sub_sympy) is True, None
 

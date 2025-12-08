@@ -142,7 +142,7 @@ router.post(
       courseInfo.topics = propertyValueWithDefault(
         courseInfo.topics,
         resolveTopics,
-        (v) => !v || v.length === 0,
+        (v: any) => !v || v.length === 0,
       );
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInfo));
