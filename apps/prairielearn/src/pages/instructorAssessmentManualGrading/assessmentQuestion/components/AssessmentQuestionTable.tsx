@@ -1,8 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type SortingState,
+  type Updater,
   type VisibilityState,
   getCoreRowModel,
   getFilteredRowModel,
@@ -11,19 +13,26 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
-import { Alert, Button, Dropdown, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { TanstackTableCard, useShiftClickCheckbox } from '@prairielearn/ui';
-
-import { RubricSettings } from '../../../../components/RubricSettings.js';
-import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import {
+  OverlayTrigger,
+  TanstackTableCard,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsNumericFilter,
   parseAsSortingState,
-} from '../../../../lib/client/nuqs.js';
+  useShiftClickCheckbox,
+} from '@prairielearn/ui';
+
+import { RubricSettings } from '../../../../components/RubricSettings.js';
+import {
+  AI_GRADING_MODELS,
+  type AiGradingModelId,
+  DEFAULT_AI_GRADING_MODEL,
+} from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
@@ -39,13 +48,10 @@ import {
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
   type InstanceQuestionRowWithAIGradingStats,
 } from '../assessmentQuestion.types.js';
-import { createColumns } from '../utils/columnDefinitions.js';
+import { type ColumnId, createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
-import {
-  type AiGradingProvider,
-  type useManualGradingActions,
-} from '../utils/useManualGradingActions.js';
+import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
@@ -59,17 +65,6 @@ const DEFAULT_GRADED_BY_FILTER: string[] = [];
 const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
 const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 
-const AI_GRADING_PROVIDERS: {
-  provider: AiGradingProvider;
-  name: string;
-}[] = [
-  { provider: 'openai', name: 'OpenAI GPT' },
-  { provider: 'google', name: 'Google Gemini' },
-  { provider: 'anthropic', name: 'Anthropic Claude' },
-];
-
-const DEFAULT_PROVIDER: AiGradingProvider = 'openai';
-
 export interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
@@ -81,13 +76,13 @@ export interface AssessmentQuestionTableProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingMode: boolean;
-  aiGradingProviderSelectionEnabled: boolean;
+  aiGradingModelSelectionEnabled: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
-  onSetConflictModalState: (modalState: ConflictModalState | null) => void;
+  onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: {
     batchActionMutation: ReturnType<typeof useManualGradingActions>['batchActionMutation'];
     handleBatchAction: ReturnType<typeof useManualGradingActions>['handleBatchAction'];
@@ -112,17 +107,20 @@ function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade
 function AiGradingOption({
   text,
   numToGrade,
-  aiGradingProviderSelectionEnabled,
-  onSelectProvider,
+  aiGradingModelSelectionEnabled,
+  onSelectModel,
 }: {
   text: string;
   numToGrade: number;
-  aiGradingProviderSelectionEnabled: boolean;
-  onSelectProvider: (provider: AiGradingProvider) => void;
+  aiGradingModelSelectionEnabled: boolean;
+  onSelectModel: (modelId: AiGradingModelId) => void;
 }) {
-  if (!aiGradingProviderSelectionEnabled) {
+  if (!aiGradingModelSelectionEnabled) {
     return (
-      <Dropdown.Item disabled={numToGrade === 0} onClick={() => onSelectProvider(DEFAULT_PROVIDER)}>
+      <Dropdown.Item
+        disabled={numToGrade === 0}
+        onClick={() => onSelectModel(DEFAULT_AI_GRADING_MODEL)}
+      >
         <AiGradingOptionContent text={text} numToGrade={numToGrade} />
       </Dropdown.Item>
     );
@@ -136,12 +134,9 @@ function AiGradingOption({
       <Dropdown.Menu>
         <p class="my-0 text-muted px-3">AI grader model</p>
         <Dropdown.Divider />
-        {AI_GRADING_PROVIDERS.map((provider) => (
-          <Dropdown.Item
-            key={provider.provider}
-            onClick={() => onSelectProvider(provider.provider)}
-          >
-            {provider.name}
+        {AI_GRADING_MODELS.map((model) => (
+          <Dropdown.Item key={model.modelId} onClick={() => onSelectModel(model.modelId)}>
+            {model.name}
           </Dropdown.Item>
         ))}
       </Dropdown.Menu>
@@ -158,7 +153,7 @@ export function AssessmentQuestionTable({
   assessmentQuestion,
   questionQid,
   aiGradingMode,
-  aiGradingProviderSelectionEnabled,
+  aiGradingModelSelectionEnabled,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
@@ -266,12 +261,12 @@ export function AssessmentQuestionTable({
     instanceQuestionsInfo.forEach((row) => {
       if (row.assigned_grader_name) graders.add(row.assigned_grader_name);
       if (row.last_grader_name) graders.add(row.last_grader_name);
-      if (row.instance_question.ai_grading_status !== 'None') {
+      if (row.instance_question.ai_grading_status !== 'None' && aiGradingMode) {
         graders.add(generateAiGraderName(row.instance_question.ai_grading_status));
       }
     });
     return Array.from(graders).sort();
-  }, [instanceQuestionsInfo]);
+  }, [instanceQuestionsInfo, aiGradingMode]);
 
   // Get all unique submission groups
   const allSubmissionGroups = useMemo(() => {
@@ -303,7 +298,7 @@ export function AssessmentQuestionTable({
   }, [instanceQuestionsInfo]);
 
   const columnFilters = useMemo(() => {
-    const filters = [
+    const filters: { id: ColumnId; value: any }[] = [
       { id: 'requires_manual_grading', value: gradingStatusFilter },
       { id: 'assigned_grader_name', value: assignedGraderFilter },
       { id: 'last_grader_name', value: gradedByFilter },
@@ -347,6 +342,48 @@ export function AssessmentQuestionTable({
     rubricData,
   ]);
 
+  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
+    return {
+      requires_manual_grading: setGradingStatusFilter,
+      assigned_grader_name: setAssignedGraderFilter,
+      last_grader_name: setGradedByFilter,
+      instance_question_group_name: setSubmissionGroupFilter,
+      rubric_difference: setAiAgreementFilter,
+      manual_points: setManualPointsFilter,
+      auto_points: setAutoPointsFilter,
+      points: setTotalPointsFilter,
+      score_perc: setScoreFilter,
+      rubric_grading_item_ids: setRubricItemsFilter,
+      uid: undefined,
+      user_or_group_name: undefined,
+      select: undefined,
+      index: undefined,
+    };
+  }, [
+    setGradingStatusFilter,
+    setAssignedGraderFilter,
+    setGradedByFilter,
+    setSubmissionGroupFilter,
+    setAiAgreementFilter,
+    setManualPointsFilter,
+    setTotalPointsFilter,
+    setScoreFilter,
+    setRubricItemsFilter,
+    setAutoPointsFilter,
+  ]);
+
+  // Sync TanStack column filter changes back to URL
+  const handleColumnFiltersChange = useMemo(
+    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
+      const newFilters =
+        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      for (const filter of newFilters) {
+        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
+      }
+    },
+    [columnFilters, columnFilterSetters],
+  );
+
   // Create columns using the extracted function
   const columns = useMemo(
     () =>
@@ -358,6 +395,7 @@ export function AssessmentQuestionTable({
         hasCourseInstancePermissionEdit,
         urlPrefix,
         csrfToken,
+        courseInstanceId: courseInstance.id,
         createCheckboxProps,
         scrollRef,
         onEditPointsSuccess: () => {
@@ -377,6 +415,7 @@ export function AssessmentQuestionTable({
       hasCourseInstancePermissionEdit,
       urlPrefix,
       csrfToken,
+      courseInstance.id,
       createCheckboxProps,
       scrollRef,
       queryClientInstance,
@@ -466,6 +505,7 @@ export function AssessmentQuestionTable({
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     onRowSelectionChange: setRowSelection,
+    onColumnFiltersChange: handleColumnFiltersChange,
     enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -560,24 +600,6 @@ export function AssessmentQuestionTable({
     allGraders,
     allSubmissionGroups,
     allAiAgreementItems,
-    gradingStatusFilter,
-    setGradingStatusFilter,
-    assignedGraderFilter,
-    setAssignedGraderFilter,
-    gradedByFilter,
-    setGradedByFilter,
-    submissionGroupFilter,
-    setSubmissionGroupFilter,
-    aiAgreementFilter,
-    setAiAgreementFilter,
-    manualPointsFilter,
-    setManualPointsFilter,
-    autoPointsFilter,
-    setAutoPointsFilter,
-    totalPointsFilter,
-    setTotalPointsFilter,
-    scoreFilter,
-    setScoreFilter,
   });
 
   return (
@@ -664,28 +686,30 @@ export function AssessmentQuestionTable({
         table={table}
         title="Student instance questions"
         style={{ height: '90vh' }}
-        columnManagerTopContent={
-          <div class="px-2 py-1 d-flex align-items-center">
-            <label class="form-check text-nowrap d-flex align-items-stretch">
-              <input
-                type="checkbox"
-                checked={studentInfoCheckboxState === 'checked'}
-                indeterminate={studentInfoCheckboxState === 'indeterminate'}
-                class="form-check-input"
-                onChange={handleStudentInfoCheckboxClick}
-              />
-              <span class="form-check-label ms-2">Show student info</span>
-            </label>
-          </div>
-        }
-        columnManagerButtons={
-          <RubricItemsFilter
-            rubricData={rubricData}
-            instanceQuestionsInfo={instanceQuestionsInfo}
-            rubricItemsFilter={rubricItemsFilter}
-            setRubricItemsFilter={setRubricItemsFilter}
-          />
-        }
+        columnManager={{
+          topContent: (
+            <div class="px-2 py-1 d-flex align-items-center">
+              <label class="form-check text-nowrap d-flex align-items-stretch">
+                <input
+                  type="checkbox"
+                  checked={studentInfoCheckboxState === 'checked'}
+                  indeterminate={studentInfoCheckboxState === 'indeterminate'}
+                  class="form-check-input"
+                  onChange={handleStudentInfoCheckboxClick}
+                />
+                <span class="form-check-label ms-2">Show student info</span>
+              </label>
+            </div>
+          ),
+          buttons: (
+            <RubricItemsFilter
+              rubricData={rubricData}
+              instanceQuestionsInfo={instanceQuestionsInfo}
+              rubricItemsFilter={rubricItemsFilter}
+              setRubricItemsFilter={setRubricItemsFilter}
+            />
+          ),
+        }}
         headerButtons={
           <>
             {aiGradingMode ? (
@@ -699,21 +723,21 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all human-graded"
                       numToGrade={aiGradingCounts.humanGraded}
-                      aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
-                      onSelectProvider={(provider) => {
+                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                      onSelectModel={(modelId) => {
                         batchActionMutation.mutate({
                           action: 'ai_grade_assessment_graded',
-                          provider,
+                          modelId,
                         });
                       }}
                     />
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
-                      aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
-                      onSelectProvider={(provider) => {
+                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                      onSelectModel={(modelId) => {
                         handleBatchAction(
-                          { batch_action: 'ai_grade_assessment_selected', provider },
+                          { batch_action: 'ai_grade_assessment_selected', model_id: modelId },
                           selectedIds,
                         );
                       }}
@@ -721,11 +745,11 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all"
                       numToGrade={aiGradingCounts.all}
-                      aiGradingProviderSelectionEnabled={aiGradingProviderSelectionEnabled}
-                      onSelectProvider={(provider) => {
+                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                      onSelectModel={(modelId) => {
                         batchActionMutation.mutate({
                           action: 'ai_grade_assessment_all',
-                          provider,
+                          modelId,
                         });
                       }}
                     />
@@ -782,12 +806,15 @@ export function AssessmentQuestionTable({
                     <Dropdown.Header class="d-flex align-items-center gap-1">
                       Assign for grading
                       <OverlayTrigger
-                        overlay={
-                          <Tooltip>
-                            Only staff with <strong>Student Data Editor</strong> permissions or
-                            higher can be assigned as graders
-                          </Tooltip>
-                        }
+                        tooltip={{
+                          body: (
+                            <>
+                              Only staff with <strong>Student Data Editor</strong> permissions or
+                              higher can be assigned as graders
+                            </>
+                          ),
+                          props: { id: 'assign-for-grading-tooltip' },
+                        }}
                       >
                         <span>
                           <i class="fas fa-question-circle text-secondary" />
@@ -834,8 +861,6 @@ export function AssessmentQuestionTable({
           </>
         }
         globalFilter={{
-          value: globalFilter,
-          setValue: setGlobalFilter,
           placeholder: 'Search by name, UID...',
         }}
         tableOptions={{
@@ -872,6 +897,7 @@ export function AssessmentQuestionTable({
             'Graded By': row.last_grader_name || '',
             'Modified At': row.instance_question.modified_at.toISOString(),
           }),
+          hasSelection: true,
         }}
       />
 
