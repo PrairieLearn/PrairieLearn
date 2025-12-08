@@ -2,7 +2,6 @@ import { Form } from 'react-bootstrap';
 import { type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
-
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverridableField } from '../hooks/useOverridableField.js';
 import type { AccessControlFormData, DeadlineEntry, OverridableField } from '../types.js';
@@ -125,6 +124,7 @@ export function DueDateField({ control, setValue, namePrefix }: DueDateFieldProp
       isOverrideRule={isOverrideRule}
       isOverridden={field.isOverridden}
       label="Due date"
+      headerContent={<strong>Due date</strong>}
       onOverride={() => enableOverride('')}
       onRemoveOverride={removeOverride}
     >

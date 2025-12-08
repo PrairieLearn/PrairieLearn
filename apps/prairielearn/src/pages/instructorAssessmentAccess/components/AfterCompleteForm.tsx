@@ -332,13 +332,9 @@ export function AfterCompleteForm({
             label="Question visibility"
             onOverride={() => enableQuestionOverride({ hideQuestions: false })}
             onRemoveOverride={removeQuestionOverride}
+            headerContent={<strong>Question visibility</strong>}
           >
-            <div>
-              <div class="mb-2">
-                <strong>Question visibility</strong>
-              </div>
-              {questionVisibilityContent}
-            </div>
+            {questionVisibilityContent}
           </FieldWrapper>
 
           {/* Score visibility section */}
@@ -348,13 +344,9 @@ export function AfterCompleteForm({
             label="Score visibility"
             onOverride={() => enableScoreOverride({ hideScore: false })}
             onRemoveOverride={removeScoreOverride}
+            headerContent={<strong>Score visibility</strong>}
           >
-            <div>
-              <div class="mb-2">
-                <strong>Score visibility</strong>
-              </div>
-              {scoreVisibilityContent}
-            </div>
+            {scoreVisibilityContent}
           </FieldWrapper>
 
           {assessmentType === 'Exam' && (

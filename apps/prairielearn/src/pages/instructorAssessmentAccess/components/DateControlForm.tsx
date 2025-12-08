@@ -152,7 +152,7 @@ export function DateControlForm({
             </Col>
           </Row>
 
-          <hr class="my-4" />
+          {!isOverrideRule && <hr class="my-4" />}
 
           {/* After Last Deadline - show when dates are configured or it's an override rule */}
           {(isOverrideRule || hasAnyDateControl) && (
@@ -165,7 +165,7 @@ export function DateControlForm({
             </div>
           )}
 
-          <hr class="my-4" />
+          {!isOverrideRule && <hr class="my-4" />}
 
           {/* Duration and Password */}
           <Row class="mb-3">

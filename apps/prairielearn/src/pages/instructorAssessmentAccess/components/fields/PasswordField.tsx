@@ -26,17 +26,20 @@ export function PasswordField({ control, setValue, namePrefix }: PasswordFieldPr
       defaultValue: '',
     });
 
+  const headerContent = (
+    <div class="d-flex align-items-center">
+      <Form.Check
+        type="checkbox"
+        class="me-2"
+        checked={field.isEnabled}
+        onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
+      />
+      <strong>Password</strong>
+    </div>
+  );
+
   const content = (
     <Form.Group>
-      <div class="d-flex align-items-center mb-2">
-        <Form.Check
-          type="checkbox"
-          class="me-2"
-          checked={field.isEnabled}
-          onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
-        />
-        <Form.Label class="mb-0">Password</Form.Label>
-      </div>
       {field.isEnabled && (
         <InputGroup>
           <Form.Control
@@ -65,6 +68,7 @@ export function PasswordField({ control, setValue, namePrefix }: PasswordFieldPr
       label="Password"
       onOverride={() => enableOverride('')}
       onRemoveOverride={removeOverride}
+      headerContent={headerContent}
     >
       {content}
     </FieldWrapper>

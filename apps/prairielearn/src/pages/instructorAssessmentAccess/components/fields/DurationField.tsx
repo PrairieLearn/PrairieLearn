@@ -23,17 +23,20 @@ export function DurationField({ control, setValue, namePrefix }: DurationFieldPr
       defaultValue: 60,
     });
 
+  const headerContent = (
+    <div class="d-flex align-items-center">
+      <Form.Check
+        type="checkbox"
+        class="me-2"
+        checked={field.isEnabled}
+        onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
+      />
+      <strong>Time limit</strong>
+    </div>
+  );
+
   const content = (
     <Form.Group>
-      <div class="d-flex align-items-center mb-2">
-        <Form.Check
-          type="checkbox"
-          class="me-2"
-          checked={field.isEnabled}
-          onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
-        />
-        <Form.Label class="mb-0">Time limit</Form.Label>
-      </div>
       {field.isEnabled && (
         <InputGroup>
           <Form.Control
@@ -63,6 +66,7 @@ export function DurationField({ control, setValue, namePrefix }: DurationFieldPr
       label="Time limit"
       onOverride={() => enableOverride(60)}
       onRemoveOverride={removeOverride}
+      headerContent={headerContent}
     >
       {content}
     </FieldWrapper>

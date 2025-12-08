@@ -16,6 +16,8 @@ interface FieldWrapperProps {
   children: ComponentChildren;
   /** Optional: render as a simple container without card styling for main rule */
   noCardForMainRule?: boolean;
+  /** Optional: content to display in the header row next to the Remove override button */
+  headerContent?: ComponentChildren;
 }
 
 /**
@@ -30,13 +32,24 @@ export function FieldWrapper({
   onRemoveOverride,
   children,
   noCardForMainRule = false,
+  headerContent,
 }: FieldWrapperProps) {
   // For main rules, just render the children (optionally without card)
   if (!isOverrideRule) {
     if (noCardForMainRule) {
-      return <>{children}</>;
+      return (
+        <>
+          {headerContent && <div class="mb-2">{headerContent}</div>}
+          {children}
+        </>
+      );
     }
-    return <div class="mb-3">{children}</div>;
+    return (
+      <div class="mb-3">
+        {headerContent && <div class="mb-2">{headerContent}</div>}
+        {children}
+      </div>
+    );
   }
 
   // For override rules, show the override UI
@@ -56,11 +69,14 @@ export function FieldWrapper({
           </div>
         ) : (
           <>
-            {onRemoveOverride && (
-              <div class="d-flex justify-content-end mb-2">
-                <Button size="sm" variant="outline-danger" onClick={onRemoveOverride}>
-                  Remove override
-                </Button>
+            {(headerContent || onRemoveOverride) && (
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                {headerContent}
+                {onRemoveOverride && (
+                  <Button size="sm" variant="outline-danger" onClick={onRemoveOverride}>
+                    Remove override
+                  </Button>
+                )}
               </div>
             )}
             <div>{children}</div>

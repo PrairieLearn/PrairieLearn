@@ -67,6 +67,7 @@ export function ReleaseDateField({ control, setValue, namePrefix }: ReleaseDateF
       label="Release date"
       onOverride={() => enableOverride('')}
       onRemoveOverride={removeOverride}
+      headerContent={<strong>Release date</strong>}
     >
       {content}
     </FieldWrapper>

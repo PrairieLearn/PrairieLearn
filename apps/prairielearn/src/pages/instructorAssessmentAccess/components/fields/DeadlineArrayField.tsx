@@ -192,12 +192,12 @@ export function DeadlineArrayField({
 
   // Determine if the field should be visible
   // For early deadlines: need release date enabled OR (override rule AND overridden)
-  // For late deadlines: need due date enabled
+  // For late deadlines: need due date enabled OR (override rule AND overridden)
   const shouldShow = () => {
     if (isEarly) {
       return releaseDate?.isEnabled || (isOverrideRule && field.isOverridden);
     } else {
-      return dueDate?.isEnabled && dueDate.value;
+      return (dueDate?.isEnabled && dueDate.value) || (isOverrideRule && field.isOverridden);
     }
   };
 
@@ -223,28 +223,25 @@ export function DeadlineArrayField({
     return null;
   }
 
+  const headerContent = (
+    <div class="d-flex justify-content-between align-items-center" style={{ flex: 1 }}>
+      <div class="d-flex align-items-center">
+        <Form.Check
+          type="checkbox"
+          class="me-2"
+          checked={field.isEnabled}
+          onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
+        />
+        <strong>{label}</strong>
+      </div>
+      <Button size="sm" variant="outline-primary" disabled={!field.isEnabled} onClick={addDeadline}>
+        Add {isEarly ? 'early' : 'late'}
+      </Button>
+    </div>
+  );
+
   const content = (
     <div>
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <div class="d-flex align-items-center">
-          <Form.Check
-            type="checkbox"
-            class="me-2"
-            checked={field.isEnabled}
-            onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
-          />
-          <span>{label}</span>
-        </div>
-        <Button
-          size="sm"
-          variant="outline-primary"
-          disabled={!field.isEnabled}
-          onClick={addDeadline}
-        >
-          Add {isEarly ? 'early' : 'late'}
-        </Button>
-      </div>
-
       {field.isEnabled &&
         deadlineFields.map((deadlineField, index) => (
           <div key={deadlineField.id} class="mb-3">
@@ -298,6 +295,7 @@ export function DeadlineArrayField({
       label={label}
       onOverride={() => enableOverride([])}
       onRemoveOverride={removeOverride}
+      headerContent={headerContent}
     >
       {content}
     </FieldWrapper>

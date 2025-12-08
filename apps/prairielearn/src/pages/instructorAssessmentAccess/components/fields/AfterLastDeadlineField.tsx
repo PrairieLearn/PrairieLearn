@@ -146,15 +146,12 @@ export function AfterLastDeadlineField({
     </Form.Group>
   );
 
-  // Wrap with header that shows the last deadline text
-  const wrappedContent = (
+  // Header content with title and description
+  const headerContent = (
     <div>
-      <div class="mb-2">
-        <strong>After last deadline</strong>
-        <br />
-        <small class="text-muted">{getLastDeadlineText()}</small>
-      </div>
-      {content}
+      <strong>After last deadline</strong>
+      <br />
+      <small class="text-muted">{getLastDeadlineText()}</small>
     </div>
   );
 
@@ -165,8 +162,9 @@ export function AfterLastDeadlineField({
       label="After last deadline"
       onOverride={() => enableOverride({ allowSubmissions: false })}
       onRemoveOverride={removeOverride}
+      headerContent={headerContent}
     >
-      {wrappedContent}
+      {content}
     </FieldWrapper>
   );
 }
