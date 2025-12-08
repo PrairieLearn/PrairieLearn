@@ -33,7 +33,7 @@ import {
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
-import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
   getSelfEnrollmentLinkUrl,
@@ -44,7 +44,11 @@ import {
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
-import { InviteStudentsModal } from './components/InviteStudentsModal.js';
+import {
+  type InvalidUidInfo,
+  type InviteResult,
+  InviteStudentsModal,
+} from './components/InviteStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
@@ -243,9 +247,12 @@ function StudentsCard({
   });
 
   const [showInvite, setShowInvite] = useState(false);
-  const [lastInvitedUids, setLastInvitedUids] = useState<string[]>([]);
+  const [lastInviteResult, setLastInviteResult] = useState<InviteResult | null>(null);
 
-  const inviteStudents = async (uids: string[]): Promise<StaffEnrollment[]> => {
+  const inviteStudents = async (
+    uids: string[],
+    skippedUids: InvalidUidInfo[],
+  ): Promise<InviteResult> => {
     const body = new URLSearchParams({
       __action: 'invite_by_uid',
       __csrf_token: csrfToken,
@@ -273,9 +280,11 @@ function StudentsCard({
     // Force a refetch of the enrollments query to ensure the new students are included
     await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
     setShowInvite(false);
-    setLastInvitedUids(uids);
 
-    return enrollments;
+    const result: InviteResult = { enrollments, skippedUids };
+    setLastInviteResult(result);
+
+    return result;
   };
 
   const columns = useMemo(
@@ -397,13 +406,48 @@ function StudentsCard({
     },
   });
 
+  const formatInviteResultMessage = (result: InviteResult): string => {
+    const parts: string[] = [];
+
+    // Invited students
+    const invitedCount = result.enrollments.length;
+    if (invitedCount > 0) {
+      parts.push(`${invitedCount} student${invitedCount === 1 ? '' : 's'} successfully invited`);
+    }
+
+    // Group skipped by reason
+    const enrolledSkipped = result.skippedUids.filter((s) => s.reason === 'Already enrolled');
+    const invitedSkipped = result.skippedUids.filter(
+      (s) => s.reason === 'Already has a pending invitation',
+    );
+    const instructorSkipped = result.skippedUids.filter(
+      (s) => s.reason === 'User is an instructor',
+    );
+
+    if (enrolledSkipped.length > 0) {
+      parts.push(
+        `${enrolledSkipped.length} enrolled student${enrolledSkipped.length === 1 ? '' : 's'} skipped`,
+      );
+    }
+    if (invitedSkipped.length > 0) {
+      parts.push(
+        `${invitedSkipped.length} invited student${invitedSkipped.length === 1 ? '' : 's'} skipped`,
+      );
+    }
+    if (instructorSkipped.length > 0) {
+      parts.push(
+        `${instructorSkipped.length} instructor${instructorSkipped.length === 1 ? '' : 's'} skipped`,
+      );
+    }
+
+    return parts.join(', ') + '.';
+  };
+
   return (
     <>
-      {lastInvitedUids.length > 0 && (
-        <Alert variant="success" dismissible onClose={() => setLastInvitedUids([])}>
-          {lastInvitedUids.length === 1
-            ? `${lastInvitedUids[0]} was invited successfully.`
-            : `${lastInvitedUids.length} students were invited successfully.`}
+      {lastInviteResult && (
+        <Alert variant="success" dismissible onClose={() => setLastInviteResult(null)}>
+          {formatInviteResultMessage(lastInviteResult)}
         </Alert>
       )}
       <TanstackTableCard

@@ -70,14 +70,15 @@ describe('Instructor Students - Invite by UID', () => {
       body: new URLSearchParams({
         __action: 'invite_by_uid',
         __csrf_token: csrfToken,
-        uid: 'nonexistent@example.com',
+        uids: 'nonexistent@example.com',
       }),
     });
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isObject(data.data);
-    assert.equal(data.data.status, 'invited');
+    assert.isArray(data.data);
+    assert.equal(data.data.length, 1);
+    assert.equal(data.data[0].status, 'invited');
   });
 
   test.sequential('should return error when user is an instructor', async () => {
@@ -110,13 +111,13 @@ describe('Instructor Students - Invite by UID', () => {
       body: new URLSearchParams({
         __action: 'invite_by_uid',
         __csrf_token: csrfToken,
-        uid: 'another_instructor@example.com',
+        uids: 'another_instructor@example.com',
       }),
     });
 
     assert.equal(response.status, 400);
     const data = await response.json();
-    assert.equal(data.error, 'The user is an instructor');
+    assert.equal(data.error, 'User another_instructor@example.com is an instructor');
   });
 
   test.sequential('should successfully invite a blocked user', async () => {
@@ -290,21 +291,23 @@ describe('Instructor Students - Check Invitation Endpoint', () => {
     assert.deepEqual(data.invalidUids, []);
   });
 
-  test.sequential('should return invalidUids for non-existent user', async () => {
-    const params = new URLSearchParams({ uids: 'nonexistent_check@example.com' });
-    const response = await fetch(`${studentsUrl}/invitation/check?${params.toString()}`, {
-      headers: {
-        Accept: 'application/json',
-        cookie: instructorHeaders.cookie,
-      },
-    });
+  test.sequential(
+    'should return empty invalidUids for non-existent user (can be invited)',
+    async () => {
+      const params = new URLSearchParams({ uids: 'nonexistent_check@example.com' });
+      const response = await fetch(`${studentsUrl}/invitation/check?${params.toString()}`, {
+        headers: {
+          Accept: 'application/json',
+          cookie: instructorHeaders.cookie,
+        },
+      });
 
-    assert.equal(response.status, 200);
-    const data = await response.json();
-    assert.equal(data.invalidUids.length, 1);
-    assert.equal(data.invalidUids[0].uid, 'nonexistent_check@example.com');
-    assert.equal(data.invalidUids[0].reason, 'User not found');
-  });
+      assert.equal(response.status, 200);
+      const data = await response.json();
+      // Non-existent users can be invited, so they should not be flagged as invalid
+      assert.deepEqual(data.invalidUids, []);
+    },
+  );
 
   test.sequential('should return invalidUids for instructor', async () => {
     await callRow(
