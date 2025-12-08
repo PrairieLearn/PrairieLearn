@@ -57,7 +57,8 @@ router.get(
       sql.select_job,
       {
         job_id: req.params.job_id,
-        course_instance_id: 'course_instance' in res.locals ? res.locals.course_instance.id : null,
+        // @ts-expect-error - TODO: We need a better type to represent a 'course' OR 'course-instance' context.
+        course_instance_id: res.locals.course_instance?.id ?? null,
         course_id: res.locals.course.id,
       },
       GradingJobRowSchema,
@@ -88,7 +89,8 @@ router.get(
       sql.select_job,
       {
         job_id: req.params.job_id,
-        course_instance_id: 'course_instance' in res.locals ? res.locals.course_instance.id : null,
+        // @ts-expect-error - TODO: We need a better type to represent a 'course' OR 'course-instance' context.
+        course_instance_id: res.locals.course_instance?.id ?? null,
         course_id: res.locals.course.id,
       },
       GradingJobRowSchema,

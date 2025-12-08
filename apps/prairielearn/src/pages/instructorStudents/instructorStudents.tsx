@@ -68,7 +68,7 @@ router.get(
     const enrollment = await selectOptionalEnrollmentByUid({
       courseInstance,
       uid,
-      requestedRole: 'Student Data Viewer',
+      requiredRole: ['Student Data Viewer'],
       authzData: res.locals.authz_data,
     });
     const staffEnrollment = StaffEnrollmentSchema.nullable().parse(enrollment);
@@ -101,25 +101,23 @@ router.post(
 
     const user = await selectOptionalUserByUid(body.uid);
 
-    if (user == null) {
-      throw new HttpStatusError(400, 'User not found');
-    }
+    if (user) {
+      const isInstructor = await callRow(
+        'users_is_instructor_in_course_instance',
+        [user.user_id, courseInstance.id],
+        z.boolean(),
+      );
 
-    const isInstructor = await callRow(
-      'users_is_instructor_in_course_instance',
-      [user.user_id, courseInstance.id],
-      z.boolean(),
-    );
-
-    if (isInstructor) {
-      throw new HttpStatusError(400, 'The user is an instructor');
+      if (isInstructor) {
+        throw new HttpStatusError(400, 'The user is an instructor');
+      }
     }
 
     // Try to find an existing enrollment so we can error gracefully.
     const existingEnrollment = await selectOptionalEnrollmentByUid({
       courseInstance,
       uid: body.uid,
-      requestedRole: 'Student Data Viewer',
+      requiredRole: ['Student Data Viewer'],
       authzData: res.locals.authz_data,
     });
 
@@ -136,7 +134,7 @@ router.post(
     const enrollment = await inviteStudentByUid({
       courseInstance,
       uid: body.uid,
-      requestedRole: 'Student Data Editor',
+      requiredRole: ['Student Data Editor'],
       authzData: res.locals.authz_data,
     });
 
