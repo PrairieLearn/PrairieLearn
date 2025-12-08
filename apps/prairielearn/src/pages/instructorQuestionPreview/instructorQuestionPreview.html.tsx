@@ -31,7 +31,7 @@ export function InstructorQuestionPreview({
   renderSubmissionSearchParams: URLSearchParams;
   readmeHtml: string;
   questionCopyTargets: CopyTarget[] | null;
-  resLocals: ResLocalsForPage['instructor-question'];
+  resLocals: ResLocalsForPage<'instructor-question'>;
 }) {
   assert(resLocals.question.qid !== null);
 
