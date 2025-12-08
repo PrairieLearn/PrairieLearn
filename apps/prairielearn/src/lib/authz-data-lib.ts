@@ -76,6 +76,7 @@ export interface DangerousSystemAuthzData {
   user: {
     user_id: null;
   };
+  is_administrator: boolean;
 }
 
 /**
@@ -98,6 +99,8 @@ interface RawPlainAuthzData {
   has_course_instance_permission_edit?: boolean;
   has_student_access_with_enrollment?: boolean;
   has_student_access?: boolean;
+
+  is_administrator?: boolean;
 
   mode: EnumMode;
   mode_reason: EnumModeReason;
@@ -153,11 +156,14 @@ export type CourseInstanceRole = StudentCourseInstanceRole | InstructorCourseIns
 
 export type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
 
+export type AdministratorRole = 'Administrator';
+
 export type Role =
   | SystemRole
   | StudentCourseInstanceRole
   | InstructorCourseInstanceRole
-  | CourseRole;
+  | CourseRole
+  | AdministratorRole;
 
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {
@@ -169,6 +175,7 @@ export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
     user: {
       user_id: null,
     },
+    is_administrator: true,
   };
 }
 
@@ -227,6 +234,10 @@ export function hasRole(authzData: AuthzData, requiredRole: Role[]): boolean {
   }
 
   if (requiredRole.includes('Owner') && authzData.has_course_permission_own) {
+    return true;
+  }
+
+  if (requiredRole.includes('Administrator') && authzData.is_administrator) {
     return true;
   }
 

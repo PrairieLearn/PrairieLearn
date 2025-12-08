@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import type { OpenAIModelId } from '../../lib/ai.js';
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import { AiQuestionGenerationPromptSchema, type User } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -219,7 +220,8 @@ export async function benchmarkAiQuestionGeneration({
       path: courseDirectory.path,
       repository: null,
       branch: 'master',
-      authn_user_id: user.user_id,
+      authzData: dangerousFullSystemAuthz(),
+      requiredRole: ['System'],
     });
 
     // Sync the course to the database so future edits will do their thing.

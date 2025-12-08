@@ -15,10 +15,15 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { calculateCourseRolePermissions } from '../lib/authz-data-lib.js';
+import {
+  type AuthzData,
+  type AuthzDataWithoutEffectiveUser,
+  assertHasRole,
+  calculateCourseRolePermissions,
+} from '../lib/authz-data-lib.js';
 import { type Course, CourseSchema, type EnumCourseRole } from '../lib/db-types.js';
 
-import { insertAuditLog } from './audit-log.js';
+import { insertAuditEvent } from './audit-event.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -174,24 +179,33 @@ export async function selectOrInsertCourseByPath(coursePath: string): Promise<Co
 }
 
 export async function deleteCourse({
-  course_id,
-  authn_user_id,
+  course,
+  authzData,
+  requiredRole,
 }: {
-  course_id: string;
-  authn_user_id: string;
+  course: Course;
+  authzData: AuthzDataWithoutEffectiveUser;
+  requiredRole: ('Administrator' | 'System')[];
 }) {
+  assertHasRole(authzData, requiredRole);
+
   await runInTransactionAsync(async () => {
-    const deletedCourse = await queryOptionalRow(sql.delete_course, { course_id }, CourseSchema);
+    const deletedCourse = await queryOptionalRow(
+      sql.delete_course,
+      { course_id: course.id },
+      CourseSchema,
+    );
     if (deletedCourse == null) {
       throw new Error('Course to delete not found');
     }
     await insertAuditLog({
-      authn_user_id,
+      // TODO: XXX
+      authn_user_id: authzData.authn_user.user_id,
       action: 'soft_delete',
       table_name: 'pl_courses',
-      row_id: course_id,
+      row_id: course.id,
       new_state: deletedCourse,
-      course_id,
+      course_id: course.id,
       institution_id: deletedCourse.institution_id,
     });
   });
@@ -205,13 +219,17 @@ export async function insertCourse({
   path,
   repository,
   branch,
-  authn_user_id,
+  authzData,
+  requiredRole,
 }: Pick<
   Course,
   'institution_id' | 'short_name' | 'title' | 'display_timezone' | 'path' | 'repository' | 'branch'
 > & {
-  authn_user_id: string;
+  authzData: AuthzData;
+  requiredRole: ('Administrator' | 'System')[];
 }): Promise<Course> {
+  assertHasRole(authzData, requiredRole);
+
   return await runInTransactionAsync(async () => {
     const course = await queryRow(
       sql.insert_course,
@@ -226,14 +244,15 @@ export async function insertCourse({
       },
       CourseSchema,
     );
-    await insertAuditLog({
-      authn_user_id,
+    await insertAuditEvent({
+      tableName: 'pl_courses',
       action: 'insert',
-      table_name: 'pl_courses',
-      row_id: course.id,
-      new_state: course,
-      institution_id,
-      course_id: course.id,
+      rowId: course.id,
+      newRow: course,
+      courseId: course.id,
+      institutionId: institution_id,
+      agentUserId: authzData.user.user_id,
+      agentAuthnUserId: authzData.user.user_id,
     });
     return course;
   });

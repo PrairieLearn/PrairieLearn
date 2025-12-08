@@ -10,6 +10,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { insertCourse, updateCourseCommitHash } from '../models/course.js';
 import { syncDiskToSql } from '../sync/syncFromDisk.js';
 
+import { dangerousFullSystemAuthz } from './authz-data-lib.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import { type Course, type User } from './db-types.js';
@@ -231,7 +232,8 @@ export async function createCourseRepoJob(
       path: options.path,
       repository,
       branch,
-      authn_user_id: authn_user.user_id,
+      authzData: dangerousFullSystemAuthz(),
+      requiredRole: ['System'],
     });
     job.verbose('Inserted course into database:');
     job.verbose(JSON.stringify(inserted_course, null, 4));
