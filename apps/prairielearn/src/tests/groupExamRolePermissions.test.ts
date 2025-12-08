@@ -112,9 +112,9 @@ async function updateGroupRoles(
   );
 
   // Grab IDs of checkboxes to construct update request
-  const checkedElementIds = {};
+  const checkedElementIds: Record<string, string> = {};
   for (let i = 0; i < checkedBoxes.length; i++) {
-    checkedElementIds[checkedBoxes[i.toString()].attribs.id] = 'on';
+    checkedElementIds[checkedBoxes[`${i}`].attribs.id] = 'on';
   }
   const res = await fetch(assessmentUrl, {
     method: 'POST',

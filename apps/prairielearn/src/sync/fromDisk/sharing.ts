@@ -30,7 +30,7 @@ export async function sync(
       name: z.string(),
     }),
   );
-  const sharingSetIdsByName = {};
+  const sharingSetIdsByName: Record<string, string> = {};
   for (const sharingSet of courseSharingSets) {
     sharingSetIdsByName[sharingSet.name] = sharingSet.id;
   }

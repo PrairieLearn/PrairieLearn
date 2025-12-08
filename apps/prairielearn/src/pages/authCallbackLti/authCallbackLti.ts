@@ -3,12 +3,12 @@ import assert from 'node:assert';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import oauthSignature from 'oauth-signature';
-import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';
 import {
   IdSchema,
@@ -16,6 +16,8 @@ import {
   LtiLinkSchema,
   SprocUsersIsInstructorInCourseInstanceSchema,
 } from '../../lib/db-types.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
+import { selectUserById } from '../../models/user.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -114,8 +116,8 @@ router.post(
     }
     const authName = parameters.lis_person_name_full || fallbackName;
 
-    const userResult = await sqldb.callOptionalRow(
-      'users_select_or_insert_and_enroll_lti',
+    const userId = await sqldb.callRow(
+      'users_select_or_insert_lti',
       [
         authUid,
         authName,
@@ -124,18 +126,43 @@ router.post(
         parameters.context_id,
         res.locals.req_date,
       ],
-      z.object({
-        user_id: IdSchema,
-        has_access: z.boolean(),
-      }),
+      IdSchema,
     );
-    if (!userResult?.has_access) {
+
+    // Persist the user's authentication data in the session. We do this before
+    // checking authorization so that user information is available for any
+    // subsequent requests or redirects (e.g. if `ensureCheckedEnrollment`
+    // redirects to a payment page).
+    req.session.user_id = userId;
+    req.session.authn_provider_name = 'LTI';
+
+    // Check if the user would have access to the course instance.
+    const user = await selectUserById(userId);
+    const { authzData, institution, course, courseInstance } =
+      await constructCourseOrInstanceContext({
+        user,
+        course_id: null,
+        course_instance_id: ltiResult.course_instance_id,
+        ip: req.ip || null,
+        req_date: res.locals.req_date,
+        is_administrator: res.locals.is_administrator,
+      });
+
+    if (!authzData?.has_student_access) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    // Persist the user's authentication data in the session.
-    req.session.user_id = userResult.user_id;
-    req.session.authn_provider_name = 'LTI';
+    if (!authzData.has_student_access_with_enrollment) {
+      assert(courseInstance);
+      await ensureEnrollment({
+        institution,
+        course,
+        courseInstance,
+        actionDetail: 'implicit_joined',
+        authzData,
+        requiredRole: ['Student'],
+      });
+    }
 
     const linkResult = await sqldb.queryRow(
       sql.upsert_current_link,
@@ -154,7 +181,7 @@ router.post(
       if ('lis_result_sourcedid' in parameters) {
         // Save outcomes here
         await sqldb.execute(sql.upsert_outcome, {
-          user_id: userResult.user_id,
+          user_id: userId,
           assessment_id: linkResult.assessment_id,
           lis_result_sourcedid: parameters.lis_result_sourcedid,
           lis_outcome_service_url: parameters.lis_outcome_service_url,
@@ -168,15 +195,11 @@ router.post(
     } else {
       // No linked assessment
 
-      const isInstructor = await sqldb.callOptionalRow(
+      const isInstructor = await sqldb.callRow(
         'users_is_instructor_in_course_instance',
-        [userResult.user_id, ltiResult.course_instance_id],
+        [userId, ltiResult.course_instance_id],
         SprocUsersIsInstructorInCourseInstanceSchema,
       );
-
-      if (isInstructor == null) {
-        throw new HttpStatusError(403, 'Access denied (could not determine if user is instructor)');
-      }
 
       if (!isInstructor) {
         // Show an error that the assignment is unavailable

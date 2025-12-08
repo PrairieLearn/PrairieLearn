@@ -1,102 +1,87 @@
 import { flexRender } from '@tanstack/react-table';
-import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
-import type { Header, Row, SortDirection, Table } from '@tanstack/table-core';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import type { Cell, Header, Row, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import type { ComponentChildren } from 'preact';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
+import { useDebouncedCallback } from 'use-debounce';
+
+import type { ComponentProps } from '@prairielearn/preact-cjs';
+import { run } from '@prairielearn/run';
 
 import { ColumnManager } from './ColumnManager.js';
 import {
   TanstackTableDownloadButton,
   type TanstackTableDownloadButtonProps,
 } from './TanstackTableDownloadButton.js';
+import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
+import { useAutoSizeColumns } from './useAutoSizeColumns.js';
 
-function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
-  if (sortMethod === 'asc') {
-    return <i class="bi bi-sort-up-alt" aria-hidden="true" />;
-  } else if (sortMethod === 'desc') {
-    return <i class="bi bi-sort-down" aria-hidden="true" />;
-  } else {
-    return <i class="bi bi-arrow-down-up opacity-75 text-muted" aria-hidden="true" />;
-  }
-}
-
-function ResizeHandle<RowDataModel>({
-  header,
-  setColumnSizing,
+function TableCell<RowDataModel>({
+  cell,
+  rowIdx,
+  colIdx,
+  canSort,
+  canFilter,
+  wrapText,
+  handleGridKeyDown,
 }: {
-  header: Header<RowDataModel, unknown>;
-  setColumnSizing: Table<RowDataModel>['setColumnSizing'];
+  cell: Cell<RowDataModel, unknown>;
+  rowIdx: number;
+  colIdx: number;
+  canSort: boolean;
+  canFilter: boolean;
+  wrapText: boolean;
+  handleGridKeyDown: (e: KeyboardEvent, rowIdx: number, colIdx: number) => void;
 }) {
-  const minSize = header.column.columnDef.minSize ?? 0;
-  const maxSize = header.column.columnDef.maxSize ?? 0;
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      e.preventDefault();
-      const currentSize = header.getSize();
-      const increment = e.shiftKey ? 20 : 5; // Larger increment with Shift key
-      const newSize =
-        e.key === 'ArrowLeft'
-          ? Math.max(minSize, currentSize - increment)
-          : Math.min(maxSize, currentSize + increment);
-
-      setColumnSizing((prevSizing) => ({
-        ...prevSizing,
-        [header.column.id]: newSize,
-      }));
-    } else if (e.key === 'Home') {
-      e.preventDefault();
-      header.column.resetSize();
-    }
-  };
-
-  const columnName =
-    typeof header.column.columnDef.header === 'string'
-      ? header.column.columnDef.header
-      : header.column.id;
-
   return (
-    <div class="py-1 h-100" style={{ position: 'absolute', right: 0, top: 0, width: '4px' }}>
-      {/* separator role is focusable, so these jsx-a11y-x rules are false positives.
-        https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/separator_role#focusable_separator
-      */}
-      {/* eslint-disable-next-line jsx-a11y-x/no-noninteractive-element-interactions */}
+    <td
+      key={cell.id}
+      tabIndex={0}
+      data-grid-cell-row={rowIdx}
+      data-grid-cell-col={colIdx}
+      class={clsx(!canSort && !canFilter && 'text-center')}
+      style={{
+        display: 'flex',
+        width: cell.column.getSize(),
+        minWidth: 0,
+        maxWidth: cell.column.getSize(),
+        flexShrink: 0,
+        position: cell.column.getIsPinned() === 'left' ? 'sticky' : undefined,
+        left: cell.column.getIsPinned() === 'left' ? cell.column.getStart() : undefined,
+        verticalAlign: 'middle',
+      }}
+      onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
+    >
       <div
-        role="separator"
-        aria-label={`Resize '${columnName}' column`}
-        aria-valuetext={`${header.getSize()}px`}
-        aria-orientation="vertical"
-        aria-valuemin={minSize}
-        aria-valuemax={maxSize}
-        aria-valuenow={header.getSize()}
-        // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex
-        tabIndex={0}
-        class="h-100"
         style={{
-          background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'var(--bs-gray-400)',
-          cursor: 'col-resize',
-          transition: 'background-color 0.2s',
+          display: 'block',
+          minWidth: 0,
+          maxWidth: '100%',
+          overflow: wrapText ? 'visible' : 'hidden',
+          textOverflow: wrapText ? undefined : 'ellipsis',
+          whiteSpace: wrapText ? 'normal' : 'nowrap',
+          flex: '1 1 0%',
+          width: 0, // Allow flex to control width, but start from 0
         }}
-        onMouseDown={header.getResizeHandler()}
-        onTouchStart={header.getResizeHandler()}
-        onKeyDown={handleKeyDown}
-      />
-    </div>
+      >
+        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+      </div>
+    </td>
   );
 }
 
 const DefaultNoResultsState = (
-  <>
-    <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
-    <p class="mb-0">No results found matching your search criteria.</p>
-  </>
+  <TanstackTableEmptyState iconName="bi-search">
+    No results found matching your search criteria.
+  </TanstackTableEmptyState>
 );
 
 const DefaultEmptyState = (
-  <>
-    <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true" />
-    <p class="mb-0">No results found.</p>
-  </>
+  <TanstackTableEmptyState iconName="bi-eye-slash">No results found.</TanstackTableEmptyState>
 );
 
 interface TanstackTableProps<RowDataModel> {
@@ -106,6 +91,7 @@ interface TanstackTableProps<RowDataModel> {
   rowHeight?: number;
   noResultsState?: JSX.Element;
   emptyState?: JSX.Element;
+  scrollRef?: React.RefObject<HTMLDivElement> | null;
 }
 
 const DEFAULT_FILTER_MAP = {};
@@ -119,6 +105,7 @@ const DEFAULT_FILTER_MAP = {};
  * @param params.rowHeight - The height of the rows in the table
  * @param params.noResultsState - The no results state for the table
  * @param params.emptyState - The empty state for the table
+ * @param params.scrollRef - Optional ref that will be attached to the scroll container element.
  */
 export function TanstackTable<RowDataModel>({
   table,
@@ -127,19 +114,60 @@ export function TanstackTable<RowDataModel>({
   rowHeight = 42,
   noResultsState = DefaultNoResultsState,
   emptyState = DefaultEmptyState,
+  scrollRef,
 }: TanstackTableProps<RowDataModel>) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = scrollRef ?? parentRef;
+
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => rowHeight,
     overscan: 10,
+    measureElement: (el) => el?.getBoundingClientRect().height ?? rowHeight,
   });
 
-  // Track focused cell for grid navigation
-  const [focusedCell, setFocusedCell] = useState<{ row: number; col: number }>({ row: 0, col: 0 });
+  const visibleColumns = table.getVisibleLeafColumns();
+  const centerColumns = visibleColumns.filter((col) => !col.getIsPinned());
+
+  const columnVirtualizer = useVirtualizer({
+    count: centerColumns.length,
+    estimateSize: (index) => centerColumns[index]?.getSize(),
+    // `useAutoSizeColumns` solves a different problem (happens once when the column set changes)
+    // and we don't need to measure the cells themselves, so we can use the default estimateSize.
+    getScrollElement: () => scrollContainerRef.current,
+    horizontal: true,
+    overscan: 3,
+  });
+
+  const virtualColumns = columnVirtualizer.getVirtualItems();
+
+  const virtualPaddingLeft = run(() => {
+    if (columnVirtualizer && virtualColumns?.length > 0) {
+      return virtualColumns[0]?.start ?? 0;
+    }
+    return null;
+  });
+
+  const virtualPaddingRight = run(() => {
+    if (columnVirtualizer && virtualColumns?.length > 0) {
+      return (
+        columnVirtualizer.getTotalSize() - (virtualColumns[virtualColumns.length - 1]?.end ?? 0)
+      );
+    }
+    return null;
+  });
+
+  // Check if any column has wrapping enabled
+  const hasWrappedColumns = table.getAllLeafColumns().some((col) => col.columnDef.meta?.wrapText);
+
+  // Create callback for remeasuring after resize
+  const handleResizeEnd = useMemo(() => {
+    if (!hasWrappedColumns) return undefined;
+    return () => rowVirtualizer.measure();
+  }, [hasWrappedColumns, rowVirtualizer]);
 
   const getVisibleCells = (row: Row<RowDataModel>) => [
     ...row.getLeftVisibleCells(),
@@ -173,108 +201,57 @@ export function TanstackTable<RowDataModel>({
       return;
     }
 
-    setFocusedCell({ row: next.row, col: next.col });
-    // If we are on the leftmost column, we should allow left scrolling.
-    if (colIdx === 0 && e.key === 'ArrowLeft') {
-      return;
-    }
+    // Only handle arrow keys if we're in the cell itself, not in an interactive element
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'TD') {
+      // If we are on the leftmost column, we should allow left scrolling.
+      if (colIdx === 0 && e.key === 'ArrowLeft') {
+        return;
+      }
 
-    // If we are on the top row, we should allow up scrolling.
-    if (rowIdx === 0 && e.key === 'ArrowUp') {
-      return;
-    }
+      // If we are on the top row, we should allow up scrolling.
+      if (rowIdx === 0 && e.key === 'ArrowUp') {
+        return;
+      }
 
-    // If we are on the rightmost column, we should allow right scrolling.
-    if (colIdx === rowLength - 1 && e.key === 'ArrowRight') {
-      return;
-    }
+      // If we are on the rightmost column, we should allow right scrolling.
+      if (colIdx === rowLength - 1 && e.key === 'ArrowRight') {
+        return;
+      }
 
-    e.preventDefault();
+      e.preventDefault();
+      const selector = `[data-grid-cell-row="${next.row}"][data-grid-cell-col="${next.col}"]`;
+      const nextCell = tableRef.current?.querySelector(selector) as HTMLElement | null;
+      nextCell?.focus();
+    }
   };
-
-  useEffect(() => {
-    const selector = `[data-grid-cell-row="${focusedCell.row}"][data-grid-cell-col="${focusedCell.col}"]`;
-    const cell = tableRef.current?.querySelector(selector) as HTMLElement | null;
-    if (!cell) return;
-
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-chain-state-updates
-    cell.focus();
-  }, [focusedCell]);
 
   const virtualRows = rowVirtualizer.getVirtualItems();
-  const [before, after] =
-    virtualRows.length > 0
-      ? [
-          notUndefined(virtualRows[0]).start - rowVirtualizer.options.scrollMargin,
-          rowVirtualizer.getTotalSize() - notUndefined(virtualRows.at(-1)).end,
-        ]
-      : [0, 0];
-  const headerGroups = table.getHeaderGroups();
-  const isTableResizing = headerGroups.some((headerGroup) =>
-    headerGroup.headers.some((header) => header.column.getIsResizing()),
-  );
-  const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
 
-  const tableRect = tableRef.current?.getBoundingClientRect();
+  const headerGroups = table.getHeaderGroups();
+
+  const leafHeaderGroup = headerGroups[headerGroups.length - 1];
+
+  const leftPinnedHeaders = leafHeaderGroup.headers.filter(
+    (header) => header.column.getIsPinned() === 'left',
+  );
+  const centerHeaders = leafHeaderGroup.headers.filter((header) => !header.column.getIsPinned());
+
+  const isTableResizing = leafHeaderGroup.headers.some((header) => header.column.getIsResizing());
 
   // We toggle this here instead of in the parent since this component logically manages all UI for the table.
-  // eslint-disable-next-line react-you-might-not-need-an-effect/no-manage-parent
   useEffect(() => {
-    document.body.classList.toggle('no-user-select', isTableResizing);
+    document.body.classList.toggle('pl-ui-no-user-select', isTableResizing);
   }, [isTableResizing]);
 
-  // Dismiss popovers when their triggering element scrolls out of view
+  const hasAutoSized = useAutoSizeColumns(table, tableRef, filters);
+
+  // Re-measure the virtualizer when auto-sizing completes
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollElement = parentRef.current;
-      if (!scrollElement) return;
-
-      // Find and check all open popovers
-      const popovers = document.querySelectorAll('.popover.show');
-      popovers.forEach((popover) => {
-        // Find the trigger element for this popover
-        const triggerElement = document.querySelector(`[aria-describedby="${popover.id}"]`);
-        if (!triggerElement) return;
-
-        // Check if the trigger element is still visible in the scroll container
-        const scrollRect = scrollElement.getBoundingClientRect();
-        const triggerRect = triggerElement.getBoundingClientRect();
-
-        // Check if trigger is outside the visible scroll area
-        const isOutOfView =
-          triggerRect.bottom < scrollRect.top ||
-          triggerRect.top > scrollRect.bottom ||
-          triggerRect.right < scrollRect.left ||
-          triggerRect.left > scrollRect.right;
-
-        if (isOutOfView) {
-          // Use Bootstrap's Popover API to properly hide it
-          const popoverInstance = (window as any).bootstrap?.Popover?.getInstance(triggerElement);
-          if (popoverInstance) {
-            popoverInstance.hide();
-          }
-        }
-      });
-    };
-
-    const scrollElement = parentRef.current;
-    if (scrollElement) {
-      scrollElement.addEventListener('scroll', handleScroll);
-      return () => scrollElement.removeEventListener('scroll', handleScroll);
+    if (hasAutoSized) {
+      columnVirtualizer.measure();
     }
-  }, []);
-
-  // Helper function to get aria-sort value
-  const getAriaSort = (sortDirection: false | SortDirection) => {
-    switch (sortDirection) {
-      case 'asc':
-        return 'ascending';
-      case 'desc':
-        return 'descending';
-      default:
-        return 'none';
-    }
-  };
+  }, [columnVirtualizer, hasAutoSized]);
 
   const displayedCount = table.getRowModel().rows.length;
   const totalCount = table.getCoreRowModel().rows.length;
@@ -282,7 +259,7 @@ export function TanstackTable<RowDataModel>({
   return (
     <div style={{ position: 'relative' }} class="d-flex flex-column h-100">
       <div
-        ref={parentRef}
+        ref={scrollContainerRef}
         style={{
           position: 'absolute',
           top: 0,
@@ -301,221 +278,203 @@ export function TanstackTable<RowDataModel>({
           }}
         >
           <table
-            class="table table-hover mb-0 border border-top-0"
-            style={{ tableLayout: 'fixed' }}
+            class="table table-hover mb-0"
+            style={{ display: 'grid', tableLayout: 'fixed' }}
             aria-label={title}
             role="grid"
           >
-            <thead>
-              {headerGroups.map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header, index) => {
-                    const isPinned = header.column.getIsPinned();
-                    const sortDirection = header.column.getIsSorted();
-                    const canSort = header.column.getCanSort();
-                    const canFilter = header.column.getCanFilter();
-                    const columnName =
-                      typeof header.column.columnDef.header === 'string'
-                        ? header.column.columnDef.header
-                        : header.column.id;
+            <thead
+              class="position-sticky top-0 w-100 border-top"
+              style={{
+                display: 'grid',
+                zIndex: 1,
+                borderBottom: 'var(--bs-border-width) solid black',
+              }}
+            >
+              <tr
+                key={leafHeaderGroup.id}
+                class="d-flex w-100"
+                style={{ minWidth: `${table.getTotalSize()}px` }}
+              >
+                {/* Left pinned columns */}
+                {leftPinnedHeaders.map((header) => {
+                  return (
+                    <TanstackTableHeaderCell
+                      key={header.id}
+                      header={header}
+                      filters={filters}
+                      table={table}
+                      handleResizeEnd={handleResizeEnd}
+                      isPinned="left"
+                    />
+                  );
+                })}
 
-                    const style: JSX.CSSProperties = {
-                      width:
-                        header.column.id === lastColumnId
-                          ? `max(100%, ${header.getSize()}px)`
-                          : header.getSize(),
-                      position: 'sticky',
-                      top: 0,
-                      zIndex: isPinned === 'left' ? 2 : 1,
-                      left: isPinned === 'left' ? header.getStart() : undefined,
-                      boxShadow:
-                        'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
-                    };
+                {/* Virtual padding for left side of center columns */}
+                {virtualPaddingLeft ? (
+                  <th style={{ display: 'flex', width: virtualPaddingLeft }} />
+                ) : null}
 
-                    return (
-                      <th
-                        key={header.id}
-                        class={clsx(isPinned === 'left' && 'bg-light')}
-                        style={style}
-                        aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
-                        role="columnheader"
-                      >
-                        <div
-                          class={clsx(
-                            'd-flex align-items-center',
-                            canSort || canFilter
-                              ? 'justify-content-between'
-                              : 'justify-content-center',
-                          )}
-                        >
-                          <button
-                            class={clsx(
-                              'text-nowrap text-start',
-                              canSort || canFilter ? 'flex-grow-1' : '',
-                            )}
-                            style={{
-                              cursor: canSort ? 'pointer' : 'default',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              background: 'transparent',
-                              border: 'none',
-                            }}
-                            type="button"
-                            aria-label={
-                              canSort
-                                ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
-                                : undefined
-                            }
-                            onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                            onKeyDown={
-                              canSort
-                                ? (e) => {
-                                    const handleSort = header.column.getToggleSortingHandler();
-                                    if (e.key === 'Enter' && handleSort) {
-                                      e.preventDefault();
-                                      handleSort(e);
-                                    }
-                                  }
-                                : undefined
-                            }
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(header.column.columnDef.header, header.getContext())}
-                            {canSort && (
-                              <span class="visually-hidden">
-                                , {getAriaSort(sortDirection)}, click to sort
-                              </span>
-                            )}
-                          </button>
+                {/* Virtualized center columns */}
+                {virtualColumns.map((virtualColumn) => {
+                  const header = centerHeaders[virtualColumn.index];
+                  if (!header) return null;
 
-                          {(canSort || canFilter) && (
-                            <div class="d-flex align-items-center">
-                              {canSort && (
-                                <button
-                                  type="button"
-                                  class="btn btn-link text-muted p-0"
-                                  aria-label={`Sort ${columnName.toLowerCase()}`}
-                                  title={`Sort ${columnName.toLowerCase()}`}
-                                  onClick={header.column.getToggleSortingHandler()}
-                                >
-                                  <SortIcon sortMethod={sortDirection || false} />
-                                </button>
-                              )}
-                              {canFilter && filters[header.column.id]?.({ header })}
-                            </div>
-                          )}
-                        </div>
-                        {tableRect?.width &&
-                        tableRect.width > table.getTotalSize() &&
-                        index === headerGroup.headers.length - 1 ? null : (
-                          <ResizeHandle header={header} setColumnSizing={table.setColumnSizing} />
-                        )}
-                      </th>
-                    );
-                  })}
-                </tr>
-              ))}
+                  return (
+                    <TanstackTableHeaderCell
+                      key={header.id}
+                      header={header}
+                      filters={filters}
+                      table={table}
+                      handleResizeEnd={handleResizeEnd}
+                      isPinned={false}
+                    />
+                  );
+                })}
+
+                {/* Virtual padding for right side of center columns */}
+                {virtualPaddingRight ? (
+                  <th style={{ display: 'flex', width: virtualPaddingRight }} />
+                ) : null}
+
+                {/* Filler to span remaining width */}
+                <th
+                  tabIndex={-1}
+                  class="d-flex flex-grow-1 p-0"
+                  style={{ minWidth: 0 }}
+                  aria-hidden="true"
+                />
+              </tr>
             </thead>
-            <tbody>
-              {before > 0 && (
-                <tr tabIndex={-1}>
-                  <td colSpan={headerGroups[0].headers.length} style={{ height: before }} />
-                </tr>
-              )}
+            <tbody
+              class="position-relative w-100"
+              style={{
+                display: 'grid',
+                height: `${rowVirtualizer.getTotalSize()}px`,
+              }}
+            >
               {virtualRows.map((virtualRow) => {
                 const row = rows[virtualRow.index];
-                const visibleCells = getVisibleCells(row);
                 const rowIdx = virtualRow.index;
+                const leftPinnedCells = row.getLeftVisibleCells();
+                const centerCells = row.getCenterVisibleCells();
+
+                let currentColIdx = 0;
 
                 return (
-                  <tr key={row.id} style={{ height: rowHeight }}>
-                    {visibleCells.map((cell, colIdx) => {
+                  <tr
+                    key={row.id}
+                    ref={(node) => rowVirtualizer.measureElement(node)}
+                    data-index={virtualRow.index}
+                    class="d-flex position-absolute w-100"
+                    style={{
+                      transform: `translateY(${virtualRow.start}px)`,
+                      minWidth: `${table.getTotalSize()}px`,
+                    }}
+                  >
+                    {leftPinnedCells.map((cell) => {
+                      const colIdx = currentColIdx++;
                       const canSort = cell.column.getCanSort();
                       const canFilter = cell.column.getCanFilter();
+                      const wrapText = cell.column.columnDef.meta?.wrapText ?? false;
 
                       return (
-                        <td
+                        <TableCell
                           key={cell.id}
-                          // You can tab to the most-recently focused cell.
-                          tabIndex={
-                            focusedCell.row === rowIdx && focusedCell.col === colIdx ? 0 : -1
-                          }
-                          // We store this so you can navigate around the grid.
-                          data-grid-cell-row={rowIdx}
-                          data-grid-cell-col={colIdx}
-                          class={clsx(!canSort && !canFilter && 'text-center')}
-                          style={{
-                            width:
-                              cell.column.id === lastColumnId
-                                ? `max(100%, ${cell.column.getSize()}px)`
-                                : cell.column.getSize(),
-                            position: cell.column.getIsPinned() === 'left' ? 'sticky' : undefined,
-                            left:
-                              cell.column.getIsPinned() === 'left'
-                                ? cell.column.getStart()
-                                : undefined,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                          onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })}
-                          onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
+                          cell={cell}
+                          rowIdx={rowIdx}
+                          colIdx={colIdx}
+                          canSort={canSort}
+                          canFilter={canFilter}
+                          wrapText={wrapText}
+                          handleGridKeyDown={handleGridKeyDown}
+                        />
                       );
                     })}
+
+                    {virtualPaddingLeft ? (
+                      <td style={{ display: 'flex', width: virtualPaddingLeft }} />
+                    ) : null}
+
+                    {virtualColumns.map((virtualColumn) => {
+                      const cell = centerCells[virtualColumn.index];
+                      if (!cell) return null;
+
+                      const colIdx = currentColIdx++;
+                      const canSort = cell.column.getCanSort();
+                      const canFilter = cell.column.getCanFilter();
+                      const wrapText = cell.column.columnDef.meta?.wrapText ?? false;
+
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          cell={cell}
+                          rowIdx={rowIdx}
+                          colIdx={colIdx}
+                          canSort={canSort}
+                          canFilter={canFilter}
+                          wrapText={wrapText}
+                          handleGridKeyDown={handleGridKeyDown}
+                        />
+                      );
+                    })}
+
+                    {virtualPaddingRight ? (
+                      <td style={{ display: 'flex', width: virtualPaddingRight }} />
+                    ) : null}
+
+                    {/* Filler to span remaining width */}
+                    <td
+                      tabIndex={-1}
+                      class="d-flex flex-grow-1 p-0"
+                      style={{ minWidth: 0 }}
+                      aria-hidden="true"
+                    />
                   </tr>
                 );
               })}
-              {after > 0 && (
-                <tr tabIndex={-1}>
-                  <td colSpan={headerGroups[0].headers.length} style={{ height: after }} />
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
-
-      {table.getVisibleLeafColumns().length === 0 && (
+      {table.getVisibleLeafColumns().length === 0 || displayedCount === 0 ? (
         <div>
           <div
-            class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
+            class="d-flex flex-column justify-content-center align-items-center p-4"
             style={{
               position: 'absolute',
               top: 0,
               left: 0,
               right: 0,
               bottom: 0,
-              background: 'var(--bs-body-bg)',
+              // Allow pointer events (e.g. scrolling) to reach the underlying table.
+              pointerEvents: 'none',
             }}
             role="status"
             aria-live="polite"
           >
-            <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true" />
-            <p class="mb-0">No columns selected. Use the View menu to show columns.</p>
+            <div
+              class="col-lg-6"
+              style={{
+                // Allow selecting and interacting with the empty state content.
+                pointerEvents: 'auto',
+              }}
+            >
+              {table.getVisibleLeafColumns().length === 0 ? (
+                <TanstackTableEmptyState iconName="bi-eye-slash">
+                  No columns selected. Use the View menu to show columns.
+                </TanstackTableEmptyState>
+              ) : displayedCount === 0 ? (
+                totalCount > 0 ? (
+                  noResultsState
+                ) : (
+                  emptyState
+                )
+              ) : null}
+            </div>
           </div>
         </div>
-      )}
-      {displayedCount === 0 && (
-        <div
-          class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'var(--bs-body-bg)',
-          }}
-          role="status"
-          aria-live="polite"
-        >
-          {totalCount > 0 ? noResultsState : emptyState}
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -525,53 +484,60 @@ export function TanstackTable<RowDataModel>({
  * @param params
  * @param params.table - The table model
  * @param params.title - The title of the card
+ * @param params.className - The class name to apply to the card
+ * @param params.style - The style to apply to the card
+ * @param params.singularLabel - The singular label for a single row in the table, e.g. "student"
+ * @param params.pluralLabel - The plural label for multiple rows in the table, e.g. "students"
  * @param params.headerButtons - The buttons to display in the header
- * @param params.columnManagerButtons - The buttons to display next to the column manager (View button)
- * @param params.globalFilter - State management for the global filter
- * @param params.globalFilter.value
- * @param params.globalFilter.setValue
- * @param params.globalFilter.placeholder
+ * @param params.columnManager - Optional configuration for the column manager. See {@link ColumnManager} for more details.
+ * @param params.columnManager.buttons - The buttons to display next to the column manager (View button)
+ * @param params.columnManager.topContent - Optional content to display at the top of the column manager (View) dropdown menu
+ * @param params.globalFilter - Configuration for the global filter
+ * @param params.globalFilter.placeholder - Placeholder text for the search input
  * @param params.tableOptions - Specific options for the table. See {@link TanstackTableProps} for more details.
  * @param params.downloadButtonOptions - Specific options for the download button. See {@link TanstackTableDownloadButtonProps} for more details.
  */
 export function TanstackTableCard<RowDataModel>({
   table,
   title,
+  singularLabel,
+  pluralLabel,
   headerButtons,
-  columnManagerButtons,
+  columnManager,
   globalFilter,
   tableOptions,
-  downloadButtonOptions = null,
+  downloadButtonOptions,
+  className,
+  ...divProps
 }: {
   table: Table<RowDataModel>;
   title: string;
-  headerButtons: JSX.Element;
-  columnManagerButtons?: JSX.Element;
+  singularLabel: string;
+  pluralLabel: string;
+  headerButtons?: JSX.Element;
+  columnManager?: {
+    buttons?: JSX.Element;
+    topContent?: JSX.Element;
+  };
   globalFilter: {
-    value: string;
-    setValue: (value: string) => void;
     placeholder: string;
   };
   tableOptions: Partial<Omit<TanstackTableProps<RowDataModel>, 'table'>>;
-  downloadButtonOptions?: Omit<TanstackTableDownloadButtonProps<RowDataModel>, 'table'> | null;
-}) {
+  downloadButtonOptions?: Omit<
+    TanstackTableDownloadButtonProps<RowDataModel>,
+    'table' | 'singularLabel' | 'pluralLabel'
+  > & { pluralLabel?: string; singularLabel?: string };
+} & Omit<ComponentProps<'div'>, 'class'>) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Track screen size for aria-hidden
-  const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)') : null;
-  const [isMediumOrLarger, setIsMediumOrLarger] = useState(false);
+  const [inputValue, setInputValue] = useState(
+    () => (table.getState().globalFilter as string) ?? '',
+  );
 
-  useEffect(() => {
-    // TODO: This is a workaround to avoid a hydration mismatch.
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-    setIsMediumOrLarger(mediaQuery?.matches ?? true);
-  }, [mediaQuery]);
-
-  useEffect(() => {
-    const handler = (e: MediaQueryListEvent) => setIsMediumOrLarger(e.matches);
-    mediaQuery?.addEventListener('change', handler);
-    return () => mediaQuery?.removeEventListener('change', handler);
-  }, [mediaQuery]);
+  // Debounce the filter update
+  const debouncedSetFilter = useDebouncedCallback((value: string) => {
+    table.setGlobalFilter(value);
+  }, 150);
 
   // Focus the search input when Ctrl+F is pressed
   useEffect(() => {
@@ -591,7 +557,7 @@ export function TanstackTableCard<RowDataModel>({
   const totalCount = table.getCoreRowModel().rows.length;
 
   return (
-    <div class="card d-flex flex-column h-100">
+    <div class={clsx('card d-flex flex-column', className)} {...divProps}>
       <div class="card-header bg-primary text-white">
         <div class="d-flex align-items-center justify-content-between gap-2">
           <div>{title}</div>
@@ -599,65 +565,76 @@ export function TanstackTableCard<RowDataModel>({
             {headerButtons}
 
             {downloadButtonOptions && (
-              <TanstackTableDownloadButton table={table} {...downloadButtonOptions} />
+              <TanstackTableDownloadButton
+                table={table}
+                pluralLabel={pluralLabel}
+                singularLabel={singularLabel}
+                {...downloadButtonOptions}
+              />
             )}
           </div>
         </div>
       </div>
-      <div class="card-body d-flex flex-column">
-        <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
-          <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
-            <div class="input-group">
-              <input
-                ref={searchInputRef}
-                type="text"
-                class="form-control"
-                aria-label={globalFilter.placeholder}
-                placeholder={globalFilter.placeholder}
-                value={globalFilter.value}
-                onInput={(e) => {
-                  if (!(e.target instanceof HTMLInputElement)) return;
-                  globalFilter.setValue(e.target.value);
-                }}
-              />
+      <div class="card-body d-flex flex-row flex-wrap flex-grow-0 align-items-center gap-2">
+        <div class="position-relative w-100" style={{ maxWidth: 'min(400px, 100%)' }}>
+          <input
+            ref={searchInputRef}
+            type="text"
+            class="form-control pl-ui-tanstack-table-search-input pl-ui-tanstack-table-focusable-shadow"
+            aria-label={globalFilter.placeholder}
+            placeholder={globalFilter.placeholder}
+            value={inputValue}
+            autoComplete="off"
+            onInput={(e) => {
+              if (!(e.target instanceof HTMLInputElement)) return;
+              const value = e.target.value;
+              setInputValue(value);
+              debouncedSetFilter(value);
+            }}
+          />
+          {inputValue && (
+            <OverlayTrigger overlay={<Tooltip>Clear search</Tooltip>}>
               <button
                 type="button"
-                class="btn btn-outline-secondary"
+                class="btn btn-floating-icon"
                 aria-label="Clear search"
-                title="Clear search"
-                data-bs-toggle="tooltip"
-                onClick={() => globalFilter.setValue('')}
+                onClick={() => {
+                  setInputValue('');
+                  debouncedSetFilter.cancel();
+                  table.setGlobalFilter('');
+                }}
               >
-                <i class="bi bi-x-circle" aria-hidden="true" />
+                <i class="bi bi-x-circle-fill" aria-hidden="true" />
               </button>
-            </div>
-            {/* We do this instead of CSS properties for the accessibility checker.
-              We can't have two elements with the same id of 'column-manager-button'. */}
-            {isMediumOrLarger && (
-              <>
-                <ColumnManager table={table} />
-                {columnManagerButtons}
-              </>
-            )}
-          </div>
-          {/* We do this instead of CSS properties for the accessibility checker.
-            We can't have two elements with the same id of 'column-manager-button'. */}
-          {!isMediumOrLarger && (
-            <>
-              <ColumnManager table={table} />
-              {columnManagerButtons}
-            </>
+            </OverlayTrigger>
           )}
-          <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
-            <div class="text-muted text-nowrap">
-              Showing {displayedCount} of {totalCount} {title.toLowerCase()}
-            </div>
-          </div>
         </div>
-        <div class="flex-grow-1">
-          <TanstackTable table={table} title={title} {...tableOptions} />
+        <div class="d-flex flex-wrap flex-row align-items-center gap-2">
+          <ColumnManager table={table} topContent={columnManager?.topContent} />
+          {columnManager?.buttons}
+        </div>
+        <div class="ms-auto text-muted text-nowrap">
+          Showing {displayedCount} of {totalCount} {totalCount === 1 ? singularLabel : pluralLabel}
         </div>
       </div>
+      <div class="flex-grow-1">
+        <TanstackTable table={table} title={title} {...tableOptions} />
+      </div>
+    </div>
+  );
+}
+
+export function TanstackTableEmptyState({
+  iconName,
+  children,
+}: {
+  iconName: `bi-${string}`;
+  children: ComponentChildren;
+}) {
+  return (
+    <div class="d-flex flex-column justify-content-center align-items-center text-muted">
+      <i class={clsx('bi', iconName, 'display-4 mb-2')} aria-hidden="true" />
+      <div>{children}</div>
     </div>
   );
 }

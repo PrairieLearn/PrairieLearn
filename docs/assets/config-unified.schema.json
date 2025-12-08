@@ -340,14 +340,6 @@
       "type": "string",
       "default": "master"
     },
-    "urlPrefix": {
-      "type": "string",
-      "default": "/pl"
-    },
-    "homeUrl": {
-      "type": "string",
-      "default": "/"
-    },
     "assetsPrefix": {
       "type": "string",
       "default": "/assets"
@@ -1279,6 +1271,14 @@
       "type": ["string", "null"],
       "default": null
     },
+    "aiGradingGoogleApiKey": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "aiGradingAnthropicApiKey": {
+      "type": ["string", "null"],
+      "default": null
+    },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
       "default": 1
@@ -1343,9 +1343,19 @@
     "costPerMillionTokens": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["gpt-5-2025-08-07", "gpt-5-mini-2025-08-07", "gpt-4o-2024-11-20"],
+      "required": [
+        "gpt-4o-2024-11-20",
+        "gpt-5-mini-2025-08-07",
+        "gpt-5-2025-08-07",
+        "gpt-5.1-2025-11-13",
+        "gemini-2.5-flash",
+        "gemini-3-pro-preview",
+        "claude-opus-4-5",
+        "claude-haiku-4-5",
+        "claude-sonnet-4-5"
+      ],
       "properties": {
-        "gpt-5-2025-08-07": {
+        "gpt-4o-2024-11-20": {
           "type": "object",
           "additionalProperties": false,
           "required": ["input", "cachedInput", "output"],
@@ -1365,16 +1375,34 @@
           }
         },
         "gpt-5-mini-2025-08-07": {
-          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
-        "gpt-4o-2024-11-20": {
-          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
+        "gpt-5-2025-08-07": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
+        },
+        "gpt-5.1-2025-11-13": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
+        },
+        "gemini-2.5-flash": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
+        },
+        "gemini-3-pro-preview": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
+        },
+        "claude-opus-4-5": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
+        },
+        "claude-haiku-4-5": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
+        },
+        "claude-sonnet-4-5": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         }
       },
       "default": {
-        "gpt-5-2025-08-07": {
-          "input": 1.25,
-          "cachedInput": 0.125,
+        "gpt-4o-2024-11-20": {
+          "input": 2.5,
+          "cachedInput": 1.25,
           "output": 10
         },
         "gpt-5-mini-2025-08-07": {
@@ -1382,10 +1410,40 @@
           "cachedInput": 0.025,
           "output": 2
         },
-        "gpt-4o-2024-11-20": {
-          "input": 2.5,
-          "cachedInput": 1.25,
+        "gpt-5-2025-08-07": {
+          "input": 1.25,
+          "cachedInput": 0.125,
           "output": 10
+        },
+        "gpt-5.1-2025-11-13": {
+          "input": 1.25,
+          "cachedInput": 0.125,
+          "output": 10
+        },
+        "gemini-2.5-flash": {
+          "input": 0.3,
+          "cachedInput": 0.03,
+          "output": 2.5
+        },
+        "gemini-3-pro-preview": {
+          "input": 2,
+          "cachedInput": 0.2,
+          "output": 12
+        },
+        "claude-haiku-4-5": {
+          "input": 1,
+          "cachedInput": 0.1,
+          "output": 5
+        },
+        "claude-sonnet-4-5": {
+          "input": 3,
+          "cachedInput": 0.3,
+          "output": 15
+        },
+        "claude-opus-4-5": {
+          "input": 5,
+          "cachedInput": 0.5,
+          "output": 25
         }
       }
     }

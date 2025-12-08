@@ -11,6 +11,7 @@ import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import {
   type ConstructedCourseOrInstanceContext,
   CourseOrInstanceContextDataSchema,
+  type PlainAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
   dangerousFullSystemAuthz,
@@ -22,6 +23,7 @@ import {
   EnumModeSchema,
   type User,
 } from './db-types.js';
+import { withBrand } from './types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -84,7 +86,7 @@ export async function calculateModernCourseInstanceStudentAccess(
   // so we need to use system auth to get the enrollment.
   const enrollment = await selectOptionalEnrollmentByUserId({
     userId,
-    requestedRole: 'System',
+    requiredRole: ['System'],
     authzData: dangerousFullSystemAuthz(),
     courseInstance,
   });
@@ -104,12 +106,15 @@ export async function calculateModernCourseInstanceStudentAccess(
 
   // If we are before the end date and after the start date, we definitely have access.
   if (reqDate < courseInstance.publishing_end_date) {
-    return { has_student_access: true, has_student_access_with_enrollment: enrollment != null };
+    return {
+      has_student_access: true,
+      has_student_access_with_enrollment: enrollment?.status === 'joined',
+    };
   }
 
   // We are after the end date. We might have access if we have an extension.
   // Only enrolled students can have extensions.
-  if (!enrollment) {
+  if (enrollment?.status !== 'joined') {
     return { has_student_access: false, has_student_access_with_enrollment: false };
   }
 
@@ -118,7 +123,7 @@ export async function calculateModernCourseInstanceStudentAccess(
     // Our current authzData would say we can't access this, but we are actually building up
     // authzData with this function, so we use system auth to get the latest extension.
     authzData: dangerousFullSystemAuthz(),
-    requestedRole: 'System',
+    requiredRole: ['System'],
   });
 
   // Check if we have access via extension.
@@ -274,7 +279,7 @@ export async function constructCourseOrInstanceContext({
   }
 
   return {
-    authzData,
+    authzData: withBrand<PlainAuthzData>(authzData),
     course: rawAuthzData.course,
     institution: rawAuthzData.institution,
     courseInstance: rawAuthzData.course_instance,

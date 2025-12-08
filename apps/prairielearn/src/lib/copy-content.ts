@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { selectCoursesWithEditAccess } from '../models/course.js';
+import type { CourseInstanceJson } from '../schemas/infoCourseInstance.js';
 
 import { config } from './config.js';
 import { type Course, type CourseInstance, type Question, type User } from './db-types.js';
@@ -118,13 +119,15 @@ async function initiateFileTransfer({
   fromCourse,
   toCourseId,
   transferType,
-  fromFilename,
+  fromFolderPath,
+  metadataOverrides,
 }: {
   userId: string;
   fromCourse: Course;
   toCourseId: string;
-  transferType: string;
-  fromFilename: string;
+  transferType: 'CopyQuestion' | 'CopyCourseInstance';
+  fromFolderPath: string;
+  metadataOverrides?: Record<string, any>;
 }): Promise<string> {
   // When copying content from one course to another, instead of just directly
   // copying it, we first copy content from the source course to a temporary
@@ -151,13 +154,37 @@ async function initiateFileTransfer({
     to_course_id: toCourseId,
     user_id: userId,
     transfer_type: transferType,
-    from_filename: fromFilename,
+    from_filename: fromFolderPath,
     storage_filename: path.join(relDir, f.slice(6)),
   };
 
   await fs.copy(params.from_filename, path.join(config.filesRoot, params.storage_filename), {
     errorOnExist: true,
   });
+
+  const metadataFileName =
+    transferType === 'CopyQuestion' ? 'infoQuestion.json' : 'infoCourseInstance.json';
+
+  // After we copy the contents of the directory, we apply any overrides to the metadata file.
+  if (metadataOverrides) {
+    const destMetadataFilePath = path.join(
+      config.filesRoot,
+      params.storage_filename,
+      metadataFileName,
+    );
+
+    // If we have overrides for a JSON file, we need to apply them to the file.
+    const metadataFileContents = await fs.readJson(
+      path.join(params.from_filename, metadataFileName),
+    );
+    const metadataFileContentsWithOverrides = {
+      ...metadataFileContents,
+      ...metadataOverrides,
+    };
+    await fs.writeJson(destMetadataFilePath, metadataFileContentsWithOverrides, {
+      spaces: 4,
+    });
+  }
 
   return await sqldb.queryRow(sql.insert_file_transfer, params, z.string());
 }
@@ -178,43 +205,49 @@ export async function copyQuestionBetweenCourses(
     throw new Error(`Question ${question.id} does not have a qid`);
   }
 
-  const fromFilename = path.join(fromCourse.path, 'questions', question.qid);
+  const fromFolderPath = path.join(fromCourse.path, 'questions', question.qid);
 
   const fileTransferId = await initiateFileTransfer({
     userId: res.locals.user.user_id,
     fromCourse,
     toCourseId,
     transferType: 'CopyQuestion',
-    fromFilename,
+    fromFolderPath,
   });
 
-  res.redirect(`${res.locals.plainUrlPrefix}/course/${toCourseId}/file_transfer/${fileTransferId}`);
+  res.redirect(`/pl/course/${toCourseId}/file_transfer/${fileTransferId}`);
 }
 
-export async function copyCourseInstanceBetweenCourses(
-  res: Response,
-  {
-    fromCourse,
-    toCourseId,
-    fromCourseInstance,
-  }: {
-    fromCourse: Course;
-    toCourseId: string;
-    fromCourseInstance: CourseInstance;
-  },
-) {
+export async function copyCourseInstanceBetweenCourses({
+  fromCourse,
+  toCourseId,
+  fromCourseInstance,
+  userId,
+  metadataOverrides,
+}: {
+  fromCourse: Course;
+  toCourseId: string;
+  fromCourseInstance: CourseInstance;
+  userId: string;
+  metadataOverrides: Partial<CourseInstanceJson>;
+}) {
   if (!fromCourseInstance.short_name) {
     throw new Error(`Course Instance ${fromCourseInstance.long_name} does not have a short_name`);
   }
 
-  const fromFilename = path.join(fromCourse.path, 'courseInstances', fromCourseInstance.short_name);
+  const fromFolderPath = path.join(
+    fromCourse.path,
+    'courseInstances',
+    fromCourseInstance.short_name,
+  );
   const fileTransferId = await initiateFileTransfer({
-    userId: res.locals.user.user_id,
+    userId,
     fromCourse,
     toCourseId,
     transferType: 'CopyCourseInstance',
-    fromFilename,
+    fromFolderPath,
+    metadataOverrides,
   });
 
-  res.redirect(`${res.locals.plainUrlPrefix}/course/${toCourseId}/file_transfer/${fileTransferId}`);
+  return fileTransferId;
 }

@@ -28,6 +28,8 @@ WHERE
 -- BLOCK select_course_instances_with_staff_access
 SELECT
   ci.*,
+  d.start_date,
+  d.end_date,
   CASE
     WHEN d.start_date IS NULL THEN '—'
     ELSE format_date_full_compact (d.start_date, ci.display_timezone)

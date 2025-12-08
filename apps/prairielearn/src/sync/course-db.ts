@@ -1465,7 +1465,18 @@ function validateCourseInstance({
     }
   }
 
+  if (courseInstance.selfEnrollment.enabled !== true && courseInstance.allowAccess != null) {
+    errors.push(
+      '"selfEnrollment.enabled" is not configurable when you have access control rules ("allowAccess" is set).',
+    );
+  }
+
   if (courseInstance.selfEnrollment.beforeDate != null) {
+    if (courseInstance.allowAccess != null) {
+      errors.push(
+        '"selfEnrollment.beforeDate" is not configurable when you have access control rules ("allowAccess" is set).',
+      );
+    }
     const date = parseJsonDate(courseInstance.selfEnrollment.beforeDate);
     if (date == null) {
       errors.push('"selfEnrollment.beforeDate" is not a valid date.');
@@ -1477,9 +1488,6 @@ function validateCourseInstance({
   if (courseInstance.allowAccess && courseInstance.publishing) {
     errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
   } else if (courseInstance.publishing) {
-    // TODO: Remove this once the UI is merged
-    warnings.push('"publishing" is not configurable yet.');
-
     const hasEndDate = courseInstance.publishing.endDate != null;
     const hasStartDate = courseInstance.publishing.startDate != null;
     if (hasStartDate && !hasEndDate) {

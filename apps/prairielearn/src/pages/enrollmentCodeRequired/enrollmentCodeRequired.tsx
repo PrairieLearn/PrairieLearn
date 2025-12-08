@@ -7,9 +7,10 @@ import { run } from '@prairielearn/run';
 import { EnrollmentPage } from '../../components/EnrollmentPage.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { hasRole } from '../../lib/authz-data-lib.js';
-import { getCourseInstanceContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
+import { features } from '../../lib/features/index.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
-import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
 import { EnrollmentCodeRequired } from './enrollmentCodeRequired.html.js';
 
@@ -22,27 +23,41 @@ router.get(
     // If they were redirected here, it will have a url param named `url`.
     const { url } = req.query;
 
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance } = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      // We should be careful to not pass `courseInstance` to the hydrated page.
+      accessType: 'instructor',
+    });
     const enrollmentCode = courseInstance.enrollment_code;
     const redirectUrl =
       typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url : null;
     // Lookup if they have an existing enrollment
     const existingEnrollment = await run(async () => {
       // We don't want to 403 instructors
-      if (!hasRole(res.locals.authz_data, 'Student')) return null;
+      if (!hasRole(res.locals.authz_data, ['Student'])) return null;
       return await selectOptionalEnrollmentByUid({
         uid: res.locals.authn_user.uid,
         courseInstance,
-        requestedRole: 'Student',
+        requiredRole: ['Student'],
         authzData: res.locals.authz_data,
       });
     });
 
+    const enrollmentManagementEnabled = await features.enabledFromLocals(
+      'enrollment-management',
+      res.locals,
+    );
+
     const selfEnrollmentEnabled = courseInstance.self_enrollment_enabled;
 
     const institutionRestrictionSatisfied =
-      !courseInstance.self_enrollment_restrict_to_institution ||
-      res.locals.authn_user.institution_id === res.locals.course.institution_id;
+      res.locals.authn_user.institution_id === res.locals.course.institution_id ||
+      !enrollmentManagementEnabled ||
+      // The default value for self-enrollment restriction is true.
+      // In the old system (before publishing was introduced), the default was false.
+      // So if publishing is not set up, we should ignore the restriction.
+      !courseInstance.modern_publishing ||
+      !courseInstance.self_enrollment_restrict_to_institution;
 
     const selfEnrollmentExpired =
       courseInstance.self_enrollment_enabled_before_date != null &&
@@ -92,12 +107,12 @@ router.get(
         await authzCourseOrInstance(req, res);
 
         // Enroll the user
-        await ensureCheckedEnrollment({
+        await ensureEnrollment({
           institution: res.locals.institution,
           course: res.locals.course,
           courseInstance: res.locals.course_instance,
           authzData: res.locals.authz_data,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           actionDetail: 'implicit_joined',
         });
       }

@@ -59,11 +59,12 @@ describe('Instructor Students - Invite by UID', () => {
     assert.isString(csrfToken);
   });
 
-  test.sequential('should return error when user does not exist', async () => {
+  test.sequential('should successfully invite a nonexistent user', async () => {
     const response = await fetch(studentsUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
@@ -73,9 +74,10 @@ describe('Instructor Students - Invite by UID', () => {
       }),
     });
 
-    assert.equal(response.status, 400);
+    assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.error, 'User not found');
+    assert.isObject(data.data);
+    assert.equal(data.data.status, 'invited');
   });
 
   test.sequential('should return error when user is an instructor', async () => {
@@ -102,6 +104,7 @@ describe('Instructor Students - Invite by UID', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
@@ -144,6 +147,7 @@ describe('Instructor Students - Invite by UID', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
@@ -155,7 +159,6 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isTrue(data.ok);
     assert.isObject(data.data);
     assert.equal(data.data.status, 'invited');
   });
@@ -171,6 +174,7 @@ describe('Instructor Students - Invite by UID', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
@@ -182,7 +186,6 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isTrue(data.ok);
     assert.isObject(data.data);
     assert.equal(data.data.status, 'invited');
     assert.equal(data.data.pending_uid, 'new_student@example.com');
@@ -216,6 +219,7 @@ describe('Instructor Students - Invite by UID', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
@@ -259,6 +263,7 @@ describe('Instructor Students - Invite by UID', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
