@@ -175,78 +175,8 @@ onDocumentReady(() => {
   let nextAuthorIndex = table?.getElementsByClassName('author-row').length ?? 0;
   addAuthorButton?.addEventListener('click', () => {
     const index = nextAuthorIndex++;
-    const newRow = document.createElement('tr');
-    newRow.setAttribute('class', 'author-row');
-    newRow.setAttribute('id', 'author_row_' + index);
-    let tableData = document.createElement('td');
-    tableData.setAttribute('class', 'align-middle');
-    const nameInput = document.createElement('input');
-    nameInput.setAttribute('type', 'text');
-    nameInput.setAttribute('class', 'form-control');
-    nameInput.setAttribute('id', 'author_name_' + index);
-    nameInput.setAttribute('name', 'author_name_' + index);
-    validateNameInput(nameInput);
-    tableData.append(nameInput);
-    newRow.append(tableData);
-
-    tableData = document.createElement('td');
-    tableData.setAttribute('class', 'align-middle');
-    const emailInput = document.createElement('input');
-    emailInput.setAttribute('type', 'text');
-    emailInput.setAttribute('class', 'form-control');
-    emailInput.setAttribute('id', 'author_email_' + index);
-    emailInput.setAttribute('name', 'author_email_' + index);
-    validateEmailInput(emailInput);
-    tableData.append(emailInput);
-    newRow.append(tableData);
-
-    tableData = document.createElement('td');
-    tableData.setAttribute('class', 'align-middle');
-    const orcidInput = document.createElement('input');
-    orcidInput.setAttribute('type', 'text');
-    orcidInput.setAttribute('class', 'form-control');
-    orcidInput.setAttribute('id', 'author_orcid_' + index);
-    orcidInput.setAttribute('name', 'author_orcid_' + index);
-    orcidInput.setAttribute('pattern', '^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$');
-    addORCIDInputListener(orcidInput);
-    tableData.append(orcidInput);
-    newRow.append(tableData);
-
-    tableData = document.createElement('td');
-    tableData.setAttribute('class', 'text-center align-middle');
-    const originCourseInput = document.createElement('input');
-    originCourseInput.setAttribute('type', 'text');
-    originCourseInput.setAttribute('class', 'form-control');
-    originCourseInput.setAttribute('id', 'author_origin_course_' + index);
-    originCourseInput.setAttribute('name', 'author_origin_course_' + index);
-    originCourseInput.setAttribute('placeholder', 'Sharing name');
-    tableData.append(originCourseInput);
-    const originCourseSharingNameInput = document.createElement('input');
-    originCourseSharingNameInput.setAttribute('id', 'author_origin_course_sharing_name_' + index);
-    originCourseSharingNameInput.setAttribute('class', 'invisible');
-    originCourseSharingNameInput.setAttribute('type', 'hidden');
-    const originCourseInsertText = document.createElement('small');
-    originCourseInsertText.setAttribute('id', 'author_origin_course_insert_' + index);
-    originCourseInsertText.setAttribute('class', 'text-primary');
-    originCourseInsertText.setAttribute('role', 'button');
-    originCourseInsertText.innerText = 'Insert current course';
-    tableData.append(originCourseInsertText);
-    newRow.append(tableData);
-
-    tableData = document.createElement('td');
-    tableData.setAttribute('class', 'text-center align-middle align-items-center');
-    const removeData = document.createElement('button');
-    removeData.setAttribute('type', 'button');
-    removeData.setAttribute('class', 'align-middle btn btn-danger remove_author_button');
-    removeData.setAttribute('id', 'remove_author_' + index);
-    removeData.innerText = 'X';
-    removeData.addEventListener('click', () => {
-      removeAuthorRowButtonClick(index, questionSettingsForm, saveButton);
-    });
-    tableData.append(removeData);
-    newRow.append(tableData);
-
-    table?.append(newRow);
+    constructNewRow(index, table, questionSettingsForm, saveButton);
+    addRowValidation(index, saveButton);
   });
 
   const addMeButton = document.querySelector<HTMLButtonElement>('#add-me-button');
@@ -255,81 +185,13 @@ onDocumentReady(() => {
   const addMeUserEmail = document.querySelector<HTMLInputElement>('#add-me-email');
   addMeButton?.addEventListener('click', () => {
     const index = nextAuthorIndex++;
-    const newRow = document.createElement('tr');
-    newRow.setAttribute('class', 'author-row');
-    newRow.setAttribute('id', 'author_row_' + index);
-    let tableData = document.createElement('td');
-    tableData.setAttribute('class', 'align-middle');
-    const nameInput = document.createElement('input');
-    nameInput.setAttribute('type', 'text');
-    nameInput.setAttribute('class', 'form-control');
-    nameInput.setAttribute('id', 'author_name_' + index);
-    nameInput.setAttribute('name', 'author_name_' + index);
-    nameInput.setAttribute('value', addMeUserName?.value ?? '');
-    validateNameInput(nameInput);
-    tableData.append(nameInput);
-    newRow.append(tableData);
-
-    tableData = document.createElement('td');
-    tableData.setAttribute('class', 'align-middle');
-    const emailInput = document.createElement('input');
-    emailInput.setAttribute('type', 'text');
-    emailInput.setAttribute('class', 'form-control');
-    emailInput.setAttribute('id', 'author_email_' + index);
-    emailInput.setAttribute('name', 'author_email_' + index);
-    emailInput.setAttribute('value', addMeUserEmail?.value ?? '');
-    validateEmailInput(emailInput);
-    tableData.append(emailInput);
-    newRow.append(tableData);
-
-    tableData = document.createElement('td');
-    tableData.setAttribute('class', 'align-middle');
-    const orcidInput = document.createElement('input');
-    orcidInput.setAttribute('type', 'text');
-    orcidInput.setAttribute('class', 'form-control');
-    orcidInput.setAttribute('id', 'author_orcid_' + index);
-    orcidInput.setAttribute('name', 'author_orcid_' + index);
-    orcidInput.setAttribute('pattern', '^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$');
-    addORCIDInputListener(orcidInput);
-    tableData.append(orcidInput);
-    newRow.append(tableData);
-
-    tableData = document.createElement('td');
-    tableData.setAttribute('class', 'text-center align-middle');
-    const originCourseInput = document.createElement('input');
-    originCourseInput.setAttribute('type', 'text');
-    originCourseInput.setAttribute('class', 'form-control');
-    originCourseInput.setAttribute('id', 'author_origin_course_' + index);
-    originCourseInput.setAttribute('name', 'author_origin_course_' + index);
-    originCourseInput.setAttribute('placeholder', 'Sharing name');
-    tableData.append(originCourseInput);
-    const originCourseSharingNameInput = document.createElement('input');
-    originCourseSharingNameInput.setAttribute('id', 'author_origin_course_sharing_name_' + index);
-    originCourseSharingNameInput.setAttribute('class', 'invisible');
-    originCourseSharingNameInput.setAttribute('type', 'hidden');
-    const originCourseInsertText = document.createElement('small');
-    originCourseInsertText.setAttribute('id', 'author_origin_course_insert_' + index);
-    originCourseInsertText.setAttribute('class', 'text-primary');
-    originCourseInsertText.setAttribute('role', 'button');
-    originCourseInsertText.innerText = 'Insert current course';
-    tableData.append(originCourseInsertText);
-    newRow.append(tableData);
-
-    tableData = document.createElement('td');
-    tableData.setAttribute('class', 'text-center align-middle align-items-center');
-    const removeData = document.createElement('button');
-    removeData.setAttribute('type', 'button');
-    removeData.setAttribute('class', 'align-middle btn btn-danger remove_author_button');
-    removeData.setAttribute('id', 'remove_author_' + index);
-    removeData.innerText = 'X';
-    removeData.addEventListener('click', () => {
-      removeAuthorRowButtonClick(index, questionSettingsForm, saveButton);
-    });
-    tableData.append(removeData);
-    newRow.append(tableData);
-
-    table?.append(newRow);
+    constructNewRow(index, table, questionSettingsForm, saveButton);
+    const nameInput = document.querySelector<HTMLInputElement>('#author_name_' + index);
+    nameInput?.setAttribute('value', addMeUserName?.value ?? '');
+    const emailInput = document.querySelector<HTMLInputElement>('#author_email_' + index);
+    emailInput?.setAttribute('value', addMeUserEmail?.value ?? '');
     addMeButton.disabled = true;
+    addRowValidation(index, saveButton);
   });
 
   const rows = table?.getElementsByClassName('author-row');
@@ -347,30 +209,128 @@ onDocumentReady(() => {
 
   for (let index = 0; index < numRows; index++) {
     const nameInput = document.querySelector<HTMLInputElement>('#author_name_' + index);
-    validateNameInput(nameInput);
+    validateNameInput(index, nameInput, saveButton);
     const orcidIDInput = document.querySelector<HTMLInputElement>('#author_orcid_' + index);
-    addORCIDInputListener(orcidIDInput);
+    addORCIDInputListener(index, orcidIDInput, saveButton);
     const emailInput = document.querySelector<HTMLInputElement>('#author_email_' + index);
-    validateEmailInput(emailInput);
+    validateEmailInput(index, emailInput, saveButton);
     const originCourse = document.querySelector<HTMLInputElement>('#author_origin_course_' + index);
-    const originCourseSharingNameInput = document.querySelector<HTMLInputElement>(
-      '#author_origin_course_sharing_name_' + index,
-    );
     const originCourseInsert = document.querySelector<HTMLElement>(
       '#author_origin_course_insert_' + index,
     );
-    insertSharingCourseName(originCourseInsert, originCourseSharingNameInput, originCourse);
+    insertSharingCourseName(index, originCourseInsert, originCourse, saveButton);
   }
 });
 
-const insertSharingCourseName = (
-  originCourseInsertText: HTMLElement | null,
-  originCourseSharingNameInput: HTMLInputElement | null,
-  originCourseInput: HTMLInputElement | null,
+const constructNewRow = (
+  index: number,
+  table: HTMLElement | null,
+  questionSettingsForm: HTMLFormElement | null,
+  saveButton: HTMLButtonElement | null,
 ) => {
+  const newRow = document.createElement('tr') as HTMLElement;
+  newRow.setAttribute('class', 'author-row');
+  newRow.setAttribute('id', 'author_row_' + index);
+  const originCourseSharingNameInput = document.querySelector<HTMLInputElement>(
+    '#author_origin_course_sharing_name',
+  );
+  const sharingCourseLink =
+    originCourseSharingNameInput != null
+      ? '<small id="author_origin_course_insert_' +
+        index +
+        '" class="text-primary" role="button">Insert current course</small></td>'
+      : '';
+  const newHTML =
+    '<td class="align-middle"><input type="text" class="form-control" id="author_name_' +
+    index +
+    '" name="author_name_' +
+    index +
+    '"/></td>' +
+    '<td class="align-middle"><input type="text" class="form-control" id="author_email_' +
+    index +
+    '" name="author_email_' +
+    index +
+    '"/></td>' +
+    '<td class="align-middle"><input type="text" class="form-control" pattern="^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$" id="author_orcid_' +
+    index +
+    '" name="author_orcid_' +
+    index +
+    '"/></td>' +
+    '<td class="text-center align-middle"><input type="text" class="form-control" placeholder="Sharing name" id="author_origin_course_' +
+    index +
+    '" name="author_origin_course_' +
+    index +
+    '"/>' +
+    sharingCourseLink +
+    '<td class="text-center align-middle align-items-center">' +
+    '<i type="button" class="bi bi-trash-fill text-danger align-middle remove_author_button" id="remove_author_' +
+    index +
+    '"</i>' +
+    '</td>';
+  newRow.innerHTML = newHTML;
+  table?.append(newRow);
+
+  addRowValidation(index, saveButton);
+
+  const removeData = document.querySelector<HTMLElement>('#remove_author_' + index);
+  removeData?.addEventListener('click', () => {
+    removeAuthorRowButtonClick(index, questionSettingsForm, saveButton);
+  });
+  const originCourse = document.querySelector<HTMLInputElement>('#author_origin_course_' + index);
+  const originCourseInsert = document.querySelector<HTMLElement>(
+    '#author_origin_course_insert_' + index,
+  );
+  insertSharingCourseName(index, originCourseInsert, originCourse, saveButton);
+};
+
+const addRowValidation = (index: number, saveButton: HTMLButtonElement | null) => {
+  const nameInput = document.querySelector<HTMLInputElement>('#author_name_' + index);
+  validateNameInput(index, nameInput, saveButton);
+  const orcidIDInput = document.querySelector<HTMLInputElement>('#author_orcid_' + index);
+  addORCIDInputListener(index, orcidIDInput, saveButton);
+  const emailInput = document.querySelector<HTMLInputElement>('#author_email_' + index);
+  validateEmailInput(index, emailInput, saveButton);
+  const originCourse = document.querySelector<HTMLInputElement>('#author_origin_course_' + index);
+  const originCourseInsert = document.querySelector<HTMLElement>(
+    '#author_origin_course_insert_' + index,
+  );
+  insertSharingCourseName(index, originCourseInsert, originCourse, saveButton);
+};
+
+const validateAuthorRowsValid = (index: number) => {
+  const nameInput = document.querySelector<HTMLInputElement>('#author_name_' + index)?.value ?? '';
+  const orcidIDInput =
+    document.querySelector<HTMLInputElement>('#author_orcid_' + index)?.value ?? '';
+  const emailInput =
+    document.querySelector<HTMLInputElement>('#author_email_' + index)?.value ?? '';
+  const originCourse =
+    document.querySelector<HTMLInputElement>('#author_origin_course_' + index)?.value ?? '';
+  console.log(
+    nameInput,
+    orcidIDInput,
+    emailInput,
+    originCourse,
+    nameInput != '' && (orcidIDInput != '' || emailInput != '' || originCourse != ''),
+  );
+  return nameInput != '' && (orcidIDInput != '' || emailInput != '' || originCourse != '');
+};
+
+const insertSharingCourseName = (
+  index: number,
+  originCourseInsertText: HTMLElement | null,
+  originCourseInput: HTMLInputElement | null,
+  saveButton: HTMLButtonElement | null,
+) => {
+  const originCourseSharingNameInput = document.querySelector<HTMLInputElement>(
+    '#author_origin_course_sharing_name',
+  );
   originCourseInsertText?.addEventListener('click', () => {
     if (originCourseInput != null && originCourseSharingNameInput != null) {
       originCourseInput.value = originCourseSharingNameInput.value;
+    }
+    const rowIsValid = validateAuthorRowsValid(index);
+    if (!rowIsValid) {
+      saveButton?.setAttribute('disabled', 'true');
     }
     return;
   });
@@ -390,7 +350,11 @@ const removeAuthorRowButtonClick = (
   }
 };
 
-const validateNameInput = (nameInput: HTMLInputElement | null) => {
+const validateNameInput = (
+  index: number,
+  nameInput: HTMLInputElement | null,
+  saveButton: HTMLButtonElement | null,
+) => {
   nameInput?.addEventListener('blur', () => {
     const nameValue = nameInput.value;
     const validName = isValidAuthorName(nameValue);
@@ -400,11 +364,20 @@ const validateNameInput = (nameInput: HTMLInputElement | null) => {
         'is-invalid': !validName,
       }),
     );
+    const rowIsValid = validateAuthorRowsValid(index);
+    if (!rowIsValid || !validName) {
+      saveButton?.setAttribute('disabled', 'true');
+    }
   });
+
   return;
 };
 
-const validateEmailInput = (emailInput: HTMLInputElement | null) => {
+const validateEmailInput = (
+  index: number,
+  emailInput: HTMLInputElement | null,
+  saveButton: HTMLButtonElement | null,
+) => {
   emailInput?.addEventListener('blur', () => {
     const emailValue = emailInput.value;
     const validEmail = isValidEmail(emailValue);
@@ -414,11 +387,19 @@ const validateEmailInput = (emailInput: HTMLInputElement | null) => {
         'is-invalid': !validEmail,
       }),
     );
+    const rowIsValid = validateAuthorRowsValid(index);
+    if (!rowIsValid || !validEmail) {
+      saveButton?.setAttribute('disabled', 'true');
+    }
   });
   return;
 };
 
-function addORCIDInputListener(orcidIDInput: HTMLInputElement | null): void {
+function addORCIDInputListener(
+  index: number,
+  orcidIDInput: HTMLInputElement | null,
+  saveButton: HTMLButtonElement | null,
+): void {
   orcidIDInput?.addEventListener('blur', () => {
     const orcidIDValue = orcidIDInput.value;
     const validOrcidID = validateORCID(orcidIDValue);
@@ -428,6 +409,10 @@ function addORCIDInputListener(orcidIDInput: HTMLInputElement | null): void {
         'is-invalid': !validOrcidID,
       }),
     );
+    const rowIsValid = validateAuthorRowsValid(index);
+    if (!rowIsValid || !validOrcidID) {
+      saveButton?.setAttribute('disabled', 'true');
+    }
   });
 }
 

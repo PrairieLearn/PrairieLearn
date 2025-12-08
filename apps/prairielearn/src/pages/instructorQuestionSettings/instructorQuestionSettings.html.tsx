@@ -305,14 +305,19 @@ export function InstructorQuestionSettings({
                         data-bs-toggle="popover"
                         data-bs-trigger="hover"
                         data-bs-delay='{"hide": 2000}'
-                        data-bs-content="To allow instructors to share their 
-                          course content with others and to avoid 
-                          instructors needing to copy question files in 
-                          between courses, PrairieLearn provides a way for 
+                        data-bs-content="PrairieLearn provides a way for 
                           questions from one course to be used in assessments 
                           in other courses.  For more information, visit 
                           https://prairielearn.readthedocs.io/en/latest/contentSharing/"
                       ></i>
+                      ${isShared
+                        ? html`<input
+                            class="invisible"
+                            type="hidden"
+                            id="${'author_origin_course_sharing_name'}"
+                            value="${sharingName}"
+                          />`
+                        : null}
                     </th>
                     ${canEdit ? html`<th class="text-center"></th>` : null}
                   </tr>
@@ -383,12 +388,6 @@ export function InstructorQuestionSettings({
                                     name="${'author_origin_course_' + index}"
                                     value="${author.origin_course}"
                                     placeholder="Sharing name"
-                                  />
-                                  <input
-                                    class="invisible"
-                                    type="hidden"
-                                    id="${'author_origin_course_sharing_name_' + index}"
-                                    value="${sharingName}"
                                   />
                                   <small
                                     class="text-primary"
