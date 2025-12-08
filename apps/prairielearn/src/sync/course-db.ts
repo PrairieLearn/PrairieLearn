@@ -548,16 +548,16 @@ export async function loadCourseInfo({
    * Adds a warning when syncing if duplicates are found.
    * If defaults are provided, the entries from defaults not present in the resulting list are merged.
    * @param fieldName The member of `info` to inspect
-   * @param entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
+   * @param entryIdentifier The member of each element of the field which uniquely identifies it
    */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
-  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K]): CourseJson[K] {
-    const known = new Map();
+  >(fieldName: K, entryIdentifier: 'name', defaults?: CourseJson[K]): CourseJson[K] {
+    type Entry = NonNullable<CourseJson[K]>[number];
+    const known = new Map<string, Entry>();
     const duplicateEntryIds = new Set<string>();
 
     (info![fieldName] ?? []).forEach((entry) => {
-      // @ts-expect-error - Legacy code that is not type-safe.
       const entryId = entry[entryIdentifier];
       if (known.has(entryId)) {
         duplicateEntryIds.add(entryId);
@@ -575,7 +575,6 @@ export async function loadCourseInfo({
 
     if (defaults) {
       defaults.forEach((defaultEntry) => {
-        // @ts-expect-error - Legacy code that is not type-safe.
         const defaultEntryId = defaultEntry[entryIdentifier];
         if (!known.has(defaultEntryId)) {
           known.set(defaultEntryId, defaultEntry);
@@ -585,7 +584,7 @@ export async function loadCourseInfo({
 
     // Turn the map back into a list; the JS spec ensures that Maps remember
     // insertion order, so the order is preserved.
-    return [...known.values()];
+    return [...known.values()] as CourseJson[K];
   }
 
   // Assessment sets in DEFAULT_ASSESSMENT_SETS may be in use but not present in the
