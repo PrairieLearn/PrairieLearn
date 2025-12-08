@@ -59,6 +59,66 @@ describe('Instructor Students - Invite by UID', () => {
     assert.isString(csrfToken);
   });
 
+  test.sequential('should successfully invite a nonexistent user', async () => {
+    const response = await fetch(studentsUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+        cookie: instructorHeaders.cookie,
+      },
+      body: new URLSearchParams({
+        __action: 'invite_by_uid',
+        __csrf_token: csrfToken,
+        uid: 'nonexistent@example.com',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    const data = await response.json();
+    assert.isObject(data.data);
+    assert.equal(data.data.status, 'invited');
+  });
+
+  test.sequential('should return error when user is an instructor', async () => {
+    await callRow(
+      'users_select_or_insert',
+      [
+        'another_instructor@example.com',
+        'Another Instructor',
+        'instructor2',
+        'another_instructor@example.com',
+        'dev',
+      ],
+      SprocUsersSelectOrInsertSchema,
+    );
+
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'another_instructor@example.com',
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+
+    const response = await fetch(studentsUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+        cookie: instructorHeaders.cookie,
+      },
+      body: new URLSearchParams({
+        __action: 'invite_by_uid',
+        __csrf_token: csrfToken,
+        uid: 'another_instructor@example.com',
+      }),
+    });
+
+    assert.equal(response.status, 400);
+    const data = await response.json();
+    assert.equal(data.error, 'The user is an instructor');
+  });
+
   test.sequential('should successfully invite a blocked user', async () => {
     const blockedStudent = await callRow(
       'users_select_or_insert',
