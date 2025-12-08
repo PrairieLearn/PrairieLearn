@@ -43,10 +43,6 @@ export function InstructorAssessmentAccess({
   enhancedAccessControl: boolean;
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
-  const { assessment, assessment_set: assessmentSet } = extractPageContext(resLocals, {
-    pageType: 'assessment',
-    accessType: 'instructor',
-  });
   const { course_instance: courseInstance } = extractPageContext(resLocals, {
     pageType: 'courseInstance',
     accessType: 'instructor',
@@ -72,15 +68,7 @@ export function InstructorAssessmentAccess({
           urlPrefix={resLocals.urlPrefix}
         />,
       )}
-      ${enhancedAccessControl
-        ? hydrateHtml(
-            <AccessControl
-              assessment={assessment}
-              assessmentSet={assessmentSet}
-              courseInstance={courseInstance}
-            />,
-          )
-        : ''}
+      ${enhancedAccessControl ? hydrateHtml(<AccessControl courseInstance={courseInstance} />) : ''}
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">

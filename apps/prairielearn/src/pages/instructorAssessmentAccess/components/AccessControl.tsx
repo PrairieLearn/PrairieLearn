@@ -52,14 +52,10 @@ const sampleAccessControl: AccessControlJson[] = [
 
     afterComplete: {
       hideQuestions: true,
-      hideQuestionsDateControl: {
-        showAgainDate: '2025-03-23T23:59',
-        hideAgainDate: '2025-03-23T23:59',
-      },
+      showQuestionsAgainDate: true,
+      hideQuestionsAgainDate: true,
       hideScore: true,
-      hideScoreDateControl: {
-        showAgainDate: '2025-03-23T23:59',
-      },
+      showScoreAgainDate: true,
     },
   },
   {
@@ -77,12 +73,8 @@ const sampleAccessControl: AccessControlJson[] = [
 ];
 
 export function AccessControl({
-  assessment,
-  assessmentSet,
   courseInstance,
 }: {
-  assessment: PageContext<'assessment', 'instructor'>['assessment'];
-  assessmentSet: PageContext<'assessment', 'instructor'>['assessment_set'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
 }) {
   const handleFormSubmit = (data: AccessControlJson[]) => {
@@ -92,20 +84,11 @@ export function AccessControl({
   };
 
   return (
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white">
-        <h2>
-          {assessmentSet.name} {assessment.number}: Access control
-        </h2>
-      </div>
-      <div class="card-body">
-        <AccessControlForm
-          initialData={sampleAccessControl}
-          courseInstance={courseInstance}
-          onSubmit={handleFormSubmit}
-        />
-      </div>
-    </div>
+    <AccessControlForm
+      initialData={sampleAccessControl}
+      courseInstance={courseInstance}
+      onSubmit={handleFormSubmit}
+    />
   );
 }
 

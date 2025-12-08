@@ -93,9 +93,17 @@ export function PrairieTestControlForm({
               disabled={showOverrideButton}
               onClick={(e) => e.stopPropagation()}
             />
-            <span style={{ cursor: collapsible ? 'pointer' : 'default' }} onClick={toggleExpanded}>
-              {title}
-            </span>
+            {collapsible ? (
+              <button
+                type="button"
+                class="btn btn-link p-0 text-decoration-none text-body"
+                onClick={toggleExpanded}
+              >
+                {title}
+              </button>
+            ) : (
+              <span>{title}</span>
+            )}
           </div>
           <Form.Text class="text-muted">{description}</Form.Text>
         </div>

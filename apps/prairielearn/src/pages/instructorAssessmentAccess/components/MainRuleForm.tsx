@@ -1,21 +1,24 @@
 import { Form } from 'react-bootstrap';
-import { type Control, type UseFormSetValue, type UseFormTrigger, useWatch } from 'react-hook-form';
+import { type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
 
 import { AfterCompleteForm } from './AfterCompleteForm.js';
 import { DateControlForm } from './DateControlForm.js';
 import { PrairieTestControlForm } from './PrairieTestControlForm.js';
-import type { AccessControlFormData } from './types.js';
+import type { AccessControlFormData, OverridableField } from './types.js';
 
 interface MainRuleFormProps {
   control: Control<AccessControlFormData>;
-  trigger: UseFormTrigger<AccessControlFormData>;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   setValue: UseFormSetValue<AccessControlFormData>;
 }
 
-export function MainRuleForm({ control, trigger, courseInstance, setValue }: MainRuleFormProps) {
+export function MainRuleForm({
+  control,
+  courseInstance: _courseInstance,
+  setValue,
+}: MainRuleFormProps) {
   // Watch the main rule enabled state
   const ruleEnabled = useWatch({
     control,
@@ -32,7 +35,7 @@ export function MainRuleForm({ control, trigger, courseInstance, setValue }: Mai
   const releaseDate = useWatch({
     control,
     name: 'mainRule.dateControl.releaseDate',
-  });
+  }) as OverridableField<string> | undefined;
 
   // Watch PrairieTest exams
   const prairieTestExams = useWatch({
@@ -41,8 +44,8 @@ export function MainRuleForm({ control, trigger, courseInstance, setValue }: Mai
     defaultValue: [],
   });
 
-  // Check if date-based release is available
-  const hasDateRelease = releaseDate !== undefined;
+  // Check if date-based release is available (has a release date enabled)
+  const hasDateRelease = releaseDate?.isEnabled ?? false;
 
   // Check if PrairieTest-based release is available
   const hasPrairieTestRelease = (prairieTestExams?.length ?? 0) > 0;
@@ -86,20 +89,10 @@ export function MainRuleForm({ control, trigger, courseInstance, setValue }: Mai
                 </Form.Group>
               )}
 
-              <DateControlForm
-                control={control}
-                trigger={trigger}
-                courseInstance={courseInstance}
-                setValue={setValue}
-              />
+              <DateControlForm control={control} setValue={setValue} />
               <PrairieTestControlForm control={control} namePrefix="mainRule" setValue={setValue} />
 
-              <AfterCompleteForm
-                control={control}
-                namePrefix="mainRule"
-                ruleEnabled={ruleEnabled}
-                setValue={setValue}
-              />
+              <AfterCompleteForm control={control} namePrefix="mainRule" setValue={setValue} />
             </>
           )}
         </>

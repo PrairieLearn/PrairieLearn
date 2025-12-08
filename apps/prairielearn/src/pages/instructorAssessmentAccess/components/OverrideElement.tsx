@@ -2,6 +2,7 @@ import { Button, Card } from 'react-bootstrap';
 
 interface OverrideElementProps {
   isOverridden: boolean;
+  label: string;
   onOverride?: () => void;
   onRemoveOverride?: () => void;
   children: React.ReactNode;
@@ -10,6 +11,7 @@ interface OverrideElementProps {
 
 export function OverrideElement({
   isOverridden,
+  label,
   onOverride,
   onRemoveOverride,
   children,
@@ -21,16 +23,12 @@ export function OverrideElement({
 
   return (
     <Card class="mb-3" style={getCardStyle()}>
-      <Card.Body class="d-flex justify-content-between align-items-start">
-        <div
-          style={{
-            flex: 1,
-            opacity: isOverridden ? 1 : 0.5,
-            pointerEvents: isOverridden ? 'auto' : 'none',
-          }}
-        >
-          {children}
-        </div>
+      <Card.Body class="d-flex justify-content-between align-items-center">
+        {!isOverridden ? (
+          <span class="text-muted">{label}</span>
+        ) : (
+          <div style={{ flex: 1 }}>{children}</div>
+        )}
         {showOverrideButton && (
           <>
             {!isOverridden && onOverride && (

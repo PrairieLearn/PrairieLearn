@@ -84,20 +84,21 @@ export function OverrideRulesForm({
       )}
 
       {fields.map((field, index) => {
-        const override = watchedOverrides[index] || {};
-        const isEnabled = override.enabled;
-        const blockAccess = override.blockAccess;
+        const override = watchedOverrides[index] as (typeof watchedOverrides)[number] | undefined;
+        if (!override) return null;
 
-        // Check if specific sections are overridden
+        const { enabled: isEnabled, blockAccess, dateControl, afterComplete } = override;
+
+        // Check if specific sections are overridden (using the new OverridableField structure)
         const hasDateControlOverride =
-          override.dateControl?.releaseDate !== undefined ||
-          override.dateControl?.dueDate !== undefined ||
-          override.dateControl?.durationMinutes !== undefined ||
-          override.dateControl?.password !== undefined;
+          dateControl.releaseDate.isOverridden ||
+          dateControl.dueDate.isOverridden ||
+          dateControl.durationMinutes.isOverridden ||
+          dateControl.password.isOverridden;
 
         const hasAfterCompleteOverride =
-          override.afterComplete?.hideQuestions !== undefined ||
-          override.afterComplete?.hideScore !== undefined;
+          afterComplete.questionVisibility.isOverridden ||
+          afterComplete.scoreVisibility.isOverridden;
 
         return (
           <Card key={field.id} class="mb-4">
@@ -158,18 +159,10 @@ export function OverrideRulesForm({
                     control={control}
                     namePrefix={`overrides.${index}`}
                     setValue={setValue}
-                    showOverrideButton={!hasDateControlOverride}
                     title="Date Control"
                     description="Control access and credit to your exam based on a schedule"
                     collapsible={true}
                     defaultExpanded={hasDateControlOverride}
-                    onOverride={() => {
-                      // Initialize with empty values - user will fill them in
-                      setValue(`overrides.${index}.dateControl.releaseDate`, '');
-                      setValue(`overrides.${index}.dateControl.dueDate`, '');
-                      setValue(`overrides.${index}.dateControl.durationMinutes`, 0);
-                      setValue(`overrides.${index}.dateControl.password`, '');
-                    }}
                   />
 
                   {/* After Completion Behavior Section */}
@@ -177,16 +170,10 @@ export function OverrideRulesForm({
                     control={control}
                     namePrefix={`overrides.${index}`}
                     setValue={setValue}
-                    showOverrideButton={!hasAfterCompleteOverride}
                     title="After Completion Behavior"
                     description="Configure what happens after students complete the assessment"
                     collapsible={true}
-                    defaultExpanded={hasAfterCompleteOverride}
-                    onOverride={() => {
-                      // Initialize with reasonable defaults
-                      setValue(`overrides.${index}.afterComplete.hideQuestions`, true);
-                      setValue(`overrides.${index}.afterComplete.hideScore`, false);
-                    }}
+                    defaultExpanded={Boolean(hasAfterCompleteOverride)}
                   />
                 </div>
               )}
