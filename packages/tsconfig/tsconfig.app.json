@@ -5,7 +5,6 @@
     "strict": true,
     "useUnknownInCatchVariables": false,
     "noUnusedLocals": true,
-    "noImplicitAny": true,
 
     // Support native ESM
     "esModuleInterop": true,

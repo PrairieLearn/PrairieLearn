@@ -86,11 +86,13 @@ export async function questionFilePath(
     );
   } else {
     // No template, try default files
-    const filenameToSuffix = {
+    const filenameToSuffix: Record<string, string> = {
       'client.js': 'Client.js',
       'server.js': 'Server.js',
     };
-    if (!(filename in filenameToSuffix)) {
+    const suffix = filenameToSuffix[filename];
+
+    if (!suffix) {
       // no default for this file type, so try clientFilesCourse
       const rootPathCourse = path.join(coursePath, 'clientFilesCourse');
       const fullPathCourse = path.join(rootPathCourse, filename);
@@ -105,8 +107,7 @@ export async function questionFilePath(
         throw new Error(`File not found at "${fullPath}" or "${fullPathCourse}"`);
       }
     } else {
-      const defaultFilename =
-        question.type + filenameToSuffix[filename as keyof typeof filenameToSuffix];
+      const defaultFilename = question.type + suffix;
       const fullDefaultFilePath = path.join(QUESTION_DEFAULTS_PATH, defaultFilename);
 
       if (await fs.pathExists(fullDefaultFilePath)) {

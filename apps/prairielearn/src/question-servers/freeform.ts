@@ -1159,7 +1159,7 @@ export async function render(
         clientFilesCourseScripts: [] as string[],
         clientFilesQuestionStyles: [] as string[],
         clientFilesQuestionScripts: [] as string[],
-      } satisfies Record<string, string[]>;
+      };
       const dynamicDependencies = {
         nodeModulesScripts: {} as Record<string, string>,
         coreElementScripts: {} as Record<string, string>,

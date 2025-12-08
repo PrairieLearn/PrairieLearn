@@ -26,7 +26,7 @@ requirejs.onError = function (err: Error) {
   };
   for (const e in err) {
     if (Object.prototype.hasOwnProperty.call(err, e)) {
-      // @ts-expect-error - @reteps notes this type is incorrect
+      // @ts-expect-error This is legacy code.
       data[e] = String(err[e]);
     }
   }

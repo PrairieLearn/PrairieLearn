@@ -16,13 +16,7 @@ interface UnvalidatedFeatureContext {
   user_id?: string | null;
 }
 
-type FeatureContextKey = 'institution_id' | 'course_id' | 'course_instance_id';
-
-const CONTEXT_HIERARCHY: FeatureContextKey[] = [
-  'institution_id',
-  'course_id',
-  'course_instance_id',
-];
+const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'] as const;
 const DEFAULT_CONTEXT = {
   institution_id: null,
   course_id: null,
