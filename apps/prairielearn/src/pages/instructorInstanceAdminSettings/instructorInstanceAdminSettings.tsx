@@ -19,7 +19,6 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import type { Course } from '../../lib/db-types.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
@@ -268,7 +267,7 @@ router.post(
 
       const copiedInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
-        course: course as unknown as Course, // TODO: We need to write up proper model functions for Courses.
+        course,
       });
 
       res.status(200).json({ course_instance_id: copiedInstance.id });

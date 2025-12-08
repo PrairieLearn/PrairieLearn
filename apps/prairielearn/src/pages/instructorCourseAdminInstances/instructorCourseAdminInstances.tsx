@@ -11,7 +11,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { type Course, CourseInstanceSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import {
@@ -206,7 +206,7 @@ router.post(
 
       const courseInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
-        course: course as unknown as Course, // TODO: We need to write up proper model functions for Courses.
+        course,
       });
 
       res.json({ course_instance_id: courseInstance.id });
