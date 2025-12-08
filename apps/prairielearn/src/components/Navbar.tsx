@@ -993,6 +993,7 @@ function NavbarInstructor({
                         ></a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                           ${assessments.map(
+                            // @ts-expect-error - This is legacy code that will be removed soon.
                             (a) => html`
                               <a
                                 class="dropdown-item ${navPage === 'assessment' &&
