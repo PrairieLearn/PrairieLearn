@@ -26,7 +26,6 @@ import {
   GradingJobSchema,
   IdSchema,
   type InstanceQuestion,
-  SubmissionSchema,
 } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
