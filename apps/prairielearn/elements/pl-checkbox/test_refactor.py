@@ -584,3 +584,92 @@ def test_get_order_type_backward_compatibility(case: OrderTypeTestCase) -> None:
     else:
         result = pl_checkbox.get_order_type(element)
         assert result == case.expected_order_type
+
+
+def test_grade_with_duplicate_submissions() -> None:
+    """Test grading behavior when submitted answers contain duplicates."""
+    # Test that duplicates in submitted answers are handled correctly via set()
+    data = create_test_data(
+        submitted=["a", "b", "b", "c"],  # Duplicate 'b'
+        correct=["a", "b", "c"],
+        all_params=["a", "b", "c", "d"],
+    )
+
+    element_html = '<pl-checkbox answers-name="test"></pl-checkbox>'
+
+    pl_checkbox.grade(element_html, data)
+
+    # With duplicates, set(['a', 'b', 'b', 'c']) == set(['a', 'b', 'c'])
+    # So it should be treated as selecting a, b, c (all correct)
+    assert data["partial_scores"]["test"]["score"] == 1.0
+
+
+def test_grade_with_duplicate_submissions_partial_credit() -> None:
+    """Test partial credit grading with duplicate submissions."""
+    # Test NET_CORRECT (PC) mode with duplicates
+    data = create_test_data(
+        submitted=["a", "a", "b"],  # Duplicate 'a', missing 'c'
+        correct=["a", "b", "c"],
+        all_params=["a", "b", "c", "d"],
+    )
+
+    element_html = (
+        '<pl-checkbox answers-name="test" partial-credit="net-correct"></pl-checkbox>'
+    )
+
+    pl_checkbox.grade(element_html, data)
+
+    # set(['a', 'a', 'b']) == set(['a', 'b'])
+    # t = 2 (correct answers selected: a, b)
+    # f = 0 (incorrect answers selected: none)
+    # n = 3 (total correct answers: a, b, c)
+    # score = max(0, (2 - 0) / 3) = 2/3 ≈ 0.6667
+    assert math.isclose(data["partial_scores"]["test"]["score"], 2 / 3, rel_tol=1e-9)
+
+
+def test_grade_with_duplicate_correct_answers() -> None:
+    """Test that grading correctly handles when correct_answers has duplicates.
+
+    This tests the edge case where the data structure itself might contain
+    duplicate keys in correct_answers, which would be unusual but should be
+    handled gracefully by the set() conversion.
+    """
+    # Manually create data with duplicate correct answer keys
+    data = {
+        "submitted_answers": {"test": ["a", "b"]},
+        "correct_answers": {
+            "test": [{"key": "a"}, {"key": "b"}, {"key": "b"}]
+        },  # Duplicate 'b'
+        "params": {"test": [{"key": "a"}, {"key": "b"}, {"key": "c"}]},
+        "partial_scores": {},
+    }
+
+    element_html = '<pl-checkbox answers-name="test"></pl-checkbox>'
+
+    pl_checkbox.grade(element_html, data)
+
+    # Even with duplicate 'b' in correct_answers, set() should handle it
+    # Submitted: {a, b}, Correct: {a, b} (after set conversion)
+    assert data["partial_scores"]["test"]["score"] == 1.0
+
+
+def test_grade_coverage_with_duplicates() -> None:
+    """Test COV grading mode with duplicate submissions."""
+    data = create_test_data(
+        submitted=["a", "b", "b", "d"],  # Duplicate 'b', one incorrect 'd'
+        correct=["a", "b", "c"],
+        all_params=["a", "b", "c", "d"],
+    )
+
+    element_html = (
+        '<pl-checkbox answers-name="test" partial-credit="coverage"></pl-checkbox>'
+    )
+
+    pl_checkbox.grade(element_html, data)
+
+    # set(['a', 'b', 'b', 'd']) == set(['a', 'b', 'd'])
+    # t = 2 (correct answers in submitted: a, b)
+    # c = 3 (total correct: a, b, c)
+    # n = 3 (total submitted after set: a, b, d)
+    # score = (2/3) * (2/3) = 4/9 ≈ 0.4444
+    assert math.isclose(data["partial_scores"]["test"]["score"], 4 / 9, rel_tol=1e-9)
