@@ -1,5 +1,4 @@
-import { useState } from 'preact/compat';
-import { Button, Card, Col, Collapse, Form, Row } from 'react-bootstrap';
+import { Button, Card, Col, Form, Row } from 'react-bootstrap';
 import { type Control, type UseFormSetValue } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -21,8 +20,6 @@ interface AfterCompleteFormProps {
   setValue: UseFormSetValue<AccessControlFormData>;
   title?: string;
   description?: string;
-  collapsible?: boolean;
-  defaultExpanded?: boolean;
 }
 
 type HideQuestionsMode =
@@ -39,11 +36,7 @@ export function AfterCompleteForm({
   setValue,
   title = 'After Completion Behavior',
   description = 'Configure what happens after students complete the assessment',
-  collapsible = false,
-  defaultExpanded = true,
 }: AfterCompleteFormProps) {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-
   const isOverrideRule = namePrefix.startsWith('overrides.');
 
   // Use the hook for question visibility
@@ -94,12 +87,6 @@ export function AfterCompleteForm({
   };
 
   const hideScoreMode = getHideScoreMode();
-
-  const toggleExpanded = () => {
-    if (collapsible) {
-      setIsExpanded(!isExpanded);
-    }
-  };
 
   const infoPopoverConfig = {
     header: 'When is an assessment "complete"?',
@@ -323,11 +310,7 @@ export function AfterCompleteForm({
 
   return (
     <Card class="mb-4">
-      <Card.Header
-        class="d-flex justify-content-between align-items-center"
-        style={{ cursor: collapsible ? 'pointer' : 'default' }}
-        onClick={toggleExpanded}
-      >
+      <Card.Header>
         <div>
           <div class="d-flex align-items-center">
             <span>{title}</span>
@@ -339,56 +322,51 @@ export function AfterCompleteForm({
           </div>
           <Form.Text class="text-muted">{description}</Form.Text>
         </div>
-        {collapsible && (
-          <i class={`bi bi-chevron-${isExpanded ? 'up' : 'down'}`} aria-hidden="true" />
-        )}
       </Card.Header>
-      <Collapse in={!collapsible || isExpanded}>
-        <Card.Body>
-          <div>
-            {/* Question Visibility Section */}
-            <FieldWrapper
-              isOverrideRule={isOverrideRule}
-              isOverridden={questionVisibility.isOverridden}
-              label="Question Visibility"
-              onOverride={() => enableQuestionOverride({ hideQuestions: false })}
-              onRemoveOverride={removeQuestionOverride}
-            >
-              <div>
-                <div class="mb-2">
-                  <strong>Question Visibility</strong>
-                </div>
-                {questionVisibilityContent}
+      <Card.Body>
+        <div>
+          {/* Question Visibility Section */}
+          <FieldWrapper
+            isOverrideRule={isOverrideRule}
+            isOverridden={questionVisibility.isOverridden}
+            label="Question Visibility"
+            onOverride={() => enableQuestionOverride({ hideQuestions: false })}
+            onRemoveOverride={removeQuestionOverride}
+          >
+            <div>
+              <div class="mb-2">
+                <strong>Question Visibility</strong>
               </div>
-            </FieldWrapper>
+              {questionVisibilityContent}
+            </div>
+          </FieldWrapper>
 
-            {/* Score Visibility Section */}
-            <FieldWrapper
-              isOverrideRule={isOverrideRule}
-              isOverridden={scoreVisibility.isOverridden}
-              label="Score Visibility"
-              onOverride={() => enableScoreOverride({ hideScore: false })}
-              onRemoveOverride={removeScoreOverride}
-            >
-              <div>
-                <div class="mb-2">
-                  <strong>Score Visibility</strong>
-                </div>
-                {scoreVisibilityContent}
+          {/* Score Visibility Section */}
+          <FieldWrapper
+            isOverrideRule={isOverrideRule}
+            isOverridden={scoreVisibility.isOverridden}
+            label="Score Visibility"
+            onOverride={() => enableScoreOverride({ hideScore: false })}
+            onRemoveOverride={removeScoreOverride}
+          >
+            <div>
+              <div class="mb-2">
+                <strong>Score Visibility</strong>
               </div>
-            </FieldWrapper>
+              {scoreVisibilityContent}
+            </div>
+          </FieldWrapper>
 
-            {assessmentType === 'Exam' && (
-              <div class="alert alert-info">
-                <i class="bi bi-info-circle me-2" aria-hidden="true" />
-                <strong>Note for Exams:</strong> Consider hiding questions and scores until after
-                all students have completed to maintain fairness. You can use the "until date"
-                options to reveal them after the exam window closes.
-              </div>
-            )}
-          </div>
-        </Card.Body>
-      </Collapse>
+          {assessmentType === 'Exam' && (
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2" aria-hidden="true" />
+              <strong>Note for Exams:</strong> Consider hiding questions and scores until after all
+              students have completed to maintain fairness. You can use the "until date" options to
+              reveal them after the exam window closes.
+            </div>
+          )}
+        </div>
+      </Card.Body>
     </Card>
   );
 }

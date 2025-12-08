@@ -52,49 +52,39 @@ export function MainRuleForm({
 
   return (
     <div>
-      <Form.Group class="mb-3">
-        <Form.Check
-          type="checkbox"
-          label="Enable this access rule"
-          {...control.register('mainRule.enabled')}
-        />
-      </Form.Group>
-
       {ruleEnabled && (
+        <Form.Group class="mb-3">
+          <Form.Check
+            type="checkbox"
+            label="Block access"
+            {...control.register('mainRule.blockAccess')}
+          />
+          <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
+        </Form.Group>
+      )}
+
+      {ruleEnabled && !blockAccess && (
         <>
-          <Form.Group class="mb-3">
-            <Form.Check
-              type="checkbox"
-              label="Block access"
-              {...control.register('mainRule.blockAccess')}
-            />
-            <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
-          </Form.Group>
-
-          {!blockAccess && (
-            <>
-              {(hasDateRelease || hasPrairieTestRelease) && (
-                <Form.Group class="mb-3">
-                  <div class="d-flex align-items-center mb-2">
-                    <Form.Check
-                      type="checkbox"
-                      class="me-2"
-                      {...control.register('mainRule.listBeforeRelease')}
-                    />
-                    <span>List before release</span>
-                  </div>
-                  <Form.Text class="text-muted">
-                    Students can see the title and click into assessment before release
-                  </Form.Text>
-                </Form.Group>
-              )}
-
-              <DateControlForm control={control} setValue={setValue} />
-              <PrairieTestControlForm control={control} namePrefix="mainRule" setValue={setValue} />
-
-              <AfterCompleteForm control={control} namePrefix="mainRule" setValue={setValue} />
-            </>
+          {(hasDateRelease || hasPrairieTestRelease) && (
+            <Form.Group class="mb-3">
+              <div class="d-flex align-items-center mb-2">
+                <Form.Check
+                  type="checkbox"
+                  class="me-2"
+                  {...control.register('mainRule.listBeforeRelease')}
+                />
+                <span>List before release</span>
+              </div>
+              <Form.Text class="text-muted">
+                Students can see the title and click into assessment before release
+              </Form.Text>
+            </Form.Group>
           )}
+
+          <DateControlForm control={control} setValue={setValue} />
+          <PrairieTestControlForm control={control} namePrefix="mainRule" setValue={setValue} />
+
+          <AfterCompleteForm control={control} namePrefix="mainRule" setValue={setValue} />
         </>
       )}
     </div>

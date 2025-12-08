@@ -1,5 +1,4 @@
-import { useState } from 'preact/compat';
-import { Card, Col, Collapse, Form, Row } from 'react-bootstrap';
+import { Card, Col, Form, Row } from 'react-bootstrap';
 import { type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
 
 import {
@@ -20,8 +19,6 @@ interface DateControlFormProps {
   namePrefix?: NamePrefix;
   title?: string;
   description?: string;
-  collapsible?: boolean;
-  defaultExpanded?: boolean;
 }
 
 export function DateControlForm({
@@ -30,11 +27,7 @@ export function DateControlForm({
   namePrefix = 'mainRule',
   title = 'Date Control',
   description = 'Control access and credit to your exam based on a schedule',
-  collapsible = false,
-  defaultExpanded = true,
 }: DateControlFormProps) {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-
   const isOverrideRule = namePrefix.startsWith('overrides.');
 
   // Watch the dateControl.enabled state (only used for main rule)
@@ -91,12 +84,6 @@ export function DateControlForm({
       password?.isOverridden
     : dateControlEnabledField;
 
-  const toggleExpanded = () => {
-    if (collapsible) {
-      setIsExpanded(!isExpanded);
-    }
-  };
-
   // Check if any date-based fields are enabled (for showing After Last Deadline)
   const hasAnyDateControl =
     dueDate?.isEnabled || earlyDeadlines?.isOverridden || lateDeadlines?.isOverridden;
@@ -108,10 +95,7 @@ export function DateControlForm({
 
   return (
     <Card class="mb-4">
-      <Card.Header
-        class="d-flex justify-content-between align-items-center"
-        style={{ cursor: collapsible ? 'pointer' : 'default' }}
-      >
+      <Card.Header>
         <div>
           <div class="d-flex align-items-center">
             {!isOverrideRule && (
@@ -119,20 +103,9 @@ export function DateControlForm({
                 type="checkbox"
                 class="me-2"
                 {...control.register(`${namePrefix}.dateControl.enabled` as any)}
-                onClick={(e) => e.stopPropagation()}
               />
             )}
-            {collapsible ? (
-              <button
-                type="button"
-                class="btn btn-link p-0 text-decoration-none text-body"
-                onClick={toggleExpanded}
-              >
-                {title}
-              </button>
-            ) : (
-              <span>{title}</span>
-            )}
+            <span>{title}</span>
           </div>
           <Form.Text class="text-muted">
             {isOverrideRule
@@ -140,77 +113,71 @@ export function DateControlForm({
               : description}
           </Form.Text>
         </div>
-        {collapsible && (
-          <i
-            class={`bi bi-chevron-${isExpanded ? 'up' : 'down'}`}
-            aria-hidden="true"
-            style={{ cursor: 'pointer' }}
-            onClick={toggleExpanded}
-          />
-        )}
       </Card.Header>
-      <Collapse in={!collapsible || isExpanded}>
-        <Card.Body
-          style={{
-            // For override rules, always show at full opacity since individual fields control overrides
-            opacity: isOverrideRule || dateControlEnabled ? 1 : 0.5,
-            pointerEvents: isOverrideRule || dateControlEnabled ? 'auto' : 'none',
-          }}
-        >
-          <div>
-            {/* Release Date and Due Date */}
-            <Row class="mb-3">
-              <Col md={6}>
-                <ReleaseDateField control={control} setValue={setValue} namePrefix={namePrefix} />
-              </Col>
-              <Col md={6}>
-                <DueDateField control={control} setValue={setValue} namePrefix={namePrefix} />
-              </Col>
-            </Row>
+      <Card.Body
+        style={{
+          // For override rules, always show at full opacity since individual fields control overrides
+          opacity: isOverrideRule || dateControlEnabled ? 1 : 0.5,
+          pointerEvents: isOverrideRule || dateControlEnabled ? 'auto' : 'none',
+        }}
+      >
+        <div>
+          {/* Release Date and Due Date */}
+          <Row class="mb-3">
+            <Col md={6}>
+              <ReleaseDateField control={control} setValue={setValue} namePrefix={namePrefix} />
+            </Col>
+            <Col md={6}>
+              <DueDateField control={control} setValue={setValue} namePrefix={namePrefix} />
+            </Col>
+          </Row>
 
-            {/* Early and Late Deadlines */}
-            <Row class="mb-4">
-              <Col md={6}>
-                <DeadlineArrayField
-                  control={control}
-                  setValue={setValue}
-                  namePrefix={namePrefix}
-                  type="early"
-                />
-              </Col>
-              <Col md={6}>
-                <DeadlineArrayField
-                  control={control}
-                  setValue={setValue}
-                  namePrefix={namePrefix}
-                  type="late"
-                />
-              </Col>
-            </Row>
+          {/* Early and Late Deadlines */}
+          <Row class="mb-4">
+            <Col md={6}>
+              <DeadlineArrayField
+                control={control}
+                setValue={setValue}
+                namePrefix={namePrefix}
+                type="early"
+              />
+            </Col>
+            <Col md={6}>
+              <DeadlineArrayField
+                control={control}
+                setValue={setValue}
+                namePrefix={namePrefix}
+                type="late"
+              />
+            </Col>
+          </Row>
 
-            {/* After Last Deadline - show when dates are configured or it's an override rule */}
-            {(isOverrideRule || hasAnyDateControl) && (
-              <div class="mb-3">
-                <AfterLastDeadlineField
-                  control={control}
-                  setValue={setValue}
-                  namePrefix={namePrefix}
-                />
-              </div>
-            )}
+          <hr class="my-4" />
 
-            {/* Duration and Password */}
-            <Row class="mb-3">
-              <Col md={6}>
-                <DurationField control={control} setValue={setValue} namePrefix={namePrefix} />
-              </Col>
-              <Col md={6}>
-                <PasswordField control={control} setValue={setValue} namePrefix={namePrefix} />
-              </Col>
-            </Row>
-          </div>
-        </Card.Body>
-      </Collapse>
+          {/* After Last Deadline - show when dates are configured or it's an override rule */}
+          {(isOverrideRule || hasAnyDateControl) && (
+            <div class="mb-3">
+              <AfterLastDeadlineField
+                control={control}
+                setValue={setValue}
+                namePrefix={namePrefix}
+              />
+            </div>
+          )}
+
+          <hr class="my-4" />
+
+          {/* Duration and Password */}
+          <Row class="mb-3">
+            <Col md={6}>
+              <DurationField control={control} setValue={setValue} namePrefix={namePrefix} />
+            </Col>
+            <Col md={6}>
+              <PasswordField control={control} setValue={setValue} namePrefix={namePrefix} />
+            </Col>
+          </Row>
+        </div>
+      </Card.Body>
     </Card>
   );
 }
