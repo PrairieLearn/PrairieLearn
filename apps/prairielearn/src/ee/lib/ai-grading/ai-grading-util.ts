@@ -105,7 +105,7 @@ export async function generatePrompt({
           [
             "You are an instructor for a course, and you are grading a student's response to a question.",
             'You are provided several rubric items with a description, explanation, and grader note.',
-            "You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response.",
+            "You must grade the student's response by using the rubric and returning an object of rubric item ids and whether or not that rubric item applies to the student's response.",
             'If no rubric items apply, do not select any.',
             'You must include an explanation on why you make these choices.',
             'Follow any special instructions given by the instructor in the question.',
@@ -117,7 +117,7 @@ export async function generatePrompt({
         role: 'user',
         content: rubric_items
           .map((item) => {
-            const itemParts: string[] = [`description: ${item.description}`];
+            const itemParts: string[] = [`rubric item id: ${item.id}`, `description: ${item.description}`];
             if (item.explanation) {
               itemParts.push(`explanation: ${item.explanation}`);
             }
@@ -413,27 +413,31 @@ export function parseAiRubricItems({
   }[];
   appliedRubricDescription: Set<string>;
 } {
+  // Build a lookup table for rubric items by id.
+  const rubricItemsById: Record<string, RubricItem> = {};
+  for (const item of rubric_items) {
+    rubricItemsById[item.id] = item;
+  }
+
   // Compute the set of selected rubric descriptions.
   const appliedRubricDescription = new Set<string>();
-  Object.entries(ai_rubric_items).forEach(([description, selected]) => {
-    if (selected) {
-      appliedRubricDescription.add(description);
-    }
-  });
-
-  // Build a lookup table for rubric items by description.
-  const rubricItemsByDescription: Record<string, RubricItem> = {};
-  for (const item of rubric_items) {
-    rubricItemsByDescription[item.description] = item;
-  }
+  const appliedRubricItems: {
+    rubric_item_id: string;
+  }[] = [];
 
   // It's possible that the rubric could have changed since we last
   // fetched it. We'll optimistically apply all the rubric items
   // that were selected. If an item was deleted, we'll allow the
   // grading to fail; the user can then try again.
-  const appliedRubricItems = Array.from(appliedRubricDescription).map((description) => ({
-    rubric_item_id: rubricItemsByDescription[description].id,
-  }));
+  Object.entries(ai_rubric_items).forEach(([id, selected]) => {
+    if (selected) {
+      appliedRubricDescription.add(rubricItemsById[id].description);
+      appliedRubricItems.push({
+        rubric_item_id: rubricItemsById[id].id,
+      })
+    }
+  });
+
   return { appliedRubricItems, appliedRubricDescription };
 }
 
