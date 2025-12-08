@@ -96,13 +96,13 @@ describe('Zone grading exam assessment', { timeout: 60_000 }, function () {
 
     describe('startExam-2. the questions', function () {
       it('should have cleared data', function () {
-        questionsArray.forEach(function (question) {
-          for (const prop in question) {
-            if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
-              delete question[prop];
-            }
-          }
-          question.points = 0;
+        questionsArray.forEach(function (question, i) {
+          questionsArray[i] = {
+            qid: question.qid,
+            type: question.type,
+            maxPoints: question.maxPoints,
+            points: 0,
+          };
         });
       });
     });

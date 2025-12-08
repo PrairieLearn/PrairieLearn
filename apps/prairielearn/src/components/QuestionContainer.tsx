@@ -73,7 +73,9 @@ export function QuestionContainer({
       ${question.type !== 'Freeform'
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
-      ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
+      ${issues.map((issue: any) =>
+        IssuePanel({ issue, course_instance, authz_data, is_administrator }),
+      )}
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">

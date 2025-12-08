@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 import * as path from 'path';
 
+import type { QueryResult } from 'pg';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -37,7 +38,10 @@ export async function runLegacySqlAdminQuery(
   });
   // @ts-expect-error We wanted to discourage the use of queryAsync, but it is still needed here.
   const result = await queryAsync(sql, params);
-  return { rows: result.rows, columns: result.fields.map((field) => field.name) };
+  return {
+    rows: result.rows,
+    columns: result.fields.map((field: QueryResult['fields'][0]) => field.name),
+  };
 }
 
 export async function loadAdminQueryModule(query: string): Promise<{

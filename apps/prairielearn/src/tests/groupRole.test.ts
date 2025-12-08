@@ -1200,7 +1200,7 @@ const changeGroupRolesConfig = async (courseDir: string, groupRoles: GroupRoleJs
 describe('Test group role reassignments with role of minimum > 1', function () {
   let tempTestCourseDir: tmp.DirectoryResult;
   let assessmentId: string;
-  let assessmentUrl;
+  let assessmentUrl: string;
 
   beforeAll(function () {
     storedConfig.authUid = config.authUid;

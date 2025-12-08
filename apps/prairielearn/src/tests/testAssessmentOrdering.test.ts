@@ -14,8 +14,8 @@ import {
 } from './sync/util.js';
 
 describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }, function () {
-  let courseDir;
-  let assessmentBadges;
+  let courseDir: string;
+  let assessmentBadges: string[];
 
   const course = getCourseData();
   course.course.assessmentSets = [

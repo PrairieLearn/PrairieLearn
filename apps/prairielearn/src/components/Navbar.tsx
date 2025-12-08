@@ -619,6 +619,7 @@ function AuthnOverrides({
           <div class="dropdown-item-text">
             <div class="list-group small text-nowrap">
               ${authz_data.overrides.map(
+                // @ts-expect-error -- No implicit any
                 (override) => html`
                   <div class="list-group-item list-group-item-warning small p-2">
                     <div class="d-flex flex-row justify-content-between align-items-center">

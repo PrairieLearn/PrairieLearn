@@ -3,6 +3,7 @@
   "compilerOptions": {
     "rootDir": "./",
     "outDir": "../dist",
+    "noImplicitAny": true,
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "paths": {
