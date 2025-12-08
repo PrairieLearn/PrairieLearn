@@ -117,7 +117,10 @@ export async function generatePrompt({
         role: 'user',
         content: rubric_items
           .map((item) => {
-            const itemParts: string[] = [`rubric item id: ${item.id}`, `description: ${item.description}`];
+            const itemParts: string[] = [
+              `rubric item id: ${item.id}`,
+              `description: ${item.description}`,
+            ];
             if (item.explanation) {
               itemParts.push(`explanation: ${item.explanation}`);
             }
@@ -419,8 +422,10 @@ export function parseAiRubricItems({
     rubricItemsById[item.id] = item;
   }
 
-  // Compute the set of selected rubric descriptions.
+  // Set of selected rubric descriptions.
   const appliedRubricDescription = new Set<string>();
+
+  // List of selected rubric item IDs.
   const appliedRubricItems: {
     rubric_item_id: string;
   }[] = [];
@@ -434,7 +439,7 @@ export function parseAiRubricItems({
       appliedRubricDescription.add(rubricItemsById[id].description);
       appliedRubricItems.push({
         rubric_item_id: rubricItemsById[id].id,
-      })
+      });
     }
   });
 
