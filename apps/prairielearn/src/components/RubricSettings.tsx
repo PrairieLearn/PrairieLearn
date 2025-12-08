@@ -628,12 +628,12 @@ export function RubricSettings({
               </div>
             </div>
             <div class="mb-3 col-12 col-md-6 col-xl-5">
-              <label class="form-label" for="grader-guidelines">
+              <label class="form-label" for="grader_guidelines">
                 Grader guidelines (not shown to students)
               </label>
               <textarea
-                id="grader-guidelines"
-                name="grader-guidelines"
+                id="grader_guidelines"
+                name="grader_guidelines"
                 class="form-control"
                 rows={5}
                 value={graderGuidelines}
