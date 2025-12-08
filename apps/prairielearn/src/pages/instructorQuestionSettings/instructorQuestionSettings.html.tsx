@@ -90,15 +90,7 @@ export function InstructorQuestionSettings({
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const questionTagNames = new Set(questionTags.map((tag) => tag.name));
   const authorsData = authors.map((author) => {
-    let parsedORCIDId = '';
-    if (author.orcid != null) {
-      for (let index = 0; index < author.orcid.length; index++) {
-        parsedORCIDId += author.orcid[index];
-        if ((index + 1) % 4 === 0 && index !== author.orcid.length - 1) {
-          parsedORCIDId += '-';
-        }
-      }
-    }
+    const parsedORCIDId = author.orcid?.match(/.{1,4}/g)?.join('-') ?? '';
     return {
       author_name: author.author_name,
       email: author.email,
@@ -325,7 +317,7 @@ export function InstructorQuestionSettings({
                 <tbody id="author-table-body">
                   ${authorsData.length === 0 && !canEdit
                     ? html`<tr>
-                        <td><small class="text-center">No authors</small></td>
+                        <td colspan="4" class="text-center"><small>No authors</small></td>
                       </tr>`
                     : null}
                   ${authorsData.map((author, index) => {
@@ -342,6 +334,7 @@ export function InstructorQuestionSettings({
                                 id="${'author_name_' + index}"
                                 name="${'author_name_' + index}"
                                 value="${author.author_name}"
+                                aria-describedby="${'author_name_help_' + index}"
                               />`
                             : html` <small class="text-center">${author.author_name}</small> `}
                         </td>
