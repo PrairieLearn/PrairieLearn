@@ -26,6 +26,7 @@ import {
   GradingJobSchema,
   IdSchema,
   type InstanceQuestion,
+  SubmissionSchema,
 } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -216,6 +217,12 @@ router.get(
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
 
+    const submissionCredits = await sqldb.queryRows(
+      sql.select_submission_credit_values,
+      { assessment_instance_id: res.locals.assessment_instance.id },
+      z.number(),
+    );
+
     res.send(
       InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
@@ -231,6 +238,7 @@ router.get(
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
         skipGradedSubmissions: req.session.skip_graded_submissions,
+        submissionCredits,
       }),
     );
   }),

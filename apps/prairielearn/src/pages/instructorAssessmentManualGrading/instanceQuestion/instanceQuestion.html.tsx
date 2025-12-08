@@ -41,6 +41,7 @@ export function InstanceQuestion({
   aiGradingStats,
   instanceQuestionGroups,
   skipGradedSubmissions,
+  submissionCredits,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData | null;
@@ -59,6 +60,7 @@ export function InstanceQuestion({
   aiGradingStats: AiGradingGeneralStats | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skipGradedSubmissions: boolean;
+  submissionCredits: number[];
 }) {
   const instanceQuestionGroupsExist = instanceQuestionGroups
     ? instanceQuestionGroups.length > 0
@@ -124,6 +126,15 @@ export function InstanceQuestion({
             <div class="alert alert-danger" role="alert">
               This assessment instance is still open. Student may still be able to submit new
               answers.
+            </div>
+          `
+        : ''}
+      ${submissionCredits.some((credit) => credit !== 100)
+        ? html`
+            <div class="alert alert-warning" role="alert">
+              There are submissions in this assessment instance with credit different than 100%.
+              Submitting a manual grade will override any credit limits set for this assessment
+              instance.
             </div>
           `
         : ''}

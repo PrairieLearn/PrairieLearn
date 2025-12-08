@@ -128,3 +128,15 @@ SELECT
       AND gj.grading_method = 'Manual'
       AND gj.deleted_at IS NULL
   );
+
+-- BLOCK select_submission_with_credit_non_100
+SELECT DISTINCT
+  s.credit
+FROM
+  assessment_instances AS ai
+  JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+  JOIN variants AS v ON (v.instance_question_id = iq.id)
+  JOIN submissions AS s ON (s.variant_id = v.id)
+WHERE
+  ai.id = $assessment_instance_id
+  AND s.credit IS NOT NULL;
