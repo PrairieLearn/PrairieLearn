@@ -76,7 +76,7 @@ test.describe('Bulk invite students', () => {
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
     // Should show success message
-    await expect(page.getByText(`${VALID_STUDENT.uid} was invited successfully`)).toBeVisible({
+    await expect(page.getByText('1 student successfully invited')).toBeVisible({
       timeout: 10000,
     });
 
@@ -98,7 +98,7 @@ test.describe('Bulk invite students', () => {
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
     // Should show success message for multiple students
-    await expect(page.getByText('2 students were invited successfully')).toBeVisible({
+    await expect(page.getByText('2 students successfully invited')).toBeVisible({
       timeout: 10000,
     });
   });
@@ -140,7 +140,7 @@ test.describe('Bulk invite students', () => {
     });
   });
 
-  test('shows confirmation modal when some UIDs are valid and some invalid', async ({ page }) => {
+  test('invites valid students and shows skip info for invalid ones', async ({ page }) => {
     // Create a fresh valid student for this test
     await sqldb.executeRow(sql.insert_or_update_user, {
       uid: 'fresh_student@test.com',
@@ -159,48 +159,14 @@ test.describe('Bulk invite students', () => {
 
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
-    const dialog = page.getByRole('dialog');
-    await expect(dialog.getByText('Confirm invalid students', { exact: true })).toBeVisible({
+    // Should show success message with skip info (no confirmation modal)
+    await expect(page.getByText('1 student successfully invited')).toBeVisible({
       timeout: 10000,
     });
-    await expect(dialog.getByText(ENROLLED_STUDENT.uid)).toBeVisible();
-    await expect(dialog.getByText('Already enrolled')).toBeVisible();
+    await expect(page.getByText('1 enrolled student skipped')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Invite anyway' }).click();
-
-    await expect(page.getByText('was invited successfully')).toBeVisible({ timeout: 10000 });
-  });
-
-  test('can continue editing from confirmation modal', async ({ page }) => {
-    await sqldb.executeRow(sql.insert_or_update_user, {
-      uid: 'another_fresh@test.com',
-      name: 'Another Fresh Student',
-    });
-
-    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
-
-    await page.getByRole('button', { name: 'Invite students' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-
-    // Mix of valid and invalid UIDs
-    await page
-      .getByRole('textbox', { name: 'UIDs' })
-      .fill(`another_fresh@test.com\n${ENROLLED_STUDENT.uid}`);
-
-    await page.getByRole('button', { name: 'Invite', exact: true }).click();
-
-    await expect(
-      page.getByRole('dialog').getByText('Confirm invalid students', { exact: true }),
-    ).toBeVisible({
-      timeout: 10000,
-    });
-
-    await page.getByRole('button', { name: 'Continue editing' }).click();
-
-    await expect(
-      page.getByRole('dialog').getByText('Invite students', { exact: true }),
-    ).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'UIDs' })).toBeVisible();
+    // Modal should be closed
+    await expect(page.getByRole('dialog')).not.toBeVisible();
   });
 
   test('shows error for invalid email format', async ({ page }) => {
