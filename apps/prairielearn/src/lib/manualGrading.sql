@@ -210,14 +210,16 @@ INSERT INTO
     starting_points,
     min_points,
     max_extra_points,
-    replace_auto_points
+    replace_auto_points,
+    grader_guidelines
   )
 VALUES
   (
     $starting_points,
     $min_points,
     $max_extra_points,
-    $replace_auto_points
+    $replace_auto_points,
+    $grader_guidelines
   )
 RETURNING
   id;

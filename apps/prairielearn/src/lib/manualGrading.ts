@@ -294,7 +294,7 @@ export async function updateAssessmentQuestionRubric(
       // Rubric does not exist yet, but should, insert new rubric
       new_rubric_id = await sqldb.queryRow(
         sql.insert_rubric,
-        { starting_points, min_points, max_extra_points, replace_auto_points },
+        { starting_points, min_points, max_extra_points, replace_auto_points, grader_guidelines },
         IdSchema,
       );
     } else {
