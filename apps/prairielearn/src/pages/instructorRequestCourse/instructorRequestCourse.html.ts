@@ -5,6 +5,7 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseRequest } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assertNever } from '../../lib/types.js';
 
 import type { CourseRequestRow, Lti13CourseRequestInput } from './instructorRequestCourse.types.js';
@@ -16,7 +17,7 @@ export function RequestCourse({
 }: {
   rows: CourseRequestRow[];
   lti13Info: Lti13CourseRequestInput;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     pageTitle: 'Request a Course',
