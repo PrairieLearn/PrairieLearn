@@ -129,7 +129,7 @@ SELECT
       AND gj.deleted_at IS NULL
   );
 
--- BLOCK select_submission_with_credit_non_100
+-- BLOCK select_submission_credit_values
 SELECT DISTINCT
   s.credit
 FROM
