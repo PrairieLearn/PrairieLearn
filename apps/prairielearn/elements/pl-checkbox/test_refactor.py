@@ -355,7 +355,7 @@ def test_partial_credit_new() -> None:
         == pl_checkbox.PartialCreditType.EACH_ANSWER
     )
 
-    with pytest.raises(ValueError, match=r"Invalid partial-credit-method.*"):
+    with pytest.raises(ValueError, match=r"Invalid partial-credit value.*"):
         pl_checkbox.get_partial_credit_mode(build_element("other"))
 
 

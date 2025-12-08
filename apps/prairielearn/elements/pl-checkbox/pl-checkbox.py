@@ -12,8 +12,8 @@ from typing_extensions import assert_never
 
 class PartialCreditType(Enum):
     OFF = "none"
-    NET_CORRECT = "PC"
-    EACH_ANSWER = "EDC"
+    NET_CORRECT = "NET"
+    EACH_ANSWER = "EACH"
     COVERAGE = "COV"
 
 
@@ -228,16 +228,18 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
                 return PartialCreditType.OFF
 
             partial_credit_method = pl.get_string_attrib(
-                element, "partial-credit-method", "PC"
+                element, "partial-credit-method", "NET"
             )
             old_to_new_mapping = {
                 "PC": PartialCreditType.NET_CORRECT,
+                "NET": PartialCreditType.NET_CORRECT,
                 "COV": PartialCreditType.COVERAGE,
                 "EDC": PartialCreditType.EACH_ANSWER,
+                "EACH": PartialCreditType.EACH_ANSWER,
             }
             if partial_credit_method not in old_to_new_mapping:
                 raise ValueError(
-                    f'Invalid partial-credit-method: {partial_credit_method}. Must be "PC", "COV", or "EDC".'
+                    f'Invalid partial-credit-method: {partial_credit_method}. Must be "NET" (or "PC"), "COV", or "EACH" (or "EDC").'
                 )
             return old_to_new_mapping[partial_credit_method]
         else:
@@ -262,7 +264,7 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
         )
     except ValueError as e:
         raise ValueError(
-            f"Invalid partial-credit-method: {pl.get_string_attrib(element, 'partial-credit')}"
+            f"Invalid partial-credit value: {pl.get_string_attrib(element, 'partial-credit')}"
         ) from e
 
 
@@ -293,14 +295,14 @@ def validate_min_max_options(
     """
     if not (0 <= min_correct <= max_correct <= len_correct):
         raise ValueError(
-            f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
+            f"Invalid configuration: min-correct ({min_correct}) and max-correct ({max_correct}) must be between 0 and the number of correct answers ({len_correct})"
         )
 
     min_incorrect = number_answers - max_correct
     max_incorrect = number_answers - min_correct
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError(
-            f"INTERNAL ERROR: incorrect number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
+            f"Invalid configuration: The number of incorrect answers needed ({min_incorrect} to {max_incorrect}) exceeds the number of incorrect answers available ({len_incorrect})"
         )
 
     if min_select < min_select_default:
@@ -417,13 +419,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     max_correct = min(len_correct, number_answers, max(min_correct, max_correct))
     if not (0 <= min_correct <= max_correct <= len_correct):
         raise ValueError(
-            f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
+            f"Invalid configuration: min-correct ({min_correct}) and max-correct ({max_correct}) must be between 0 and the number of correct answers ({len_correct})"
         )
     min_incorrect = number_answers - max_correct
     max_incorrect = number_answers - min_correct
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError(
-            f"INTERNAL ERROR: incorrect number: ({min_incorrect}, {max_incorrect}, {len_incorrect}, {len_correct})"
+            f"Invalid configuration: The number of incorrect answers needed ({min_incorrect} to {max_incorrect}) exceeds the number of incorrect answers available ({len_incorrect})"
         )
 
     min_select = pl.get_integer_attrib(element, "min-select", MIN_SELECT_DEFAULT)
