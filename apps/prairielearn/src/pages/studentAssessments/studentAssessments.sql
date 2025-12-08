@@ -200,6 +200,7 @@ SELECT
 FROM
   all_rows
 WHERE
+  -- TODO: shift this check into typescript so that we are setup for evaluation of modern access control.
   authorized
 ORDER BY
   CASE
