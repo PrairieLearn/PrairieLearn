@@ -547,18 +547,20 @@ export async function loadCourseInfo({
    * Used to retrieve fields such as "assessmentSets" and "topics".
    * Adds a warning when syncing if duplicates are found.
    * If defaults are provided, the entries from defaults not present in the resulting list are merged.
+   *
+   * Each entry must have a `name` property.
+   *
    * @param fieldName The member of `info` to inspect
-   * @param entryIdentifier The member of each element of the field which uniquely identifies it
    */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
-  >(fieldName: K, entryIdentifier: 'name', defaults?: CourseJson[K]): CourseJson[K] {
+  >(fieldName: K, defaults?: CourseJson[K]): CourseJson[K] {
     type Entry = NonNullable<CourseJson[K]>[number];
     const known = new Map<string, Entry>();
     const duplicateEntryIds = new Set<string>();
 
     (info![fieldName] ?? []).forEach((entry) => {
-      const entryId = entry[entryIdentifier];
+      const entryId = entry.name;
       if (known.has(entryId)) {
         duplicateEntryIds.add(entryId);
       }
@@ -575,7 +577,7 @@ export async function loadCourseInfo({
 
     if (defaults) {
       defaults.forEach((defaultEntry) => {
-        const defaultEntryId = defaultEntry[entryIdentifier];
+        const defaultEntryId = defaultEntry.name;
         if (!known.has(defaultEntryId)) {
           known.set(defaultEntryId, defaultEntry);
         }
@@ -594,22 +596,18 @@ export async function loadCourseInfo({
     assessmentSetsInUse.has(set.name),
   );
 
-  const assessmentSets = getFieldWithoutDuplicates(
-    'assessmentSets',
-    'name',
-    defaultAssessmentSetsInUse,
-  );
+  const assessmentSets = getFieldWithoutDuplicates('assessmentSets', defaultAssessmentSetsInUse);
 
   // Tags in DEFAULT_TAGS may be in use but not present in the course info JSON
   // file. This ensures that default tags are added if a question uses them, and
   // removed if not.
   const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => tagsInUse.has(tag.name));
 
-  const tags = getFieldWithoutDuplicates('tags', 'name', defaultTagsInUse);
-  const topics = getFieldWithoutDuplicates('topics', 'name');
-  const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
+  const tags = getFieldWithoutDuplicates('tags', defaultTagsInUse);
+  const topics = getFieldWithoutDuplicates('topics');
+  const sharingSets = getFieldWithoutDuplicates('sharingSets');
 
-  const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
+  const assessmentModules = getFieldWithoutDuplicates('assessmentModules');
 
   const devModeFeatures = run(() => {
     const features = info.options.devModeFeatures ?? {};
