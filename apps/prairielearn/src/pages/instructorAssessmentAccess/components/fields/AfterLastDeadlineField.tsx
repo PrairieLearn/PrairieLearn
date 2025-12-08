@@ -150,7 +150,7 @@ export function AfterLastDeadlineField({
   const wrappedContent = (
     <div>
       <div class="mb-2">
-        <strong>After Last Deadline</strong>
+        <strong>After last deadline</strong>
         <br />
         <small class="text-muted">{getLastDeadlineText()}</small>
       </div>
@@ -162,7 +162,7 @@ export function AfterLastDeadlineField({
     <FieldWrapper
       isOverrideRule={isOverrideRule}
       isOverridden={field.isOverridden}
-      label="After Last Deadline"
+      label="After last deadline"
       onOverride={() => enableOverride({ allowSubmissions: false })}
       onRemoveOverride={removeOverride}
     >

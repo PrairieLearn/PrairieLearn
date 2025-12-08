@@ -44,24 +44,26 @@ export function FieldWrapper({
 
   return (
     <Card class="mb-3" style={cardStyle}>
-      <Card.Body class="d-flex justify-content-between align-items-center">
+      <Card.Body>
         {!isOverridden ? (
-          <>
+          <div class="d-flex justify-content-between align-items-center">
             <span class="text-muted">{label}</span>
             {onOverride && (
               <Button size="sm" variant="outline-primary" class="ms-3" onClick={onOverride}>
                 Override
               </Button>
             )}
-          </>
+          </div>
         ) : (
           <>
-            <div style={{ flex: 1 }}>{children}</div>
             {onRemoveOverride && (
-              <Button size="sm" variant="outline-danger" class="ms-3" onClick={onRemoveOverride}>
-                Remove Override
-              </Button>
+              <div class="d-flex justify-content-end mb-2">
+                <Button size="sm" variant="outline-danger" onClick={onRemoveOverride}>
+                  Remove override
+                </Button>
+              </div>
             )}
+            <div>{children}</div>
           </>
         )}
       </Card.Body>

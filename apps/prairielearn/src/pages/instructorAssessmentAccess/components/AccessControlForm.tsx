@@ -179,11 +179,11 @@ export function AccessControlForm({
           </Button>
         </div>
 
-        {/* Rule Header with name and actions */}
+        {/* Rule header with name and actions */}
         <div class="d-flex align-items-center justify-content-between mb-3">
           <h5 class="mb-0">
             {selectedRule.type === 'main'
-              ? 'Main Access Control Rule'
+              ? 'Main access control rule'
               : getOverrideName(selectedRule.index)}
           </h5>
 
@@ -266,7 +266,7 @@ export function AccessControlForm({
 
         <div class="mt-4 d-flex gap-2">
           <Button type="submit" variant="primary" disabled={!isDirty || !isValid}>
-            Save Changes
+            Save changes
           </Button>
           <Button
             type="button"
@@ -278,18 +278,18 @@ export function AccessControlForm({
         </div>
       </Form>
 
-      {/* Targets Configuration Modal */}
+      {/* Targets configuration modal */}
       <Modal
         show={targetsModalState.show}
         onHide={() => setTargetsModalState({ show: false, overrideIndex: null })}
       >
         <Modal.Header closeButton>
-          <Modal.Title>Configure Targets</Modal.Title>
+          <Modal.Title>Configure targets</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {targetsModalState.overrideIndex !== null && (
             <Form.Group>
-              <Form.Label>Target Groups</Form.Label>
+              <Form.Label>Target groups</Form.Label>
               <Form.Control
                 type="text"
                 placeholder="Enter target identifiers separated by commas"
@@ -311,10 +311,10 @@ export function AccessControlForm({
         </Modal.Footer>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete confirmation modal */}
       <ConfirmationModal
         show={deleteModalState.show}
-        title="Delete Override Rule"
+        title="Delete override rule"
         message={`Are you sure you want to delete "${deleteModalState.overrideIndex !== null ? getOverrideName(deleteModalState.overrideIndex) : ''}"? This action cannot be undone.`}
         confirmText="Delete"
         confirmVariant="danger"
@@ -322,14 +322,14 @@ export function AccessControlForm({
         onCancel={handleDeleteCancel}
       />
 
-      {/* Debug Display - Show both form state and JSON output */}
+      {/* Debug display - show both form state and JSON output */}
       <Card class="mt-4">
         <Card.Header>
-          <strong>Form State (Debug)</strong>
+          <strong>Form state (debug)</strong>
         </Card.Header>
         <Card.Body>
           <div class="mb-3">
-            <strong>Internal Form Data:</strong>
+            <strong>Internal form data:</strong>
             <pre
               class="mb-0 mt-2"
               style={{ fontSize: '0.8rem', maxHeight: '400px', overflow: 'auto' }}
@@ -338,7 +338,7 @@ export function AccessControlForm({
             </pre>
           </div>
           <div>
-            <strong>JSON Output (what will be saved):</strong>
+            <strong>JSON output (what will be saved):</strong>
             <pre
               class="mb-0 mt-2"
               style={{ fontSize: '0.8rem', maxHeight: '400px', overflow: 'auto' }}

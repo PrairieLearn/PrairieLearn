@@ -34,7 +34,7 @@ export function AfterCompleteForm({
   namePrefix,
   assessmentType,
   setValue,
-  title = 'After Completion Behavior',
+  title = 'After completion behavior',
   description = 'Configure what happens after students complete the assessment',
 }: AfterCompleteFormProps) {
   const isOverrideRule = namePrefix.startsWith('overrides.');
@@ -325,33 +325,33 @@ export function AfterCompleteForm({
       </Card.Header>
       <Card.Body>
         <div>
-          {/* Question Visibility Section */}
+          {/* Question visibility section */}
           <FieldWrapper
             isOverrideRule={isOverrideRule}
             isOverridden={questionVisibility.isOverridden}
-            label="Question Visibility"
+            label="Question visibility"
             onOverride={() => enableQuestionOverride({ hideQuestions: false })}
             onRemoveOverride={removeQuestionOverride}
           >
             <div>
               <div class="mb-2">
-                <strong>Question Visibility</strong>
+                <strong>Question visibility</strong>
               </div>
               {questionVisibilityContent}
             </div>
           </FieldWrapper>
 
-          {/* Score Visibility Section */}
+          {/* Score visibility section */}
           <FieldWrapper
             isOverrideRule={isOverrideRule}
             isOverridden={scoreVisibility.isOverridden}
-            label="Score Visibility"
+            label="Score visibility"
             onOverride={() => enableScoreOverride({ hideScore: false })}
             onRemoveOverride={removeScoreOverride}
           >
             <div>
               <div class="mb-2">
-                <strong>Score Visibility</strong>
+                <strong>Score visibility</strong>
               </div>
               {scoreVisibilityContent}
             </div>
@@ -360,7 +360,7 @@ export function AfterCompleteForm({
           {assessmentType === 'Exam' && (
             <div class="alert alert-info">
               <i class="bi bi-info-circle me-2" aria-hidden="true" />
-              <strong>Note for Exams:</strong> Consider hiding questions and scores until after all
+              <strong>Note for exams:</strong> Consider hiding questions and scores until after all
               students have completed to maintain fairness. You can use the "until date" options to
               reveal them after the exam window closes.
             </div>

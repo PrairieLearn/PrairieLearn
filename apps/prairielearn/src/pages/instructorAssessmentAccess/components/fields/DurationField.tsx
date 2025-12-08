@@ -60,7 +60,7 @@ export function DurationField({ control, setValue, namePrefix }: DurationFieldPr
     <FieldWrapper
       isOverrideRule={isOverrideRule}
       isOverridden={field.isOverridden}
-      label="Time Limit"
+      label="Time limit"
       onOverride={() => enableOverride(60)}
       onRemoveOverride={removeOverride}
     >

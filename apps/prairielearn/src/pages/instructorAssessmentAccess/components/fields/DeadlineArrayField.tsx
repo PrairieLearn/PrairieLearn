@@ -38,7 +38,7 @@ export function DeadlineArrayField({
   const isEarly = type === 'early';
 
   const fieldPath = isEarly ? 'dateControl.earlyDeadlines' : 'dateControl.lateDeadlines';
-  const label = isEarly ? 'Early Deadlines' : 'Late Deadlines';
+  const label = isEarly ? 'Early deadlines' : 'Late deadlines';
 
   const { field, isOverrideRule, enableOverride, removeOverride, toggleEnabled } =
     useOverridableField({
@@ -241,7 +241,7 @@ export function DeadlineArrayField({
           disabled={!field.isEnabled}
           onClick={addDeadline}
         >
-          Add {isEarly ? 'Early' : 'Late'}
+          Add {isEarly ? 'early' : 'late'}
         </Button>
       </div>
 

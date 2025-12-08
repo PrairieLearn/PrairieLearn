@@ -25,7 +25,7 @@ export function DateControlForm({
   control,
   setValue,
   namePrefix = 'mainRule',
-  title = 'Date Control',
+  title = 'Date control',
   description = 'Control access and credit to your exam based on a schedule',
 }: DateControlFormProps) {
   const isOverrideRule = namePrefix.startsWith('overrides.');

@@ -32,24 +32,24 @@ export function OverrideRuleContent({ control, index, setValue }: OverrideRuleCo
         </Form.Group>
       )}
 
-      {/* Effects Section - Only show if rule is enabled and doesn't block access */}
+      {/* Effects section - only show if rule is enabled and doesn't block access */}
       {isEnabled && !blockAccess && (
         <div class="mb-3">
-          {/* Date Control Section */}
+          {/* Date control section */}
           <DateControlForm
             control={control}
             namePrefix={`overrides.${index}`}
             setValue={setValue}
-            title="Date Control"
+            title="Date control"
             description="Control access and credit to your exam based on a schedule"
           />
 
-          {/* After Completion Behavior Section */}
+          {/* After completion behavior section */}
           <AfterCompleteForm
             control={control}
             namePrefix={`overrides.${index}`}
             setValue={setValue}
-            title="After Completion Behavior"
+            title="After completion behavior"
             description="Configure what happens after students complete the assessment"
           />
         </div>

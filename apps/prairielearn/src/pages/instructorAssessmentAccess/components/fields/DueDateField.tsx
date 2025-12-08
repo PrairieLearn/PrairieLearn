@@ -124,7 +124,7 @@ export function DueDateField({ control, setValue, namePrefix }: DueDateFieldProp
     <FieldWrapper
       isOverrideRule={isOverrideRule}
       isOverridden={field.isOverridden}
-      label="Due Date"
+      label="Due date"
       onOverride={() => enableOverride('')}
       onRemoveOverride={removeOverride}
     >
