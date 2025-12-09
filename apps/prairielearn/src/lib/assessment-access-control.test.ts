@@ -2,12 +2,12 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { execute } from '@prairielearn/postgres';
 
-import { AssessmentSchema, CourseInstanceSchema } from '../../../lib/db-types.js';
-import type { AccessControlJsonInput } from '../../../schemas/accessControl.js';
-import * as helperDb from '../../../tests/helperDb.js';
-import * as util from '../../../tests/sync/util.js';
+import type { AccessControlJsonInput } from '../schemas/accessControl.js';
+import * as helperDb from '../tests/helperDb.js';
+import * as util from '../tests/sync/util.js';
 
-import { getAccessControlForAssessment } from './accessControl.js';
+import { getAccessControlForAssessment } from './assessment-access-control.js';
+import { AssessmentSchema, CourseInstanceSchema } from './db-types.js';
 
 /**
  * Makes a basic access control rule for testing.

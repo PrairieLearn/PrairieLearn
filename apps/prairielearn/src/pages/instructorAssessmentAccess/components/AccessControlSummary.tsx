@@ -53,6 +53,8 @@ export function AccessControlSummary({
         ) : (
           overrides.map((override, index) => (
             <RuleSummaryCard
+              // TODO: Fix this
+              // eslint-disable-next-line @eslint-react/no-array-index-key
               key={index}
               rule={override}
               isMainRule={false}

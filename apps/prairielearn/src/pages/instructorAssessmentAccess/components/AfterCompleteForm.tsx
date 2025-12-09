@@ -330,9 +330,9 @@ export function AfterCompleteForm({
             isOverrideRule={isOverrideRule}
             isOverridden={questionVisibility.isOverridden}
             label="Question visibility"
+            headerContent={<strong>Question visibility</strong>}
             onOverride={() => enableQuestionOverride({ hideQuestions: false })}
             onRemoveOverride={removeQuestionOverride}
-            headerContent={<strong>Question visibility</strong>}
           >
             {questionVisibilityContent}
           </FieldWrapper>
@@ -342,9 +342,9 @@ export function AfterCompleteForm({
             isOverrideRule={isOverrideRule}
             isOverridden={scoreVisibility.isOverridden}
             label="Score visibility"
+            headerContent={<strong>Score visibility</strong>}
             onOverride={() => enableScoreOverride({ hideScore: false })}
             onRemoveOverride={removeScoreOverride}
-            headerContent={<strong>Score visibility</strong>}
           >
             {scoreVisibilityContent}
           </FieldWrapper>

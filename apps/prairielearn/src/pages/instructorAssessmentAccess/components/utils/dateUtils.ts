@@ -22,7 +22,7 @@ export function getEarlyDeadlineRange(
   releaseDate: OverridableField<string>,
 ): DateRange | null {
   const currentDeadline = deadlines[index];
-  if (!currentDeadline?.date) return null;
+  if (!currentDeadline.date) return null;
 
   const endDate = new Date(currentDeadline.date);
   let startDate: Date | null = null;
@@ -35,7 +35,7 @@ export function getEarlyDeadlineRange(
   } else {
     // Subsequent deadlines start from previous deadline
     const previousDeadline = deadlines[index - 1];
-    if (previousDeadline?.date) {
+    if (previousDeadline.date) {
       startDate = new Date(previousDeadline.date);
     }
   }
@@ -53,7 +53,7 @@ export function getLateDeadlineRange(
   dueDate: OverridableField<string>,
 ): DateRange | null {
   const currentDeadline = deadlines[index];
-  if (!currentDeadline?.date) return null;
+  if (!currentDeadline.date) return null;
 
   const endDate = new Date(currentDeadline.date);
   let startDate: Date | null = null;
@@ -66,7 +66,7 @@ export function getLateDeadlineRange(
   } else {
     // Subsequent deadlines start from previous deadline
     const previousDeadline = deadlines[index - 1];
-    if (previousDeadline?.date) {
+    if (previousDeadline.date) {
       startDate = new Date(previousDeadline.date);
     }
   }

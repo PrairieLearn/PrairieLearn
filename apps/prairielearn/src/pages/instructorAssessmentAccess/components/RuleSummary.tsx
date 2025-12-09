@@ -275,7 +275,7 @@ export function RuleSummaryCard({
         {dateTableRows.length > 0 && (
           <div class="mb-3">
             <strong class="d-block mb-2">Deadlines</strong>
-            <Table size="sm" bordered class="mb-0">
+            <Table size="sm" class="mb-0" bordered>
               <thead class="table-light">
                 <tr>
                   <th>Date</th>
@@ -284,8 +284,8 @@ export function RuleSummaryCard({
                 </tr>
               </thead>
               <tbody>
-                {dateTableRows.map((row, index) => (
-                  <tr key={index}>
+                {dateTableRows.map((row) => (
+                  <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
                     <td>
                       {row.label && <span class="text-muted me-1">{row.label}:</span>}
                       {row.date}
@@ -302,8 +302,8 @@ export function RuleSummaryCard({
         {/* Other settings list */}
         {summaryLines.length > 0 && (
           <ul class="mb-0 ps-3">
-            {summaryLines.map((line, index) => (
-              <li key={index}>{line}</li>
+            {summaryLines.map((line) => (
+              <li key={line}>{line}</li>
             ))}
           </ul>
         )}

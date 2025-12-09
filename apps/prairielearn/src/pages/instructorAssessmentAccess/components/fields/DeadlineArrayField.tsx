@@ -8,7 +8,6 @@ import {
 } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
-
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverridableField } from '../hooks/useOverridableField.js';
 import type { AccessControlFormData, DeadlineEntry, OverridableField } from '../types.js';
@@ -82,7 +81,7 @@ export function DeadlineArrayField({
         index
       ]?.date?.message;
     } else {
-      const overrideIndex = parseInt(parts[1]);
+      const overrideIndex = Number.parseInt(parts[1]);
       return err?.overrides?.[overrideIndex]?.dateControl?.[
         isEarly ? 'earlyDeadlines' : 'lateDeadlines'
       ]?.value?.[index]?.date?.message;
@@ -97,7 +96,7 @@ export function DeadlineArrayField({
         index
       ]?.credit?.message;
     } else {
-      const overrideIndex = parseInt(parts[1]);
+      const overrideIndex = Number.parseInt(parts[1]);
       return err?.overrides?.[overrideIndex]?.dateControl?.[
         isEarly ? 'earlyDeadlines' : 'lateDeadlines'
       ]?.value?.[index]?.credit?.message;
@@ -177,7 +176,6 @@ export function DeadlineArrayField({
   };
 
   const validateCredit = (value: number) => {
-    if (value === undefined || value === null) return 'Credit is required';
     if (isEarly) {
       if (value < 101 || value > 200) return 'Must be 101-200%';
     } else {
@@ -293,9 +291,9 @@ export function DeadlineArrayField({
       isOverrideRule={isOverrideRule}
       isOverridden={field.isOverridden}
       label={label}
+      headerContent={headerContent}
       onOverride={() => enableOverride([])}
       onRemoveOverride={removeOverride}
-      headerContent={headerContent}
     >
       {content}
     </FieldWrapper>

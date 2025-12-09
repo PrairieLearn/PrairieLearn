@@ -36,15 +36,16 @@ export function AccessControlBreadcrumb({
         ) : (
           <>
             <li class="breadcrumb-item">
-              <a
-                href="#"
+              <button
+                type="button"
+                class="btn btn-link"
                 onClick={(e) => {
                   e.preventDefault();
                   goToSummary();
                 }}
               >
                 Access rules
-              </a>
+              </button>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
               {getCurrentPageName()}

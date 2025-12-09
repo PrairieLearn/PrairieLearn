@@ -2,7 +2,6 @@ import { Form, InputGroup } from 'react-bootstrap';
 import { type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
-
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverridableField } from '../hooks/useOverridableField.js';
 import type {
@@ -160,9 +159,9 @@ export function AfterLastDeadlineField({
       isOverrideRule={isOverrideRule}
       isOverridden={field.isOverridden}
       label="After last deadline"
+      headerContent={headerContent}
       onOverride={() => enableOverride({ allowSubmissions: false })}
       onRemoveOverride={removeOverride}
-      headerContent={headerContent}
     >
       {content}
     </FieldWrapper>

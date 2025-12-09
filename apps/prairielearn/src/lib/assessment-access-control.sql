@@ -63,4 +63,3 @@ WHERE
   ac.assessment_id = $assessment_id
 ORDER BY
   ac.order;
-

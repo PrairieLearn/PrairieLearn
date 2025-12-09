@@ -66,9 +66,9 @@ export function PasswordField({ control, setValue, namePrefix }: PasswordFieldPr
       isOverrideRule={isOverrideRule}
       isOverridden={field.isOverridden}
       label="Password"
+      headerContent={headerContent}
       onOverride={() => enableOverride('')}
       onRemoveOverride={removeOverride}
-      headerContent={headerContent}
     >
       {content}
     </FieldWrapper>

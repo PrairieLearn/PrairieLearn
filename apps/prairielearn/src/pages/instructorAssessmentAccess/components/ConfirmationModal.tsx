@@ -22,7 +22,7 @@ export function ConfirmationModal({
   onCancel,
 }: ConfirmationModalProps) {
   return (
-    <Modal show={show} onHide={onCancel} centered>
+    <Modal show={show} centered onHide={onCancel}>
       <Modal.Header closeButton>
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
@@ -38,4 +38,3 @@ export function ConfirmationModal({
     </Modal>
   );
 }
-
