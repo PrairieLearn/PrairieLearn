@@ -26,7 +26,7 @@ function asHtmlSafe(
   return renderHtml(content);
 }
 
-function SyncErrorsAndWarningsComponent({
+function SyncErrorsAndWarningsForContext({
   navContext,
   resLocals,
 }: {
@@ -37,6 +37,9 @@ function SyncErrorsAndWarningsComponent({
   const { course, urlPrefix, authz_data: authzData } = resLocals;
 
   if (!course || !urlPrefix || !authzData) return null;
+
+  // The file editor renders its own SyncErrorsAndWarnings component with different wording.
+  if (navContext.subPage === 'file_edit') return null;
 
   switch (navContext.page) {
     case 'course_admin': {
@@ -69,17 +72,9 @@ function SyncErrorsAndWarningsComponent({
       const { assessment, course_instance: courseInstance } = resLocals;
       if (!assessment || !courseInstance) return null;
 
-      // This should never happen, but we are waiting on a better type system for res.locals.authz_data
-      // to be able to express this.
-      if (authzData.has_course_instance_permission_edit === undefined) {
-        throw new Error('has_course_instance_permission_edit is undefined');
-      }
-
       return (
         <SyncErrorsAndWarnings
-          authzData={{
-            has_course_instance_permission_edit: authzData.has_course_instance_permission_edit,
-          }}
+          authzData={authzData}
           exampleCourse={course.example_course}
           syncErrors={assessment.sync_errors}
           syncWarnings={assessment.sync_warnings}
@@ -358,7 +353,7 @@ export function PageLayout({
                 )}"
               >
                 ${renderHtml(
-                  <SyncErrorsAndWarningsComponent navContext={navContext} resLocals={resLocals} />,
+                  <SyncErrorsAndWarningsForContext navContext={navContext} resLocals={resLocals} />,
                 )}
                 ${contentString}
               </main>

@@ -30,7 +30,7 @@ router.get(
     let needToSync = false;
     try {
       await fs.access(res.locals.course.path);
-    } catch (err) {
+    } catch (err: any) {
       if (err.code === 'ENOENT') {
         needToSync = true;
       } else {

@@ -10,14 +10,14 @@ export function SyncErrorsAndWarnings({
   fileEditUrl,
   context,
 }: {
-  authzData: { has_course_instance_permission_edit: boolean };
+  authzData: { has_course_permission_edit: boolean };
   exampleCourse: boolean;
   syncErrors: string | null;
   syncWarnings: string | null;
   fileEditUrl: string;
   context: 'course' | 'question' | 'course instance' | 'assessment';
 }) {
-  if (!authzData.has_course_instance_permission_edit) {
+  if (!authzData.has_course_permission_edit) {
     return null;
   }
   if (!syncErrors && !syncWarnings) {

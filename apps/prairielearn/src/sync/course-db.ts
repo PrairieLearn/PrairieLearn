@@ -401,7 +401,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
     contents = await fs.readFile(absolutePath, 'utf8');
-  } catch (err) {
+  } catch (err: any) {
     if (err.code === 'ENOTDIR' && err.path === absolutePath) {
       // In a previous version of this code, we'd pre-filter
       // all files in the parent directory to remove anything
@@ -463,7 +463,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
         uuid: json.uuid,
         data: json,
       });
-    } catch (err) {
+    } catch (err: any) {
       return infofile.makeError(err.message);
     }
   } catch {
@@ -473,7 +473,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     try {
       // This should always throw
       jju.parse(contents, { mode: 'json' });
-    } catch (e) {
+    } catch (e: any) {
       result = infofile.makeError(`Error parsing JSON: ${e.message}`);
     }
 
@@ -798,7 +798,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
             );
           }
           Object.assign(infoFiles, subInfoFiles);
-        } catch (e) {
+        } catch (e: any) {
           if (e.code === 'ENOTDIR') {
             // This wasn't a directory; ignore it.
           } else if (e.code === 'ENOENT') {
@@ -818,7 +818,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
 
   try {
     return await walk('');
-  } catch (e) {
+  } catch (e: any) {
     if (e.code === 'ENOENT') {
       // Missing directory; return an empty list
       return {};
@@ -1054,7 +1054,7 @@ function validateQuestion({
     try {
       const schema = schemas[`QuestionOptions${question.type}JsonSchema`];
       schema.parse(question.options);
-    } catch (err) {
+    } catch (err: any) {
       errors.push(`Error validating question options: ${err.message}`);
     }
   }
