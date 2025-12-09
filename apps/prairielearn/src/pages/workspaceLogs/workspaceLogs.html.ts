@@ -95,9 +95,6 @@ export function WorkspaceVersionLogs({
       page: 'workspace',
       type: 'plain',
     },
-    options: {
-      paddingBottom: true,
-    },
     content: html`
       <h1 class="mb-4">Workspace version logs</h1>
 

@@ -47,9 +47,7 @@ export function Workspace({
         'visibility-timeout-sec': visibilityTimeoutSec.toString(),
       },
       enableNavbar: false,
-      paddingBottom: false,
-      paddingSides: false,
-      paddingTop: false,
+      contentPadding: false,
     },
     headContent: html`
       <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />

@@ -51,7 +51,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function prepareLocalsForRender(
   query: Record<string, any>,
-  resLocals: ResLocalsForPage['instructor-instance-question'],
+  resLocals: ResLocalsForPage<'instructor-instance-question'>,
 ) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
@@ -86,7 +86,9 @@ async function prepareLocalsForRender(
   }
 
   const graders = await selectCourseInstanceGraderStaff({
-    course_instance: resLocals.course_instance,
+    courseInstance: resLocals.course_instance,
+    authzData: resLocals.authz_data,
+    requiredRole: ['Student Data Viewer'],
   });
   return { resLocals, conflict_grading_job, graders };
 }
@@ -611,7 +613,9 @@ router.post(
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
-          course_instance: res.locals.course_instance,
+          courseInstance: res.locals.course_instance,
+          authzData: res.locals.authz_data,
+          requiredRole: ['Student Data Editor'],
         });
         if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
           throw new error.HttpStatusError(

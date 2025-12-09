@@ -42,7 +42,7 @@ export function InstanceQuestion({
   instanceQuestionGroups,
   skipGradedSubmissions,
 }: {
-  resLocals: ResLocalsForPage['instance-question'];
+  resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
@@ -270,7 +270,7 @@ function ConflictGradingJobModal({
   lastGrader,
   skipGradedSubmissions,
 }: {
-  resLocals: ResLocalsForPage['instance-question'];
+  resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;

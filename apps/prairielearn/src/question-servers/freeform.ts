@@ -1172,7 +1172,9 @@ export async function render(
         if (!(type in dependencies)) continue;
 
         for (const dep of question.dependencies[type]) {
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
           if (!dependencies[type].includes(dep)) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             dependencies[type].push(dep);
           }
         }
@@ -1220,8 +1222,11 @@ export async function render(
 
           if (!(resolvedType in dependencies)) continue;
 
-          for (const dep of elementDependencies[type]) {
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+          for (const dep of elementDependencies[type] ?? []) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             if (!dependencies[resolvedType].includes(dep)) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dependencies[resolvedType].push(dep);
             }
           }
@@ -1238,17 +1243,26 @@ export async function render(
             return type;
           });
 
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
           for (const key in elementDynamicDependencies[type]) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             if (!Object.hasOwn(dynamicDependencies[resolvedType], key)) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dynamicDependencies[resolvedType][key] = elementDynamicDependencies[type][key];
             } else if (
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dynamicDependencies[resolvedType][key] !== elementDynamicDependencies[type][key]
             ) {
               courseIssues.push(
                 new CourseIssueError(`Dynamic dependency ${key} assigned to conflicting files`, {
                   data: {
                     dependencyType: type,
-                    values: [dynamicDependencies[type][key], elementDynamicDependencies[type][key]],
+                    values: [
+                      // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                      dynamicDependencies[resolvedType][key],
+                      // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                      elementDynamicDependencies[type][key],
+                    ],
                   },
                   fatal: true,
                 }),
@@ -1291,24 +1305,40 @@ export async function render(
             for (const type in extension) {
               if (!(type in dependencies)) continue;
 
-              for (const dep of extension[type]) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+              for (const dep of extension[type] ?? []) {
+                // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                 if (!dependencies[type].includes(dep)) {
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                   dependencies[type].push(dep);
                 }
               }
             }
             for (const type in extensionDynamic) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               for (const key in extensionDynamic[type]) {
+                // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                 if (!Object.hasOwn(dynamicDependencies[type], key)) {
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                   dynamicDependencies[type][key] = extensionDynamic[type][key];
-                } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
+                } else if (
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                  dynamicDependencies[type][key] !==
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                  extensionDynamic[type][key]
+                ) {
                   courseIssues.push(
                     new CourseIssueError(
                       `Dynamic dependency ${key} assigned to conflicting files`,
                       {
                         data: {
                           dependencyType: type,
-                          values: [dynamicDependencies[type][key], extensionDynamic[type][key]],
+                          values: [
+                            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                            dynamicDependencies[type][key],
+                            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                            extensionDynamic[type][key],
+                          ],
                         },
                         fatal: true,
                       },

@@ -435,7 +435,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  const req_date = run(() => {
+  const req_date = run<Date>(() => {
     if (req.cookies.pl2_requested_date) {
       const req_date = parseISO(req.cookies.pl2_requested_date);
       if (!isValid(req_date)) {
@@ -682,7 +682,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.course = authnCourse;
   res.locals.institution = authnInstitution;
   res.locals.user = effectiveAuthzData.user;
-  res.locals.course_instance = authnCourseInstance;
+  if (authnCourseInstance) {
+    res.locals.course_instance = authnCourseInstance;
+  }
 
   // The session middleware does not run for API requests.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

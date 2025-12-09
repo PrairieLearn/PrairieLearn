@@ -69,36 +69,34 @@ export function Home({
   const hasCourses = listedStudentCourses.length > 0 || instructorCourses.length > 0;
 
   return (
-    <>
+    <div class="pt-5">
       <h1 class="visually-hidden">PrairieLearn Homepage</h1>
-      <div class="container pt-5">
-        <DevModeCard isDevMode={isDevMode} />
-        <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
-        {hasCourses ? (
-          <>
-            <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
-            <Hydrate>
-              <StudentCoursesCard
-                studentCourses={listedStudentCourses}
-                hasInstructorCourses={instructorCourses.length > 0}
-                canAddCourses={canAddCourses}
-                csrfToken={csrfToken}
-                urlPrefix={urlPrefix}
-                isDevMode={isDevMode}
-                enrollmentManagementEnabled={enrollmentManagementEnabled}
-              />
-            </Hydrate>
-          </>
-        ) : (
+      <DevModeCard isDevMode={isDevMode} />
+      <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
+      {hasCourses ? (
+        <>
+          <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
           <Hydrate>
-            <EmptyStateCards
+            <StudentCoursesCard
+              studentCourses={listedStudentCourses}
+              hasInstructorCourses={instructorCourses.length > 0}
+              canAddCourses={canAddCourses}
+              csrfToken={csrfToken}
               urlPrefix={urlPrefix}
+              isDevMode={isDevMode}
               enrollmentManagementEnabled={enrollmentManagementEnabled}
             />
           </Hydrate>
-        )}
-      </div>
-    </>
+        </>
+      ) : (
+        <Hydrate>
+          <EmptyStateCards
+            urlPrefix={urlPrefix}
+            enrollmentManagementEnabled={enrollmentManagementEnabled}
+          />
+        </Hydrate>
+      )}
+    </div>
   );
 }
 

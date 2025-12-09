@@ -98,7 +98,7 @@ router.get(
 
         const fromCourseInstance = await selectCourseInstanceByShortName({
           course,
-          short_name: shortName,
+          shortName,
         });
 
         const editor = new CourseInstanceCopyEditor({

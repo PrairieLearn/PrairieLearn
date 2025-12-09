@@ -43,18 +43,14 @@ export function PageLayout({
   options?: {
     /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
-    /** Whether the main container should have a bottom padding of pb-4 in Bootstrap. */
-    paddingBottom?: boolean;
-    /** Whether the main container should have no left and right padding in Bootstrap. */
-    paddingSides?: boolean;
-    /** Whether the main container should have a top padding of pt-3 in Bootstrap. */
-    paddingTop?: boolean;
+    /** Sets the html and body tag heights to 100% */
+    fullHeight?: boolean;
+    /** Whether the page content should have padding around it. */
+    contentPadding?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
     /** Enables an htmx extension for an element and all its children */
     hxExt?: string;
-    /** Sets the html and body tag heights to 100% */
-    fullHeight?: boolean;
     /** Dataset attributes to add to the body tag. The "data-" prefix will be added, so do not include it. */
     dataAttributes?: Record<string, string>;
     /** Whether or not the navbar should be shown. */
@@ -78,14 +74,12 @@ export function PageLayout({
   postContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
 }) {
   const resolvedOptions = {
+    fullWidth: false,
+    fullHeight: false,
+    contentPadding: true,
     hxExt: '',
-    paddingBottom: true,
-    paddingSides: true,
-    paddingTop: true,
     dataAttributes: {},
     enableNavbar: true,
-    fullHeight: false,
-    fullWidth: false,
     ...options,
   };
 
@@ -225,12 +219,15 @@ export function PageLayout({
               <main
                 id="content"
                 class="${clsx(
-                  resolvedOptions.fullWidth ? 'container-fluid' : 'container',
-                  resolvedOptions.paddingBottom && 'pb-4',
-                  !resolvedOptions.paddingSides && 'px-0',
-                  resolvedOptions.fullHeight && 'flex-grow-1',
-                  resolvedOptions.paddingTop && 'pt-3',
-                  sideNavEnabled && 'px-3',
+                  resolvedOptions.contentPadding
+                    ? resolvedOptions.fullWidth
+                      ? 'container-fluid'
+                      : 'container'
+                    : null,
+                  resolvedOptions.contentPadding && 'pt-3',
+                  resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
+                  resolvedOptions.contentPadding && 'pb-3',
+                  resolvedOptions.fullHeight && 'h-100',
                 )}"
               >
                 ${contentString}
