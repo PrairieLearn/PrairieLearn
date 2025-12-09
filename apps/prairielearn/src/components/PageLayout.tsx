@@ -115,10 +115,6 @@ function UnpublishedBannerComponent({
   navContext: NavContext;
   resLocals: UntypedResLocals;
 }) {
-  console.log('instructor page', navContext.type);
-  console.log('urlPrefix', urlPrefix);
-  console.log('courseInstance', courseInstance);
-
   if (navContext.type !== 'instructor') return null;
   const { course_instance: courseInstance, urlPrefix } = resLocals;
 
