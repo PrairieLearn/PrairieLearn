@@ -241,13 +241,13 @@ export function SelfEnrollmentSettings({
           class="form-check-input"
           type="checkbox"
           id="self_enrollment_enabled"
-          disabled={!canEdit || !hasModernPublishing}
+          disabled={!canEdit || !hasModernPublishing || !enrollmentManagementEnabled}
           {...control.register('self_enrollment_enabled', {
             // Re-run validation on show_in_enroll_page when self-enrollment changes
             deps: ['show_in_enroll_page'],
           })}
         />
-        {!hasModernPublishing && canEdit && enrollmentManagementEnabled && (
+        {(!canEdit || !hasModernPublishing || !enrollmentManagementEnabled) && (
           <input
             type="hidden"
             name="self_enrollment_enabled"
@@ -298,10 +298,18 @@ export function SelfEnrollmentSettings({
           class={clsx('form-check-input')}
           type="checkbox"
           id="self_enrollment_use_enrollment_code"
-          disabled={!canEdit || !selfEnrollmentEnabled || !hasModernPublishing}
+          disabled={
+            !canEdit ||
+            !selfEnrollmentEnabled ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled
+          }
           {...control.register('self_enrollment_use_enrollment_code')}
         />
-        {!hasModernPublishing && canEdit && enrollmentManagementEnabled && (
+        {(!canEdit ||
+          !selfEnrollmentEnabled ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled) && (
           <input
             type="hidden"
             name="self_enrollment_use_enrollment_code"
@@ -326,10 +334,18 @@ export function SelfEnrollmentSettings({
           class={clsx('form-check-input')}
           type="checkbox"
           id="self_enrollment_restrict_to_institution"
-          disabled={!canEdit || !selfEnrollmentEnabled || !hasModernPublishing}
+          disabled={
+            !canEdit ||
+            !selfEnrollmentEnabled ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled
+          }
           {...control.register('self_enrollment_restrict_to_institution')}
         />
-        {!hasModernPublishing && canEdit && enrollmentManagementEnabled && (
+        {(!canEdit ||
+          !selfEnrollmentEnabled ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled) && (
           <input
             type="hidden"
             name="self_enrollment_restrict_to_institution"
@@ -354,7 +370,12 @@ export function SelfEnrollmentSettings({
           class={clsx('form-check-input')}
           type="checkbox"
           id="disable_self_enrollment_after_date"
-          disabled={!canEdit || !hasModernPublishing}
+          disabled={
+            !canEdit ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled ||
+            !selfEnrollmentEnabled
+          }
           {...control.register('self_enrollment_enabled_before_date_enabled', {
             onChange: async (event) => {
               if (!event.target.checked) {
@@ -363,7 +384,10 @@ export function SelfEnrollmentSettings({
             },
           })}
         />
-        {!hasModernPublishing && canEdit && enrollmentManagementEnabled && (
+        {(!canEdit ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled ||
+          !selfEnrollmentEnabled) && (
           <input
             type="hidden"
             name="self_enrollment_enabled_before_date_enabled"
@@ -382,7 +406,13 @@ export function SelfEnrollmentSettings({
           type="datetime-local"
           aria-label="Self-enrollment cutoff date"
           class={clsx('form-control mt-2', selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid')}
-          disabled={!canEdit || !selfEnrollmentEnabledBeforeDateEnabled || !hasModernPublishing}
+          disabled={
+            !canEdit ||
+            !selfEnrollmentEnabledBeforeDateEnabled ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled ||
+            !selfEnrollmentEnabled
+          }
           step="1"
           {...control.register('self_enrollment_enabled_before_date', {
             validate: (value, { self_enrollment_enabled_before_date_enabled }) => {
@@ -393,7 +423,11 @@ export function SelfEnrollmentSettings({
             },
           })}
         />
-        {!hasModernPublishing && canEdit && enrollmentManagementEnabled && (
+        {(!canEdit ||
+          !selfEnrollmentEnabledBeforeDateEnabled ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled ||
+          !selfEnrollmentEnabled) && (
           <input
             type="hidden"
             name="self_enrollment_enabled_before_date"

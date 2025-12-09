@@ -310,7 +310,7 @@ export async function aiInstanceQuestionGrouping({
             instanceQuestion,
             logger,
           );
-        } catch (err) {
+        } catch (err: any) {
           logger.error(err);
         } finally {
           for (const log of logs) {

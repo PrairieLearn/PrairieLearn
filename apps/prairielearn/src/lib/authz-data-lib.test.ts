@@ -1,11 +1,6 @@
 import { assert, describe, it } from 'vitest';
 
-import {
-  type AuthzData,
-  type CourseInstanceRole,
-  dangerousFullSystemAuthz,
-  hasRole,
-} from './authz-data-lib.js';
+import { type AuthzData, type Role, dangerousFullSystemAuthz, hasRole } from './authz-data-lib.js';
 
 describe('authzData', () => {
   describe('hasRole', () => {
@@ -58,11 +53,15 @@ describe('authzData', () => {
     describe('dangerous full system authz', () => {
       it('returns true for system/any role when using dangerous full authz', () => {
         const dangerousAuthz = dangerousFullSystemAuthz();
-        const goodRoles: CourseInstanceRole[] = ['System'];
-        const badRoles: CourseInstanceRole[] = [
+        const goodRoles: Role[] = ['System'];
+        const badRoles: Role[] = [
           'Student',
           'Student Data Viewer',
           'Student Data Editor',
+          'Previewer',
+          'Viewer',
+          'Editor',
+          'Owner',
         ];
 
         for (const role of goodRoles) {
@@ -139,6 +138,78 @@ describe('authzData', () => {
       });
     });
 
+    describe('Previewer role', () => {
+      it('returns true when user has course permission preview', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_preview: true,
+        });
+
+        assert.isTrue(hasRole(authzData, ['Previewer']));
+      });
+
+      it('returns false when user does not have course permission preview', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_preview: false,
+        });
+
+        assert.isFalse(hasRole(authzData, ['Previewer']));
+      });
+    });
+
+    describe('Viewer role', () => {
+      it('returns true when user has course permission view', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_view: true,
+        });
+
+        assert.isTrue(hasRole(authzData, ['Viewer']));
+      });
+
+      it('returns false when user does not have course permission view', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_view: false,
+        });
+
+        assert.isFalse(hasRole(authzData, ['Viewer']));
+      });
+    });
+
+    describe('Editor role', () => {
+      it('returns true when user has course permission edit', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_edit: true,
+        });
+
+        assert.isTrue(hasRole(authzData, ['Editor']));
+      });
+
+      it('returns false when user does not have course permission edit', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_edit: false,
+        });
+
+        assert.isFalse(hasRole(authzData, ['Editor']));
+      });
+    });
+
+    describe('Owner role', () => {
+      it('returns true when user has course permission own', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_own: true,
+        });
+
+        assert.isTrue(hasRole(authzData, ['Owner']));
+      });
+
+      it('returns false when user does not have course permission own', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_own: false,
+        });
+
+        assert.isFalse(hasRole(authzData, ['Owner']));
+      });
+    });
+
     describe('edge cases', () => {
       it('handles undefined course_instance_role', () => {
         const authzData = createMockAuthzData({
@@ -172,6 +243,90 @@ describe('authzData', () => {
 
         assert.isTrue(hasRole(authzData, ['Student Data Viewer']));
         assert.isFalse(hasRole(authzData, ['Student Data Editor']));
+      });
+
+      it('Previewer does not have Viewer, Editor, or Owner permissions', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_preview: true,
+          has_course_permission_view: false,
+          has_course_permission_edit: false,
+          has_course_permission_own: false,
+        });
+
+        assert.isTrue(hasRole(authzData, ['Previewer']));
+        assert.isFalse(hasRole(authzData, ['Viewer']));
+        assert.isFalse(hasRole(authzData, ['Editor']));
+        assert.isFalse(hasRole(authzData, ['Owner']));
+      });
+
+      it('Viewer has Previewer permissions but not Editor or Owner', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_preview: true,
+          has_course_permission_view: true,
+          has_course_permission_edit: false,
+          has_course_permission_own: false,
+        });
+
+        assert.isTrue(hasRole(authzData, ['Previewer']));
+        assert.isTrue(hasRole(authzData, ['Viewer']));
+        assert.isFalse(hasRole(authzData, ['Editor']));
+        assert.isFalse(hasRole(authzData, ['Owner']));
+      });
+
+      it('Editor has Previewer and Viewer permissions but not Owner', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_preview: true,
+          has_course_permission_view: true,
+          has_course_permission_edit: true,
+          has_course_permission_own: false,
+        });
+
+        assert.isTrue(hasRole(authzData, ['Previewer']));
+        assert.isTrue(hasRole(authzData, ['Viewer']));
+        assert.isTrue(hasRole(authzData, ['Editor']));
+        assert.isFalse(hasRole(authzData, ['Owner']));
+      });
+
+      it('Owner has all course permissions', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_preview: true,
+          has_course_permission_view: true,
+          has_course_permission_edit: true,
+          has_course_permission_own: true,
+        });
+
+        assert.isTrue(hasRole(authzData, ['Previewer']));
+        assert.isTrue(hasRole(authzData, ['Viewer']));
+        assert.isTrue(hasRole(authzData, ['Editor']));
+        assert.isTrue(hasRole(authzData, ['Owner']));
+      });
+    });
+
+    describe('multiple roles', () => {
+      it('returns true if user has any of the required course roles', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_preview: false,
+          has_course_permission_view: true,
+          has_course_permission_edit: false,
+          has_course_permission_own: false,
+        });
+
+        assert.isTrue(hasRole(authzData, ['Previewer', 'Viewer']));
+        assert.isTrue(hasRole(authzData, ['Viewer', 'Editor']));
+        assert.isFalse(hasRole(authzData, ['Editor', 'Owner']));
+      });
+
+      it('returns true if user has any combination of course and course instance roles', () => {
+        const authzData = createMockAuthzData({
+          has_course_permission_preview: true,
+          has_course_permission_view: false,
+          has_course_instance_permission_view: true,
+          has_course_instance_permission_edit: false,
+        });
+
+        assert.isTrue(hasRole(authzData, ['Previewer', 'Student Data Viewer']));
+        assert.isTrue(hasRole(authzData, ['Viewer', 'Student Data Viewer']));
+        assert.isFalse(hasRole(authzData, ['Viewer', 'Student Data Editor']));
       });
     });
   });

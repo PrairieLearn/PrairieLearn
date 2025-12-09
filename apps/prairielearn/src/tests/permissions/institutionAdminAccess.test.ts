@@ -78,7 +78,7 @@ describe('institution administrators', () => {
     await insertUser(INSTITUTION_ADMIN_USER);
     courseInstance = await selectCourseInstanceByShortName({
       course: await selectCourseById('1'),
-      short_name: 'Sp15',
+      shortName: 'Sp15',
     });
     assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,

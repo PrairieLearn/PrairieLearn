@@ -215,7 +215,7 @@ export async function createCourseRepoJob(
         job.info(
           `Added user ${options.github_user} as administrator of repo ${options.repo_short_name}`,
         );
-      } catch (err) {
+      } catch (err: any) {
         job.error(`Could not add user "${options.github_user}": ${err}`);
       }
     }
@@ -296,7 +296,7 @@ export async function createCourseRepoJob(
         status: 'approved',
         course_request_id: options.course_request_id,
       });
-    } catch (err) {
+    } catch (err: any) {
       await sqldb.execute(sql.set_course_request_status, {
         status: 'failed',
         course_request_id: options.course_request_id,
@@ -309,7 +309,7 @@ export async function createCourseRepoJob(
             `${err.message.trim()}\n` +
             '```',
         );
-      } catch (err) {
+      } catch (err: any) {
         logger.error('Error sending course request message to Slack', err);
         Sentry.captureException(err);
       }

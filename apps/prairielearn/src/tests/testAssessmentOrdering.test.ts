@@ -112,7 +112,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
   test.sequential('should default to grouping by Set', async function () {
     const courseInstance = await selectCourseInstanceByShortName({
       course: await selectCourseById('1'),
-      short_name: 'Fa19',
+      shortName: 'Fa19',
     });
     assert.equal(courseInstance.assessments_group_by, 'Set');
   });

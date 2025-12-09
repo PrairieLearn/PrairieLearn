@@ -18,6 +18,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
+import type { AuthzData } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
@@ -244,7 +245,7 @@ export class Lti13Claim {
   constructor(req: Request) {
     try {
       this.claims = Lti13ClaimSchema.parse(req.session.lti13_claims);
-    } catch (err) {
+    } catch (err: any) {
       throw new AugmentedError('LTI session invalid or timed out, please try logging in again.', {
         cause: err,
         status: 403,
@@ -671,7 +672,7 @@ export async function fetchRetry(
         body: resString,
       },
     });
-  } catch (err) {
+  } catch (err: any) {
     // https://canvas.instructure.com/doc/api/file.throttling.html
     // 403 Forbidden (Rate Limit Exceeded)
     if (
@@ -855,12 +856,14 @@ class Lti13ContextMembership {
 }
 
 export async function updateLti13Scores({
-  course_instance,
+  courseInstance,
+  authzData,
   unsafe_assessment_id,
   instance,
   job,
 }: {
-  course_instance: CourseInstance;
+  courseInstance: CourseInstance;
+  authzData: AuthzData;
   unsafe_assessment_id: string | number;
   instance: Lti13CombinedInstance;
   job: ServerJob;
@@ -894,8 +897,10 @@ export async function updateLti13Scores({
   );
 
   const courseStaff = await selectUsersWithCourseInstanceAccess({
-    course_instance,
-    minimal_role: 'Student Data Viewer',
+    courseInstance,
+    authzData,
+    requiredRole: ['Student Data Viewer'],
+    minimalRole: 'Student Data Viewer',
   });
   const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));
 
@@ -970,7 +975,7 @@ export async function updateLti13Scores({
         body: JSON.stringify(score),
       });
       counts.success++;
-    } catch (error) {
+    } catch (error: any) {
       counts.error++;
       job.warn(`\t${error.message}`);
       if (error instanceof AugmentedError && error.data.body) {

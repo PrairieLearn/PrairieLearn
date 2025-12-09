@@ -1012,7 +1012,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
     if (linkString === relativeUnpackPath) {
       chunkExists = true;
     }
-  } catch (err) {
+  } catch (err: any) {
     // If we encounter an EINVAL error, chances are that we're trying to `readlink`
     // on a directory. This can occur if a question is renamed to a parent directory,
     // e.g. renamed from `foo/bar/baz` to `foo/bar`. In this case, we should remove
@@ -1071,7 +1071,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       } else if (!stat.isDirectory()) {
         throw new Error(`${parentPath} exists but is not a directory`);
       }
-    } catch (err) {
+    } catch (err: any) {
       if (err.code !== 'ENOENT') throw err;
     }
   }

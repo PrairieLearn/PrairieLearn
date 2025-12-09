@@ -761,7 +761,7 @@ describe('chunks', () => {
       // Get the new course instance.
       const courseInstance = await selectCourseInstanceByShortName({
         course: await selectCourseById(courseId),
-        short_name: 'new',
+        shortName: 'new',
       });
 
       // Generate new chunks.
@@ -843,7 +843,7 @@ describe('chunks', () => {
       // Assert that we produced a course instance without sync errors/warnings.
       const newCourseInstance = await selectCourseInstanceByShortName({
         course: await selectCourseById(courseId),
-        short_name: 'new',
+        shortName: 'new',
       });
       assert.equal(newCourseInstance.id, courseInstance.id);
       expect(newCourseInstance.sync_errors).toBeFalsy();

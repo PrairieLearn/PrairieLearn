@@ -4,7 +4,6 @@ import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
-import { assertNever } from '../lib/types.js';
 import type { Override } from '../middlewares/authzCourseOrInstance.js';
 
 import { IssueBadgeHtml } from './IssueBadge.js';
@@ -144,7 +143,7 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${resLocals.has_enhanced_navigation && isInPageLayout
+    ${isInPageLayout
       ? FlashMessages()
       : html`
           <div class="${marginBottom ? 'mb-3' : ''}">
@@ -174,27 +173,19 @@ function NavbarByType({
   } else if (navbarType === 'public') {
     return NavbarPublic({ resLocals });
   } else {
-    if (resLocals.has_enhanced_navigation && isInPageLayout) {
+    if (isInPageLayout) {
       return NavbarButtons({
         resLocals,
         navPage,
         navbarType,
       });
+    } else if (navbarType === 'instructor') {
+      // TODO: Remove this once `instructorAiGenerateDraftEditor.html.tsx` uses PageLayout.
+      return NavbarInstructor({ resLocals, navPage, navSubPage });
     } else {
-      switch (navbarType) {
-        case undefined:
-        case 'plain':
-        case 'administrator':
-          return NavbarPlain({ resLocals, navPage });
-        case 'instructor':
-          return NavbarInstructor({ resLocals, navPage, navSubPage });
-        case 'administrator_institution':
-          return NavbarAdministratorInstitution({ resLocals });
-        case 'institution':
-          return NavbarInstitution({ resLocals });
-        default:
-          assertNever(navbarType);
-      }
+      // The only page that isn't in a PageLayout and hit by other checks
+      // is `instructorAiGenerateDraftEditor.html.tsx`, which has navbarType `instructor`.
+      throw new Error(`Invalid navbar type: ${navbarType}`);
     }
   }
 }
@@ -655,16 +646,6 @@ function AuthnOverrides({
   `;
 }
 
-function NavbarPlain({ resLocals, navPage }: { resLocals: UntypedResLocals; navPage: NavPage }) {
-  if (!resLocals.is_administrator) return '';
-
-  return html`
-    <li class="nav-item ${navPage === 'admin' ? 'active' : ''}">
-      <a class="nav-link" href="/pl/administrator/admins">Admin</a>
-    </li>
-  `;
-}
-
 function NavbarButton({
   text,
   href,
@@ -824,9 +805,6 @@ function NavbarInstructor({
   const {
     course,
     course_instance,
-    assessment,
-    assessment_label,
-    assessments,
     navbarOpenIssueCount,
     navbarCompleteGettingStartedTasksCount,
     navbarTotalGettingStartedTasksCount,
@@ -968,52 +946,6 @@ function NavbarInstructor({
           >
             <a class="nav-link" href="${urlPrefix}/instance_admin/gradebook">Gradebook</a>
           </li>
-
-          ${assessment_label != null && assessment != null
-            ? html`
-                <li class="navbar-text mx-2 no-select">/</li>
-                <li class="nav-item btn-group">
-                  <a
-                    class="nav-link ${navPage === 'assessment' ? 'active' : ''}"
-                    href="${urlPrefix}/assessment/${assessment.id}"
-                  >
-                    ${assessment_label}
-                  </a>
-                  ${assessments != null
-                    ? html`
-                        <a
-                          class="nav-link dropdown-toggle dropdown-toggle-split"
-                          id="navbarDropdownMenuLink"
-                          href="#"
-                          role="button"
-                          data-bs-toggle="dropdown"
-                          aria-haspopup="true"
-                          aria-expanded="false"
-                          aria-label="Change assessment"
-                        ></a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                          ${assessments.map(
-                            (a) => html`
-                              <a
-                                class="dropdown-item ${navPage === 'assessment' &&
-                                assessment.id === a.id
-                                  ? 'active'
-                                  : ''}"
-                                href="${urlPrefix}/assessment/${a.id}${navPage === 'assessment' &&
-                                navSubPage !== 'file_edit'
-                                  ? `/${navSubPage}`
-                                  : ''}"
-                              >
-                                ${a.assessment_label}
-                              </a>
-                            `,
-                          )}
-                        </div>
-                      `
-                    : ''}
-                </li>
-              `
-            : ''}
         `
       : html`
           <li class="navbar-text mx-2 no-select">/</li>
@@ -1059,34 +991,6 @@ function NavbarPublic({ resLocals }: { resLocals: UntypedResLocals }) {
         href="${urlPrefix}/questions"
       >
         ${course?.short_name ?? ''}
-      </a>
-    </li>
-  `;
-}
-
-function NavbarInstitution({ resLocals }: { resLocals: UntypedResLocals }) {
-  const { institution } = resLocals;
-
-  return html`
-    <li class="nav-item">
-      <a class="nav-link" href="/pl/institution/${institution.id}/admin/courses">
-        ${institution.short_name} (${institution.long_name})
-      </a>
-    </li>
-  `;
-}
-
-function NavbarAdministratorInstitution({ resLocals }: { resLocals: UntypedResLocals }) {
-  const { institution } = resLocals;
-
-  return html`
-    <li class="nav-item">
-      <a class="nav-link" href="/pl/administrator/institutions">Admin</a>
-    </li>
-
-    <li class="nav-item">
-      <a class="nav-link" href="/pl/administrator/institution/${institution.id}">
-        ${institution.short_name}
       </a>
     </li>
   `;

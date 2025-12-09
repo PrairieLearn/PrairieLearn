@@ -56,7 +56,7 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
       env: process.env,
     });
     return stdout.trim();
-  } catch (err) {
+  } catch (err: any) {
     throw new error.AugmentedError(`Could not get git status; exited with code ${err.code}`, {
       data: {
         stdout: err.stdout,

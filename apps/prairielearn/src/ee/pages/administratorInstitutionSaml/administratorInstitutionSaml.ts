@@ -4,6 +4,7 @@ import asyncHandler from 'express-async-handler';
 // We import from this instead of `pem` directly because the latter includes
 // code that messes up the display of source maps in dev mode:
 // https://github.com/Dexus/pem/issues/389#issuecomment-2043258753
+// @ts-expect-error No types for pem/lib/pem.js
 import * as pem from 'pem/lib/pem.js';
 import formatXml from 'xml-formatter';
 import { z } from 'zod';
@@ -30,7 +31,7 @@ function createCertificate(
   options: pem.CertificateCreationOptions,
 ): Promise<pem.CertificateCreationResult> {
   return new Promise((resolve, reject) => {
-    pem.createCertificate(options, (err, keys) => {
+    pem.createCertificate(options, (err: Error | null, keys: pem.CertificateCreationResult) => {
       if (err) return reject(err);
       resolve(keys);
     });
@@ -129,7 +130,7 @@ router.post(
       try {
         // @ts-expect-error https://github.com/chrisbottin/xml-formatter/issues/72
         xml = formatXml(Buffer.from(req.body.encoded_assertion, 'base64').toString('utf8'));
-      } catch (err) {
+      } catch (err: any) {
         res.send(DecodedAssertion({ xml: err.message, profile: '' }));
         return;
       }

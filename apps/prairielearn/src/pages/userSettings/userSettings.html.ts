@@ -20,9 +20,6 @@ export const AccessTokenSchema = z.object({
 });
 type AccessToken = z.infer<typeof AccessTokenSchema>;
 
-const ENHANCED_NAV_DISCUSSION_URL =
-  'https://github.com/PrairieLearn/PrairieLearn/discussions/12230';
-
 export function UserSettings({
   authn_user,
   authn_institution,
@@ -31,8 +28,6 @@ export function UserSettings({
   newAccessTokens,
   purchases,
   isExamMode,
-  showEnhancedNavigationToggle,
-  enhancedNavigationEnabled,
   resLocals,
 }: {
   authn_user: User;
@@ -42,8 +37,6 @@ export function UserSettings({
   newAccessTokens: string[];
   purchases: Purchase[];
   isExamMode: boolean;
-  showEnhancedNavigationToggle: boolean;
-  enhancedNavigationEnabled: boolean;
   resLocals: UntypedResLocals;
 }) {
   return PageLayout({
@@ -95,75 +88,6 @@ export function UserSettings({
         </div>
       </div>
 
-      ${showEnhancedNavigationToggle
-        ? html`
-            <form method="POST">
-              <div class="card mb-4">
-                <div class="card-header bg-primary text-white d-flex align-items-center">
-                  <h2>Feature preview</h2>
-                </div>
-                <ul class="list-group list-group-flush">
-                  <li class="list-group-item">
-                    <div class="form-check">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        name="enhanced_navigation"
-                        value="1"
-                        id="enhanced_navigation_toggle"
-                        ${enhancedNavigationEnabled ? 'checked' : ''}
-                      />
-                      <label
-                        class="form-check-label d-flex align-items-center"
-                        for="enhanced_navigation_toggle"
-                      >
-                        Enhanced navigation
-                      </label>
-                      <div class="small text-muted">
-                        Try a new navigation experience for instructors that makes accessing your
-                        course simpler, faster, and more intuitive.
-                        <a href="${ENHANCED_NAV_DISCUSSION_URL}" target="_blank"
-                          >Share your feedback</a
-                        >
-                        to help us improve the new design.
-                      </div>
-                    </div>
-
-                    <div
-                      id="enhanced_navigation_feedback"
-                      class="alert alert-info mt-2 mb-2 d-none"
-                    >
-                      <div class="mb-2 text-dark">
-                        <strong>Turning off enhanced navigation?</strong> We'd love to know what's
-                        not working for you.
-                      </div>
-                      <a
-                        href="${ENHANCED_NAV_DISCUSSION_URL}"
-                        target="_blank"
-                        class="btn btn-sm btn-outline-dark"
-                      >
-                        Share feedback on GitHub Discussions
-                        <i class="bi bi-box-arrow-up-right ms-1"></i>
-                      </a>
-                    </div>
-                  </li>
-                </ul>
-
-                <div class="card-footer">
-                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <button
-                    type="submit"
-                    class="btn btn-sm btn-primary"
-                    name="__action"
-                    value="update_features"
-                  >
-                    Save changes
-                  </button>
-                </div>
-              </div>
-            </form>
-          `
-        : ''}
       ${isEnterprise() ? UserSettingsPurchasesCard({ purchases }) : ''}
 
       <div class="card mb-4">

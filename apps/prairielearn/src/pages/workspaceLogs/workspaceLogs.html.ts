@@ -40,9 +40,6 @@ export function WorkspaceLogs({
       page: 'workspace',
       type: 'plain',
     },
-    options: {
-      enableEnhancedNav: false,
-    },
     content: html`
       <h1 class="mb-4">Workspace logs</h1>
       <h2>Versions</h2>
@@ -97,10 +94,6 @@ export function WorkspaceVersionLogs({
     navContext: {
       page: 'workspace',
       type: 'plain',
-    },
-    options: {
-      enableEnhancedNav: false,
-      paddingBottom: true,
     },
     content: html`
       <h1 class="mb-4">Workspace version logs</h1>

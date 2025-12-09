@@ -57,9 +57,16 @@ export function InstructorAiGenerateDraftEditor({
         <div class="app-container" style="--chat-width: 400px;">
           <div class="app-grid">
             <div class="app-navbar">
+              <!-- This is the last page directly rendering a Navbar component.
+
+              It was not converted to avoid merge conflicts with the upcoming agentic question generation feature.
+              
+              We should rip out the remaining bits of the legacy Navbar
+              logic when we convert this. -->
               ${Navbar({
                 navPage: 'course_admin',
                 navSubPage: 'questions',
+                navbarType: 'instructor',
                 resLocals,
                 marginBottom: false,
               })}

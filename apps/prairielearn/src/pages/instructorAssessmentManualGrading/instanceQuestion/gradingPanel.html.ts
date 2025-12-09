@@ -35,7 +35,7 @@ export function GradingPanel({
   instanceQuestionGroups,
   skip_graded_submissions,
 }: {
-  resLocals: ResLocalsForPage['instance-question'];
+  resLocals: ResLocalsForPage<'instance-question'>;
   context: 'main' | 'existing' | 'conflicting';
   graders?: User[] | null;
   disable?: boolean;

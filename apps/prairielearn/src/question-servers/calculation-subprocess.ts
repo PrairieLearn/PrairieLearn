@@ -113,7 +113,7 @@ async function callFunction<Data>(
       // so we won't impose the same restriction here.
       return { data: res.result, courseIssues: [] };
     });
-  } catch (err) {
+  } catch (err: any) {
     err.fatal = true;
     return {
       // We don't have any useful data to return. We'll just lie to the type checker.

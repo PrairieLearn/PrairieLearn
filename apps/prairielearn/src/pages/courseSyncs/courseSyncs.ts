@@ -53,7 +53,7 @@ router.get(
             repositoryName: repository.getRepository(),
             imageIds: [{ imageTag: repository.getTag() ?? 'latest' }],
           });
-        } catch (err) {
+        } catch (err: any) {
           if (err.name === 'InvalidParameterException') {
             image.invalid = true;
             return;

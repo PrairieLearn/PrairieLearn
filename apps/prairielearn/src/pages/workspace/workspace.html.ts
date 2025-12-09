@@ -46,10 +46,8 @@ export function Workspace({
         'heartbeat-interval-sec': heartbeatIntervalSec.toString(),
         'visibility-timeout-sec': visibilityTimeoutSec.toString(),
       },
-      enableEnhancedNav: false,
       enableNavbar: false,
-      paddingBottom: false,
-      paddingSides: false,
+      contentPadding: false,
     },
     headContent: html`
       <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />

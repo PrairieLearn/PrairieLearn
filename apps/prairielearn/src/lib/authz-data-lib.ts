@@ -134,15 +134,30 @@ export type CourseOrInstanceContextData = z.infer<typeof CourseOrInstanceContext
 
 export type AuthzDataWithoutEffectiveUser = PlainAuthzData | DangerousSystemAuthzData;
 
-export type AuthzDataWithEffectiveUser = PageAuthzData | DangerousSystemAuthzData;
+export type AuthzDataWithEffectiveUser =
+  | RawPageAuthzData
+  | PageAuthzData
+  | DangerousSystemAuthzData;
 
 export type AuthzData = AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser;
 
-export type CourseInstanceRole =
-  | 'System'
-  | 'Student'
-  | 'Student Data Viewer'
-  | 'Student Data Editor';
+// More information about these roles can be found in the "Permission checking" section of the developer guide.
+
+export type SystemRole = 'System';
+
+export type StudentCourseInstanceRole = 'Student';
+
+export type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
+
+export type CourseInstanceRole = StudentCourseInstanceRole | InstructorCourseInstanceRole;
+
+export type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
+
+export type Role =
+  | SystemRole
+  | StudentCourseInstanceRole
+  | InstructorCourseInstanceRole
+  | CourseRole;
 
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {
@@ -163,13 +178,14 @@ export function isDangerousFullSystemAuthz(
   return authzData.user.user_id === null;
 }
 
-export function hasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]): boolean {
-  // You must include 'System' in the requiredRole when you use dangerousFullSystemAuthz.
-  const hasSystemAuthz = isDangerousFullSystemAuthz(authzData);
-  if (hasSystemAuthz) {
+export function hasRole(authzData: AuthzData, requiredRole: Role[]): boolean {
+  /* System roles */
+  if (isDangerousFullSystemAuthz(authzData)) {
+    // You must include 'System' in the requiredRole when you use dangerousFullSystemAuthz.
     return requiredRole.includes('System');
   }
 
+  /* Student course instance roles */
   if (
     requiredRole.includes('Student') &&
     authzData.has_student_access &&
@@ -182,6 +198,7 @@ export function hasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]
     return true;
   }
 
+  /* Instructor course instance roles */
   if (
     requiredRole.includes('Student Data Viewer') &&
     authzData.has_course_instance_permission_view
@@ -193,6 +210,23 @@ export function hasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]
     requiredRole.includes('Student Data Editor') &&
     authzData.has_course_instance_permission_edit
   ) {
+    return true;
+  }
+
+  /* Course roles */
+  if (requiredRole.includes('Previewer') && authzData.has_course_permission_preview) {
+    return true;
+  }
+
+  if (requiredRole.includes('Viewer') && authzData.has_course_permission_view) {
+    return true;
+  }
+
+  if (requiredRole.includes('Editor') && authzData.has_course_permission_edit) {
+    return true;
+  }
+
+  if (requiredRole.includes('Owner') && authzData.has_course_permission_own) {
     return true;
   }
 
@@ -211,10 +245,7 @@ export function hasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]
  * @param requiredRole The potential roles.
  * @param permittedRoles The roles permitted for the action.
  */
-export function assertRoleIsPermitted(
-  requiredRole: CourseInstanceRole[],
-  permittedRoles: CourseInstanceRole[],
-): void {
+export function assertRoleIsPermitted(requiredRole: Role[], permittedRoles: Role[]): void {
   // Assert that requiredRole is a subset of allowedRoles
   for (const role of requiredRole) {
     if (!permittedRoles.includes(role)) {
@@ -258,7 +289,7 @@ export function assertRoleIsPermitted(
  * @param authzData - The authorization data of the user.
  * @param requiredRole - The required role by the model function. Provided by the caller of the model function.
  */
-export function assertHasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]): void {
+export function assertHasRole(authzData: AuthzData, requiredRole: Role[]): void {
   if (!hasRole(authzData, requiredRole)) {
     throw new HttpStatusError(403, 'Access denied');
   }
