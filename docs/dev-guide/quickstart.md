@@ -64,7 +64,7 @@ sudo make dev
 If you want to preview the documentation, run:
 
 ```sh
-make preview-docs
+make dev-docs
 ```
 
 ## Testing
@@ -74,14 +74,16 @@ If you are contributing code to PrairieLearn, you must ensure that your changes 
 Run the test suite (Docker must be installed and running):
 
 ```sh
-make test
+make test-all
 ```
 
-Or, to run tests for just a specific language:
+Or, to run just a specific subset of tests:
 
 ```sh
-make test-js     # Javascript only
-make test-python # Python only
+make test-js           # Javascript tests (both packages and applications)
+make test-prairielearn # PrairieLearn application tests
+make test-python       # Python tests
+make test-e2e          # E2E tests (run `make e2e-deps` first)
 ```
 
 ### JavaScript tests

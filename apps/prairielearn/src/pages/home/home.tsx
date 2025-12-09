@@ -11,7 +11,7 @@ import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
-import { getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
@@ -118,7 +118,9 @@ router.get(
       StaffInstitutionSchema,
     );
 
-    const { authn_provider_name, __csrf_token, urlPrefix } = getPageContext(res.locals, {
+    const { authn_provider_name, __csrf_token, urlPrefix } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'student',
       withAuthzData: false,
     });
 
@@ -176,17 +178,22 @@ router.post(
     const body = BodySchema.parse(req.body);
 
     const {
-      authn_user: { uid, user_id: userId },
-    } = getPageContext(res.locals, { withAuthzData: false });
-
-    const { authzData, courseInstance } = await constructCourseOrInstanceContext({
-      user: res.locals.authn_user,
-      course_id: null,
-      course_instance_id: body.course_instance_id,
-      ip: req.ip ?? null,
-      req_date: res.locals.req_date,
-      is_administrator: res.locals.is_administrator,
+      authn_user: { uid },
+    } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'student',
+      withAuthzData: false,
     });
+
+    const { authzData, courseInstance, institution, course } =
+      await constructCourseOrInstanceContext({
+        user: res.locals.authn_user,
+        course_id: null,
+        course_instance_id: body.course_instance_id,
+        ip: req.ip ?? null,
+        req_date: res.locals.req_date,
+        is_administrator: res.locals.is_administrator,
+      });
 
     if (authzData === null || courseInstance === null) {
       throw new HttpStatusError(403, 'Access denied');
@@ -197,7 +204,7 @@ router.post(
         const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
           uid,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           authzData,
         });
         if (
@@ -209,10 +216,11 @@ router.post(
         }
 
         await ensureEnrollment({
+          institution,
+          course,
           courseInstance,
-          userId,
           authzData,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           actionDetail: 'invitation_accepted',
         });
         break;
@@ -221,7 +229,7 @@ router.post(
         const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
           uid,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           authzData,
         });
 
@@ -234,7 +242,7 @@ router.post(
           enrollment,
           status: 'rejected',
           authzData,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
         });
         break;
       }
@@ -242,7 +250,7 @@ router.post(
         const enrollment = await selectOptionalEnrollmentByUid({
           courseInstance,
           uid,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
           authzData,
         });
 
@@ -255,7 +263,7 @@ router.post(
           enrollment,
           status: 'removed',
           authzData,
-          requestedRole: 'Student',
+          requiredRole: ['Student'],
         });
         break;
       }

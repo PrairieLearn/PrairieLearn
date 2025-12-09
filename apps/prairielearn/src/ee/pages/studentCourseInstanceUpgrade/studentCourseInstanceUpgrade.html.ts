@@ -3,6 +3,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course, type CourseInstance } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 import { formatStripePrice } from '../../lib/billing/stripe.js';
 
@@ -21,7 +22,7 @@ export function StudentCourseInstanceUpgrade({
    * and thus that we can't show prices of the upgrade button
    */
   planPrices: Record<string, number> | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,
@@ -91,7 +92,7 @@ export function CourseInstanceStudentUpdateSuccess({
   course: Course;
   course_instance: CourseInstance;
   paid: boolean;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,

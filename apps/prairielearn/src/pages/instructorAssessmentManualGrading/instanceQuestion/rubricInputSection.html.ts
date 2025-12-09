@@ -7,13 +7,14 @@ import {
   type RubricData,
   type RubricGradingData,
 } from '../../../lib/manualGrading.types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export function RubricInputSection({
   resLocals,
   disable,
   aiGradingInfo,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   disable: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {

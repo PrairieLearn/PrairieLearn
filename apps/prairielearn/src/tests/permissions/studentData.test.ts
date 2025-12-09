@@ -16,7 +16,7 @@ import {
   insertCoursePermissionsByUserUid,
   updateCourseInstancePermissionsRole,
 } from '../../models/course-permissions.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 
@@ -64,10 +64,10 @@ describe('student data access', { timeout: 60_000 }, function () {
     });
     const courseInstance = await selectCourseInstanceById('1');
 
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       userId: '3',
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });

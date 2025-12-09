@@ -7,7 +7,6 @@ import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
@@ -22,6 +21,7 @@ import {
   type Topic,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
@@ -46,7 +46,7 @@ export const SharingSetRowSchema = z.object({
   name: z.string(),
   in_set: z.boolean(),
 });
-type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
+export type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
 
 export function InstructorQuestionSettings({
   resLocals,
@@ -65,7 +65,7 @@ export function InstructorQuestionSettings({
   courseTopics,
   courseTags,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionTestPath: string;
   questionTestCsrfToken: string;
   questionGHLink: string | null;
@@ -73,7 +73,7 @@ export function InstructorQuestionSettings({
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
-  sharingSetsIn: SharingSetRow[];
+  sharingSetsIn: SharingSetRow[] | undefined;
   editableCourses: CourseWithPermissions[];
   infoPath: string;
   origHash: string;
@@ -115,14 +115,6 @@ export function InstructorQuestionSettings({
       />
     `,
     content: html`
-      ${renderHtml(
-        <QuestionSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          question={resLocals.question}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
@@ -608,7 +600,7 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                   <div data-testid="shared-with">
                     ${QuestionSharing({
                       question: resLocals.question,
-                      sharingSetsIn,
+                      sharingSetsIn: sharingSetsIn ?? [],
                     })}
                   </div>
                 </div>

@@ -89,7 +89,7 @@ interface FileGenerationError {
  * Internal error type for tracking submission with format issues.
  */
 export class SubmissionFormatError extends Error {
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = 'SubmissionFormatError';
   }
@@ -287,7 +287,7 @@ async function startup(workspace_id: string): Promise<void> {
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
             { overwrite: true },
           );
-        } catch (err) {
+        } catch (err: any) {
           // If the directory couldn't be moved because it didn't exist, ignore the error.
           // But otherwise, rethrow it.
           if (err.code !== 'ENOENT') {
@@ -477,7 +477,7 @@ export async function generateWorkspaceFiles({
             ),
             mode: file.stats.mode,
           };
-        } catch (err) {
+        } catch (err: any) {
           fileGenerationErrors.push({
             file: generatedFileName,
             err,
@@ -576,7 +576,7 @@ export async function generateWorkspaceFiles({
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
             mode: file.mode,
           };
-        } catch (err) {
+        } catch (err: any) {
           // Error retrieving contents of dynamic file. Ignoring file.
           fileGenerationErrors.push({
             file: file.name,
@@ -614,7 +614,7 @@ export async function generateWorkspaceFiles({
             await fs.writeFile(targetFile, workspaceFile.buffer);
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         fileGenerationErrors.push({
           file: workspaceFile.name,
           msg: `Workspace file could not be written to workspace: ${err.message}`,
@@ -656,7 +656,7 @@ export async function getGradedFiles(workspace_id: string): Promise<string | nul
     // Attempt to get the files directly from the host.
     try {
       zipPath = await controlContainer(workspace_id, 'getGradedFiles');
-    } catch (err) {
+    } catch (err: any) {
       logger.error('Error getting graded files from container', err);
       if (err instanceof SubmissionFormatError) throw err;
     }
@@ -692,7 +692,7 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
         maxSize: config.workspaceMaxGradedFilesSize,
       },
     );
-  } catch (err) {
+  } catch (err: any) {
     // Turn any error into a `SubmissionFormatError` so that it is handled correctly.
     throw new SubmissionFormatError(err.message);
   }

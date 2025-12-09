@@ -2,16 +2,15 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { getUrl } from '../../lib/url.js';
@@ -29,11 +28,14 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/data.json',
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     if (!pageContext.authz_data.has_course_instance_permission_view) {
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance } = pageContext;
     const students = await queryRows(
       sql.select_users_and_enrollments_for_course_instance,
       { course_instance_id: courseInstance.id },
@@ -50,11 +52,14 @@ router.get(
       throw new HttpStatusError(406, 'Not Acceptable');
     }
 
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     if (!pageContext.authz_data.has_course_instance_permission_view) {
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance } = pageContext;
     const { uid } = req.query;
     if (typeof uid !== 'string') {
       throw new HttpStatusError(400, 'UID must be a string');
@@ -62,7 +67,7 @@ router.get(
     const enrollment = await selectOptionalEnrollmentByUid({
       courseInstance,
       uid,
-      requestedRole: 'Student Data Viewer',
+      requiredRole: ['Student Data Viewer'],
       authzData: res.locals.authz_data,
     });
     const staffEnrollment = StaffEnrollmentSchema.nullable().parse(enrollment);
@@ -77,12 +82,15 @@ router.post(
       throw new HttpStatusError(406, 'Not Acceptable');
     }
 
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     if (!pageContext.authz_data.has_course_instance_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be an instructor)');
     }
 
-    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance } = pageContext;
 
     const BodySchema = z.object({
       uid: z.string().min(1),
@@ -92,25 +100,23 @@ router.post(
 
     const user = await selectOptionalUserByUid(body.uid);
 
-    if (user == null) {
-      throw new HttpStatusError(400, 'User not found');
-    }
+    if (user) {
+      const isInstructor = await callRow(
+        'users_is_instructor_in_course_instance',
+        [user.user_id, courseInstance.id],
+        z.boolean(),
+      );
 
-    const isInstructor = await callRow(
-      'users_is_instructor_in_course_instance',
-      [user.user_id, courseInstance.id],
-      z.boolean(),
-    );
-
-    if (isInstructor) {
-      throw new HttpStatusError(400, 'The user is an instructor');
+      if (isInstructor) {
+        throw new HttpStatusError(400, 'The user is an instructor');
+      }
     }
 
     // Try to find an existing enrollment so we can error gracefully.
     const existingEnrollment = await selectOptionalEnrollmentByUid({
       courseInstance,
       uid: body.uid,
-      requestedRole: 'Student Data Viewer',
+      requiredRole: ['Student Data Viewer'],
       authzData: res.locals.authz_data,
     });
 
@@ -127,7 +133,7 @@ router.post(
     const enrollment = await inviteStudentByUid({
       courseInstance,
       uid: body.uid,
-      requestedRole: 'Student Data Editor',
+      requiredRole: ['Student Data Editor'],
       authzData: res.locals.authz_data,
     });
 
@@ -144,17 +150,21 @@ router.get(
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
-    const { authz_data, urlPrefix, __csrf_token: csrfToken } = pageContext;
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     const {
+      authz_data,
+      __csrf_token: csrfToken,
       course_instance: courseInstance,
       course,
       institution,
-    } = getCourseInstanceContext(res.locals, 'instructor');
+    } = pageContext;
 
     const search = getUrl(req).search;
 
-    if (!pageContext.authz_data.has_course_instance_permission_view) {
+    if (!authz_data.has_course_instance_permission_view) {
       const courseOwners = await getCourseOwners(course.id);
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
@@ -172,7 +182,6 @@ router.get(
       return;
     }
 
-    // For now, this is a development-only feature, so that can can get PRs merged without affecting users.
     const enrollmentManagementEnabled =
       (await features.enabled('enrollment-management', {
         institution_id: institution.id,
@@ -199,33 +208,20 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        headContent: compiledStylesheetTag('tanstackTable.css'),
         content: (
-          <>
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={{
-                has_course_instance_permission_edit:
-                  authz_data.has_course_instance_permission_edit ?? false,
-              }}
+          <Hydrate fullHeight>
+            <InstructorStudents
+              enrollmentManagementEnabled={enrollmentManagementEnabled}
+              isDevMode={config.devMode}
+              authzData={authz_data}
+              students={students}
+              search={search}
+              timezone={course.display_timezone}
               courseInstance={courseInstance}
               course={course}
-              urlPrefix={urlPrefix}
+              csrfToken={csrfToken}
             />
-            <Hydrate fullHeight>
-              <InstructorStudents
-                enrollmentManagementEnabled={enrollmentManagementEnabled}
-                isDevMode={process.env.NODE_ENV === 'development'}
-                authzData={authz_data}
-                students={students}
-                search={search}
-                timezone={course.display_timezone}
-                courseInstance={courseInstance}
-                course={course}
-                csrfToken={csrfToken}
-                urlPrefix={urlPrefix}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );

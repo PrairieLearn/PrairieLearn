@@ -6,6 +6,7 @@ import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
@@ -13,6 +14,7 @@ import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
 import { SideNav } from './SideNav.js';
+import { SyncErrorsAndWarnings } from './SyncErrorsAndWarnings.js';
 
 function asHtmlSafe(
   content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
@@ -21,6 +23,83 @@ function asHtmlSafe(
     return content;
   }
   return renderHtml(content);
+}
+
+function SyncErrorsAndWarningsForContext({
+  navContext,
+  resLocals,
+}: {
+  navContext: NavContext;
+  resLocals: UntypedResLocals;
+}) {
+  if (navContext.type !== 'instructor') return null;
+  const { course, urlPrefix, authz_data: authzData } = resLocals;
+
+  if (!course || !urlPrefix || !authzData) return null;
+
+  // The file editor renders its own SyncErrorsAndWarnings component with different wording.
+  if (navContext.subPage === 'file_edit') return null;
+
+  switch (navContext.page) {
+    case 'course_admin': {
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={course.sync_errors}
+          syncWarnings={course.sync_warnings}
+          fileEditUrl={`${urlPrefix}/course_admin/file_edit/infoCourse.json`}
+          context="course"
+        />
+      );
+    }
+    case 'instance_admin': {
+      const { course_instance: courseInstance, course } = resLocals;
+      if (!courseInstance || !course) return null;
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={courseInstance.sync_errors}
+          syncWarnings={courseInstance.sync_warnings}
+          fileEditUrl={`${urlPrefix}/instance_admin/file_edit/courseInstances/${courseInstance.short_name}/infoCourseInstance.json`}
+          context="course instance"
+        />
+      );
+    }
+    case 'assessment': {
+      const { assessment, course_instance: courseInstance } = resLocals;
+      if (!assessment || !courseInstance) return null;
+
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={assessment.sync_errors}
+          syncWarnings={assessment.sync_warnings}
+          fileEditUrl={`${urlPrefix}/assessment/${assessment.id}/file_edit/courseInstances/${courseInstance.short_name}/assessments/${assessment.tid}/infoAssessment.json`}
+          context="assessment"
+        />
+      );
+    }
+    case 'question':
+    case 'public_question': {
+      const { question } = resLocals;
+      if (!question) return null;
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={question.sync_errors}
+          syncWarnings={question.sync_warnings}
+          fileEditUrl={`${urlPrefix}/question/${question.id}/file_edit/questions/${question.qid}/info.json`}
+          context="question"
+        />
+      );
+    }
+    default:
+      return null;
+  }
 }
 
 export function PageLayout({
@@ -34,7 +113,7 @@ export function PageLayout({
   postContent,
 }: {
   /** The locals object from the Express response. */
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   /** The title of the page in the browser. */
   pageTitle: string;
   /** The information used to configure the navbar. */
@@ -42,20 +121,16 @@ export function PageLayout({
   options?: {
     /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
-    /** Whether the main container should have a bottom padding of pb-4 in Bootstrap. */
-    paddingBottom?: boolean;
-    /** Whether the main container should have no left and right padding in Bootstrap. */
-    paddingSides?: boolean;
+    /** Sets the html and body tag heights to 100% */
+    fullHeight?: boolean;
+    /** Whether the page content should have padding around it. */
+    contentPadding?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
     /** Enables an htmx extension for an element and all its children */
     hxExt?: string;
-    /** Sets the html and body tag heights to 100% */
-    fullHeight?: boolean;
     /** Dataset attributes to add to the body tag. The "data-" prefix will be added, so do not include it. */
     dataAttributes?: Record<string, string>;
-    /** Controls if the page should use enhanced navigation. */
-    enableEnhancedNav?: boolean;
     /** Whether or not the navbar should be shown. */
     enableNavbar?: boolean;
     /**
@@ -77,14 +152,12 @@ export function PageLayout({
   postContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
 }) {
   const resolvedOptions = {
+    fullWidth: false,
+    fullHeight: false,
+    contentPadding: true,
     hxExt: '',
-    paddingBottom: true,
-    paddingSides: true,
-    enableEnhancedNav: true,
     dataAttributes: {},
     enableNavbar: true,
-    fullHeight: false,
-    fullWidth: false,
     ...options,
   };
 
@@ -93,199 +166,158 @@ export function PageLayout({
   const contentString = asHtmlSafe(content);
   const postContentString = asHtmlSafe(postContent);
 
-  if (resLocals.has_enhanced_navigation && resolvedOptions.enableEnhancedNav) {
-    // The side navbar is only available if the user is on an course instructor page.
-    const sideNavEnabled = resLocals.course && navContext.type === 'instructor';
+  // The side navbar is only available if the user is on an course instructor page.
+  const sideNavEnabled = resLocals.course && navContext.type === 'instructor';
 
-    const sideNavExpanded =
-      sideNavEnabled &&
-      (resolvedOptions.forcedInitialNavToggleState ?? resLocals.side_nav_expanded);
+  const sideNavExpanded =
+    sideNavEnabled && (resolvedOptions.forcedInitialNavToggleState ?? resLocals.side_nav_expanded);
 
-    let showContextNavigation = [
-      'instructor',
-      'administrator_institution',
-      'administrator',
-      'institution',
-    ].includes(navContext.type ?? '');
+  let showContextNavigation = [
+    'instructor',
+    'administrator_institution',
+    'administrator',
+    'institution',
+  ].includes(navContext.type ?? '');
 
-    // If additional navigation capabilities are not needed, such as on the
-    // course staff and sync pages, then the context navigation is not shown.
-    if (navContext.page === 'course_admin') {
-      const navPageTabs = getNavPageTabs(true);
+  // If additional navigation capabilities are not needed, such as on the
+  // course staff and sync pages, then the context navigation is not shown.
+  if (navContext.page === 'course_admin') {
+    const navPageTabs = getNavPageTabs();
 
-      const courseAdminSettingsNavSubPages = navPageTabs.course_admin.flatMap(
-        (tab) => tab.activeSubPage,
-      );
+    const courseAdminSettingsNavSubPages = navPageTabs.course_admin.flatMap(
+      (tab) => tab.activeSubPage,
+    );
 
-      // If the user is on a course admin settings subpage, show ContextNavigation
-      if (navContext.subPage && courseAdminSettingsNavSubPages.includes(navContext.subPage)) {
-        showContextNavigation = true;
-      } else {
-        showContextNavigation = false;
-      }
-    } else if (navContext.page === 'instance_admin') {
-      const navPageTabs = getNavPageTabs(true);
-
-      const instanceAdminSettingsNavSubPages = navPageTabs.instance_admin.flatMap(
-        (tab) => tab.activeSubPage,
-      );
-
-      // If the user is on a instance admin settings subpage, show ContextNavigation
-      if (navContext.subPage && instanceAdminSettingsNavSubPages.includes(navContext.subPage)) {
-        showContextNavigation = true;
-      } else {
-        showContextNavigation = false;
-      }
+    // If the user is on a course admin settings subpage, show ContextNavigation
+    if (navContext.subPage && courseAdminSettingsNavSubPages.includes(navContext.subPage)) {
+      showContextNavigation = true;
+    } else {
+      showContextNavigation = false;
     }
+  } else if (navContext.page === 'instance_admin') {
+    const navPageTabs = getNavPageTabs();
 
-    return html`
-      <!doctype html>
-      <html lang="en">
-        <head>
-          ${HeadContents({
-            resLocals,
-            pageTitle,
-            pageNote: resolvedOptions.pageNote,
-          })}
-          ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
-          ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
-        </head>
-        <body
-          class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
-          hx-ext="${resolvedOptions.hxExt}"
-          ${unsafeHtml(
-            Object.entries(resolvedOptions.dataAttributes)
-              .map(([key, value]) => `data-${key}="${value}"`)
-              .join(' '),
-          )}
+    const instanceAdminSettingsNavSubPages = navPageTabs.instance_admin.flatMap(
+      (tab) => tab.activeSubPage,
+    );
+
+    // If the user is on a instance admin settings subpage, show ContextNavigation
+    if (navContext.subPage && instanceAdminSettingsNavSubPages.includes(navContext.subPage)) {
+      showContextNavigation = true;
+    } else {
+      showContextNavigation = false;
+    }
+  }
+
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${HeadContents({
+          resLocals,
+          pageTitle,
+          pageNote: resolvedOptions.pageNote,
+        })}
+        ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
+        ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
+      </head>
+      <body
+        class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
+        hx-ext="${resolvedOptions.hxExt}"
+        ${unsafeHtml(
+          Object.entries(resolvedOptions.dataAttributes)
+            .map(([key, value]) => `data-${key}="${value}"`)
+            .join(' '),
+        )}
+      >
+        <div
+          id="app-container"
+          class="${clsx(
+            'app-container',
+            sideNavEnabled && 'side-nav-enabled',
+            // Collapsed state for wider viewports (768px and above).
+            // Persisted in the user session.
+            !sideNavExpanded && 'collapsed',
+            // Separate collapsed state for narrower viewports (768px and below).
+            // Not persisted.
+            'mobile-collapsed',
+            resolvedOptions.fullHeight && 'h-100',
+          )}"
         >
-          <div
-            id="app-container"
-            class="${clsx(
-              'app-container',
-              sideNavEnabled && 'side-nav-enabled',
-              // Collapsed state for wider viewports (768px and above).
-              // Persisted in the user session.
-              !sideNavExpanded && 'collapsed',
-              // Separate collapsed state for narrower viewports (768px and below).
-              // Not persisted.
-              'mobile-collapsed',
-            )}"
-          >
-            ${resolvedOptions.enableNavbar
-              ? html`<div class="app-top-nav">
-                  ${Navbar({
+          ${resolvedOptions.enableNavbar
+            ? html`<div class="app-top-nav">
+                ${Navbar({
+                  resLocals,
+                  navPage: navContext.page,
+                  navSubPage: navContext.subPage,
+                  navbarType: navContext.type,
+                  isInPageLayout: true,
+                  sideNavEnabled,
+                })}
+              </div>`
+            : ''}
+          ${sideNavEnabled
+            ? html`
+                <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
+                  <div class="app-side-nav-scroll">
+                    ${SideNav({
+                      resLocals,
+                      page: navContext.page,
+                      subPage: navContext.subPage,
+                      sideNavExpanded,
+                      persistToggleState: resolvedOptions.forcedInitialNavToggleState === undefined,
+                    })}
+                  </div>
+                </nav>
+              `
+            : ''}
+          <div class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}">
+            <div
+              class="${clsx(
+                sideNavEnabled ? 'app-main-container' : 'h-100 w-100',
+                'd-flex flex-column',
+              )}"
+            >
+              ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
+                ? AssessmentNavigation({
+                    courseInstanceId: resLocals.course_instance.id,
+                    subPage: navContext.subPage,
+                    assessment: resLocals.assessment,
+                    assessmentSet: resLocals.assessment_set,
+                  })
+                : ''}
+              ${showContextNavigation
+                ? ContextNavigation({
                     resLocals,
                     navPage: navContext.page,
                     navSubPage: navContext.subPage,
-                    navbarType: navContext.type,
-                    isInPageLayout: true,
-                    sideNavEnabled,
-                  })}
-                </div>`
-              : ''}
-            ${sideNavEnabled
-              ? html`
-                  <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
-                    <div class="app-side-nav-scroll">
-                      ${SideNav({
-                        resLocals,
-                        page: navContext.page,
-                        subPage: navContext.subPage,
-                        sideNavExpanded,
-                        persistToggleState:
-                          resolvedOptions.forcedInitialNavToggleState === undefined,
-                      })}
-                    </div>
-                  </nav>
-                `
-              : ''}
-            <div
-              class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}"
-            >
-              <div class="${sideNavEnabled ? 'app-main-container' : ''}">
-                ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
-                  ? AssessmentNavigation({
-                      courseInstanceId: resLocals.course_instance.id,
-                      subPage: navContext.subPage,
-                      assessment: resLocals.assessment,
-                      assessmentSet: resLocals.assessment_set,
-                    })
-                  : ''}
-                ${showContextNavigation
-                  ? ContextNavigation({
-                      resLocals,
-                      navPage: navContext.page,
-                      navSubPage: navContext.subPage,
-                    })
-                  : ''}
-                ${preContentString}
-                <main
-                  id="content"
-                  class="${clsx(
-                    resolvedOptions.fullWidth ? 'container-fluid' : 'container',
-                    resolvedOptions.paddingBottom && 'pb-4',
-                    !resolvedOptions.paddingSides && 'px-0',
-                    resolvedOptions.fullHeight && 'h-100',
-                    'pt-3',
-                    sideNavEnabled && 'px-3',
-                  )}"
-                >
-                  ${contentString}
-                </main>
-                ${postContentString}
-              </div>
+                  })
+                : ''}
+              ${preContentString}
+              <main
+                id="content"
+                class="${clsx(
+                  resolvedOptions.contentPadding
+                    ? resolvedOptions.fullWidth
+                      ? 'container-fluid'
+                      : 'container'
+                    : null,
+                  resolvedOptions.contentPadding && 'pt-3',
+                  resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
+                  resolvedOptions.contentPadding && 'pb-3',
+                  resolvedOptions.fullHeight && 'h-100',
+                )}"
+              >
+                ${renderHtml(
+                  <SyncErrorsAndWarningsForContext navContext={navContext} resLocals={resLocals} />,
+                )}
+                ${contentString}
+              </main>
+              ${postContentString}
             </div>
           </div>
-        </body>
-      </html>
-    `.toString();
-  } else {
-    return html`
-      <!doctype html>
-      <html lang="en" class="${resolvedOptions.fullHeight ? 'h-100' : ''}">
-        <head>
-          ${HeadContents({
-            resLocals,
-            pageTitle,
-            pageNote: resolvedOptions.pageNote,
-          })}
-          ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
-        </head>
-        <body
-          class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
-          hx-ext="${resolvedOptions.hxExt}"
-          ${unsafeHtml(
-            Object.entries(resolvedOptions.dataAttributes)
-              .map(([key, value]) => `data-${key}="${value}"`)
-              .join(' '),
-          )}
-        >
-          ${resolvedOptions.enableNavbar
-            ? Navbar({
-                resLocals,
-                navPage: navContext.page,
-                navSubPage: navContext.subPage,
-                navbarType: navContext.type,
-              })
-            : ''}
-          ${preContentString}
-          <main
-            id="content"
-            class="
-            ${clsx(
-              resolvedOptions.fullWidth ? 'container-fluid' : 'container',
-              resolvedOptions.paddingBottom && 'pb-4',
-              !resolvedOptions.paddingSides && 'px-0',
-              resolvedOptions.fullHeight && 'flex-grow-1',
-            )}
-          "
-          >
-            ${contentString}
-          </main>
-          ${postContentString}
-        </body>
-      </html>
-    `.toString();
-  }
+        </div>
+      </body>
+    </html>
+  `.toString();
 }

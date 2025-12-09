@@ -1,8 +1,11 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
+  type Header,
   type SortingState,
+  type Updater,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
@@ -11,37 +14,25 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'preact/compat';
-import {
-  Alert,
-  Button,
-  ButtonGroup,
-  Dropdown,
-  DropdownButton,
-  OverlayTrigger,
-  Tooltip,
-} from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
+  NuqsAdapter,
+  OverlayTrigger,
   TanstackTableCard,
   TanstackTableEmptyState,
+  parseAsColumnPinningState,
+  parseAsColumnVisibilityStateWithColumns,
+  parseAsSortingState,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
-import {
-  NuqsAdapter,
-  parseAsColumnPinningState,
-  parseAsColumnVisibilityStateWithColumns,
-  parseAsSortingState,
-} from '../../lib/client/nuqs.js';
-import type {
-  PageContextWithAuthzData,
-  StaffCourseInstanceContext,
-} from '../../lib/client/page-context.js';
+import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
@@ -73,7 +64,7 @@ async function copyToClipboard(text: string) {
 function CopyEnrollmentLinkButton({
   courseInstance,
 }: {
-  courseInstance: StaffCourseInstanceContext['course_instance'];
+  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
 }) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -119,7 +110,10 @@ function CopyEnrollmentLinkButton({
       {courseInstance.self_enrollment_use_enrollment_code && (
         <OverlayTrigger
           placement="right"
-          overlay={<Tooltip>{copiedCode ? 'Copied!' : 'Copy'}</Tooltip>}
+          tooltip={{
+            body: copiedCode ? 'Copied!' : 'Copy',
+            props: { id: 'students-copy-code-tooltip' },
+          }}
           show={copiedCode ? true : undefined}
         >
           <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
@@ -132,7 +126,10 @@ function CopyEnrollmentLinkButton({
       {courseInstance.self_enrollment_enabled && (
         <OverlayTrigger
           placement="right"
-          overlay={<Tooltip>{copiedLink ? 'Copied!' : 'Copy'}</Tooltip>}
+          tooltip={{
+            body: copiedLink ? 'Copied!' : 'Copy',
+            props: { id: 'students-copy-link-tooltip' },
+          }}
           show={copiedLink ? true : undefined}
         >
           <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
@@ -151,14 +148,20 @@ function CopyEnrollmentLinkButton({
 
 interface StudentsCardProps {
   authzData: PageContextWithAuthzData['authz_data'];
-  course: StaffCourseInstanceContext['course'];
-  courseInstance: StaffCourseInstanceContext['course_instance'];
+  course: PageContext<'courseInstance', 'instructor'>['course'];
+  courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
   enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
-  urlPrefix: string;
 }
+
+type ColumnId =
+  | 'user_uid'
+  | 'user_name'
+  | 'enrollment_status'
+  | 'user_email'
+  | 'enrollment_first_joined_at';
 
 function StudentsCard({
   authzData,
@@ -168,7 +171,6 @@ function StudentsCard({
   students: initialStudents,
   timezone,
   csrfToken,
-  urlPrefix,
 }: StudentsCardProps) {
   const queryClient = useQueryClient();
 
@@ -190,7 +192,7 @@ function StudentsCard({
   const [lastInvitation, setLastInvitation] = useState<StaffEnrollment | null>(null);
 
   // The individual column filters are the source of truth, and this is derived from them.
-  const columnFilters = useMemo(() => {
+  const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
     return [
       {
         id: 'enrollment_status',
@@ -198,6 +200,28 @@ function StudentsCard({
       },
     ];
   }, [enrollmentStatusFilter]);
+
+  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
+    return {
+      user_uid: undefined,
+      user_name: undefined,
+      enrollment_status: setEnrollmentStatusFilter,
+      user_email: undefined,
+      enrollment_first_joined_at: undefined,
+    };
+  }, [setEnrollmentStatusFilter]);
+
+  // Sync TanStack column filter changes back to URL
+  const handleColumnFiltersChange = useMemo(
+    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
+      const newFilters =
+        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
+      for (const filter of newFilters) {
+        columnFilterSetters[filter.id as ColumnId]?.(filter.value);
+      }
+    },
+    [columnFilters, columnFilterSetters],
+  );
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
@@ -262,7 +286,7 @@ function StudentsCard({
         header: 'UID',
         cell: (info) => {
           return (
-            <a href={getStudentEnrollmentUrl(urlPrefix, info.row.original.enrollment.id)}>
+            <a href={getStudentEnrollmentUrl(courseInstance.id, info.row.original.enrollment.id)}>
               {info.getValue()}
             </a>
           );
@@ -276,7 +300,12 @@ function StudentsCard({
             return info.getValue() || '—';
           }
           return (
-            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+            <OverlayTrigger
+              tooltip={{
+                body: 'Student information is not yet available.',
+                props: { id: 'students-name-tooltip' },
+              }}
+            >
               <i class="bi bi-question-circle" />
             </OverlayTrigger>
           );
@@ -288,8 +317,7 @@ function StudentsCard({
         cell: (info) => <EnrollmentStatusIcon type="text" status={info.getValue()} />,
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const current = row.getValue(columnId);
-          if (typeof current !== 'string') return false;
+          const current = row.getValue<StudentRow['enrollment']['status']>(columnId);
           return filterValues.includes(current);
         },
       }),
@@ -301,7 +329,12 @@ function StudentsCard({
             return info.getValue() || '—';
           }
           return (
-            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+            <OverlayTrigger
+              tooltip={{
+                body: 'Student information is not yet available.',
+                props: { id: 'students-email-tooltip' },
+              }}
+            >
               <i class="bi bi-question-circle" />
             </OverlayTrigger>
           );
@@ -319,7 +352,7 @@ function StudentsCard({
         },
       }),
     ],
-    [timezone, urlPrefix],
+    [timezone, courseInstance.id],
   );
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
@@ -347,6 +380,7 @@ function StudentsCard({
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
+    onColumnFiltersChange: handleColumnFiltersChange,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
@@ -374,9 +408,12 @@ function StudentsCard({
       <TanstackTableCard
         table={table}
         title="Students"
+        // eslint-disable-next-line @eslint-react/no-forbidden-props
+        className="h-100"
+        singularLabel="student"
+        pluralLabel="students"
         downloadButtonOptions={{
           filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
-          pluralLabel: 'students',
           mapRowToData: (row) => {
             return {
               uid: row.user?.uid ?? row.enrollment.pending_uid,
@@ -390,10 +427,11 @@ function StudentsCard({
                 : null,
             };
           },
+          hasSelection: false,
         }}
         headerButtons={
           <>
-            {enrollmentManagementEnabled && (
+            {enrollmentManagementEnabled && courseInstance.modern_publishing && (
               <>
                 <Button
                   variant="light"
@@ -409,22 +447,21 @@ function StudentsCard({
           </>
         }
         globalFilter={{
-          value: globalFilter,
-          setValue: setGlobalFilter,
           placeholder: 'Search by UID, name, email...',
         }}
         tableOptions={{
           filters: {
-            enrollment_status: ({ header }) => (
+            enrollment_status: ({
+              header,
+            }: {
+              header: Header<StudentRow, StudentRow['enrollment']['status']>;
+            }) => (
               <CategoricalColumnFilter
-                columnId={header.column.id}
-                columnLabel="Status"
+                column={header.column}
                 allColumnValues={STATUS_VALUES}
                 renderValueLabel={({ value }) => (
                   <EnrollmentStatusIcon type="text" status={value} />
                 )}
-                columnValuesFilter={enrollmentStatusFilter}
-                setColumnValuesFilter={setEnrollmentStatusFilter}
               />
             ),
           },
@@ -470,13 +507,12 @@ export const InstructorStudents = ({
   enrollmentManagementEnabled,
   csrfToken,
   isDevMode,
-  urlPrefix,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
   search: string;
   isDevMode: boolean;
 } & StudentsCardProps) => {
-  const queryClient = new QueryClient();
+  const [queryClient] = useState(() => new QueryClient());
 
   return (
     <NuqsAdapter search={search}>
@@ -489,7 +525,6 @@ export const InstructorStudents = ({
           students={students}
           timezone={timezone}
           csrfToken={csrfToken}
-          urlPrefix={urlPrefix}
         />
       </QueryClientProviderDebug>
     </NuqsAdapter>

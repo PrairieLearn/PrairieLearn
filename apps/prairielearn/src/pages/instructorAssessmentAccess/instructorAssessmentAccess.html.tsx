@@ -1,14 +1,13 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -32,7 +31,7 @@ export function InstructorAssessmentAccess({
   resLocals,
   accessRules,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   accessRules: AssessmentAccessRules[];
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
@@ -48,16 +47,6 @@ export function InstructorAssessmentAccess({
       fullWidth: true,
     },
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access</h1>

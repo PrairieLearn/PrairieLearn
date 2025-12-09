@@ -1,10 +1,8 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import {
   type CourseInstance,
   CourseInstancePermissionSchema,
@@ -13,6 +11,7 @@ import {
   type User,
   UserSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 const CourseInstanceRoleRowSchema = z.object({
   id: CourseInstanceSchema.shape.id,
@@ -49,7 +48,7 @@ export function InstructorCourseAdminStaff({
   uidsLimit,
   githubAccessLink,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   courseInstances: CourseInstance[];
   courseUsers: CourseUsersRow[];
   uidsLimit: number;
@@ -67,13 +66,6 @@ export function InstructorCourseAdminStaff({
       fullWidth: true,
     },
     content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex flex-wrap align-items-center">
           <h1 class="me-2">Staff</h1>
