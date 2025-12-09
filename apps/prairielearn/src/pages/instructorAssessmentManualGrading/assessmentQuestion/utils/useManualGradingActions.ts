@@ -1,11 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import type { AiGradingModelId } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 
 export type BatchActionData =
   | { assigned_grader: string | null }
   | { requires_manual_grading: boolean }
-  | { batch_action: 'ai_grade_assessment_selected'; closed_instance_questions_only?: boolean }
+  | {
+      batch_action: 'ai_grade_assessment_selected';
+      model_id: AiGradingModelId;
+      closed_instance_questions_only?: boolean;
+    }
   | {
       batch_action: 'ai_instance_question_group_selected';
       closed_instance_questions_only?: boolean;
@@ -23,6 +28,7 @@ export type BatchActionParams =
         | 'ai_grade_assessment_all'
         | 'ai_instance_question_group_assessment_all'
         | 'ai_instance_question_group_assessment_ungrouped';
+      modelId: AiGradingModelId;
     };
 
 interface UseManualGradingActionsParams {
@@ -59,10 +65,16 @@ export function useManualGradingActions({
           if (actionData.closed_instance_questions_only !== undefined) {
             requestBody.closed_instance_questions_only = actionData.closed_instance_questions_only;
           }
+
+          if ('model_id' in actionData) {
+            requestBody.model_id = actionData.model_id;
+          }
         } else {
           // For regular batch actions
           requestBody.batch_action_data = actionData;
         }
+      } else {
+        requestBody.model_id = params.modelId;
       }
 
       const response = await fetch(window.location.pathname, {

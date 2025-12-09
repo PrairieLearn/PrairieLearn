@@ -65,6 +65,7 @@ import {
   type SubmissionPanels,
 } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
+import type { UntypedResLocals } from './res-locals.types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -122,7 +123,7 @@ async function render(
   submission: Submission | null,
   submissions: Submission[],
   question_course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 

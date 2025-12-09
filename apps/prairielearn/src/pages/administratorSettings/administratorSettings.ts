@@ -80,9 +80,8 @@ router.post(
         organization: config.aiQuestionGenerationOpenAiOrganization,
       });
 
-      const { benchmarkAiQuestionGeneration } = await import(
-        '../../ee/lib/ai-question-generation-benchmark.js'
-      );
+      const { benchmarkAiQuestionGeneration } =
+        await import('../../ee/lib/ai-question-generation-benchmark.js');
       const jobSequenceId = await benchmarkAiQuestionGeneration({
         evaluationModel: openai(QUESTION_BENCHMARKING_OPENAI_MODEL),
         user: res.locals.authn_user,

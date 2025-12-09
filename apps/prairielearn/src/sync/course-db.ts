@@ -2,6 +2,7 @@ import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
+// @ts-expect-error No types for better-ajv-errors (see https://github.com/atlassian/better-ajv-errors/issues/176)
 import betterAjvErrors from 'better-ajv-errors';
 import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
@@ -546,17 +547,20 @@ export async function loadCourseInfo({
    * Used to retrieve fields such as "assessmentSets" and "topics".
    * Adds a warning when syncing if duplicates are found.
    * If defaults are provided, the entries from defaults not present in the resulting list are merged.
+   *
+   * Each entry must have a `name` property.
+   *
    * @param fieldName The member of `info` to inspect
-   * @param entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
    */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
-  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K]): CourseJson[K] {
-    const known = new Map();
+  >(fieldName: K, defaults?: CourseJson[K]): CourseJson[K] {
+    type Entry = NonNullable<CourseJson[K]>[number];
+    const known = new Map<string, Entry>();
     const duplicateEntryIds = new Set<string>();
 
     (info![fieldName] ?? []).forEach((entry) => {
-      const entryId = entry[entryIdentifier];
+      const entryId = entry.name;
       if (known.has(entryId)) {
         duplicateEntryIds.add(entryId);
       }
@@ -573,7 +577,7 @@ export async function loadCourseInfo({
 
     if (defaults) {
       defaults.forEach((defaultEntry) => {
-        const defaultEntryId = defaultEntry[entryIdentifier];
+        const defaultEntryId = defaultEntry.name;
         if (!known.has(defaultEntryId)) {
           known.set(defaultEntryId, defaultEntry);
         }
@@ -582,7 +586,7 @@ export async function loadCourseInfo({
 
     // Turn the map back into a list; the JS spec ensures that Maps remember
     // insertion order, so the order is preserved.
-    return [...known.values()];
+    return [...known.values()] as CourseJson[K];
   }
 
   // Assessment sets in DEFAULT_ASSESSMENT_SETS may be in use but not present in the
@@ -592,22 +596,18 @@ export async function loadCourseInfo({
     assessmentSetsInUse.has(set.name),
   );
 
-  const assessmentSets = getFieldWithoutDuplicates(
-    'assessmentSets',
-    'name',
-    defaultAssessmentSetsInUse,
-  );
+  const assessmentSets = getFieldWithoutDuplicates('assessmentSets', defaultAssessmentSetsInUse);
 
   // Tags in DEFAULT_TAGS may be in use but not present in the course info JSON
   // file. This ensures that default tags are added if a question uses them, and
   // removed if not.
   const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => tagsInUse.has(tag.name));
 
-  const tags = getFieldWithoutDuplicates('tags', 'name', defaultTagsInUse);
-  const topics = getFieldWithoutDuplicates('topics', 'name');
-  const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
+  const tags = getFieldWithoutDuplicates('tags', defaultTagsInUse);
+  const topics = getFieldWithoutDuplicates('topics');
+  const sharingSets = getFieldWithoutDuplicates('sharingSets');
 
-  const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
+  const assessmentModules = getFieldWithoutDuplicates('assessmentModules');
 
   const devModeFeatures = run(() => {
     const features = info.options.devModeFeatures ?? {};
@@ -1465,7 +1465,18 @@ function validateCourseInstance({
     }
   }
 
+  if (courseInstance.selfEnrollment.enabled !== true && courseInstance.allowAccess != null) {
+    errors.push(
+      '"selfEnrollment.enabled" is not configurable when you have access control rules ("allowAccess" is set).',
+    );
+  }
+
   if (courseInstance.selfEnrollment.beforeDate != null) {
+    if (courseInstance.allowAccess != null) {
+      errors.push(
+        '"selfEnrollment.beforeDate" is not configurable when you have access control rules ("allowAccess" is set).',
+      );
+    }
     const date = parseJsonDate(courseInstance.selfEnrollment.beforeDate);
     if (date == null) {
       errors.push('"selfEnrollment.beforeDate" is not a valid date.');

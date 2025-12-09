@@ -8,6 +8,7 @@ import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { editQuestionWithAgent, getAgenticModel } from '../../lib/ai-question-generation/agent.js';
 import { getIntervalUsage } from '../../lib/aiQuestionGeneration.js';
 
@@ -20,7 +21,7 @@ import {
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-function assertCanCreateQuestion(resLocals: Record<string, any>) {
+function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   // Do not allow users to edit without permission
   if (!resLocals.authz_data.has_course_permission_edit) {
     throw new error.HttpStatusError(403, 'Access denied (must be course editor)');

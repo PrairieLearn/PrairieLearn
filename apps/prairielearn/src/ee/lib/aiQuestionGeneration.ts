@@ -409,7 +409,10 @@ export async function generateQuestion({
       errors = ['Please generate a question.html file.'];
     }
 
-    const files = {};
+    const files: {
+      'question.html'?: string;
+      'server.py'?: string;
+    } = {};
     if (results.html) {
       files['question.html'] = results.html;
     }

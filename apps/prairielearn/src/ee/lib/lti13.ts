@@ -18,6 +18,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
+import type { AuthzData } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
@@ -29,6 +30,7 @@ import {
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
@@ -374,9 +376,7 @@ export class Lti13Claim {
   }
 }
 
-export async function validateLti13CourseInstance(
-  resLocals: Record<string, any>,
-): Promise<boolean> {
+export async function validateLti13CourseInstance(resLocals: UntypedResLocals): Promise<boolean> {
   const hasLti13CourseInstance = await queryRow(
     sql.select_ci_validation,
     { course_instance_id: resLocals.course_instance.id },
@@ -607,11 +607,11 @@ export async function linkAssessment(
 export function findValueByKey(obj: unknown, targetKey: string): unknown {
   if (typeof obj !== 'object' || obj === null) return undefined;
   if (Object.hasOwn(obj, targetKey)) {
-    return obj[targetKey];
+    return (obj as Record<string, unknown>)[targetKey];
   }
   for (const key in obj) {
-    if (typeof obj[key] === 'object') {
-      const result = findValueByKey(obj[key], targetKey);
+    if (typeof (obj as Record<string, unknown>)[key] === 'object') {
+      const result = findValueByKey((obj as Record<string, unknown>)[key], targetKey);
       if (result !== undefined) {
         return result;
       }
@@ -835,8 +835,11 @@ class Lti13ContextMembership {
     if (user.lti13_sub !== null) {
       return this.#membershipsBySub[user.lti13_sub] ?? null;
     }
-    for (const match of ['uid', 'email']) {
-      const memberResults = this.#membershipsByEmail[user[match]];
+    for (const match of ['uid', 'email'] as const) {
+      const key = user[match];
+      if (key == null) continue;
+
+      const memberResults = this.#membershipsByEmail[key];
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!memberResults) continue;
@@ -853,12 +856,14 @@ class Lti13ContextMembership {
 }
 
 export async function updateLti13Scores({
-  course_instance,
+  courseInstance,
+  authzData,
   unsafe_assessment_id,
   instance,
   job,
 }: {
-  course_instance: CourseInstance;
+  courseInstance: CourseInstance;
+  authzData: AuthzData;
   unsafe_assessment_id: string | number;
   instance: Lti13CombinedInstance;
   job: ServerJob;
@@ -892,8 +897,10 @@ export async function updateLti13Scores({
   );
 
   const courseStaff = await selectUsersWithCourseInstanceAccess({
-    course_instance,
-    minimal_role: 'Student Data Viewer',
+    courseInstance,
+    authzData,
+    requiredRole: ['Student Data Viewer'],
+    minimalRole: 'Student Data Viewer',
   });
   const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));
 

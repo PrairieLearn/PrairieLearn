@@ -26,6 +26,7 @@ import { getAndRenderVariant } from '../../../lib/question-render.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
 import { editQuestionWithAgent, getAgenticModel } from '../../lib/ai-question-generation/agent.js';
@@ -106,7 +107,7 @@ async function saveRevisedQuestion({
   });
 }
 
-function assertCanCreateQuestion(resLocals: Record<string, any>) {
+function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   // Do not allow users to edit without permission
   if (!resLocals.authz_data.has_course_permission_edit) {
     throw new error.HttpStatusError(403, 'Access denied (must be course editor)');

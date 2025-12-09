@@ -8,6 +8,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { type Question } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import type { QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.types.js';
 
@@ -21,7 +22,7 @@ export function InstructorAiGenerateDraftEditor({
   richTextEditorEnabled,
   questionContainerHtml,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   question: Question;
   messages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
