@@ -95,7 +95,7 @@ router.get(
     if ('lineitems' in req.query) {
       try {
         res.end(LineitemsInputs(await getLineitems(instance)));
-      } catch (error) {
+      } catch (error: any) {
         res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
         logger.error('LineitemsInputs error', error);
       }
