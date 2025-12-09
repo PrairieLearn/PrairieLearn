@@ -73,15 +73,14 @@ export function InviteStudentsModal({
     saveMutation.mutate(uids);
   };
 
-  const onClose = () => {
+  const onExited = () => {
     reset();
     clearErrors();
     saveMutation.reset();
-    onHide();
   };
 
   return (
-    <Modal show={show} backdrop="static" onHide={onClose}>
+    <Modal show={show} backdrop="static" onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
         <Modal.Title>Invite students</Modal.Title>
       </Modal.Header>
@@ -117,7 +116,7 @@ export function InviteStudentsModal({
             type="button"
             class="btn btn-secondary"
             disabled={saveMutation.isPending}
-            onClick={onClose}
+            onClick={onExited}
           >
             Cancel
           </button>
