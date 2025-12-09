@@ -1033,9 +1033,9 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       // Don't set host to unhealthy.
       return;
     }
-  } catch (err) {
+  } catch (err: any) {
     logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);
-    await markSelfUnhealthy(err instanceof Error ? err : String(err));
+    await markSelfUnhealthy(err);
   }
 }
 
@@ -1056,8 +1056,8 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
         maxSize: config.workspaceMaxGradedFilesSize,
       },
     );
-  } catch (err) {
-    res.status(500).send(err instanceof Error ? err.message : String(err));
+  } catch (err: any) {
+    res.status(500).send(err.message);
     return;
   }
 

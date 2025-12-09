@@ -95,9 +95,8 @@ async function ensureImage() {
     logger.info(`Checking for executor image ${imageName}`);
     await image.inspect();
     logger.info(`Executor image ${imageName} found`);
-  } catch (e: unknown) {
-    const err = e as { statusCode?: number };
-    if (err.statusCode === 404) {
+  } catch (e: any) {
+    if (e.statusCode === 404) {
       logger.info('Image not found, pulling from registry');
       const start = performance.now();
       const ecr = new ECRClient(makeAwsClientConfig());
@@ -559,8 +558,8 @@ export class CodeCallerContainer implements CodeCaller {
           this.outputBoth = data.errorData.outputBoth;
         }
       }
-    } catch (e: unknown) {
-      err = new Error('Error decoding CodeCallerContainer JSON: ' + (e instanceof Error ? e.message : String(e)));
+    } catch (e: any) {
+      err = new Error('Error decoding CodeCallerContainer JSON: ' + e.message);
     }
     this.state = WAITING;
     if (err) {
@@ -598,7 +597,7 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.container) {
       try {
         await this.container.kill();
-      } catch (e) {
+      } catch (e: any) {
         logger.error(`Error killing Docker container ${this.container.id}`, e);
       }
     }
@@ -606,12 +605,12 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.hostDirectory) {
       try {
         await this.removeBindMountIfNeeded(this.hostDirectory.path);
-      } catch (e) {
+      } catch (e: any) {
         logger.error('Error unmounting host directory', e);
       }
       try {
         await this.hostDirectory.cleanup();
-      } catch (e) {
+      } catch (e: any) {
         logger.error(`Error removing host directory ${this.hostDirectory.path}`, e);
       }
     }
@@ -746,13 +745,13 @@ async function cleanupMountDirectories() {
 
         try {
           await fs.rmdir(absolutePath);
-        } catch (e) {
+        } catch (e: any) {
           logger.error(`Failed to remove temporary directory ${absolutePath}`);
           logger.error(e);
         }
       }),
     );
-  } catch (e) {
+  } catch (e: any) {
     logger.error(e);
   }
 }

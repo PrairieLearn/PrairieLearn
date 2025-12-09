@@ -75,9 +75,8 @@ function getPackageVersion(packageName: string): string {
 
   try {
     return require(`${packageName}/package.json`).version;
-  } catch (e: unknown) {
-    const err = e as NodeJS.ErrnoException;
-    if (err.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
+  } catch (e: any) {
+    if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
       throw e;
     }
 
@@ -100,19 +99,18 @@ function getPackageVersion(packageName: string): string {
           packageName,
           'package.json',
         );
-      } catch (err: unknown) {
+      } catch (err: any) {
         // Some packages (namely `cropperjs`) have invalid `package.json` files
         // that refer to non-existent files. In this case, we can still try to
         // recover from things by using the path that couldn't be resolved.
         //
         // In this case, `err.path` should point to the root of the package.
-        const e = err as NodeJS.ErrnoException & { path?: string };
-        if (e.code === 'MODULE_NOT_FOUND' && e.path) {
+        if (err.code === 'MODULE_NOT_FOUND' && err.path) {
           // Check if the path is a directory
-          if (fs.lstatSync(e.path).isDirectory()) {
-            return path.resolve(e.path, 'package.json');
+          if (fs.lstatSync(err.path).isDirectory()) {
+            return path.resolve(err.path, 'package.json');
           } else {
-            return path.resolve(path.dirname(e.path), 'package.json');
+            return path.resolve(path.dirname(err.path), 'package.json');
           }
         }
 

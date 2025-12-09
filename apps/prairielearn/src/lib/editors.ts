@@ -2191,9 +2191,8 @@ export class FileUploadEditor extends Editor {
     let contents;
     try {
       contents = await fs.readFile(this.filePath);
-    } catch (err: unknown) {
-      const e = err as NodeJS.ErrnoException;
-      if (e.code === 'ENOENT') {
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
         debug('no old contents, so continue with upload');
         return true;
       }

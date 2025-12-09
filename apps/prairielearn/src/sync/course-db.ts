@@ -401,9 +401,8 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
     contents = await fs.readFile(absolutePath, 'utf8');
-  } catch (err: unknown) {
-    const e = err as NodeJS.ErrnoException;
-    if (e.code === 'ENOTDIR' && e.path === absolutePath) {
+  } catch (err: any) {
+    if (err.code === 'ENOTDIR' && err.path === absolutePath) {
       // In a previous version of this code, we'd pre-filter
       // all files in the parent directory to remove anything
       // that may have accidentally slipped in, like .DS_Store.
@@ -414,7 +413,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
       // in fact a directory.
       return null;
     }
-    if (tolerateMissing && e.code === 'ENOENT' && e.path === absolutePath) {
+    if (tolerateMissing && err.code === 'ENOENT' && err.path === absolutePath) {
       // For info files that are recursively loaded, this probably means
       // we tried to load a file at an intermediate directory. This isn't
       // an error; return null to let the caller handle this.
@@ -423,7 +422,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
 
     // If it wasn't a missing file, this is another error. Propagate it to
     // the caller.
-    return infofile.makeError(`Error reading JSON file ${filePath}: ${e.code}`);
+    return infofile.makeError(`Error reading JSON file ${filePath}: ${err.code}`);
   }
 
   try {
@@ -464,8 +463,8 @@ export async function loadInfoFile<T extends { uuid: string }>({
         uuid: json.uuid,
         data: json,
       });
-    } catch (err: unknown) {
-      return infofile.makeError(err instanceof Error ? err.message : String(err));
+    } catch (err: any) {
+      return infofile.makeError(err.message);
     }
   } catch {
     // Invalid JSON; let's reparse with jju to get a better error message
@@ -474,8 +473,8 @@ export async function loadInfoFile<T extends { uuid: string }>({
     try {
       // This should always throw
       jju.parse(contents, { mode: 'json' });
-    } catch (e: unknown) {
-      result = infofile.makeError(`Error parsing JSON: ${e instanceof Error ? e.message : String(e)}`);
+    } catch (e: any) {
+      result = infofile.makeError(`Error parsing JSON: ${e.message}`);
     }
 
     // The document was still valid JSON, but we may still be able to
@@ -799,11 +798,10 @@ async function loadInfoForDirectory<T extends ZodSchema>({
             );
           }
           Object.assign(infoFiles, subInfoFiles);
-        } catch (e: unknown) {
-          const err = e as NodeJS.ErrnoException;
-          if (err.code === 'ENOTDIR') {
+        } catch (e: any) {
+          if (e.code === 'ENOTDIR') {
             // This wasn't a directory; ignore it.
-          } else if (err.code === 'ENOENT') {
+          } else if (e.code === 'ENOENT') {
             // Missing directory; record it
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
               `Missing JSON file: ${infoFilePath}`,
@@ -820,9 +818,8 @@ async function loadInfoForDirectory<T extends ZodSchema>({
 
   try {
     return await walk('');
-  } catch (e: unknown) {
-    const err = e as NodeJS.ErrnoException;
-    if (err.code === 'ENOENT') {
+  } catch (e: any) {
+    if (e.code === 'ENOENT') {
       // Missing directory; return an empty list
       return {};
     }
@@ -1057,8 +1054,8 @@ function validateQuestion({
     try {
       const schema = schemas[`QuestionOptions${question.type}JsonSchema`];
       schema.parse(question.options);
-    } catch (err: unknown) {
-      errors.push(`Error validating question options: ${err instanceof Error ? err.message : String(err)}`);
+    } catch (err: any) {
+      errors.push(`Error validating question options: ${err.message}`);
     }
   }
 

@@ -286,14 +286,12 @@ async function runJobs(jobsList: CronJob[]) {
         try {
           await tryJobWithLock(job, cronUuid);
           span.setStatus({ code: SpanStatusCode.OK });
-        } catch (err: unknown) {
-          const error = err instanceof Error ? err : new Error(String(err));
-          const errorWithData = err as Error & { data?: any };
+        } catch (err: any) {
           debug(`runJobs(): error running ${job.name}: ${err}`);
           logger.error(`cron: ${job.name} failure: ` + String(err), {
-            message: error.message,
-            stack: error.stack,
-            data: JSON.stringify(errorWithData.data),
+            message: err.message,
+            stack: err.stack,
+            data: JSON.stringify(err.data),
             cronUuid,
           });
 
@@ -304,10 +302,10 @@ async function runJobs(jobsList: CronJob[]) {
             },
           });
 
-          span.recordException(error);
+          span.recordException(err);
           span.setStatus({
             code: SpanStatusCode.ERROR,
-            message: error.message,
+            message: err.message,
           });
         }
 

@@ -88,9 +88,9 @@ router.post(
     let result: AdministratorQueryResult | null = null;
     try {
       result = await module.default(queryParams);
-    } catch (err: unknown) {
+    } catch (err: any) {
       logger.error(err);
-      error = err instanceof Error ? err.toString() : String(err);
+      error = err.toString();
     }
 
     const query_run_id = await sqldb.queryRow(

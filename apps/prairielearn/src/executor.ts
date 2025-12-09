@@ -39,11 +39,11 @@ async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<
   let request: ExecutorRequest;
   try {
     request = JSON.parse(line);
-  } catch (err: unknown) {
+  } catch (err: any) {
     // We shouldn't ever get malformed JSON from the caller - but if we do,
     // handle it gracefully.
     return {
-      error: err instanceof Error ? err.message : String(err),
+      error: err.message,
       needsFullRestart: false,
     };
   }
@@ -54,8 +54,8 @@ async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<
 
     try {
       success = await codeCaller.restart();
-    } catch (err: unknown) {
-      restartErr = err instanceof Error ? err : new Error(String(err));
+    } catch (err: any) {
+      restartErr = err;
     }
 
     return {
@@ -85,8 +85,8 @@ async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<
       request.fcn,
       request.args,
     ));
-  } catch (err: unknown) {
-    callErr = err instanceof Error ? (err as Error | CodeCallerError) : new Error(String(err));
+  } catch (err: any) {
+    callErr = err;
   }
 
   const functionMissing = callErr instanceof FunctionMissingError;

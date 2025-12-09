@@ -141,9 +141,8 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   let files: string[];
   try {
     files = await fs.readdir(sourceDir);
-  } catch (err: unknown) {
-    const e = err as NodeJS.ErrnoException;
-    if (e.code === 'ENOENT') {
+  } catch (err: any) {
+    if (err?.code === 'ENOENT') {
       // Directory doesn't exist, most likely a course with no elements.
       // Proceed with an empty object.
       return {};
@@ -165,9 +164,8 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     let rawInfo: any;
     try {
       rawInfo = await fs.readJSON(elementInfoPath);
-    } catch (err: unknown) {
-      const e = err as NodeJS.ErrnoException;
-      if (e.code === 'ENOENT') {
+    } catch (err: any) {
+      if (err?.code === 'ENOENT') {
         // This must not be an element directory, skip it
         return;
       }
@@ -230,9 +228,8 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
   let elementFolders: string[];
   try {
     elementFolders = await fs.readdir(sourceDir);
-  } catch (err: unknown) {
-    const e = err as NodeJS.ErrnoException;
-    if (e.code === 'ENOENT') {
+  } catch (err: any) {
+    if (err.code === 'ENOENT') {
       // We don't really care if there are no extensions, just return an empty object.
       return {};
     }
@@ -265,12 +262,11 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
     let rawInfo: any;
     try {
       rawInfo = await fs.readJson(infoPath);
-    } catch (err: unknown) {
-      const e = err as NodeJS.ErrnoException;
-      if (e.code === 'ENOENT') {
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
         // Not an extension directory, skip it.
         return;
-      } else if (e.code === 'ENOTDIR') {
+      } else if (err.code === 'ENOTDIR') {
         // Random file, skip it as well.
         return;
       } else {
@@ -380,7 +376,7 @@ async function execPythonServer(
     );
     debug('execPythonServer(): completed');
     return { result, output };
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof FunctionMissingError) {
       // function wasn't present in server
       debug('execPythonServer(): function not present');
@@ -522,12 +518,11 @@ async function processQuestionPhase<T>(
     );
     result = res.result;
     output = res.output;
-  } catch (err: unknown) {
-    const errorWithData = err as Error & { data?: any };
+  } catch (err: any) {
     courseIssues.push(
-      new CourseIssueError(err instanceof Error ? err.message : String(err), {
-        data: errorWithData.data,
-        cause: err instanceof Error ? err : undefined,
+      new CourseIssueError(err.message, {
+        data: err.data,
+        cause: err,
         fatal: true,
       }),
     );
@@ -586,9 +581,9 @@ async function processQuestionHtml<T extends ExecutionData>(
   let html: string;
   try {
     html = await execTemplate(htmlFilename, data);
-  } catch (err: unknown) {
+  } catch (err: any) {
     return {
-      courseIssues: [new CourseIssueError(`${htmlFilename}: ${err instanceof Error ? err.toString() : String(err)}`, { fatal: true })],
+      courseIssues: [new CourseIssueError(`${htmlFilename}: ${err.toString()}`, { fatal: true })],
       data,
       html: '',
       fileData: Buffer.from(''),
@@ -661,14 +656,13 @@ async function processQuestionServer<T extends ExecutionData>(
   let result, output;
   try {
     ({ result, output } = await execPythonServer(codeCaller, phase, data, html, context));
-  } catch (err: unknown) {
+  } catch (err: any) {
     const serverFile = path.join(context.question_dir, 'server.py');
-    const errorWithData = err as Error & { data?: any };
     courseIssues.push(
-      new CourseIssueError(`${serverFile}: Error calling ${phase}(): ${err instanceof Error ? err.toString() : String(err)}`, {
-        data: errorWithData.data,
+      new CourseIssueError(`${serverFile}: Error calling ${phase}(): ${err.toString()}`, {
+        data: err.data,
         fatal: true,
-        cause: err instanceof Error ? err : undefined,
+        cause: err,
       }),
     );
     return { courseIssues, data };
@@ -1815,7 +1809,7 @@ async function getCachedDataOrCompute(
 
     try {
       cachedData = await cache.get(cacheKey);
-    } catch (err) {
+    } catch (err: any) {
       // We don't actually want to fail if the cache has an error; we'll
       // just compute the cachedData as normal
       logger.error('Error in cache.get()', err);

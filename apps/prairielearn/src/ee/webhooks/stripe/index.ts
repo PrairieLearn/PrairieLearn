@@ -29,8 +29,8 @@ function constructEvent(req: Request) {
       req.headers['stripe-signature'] as string,
       config.stripeWebhookSigningSecret,
     );
-  } catch (err: unknown) {
-    throw new error.HttpStatusError(400, `Webhook error: ${err instanceof Error ? err.message : String(err)}`);
+  } catch (err: any) {
+    throw new error.HttpStatusError(400, `Webhook error: ${err.message}`);
   }
 }
 

@@ -245,7 +245,7 @@ export class Lti13Claim {
   constructor(req: Request) {
     try {
       this.claims = Lti13ClaimSchema.parse(req.session.lti13_claims);
-    } catch (err) {
+    } catch (err: any) {
       throw new AugmentedError('LTI session invalid or timed out, please try logging in again.', {
         cause: err,
         status: 403,
@@ -672,16 +672,15 @@ export async function fetchRetry(
         body: resString,
       },
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     // https://canvas.instructure.com/doc/api/file.throttling.html
     // 403 Forbidden (Rate Limit Exceeded)
-    const e = err as { status?: number; name?: string; code?: string };
     if (
       // Common retry codes
-      [403, 429, 502, 503, 504].includes(e.status ?? 0) ||
+      [403, 429, 502, 503, 504].includes(err.status) ||
       // node-fetch transient errors
-      e.name === 'FetchError' ||
-      e.code === 'ECONNRESET'
+      err.name === 'FetchError' ||
+      err.code === 'ECONNRESET'
     ) {
       // Retry logic
       fetchRetryOpts.retryLeft -= 1;
@@ -976,9 +975,9 @@ export async function updateLti13Scores({
         body: JSON.stringify(score),
       });
       counts.success++;
-    } catch (error: unknown) {
+    } catch (error: any) {
       counts.error++;
-      job.warn(`\t${error instanceof Error ? error.message : String(error)}`);
+      job.warn(`\t${error.message}`);
       if (error instanceof AugmentedError && error.data.body) {
         job.verbose(error.data.body);
       }

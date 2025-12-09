@@ -41,9 +41,8 @@ router.get(
         isReadOnly: true,
       });
       res.send(fileBrowser);
-    } catch (err: unknown) {
-      const e = err as NodeJS.ErrnoException;
-      if (e.code === 'ENOENT' && paths.branch.length > 1) {
+    } catch (err: any) {
+      if (err.code === 'ENOENT' && paths.branch.length > 1) {
         res.redirect(`${req.baseUrl}/${encodePath(paths.branch.slice(-2)[0].path)}`);
         return;
       }
