@@ -140,8 +140,6 @@ export async function syncAccessControl(
       const dateControl = rule.dateControl ?? {};
       const afterComplete = rule.afterComplete ?? {};
       const afterLastDeadline = dateControl.afterLastDeadline ?? {};
-      const hideQuestionsDateControl = afterComplete.hideQuestionsDateControl ?? {};
-      const hideScoreDateControl = afterComplete.hideScoreDateControl ?? {};
 
       // Map JSON -> DB override representation
       const enabled = mapField(rule.enabled);
@@ -184,10 +182,10 @@ export async function syncAccessControl(
 
       // After Complete
       const hideQuestions = mapField(afterComplete.hideQuestions);
-      const hideQuestionsShowAgainDateOverridden = mapField(hideQuestionsDateControl.showAgainDate);
-      const hideQuestionsHideAgainDateOverridden = mapField(hideQuestionsDateControl.hideAgainDate);
+      const hideQuestionsShowAgainDateOverridden = mapField(afterComplete.showQuestionsAgainDate);
+      const hideQuestionsHideAgainDateOverridden = mapField(afterComplete.hideQuestionsAgainDate);
       const hideScore = mapField(afterComplete.hideScore);
-      const hideScoreShowAgainDateOverridden = mapField(hideScoreDateControl.showAgainDate);
+      const hideScoreShowAgainDateOverridden = mapField(afterComplete.showScoreAgainDate);
 
       // Insert main rule
       const insertedRule = await queryRows(
@@ -342,7 +340,7 @@ export async function sync(
   courseInstanceData: CourseInstanceData,
   assessmentIds: Record<string, string>,
 ): Promise<void> {
-  for (const [tid, _] of Object.entries(courseInstanceData.assessments)) {
+  for (const tid of Object.keys(courseInstanceData.assessments)) {
     const assessmentId = assessmentIds[tid];
     if (!assessmentId) continue;
 

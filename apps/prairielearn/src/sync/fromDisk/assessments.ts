@@ -360,8 +360,7 @@ function getParamsForAssessment(
     has_roles: assessment.groupRoles.length > 0,
     json_can_view: assessment.canView,
     json_can_submit: assessment.canSubmit,
-    // TODO: This will be conditional based on the access control settings in the future.
-    modern_access_control: false,
+    modern_access_control: assessment.accessControl !== undefined,
     allowAccess,
     zones,
     alternativeGroups,

@@ -6,16 +6,6 @@ FROM
 WHERE
   course_instance_id = $course_instance_id;
 
--- BLOCK select_access_control
-SELECT
-  *
-FROM
-  access_control
-WHERE
-  assessment_id = $assessment_id
-ORDER BY
-  "order";
-
 -- BLOCK select_access_control_with_targets
 SELECT
   ac.id,
@@ -102,11 +92,6 @@ VALUES
   )
 RETURNING
   *;
-
--- BLOCK delete_access_control
-DELETE FROM access_control
-WHERE
-  assessment_id = $assessment_id;
 
 -- BLOCK delete_access_control_by_ids
 DELETE FROM access_control
