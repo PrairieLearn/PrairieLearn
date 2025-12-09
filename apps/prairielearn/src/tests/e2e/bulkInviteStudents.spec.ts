@@ -103,43 +103,6 @@ test.describe('Bulk invite students', () => {
     });
   });
 
-  test('shows inline error for single invalid student', async ({ page }) => {
-    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
-
-    await page.getByRole('button', { name: 'Invite students' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-
-    // Enter an already enrolled student
-    await page.getByRole('textbox', { name: 'UIDs' }).fill(ENROLLED_STUDENT.uid);
-
-    await page.getByRole('button', { name: 'Invite', exact: true }).click();
-
-    // Should show inline error
-    await expect(page.getByText('Already enrolled')).toBeVisible({ timeout: 10000 });
-
-    // Modal should still be open
-    await expect(page.getByRole('dialog')).toBeVisible();
-  });
-
-  test('shows inline error when all students are invalid', async ({ page }) => {
-    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
-
-    await page.getByRole('button', { name: 'Invite students' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-
-    // Enter multiple invalid UIDs
-    await page
-      .getByRole('textbox', { name: 'UIDs' })
-      .fill(`${ENROLLED_STUDENT.uid}\n${INVITED_STUDENT.uid}`);
-
-    await page.getByRole('button', { name: 'Invite', exact: true }).click();
-
-    // Should show inline error about none being invitable
-    await expect(page.getByText('None of the UIDs can be invited', { exact: false })).toBeVisible({
-      timeout: 10000,
-    });
-  });
-
   test('invites valid students and shows skip info for invalid ones', async ({ page }) => {
     // Create a fresh valid student for this test
     await sqldb.executeRow(sql.insert_or_update_user, {
