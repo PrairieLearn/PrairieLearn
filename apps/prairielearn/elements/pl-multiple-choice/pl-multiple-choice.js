@@ -1,67 +1,117 @@
 /* global TomSelect, MathJax */
 
+/**
+ * @typedef {Object} TomSelectInstance
+ * @property {HTMLElement} control
+ * @property {HTMLElement} dropdown
+ * @property {HTMLElement} wrapper
+ * @property {() => void} open
+ * @property {() => void} positionDropdown
+ * @property {(option: Element | null, scroll?: boolean) => void} setActiveOption
+ */
+
+/**
+ * @typedef {Object} TomSelectConfig
+ * @property {string[]} [plugins]
+ * @property {boolean} [allowEmptyOption]
+ * @property {string} [dropdownParent]
+ * @property {string[]} [searchField]
+ * @property {number} [refreshThrottle]
+ * @property {boolean} [openOnFocus]
+ * @property {Object} [render]
+ * @property {(dropdown: HTMLElement) => void} [onDropdownOpen]
+ * @property {() => void} [onDropdownClose]
+ */
+
+/**
+ * @typedef {new (element: HTMLElement, config: TomSelectConfig) => TomSelect} TomSelectConstructor
+ */
+
 class PLMultipleChoiceTomSelect extends TomSelect {
+  /**
+   * @param {HTMLElement} element
+   * @param {TomSelectConfig} config
+   */
+  constructor(element, config) {
+    // @ts-ignore - TomSelect constructor accepts arguments
+    super(element, config);
+  }
+
   // This class overrides the positionDropdown method to ensure that the dropdown moves up if the space below is too small.
   positionDropdown() {
     super.positionDropdown();
 
-    const controlRect = this.control.getBoundingClientRect();
-    const dropdownRect = this.dropdown.getBoundingClientRect();
+    const control = /** @type {TomSelectInstance} */ (/** @type {unknown} */ (this)).control;
+    const dropdown = /** @type {TomSelectInstance} */ (/** @type {unknown} */ (this)).dropdown;
+
+    const controlRect = control.getBoundingClientRect();
+    const dropdownRect = dropdown.getBoundingClientRect();
 
     if (dropdownRect.bottom > window.innerHeight) {
-      const newTop = Math.max(controlRect.top - this.dropdown.offsetHeight, 0) + window.scrollY;
-      this.dropdown.style.top = `${newTop}px`;
+      const newTop = Math.max(controlRect.top - dropdown.offsetHeight, 0) + window.scrollY;
+      dropdown.style.top = `${newTop}px`;
     }
   }
 }
 
+/**
+ * @param {string} uuid
+ */
 window.PLMultipleChoice = function (uuid) {
   const selectElement = document.getElementById('pl-multiple-choice-select-' + uuid);
+  if (!selectElement) {
+    throw new Error(`Could not find select element for uuid ${uuid}`);
+  }
   const container = selectElement.closest('.pl-multiple-choice-dropdown');
 
-  const select = new PLMultipleChoiceTomSelect(selectElement, {
-    plugins: ['no_backspace_delete', 'dropdown_input'],
-    allowEmptyOption: true,
+  const select = /** @type {PLMultipleChoiceTomSelect & TomSelectInstance} */ (
+    new PLMultipleChoiceTomSelect(selectElement, {
+      plugins: ['no_backspace_delete', 'dropdown_input'],
+      allowEmptyOption: true,
 
-    // Append dropdown to body to prevent overflow clipping by parent containers
-    dropdownParent: 'body',
+      // Append dropdown to body to prevent overflow clipping by parent containers
+      dropdownParent: 'body',
 
-    // Search based on the `content` field, which comes from the `data-content`
-    // attribute on each option.
-    searchField: ['content'],
+      // Search based on the `content` field, which comes from the `data-content`
+      // attribute on each option.
+      searchField: ['content'],
 
-    // Ensure searches happen immediately.
-    refreshThrottle: 0,
+      // Ensure searches happen immediately.
+      refreshThrottle: 0,
 
-    // Mirror default `<select>` behavior, only open on Down/Enter/Space.
-    openOnFocus: false,
+      // Mirror default `<select>` behavior, only open on Down/Enter/Space.
+      openOnFocus: false,
 
-    // Render items based on the `data-content` attribute.
-    render: {
-      option: (data) => {
-        return `<div>${data.content}</div>`;
+      // Render items based on the `data-content` attribute.
+      render: {
+        /** @param {{ content: string }} data */
+        option: (data) => {
+          return `<div>${data.content}</div>`;
+        },
+        /** @param {{ content: string; disabled?: boolean }} data */
+        item: (data) => {
+          return `<div class="${data.disabled ? 'text-muted' : ''}">${data.content}</div>`;
+        },
       },
-      item: (data) => {
-        return `<div class="${data.disabled ? 'text-muted' : ''}">${data.content}</div>`;
+
+      /** @param {HTMLElement} dropdown */
+      onDropdownOpen: (dropdown) => {
+        // The first time the dropdown is opened, this event is fired before the
+        // options are actually present in the DOM. We'll wait for the next tick
+        // to ensure that the options are present.
+        setTimeout(async () => {
+          await MathJax.typesetPromise([dropdown]);
+          select.positionDropdown();
+        }, 0);
       },
-    },
 
-    onDropdownOpen: (dropdown) => {
-      // The first time the dropdown is opened, this event is fired before the
-      // options are actually present in the DOM. We'll wait for the next tick
-      // to ensure that the options are present.
-      setTimeout(async () => {
-        await MathJax.typesetPromise([dropdown]);
-        select.positionDropdown();
-      }, 0);
-    },
-
-    onDropdownClose: () => {
-      // In case the dropdown items contain math, render it when the
-      // dropdown is opened or closed.
-      MathJax.typesetPromise([container]);
-    },
-  });
+      onDropdownClose: () => {
+        // In case the dropdown items contain math, render it when the
+        // dropdown is opened or closed.
+        void MathJax.typesetPromise([/** @type {Element} */ (container)]);
+      },
+    })
+  );
 
   // Reposition the dropdown when the main container is scrolled. This is only
   // needed in instructor pages, since student pages scroll on body, which is
@@ -75,7 +125,7 @@ window.PLMultipleChoice = function (uuid) {
   // immediately after opening the dropdown. We'll override this function to
   // ensure that a non-disabled option is always set as the active one.
   const originalSetActiveOption = select.setActiveOption.bind(select);
-  select.setActiveOption = (option, scroll = true) => {
+  select.setActiveOption = (/** @type {Element | null} */ option, scroll = true) => {
     if (option?.getAttribute('aria-disabled') === 'true') {
       option = select.wrapper.querySelector('[data-selectable]');
     }
@@ -84,12 +134,15 @@ window.PLMultipleChoice = function (uuid) {
   };
 
   // Mirror native `<select>` behavior, open the dropdown on Space or Enter.
-  select.control.addEventListener('keydown', (event) => {
-    if (event.key === ' ' || event.key === 'Enter') {
-      select.open();
-      event.preventDefault();
-    }
-  });
+  select.control.addEventListener(
+    'keydown',
+    /** @param {KeyboardEvent} event */ (event) => {
+      if (event.key === ' ' || event.key === 'Enter') {
+        select.open();
+        event.preventDefault();
+      }
+    },
+  );
 
   // Because we set `openOnFocus: false`, we need to manually open the dropdown
   // when the control is clicked.
