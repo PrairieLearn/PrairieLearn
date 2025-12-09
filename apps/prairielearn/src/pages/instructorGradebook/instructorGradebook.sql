@@ -158,10 +158,7 @@ FROM
     e.user_id = u.user_id
     AND e.course_instance_id = $course_instance_id
   )
-  LEFT JOIN user_scores AS s ON (u.user_id = s.user_id)
-ORDER BY
-  role DESC,
-  uid ASC;
+  LEFT JOIN user_scores AS s ON (u.user_id = s.user_id);
 
 -- BLOCK assessment_instance_score
 SELECT
