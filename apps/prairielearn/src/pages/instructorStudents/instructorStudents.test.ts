@@ -76,9 +76,10 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isArray(data.data);
-    assert.equal(data.data.length, 1);
-    assert.equal(data.data[0].status, 'invited');
+    assert.equal(data.counts.success, 1);
+    assert.equal(data.counts.instructor, 0);
+    assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyInvited, 0);
   });
 
   test.sequential('should return error when user is an instructor', async () => {
@@ -115,9 +116,12 @@ describe('Instructor Students - Invite by UID', () => {
       }),
     });
 
-    assert.equal(response.status, 400);
+    assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.error, 'User another_instructor@example.com is an instructor');
+    assert.equal(data.counts.success, 0);
+    assert.equal(data.counts.instructor, 1);
+    assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyInvited, 0);
   });
 
   test.sequential('should successfully invite a blocked user', async () => {
@@ -160,9 +164,10 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isArray(data.data);
-    assert.equal(data.data.length, 1);
-    assert.equal(data.data[0].status, 'invited');
+    assert.equal(data.counts.success, 1);
+    assert.equal(data.counts.instructor, 0);
+    assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyInvited, 0);
   });
 
   test.sequential('should successfully invite a new student', async () => {
@@ -188,10 +193,10 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isArray(data.data);
-    assert.equal(data.data.length, 1);
-    assert.equal(data.data[0].status, 'invited');
-    assert.equal(data.data[0].pending_uid, 'new_student@example.com');
+    assert.equal(data.counts.success, 1);
+    assert.equal(data.counts.instructor, 0);
+    assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyInvited, 0);
   });
 
   test.sequential('should successfully invite multiple students', async () => {
@@ -223,9 +228,9 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isArray(data.data);
-    assert.equal(data.data.length, 2);
-    assert.equal(data.data[0].status, 'invited');
-    assert.equal(data.data[1].status, 'invited');
+    assert.equal(data.counts.success, 2);
+    assert.equal(data.counts.instructor, 0);
+    assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyInvited, 0);
   });
 });

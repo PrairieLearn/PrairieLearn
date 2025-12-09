@@ -14,6 +14,17 @@ export const StudentRowSchemaWithUser = StudentRowSchema.extend({
   user: StaffUserSchema,
 });
 
+export const InviteResultSchema = z.object({
+  counts: z.object({
+    success: z.number(),
+    instructor: z.number(),
+    alreadyEnrolled: z.number(),
+    alreadyInvited: z.number(),
+  }),
+});
+
+export type InviteResult = z.infer<typeof InviteResultSchema>;
+
 export type StudentRow = z.infer<typeof StudentRowSchema>;
 
 export type StudentRowWithUser = z.infer<typeof StudentRowSchemaWithUser>;

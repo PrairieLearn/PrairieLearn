@@ -43,8 +43,14 @@ import {
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
-import { type InviteResult, InviteStudentsModal } from './components/InviteStudentsModal.js';
-import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
+import { InviteStudentsModal } from './components/InviteStudentsModal.js';
+import {
+  type InviteResult,
+  InviteResultSchema,
+  STATUS_VALUES,
+  type StudentRow,
+  StudentRowSchema,
+} from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
@@ -267,16 +273,7 @@ function StudentsCard({
       }
       throw new Error(message);
     }
-    const result = z
-      .object({
-        counts: z.object({
-          success: z.number(),
-          instructor: z.number(),
-          alreadyEnrolled: z.number(),
-          alreadyInvited: z.number(),
-        }),
-      })
-      .parse(json);
+    const result = InviteResultSchema.parse(json);
 
     // Force a refetch of the enrollments query to ensure the new students are included
     await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });

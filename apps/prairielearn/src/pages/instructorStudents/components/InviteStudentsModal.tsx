@@ -4,22 +4,10 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import type { InviteResult } from '../instructorStudents.shared.js';
+
 interface InviteStudentForm {
   uids: string;
-}
-
-export interface InvalidUidInfo {
-  uid: string;
-  reason: string;
-}
-
-export interface InviteResult {
-  counts: {
-    success: number;
-    instructor: number;
-    alreadyEnrolled: number;
-    alreadyInvited: number;
-  };
 }
 
 export function InviteStudentsModal({
