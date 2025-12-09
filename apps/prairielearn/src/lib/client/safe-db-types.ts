@@ -26,6 +26,7 @@ import {
   AssessmentSetSchema as RawAssessmentSetSchema,
   AuditEventSchema as RawAuditEventSchema,
   AuthnProviderSchema as RawAuthnProviderSchema,
+  CourseInstancePublishingExtensionSchema as RawCourseInstancePublishingExtensionSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
@@ -173,6 +174,14 @@ export type StaffAssessmentQuestion = z.infer<typeof StaffAssessmentQuestionSche
 /** Audit Events */
 export const StaffAuditEventSchema = RawAuditEventSchema.brand<'StaffAuditEvent'>();
 export type StaffAuditEvent = z.infer<typeof StaffAuditEventSchema>;
+
+/** Authn Providers */
+export const RawStaffAuthnProviderSchema = RawAuthnProviderSchema.pick({
+  id: true,
+  name: true,
+});
+export const StaffAuthnProviderSchema = RawStaffAuthnProviderSchema.brand<'StaffAuthnProvider'>();
+export type StaffAuthnProvider = z.infer<typeof StaffAuthnProviderSchema>;
 
 /** Courses */
 export const RawAdminCourseSchema = RawCourseSchema;
@@ -336,13 +345,12 @@ export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
 export const StaffInstitutionSchema = RawStaffInstitutionSchema.brand<'StaffInstitution'>();
 export type StaffInstitution = z.infer<typeof StaffInstitutionSchema>;
 
-/** AuthnProviders */
-export const RawStaffAuthnProviderSchema = RawAuthnProviderSchema.pick({
-  id: true,
-  name: true,
-});
-export const StaffAuthnProviderSchema = RawStaffAuthnProviderSchema.brand<'StaffAuthnProvider'>();
-export type StaffAuthnProvider = z.infer<typeof StaffAuthnProviderSchema>;
+/** Publishing Extensions */
+export const StaffCourseInstancePublishingExtensionSchema =
+  RawCourseInstancePublishingExtensionSchema.brand<'StaffCourseInstancePublishingExtension'>();
+export type StaffCourseInstancePublishingExtension = z.infer<
+  typeof StaffCourseInstancePublishingExtensionSchema
+>;
 
 /** Questions */
 export const RawStaffQuestionSchema = RawQuestionSchema;
