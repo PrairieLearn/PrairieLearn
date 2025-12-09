@@ -14,6 +14,7 @@ import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
 import { SideNav } from './SideNav.js';
+import { SyncErrorsAndWarnings } from './SyncErrorsAndWarnings.js';
 
 function asHtmlSafe(
   content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
@@ -22,6 +23,83 @@ function asHtmlSafe(
     return content;
   }
   return renderHtml(content);
+}
+
+function SyncErrorsAndWarningsForContext({
+  navContext,
+  resLocals,
+}: {
+  navContext: NavContext;
+  resLocals: UntypedResLocals;
+}) {
+  if (navContext.type !== 'instructor') return null;
+  const { course, urlPrefix, authz_data: authzData } = resLocals;
+
+  if (!course || !urlPrefix || !authzData) return null;
+
+  // The file editor renders its own SyncErrorsAndWarnings component with different wording.
+  if (navContext.subPage === 'file_edit') return null;
+
+  switch (navContext.page) {
+    case 'course_admin': {
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={course.sync_errors}
+          syncWarnings={course.sync_warnings}
+          fileEditUrl={`${urlPrefix}/course_admin/file_edit/infoCourse.json`}
+          context="course"
+        />
+      );
+    }
+    case 'instance_admin': {
+      const { course_instance: courseInstance, course } = resLocals;
+      if (!courseInstance || !course) return null;
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={courseInstance.sync_errors}
+          syncWarnings={courseInstance.sync_warnings}
+          fileEditUrl={`${urlPrefix}/instance_admin/file_edit/courseInstances/${courseInstance.short_name}/infoCourseInstance.json`}
+          context="course instance"
+        />
+      );
+    }
+    case 'assessment': {
+      const { assessment, course_instance: courseInstance } = resLocals;
+      if (!assessment || !courseInstance) return null;
+
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={assessment.sync_errors}
+          syncWarnings={assessment.sync_warnings}
+          fileEditUrl={`${urlPrefix}/assessment/${assessment.id}/file_edit/courseInstances/${courseInstance.short_name}/assessments/${assessment.tid}/infoAssessment.json`}
+          context="assessment"
+        />
+      );
+    }
+    case 'question':
+    case 'public_question': {
+      const { question } = resLocals;
+      if (!question) return null;
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={question.sync_errors}
+          syncWarnings={question.sync_warnings}
+          fileEditUrl={`${urlPrefix}/question/${question.id}/file_edit/questions/${question.qid}/info.json`}
+          context="question"
+        />
+      );
+    }
+    default:
+      return null;
+  }
 }
 
 export function PageLayout({
@@ -230,6 +308,9 @@ export function PageLayout({
                   resolvedOptions.fullHeight && 'h-100',
                 )}"
               >
+                ${renderHtml(
+                  <SyncErrorsAndWarningsForContext navContext={navContext} resLocals={resLocals} />,
+                )}
                 ${contentString}
               </main>
               ${postContentString}
