@@ -116,7 +116,10 @@ export function InviteStudentsModal({
             type="button"
             class="btn btn-secondary"
             disabled={saveMutation.isPending}
-            onClick={onExited}
+            onClick={() => {
+              onExited();
+              onHide();
+            }}
           >
             Cancel
           </button>
