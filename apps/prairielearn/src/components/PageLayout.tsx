@@ -142,7 +142,7 @@ function UnpublishedBannerComponent({
         if (courseInstance.publishing_end_date) {
           return `This course instance is no longer accessible to students because it was unpublished at ${formatDateFriendly(courseInstance.publishing_end_date, courseInstance.display_timezone, { timeFirst: true })}.`;
         }
-        return 'This course instance is no longer accessible to students because it is unpublished.';
+        return 'This course instance is not accessible to students because it is unpublished.';
       case 'publish_scheduled':
         return `This course instance will be accessible to students after the scheduled publish date of ${formatDateFriendly(courseInstance.publishing_start_date, courseInstance.display_timezone, { timeFirst: true })}.`;
       default:
