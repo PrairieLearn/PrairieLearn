@@ -3,13 +3,11 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { Pager } from '../../components/Pager.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import {
   AssessmentSetSchema,
@@ -75,7 +73,7 @@ export function InstructorIssues({
   closedCount: number;
   chosenPage: number;
 }) {
-  const { authz_data, __csrf_token, urlPrefix, course } = resLocals;
+  const { authz_data, __csrf_token, urlPrefix } = resLocals;
   const issueCount = issues[0]?.issue_count ?? 0;
 
   return PageLayout({
@@ -91,13 +89,6 @@ export function InstructorIssues({
     },
     headContent: compiledStylesheetTag('instructorIssues.css'),
     content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={authz_data}
-          course={course}
-          urlPrefix={urlPrefix}
-        />,
-      )}
       ${authz_data.has_course_permission_edit
         ? CloseMatchingIssuesModal({
             openFilteredIssuesCount,

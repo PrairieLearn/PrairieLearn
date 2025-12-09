@@ -1,11 +1,9 @@
 import { z } from 'zod';
 
 import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
@@ -146,13 +144,6 @@ export function InstructorCourseAdminSharing({
     },
     headContent: html`${compiledScriptTag('instructorCourseAdminSharingClient.ts')}`,
     content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>Course sharing details</h1>

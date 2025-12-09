@@ -13,7 +13,6 @@ import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/po
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -185,35 +184,24 @@ router.get(
           page: 'instance_admin',
           subPage: 'publishing',
         },
-        content: (
-          <>
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
-              courseInstance={res.locals.course_instance}
-              course={res.locals.course}
-              urlPrefix={res.locals.urlPrefix}
+        content: courseInstance.modern_publishing ? (
+          <Hydrate>
+            <CourseInstancePublishing
+              courseInstance={courseInstance}
+              canEdit={hasCourseInstancePermissionEdit && origHash !== null}
+              csrfToken={csrfToken}
+              origHash={origHash}
+              publishingExtensions={publishingExtensions}
+              isDevMode={config.devMode}
             />
-
-            {courseInstance.modern_publishing ? (
-              <Hydrate>
-                <CourseInstancePublishing
-                  courseInstance={courseInstance}
-                  canEdit={hasCourseInstancePermissionEdit && origHash !== null}
-                  csrfToken={csrfToken}
-                  origHash={origHash}
-                  publishingExtensions={publishingExtensions}
-                  isDevMode={config.devMode}
-                />
-              </Hydrate>
-            ) : (
-              <LegacyAccessRuleCard
-                accessRules={accessRules}
-                showComments={showComments}
-                courseInstance={courseInstance}
-                hasCourseInstancePermissionView={hasCourseInstancePermissionView}
-              />
-            )}
-          </>
+          </Hydrate>
+        ) : (
+          <LegacyAccessRuleCard
+            accessRules={accessRules}
+            showComments={showComments}
+            courseInstance={courseInstance}
+            hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+          />
         ),
       }),
     );

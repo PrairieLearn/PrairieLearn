@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 import { hydrateHtml } from '@prairielearn/preact/server';
 
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.js';
@@ -11,7 +10,6 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { RubricSettings } from '../../../components/RubricSettings.js';
-import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type {
   AiGradingGeneralStats,
   InstanceQuestionAIGradingInfo,
@@ -106,18 +104,6 @@ export function InstanceQuestion({
         },
         'instance-question-data',
       )}
-    `,
-    preContent: html`
-      <div class="container-fluid">
-        ${renderHtml(
-          <QuestionSyncErrorsAndWarnings
-            authzData={resLocals.authz_data}
-            question={resLocals.question}
-            course={resLocals.course}
-            urlPrefix={resLocals.urlPrefix}
-          />,
-        )}
-      </div>
     `,
     content: html`
       <h1 class="visually-hidden">Instance Question Manual Grading</h1>

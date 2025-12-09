@@ -9,7 +9,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
@@ -85,23 +84,16 @@ router.get(
           fullWidth: true,
         },
         content: (
-          <>
-            <CourseSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
+          <Hydrate>
+            <InstructorCourseAdminInstances
+              courseInstances={safeCourseInstancesWithEnrollmentCounts}
               course={course}
+              canEditCourse={authzData.has_course_permission_edit}
+              needToSync={needToSync}
+              csrfToken={__csrf_token}
               urlPrefix={urlPrefix}
             />
-            <Hydrate>
-              <InstructorCourseAdminInstances
-                courseInstances={safeCourseInstancesWithEnrollmentCounts}
-                course={course}
-                canEditCourse={authzData.has_course_permission_edit}
-                needToSync={needToSync}
-                csrfToken={__csrf_token}
-                urlPrefix={urlPrefix}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );
