@@ -672,15 +672,16 @@ export async function fetchRetry(
         body: resString,
       },
     });
-  } catch (err) {
+  } catch (err: unknown) {
     // https://canvas.instructure.com/doc/api/file.throttling.html
     // 403 Forbidden (Rate Limit Exceeded)
+    const e = err as { status?: number; name?: string; code?: string };
     if (
       // Common retry codes
-      [403, 429, 502, 503, 504].includes(err.status) ||
+      [403, 429, 502, 503, 504].includes(e.status ?? 0) ||
       // node-fetch transient errors
-      err.name === 'FetchError' ||
-      err.code === 'ECONNRESET'
+      e.name === 'FetchError' ||
+      e.code === 'ECONNRESET'
     ) {
       // Retry logic
       fetchRetryOpts.retryLeft -= 1;
@@ -975,9 +976,9 @@ export async function updateLti13Scores({
         body: JSON.stringify(score),
       });
       counts.success++;
-    } catch (error) {
+    } catch (error: unknown) {
       counts.error++;
-      job.warn(`\t${error.message}`);
+      job.warn(`\t${error instanceof Error ? error.message : String(error)}`);
       if (error instanceof AugmentedError && error.data.body) {
         job.verbose(error.data.body);
       }

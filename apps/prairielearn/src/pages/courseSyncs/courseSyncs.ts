@@ -53,13 +53,14 @@ router.get(
             repositoryName: repository.getRepository(),
             imageIds: [{ imageTag: repository.getTag() ?? 'latest' }],
           });
-        } catch (err) {
-          if (err.name === 'InvalidParameterException') {
+        } catch (err: unknown) {
+          const e = err as { name?: string };
+          if (e.name === 'InvalidParameterException') {
             image.invalid = true;
             return;
           } else if (
-            err.name === 'RepositoryNotFoundException' ||
-            err.name === 'ImageNotFoundException'
+            e.name === 'RepositoryNotFoundException' ||
+            e.name === 'ImageNotFoundException'
           ) {
             image.imageSyncNeeded = true;
             return;

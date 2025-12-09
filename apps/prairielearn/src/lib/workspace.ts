@@ -287,10 +287,11 @@ async function startup(workspace_id: string): Promise<void> {
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
             { overwrite: true },
           );
-        } catch (err) {
+        } catch (err: unknown) {
           // If the directory couldn't be moved because it didn't exist, ignore the error.
           // But otherwise, rethrow it.
-          if (err.code !== 'ENOENT') {
+          const e = err as NodeJS.ErrnoException;
+          if (e.code !== 'ENOENT') {
             throw err;
           }
         }
@@ -477,11 +478,11 @@ export async function generateWorkspaceFiles({
             ),
             mode: file.stats.mode,
           };
-        } catch (err) {
+        } catch (err: unknown) {
           fileGenerationErrors.push({
             file: generatedFileName,
             err,
-            msg: `Error rendering workspace template file: ${err.message}`,
+            msg: `Error rendering workspace template file: ${err instanceof Error ? err.message : String(err)}`,
           });
           // File cannot be rendered, treat file as static file
           return { name: generatedFileName, localPath: file.path };
@@ -576,11 +577,11 @@ export async function generateWorkspaceFiles({
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
             mode: file.mode,
           };
-        } catch (err) {
+        } catch (err: unknown) {
           // Error retrieving contents of dynamic file. Ignoring file.
           fileGenerationErrors.push({
             file: file.name,
-            msg: `Error decoding dynamic workspace file: ${err.message}`,
+            msg: `Error decoding dynamic workspace file: ${err instanceof Error ? err.message : String(err)}`,
             err,
             data: file,
           });
@@ -614,10 +615,10 @@ export async function generateWorkspaceFiles({
             await fs.writeFile(targetFile, workspaceFile.buffer);
           }
         }
-      } catch (err) {
+      } catch (err: unknown) {
         fileGenerationErrors.push({
           file: workspaceFile.name,
-          msg: `Workspace file could not be written to workspace: ${err.message}`,
+          msg: `Workspace file could not be written to workspace: ${err instanceof Error ? err.message : String(err)}`,
           err,
           data: { workspaceFile },
         });
@@ -692,9 +693,9 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
         maxSize: config.workspaceMaxGradedFilesSize,
       },
     );
-  } catch (err) {
+  } catch (err: unknown) {
     // Turn any error into a `SubmissionFormatError` so that it is handled correctly.
-    throw new SubmissionFormatError(err.message);
+    throw new SubmissionFormatError(err instanceof Error ? err.message : String(err));
   }
 
   // Zip files from filesystem to zip file

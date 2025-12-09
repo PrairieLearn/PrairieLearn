@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { exec } from 'child_process';
+import { exec, type ExecException } from 'child_process';
 import { promisify } from 'util';
 
 import { z } from 'zod';
@@ -56,11 +56,12 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
       env: process.env,
     });
     return stdout.trim();
-  } catch (err) {
-    throw new error.AugmentedError(`Could not get git status; exited with code ${err.code}`, {
+  } catch (err: unknown) {
+    const e = err as ExecException & { stdout?: string; stderr?: string };
+    throw new error.AugmentedError(`Could not get git status; exited with code ${e.code}`, {
       data: {
-        stdout: err.stdout,
-        stderr: err.stderr,
+        stdout: e.stdout,
+        stderr: e.stderr,
       },
     });
   }

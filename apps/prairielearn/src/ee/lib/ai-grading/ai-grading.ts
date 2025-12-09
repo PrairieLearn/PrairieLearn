@@ -596,8 +596,8 @@ export async function aiGrade({
 
         try {
           return await gradeInstanceQuestion(instance_question, logger);
-        } catch (err) {
-          logger.error(err);
+        } catch (err: unknown) {
+          logger.error(err instanceof Error ? err.message : String(err));
           return false;
         } finally {
           for (const log of logs) {

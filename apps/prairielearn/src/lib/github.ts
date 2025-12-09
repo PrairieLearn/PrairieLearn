@@ -296,7 +296,7 @@ export async function createCourseRepoJob(
         status: 'approved',
         course_request_id: options.course_request_id,
       });
-    } catch (err) {
+    } catch (err: unknown) {
       await sqldb.execute(sql.set_course_request_status, {
         status: 'failed',
         course_request_id: options.course_request_id,
@@ -306,12 +306,12 @@ export async function createCourseRepoJob(
         await sendCourseRequestMessage(
           `*Failed to create course "${options.short_name}"*\n\n` +
             '```\n' +
-            `${err.message.trim()}\n` +
+            `${err instanceof Error ? err.message.trim() : String(err)}\n` +
             '```',
         );
-      } catch (err) {
-        logger.error('Error sending course request message to Slack', err);
-        Sentry.captureException(err);
+      } catch (sendErr: unknown) {
+        logger.error('Error sending course request message to Slack', sendErr);
+        Sentry.captureException(sendErr);
       }
 
       // Throw the error again so that the server job will be marked as failed.

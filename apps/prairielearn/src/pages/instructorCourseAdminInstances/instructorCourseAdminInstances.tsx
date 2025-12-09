@@ -31,8 +31,9 @@ router.get(
     let needToSync = false;
     try {
       await fs.access(res.locals.course.path);
-    } catch (err) {
-      if (err.code === 'ENOENT') {
+    } catch (err: unknown) {
+      const e = err as NodeJS.ErrnoException;
+      if (e.code === 'ENOENT') {
         needToSync = true;
       } else {
         throw new Error('Invalid course path', { cause: err });

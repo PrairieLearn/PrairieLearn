@@ -141,8 +141,9 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   let files: string[];
   try {
     files = await fs.readdir(sourceDir);
-  } catch (err) {
-    if (err?.code === 'ENOENT') {
+  } catch (err: unknown) {
+    const e = err as NodeJS.ErrnoException;
+    if (e.code === 'ENOENT') {
       // Directory doesn't exist, most likely a course with no elements.
       // Proceed with an empty object.
       return {};
@@ -164,8 +165,9 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     let rawInfo: any;
     try {
       rawInfo = await fs.readJSON(elementInfoPath);
-    } catch (err) {
-      if (err?.code === 'ENOENT') {
+    } catch (err: unknown) {
+      const e = err as NodeJS.ErrnoException;
+      if (e.code === 'ENOENT') {
         // This must not be an element directory, skip it
         return;
       }
@@ -228,8 +230,9 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
   let elementFolders: string[];
   try {
     elementFolders = await fs.readdir(sourceDir);
-  } catch (err) {
-    if (err.code === 'ENOENT') {
+  } catch (err: unknown) {
+    const e = err as NodeJS.ErrnoException;
+    if (e.code === 'ENOENT') {
       // We don't really care if there are no extensions, just return an empty object.
       return {};
     }
@@ -262,11 +265,12 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
     let rawInfo: any;
     try {
       rawInfo = await fs.readJson(infoPath);
-    } catch (err) {
-      if (err.code === 'ENOENT') {
+    } catch (err: unknown) {
+      const e = err as NodeJS.ErrnoException;
+      if (e.code === 'ENOENT') {
         // Not an extension directory, skip it.
         return;
-      } else if (err.code === 'ENOTDIR') {
+      } else if (e.code === 'ENOTDIR') {
         // Random file, skip it as well.
         return;
       } else {
@@ -518,11 +522,12 @@ async function processQuestionPhase<T>(
     );
     result = res.result;
     output = res.output;
-  } catch (err) {
+  } catch (err: unknown) {
+    const errorWithData = err as Error & { data?: any };
     courseIssues.push(
-      new CourseIssueError(err.message, {
-        data: err.data,
-        cause: err,
+      new CourseIssueError(err instanceof Error ? err.message : String(err), {
+        data: errorWithData.data,
+        cause: err instanceof Error ? err : undefined,
         fatal: true,
       }),
     );
@@ -581,9 +586,9 @@ async function processQuestionHtml<T extends ExecutionData>(
   let html: string;
   try {
     html = await execTemplate(htmlFilename, data);
-  } catch (err) {
+  } catch (err: unknown) {
     return {
-      courseIssues: [new CourseIssueError(`${htmlFilename}: ${err.toString()}`, { fatal: true })],
+      courseIssues: [new CourseIssueError(`${htmlFilename}: ${err instanceof Error ? err.toString() : String(err)}`, { fatal: true })],
       data,
       html: '',
       fileData: Buffer.from(''),
@@ -656,13 +661,14 @@ async function processQuestionServer<T extends ExecutionData>(
   let result, output;
   try {
     ({ result, output } = await execPythonServer(codeCaller, phase, data, html, context));
-  } catch (err) {
+  } catch (err: unknown) {
     const serverFile = path.join(context.question_dir, 'server.py');
+    const errorWithData = err as Error & { data?: any };
     courseIssues.push(
-      new CourseIssueError(`${serverFile}: Error calling ${phase}(): ${err.toString()}`, {
-        data: err.data,
+      new CourseIssueError(`${serverFile}: Error calling ${phase}(): ${err instanceof Error ? err.toString() : String(err)}`, {
+        data: errorWithData.data,
         fatal: true,
-        cause: err,
+        cause: err instanceof Error ? err : undefined,
       }),
     );
     return { courseIssues, data };

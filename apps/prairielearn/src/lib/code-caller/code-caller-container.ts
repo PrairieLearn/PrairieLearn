@@ -95,8 +95,9 @@ async function ensureImage() {
     logger.info(`Checking for executor image ${imageName}`);
     await image.inspect();
     logger.info(`Executor image ${imageName} found`);
-  } catch (e) {
-    if (e.statusCode === 404) {
+  } catch (e: unknown) {
+    const err = e as { statusCode?: number };
+    if (err.statusCode === 404) {
       logger.info('Image not found, pulling from registry');
       const start = performance.now();
       const ecr = new ECRClient(makeAwsClientConfig());
@@ -558,8 +559,8 @@ export class CodeCallerContainer implements CodeCaller {
           this.outputBoth = data.errorData.outputBoth;
         }
       }
-    } catch (e) {
-      err = new Error('Error decoding CodeCallerContainer JSON: ' + e.message);
+    } catch (e: unknown) {
+      err = new Error('Error decoding CodeCallerContainer JSON: ' + (e instanceof Error ? e.message : String(e)));
     }
     this.state = WAITING;
     if (err) {

@@ -162,10 +162,10 @@ router.post(
             course_role: req.body.course_role,
             authn_user_id: res.locals.authz_data.authn_user.user_id,
           });
-        } catch (err) {
+        } catch (err: unknown) {
           logger.verbose(`Failed to insert course permission for uid: ${uid}`, err);
           memo.not_given_cp.push(uid);
-          memo.errors.push(`Failed to give course content access to ${uid}\n(${err.message})`);
+          memo.errors.push(`Failed to give course content access to ${uid}\n(${err instanceof Error ? err.message : String(err)})`);
           return memo;
         }
 
@@ -181,10 +181,10 @@ router.post(
             course_instance_role: req.body.course_instance_role,
             authn_user_id: res.locals.authz_data.authn_user.user_id,
           });
-        } catch (err) {
+        } catch (err: unknown) {
           logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, err);
           memo.not_given_cip.push(uid);
-          memo.errors.push(`Failed to give student data access to ${uid}\n(${err.message})`);
+          memo.errors.push(`Failed to give student data access to ${uid}\n(${err instanceof Error ? err.message : String(err)})`);
         }
 
         return memo;

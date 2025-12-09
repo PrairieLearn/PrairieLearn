@@ -310,8 +310,8 @@ export async function aiInstanceQuestionGrouping({
             instanceQuestion,
             logger,
           );
-        } catch (err) {
-          logger.error(err);
+        } catch (err: unknown) {
+          logger.error(err instanceof Error ? err.message : String(err));
         } finally {
           for (const log of logs) {
             switch (log.messageType) {

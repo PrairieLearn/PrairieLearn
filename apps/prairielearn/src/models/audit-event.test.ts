@@ -189,9 +189,9 @@ describe('audit-event', () => {
           course_instance_id: '1',
         });
         assert.fail('Expected error to be thrown');
-      } catch (error) {
+      } catch (error: unknown) {
         assert.match(
-          error.message,
+          error instanceof Error ? error.message : String(error),
           /subject_user_id and agent_authn_user_id cannot both be provided/,
         );
       }
@@ -204,8 +204,8 @@ describe('audit-event', () => {
           course_instance_id: '1',
         });
         assert.fail('Expected error to be thrown');
-      } catch (error) {
-        assert.match(error.message, /subject_user_id or agent_authn_user_id must be provided/);
+      } catch (error: unknown) {
+        assert.match(error instanceof Error ? error.message : String(error), /subject_user_id or agent_authn_user_id must be provided/);
       }
     });
 

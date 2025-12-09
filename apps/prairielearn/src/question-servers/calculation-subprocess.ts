@@ -113,12 +113,14 @@ async function callFunction<Data>(
       // so we won't impose the same restriction here.
       return { data: res.result, courseIssues: [] };
     });
-  } catch (err) {
-    err.fatal = true;
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    const fatalError = error as Error & { fatal?: boolean; data?: any };
+    fatalError.fatal = true;
     return {
       // We don't have any useful data to return. We'll just lie to the type checker.
       data: {} as Data,
-      courseIssues: [err],
+      courseIssues: [fatalError],
     };
   }
 }

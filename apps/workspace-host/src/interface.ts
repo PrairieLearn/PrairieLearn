@@ -1035,7 +1035,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     }
   } catch (err) {
     logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);
-    await markSelfUnhealthy(err);
+    await markSelfUnhealthy(err instanceof Error ? err : String(err));
   }
 }
 
@@ -1057,7 +1057,7 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
       },
     );
   } catch (err) {
-    res.status(500).send(err.message);
+    res.status(500).send(err instanceof Error ? err.message : String(err));
     return;
   }
 
