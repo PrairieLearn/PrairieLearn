@@ -1,3 +1,7 @@
+import { useMutation } from '@tanstack/react-query';
+import { Alert } from 'react-bootstrap';
+
+import { getCourseInstanceEditErrorUrl } from '../../../lib/client/url.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type { AccessControlJson } from '../../../schemas/accessControl.js';
 
@@ -5,9 +9,9 @@ import { AccessControlForm } from './AccessControlForm.js';
 
 const sampleAccessControl: AccessControlJson[] = [
   {
-    enabled: true /* should you consider this access rule? */,
-    blockAccess: false /* short circuit, deny access if applies */,
-    listBeforeRelease: true /* student can: can see the title, click into the assessment */,
+    enabled: true,
+    blockAccess: false,
+    listBeforeRelease: true,
 
     dateControl: {
       enabled: true,
@@ -24,7 +28,6 @@ const sampleAccessControl: AccessControlJson[] = [
         { date: '2025-03-30T23:59', credit: 50 },
       ],
 
-      /* If allowSubmissions is true, the afterComplete section will never apply */
       afterLastDeadline: {
         allowSubmissions: true,
         credit: 30,
@@ -40,15 +43,6 @@ const sampleAccessControl: AccessControlJson[] = [
         { examUuid: '896c088c-7468-4045-965b-e8ae134086c2', readOnly: true },
       ],
     },
-
-    /*
-      If you can't answer questions on it, the assessment is complete.
-      This typically happens for a couple reasons:
-           - durationMinutes was set, and you ran out of time
-           - the oldest late deadline, or due date if no late deadlines.
-           - PrairieTest says that the assessment is complete?
-      The completion date can be different for different students.
-   */
 
     afterComplete: {
       hideQuestions: true,
@@ -72,23 +66,67 @@ const sampleAccessControl: AccessControlJson[] = [
   },
 ];
 
-export function AccessControl({
-  courseInstance,
-}: {
+interface AccessControlProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
-}) {
+  csrfToken: string;
+  origHash: string;
+}
+
+export function AccessControl({ courseInstance, csrfToken, origHash }: AccessControlProps) {
+  const saveMutation = useMutation({
+    mutationKey: ['save-access-control'],
+    mutationFn: async (accessControl: AccessControlJson[]) => {
+      const body = new URLSearchParams({
+        __action: 'update_access_control',
+        __csrf_token: csrfToken,
+        access_control: JSON.stringify(accessControl),
+        orig_hash: origHash,
+      });
+
+      const res = await fetch(window.location.href, {
+        method: 'POST',
+        body,
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        if (result.job_sequence_id) {
+          window.location.href = getCourseInstanceEditErrorUrl(
+            courseInstance.id,
+            result.job_sequence_id,
+          );
+          return null;
+        }
+
+        throw new Error(result.error || 'Failed to save access control');
+      }
+
+      return result;
+    },
+    onSuccess: () => {
+      // Reload the page to get the updated origHash and show success message
+      window.location.reload();
+    },
+  });
+
   const handleFormSubmit = (data: AccessControlJson[]) => {
-    // TODO: Implement actual save functionality
-    // For now, just log the data
-    console.table(data);
+    saveMutation.mutate(data);
   };
 
   return (
-    <AccessControlForm
-      initialData={sampleAccessControl}
-      courseInstance={courseInstance}
-      onSubmit={handleFormSubmit}
-    />
+    <div>
+      {saveMutation.isError && (
+        <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
+          {saveMutation.error.message}
+        </Alert>
+      )}
+      <AccessControlForm
+        courseInstance={courseInstance}
+        initialData={sampleAccessControl}
+        isSaving={saveMutation.isPending}
+        onSubmit={handleFormSubmit}
+      />
+    </div>
   );
 }
 

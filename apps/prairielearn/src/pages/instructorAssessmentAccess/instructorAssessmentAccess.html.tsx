@@ -37,10 +37,12 @@ export function InstructorAssessmentAccess({
   resLocals,
   accessRules,
   enhancedAccessControl,
+  origHash,
 }: {
   resLocals: UntypedResLocals;
   accessRules: AssessmentAccessRules[];
   enhancedAccessControl: boolean;
+  origHash: string;
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
   const { course_instance: courseInstance } = extractPageContext(resLocals, {
@@ -68,7 +70,15 @@ export function InstructorAssessmentAccess({
           urlPrefix={resLocals.urlPrefix}
         />,
       )}
-      ${enhancedAccessControl ? hydrateHtml(<AccessControl courseInstance={courseInstance} />) : ''}
+      ${enhancedAccessControl
+        ? hydrateHtml(
+            <AccessControl
+              courseInstance={courseInstance}
+              csrfToken={resLocals.__csrf_token}
+              origHash={origHash}
+            />,
+          )
+        : ''}
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">

@@ -23,6 +23,7 @@ interface AccessControlFormProps {
   onSubmit: (data: AccessControlJson[]) => void;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   assessmentType?: 'Exam' | 'Homework';
+  isSaving?: boolean;
 }
 
 const defaultInitialData: AccessControlJson[] = [];
@@ -31,6 +32,7 @@ export function AccessControlForm({
   initialData = defaultInitialData,
   onSubmit,
   courseInstance,
+  isSaving = false,
 }: AccessControlFormProps) {
   const [currentView, setCurrentView] = useState<AccessControlView>({ type: 'summary' });
   const [deleteModalState, setDeleteModalState] = useState<{
@@ -234,12 +236,13 @@ export function AccessControlForm({
 
         {/* Form actions */}
         <div class="mt-4 d-flex gap-2">
-          <Button type="submit" variant="primary" disabled={!isDirty || !isValid}>
-            Save changes
+          <Button type="submit" variant="primary" disabled={!isDirty || !isValid || isSaving}>
+            {isSaving ? 'Saving...' : 'Save changes'}
           </Button>
           <Button
             type="button"
             variant="outline-secondary"
+            disabled={isSaving}
             onClick={() => window.location.reload()}
           >
             Reset
