@@ -6,6 +6,4 @@ FROM
   enrollments AS e
   LEFT JOIN users AS u ON (u.user_id = e.user_id)
 WHERE
-  e.course_instance_id = $course_instance_id
-ORDER BY
-  u.uid ASC;
+  e.course_instance_id = $course_instance_id;
