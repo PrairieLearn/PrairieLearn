@@ -4,13 +4,11 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
 import { InstitutionSchema, UserSchema } from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
-import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
@@ -54,13 +52,6 @@ router.get(
       authn_user_id: authn_user.user_id,
     });
 
-    const showEnhancedNavigationToggle = await features.enabled('legacy-navigation-user-toggle', {
-      user_id: authn_user.user_id,
-    });
-    const usesLegacyNavigation = await features.enabled('legacy-navigation', {
-      user_id: authn_user.user_id,
-    });
-
     res.send(
       UserSettings({
         authn_user,
@@ -70,8 +61,6 @@ router.get(
         newAccessTokens,
         purchases,
         isExamMode: mode !== 'Public',
-        showEnhancedNavigationToggle,
-        enhancedNavigationEnabled: !usesLegacyNavigation,
         resLocals: res.locals,
       }),
     );
@@ -81,21 +70,7 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (req.body.__action === 'update_features') {
-      const context = { user_id: res.locals.authn_user.user_id };
-
-      if (await features.enabled('legacy-navigation-user-toggle', context)) {
-        // Checkbox indicates enhanced navigation ON when checked; legacy is inverse
-        if (req.body.enhanced_navigation) {
-          await features.disable('legacy-navigation', context);
-        } else {
-          await features.enable('legacy-navigation', context);
-        }
-      }
-
-      flash('success', 'Features updated successfully.');
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'token_generate') {
+    if (req.body.__action === 'token_generate') {
       const { mode } = await ipToMode({
         ip: req.ip,
         date: res.locals.req_date,
