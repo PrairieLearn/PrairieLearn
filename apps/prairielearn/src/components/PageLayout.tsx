@@ -14,12 +14,7 @@ import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
 import { SideNav } from './SideNav.js';
-import {
-  AssessmentSyncErrorsAndWarnings,
-  CourseInstanceSyncErrorsAndWarnings,
-  CourseSyncErrorsAndWarnings,
-  QuestionSyncErrorsAndWarnings,
-} from './SyncErrorsAndWarnings.js';
+import { SyncErrorsAndWarnings } from './SyncErrorsAndWarnings.js';
 
 function asHtmlSafe(
   content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
@@ -30,7 +25,7 @@ function asHtmlSafe(
   return renderHtml(content);
 }
 
-function SyncErrorsAndWarnings({
+function SyncErrorsAndWarningsComponent({
   navContext,
   resLocals,
 }: {
@@ -38,49 +33,75 @@ function SyncErrorsAndWarnings({
   resLocals: UntypedResLocals;
 }) {
   if (navContext.type !== 'instructor') return null;
+  const { course, urlPrefix, authz_data: authzData } = resLocals;
+
+  if (!course || !urlPrefix || !authzData) return null;
 
   switch (navContext.page) {
-    case 'course_admin':
-      if (!resLocals.course) return null;
+    case 'course_admin': {
       return (
-        <CourseSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={course.sync_errors}
+          syncWarnings={course.sync_warnings}
+          fileEditUrl={`${urlPrefix}/course_admin/file_edit/infoCourse.json`}
+          context="course"
         />
       );
-    case 'instance_admin':
-      if (!resLocals.course_instance || !resLocals.course) return null;
+    }
+    case 'instance_admin': {
+      const { course_instance: courseInstance, course } = resLocals;
+      if (!courseInstance || !course) return null;
       return (
-        <CourseInstanceSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={courseInstance.sync_errors}
+          syncWarnings={courseInstance.sync_warnings}
+          fileEditUrl={`${urlPrefix}/instance_admin/file_edit/courseInstances/${courseInstance.short_name}/infoCourseInstance.json`}
+          context="course instance"
         />
       );
-    case 'assessment':
-      if (!resLocals.assessment || !resLocals.course_instance || !resLocals.course) return null;
+    }
+    case 'assessment': {
+      const { assessment, course_instance: courseInstance } = resLocals;
+      if (!assessment || !courseInstance) return null;
+
+      // This should never happen, but we are waiting on a better type system for res.locals.authz_data
+      // to be able to express this.
+      if (authzData.has_course_instance_permission_edit === undefined) {
+        throw new Error('has_course_instance_permission_edit is undefined');
+      }
+
       return (
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
+        <SyncErrorsAndWarnings
+          authzData={{
+            has_course_instance_permission_edit: authzData.has_course_instance_permission_edit,
+          }}
+          exampleCourse={course.example_course}
+          syncErrors={assessment.sync_errors}
+          syncWarnings={assessment.sync_warnings}
+          fileEditUrl={`${urlPrefix}/assessment/${assessment.id}/file_edit/courseInstances/${courseInstance.short_name}/assessments/${assessment.tid}/infoAssessment.json`}
+          context="assessment"
         />
       );
+    }
     case 'question':
-    case 'public_question':
-      if (!resLocals.question || !resLocals.course) return null;
+    case 'public_question': {
+      const { question } = resLocals;
+      if (!question) return null;
       return (
-        <QuestionSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          question={resLocals.question}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={question.sync_errors}
+          syncWarnings={question.sync_warnings}
+          fileEditUrl={`${urlPrefix}/question/${question.id}/file_edit/questions/${question.qid}/info.json`}
+          context="question"
         />
       );
+    }
     default:
       return null;
   }
@@ -293,7 +314,7 @@ export function PageLayout({
                 )}"
               >
                 ${renderHtml(
-                  <SyncErrorsAndWarnings navContext={navContext} resLocals={resLocals} />,
+                  <SyncErrorsAndWarningsComponent navContext={navContext} resLocals={resLocals} />,
                 )}
                 ${contentString}
               </main>
