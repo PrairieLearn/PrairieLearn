@@ -299,7 +299,7 @@ router.post(
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
       // JSON file has been formatted and is ready to be written
-      const paths = getPaths(undefined, res.locals);
+      const paths = getPaths(undefined, res.locals, 'instance_admin');
       const editor = new FileModifyEditor({
         locals: res.locals as any,
         container: {

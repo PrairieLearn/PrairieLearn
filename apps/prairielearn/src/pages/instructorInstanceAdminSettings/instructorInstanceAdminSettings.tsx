@@ -303,7 +303,7 @@ router.post(
         );
       }
 
-      const paths = getPaths(undefined, res.locals);
+      const paths = getPaths(undefined, res.locals, 'instance_admin');
 
       const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
         await fs.readFile(infoCourseInstancePath, 'utf8'),

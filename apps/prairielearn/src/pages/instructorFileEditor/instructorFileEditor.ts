@@ -86,7 +86,7 @@ router.get(
     // Do not allow users to edit files in bad locations (e.g., outside the
     // current course, outside the current course instance, etc.). Do this by
     // wrapping everything in getPaths, which throws an error on a bad path.
-    const paths = getPaths(req.params[0], res.locals);
+    const paths = getPaths(req.params[0], res.locals, res.locals.navPage);
 
     // We could also check if the file exists, if the file actually is a
     // file and not a directory, if the file is non-binary, etc., and try
@@ -185,7 +185,7 @@ router.post(
       throw new HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
 
-    const paths = getPaths(req.params[0], res.locals);
+    const paths = getPaths(req.params[0], res.locals, res.locals.navPage);
 
     const container = {
       rootPath: paths.rootPath,

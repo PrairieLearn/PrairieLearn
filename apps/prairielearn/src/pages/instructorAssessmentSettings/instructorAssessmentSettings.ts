@@ -163,7 +163,7 @@ router.post(
         );
       }
 
-      const paths = getPaths(undefined, res.locals);
+      const paths = getPaths(undefined, res.locals, 'assessment');
 
       const assessmentInfo = JSON.parse(await fs.readFile(infoAssessmentPath, 'utf8'));
       assessmentInfo.title = req.body.title;

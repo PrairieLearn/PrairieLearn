@@ -36,8 +36,6 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    res.locals.navPage = 'home';
-
     // Potentially prompt the user to accept the terms before proceeding.
     if (isEnterprise()) {
       await redirectToTermsPageIfNeeded(res, res.locals.authn_user, req.ip, req.originalUrl);
