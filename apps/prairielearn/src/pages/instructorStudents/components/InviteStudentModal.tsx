@@ -75,6 +75,7 @@ export function InviteStudentModal({
             id="invite-uid"
             class={clsx('form-control', errors.uid && 'is-invalid')}
             type="email"
+            placeholder="student@example.com"
             aria-invalid={errors.uid ? 'true' : 'false'}
             {...register('uid', {
               validate: async (uid) => {
