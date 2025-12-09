@@ -2,6 +2,9 @@ import { type TSESTree } from '@typescript-eslint/types';
 import { ESLintUtils } from '@typescript-eslint/utils';
 import * as ts from 'typescript';
 
+const HYDRATE_FUNCTION_NAME = 'hydrateHtml';
+const HYDRATE_COMPONENT_NAME = 'Hydrate';
+
 /**
  * Check if a variable declaration is a Zod schema that uses schemas from db-types.ts
  * For example: const RubricDataSchema = RubricSchema.extend({...})
@@ -518,12 +521,10 @@ export default ESLintUtils.RuleCreator.withoutDocs<
     return {
       JSXElement(node) {
         const openingElementNameExpression = node.openingElement.name;
-
-        // TODO: handle namespace and member expressions?
         if (openingElementNameExpression.type !== 'JSXIdentifier') return;
 
         const elementName = openingElementNameExpression.name;
-        if (elementName !== 'Hydrate') return;
+        if (elementName !== HYDRATE_COMPONENT_NAME) return;
 
         const child = extractChild(node.children);
         if (!child) return;
@@ -555,7 +556,7 @@ export default ESLintUtils.RuleCreator.withoutDocs<
 
       CallExpression(node) {
         // Check for hydrateHtml(<Component ... />, props?) calls
-        if (node.callee.type !== 'Identifier' || node.callee.name !== 'hydrateHtml') return;
+        if (node.callee.type !== 'Identifier' || node.callee.name !== HYDRATE_FUNCTION_NAME) return;
 
         // Should have at least one argument, the first is JSX element.
         if (node.arguments.length === 0) return;
