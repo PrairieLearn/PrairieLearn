@@ -157,7 +157,7 @@ export function ExtensionModifyModal({
         onHide={() => setStage({ type: 'editing' })}
       >
         <Modal.Header closeButton>
-          <Modal.Title>Confirm Unenrolled Students</Modal.Title>
+          <Modal.Title>Confirm unenrolled students</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p>The following UIDs are not enrolled in this course instance:</p>
@@ -178,7 +178,7 @@ export function ExtensionModifyModal({
             disabled={saveMutation.isPending}
             onClick={() => setStage({ type: 'editing' })}
           >
-            Continue Editing
+            Continue editing
           </button>
           <button
             type="button"
@@ -189,7 +189,7 @@ export function ExtensionModifyModal({
               void saveMutation.mutate(data);
             })}
           >
-            {saveMutation.isPending ? 'Saving...' : 'Save Anyway'}
+            {saveMutation.isPending ? 'Saving...' : 'Save anyway'}
           </button>
         </Modal.Footer>
       </Modal>
@@ -207,7 +207,7 @@ export function ExtensionModifyModal({
       }}
     >
       <Modal.Header closeButton>
-        <Modal.Title>{modalState?.type === 'add' ? 'Add Extension' : 'Edit Extension'}</Modal.Title>
+        <Modal.Title>{modalState?.type === 'add' ? 'Add extension' : 'Edit extension'}</Modal.Title>
       </Modal.Header>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
@@ -252,7 +252,7 @@ export function ExtensionModifyModal({
             {errors.end_date && (
               <div class="text-danger small">{String(errors.end_date.message)}</div>
             )}
-            <small class="text-muted">Current course end date: {currentUnpublishText}</small>
+            <small class="form-text">Current course end date: {currentUnpublishText}</small>
           </div>
           {saveMutation.isError && (
             <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
@@ -266,8 +266,8 @@ export function ExtensionModifyModal({
             <textarea
               id="ext-uids"
               class="form-control"
+              aria-describedby="ext-uids-help"
               rows={5}
-              placeholder="One UID per line, or comma/space separated"
               {...register('uids', {
                 validate: validateEmails,
               })}
@@ -275,6 +275,9 @@ export function ExtensionModifyModal({
             {errors.uids && !errors.uids.message?.toString().startsWith('UNENROLLED:') && (
               <div class="text-danger small">{String(errors.uids.message)}</div>
             )}
+            <small id="ext-uids-help" class="form-text">
+              Enter UIDs separated by commas, whitespace, or new lines.
+            </small>
           </div>
         </Modal.Body>
         <Modal.Footer>

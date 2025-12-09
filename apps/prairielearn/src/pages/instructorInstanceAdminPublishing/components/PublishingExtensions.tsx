@@ -86,7 +86,7 @@ export function PublishingExtensions({
                 })
               }
             >
-              Add Extension
+              Add extension
             </button>
           )}
         </div>
@@ -117,7 +117,7 @@ export function PublishingExtensions({
           <table class="table table-striped">
             <thead>
               <tr>
-                <th class="col-1">Extension Name</th>
+                <th class="col-1">Extension name</th>
                 <th class="col-1">End date</th>
                 <th class="col-3">Students</th>
                 <th class="col-1">Actions</th>

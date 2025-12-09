@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { useState } from 'preact/hooks';
 import { Alert, Modal } from 'react-bootstrap';
 
 export type ExtensionDeleteModalState = null | {
@@ -38,36 +39,54 @@ export function ExtensionDeleteModal({
     onSuccess,
   });
 
+  // To avoid a flash of empty content when the modal is closed, we'll snapshot
+  // the state when it opens and clear it when it closes.
+  const [snapshottedState, setSnapshottedState] = useState(modalState);
+
   const ModalBody = () => {
-    if (!modalState) return null;
+    if (!snapshottedState) return null;
     return (
       <>
-        <div class="mb-3">
+        <p>
           Are you sure you want to delete{' '}
-          {modalState.extensionName === null
+          {snapshottedState.extensionName === null
             ? 'this extension'
-            : `the extension "${modalState.extensionName}"`}
+            : `the extension "${snapshottedState.extensionName}"`}
           ?
-        </div>
-        <label class="form-label" for="ext-uids">
-          UIDs
-        </label>
-        <textarea
-          id="ext-uids"
-          class="form-control"
-          rows={5}
-          placeholder="One UID per line, or comma/space separated"
-          value={modalState.userData.map((user) => user.uid).join('\n')}
-          readOnly
-        />
+        </p>
+        <details>
+          <summary>Show affected students</summary>
+          <table class="table table-bordered table-sm mb-0">
+            <thead>
+              <tr>
+                <th>UID</th>
+                <th>Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              {snapshottedState.userData.map((user) => (
+                <tr key={user.enrollment_id}>
+                  <td>{user.uid}</td>
+                  <td>{user.name ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
       </>
     );
   };
 
   return (
-    <Modal backdrop="static" show={modalState !== null} onHide={onHide}>
+    <Modal
+      backdrop="static"
+      show={modalState !== null}
+      onHide={onHide}
+      onEntering={() => setSnapshottedState(modalState)}
+      onExited={() => setSnapshottedState(null)}
+    >
       <Modal.Header closeButton>
-        <Modal.Title>Delete Extension</Modal.Title>
+        <Modal.Title>Delete extension</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {deleteMutation.isError && (
