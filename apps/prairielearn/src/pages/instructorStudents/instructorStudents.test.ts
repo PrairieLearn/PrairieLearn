@@ -68,7 +68,7 @@ describe('Instructor Students - Invite by UID', () => {
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
-        __action: 'invite_by_uid',
+        __action: 'invite_uids',
         __csrf_token: csrfToken,
         uids: 'nonexistent@example.com',
       }),
@@ -109,7 +109,7 @@ describe('Instructor Students - Invite by UID', () => {
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
-        __action: 'invite_by_uid',
+        __action: 'invite_uids',
         __csrf_token: csrfToken,
         uids: 'another_instructor@example.com',
       }),
@@ -152,7 +152,7 @@ describe('Instructor Students - Invite by UID', () => {
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
-        __action: 'invite_by_uid',
+        __action: 'invite_uids',
         __csrf_token: csrfToken,
         uids: 'blocked_student@example.com',
       }),
@@ -180,7 +180,7 @@ describe('Instructor Students - Invite by UID', () => {
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
-        __action: 'invite_by_uid',
+        __action: 'invite_uids',
         __csrf_token: csrfToken,
         uids: 'new_student@example.com',
       }),
@@ -215,7 +215,7 @@ describe('Instructor Students - Invite by UID', () => {
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
-        __action: 'invite_by_uid',
+        __action: 'invite_uids',
         __csrf_token: csrfToken,
         uids: 'bulk_student1@example.com,bulk_student2@example.com',
       }),

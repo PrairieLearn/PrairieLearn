@@ -246,7 +246,7 @@ function StudentsCard({
 
   const inviteStudents = async (uids: string[]): Promise<InviteResult> => {
     const body = new URLSearchParams({
-      __action: 'invite_by_uid',
+      __action: 'invite_uids',
       __csrf_token: csrfToken,
       uids: uids.join(','),
     });

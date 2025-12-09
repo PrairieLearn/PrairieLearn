@@ -178,7 +178,7 @@ router.post(
             : val,
         EmailsSchema,
       ),
-      __action: z.literal('invite_by_uid'),
+      __action: z.literal('invite_uids'),
     });
     const body = BodySchema.parse(req.body);
 
@@ -201,6 +201,7 @@ router.post(
           );
           if (isInstructor) {
             counts.instructor++;
+            return;
           }
         }
 
@@ -214,9 +215,11 @@ router.post(
         if (existingEnrollment) {
           if (existingEnrollment.status === 'joined') {
             counts.alreadyEnrolled++;
+            return;
           }
           if (existingEnrollment.status === 'invited') {
             counts.alreadyInvited++;
+            return;
           }
         }
 
