@@ -12,9 +12,12 @@ SELECT
   ac.number,
   COALESCE(
     (
-      SELECT array_agg(target_type::text)
-      FROM access_control_target
-      WHERE access_control_id = ac.id
+      SELECT
+        array_agg(target_type::text)
+      FROM
+        access_control_target
+      WHERE
+        access_control_id = ac.id
     ),
     ARRAY[]::text[]
   ) AS target_types
@@ -176,22 +179,33 @@ WHERE
   uuid = ANY ($exam_uuids::uuid[])
   AND course_id = $course_id;
 
-
 -- BLOCK update_individual_rule_numbers
-WITH individual_rules AS (
-  SELECT 
-    ac.id,
-    ROW_NUMBER() OVER (ORDER BY ac.number) + $start_number - 1 AS new_number
-  FROM access_control ac
-  WHERE ac.assessment_id = $assessment_id
-    AND EXISTS (
-      SELECT 1
-      FROM access_control_target act
-      WHERE act.access_control_id = ac.id
-        AND act.target_type = 'individual'
-    )
-)
+WITH
+  individual_rules AS (
+    SELECT
+      ac.id,
+      ROW_NUMBER() OVER (
+        ORDER BY
+          ac.number
+      ) + $start_number - 1 AS new_number
+    FROM
+      access_control ac
+    WHERE
+      ac.assessment_id = $assessment_id
+      AND EXISTS (
+        SELECT
+          1
+        FROM
+          access_control_target act
+        WHERE
+          act.access_control_id = ac.id
+          AND act.target_type = 'individual'
+      )
+  )
 UPDATE access_control
-SET number = individual_rules.new_number
-FROM individual_rules
-WHERE access_control.id = individual_rules.id;
+SET
+  number = individual_rules.new_number
+FROM
+  individual_rules
+WHERE
+  access_control.id = individual_rules.id;

@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS access_control (
   after_complete_hide_score boolean,
   after_complete_show_score_again_date_overridden boolean,
   after_complete_show_score_again_date TIMESTAMP WITH TIME ZONE,
-  UNIQUE(course_instance_id, assessment_id, number) DEFERRABLE INITIALLY IMMEDIATE 
+  UNIQUE (course_instance_id, assessment_id, number) DEFERRABLE INITIALLY IMMEDIATE
   -- we allow for this to be deferred as reordering rules can cause temporary conflicts
   -- @reteps is this ^ true?
 );
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS access_control_groups (
   name text,
   description text,
   course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  UNIQUE (course_instance_id, uuid) 
+  UNIQUE (course_instance_id, uuid)
 );
 
 CREATE INDEX idx_sections_on_course_instance_id ON access_control_groups (course_instance_id);
