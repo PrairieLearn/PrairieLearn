@@ -25,7 +25,7 @@ function asHtmlSafe(
   return renderHtml(content);
 }
 
-function SyncErrorsAndWarningsComponent({
+function SyncErrorsAndWarningsForContext({
   navContext,
   resLocals,
 }: {
@@ -309,7 +309,7 @@ export function PageLayout({
                 )}"
               >
                 ${renderHtml(
-                  <SyncErrorsAndWarningsComponent navContext={navContext} resLocals={resLocals} />,
+                  <SyncErrorsAndWarningsForContext navContext={navContext} resLocals={resLocals} />,
                 )}
                 ${contentString}
               </main>
