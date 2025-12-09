@@ -36,7 +36,7 @@ router.get(
 
     // Look up the course instance by enrollment code
     const courseInstanceId = await selectOptionalCourseInstanceIdByEnrollmentCode({
-      enrollment_code: code,
+      enrollmentCode: code,
     });
     if (!courseInstanceId) {
       // User-facing terminology is to use "course" instead of "course instance"
