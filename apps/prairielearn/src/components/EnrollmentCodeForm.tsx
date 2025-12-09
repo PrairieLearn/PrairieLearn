@@ -63,11 +63,10 @@ export function EnrollmentCodeForm({
   const input3Ref = useRef<HTMLInputElement>(null);
 
   const watchedValues = watch();
-  // Handle modal close - reset form and clear errors
-  const handleClose = () => {
+  // Handle modal close - reset form and clear errors on exit
+  const handleReset = () => {
     reset();
     clearErrors();
-    onHide?.();
   };
 
   // Validate and format input - only alphanumeric, uppercase
@@ -355,14 +354,14 @@ export function EnrollmentCodeForm({
   }
 
   return (
-    <Modal key={show ? 'open' : 'closed'} show={show} size="md" onHide={handleClose}>
+    <Modal key={show ? 'open' : 'closed'} show={show} size="md" onHide={onHide} onExited={handleReset}>
       <Modal.Header closeButton>
         <Modal.Title>Join a course</Modal.Title>
       </Modal.Header>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Modal.Body>{formContent}</Modal.Body>
         <Modal.Footer>
-          <button type="button" class="btn btn-secondary" onClick={handleClose}>
+          <button type="button" class="btn btn-secondary" onClick={onHide}>
             Cancel
           </button>
           {submitButton}

@@ -220,8 +220,11 @@ export function RubricSettings({
   }
 
   const resetImportModal = () => {
-    setShowImportModal(false);
     setImportModalWarning(null);
+  };
+
+  const handleImportModalClose = () => {
+    setShowImportModal(false);
   };
 
   const importRubric = async () => {
@@ -286,7 +289,7 @@ export function RubricSettings({
         });
       }
       setRubricItems(scaledRubricItems);
-      resetImportModal();
+      handleImportModalClose();
     } catch {
       setImportModalWarning('Error reading file content.');
     }
@@ -689,7 +692,7 @@ export function RubricSettings({
             <i class="fas fa-upload" />
             Import rubric
           </button>
-          <Modal show={showImportModal} size="lg" onHide={() => resetImportModal()}>
+          <Modal show={showImportModal} size="lg" onHide={handleImportModalClose} onExited={resetImportModal}>
             <Modal.Header closeButton>
               <Modal.Title>Import rubric settings</Modal.Title>
             </Modal.Header>
@@ -723,7 +726,7 @@ export function RubricSettings({
               )}
             </Modal.Body>
             <Modal.Footer>
-              <button type="button" class="btn btn-secondary" onClick={() => resetImportModal()}>
+              <button type="button" class="btn btn-secondary" onClick={handleImportModalClose}>
                 Cancel
               </button>
               <button
