@@ -10,9 +10,11 @@ import { ArrayFromCheckboxSchema, IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
-import { StaffAuthnProviderSchema } from '../../lib/client/safe-db-types.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
+import {
+  AdminInstitutionSchema,
+  StaffAuthnProviderSchema,
+} from '../../lib/client/safe-db-types.js';
 import { AuthnProviderSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
