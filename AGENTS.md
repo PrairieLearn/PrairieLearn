@@ -57,7 +57,7 @@ Run `make format-python` / `make lint-python` from the root directory to format/
 ### User interface conventions
 
 - Use `react-bootstrap` components for UI elements.
-- Titles and buttons should use sentence case.
+- Titles and buttons should use sentence case ("Save course", "Discard these changes").
 
 ## Testing
 
