@@ -47,7 +47,7 @@ Run `make format-python` / `make lint-python` from the root directory to format/
 
 - NEVER use `as any` casts in TypeScript code to avoid type errors.
 - Don't add extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially if called by trusted / validated codepaths)
-- Don't add extra comments that a human wouldn't add or is inconsistent with the rest of the file
+- Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
 
 ### Library usage conventions
 
