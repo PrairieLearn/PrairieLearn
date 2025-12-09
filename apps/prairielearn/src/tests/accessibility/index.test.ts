@@ -369,6 +369,7 @@ const SKIP_ROUTES = [
 
   // API routes.
   '/pl/course_instance/lookup',
+  '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
 ];
 
 function shouldSkipPath(path: string) {
