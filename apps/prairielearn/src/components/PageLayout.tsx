@@ -1,13 +1,16 @@
 import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
+import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
+import { run } from '@prairielearn/run';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import { assertNever } from '../lib/types.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
@@ -131,11 +134,25 @@ function UnpublishedBannerComponent({
     courseInstance.publishing_end_date,
   );
 
-  if (status !== 'unpublished') return null;
+  if (status !== 'unpublished' && status !== 'publish_scheduled') return null;
+
+  const message = run(() => {
+    switch (status) {
+      case 'unpublished':
+        if (courseInstance.publishing_end_date) {
+          return `This course instance is no longer accessible to students because it was unpublished at ${formatDateFriendly(courseInstance.publishing_end_date, courseInstance.display_timezone, { timeFirst: true })}.`;
+        }
+        return 'This course instance is no longer accessible to students because it is unpublished.';
+      case 'publish_scheduled':
+        return `This course instance will be accessible to students after the scheduled publish date of ${formatDateFriendly(courseInstance.publishing_start_date, courseInstance.display_timezone, { timeFirst: true })}.`;
+      default:
+        assertNever(status);
+    }
+  });
 
   return (
     <div class="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small" role="alert">
-      Students will not be able to access the course instance until it is published.{' '}
+      {message}{' '}
       <a href={`${urlPrefix}/instance_admin/publishing`} class="alert-link">
         Configure publishing settings
       </a>
