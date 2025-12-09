@@ -4,6 +4,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
@@ -48,7 +49,8 @@ router.post(
         path: req.body.path,
         repository: req.body.repository,
         branch: req.body.branch,
-        authn_user_id: res.locals.authn_user.user_id,
+        authzData: dangerousFullSystemAuthz(),
+        requiredRole: ['Administrator'],
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'courses_update_column') {
@@ -68,8 +70,9 @@ router.post(
         );
       }
       await deleteCourse({
-        course_id: req.body.course_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        course,
+        authzData: res.locals.authz_data,
+        requiredRole: ['Administrator'],
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'approve_deny_course_request') {
