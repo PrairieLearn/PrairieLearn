@@ -6,6 +6,7 @@ import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
+import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
@@ -105,6 +106,48 @@ function SyncErrorsAndWarningsComponent({
     default:
       return null;
   }
+}
+
+function UnpublishedBannerComponent({
+  navContext,
+  resLocals,
+}: {
+  navContext: NavContext;
+  resLocals: UntypedResLocals;
+}) {
+  console.log('instructor page', navContext.type);
+  console.log('urlPrefix', urlPrefix);
+  console.log('courseInstance', courseInstance);
+
+  if (navContext.type !== 'instructor') return null;
+  const { course_instance: courseInstance, urlPrefix } = resLocals;
+
+  if (!courseInstance || !urlPrefix) return null;
+
+  // Only show banner if modern publishing is enabled
+  if (!courseInstance.modern_publishing) return null;
+
+  // Check if the course instance is unpublished
+  const status = computeStatus(
+    courseInstance.publishing_start_date,
+    courseInstance.publishing_end_date,
+  );
+
+  if (status !== 'unpublished') return null;
+
+  return (
+    <div class="alert alert-warning mb-4" role="alert">
+      <h2 class="h5 alert-heading">Course instance is unpublished</h2>
+      <p class="mb-0">
+        This course instance is not currently published. Students will not be able to access it
+        until it is published.{' '}
+        <a href={`${urlPrefix}/instance_admin/publishing`} class="alert-link">
+          Configure publishing settings
+        </a>
+        .
+      </p>
+    </div>
+  );
 }
 
 export function PageLayout({
@@ -315,6 +358,9 @@ export function PageLayout({
               >
                 ${renderHtml(
                   <SyncErrorsAndWarningsComponent navContext={navContext} resLocals={resLocals} />,
+                )}
+                ${renderHtml(
+                  <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
                 )}
                 ${contentString}
               </main>
