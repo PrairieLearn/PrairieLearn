@@ -58,7 +58,7 @@ export default asyncHandler(async (req, res, next) => {
   const selfEnrollmentAllowed =
     selfEnrollmentEnabled && !selfEnrollmentExpired && institutionRestrictionSatisfied;
 
-  // If the user is not enrolled, or is invited/rejected, and self-enrollment is allowed, then they can enroll.
+  // If the user is not enrolled or is invited/rejected, and self-enrollment is allowed, then they can enroll.
   const canSelfEnroll =
     selfEnrollmentAllowed &&
     (existingEnrollment == null || ['rejected'].includes(existingEnrollment.status));
