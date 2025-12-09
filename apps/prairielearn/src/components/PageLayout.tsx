@@ -137,12 +137,10 @@ function UnpublishedBannerComponent({
     <div class="alert alert-warning mb-4" role="alert">
       <h2 class="h5 alert-heading">Course instance is unpublished</h2>
       <p class="mb-0">
-        This course instance is not currently published. Students will not be able to access it
-        until it is published.{' '}
+        Students will not be able to access the course instance until it is published.{' '}
         <a href={`${urlPrefix}/instance_admin/publishing`} class="alert-link">
           Configure publishing settings
         </a>
-        .
       </p>
     </div>
   );
