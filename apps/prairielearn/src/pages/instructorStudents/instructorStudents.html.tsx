@@ -33,7 +33,6 @@ import {
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
-import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
   getSelfEnrollmentLinkUrl,
@@ -44,11 +43,7 @@ import {
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
-import {
-  type InvalidUidInfo,
-  type InviteResult,
-  InviteStudentsModal,
-} from './components/InviteStudentsModal.js';
+import { type InviteResult, InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
@@ -249,10 +244,7 @@ function StudentsCard({
   const [showInvite, setShowInvite] = useState(false);
   const [lastInviteResult, setLastInviteResult] = useState<InviteResult | null>(null);
 
-  const inviteStudents = async (
-    uids: string[],
-    skippedUids: InvalidUidInfo[],
-  ): Promise<InviteResult> => {
+  const inviteStudents = async (uids: string[]): Promise<InviteResult> => {
     const body = new URLSearchParams({
       __action: 'invite_by_uid',
       __csrf_token: csrfToken,
@@ -275,13 +267,21 @@ function StudentsCard({
       }
       throw new Error(message);
     }
-    const enrollments = z.array(StaffEnrollmentSchema).parse(json.data);
+    const result = z
+      .object({
+        counts: z.object({
+          success: z.number(),
+          instructor: z.number(),
+          alreadyEnrolled: z.number(),
+          alreadyInvited: z.number(),
+        }),
+      })
+      .parse(json);
 
     // Force a refetch of the enrollments query to ensure the new students are included
     await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
     setShowInvite(false);
 
-    const result: InviteResult = { enrollments, skippedUids };
     setLastInviteResult(result);
 
     return result;
@@ -406,38 +406,29 @@ function StudentsCard({
     },
   });
 
-  const formatInviteResultMessage = (result: InviteResult): string => {
+  const formatInviteResultMessage = ({ counts }: InviteResult): string => {
     const parts: string[] = [];
 
     // Invited students
-    const invitedCount = result.enrollments.length;
+    const invitedCount = counts.success;
+
     if (invitedCount > 0) {
       parts.push(`${invitedCount} student${invitedCount === 1 ? '' : 's'} successfully invited`);
     }
 
     // Group skipped by reason
-    const enrolledSkipped = result.skippedUids.filter((s) => s.reason === 'Already enrolled');
-    const invitedSkipped = result.skippedUids.filter(
-      (s) => s.reason === 'Already has a pending invitation',
-    );
-    const instructorSkipped = result.skippedUids.filter(
-      (s) => s.reason === 'User is an instructor',
-    );
+    const enrolledSkipped = counts.alreadyEnrolled;
+    const invitedSkipped = counts.alreadyInvited;
+    const instructorSkipped = counts.instructor;
 
-    if (enrolledSkipped.length > 0) {
-      parts.push(
-        `${enrolledSkipped.length} enrolled student${enrolledSkipped.length === 1 ? '' : 's'} skipped`,
-      );
+    if (enrolledSkipped > 0) {
+      parts.push(`${enrolledSkipped} enrolled student${enrolledSkipped === 1 ? '' : 's'} skipped`);
     }
-    if (invitedSkipped.length > 0) {
-      parts.push(
-        `${invitedSkipped.length} invited student${invitedSkipped.length === 1 ? '' : 's'} skipped`,
-      );
+    if (invitedSkipped > 0) {
+      parts.push(`${invitedSkipped} invited student${invitedSkipped === 1 ? '' : 's'} skipped`);
     }
-    if (instructorSkipped.length > 0) {
-      parts.push(
-        `${instructorSkipped.length} instructor${instructorSkipped.length === 1 ? '' : 's'} skipped`,
-      );
+    if (instructorSkipped > 0) {
+      parts.push(`${instructorSkipped} instructor${instructorSkipped === 1 ? '' : 's'} skipped`);
     }
 
     return parts.join(', ') + '.';
@@ -446,7 +437,11 @@ function StudentsCard({
   return (
     <>
       {lastInviteResult && (
-        <Alert variant="success" dismissible onClose={() => setLastInviteResult(null)}>
+        <Alert
+          variant={lastInviteResult.counts.success === 0 ? 'warning' : 'success'}
+          dismissible
+          onClose={() => setLastInviteResult(null)}
+        >
           {formatInviteResultMessage(lastInviteResult)}
         </Alert>
       )}

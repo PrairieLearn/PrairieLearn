@@ -4,8 +4,6 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import type { StaffEnrollment } from '../../../lib/client/safe-db-types.js';
-
 interface InviteStudentForm {
   uids: string;
 }
@@ -16,8 +14,12 @@ export interface InvalidUidInfo {
 }
 
 export interface InviteResult {
-  enrollments: StaffEnrollment[];
-  skippedUids: InvalidUidInfo[];
+  counts: {
+    success: number;
+    instructor: number;
+    alreadyEnrolled: number;
+    alreadyInvited: number;
+  };
 }
 
 export function InviteStudentsModal({
@@ -27,7 +29,7 @@ export function InviteStudentsModal({
 }: {
   show: boolean;
   onHide: () => void;
-  onSubmit: (uids: string[], skippedUids: InvalidUidInfo[]) => Promise<InviteResult>;
+  onSubmit: (uids: string[]) => Promise<InviteResult>;
 }) {
   const {
     register,
@@ -70,42 +72,7 @@ export function InviteStudentsModal({
 
   const saveMutation = useMutation({
     mutationFn: async (uids: string[]) => {
-      // Check with server for enrollment status
-      const params = new URLSearchParams();
-      params.append('uids', uids.join(','));
-
-      const resp = await fetch(
-        `${window.location.pathname}/invitation/check?${params.toString()}`,
-        {
-          headers: {
-            Accept: 'application/json',
-          },
-        },
-      );
-
-      if (!resp.ok) throw new Error('Failed to validate UIDs');
-
-      const { success, data } = z
-        .object({ invalidUids: z.array(z.object({ uid: z.string(), reason: z.string() })) })
-        .safeParse(await resp.json());
-      if (!success) throw new Error('Failed to check UIDs');
-
-      const validUids = uids.filter(
-        (uid) => !data.invalidUids.some((invalid) => invalid.uid === uid),
-      );
-
-      if (validUids.length === 0) {
-        if (uids.length === 1) {
-          // Single UID case - show specific error
-          throw new Error(data.invalidUids[0].reason);
-        }
-        // Multiple UIDs, all invalid
-        throw new Error(
-          'None of the UIDs can be invited. Please check that all users are not already invited or enrolled already, and are not instructors.',
-        );
-      }
-
-      return onSubmit(validUids, data.invalidUids);
+      return onSubmit(uids);
     },
     onSuccess: () => {
       reset();

@@ -183,7 +183,13 @@ router.post(
     const body = BodySchema.parse(req.body);
 
     // Process all invitations in a single transaction
-    const staffEnrollments = await runInTransactionAsync(async () => {
+    const counts = {
+      success: 0,
+      instructor: 0,
+      alreadyEnrolled: 0,
+      alreadyInvited: 0,
+    };
+    await runInTransactionAsync(async () => {
       const enrollments = body.uids.map(async (uid) => {
         const user = await selectOptionalUserByUid(uid);
         if (user) {
@@ -194,7 +200,7 @@ router.post(
             z.boolean(),
           );
           if (isInstructor) {
-            throw new HttpStatusError(400, `User ${uid} is an instructor`);
+            counts.instructor++;
           }
         }
 
@@ -207,25 +213,25 @@ router.post(
 
         if (existingEnrollment) {
           if (existingEnrollment.status === 'joined') {
-            throw new HttpStatusError(400, `User ${uid} is already enrolled`);
+            counts.alreadyEnrolled++;
           }
           if (existingEnrollment.status === 'invited') {
-            throw new HttpStatusError(400, `User ${uid} already has a pending invitation`);
+            counts.alreadyInvited++;
           }
         }
 
-        const enrollment = await inviteStudentByUid({
+        await inviteStudentByUid({
           courseInstance,
           uid,
           requiredRole: ['Student Data Editor'],
           authzData: res.locals.authz_data,
         });
-        return StaffEnrollmentSchema.parse(enrollment);
+        counts.success++;
       });
       return Promise.all(enrollments);
     });
 
-    res.json({ data: staffEnrollments });
+    res.json({ counts });
   }),
 );
 
