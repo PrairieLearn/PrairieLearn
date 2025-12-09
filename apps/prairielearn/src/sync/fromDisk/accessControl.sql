@@ -9,7 +9,7 @@ WHERE
 -- BLOCK select_access_control_with_targets
 SELECT
   ac.id,
-  ac."order",
+  ac.number,
   COALESCE(
     (
       SELECT array_agg(target_type::text)
@@ -23,7 +23,7 @@ FROM
 WHERE
   ac.assessment_id = $assessment_id
 ORDER BY
-  ac."order";
+  ac.number;
 
 -- BLOCK insert_access_control
 INSERT INTO
@@ -33,7 +33,7 @@ INSERT INTO
     enabled,
     block_access,
     list_before_release,
-    "order",
+    number,
     date_control_overridden,
     date_control_release_date_overridden,
     date_control_release_date,
@@ -65,7 +65,7 @@ VALUES
     $enabled,
     $block_access,
     $list_before_release,
-    $order,
+    $number,
     $date_control_overridden,
     $date_control_release_date_overridden,
     $date_control_release_date,
@@ -177,11 +177,11 @@ WHERE
   AND course_id = $course_id;
 
 
--- BLOCK update_individual_rule_orders
+-- BLOCK update_individual_rule_numbers
 WITH individual_rules AS (
   SELECT 
     ac.id,
-    ROW_NUMBER() OVER (ORDER BY ac."order") + $start_order - 1 AS new_order
+    ROW_NUMBER() OVER (ORDER BY ac.number) + $start_number - 1 AS new_number
   FROM access_control ac
   WHERE ac.assessment_id = $assessment_id
     AND EXISTS (
@@ -192,6 +192,6 @@ WITH individual_rules AS (
     )
 )
 UPDATE access_control
-SET "order" = individual_rules.new_order
+SET number = individual_rules.new_number
 FROM individual_rules
 WHERE access_control.id = individual_rules.id;

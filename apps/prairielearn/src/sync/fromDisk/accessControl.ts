@@ -4,7 +4,6 @@ import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairi
 
 import { AccessControlGroupSchema, AccessControlSchema, IdSchema } from '../../lib/db-types.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
-import type { CourseInstanceData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -323,29 +322,13 @@ export async function syncAccessControl(
       }
     }
 
-    // Update order numbers for individual-level rules
+    // Update number for individual-level rules
     if (individualRuleIds.length > 0) {
-      const newMaxOrder = accessControlRules.length;
-      await execute(sql.update_individual_rule_orders, {
+      const newMaxNumber = accessControlRules.length;
+      await execute(sql.update_individual_rule_numbers, {
         assessment_id: assessmentId,
-        start_order: newMaxOrder + 1,
+        start_number: newMaxNumber + 1,
       });
     }
   });
-}
-
-export async function sync(
-  courseId: string,
-  courseInstanceId: string,
-  courseInstanceData: CourseInstanceData,
-  assessmentIds: Record<string, string>,
-): Promise<void> {
-  for (const tid of Object.keys(courseInstanceData.assessments)) {
-    const assessmentId = assessmentIds[tid];
-    if (!assessmentId) continue;
-
-    const accessControlRules = courseInstanceData.assessmentAccessControl?.[tid] ?? [];
-
-    await syncAccessControl(courseId, courseInstanceId, assessmentId, accessControlRules);
-  }
 }

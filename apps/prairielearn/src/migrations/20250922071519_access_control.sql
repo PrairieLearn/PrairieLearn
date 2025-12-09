@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS access_control (
   enabled boolean,
   block_access boolean,
   list_before_release boolean,
-  "order" INTEGER, -- precedence, lower is higher priority
+  number INTEGER, -- precedence, lower is higher priority
   -- dateControl fields
   date_control_overridden boolean,
   date_control_release_date_overridden boolean,
@@ -34,7 +34,9 @@ CREATE TABLE IF NOT EXISTS access_control (
   after_complete_hide_score boolean,
   after_complete_hide_score_show_again_date_overridden boolean,
   after_complete_hide_score_show_again_date TIMESTAMP WITH TIME ZONE,
-  UNIQUE(course_instance_id, assessment_id, "order") DEFERRABLE INITIALLY IMMEDIATE -- we allow for this to be deferred as reordering rules can cause temporary 
+  UNIQUE(course_instance_id, assessment_id, number) DEFERRABLE INITIALLY IMMEDIATE 
+  -- we allow for this to be deferred as reordering rules can cause temporary conflicts
+  -- @reteps is this ^ true?
 );
 
 CREATE TABLE IF NOT EXISTS access_control_groups (

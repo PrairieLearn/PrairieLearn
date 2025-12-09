@@ -258,7 +258,7 @@ export const AccessControlSchema = z.object({
   after_complete_hide_score: z.boolean().nullable(),
   after_complete_hide_score_show_again_date: DateFromISOString.nullable(),
   after_complete_hide_score_show_again_date_overridden: z.boolean().nullable(),
-  order: z.number().int(),
+  number: z.number().int(),
 
   prairietest_control_overridden: z.boolean().nullable(),
 });

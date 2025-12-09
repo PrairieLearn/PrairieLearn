@@ -173,17 +173,15 @@ export async function syncDiskToSqlWithLock(
       syncAssessmentModules.sync(courseId, courseData),
     );
     await timed('Synced all assessments', async () => {
+      // Ensure that a single course with a ton of course instances can't
+      // monopolize the database connection pool.
       await async.eachLimit(
         Object.entries(courseData.courseInstances),
         3,
         async ([ciid, courseInstanceData]) => {
           const courseInstanceId = courseInstanceIds[ciid];
-          const assessmentIds = await timed(`Synced assessments for ${ciid}`, () =>
+          await timed(`Synced assessments for ${ciid}`, () =>
             syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
-          );
-          // Sync access control rules for each assessment
-          await timed(`Synced access control for ${ciid}`, () =>
-            syncAccessControl.sync(courseId, courseInstanceId, courseInstanceData, assessmentIds),
           );
         },
       );
