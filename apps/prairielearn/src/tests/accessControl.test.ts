@@ -41,9 +41,7 @@ describe('Valid configs', () => {
         },
         afterComplete: {
           hideQuestions: true,
-          hideQuestionsDateControl: {
-            showAgainDate: '2024-03-23T23:59:00',
-          },
+          showQuestionsAgainDate: '2024-03-23T23:59:00',
         },
       },
     ],
@@ -56,13 +54,9 @@ describe('Valid configs', () => {
         },
         afterComplete: {
           hideQuestions: true,
-          hideQuestionsDateControl: {
-            showAgainDate: '2024-03-23T23:59:00',
-          },
+          showQuestionsAgainDate: '2024-03-23T23:59:00',
           hideScore: true,
-          hideScoreDateControl: {
-            showAgainDate: '2024-03-23T23:59:00',
-          },
+          showScoreAgainDate: '2024-03-23T23:59:00',
         },
       },
     ],
@@ -148,10 +142,8 @@ describe('Valid configs', () => {
       {
         afterComplete: {
           hideQuestions: false,
-          hideQuestionsDateControl: {
-            showAgainDate: '2024-03-23T23:59:00',
-            hideAgainDate: '2024-03-25T23:59:00',
-          },
+          showQuestionsAgainDate: '2024-03-23T23:59:00',
+          hideQuestionsAgainDate: '2024-03-25T23:59:00',
         },
       },
     ],
@@ -312,9 +304,7 @@ describe('Date fields must be dates', () => {
             releaseDate: '2024-03-14T00:01:00',
           },
           afterComplete: {
-            hideQuestionsDateControl: {
-              showAgainDate: 'NOTADATE',
-            },
+            showQuestionsAgainDate: 'NOTADATE',
           },
         },
       ],

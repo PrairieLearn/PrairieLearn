@@ -115,6 +115,7 @@ export function useOverridableField<T>({
       const fieldName = fieldPath.split('.')[1] as keyof DateControlFormData;
       const updatedDateControl = {
         ...watchedDateControl,
+        // @ts-expect-error FIXME FIXME FIXME
         [fieldName]: { ...watchedDateControl[fieldName], isOverridden: false },
       } as DateControlFormData;
 

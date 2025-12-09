@@ -62,13 +62,13 @@ const AfterCompleteJsonSchema = z
         'Whether to enable settings controlling question visibility after assessment completion',
       ),
     showQuestionsAgainDate: z
-      .boolean()
+      .string()
       .optional()
       .describe(
         'Date as ISO String for when to unhide questions to students after assessment completion',
       ),
     hideQuestionsAgainDate: z
-      .boolean()
+      .string()
       .optional()
       .describe(
         'Date as ISO String for when to rehide questions to students after unhiding questions after assessment completion',
@@ -80,7 +80,7 @@ const AfterCompleteJsonSchema = z
         'Whether to enable settings controlling score visibility after assessment completion',
       ),
     showScoreAgainDate: z
-      .boolean()
+      .string()
       .optional()
       .describe('Date as ISO String for when to reveal hidden scores after assessment completion'),
   })

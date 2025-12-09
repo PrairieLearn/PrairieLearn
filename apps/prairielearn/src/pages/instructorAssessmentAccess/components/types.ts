@@ -160,17 +160,17 @@ function transformRule(rule: AccessControlRuleFormData): AccessControlJson {
     if (questionVisibility.isOverridden) {
       output.afterComplete.hideQuestions = questionVisibility.value.hideQuestions;
       if (questionVisibility.value.showAgainDate) {
-        output.afterComplete.showQuestionsAgainDate = true;
+        output.afterComplete.showQuestionsAgainDate = questionVisibility.value.showAgainDate;
       }
       if (questionVisibility.value.hideAgainDate) {
-        output.afterComplete.hideQuestionsAgainDate = true;
+        output.afterComplete.hideQuestionsAgainDate = questionVisibility.value.hideAgainDate;
       }
     }
 
     if (scoreVisibility.isOverridden) {
       output.afterComplete.hideScore = scoreVisibility.value.hideScore;
       if (scoreVisibility.value.showAgainDate) {
-        output.afterComplete.showScoreAgainDate = true;
+        output.afterComplete.showScoreAgainDate = scoreVisibility.value.showAgainDate;
       }
     }
   }

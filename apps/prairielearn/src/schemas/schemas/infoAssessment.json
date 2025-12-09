@@ -224,11 +224,11 @@
               },
               "showQuestionsAgainDate": {
                 "description": "Date as ISO String for when to unhide questions to students after assessment completion",
-                "type": "boolean"
+                "type": "string"
               },
               "hideQuestionsAgainDate": {
                 "description": "Date as ISO String for when to rehide questions to students after unhiding questions after assessment completion",
-                "type": "boolean"
+                "type": "string"
               },
               "hideScore": {
                 "description": "Whether to enable settings controlling score visibility after assessment completion",
@@ -236,7 +236,7 @@
               },
               "showScoreAgainDate": {
                 "description": "Date as ISO String for when to reveal hidden scores after assessment completion",
-                "type": "boolean"
+                "type": "string"
               }
             }
           }

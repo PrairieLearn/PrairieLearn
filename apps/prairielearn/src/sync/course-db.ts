@@ -1730,7 +1730,7 @@ export function validateAccessControl({
 
   // validate assignment-level constraints: no null enabled fields allowed
   const validateAssignmentLevelConstraints = (data: AccessControlJson, errors: string[]) => {
-    const isAssignmentLevel = !data?.targets || data.targets.length === 0;
+    const isAssignmentLevel = !data.targets || data.targets.length === 0;
 
     if (isAssignmentLevel) {
       for (const enabledFieldPath of assignmentLevelEnabledFields) {
@@ -1971,7 +1971,7 @@ export async function loadAccessControl({
     }
 
     return infoFiles;
-  } catch (err) {
+  } catch (err: any) {
     if (err.code === 'ENOENT') {
       // file doesn't exist, return empty array (access control is optional)
       return [];

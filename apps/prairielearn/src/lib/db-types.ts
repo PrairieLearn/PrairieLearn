@@ -248,16 +248,18 @@ export const AccessControlSchema = z.object({
   date_control_release_date_overridden: z.boolean().nullable(),
 
   // Prairie test control
+
+  // Question visibility
   after_complete_hide_questions: z.boolean().nullable(),
+  after_complete_hide_questions_again_date: DateFromISOString.nullable(),
+  after_complete_hide_questions_again_date_overridden: z.boolean().nullable(),
+  after_complete_show_questions_again_date: DateFromISOString.nullable(),
+  after_complete_show_questions_again_date_overridden: z.boolean().nullable(),
 
-  after_complete_hide_questions_hide_again_date: DateFromISOString.nullable(),
-  after_complete_hide_questions_hide_again_date_overridden: z.boolean().nullable(),
-  after_complete_hide_questions_show_again_date: DateFromISOString.nullable(),
-  after_complete_hide_questions_show_again_date_overridden: z.boolean().nullable(),
-
+  // Score visibility
   after_complete_hide_score: z.boolean().nullable(),
-  after_complete_hide_score_show_again_date: DateFromISOString.nullable(),
-  after_complete_hide_score_show_again_date_overridden: z.boolean().nullable(),
+  after_complete_show_score_again_date: DateFromISOString.nullable(),
+  after_complete_show_score_again_date_overridden: z.boolean().nullable(),
   number: z.number().int(),
 
   prairietest_control_overridden: z.boolean().nullable(),

@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 import { Alert } from 'react-bootstrap';
 
-import { getCourseInstanceEditErrorUrl } from '../../../lib/client/url.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
+import { getCourseInstanceEditErrorUrl } from '../../../lib/client/url.js';
 import type { AccessControlJson } from '../../../schemas/accessControl.js';
 
 import { AccessControlForm } from './AccessControlForm.js';
@@ -46,10 +46,10 @@ const sampleAccessControl: AccessControlJson[] = [
 
     afterComplete: {
       hideQuestions: true,
-      showQuestionsAgainDate: true,
-      hideQuestionsAgainDate: true,
+      showQuestionsAgainDate: '2025-03-25T23:59:00Z',
+      hideQuestionsAgainDate: '2025-03-28T23:59:00Z',
       hideScore: true,
-      showScoreAgainDate: true,
+      showScoreAgainDate: '2025-03-31T23:59:00Z',
     },
   },
   {

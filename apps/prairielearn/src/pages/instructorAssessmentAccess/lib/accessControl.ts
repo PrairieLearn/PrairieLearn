@@ -31,9 +31,9 @@ function formatDateToIso(date: Date | null): string | undefined {
 /** Transform a database row to the AccessControlJson format */
 function transformToJson(row: AccessControlWithChildren): AccessControlJson {
   return {
-    enabled: row.enabled ?? undefined,
-    blockAccess: row.block_access ?? undefined,
-    listBeforeRelease: row.list_before_release ?? undefined,
+    enabled: row.enabled,
+    blockAccess: row.block_access,
+    listBeforeRelease: row.list_before_release,
     targets: row.targets.length > 0 ? row.targets : undefined,
 
     dateControl: {
@@ -75,17 +75,17 @@ function transformToJson(row: AccessControlWithChildren): AccessControlJson {
         row.prairietest_exams.length > 0
           ? row.prairietest_exams.map((e) => ({
               examUuid: e.uuid,
-              readOnly: e.read_only ?? undefined,
+              readOnly: e.read_only,
             }))
           : undefined,
     },
 
     afterComplete: {
       hideQuestions: row.after_complete_hide_questions ?? undefined,
-      showQuestionsAgainDate: row.after_complete_hide_questions_show_again_date ? true : undefined,
-      hideQuestionsAgainDate: row.after_complete_hide_questions_hide_again_date ? true : undefined,
+      showQuestionsAgainDate: row.after_complete_show_questions_again_date?.toString(),
+      hideQuestionsAgainDate: row.after_complete_hide_questions_again_date?.toString(),
       hideScore: row.after_complete_hide_score ?? undefined,
-      showScoreAgainDate: row.after_complete_hide_score_show_again_date ? true : undefined,
+      showScoreAgainDate: row.after_complete_show_score_again_date?.toString(),
     },
   };
 }

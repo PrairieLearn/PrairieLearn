@@ -1,7 +1,6 @@
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { execute, queryRow } from '@prairielearn/postgres';
+import { execute } from '@prairielearn/postgres';
 
 import { AssessmentSchema, CourseInstanceSchema } from '../../../lib/db-types.js';
 import type { AccessControlJsonInput } from '../../../schemas/accessControl.js';
@@ -64,7 +63,7 @@ describe('getAccessControlForAssessment', () => {
 
   describe('Basic retrieval', () => {
     it('returns empty array when no access control rules exist', async () => {
-      const { courseData, courseDir } = await util.createAndSyncCourseData();
+      await util.createAndSyncCourseData();
 
       // Don't set any access control rules
       const assessment = await findAssessment(util.ASSESSMENT_ID);
@@ -105,11 +104,11 @@ describe('getAccessControlForAssessment', () => {
 
       // Check dateControl
       assert.isOk(retrieved.dateControl);
-      assert.equal(retrieved.dateControl?.durationMinutes, 60);
-      assert.equal(retrieved.dateControl?.password, 'secret123');
+      assert.equal(retrieved.dateControl.durationMinutes, 60);
+      assert.equal(retrieved.dateControl.password, 'secret123');
       // Dates should be formatted as ISO strings (YYYY-MM-DDTHH:mm)
-      assert.isString(retrieved.dateControl?.releaseDate);
-      assert.isString(retrieved.dateControl?.dueDate);
+      assert.isString(retrieved.dateControl.releaseDate);
+      assert.isString(retrieved.dateControl.dueDate);
     });
   });
 
@@ -218,8 +217,8 @@ describe('getAccessControlForAssessment', () => {
 
       const afterLastDeadline = result[0].dateControl?.afterLastDeadline;
       assert.isOk(afterLastDeadline);
-      assert.equal(afterLastDeadline?.allowSubmissions, true);
-      assert.equal(afterLastDeadline?.credit, 30);
+      assert.equal(afterLastDeadline.allowSubmissions, true);
+      assert.equal(afterLastDeadline.credit, 30);
     });
   });
 
@@ -244,15 +243,15 @@ describe('getAccessControlForAssessment', () => {
 
       const afterComplete = result[0].afterComplete;
       assert.isOk(afterComplete);
-      assert.equal(afterComplete?.hideQuestions, true);
-      assert.equal(afterComplete?.hideScore, true);
+      assert.equal(afterComplete.hideQuestions, true);
+      assert.equal(afterComplete.hideScore, true);
     });
   });
 
   describe('Multiple rules with ordering', () => {
     it('returns multiple rules in correct order', async () => {
       const courseData = util.getCourseData();
-      const groupUuid = uuidv4();
+      const groupUuid = crypto.randomUUID();
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -293,8 +292,8 @@ describe('getAccessControlForAssessment', () => {
   describe('Group targets', () => {
     it('returns group names in targets array', async () => {
       const courseData = util.getCourseData();
-      const groupUuid1 = uuidv4();
-      const groupUuid2 = uuidv4();
+      const groupUuid1 = crypto.randomUUID();
+      const groupUuid2 = crypto.randomUUID();
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -377,13 +376,13 @@ describe('getAccessControlForAssessment', () => {
 
       const prairieTestControl = result[0].prairieTestControl;
       assert.isOk(prairieTestControl);
-      assert.isArray(prairieTestControl?.exams);
-      assert.lengthOf(prairieTestControl!.exams!, 2);
+      assert.isArray(prairieTestControl.exams);
+      assert.lengthOf(prairieTestControl.exams!, 2);
 
       // Check exam UUIDs
-      assert.equal(prairieTestControl!.exams![0].examUuid, examUuid1);
-      assert.equal(prairieTestControl!.exams![1].examUuid, examUuid2);
-      assert.equal(prairieTestControl!.exams![1].readOnly, true);
+      assert.equal(prairieTestControl.exams![0].examUuid, examUuid1);
+      assert.equal(prairieTestControl.exams![1].examUuid, examUuid2);
+      assert.equal(prairieTestControl.exams![1].readOnly, true);
     });
   });
 });

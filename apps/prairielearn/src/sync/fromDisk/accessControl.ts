@@ -181,10 +181,10 @@ export async function syncAccessControl(
 
       // After Complete
       const hideQuestions = mapField(afterComplete.hideQuestions);
-      const hideQuestionsShowAgainDateOverridden = mapField(afterComplete.showQuestionsAgainDate);
-      const hideQuestionsHideAgainDateOverridden = mapField(afterComplete.hideQuestionsAgainDate);
+      const hideQuestionsShowAgainDate = mapField(afterComplete.showQuestionsAgainDate);
+      const hideQuestionsHideAgainDate = mapField(afterComplete.hideQuestionsAgainDate);
       const hideScore = mapField(afterComplete.hideScore);
-      const hideScoreShowAgainDateOverridden = mapField(afterComplete.showScoreAgainDate);
+      const hideScoreShowAgainDate = mapField(afterComplete.showScoreAgainDate);
 
       // Insert main rule
       const insertedRule = await queryRows(
@@ -220,16 +220,15 @@ export async function syncAccessControl(
 
           // After complete
           after_complete_hide_questions: hideQuestions.value,
-          after_complete_hide_questions_show_again_date_overridden:
-            hideQuestionsShowAgainDateOverridden.overridden,
-          after_complete_hide_questions_show_again_date: hideQuestionsShowAgainDateOverridden.value,
-          after_complete_hide_questions_hide_again_date_overridden:
-            hideQuestionsHideAgainDateOverridden.overridden,
-          after_complete_hide_questions_hide_again_date: hideQuestionsHideAgainDateOverridden.value,
+          after_complete_show_questions_again_date_overridden:
+            hideQuestionsShowAgainDate.overridden,
+          after_complete_show_questions_again_date: hideQuestionsShowAgainDate.value,
+          after_complete_hide_questions_again_date_overridden:
+            hideQuestionsHideAgainDate.overridden,
+          after_complete_hide_questions_again_date: hideQuestionsHideAgainDate.value,
           after_complete_hide_score: hideScore.value,
-          after_complete_hide_score_show_again_date_overridden:
-            hideScoreShowAgainDateOverridden.overridden,
-          after_complete_hide_score_show_again_date: hideScoreShowAgainDateOverridden.value,
+          after_complete_show_score_again_date_overridden: hideScoreShowAgainDate.overridden,
+          after_complete_show_score_again_date: hideScoreShowAgainDate.value,
         },
         AccessControlSchema,
       );

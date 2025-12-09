@@ -27,13 +27,13 @@ CREATE TABLE IF NOT EXISTS access_control (
   prairietest_control_overridden boolean,
   -- afterComplete fields
   after_complete_hide_questions boolean,
-  after_complete_hide_questions_show_again_date_overridden boolean,
-  after_complete_hide_questions_show_again_date TIMESTAMP WITH TIME ZONE,
-  after_complete_hide_questions_hide_again_date_overridden boolean,
-  after_complete_hide_questions_hide_again_date TIMESTAMP WITH TIME ZONE,
+  after_complete_show_questions_again_date_overridden boolean,
+  after_complete_show_questions_again_date TIMESTAMP WITH TIME ZONE,
+  after_complete_hide_questions_again_date_overridden boolean,
+  after_complete_hide_questions_again_date TIMESTAMP WITH TIME ZONE,
   after_complete_hide_score boolean,
-  after_complete_hide_score_show_again_date_overridden boolean,
-  after_complete_hide_score_show_again_date TIMESTAMP WITH TIME ZONE,
+  after_complete_show_score_again_date_overridden boolean,
+  after_complete_show_score_again_date TIMESTAMP WITH TIME ZONE,
   UNIQUE(course_instance_id, assessment_id, number) DEFERRABLE INITIALLY IMMEDIATE 
   -- we allow for this to be deferred as reordering rules can cause temporary conflicts
   -- @reteps is this ^ true?

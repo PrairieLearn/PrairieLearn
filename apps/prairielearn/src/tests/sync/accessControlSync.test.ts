@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/dot-notation */
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { execute, queryRow } from '@prairielearn/postgres';
@@ -84,7 +82,7 @@ describe('Access control syncing', () => {
 
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       assert.equal(syncedRules.length, 1);
-      assert.equal(syncedRules[0].order, 1);
+      assert.equal(syncedRules[0].number, 1);
       assert.equal(syncedRules[0].date_control_release_date_overridden, true);
 
       // check assignment-level target was created
@@ -351,8 +349,8 @@ describe('Access control syncing', () => {
     // order numbers matching the order they were specified in the JSON array
     it('assigns correct order to multiple rules', async () => {
       const courseData = util.getCourseData();
-      const groupUuid1 = uuidv4();
-      const groupUuid2 = uuidv4();
+      const groupUuid1 = crypto.randomUUID();
+      const groupUuid2 = crypto.randomUUID();
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -382,18 +380,18 @@ describe('Access control syncing', () => {
       assert.equal(syncedRules.length, 3);
 
       // sort for stable ordering
-      syncedRules.sort((a, b) => a.order - b.order);
+      syncedRules.sort((a, b) => a.number - b.number);
 
       // check each rule is in the correct order
-      assert.equal(syncedRules[0].order, 1);
+      assert.equal(syncedRules[0].number, 1);
       assert.equal(syncedRules[0].date_control_duration_minutes, 60);
       assert.isNotNull(syncedRules[0].date_control_release_date);
 
-      assert.equal(syncedRules[1].order, 2);
+      assert.equal(syncedRules[1].number, 2);
       assert.equal(syncedRules[1].date_control_duration_minutes, 90);
       assert.isNull(syncedRules[1].date_control_release_date);
 
-      assert.equal(syncedRules[2].order, 3);
+      assert.equal(syncedRules[2].number, 3);
       assert.equal(syncedRules[2].date_control_duration_minutes, 120);
       assert.isNull(syncedRules[2].date_control_release_date);
     });
@@ -402,7 +400,7 @@ describe('Access control syncing', () => {
     // corresponding properties remain in the same sequence as specified
     it('maintains order when rules are updated', async () => {
       const courseData = util.getCourseData();
-      const groupUuid = uuidv4();
+      const groupUuid = crypto.randomUUID();
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -428,15 +426,15 @@ describe('Access control syncing', () => {
       await util.overwriteAndSyncCourseData(courseData, courseDir);
 
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      syncedRules.sort((a, b) => a.order - b.order);
+      syncedRules.sort((a, b) => a.number - b.number);
       assert.equal(syncedRules.length, 2);
 
       // verify the updated rule1 is still at order 1
-      assert.equal(syncedRules[0].order, 1);
+      assert.equal(syncedRules[0].number, 1);
       assert.equal(syncedRules[0].date_control_duration_minutes, 75);
 
       // verify rule2 is still at order 2
-      assert.equal(syncedRules[1].order, 2);
+      assert.equal(syncedRules[1].number, 2);
       assert.equal(syncedRules[1].date_control_duration_minutes, 90);
     });
 
@@ -444,8 +442,8 @@ describe('Access control syncing', () => {
     // the remaining rules maintain the correct order and properties
     it('deletes excess rules when syncing fewer rules', async () => {
       const courseData = util.getCourseData();
-      const groupUuid1 = uuidv4();
-      const groupUuid2 = uuidv4();
+      const groupUuid1 = crypto.randomUUID();
+      const groupUuid2 = crypto.randomUUID();
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -481,14 +479,14 @@ describe('Access control syncing', () => {
       assert.equal(syncedRules.length, 1);
 
       // verify it's the correct rule with the correct order
-      assert.equal(syncedRules[0].order, 1);
+      assert.equal(syncedRules[0].number, 1);
       assert.equal(syncedRules[0].date_control_duration_minutes, 60);
     });
 
     // Validate reordering rules works in the database
     it('respects rule order when rules are reordered', async () => {
       const courseData = util.getCourseData();
-      const groupUuid = uuidv4();
+      const groupUuid = crypto.randomUUID();
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -508,7 +506,7 @@ describe('Access control syncing', () => {
 
       // verify initial order
       const initialRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      initialRules.sort((a, b) => a.order - b.order);
+      initialRules.sort((a, b) => a.number - b.number);
       assert.equal(initialRules[0].date_control_duration_minutes, 60);
       assert.equal(initialRules[1].date_control_duration_minutes, 90);
 
@@ -518,11 +516,11 @@ describe('Access control syncing', () => {
 
       // verify the order was reversed in the database
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      syncedRules.sort((a, b) => a.order - b.order);
+      syncedRules.sort((a, b) => a.number - b.number);
       assert.equal(syncedRules.length, 2);
-      assert.equal(syncedRules[0].order, 1);
+      assert.equal(syncedRules[0].number, 1);
       assert.equal(syncedRules[0].date_control_duration_minutes, 90);
-      assert.equal(syncedRules[1].order, 2);
+      assert.equal(syncedRules[1].number, 2);
       assert.equal(syncedRules[1].date_control_duration_minutes, 60);
     });
   });
@@ -533,8 +531,8 @@ describe('Access control syncing', () => {
     // automatically shift when group rules experience a change
     it('shifts individual rule orders when group rules change', async () => {
       const courseData = util.getCourseData();
-      const groupUuid1 = uuidv4();
-      const groupUuid2 = uuidv4();
+      const groupUuid1 = crypto.randomUUID();
+      const groupUuid2 = crypto.randomUUID();
 
       // create one assessment rule and two group rules
       const assignmentRule = makeAccessControlRule({
@@ -572,13 +570,13 @@ describe('Access control syncing', () => {
 
       // validate initial state: 3 rules with orders 1, 2, 3
       let allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.order - b.order);
+      allRules.sort((a, b) => a.number - b.number);
       assert.equal(allRules.length, 3);
-      assert.equal(allRules[0].order, 1);
+      assert.equal(allRules[0].number, 1);
       assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment
-      assert.equal(allRules[1].order, 2);
+      assert.equal(allRules[1].number, 2);
       assert.equal(allRules[1].date_control_duration_minutes, 90); // group1
-      assert.equal(allRules[2].order, 3);
+      assert.equal(allRules[2].number, 3);
       assert.equal(allRules[2].date_control_duration_minutes, 120); // group2
 
       // manually create 2 individual-level rules (UI creation)
@@ -626,14 +624,14 @@ describe('Access control syncing', () => {
 
       // validate we now have 5 rules with correct orders
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.order - b.order);
+      allRules.sort((a, b) => a.number - b.number);
       assert.equal(allRules.length, 5);
-      assert.equal(allRules[0].order, 1); // assignment
-      assert.equal(allRules[1].order, 2); // group1
-      assert.equal(allRules[2].order, 3); // group2
-      assert.equal(allRules[3].order, 4); // individual1
+      assert.equal(allRules[0].number, 1); // assignment
+      assert.equal(allRules[1].number, 2); // group1
+      assert.equal(allRules[2].number, 3); // group2
+      assert.equal(allRules[3].number, 4); // individual1
       assert.equal(allRules[3].date_control_duration_minutes, 150);
-      assert.equal(allRules[4].order, 5); // individual2
+      assert.equal(allRules[4].number, 5); // individual2
       assert.equal(allRules[4].date_control_duration_minutes, 180);
 
       // remove one group rule and resync
@@ -642,15 +640,15 @@ describe('Access control syncing', () => {
 
       // verify individual rules shifted down (orders 3, 4 instead of 4, 5)
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.order - b.order);
+      allRules.sort((a, b) => a.number - b.number);
       assert.equal(allRules.length, 4);
-      assert.equal(allRules[0].order, 1); // assignment
+      assert.equal(allRules[0].number, 1); // assignment
       assert.equal(allRules[0].date_control_duration_minutes, 60);
-      assert.equal(allRules[1].order, 2); // group1
+      assert.equal(allRules[1].number, 2); // group1
       assert.equal(allRules[1].date_control_duration_minutes, 90);
-      assert.equal(allRules[2].order, 3); // individual1
+      assert.equal(allRules[2].number, 3); // individual1
       assert.equal(allRules[2].date_control_duration_minutes, 150);
-      assert.equal(allRules[3].order, 4); // individual2
+      assert.equal(allRules[3].number, 4); // individual2
       assert.equal(allRules[3].date_control_duration_minutes, 180);
 
       // verify the individual rules still have individual targets
@@ -680,17 +678,17 @@ describe('Access control syncing', () => {
 
       // verify individual rules shifted up (back to orders 4, 5)
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.order - b.order);
+      allRules.sort((a, b) => a.number - b.number);
       assert.equal(allRules.length, 5);
-      assert.equal(allRules[0].order, 1); // assignment
+      assert.equal(allRules[0].number, 1); // assignment
       assert.equal(allRules[0].date_control_duration_minutes, 60);
-      assert.equal(allRules[1].order, 2); // group1
+      assert.equal(allRules[1].number, 2); // group1
       assert.equal(allRules[1].date_control_duration_minutes, 90);
-      assert.equal(allRules[2].order, 3); // group3 (new)
+      assert.equal(allRules[2].number, 3); // group3 (new)
       assert.equal(allRules[2].date_control_duration_minutes, 135);
-      assert.equal(allRules[3].order, 4); // individual1
+      assert.equal(allRules[3].number, 4); // individual1
       assert.equal(allRules[3].date_control_duration_minutes, 150);
-      assert.equal(allRules[4].order, 5); // individual2
+      assert.equal(allRules[4].number, 5); // individual2
       assert.equal(allRules[4].date_control_duration_minutes, 180);
 
       // verify individual rules still preserved
@@ -707,7 +705,7 @@ describe('Access control syncing', () => {
     // rules shift down appropriately (but are not deleted)
     it('shifts individual rules when group rules are removed', async () => {
       const courseData = util.getCourseData();
-      const groupUuid = uuidv4();
+      const groupUuid = crypto.randomUUID();
 
       const assignmentRule = makeAccessControlRule({
         dateControl: { durationMinutes: 60 },
@@ -754,13 +752,13 @@ describe('Access control syncing', () => {
 
       // Verify initial state: assignment (order 1), group (order 2), individual (order 3)
       let allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.order - b.order);
+      allRules.sort((a, b) => a.number - b.number);
       assert.equal(allRules.length, 3);
-      assert.equal(allRules[0].order, 1);
+      assert.equal(allRules[0].number, 1);
       assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment
-      assert.equal(allRules[1].order, 2);
+      assert.equal(allRules[1].number, 2);
       assert.equal(allRules[1].date_control_duration_minutes, 90); // group
-      assert.equal(allRules[2].order, 3);
+      assert.equal(allRules[2].number, 3);
       assert.equal(allRules[2].date_control_duration_minutes, 150); // individual
 
       // Remove the group rule by syncing with only the assignment rule
@@ -769,11 +767,11 @@ describe('Access control syncing', () => {
 
       // verify the group rule was deleted and individual rule shifted to order 2
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.order - b.order);
+      allRules.sort((a, b) => a.number - b.number);
       assert.equal(allRules.length, 2);
-      assert.equal(allRules[0].order, 1);
+      assert.equal(allRules[0].number, 1);
       assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment rule
-      assert.equal(allRules[1].order, 2);
+      assert.equal(allRules[1].number, 2);
       assert.equal(allRules[1].date_control_duration_minutes, 150); // individual rule
 
       // verify it's still an individual rule
@@ -795,9 +793,7 @@ describe('Access control syncing', () => {
       const rule = makeAccessControlRule({
         afterComplete: {
           hideQuestions: true,
-          hideQuestionsDateControl: {
-            showAgainDate: '2024-03-23T23:59:00Z',
-          },
+          showQuestionsAgainDate: '2025-03-25T23:59:00Z',
         },
       });
       util.setAccessControlRules(courseData, util.ASSESSMENT_ID, [rule]);
@@ -807,8 +803,8 @@ describe('Access control syncing', () => {
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       assert.equal(syncedRules.length, 1);
       assert.equal(syncedRules[0].after_complete_hide_questions, true);
-      assert.equal(syncedRules[0].after_complete_hide_questions_show_again_date_overridden, true);
-      assert.isNotNull(syncedRules[0].after_complete_hide_questions_show_again_date);
+      assert.equal(syncedRules[0].after_complete_show_questions_again_date_overridden, true);
+      assert.isNotNull(syncedRules[0].after_complete_show_questions_again_date);
     });
 
     it('syncs hideScore settings', async () => {
@@ -816,9 +812,7 @@ describe('Access control syncing', () => {
       const rule = makeAccessControlRule({
         afterComplete: {
           hideScore: true,
-          hideScoreDateControl: {
-            showAgainDate: '2024-03-25T23:59:00Z',
-          },
+          showScoreAgainDate: '2025-03-25T23:59:00Z',
         },
       });
       util.setAccessControlRules(courseData, util.ASSESSMENT_ID, [rule]);
@@ -828,15 +822,15 @@ describe('Access control syncing', () => {
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       assert.equal(syncedRules.length, 1);
       assert.equal(syncedRules[0].after_complete_hide_score, true);
-      assert.equal(syncedRules[0].after_complete_hide_score_show_again_date_overridden, true);
-      assert.isNotNull(syncedRules[0].after_complete_hide_score_show_again_date);
+      assert.equal(syncedRules[0].after_complete_show_score_again_date_overridden, true);
+      assert.isNotNull(syncedRules[0].after_complete_show_score_again_date);
     });
   });
 
   describe('Group-level rules', () => {
     it('syncs group-level access control rules', async () => {
       const courseData = util.getCourseData();
-      const groupUuid = uuidv4();
+      const groupUuid = crypto.randomUUID();
 
       // Create the group first
       const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -901,7 +895,7 @@ describe('Access control syncing', () => {
   describe('Assignment-level rule requirement', () => {
     it('rejects sync when no assignment-level rule exists', async () => {
       const courseData = util.getCourseData();
-      const groupUuid = uuidv4();
+      const groupUuid = crypto.randomUUID();
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -953,7 +947,7 @@ describe('Access control syncing', () => {
 
     it('successfully syncs with exactly one assignment-level rule', async () => {
       const courseData = util.getCourseData();
-      const groupUuid = uuidv4();
+      const groupUuid = crypto.randomUUID();
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -978,7 +972,7 @@ describe('Access control syncing', () => {
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       assert.equal(syncedRules.length, 2, 'Should sync all rules when properly configured');
 
-      syncedRules.sort((a, b) => a.order - b.order);
+      syncedRules.sort((a, b) => a.number - b.number);
       assert.equal(syncedRules[0].date_control_duration_minutes, 60); // assignment
       assert.equal(syncedRules[1].date_control_duration_minutes, 90); // group
     });
@@ -1003,7 +997,7 @@ describe('Access control syncing', () => {
 
     it('rejects sync when non-assignment-level rule specifies prairieTestControl', async () => {
       const courseData = util.getCourseData();
-      const groupUuid = uuidv4();
+      const groupUuid = crypto.randomUUID();
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -1070,7 +1064,7 @@ describe('Access control syncing', () => {
 
     it('allows assignment-level rule to specify prairieTestControl', async () => {
       const courseData = util.getCourseData();
-      const groupUuid = uuidv4();
+      const groupUuid = crypto.randomUUID();
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -1114,7 +1108,7 @@ describe('Access control syncing', () => {
       const courseData = util.getCourseData();
 
       // add a second assessment
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['test2'] = {
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.test2 = {
         uuid: '03f3b4d2-0264-48b7-bf42-107732142c02',
         title: 'Test assessment 2',
         type: 'Exam',

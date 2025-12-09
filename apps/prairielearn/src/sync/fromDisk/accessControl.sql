@@ -50,13 +50,13 @@ INSERT INTO
     date_control_password,
     prairietest_control_overridden,
     after_complete_hide_questions,
-    after_complete_hide_questions_show_again_date_overridden,
-    after_complete_hide_questions_show_again_date,
-    after_complete_hide_questions_hide_again_date_overridden,
-    after_complete_hide_questions_hide_again_date,
+    after_complete_show_questions_again_date_overridden,
+    after_complete_show_questions_again_date,
+    after_complete_hide_questions_again_date_overridden,
+    after_complete_hide_questions_again_date,
     after_complete_hide_score,
-    after_complete_hide_score_show_again_date_overridden,
-    after_complete_hide_score_show_again_date
+    after_complete_show_score_again_date_overridden,
+    after_complete_show_score_again_date
   )
 VALUES
   (
@@ -82,13 +82,13 @@ VALUES
     $date_control_password,
     $prairietest_control_overridden,
     $after_complete_hide_questions,
-    $after_complete_hide_questions_show_again_date_overridden,
-    $after_complete_hide_questions_show_again_date,
-    $after_complete_hide_questions_hide_again_date_overridden,
-    $after_complete_hide_questions_hide_again_date,
+    $after_complete_show_questions_again_date_overridden,
+    $after_complete_show_questions_again_date,
+    $after_complete_hide_questions_again_date_overridden,
+    $after_complete_hide_questions_again_date,
     $after_complete_hide_score,
-    $after_complete_hide_score_show_again_date_overridden,
-    $after_complete_hide_score_show_again_date
+    $after_complete_show_score_again_date_overridden,
+    $after_complete_show_score_again_date
   )
 RETURNING
   *;
