@@ -46,7 +46,6 @@ export function Workspace({
         'heartbeat-interval-sec': heartbeatIntervalSec.toString(),
         'visibility-timeout-sec': visibilityTimeoutSec.toString(),
       },
-      enableEnhancedNav: false,
       enableNavbar: false,
       contentPadding: false,
     },
