@@ -1,10 +1,8 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import {
   type CourseInstance,
   CourseInstancePermissionSchema,
@@ -68,13 +66,6 @@ export function InstructorCourseAdminStaff({
       fullWidth: true,
     },
     content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex flex-wrap align-items-center">
           <h1 class="me-2">Staff</h1>

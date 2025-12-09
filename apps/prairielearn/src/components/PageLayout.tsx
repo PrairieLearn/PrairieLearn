@@ -14,6 +14,12 @@ import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
 import { SideNav } from './SideNav.js';
+import {
+  AssessmentSyncErrorsAndWarnings,
+  CourseInstanceSyncErrorsAndWarnings,
+  CourseSyncErrorsAndWarnings,
+  QuestionSyncErrorsAndWarnings,
+} from './SyncErrorsAndWarnings.js';
 
 function asHtmlSafe(
   content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
@@ -22,6 +28,61 @@ function asHtmlSafe(
     return content;
   }
   return renderHtml(content);
+}
+
+function SyncErrorsAndWarnings({
+  navContext,
+  resLocals,
+}: {
+  navContext: NavContext;
+  resLocals: UntypedResLocals;
+}) {
+  if (navContext.type !== 'instructor') return null;
+
+  switch (navContext.page) {
+    case 'course_admin':
+      if (!resLocals.course) return null;
+      return (
+        <CourseSyncErrorsAndWarnings
+          authzData={resLocals.authz_data}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />
+      );
+    case 'instance_admin':
+      if (!resLocals.course_instance || !resLocals.course) return null;
+      return (
+        <CourseInstanceSyncErrorsAndWarnings
+          authzData={resLocals.authz_data}
+          courseInstance={resLocals.course_instance}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />
+      );
+    case 'assessment':
+      if (!resLocals.assessment || !resLocals.course_instance || !resLocals.course) return null;
+      return (
+        <AssessmentSyncErrorsAndWarnings
+          authzData={resLocals.authz_data}
+          assessment={resLocals.assessment}
+          courseInstance={resLocals.course_instance}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />
+      );
+    case 'question':
+      if (!resLocals.question || !resLocals.course) return null;
+      return (
+        <QuestionSyncErrorsAndWarnings
+          authzData={resLocals.authz_data}
+          question={resLocals.question}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />
+      );
+    default:
+      return null;
+  }
 }
 
 export function PageLayout({
@@ -230,6 +291,9 @@ export function PageLayout({
                   resolvedOptions.fullHeight && 'h-100',
                 )}"
               >
+                ${renderHtml(
+                  <SyncErrorsAndWarnings navContext={navContext} resLocals={resLocals} />,
+                )}
                 ${contentString}
               </main>
               ${postContentString}
