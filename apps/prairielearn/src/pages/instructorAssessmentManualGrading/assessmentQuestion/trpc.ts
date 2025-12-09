@@ -1,17 +1,11 @@
-import path from 'node:path';
-
 import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-// TODO: these transitively drag a ton of types into the graph of code that ends
-// up being type-checked in the client bundle, which fails because the client
-// assets have strict mode enabled but the reset of the server code does not.
 import {
   AI_GRADING_MODEL_IDS,
   type AiGradingModelId,
@@ -31,12 +25,8 @@ import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
-import {
-  InstanceQuestionRowSchema,
-  InstanceQuestionRowWithAIGradingStatsSchema,
-} from './assessmentQuestion.types.js';
-
-const sql = loadSqlEquiv(path.join(import.meta.dirname, 'assessmentQuestion.js'));
+import { InstanceQuestionRowWithAIGradingStatsSchema } from './assessmentQuestion.types.js';
+import { selectInstanceQuestionsForManualGrading, updateInstanceQuestions } from './queries.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const pageContext = extractPageContext(res.locals, {
@@ -73,14 +63,10 @@ const instancesQuery = t.procedure
       });
     }
 
-    const instance_questions = await queryRows(
-      sql.select_instance_questions_manual_grading,
-      {
-        assessment_id: opts.ctx.assessment.id,
-        assessment_question_id: opts.ctx.assessment_question.id,
-      },
-      InstanceQuestionRowSchema,
-    );
+    const instance_questions = await selectInstanceQuestionsForManualGrading({
+      assessment: opts.ctx.assessment,
+      assessment_question: opts.ctx.assessment_question,
+    });
 
     return await fillInstanceQuestionColumnEntries(
       instance_questions,
@@ -136,6 +122,10 @@ const aiGroupInstanceQuestionsMutation = t.procedure
   )
   .output(z.object({ job_sequence_id: z.string() }))
   .mutation(async (opts) => {
+    if (!(await features.enabledFromLocals('ai-grading', opts.ctx.locals))) {
+      throw new TRPCError({ message: 'Access denied (feature not available)', code: 'FORBIDDEN' });
+    }
+
     const job_sequence_id = await aiInstanceQuestionGrouping({
       question: opts.ctx.question,
       // TODO: what to do about this?
@@ -223,8 +213,8 @@ const setAssignedGraderMutation = t.procedure
       }
     }
 
-    await execute(sql.update_instance_questions, {
-      assessment_question_id: opts.ctx.assessment_question.id,
+    await updateInstanceQuestions({
+      assessment_question: opts.ctx.assessment_question,
       instance_question_ids: opts.input.instance_question_ids,
       update_requires_manual_grading: false,
       requires_manual_grading: null,
@@ -241,8 +231,8 @@ const setRequiresManualGradingMutation = t.procedure
     }),
   )
   .mutation(async (opts) => {
-    await execute(sql.update_instance_questions, {
-      assessment_question_id: opts.ctx.assessment_question.id,
+    await updateInstanceQuestions({
+      assessment_question: opts.ctx.assessment_question,
       instance_question_ids: opts.input.instance_question_ids,
       update_requires_manual_grading: true,
       requires_manual_grading: opts.input.requires_manual_grading,

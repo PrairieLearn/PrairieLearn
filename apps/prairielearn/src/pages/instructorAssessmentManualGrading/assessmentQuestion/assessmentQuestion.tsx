@@ -3,7 +3,6 @@ import { Router } from 'express';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
@@ -31,11 +30,10 @@ import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
-import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
+import { selectInstanceQuestionsForManualGrading } from './queries.js';
 import { createContext, manualGradingAssessmentQuestionRouter } from './trpc.js';
 
 const router = Router();
-const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -67,14 +65,10 @@ router.get(
       }),
     );
 
-    const unfilledInstanceQuestionInfo = await queryRows(
-      sql.select_instance_questions_manual_grading,
-      {
-        assessment_id: res.locals.assessment.id,
-        assessment_question_id: res.locals.assessment_question.id,
-      },
-      InstanceQuestionRowSchema,
-    );
+    const unfilledInstanceQuestionInfo = await selectInstanceQuestionsForManualGrading({
+      assessment: res.locals.assessment,
+      assessment_question: res.locals.assessment_question,
+    });
 
     const instanceQuestionsInfo = await fillInstanceQuestionColumnEntries(
       unfilledInstanceQuestionInfo,
