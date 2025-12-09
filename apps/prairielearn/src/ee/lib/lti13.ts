@@ -245,7 +245,7 @@ export class Lti13Claim {
   constructor(req: Request) {
     try {
       this.claims = Lti13ClaimSchema.parse(req.session.lti13_claims);
-    } catch (err) {
+    } catch (err: any) {
       throw new AugmentedError('LTI session invalid or timed out, please try logging in again.', {
         cause: err,
         status: 403,
@@ -672,7 +672,7 @@ export async function fetchRetry(
         body: resString,
       },
     });
-  } catch (err) {
+  } catch (err: any) {
     // https://canvas.instructure.com/doc/api/file.throttling.html
     // 403 Forbidden (Rate Limit Exceeded)
     if (
@@ -975,7 +975,7 @@ export async function updateLti13Scores({
         body: JSON.stringify(score),
       });
       counts.success++;
-    } catch (error) {
+    } catch (error: any) {
       counts.error++;
       job.warn(`\t${error.message}`);
       if (error instanceof AugmentedError && error.data.body) {

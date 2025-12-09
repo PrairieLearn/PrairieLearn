@@ -130,7 +130,7 @@ router.post(
       try {
         // @ts-expect-error https://github.com/chrisbottin/xml-formatter/issues/72
         xml = formatXml(Buffer.from(req.body.encoded_assertion, 'base64').toString('utf8'));
-      } catch (err) {
+      } catch (err: any) {
         res.send(DecodedAssertion({ xml: err.message, profile: '' }));
         return;
       }
