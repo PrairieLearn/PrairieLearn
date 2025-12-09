@@ -134,14 +134,11 @@ function UnpublishedBannerComponent({
   if (status !== 'unpublished') return null;
 
   return (
-    <div class="alert alert-warning mb-4" role="alert">
-      <h2 class="h5 alert-heading">Course instance is unpublished</h2>
-      <p class="mb-0">
-        Students will not be able to access the course instance until it is published.{' '}
-        <a href={`${urlPrefix}/instance_admin/publishing`} class="alert-link">
-          Configure publishing settings
-        </a>
-      </p>
+    <div class="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small" role="alert">
+      Students will not be able to access the course instance until it is published.{' '}
+      <a href={`${urlPrefix}/instance_admin/publishing`} class="alert-link">
+        Configure publishing settings
+      </a>
     </div>
   );
 }
@@ -322,6 +319,9 @@ export function PageLayout({
                 'd-flex flex-column',
               )}"
             >
+              ${renderHtml(
+                <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
+              )}
               ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
                 ? AssessmentNavigation({
                     courseInstanceId: resLocals.course_instance.id,
@@ -354,9 +354,6 @@ export function PageLayout({
               >
                 ${renderHtml(
                   <SyncErrorsAndWarningsComponent navContext={navContext} resLocals={resLocals} />,
-                )}
-                ${renderHtml(
-                  <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
                 )}
                 ${contentString}
               </main>
