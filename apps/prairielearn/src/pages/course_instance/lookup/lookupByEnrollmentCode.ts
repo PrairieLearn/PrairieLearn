@@ -77,15 +77,14 @@ router.get(
         throw new HttpStatusError(403, 'You are blocked from accessing this course');
       }
 
-      // If the user was invited, joined, or removed, return the course instance ID.
+      // If the user was invited, joined, or removed, then they have access so we can return the course instance ID.
+      // This means that rejected users will fall through to the self-enrollment checks.
       if (['invited', 'joined', 'removed'].includes(existingEnrollment.status)) {
         res.json({
           course_instance_id: courseInstance.id,
         });
         return;
       }
-
-      // Otherwise, fall through to the self-enrollment checks.
     }
 
     // Check if self-enrollment is enabled for this course instance
