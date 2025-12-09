@@ -71,6 +71,7 @@ function SyncErrorsAndWarnings({
         />
       );
     case 'question':
+    case 'public_question':
       if (!resLocals.question || !resLocals.course) return null;
       return (
         <QuestionSyncErrorsAndWarnings
