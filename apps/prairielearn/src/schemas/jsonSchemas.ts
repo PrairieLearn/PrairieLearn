@@ -259,7 +259,6 @@ export const accessControl = prairielearnZodToJsonSchema(AccessControlJsonSchema
 }) as JSONSchemaType<AccessControlJson>;
 
 export const ajvSchemas = {
-  accessControl,
   infoNewsItem,
   infoAssessment,
   infoCourse,
