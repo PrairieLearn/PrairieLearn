@@ -45,7 +45,7 @@ WITH
       mia.assessment_number,
       mia.assessment_order_by,
       mia.title || ' instance #' || ai.number,
-      NULL::boolean AS group_work,
+      NULL::boolean AS team_work,
       mia.assessment_set_id,
       mia.assessment_set_name,
       mia.assessment_set_heading,
@@ -101,7 +101,7 @@ WITH
       am.heading AS assessment_module_heading,
       am.number AS assessment_module_number
     FROM
-      -- JOIN team_users first to find all group assessments
+      -- JOIN team_users first to find all team assessments
       team_configs AS gc
       JOIN teams AS g ON (
         g.team_config_id = gc.id
@@ -115,11 +115,11 @@ WITH
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       -- We use a subquery to find assessment instances by either user_id or
-      -- group_id. We use to do this with AND (ai.user_id = $user_id OR
+      -- team_id. We use to do this with AND (ai.user_id = $user_id OR
       -- ai.team_id = gu.team_id) but this was triggering a bad query plan for
       -- some course instances. Having separate SELECTs for user_id and group_id
       -- allows the query planner to utilize the two separate indexes we have
-      -- for user_id and group_id.
+      -- for user_id and team_id.
       LEFT JOIN LATERAL (
         SELECT
           *

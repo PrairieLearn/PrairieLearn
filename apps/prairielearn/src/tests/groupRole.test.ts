@@ -95,7 +95,6 @@ async function switchUserAndLoadAssessment(
   assert.nestedProperty(elemList[0], 'attribs.value');
   locals.__csrf_token = elemList[0].attribs.value;
   assert.isString(locals.__csrf_token);
-  console.log('locals.__csrf_token', locals.__csrf_token);
 }
 
 /**
@@ -1258,7 +1257,6 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       { tid: 'hw5-templateGroupWork' },
       IdSchema,
     );
-    console.log('assessmentId', assessmentId);
     assessmentUrl = locals.courseInstanceUrl + '/assessment/' + assessmentId;
   });
 
@@ -1329,9 +1327,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       }),
     });
 
-    const text = await joinRes.text();
-    console.log('text', text);
-    locals.$ = cheerio.load(text);
+    locals.$ = cheerio.load(await joinRes.text());
     assert.isOk(joinRes.ok);
 
     // Grab join code
@@ -1374,7 +1370,6 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   });
 
   test.sequential('should display correct errors for too few role assignments', function () {
-    console.log('locals.$.html()', locals.$.html());
     assertAlert(locals.$, '1 more student needs to be assigned to the role "Reflector"');
     assertAlert(locals.$, '1 more student needs to be assigned to the role "Recorder"');
   });
@@ -1812,6 +1807,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       { assessment_id: locals.assessment_id },
       GroupRoleSchema,
     );
+
     assert.lengthOf(result, 4);
     locals.groupRoles = result;
 

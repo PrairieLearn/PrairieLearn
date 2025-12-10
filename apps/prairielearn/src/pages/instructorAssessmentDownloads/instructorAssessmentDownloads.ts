@@ -298,14 +298,14 @@ async function sendInstancesCsv(
   res: Response,
   req: Request,
   columns: Columns,
-  options: { only_highest: boolean; team_work?: true },
+  options: { only_highest: boolean; group_work?: true },
 ) {
   const result = await sqldb.queryCursor(
     sql.select_assessment_instances,
     {
       assessment_id: res.locals.assessment.id,
       highest_score: options.only_highest,
-      team_work: options.team_work,
+      group_work: options.group_work,
     },
     z.unknown(),
   );
@@ -387,12 +387,12 @@ router.get(
     } else if (req.params.filename === filenames.instancesCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: true,
-        team_work: res.locals.assessment.team_work,
+        group_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instancesAllCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: false,
-        team_work: res.locals.assessment.team_work,
+        group_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
       const cursor = await sqldb.queryCursor(
@@ -571,22 +571,22 @@ router.get(
     } else if (req.params.filename === filenames.scoresGroupCsvFilename) {
       await sendInstancesCsv(res, req, scoresGroupColumns, {
         only_highest: true,
-        team_work: true,
+        group_work: true,
       });
     } else if (req.params.filename === filenames.scoresGroupAllCsvFilename) {
       await sendInstancesCsv(res, req, scoresGroupColumns, {
         only_highest: false,
-        team_work: true,
+        group_work: true,
       });
     } else if (req.params.filename === filenames.pointsGroupCsvFilename) {
       await sendInstancesCsv(res, req, pointsGroupColumns, {
         only_highest: true,
-        team_work: true,
+        group_work: true,
       });
     } else if (req.params.filename === filenames.pointsGroupAllCsvFilename) {
       await sendInstancesCsv(res, req, pointsGroupColumns, {
         only_highest: false,
-        team_work: true,
+        group_work: true,
       });
     } else {
       throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);

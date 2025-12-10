@@ -166,7 +166,7 @@ BEGIN
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
             honor_code = valid_assessment.data->>'honor_code',
             allow_personal_notes = (valid_assessment.data->>'allow_personal_notes')::boolean,
-            team_work = (valid_assessment.data->>'group_work')::boolean,
+            team_work = (valid_assessment.data->>'team_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision,
             json_can_view = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_view')),
@@ -193,7 +193,7 @@ BEGIN
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
         -- if it is a group work try to insert a group_config
-        IF (valid_assessment.data->>'group_work')::boolean THEN
+        IF (valid_assessment.data->>'team_work')::boolean THEN
             INSERT INTO team_configs (
                 course_instance_id,
                 assessment_id,
