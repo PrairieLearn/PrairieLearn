@@ -5,6 +5,6 @@ SET
 FROM
   groups AS g
 WHERE
-  gu.team_id = g.id
-  AND gu.team_id >= $min
-  AND gu.team_id <= $max;
+  gu.group_id = g.id
+  AND gu.group_id >= $min
+  AND gu.group_id <= $max;
