@@ -88,7 +88,7 @@ WITH
   ),
   scores AS (
     SELECT
-      u.id,
+      u.id AS user_id,
       u.uid AS user_uid,
       u.uin AS user_uin,
       u.name AS user_name,

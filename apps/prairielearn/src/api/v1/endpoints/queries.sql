@@ -52,7 +52,7 @@ WITH
       (aset.abbreviation || a.number) AS assessment_label,
       aset.abbreviation AS assessment_set_abbreviation,
       a.number AS assessment_number,
-      u.id,
+      u.id AS user_id,
       u.uid AS user_uid,
       u.uin AS user_uin,
       u.name AS user_name,
@@ -276,7 +276,7 @@ WITH
   object_data AS (
     SELECT
       s.id AS submission_id,
-      u.id,
+      u.id AS user_id,
       u.uid AS user_uid,
       u.uin AS user_uin,
       u.name AS user_name,

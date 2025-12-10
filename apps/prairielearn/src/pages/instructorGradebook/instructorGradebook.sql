@@ -38,10 +38,11 @@ WITH
   course_scores AS (
     -- For each user, select the instance with the highest score for each assessment
     SELECT DISTINCT
-      ON (cai.user_id, cai.assessment_id) cai.user_id,
+      ON (cai.user_id, cai.assessment_id)
+      cai.id AS assessment_instance_id,
+      cai.user_id,
       cai.assessment_id,
       cai.score_perc,
-      cai.id AS assessment_instance_id,
       cai.group_id
     FROM
       course_assessment_instances AS cai
@@ -108,7 +109,7 @@ WITH
   user_scores AS (
     -- Aggregate scores for each user
     SELECT
-      u.id,
+      u.id AS user_id,
       JSONB_OBJECT_AGG(
         s.assessment_id,
         json_build_object(
@@ -145,7 +146,7 @@ WITH
       u.id
   )
 SELECT
-  u.id,
+  u.id AS user_id,
   u.uid,
   u.uin,
   u.user_name,

@@ -147,9 +147,10 @@ ORDER BY
 WITH
   final_assessment_instances AS (
     SELECT DISTINCT
-      ON (g.id, u.id) u.id,
+      ON (g.id, u.id)
+      ai.id,
+      u.id AS user_id,
       g.id AS group_id,
-      ai.id AS assessment_instance_id,
       assessment_id,
       g.name AS group_name,
       groups_uid_list (g.id) AS uid_list
@@ -329,7 +330,7 @@ WITH
       JOIN questions AS q ON (q.id = aq.question_id)
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
-      LEFT JOIN users AS su ON (su.user_id = s.auth_user_id)
+      LEFT JOIN users AS su ON (su.id = s.auth_user_id)
       LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
       LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
       LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)
