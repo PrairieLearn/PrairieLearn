@@ -12,6 +12,7 @@ import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
 
 import { EmptyStateCards } from './components/EmptyStateCards.js';
 import { StudentCoursesCard } from './components/StudentCoursesCard.js';
+import { computeStatus } from '../../lib/publishing.js';
 
 export const InstructorHomePageCourseSchema = z.object({
   id: RawStudentCourseSchema.shape.id,
@@ -64,8 +65,16 @@ export function Home({
 }) {
   const listedStudentCourses = studentCourses.filter((ci) => {
     if (ci.enrollment.status === 'joined') return true;
-    if (ci.enrollment.status === 'invited' && computeStatus(ci.course_instance) === 'published') {
-      return true;
+    if (ci.enrollment.status === 'invited') {
+      if (!ci.course_instance.modern_publishing) {
+        return false;
+      }
+      return (
+        computeStatus(
+          ci.course_instance.publishing_start_date,
+          ci.course_instance.publishing_end_date,
+        ) === 'published'
+      );
     }
     return false;
   });

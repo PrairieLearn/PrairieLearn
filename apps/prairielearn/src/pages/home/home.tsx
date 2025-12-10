@@ -29,6 +29,7 @@ import {
   StudentHomePageCourseSchema,
   StudentHomePageCourseWithExtensionSchema,
 } from './home.html.js';
+import { computeStatus } from '../../lib/publishing.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -199,7 +200,11 @@ router.post(
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    if (computeStatus(courseInstance) !== 'published') {
+    if (
+      courseInstance.modern_publishing &&
+      computeStatus(courseInstance.publishing_start_date, courseInstance.publishing_end_date) !==
+        'published'
+    ) {
       flash('error', 'This course instance is not accessible to students');
       return;
     }

@@ -5,6 +5,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import type { InviteResult } from '../instructorStudents.shared.js';
+import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import { computeStatus } from '../../../lib/publishing.js';
 
 interface InviteStudentForm {
   uids: string;
@@ -12,12 +14,12 @@ interface InviteStudentForm {
 
 export function InviteStudentsModal({
   show,
-  isUnpublished,
+  courseInstance,
   onHide,
   onSubmit,
 }: {
   show: boolean;
-  isUnpublished: boolean;
+  courseInstance: StaffCourseInstance;
   onHide: () => void;
   onSubmit: (uids: string[]) => Promise<InviteResult>;
 }) {
@@ -89,12 +91,16 @@ export function InviteStudentsModal({
 
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
-          {isUnpublished && (
-            <Alert variant="warning">
-              Students will not be able to accept the invitation until the course instance is
-              published.
-            </Alert>
-          )}
+          {courseInstance.modern_publishing &&
+            computeStatus(
+              courseInstance.publishing_start_date,
+              courseInstance.publishing_end_date,
+            ) === 'unpublished' && (
+              <Alert variant="warning">
+                Students will not be able to accept the invitation until the course instance is
+                published.
+              </Alert>
+            )}
           {saveMutation.isError && (
             <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
               {saveMutation.error instanceof Error
