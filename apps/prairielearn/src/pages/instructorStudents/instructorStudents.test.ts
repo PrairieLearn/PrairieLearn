@@ -126,7 +126,7 @@ describe('Instructor Students - Invite by UID', () => {
     assert.equal(data.counts.alreadyInvited, 0);
   });
 
-  test.sequential('should successfully invite a blocked user', async () => {
+  test.sequential('should return error when trying to invite a blocked user', async () => {
     const blockedStudent = await callRow(
       'users_select_or_insert',
       [
@@ -166,10 +166,10 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.counts.success, 1);
+    assert.equal(data.counts.success, 0);
     assert.equal(data.counts.instructor, 0);
     assert.equal(data.counts.alreadyEnrolled, 0);
-    assert.equal(data.counts.alreadyBlocked, 0);
+    assert.equal(data.counts.alreadyBlocked, 1);
     assert.equal(data.counts.alreadyInvited, 0);
   });
 
