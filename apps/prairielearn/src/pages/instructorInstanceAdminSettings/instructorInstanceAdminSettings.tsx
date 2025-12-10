@@ -14,12 +14,10 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import type { Course } from '../../lib/db-types.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
@@ -51,7 +49,6 @@ router.get(
       course_instance: courseInstance,
       course,
       institution,
-      has_enhanced_navigation,
       authz_data,
       urlPrefix,
       navPage,
@@ -123,21 +120,11 @@ router.get(
         },
         content: (
           <>
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={{
-                has_course_instance_permission_edit:
-                  authz_data.has_course_instance_permission_edit ?? false,
-              }}
-              courseInstance={courseInstance}
-              course={course}
-              urlPrefix={urlPrefix}
-            />
             <Hydrate>
               <InstructorInstanceAdminSettings
                 csrfToken={__csrf_token}
                 urlPrefix={urlPrefix}
                 navPage={navPage}
-                hasEnhancedNavigation={has_enhanced_navigation}
                 canEdit={canEdit}
                 course={course}
                 courseInstance={courseInstance}
@@ -268,7 +255,7 @@ router.post(
 
       const copiedInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
-        course: course as unknown as Course, // TODO: We need to write up proper model functions for Courses.
+        course,
       });
 
       res.status(200).json({ course_instance_id: copiedInstance.id });
