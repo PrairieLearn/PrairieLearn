@@ -397,7 +397,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user1.user_id,
+        subjectUserId: user1.id,
         courseInstanceId: '1',
         newRow: user1,
         context: { test: 'user1' },
@@ -409,20 +409,20 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user2.user_id,
+        subjectUserId: user2.id,
         courseInstanceId: '1',
         context: user2,
         newRow: await selectUserById('1'),
       });
 
       const result = await selectAuditEvents({
-        subject_user_id: user1.user_id,
+        subject_user_id: user1.id,
         table_names: ['users'],
         course_instance_id: '1',
       });
 
       assert.equal(result.length, 1);
-      assert.equal(result[0].subject_user_id, user1.user_id);
+      assert.equal(result[0].subject_user_id, user1.id);
     });
 
     it('orders results by date DESC', async () => {

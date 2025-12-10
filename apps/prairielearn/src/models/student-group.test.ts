@@ -379,7 +379,7 @@ describe('Student Group Model', () => {
          VALUES ($user_id, $course_instance_id, 'joined', $first_joined_at)
          RETURNING *`,
         {
-          user_id: user1.user_id,
+          user_id: user1.id,
           course_instance_id: '1',
           first_joined_at: new Date(),
         },
@@ -391,7 +391,7 @@ describe('Student Group Model', () => {
          VALUES ($user_id, $course_instance_id, 'joined', $first_joined_at)
          RETURNING *`,
         {
-          user_id: user2.user_id,
+          user_id: user2.id,
           course_instance_id: '1',
           first_joined_at: new Date(),
         },

@@ -331,14 +331,14 @@ describe('DB validation of enrollment', () => {
     const validStates = [
       // created_at is null (old enrollments), constraint doesn't apply
       {
-        user_id: user1.user_id,
+        user_id: user1.id,
         status: 'joined',
         created_at: null,
         first_joined_at: null,
         pending_uid: null,
       },
       {
-        user_id: user2.user_id,
+        user_id: user2.id,
         status: 'removed',
         created_at: null,
         first_joined_at: null,
@@ -376,7 +376,7 @@ describe('DB validation of enrollment', () => {
       },
       // status is 'joined', first_joined_at must not be null
       {
-        user_id: user3.user_id,
+        user_id: user3.id,
         status: 'joined',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
@@ -384,7 +384,7 @@ describe('DB validation of enrollment', () => {
       },
       // status is 'removed', first_joined_at must not be null
       {
-        user_id: user4.user_id,
+        user_id: user4.id,
         status: 'removed',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
@@ -392,7 +392,7 @@ describe('DB validation of enrollment', () => {
       },
       // status is 'blocked', first_joined_at must not be null
       {
-        user_id: user5.user_id,
+        user_id: user5.id,
         status: 'blocked',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
