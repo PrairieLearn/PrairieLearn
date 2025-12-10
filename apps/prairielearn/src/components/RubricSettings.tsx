@@ -587,7 +587,7 @@ export function RubricSettings({
                   class="form-control"
                   type="number"
                   value={minPoints}
-                  onInput={(e: any) => setMinPoints(Number(e.target.value))}
+                  onInput={(e) => setMinPoints(Number(e.currentTarget.value))}
                 />
               </label>
             </div>
@@ -607,7 +607,7 @@ export function RubricSettings({
                   class="form-control"
                   type="number"
                   value={maxExtraPoints}
-                  onInput={(e: any) => setMaxExtraPoints(Number(e.target.value))}
+                  onInput={(e) => setMaxExtraPoints(Number(e.currentTarget.value))}
                 />
               </label>
             </div>
@@ -918,7 +918,7 @@ export function RubricRow({
           value={item.points}
           aria-label="Points"
           required
-          onInput={(e: any) => updateRubricItem({ points: e.target.value })}
+          onInput={(e) => updateRubricItem({ points: e.currentTarget.value })}
         />
       </td>
 
@@ -931,7 +931,7 @@ export function RubricRow({
           value={item.description}
           aria-label="Description"
           required
-          onInput={(e: any) => updateRubricItem({ description: e.target.value })}
+          onInput={(e) => updateRubricItem({ description: e.currentTarget.value })}
         />
       </td>
 
@@ -949,7 +949,7 @@ export function RubricRow({
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Explanation"
-          onInput={(e: any) => updateRubricItem({ explanation: e.target.value })}
+          onInput={(e) => updateRubricItem({ explanation: e.currentTarget.value })}
         />
       </td>
 
@@ -960,7 +960,7 @@ export function RubricRow({
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Grader note"
-          onInput={(e: any) => updateRubricItem({ grader_note: e.target.value })}
+          onInput={(e) => updateRubricItem({ grader_note: e.currentTarget.value })}
         />
       </td>
 

@@ -586,8 +586,7 @@ export function TanstackTableCard<RowDataModel>({
             value={inputValue}
             autoComplete="off"
             onInput={(e) => {
-              if (!(e.target instanceof HTMLInputElement)) return;
-              const value = e.target.value;
+              const value = e.currentTarget.value;
               setInputValue(value);
               debouncedSetFilter(value);
             }}
