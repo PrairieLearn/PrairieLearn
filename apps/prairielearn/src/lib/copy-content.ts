@@ -5,7 +5,6 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../models/course.js';

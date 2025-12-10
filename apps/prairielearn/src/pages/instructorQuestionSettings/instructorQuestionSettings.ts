@@ -11,7 +11,6 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import { generateSignedToken } from '@prairielearn/signed-token';
 import {
   ArrayFromStringOrArraySchema,
   BooleanFromCheckboxSchema,
@@ -19,7 +18,6 @@ import {
 } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import {
