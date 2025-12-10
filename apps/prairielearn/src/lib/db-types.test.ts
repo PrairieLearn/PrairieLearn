@@ -10,9 +10,6 @@ import * as DbSchemas from './db-types.js';
 import { TableNames } from './db-types.js';
 
 const schemaNameOverrides: Record<string, string | null> = {
-  // https://github.com/PrairieLearn/PrairieLearn/issues/12428
-  courses: null,
-  pl_courses: 'CourseSchema',
   last_accesses: 'LastAccessSchema',
   query_runs: 'QueryRunSchema',
   time_series: 'TimeSeriesSchema',

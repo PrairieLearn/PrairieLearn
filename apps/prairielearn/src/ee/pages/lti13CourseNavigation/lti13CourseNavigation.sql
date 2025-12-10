@@ -14,7 +14,7 @@ SELECT
 FROM
   lti13_instances
   JOIN institutions AS i ON i.id = lti13_instances.institution_id
-  JOIN pl_courses AS plc ON plc.institution_id = i.id
+  JOIN courses AS plc ON plc.institution_id = i.id
   JOIN course_instances AS ci ON plc.id = ci.course_id
 WHERE
   ci.id = $course_instance_id

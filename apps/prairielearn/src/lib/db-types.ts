@@ -558,7 +558,6 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
-// pl_courses table
 export const CourseSchema = z.object({
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
@@ -1623,7 +1622,7 @@ export const TableNames = [
   'news_item_notifications',
   'news_items',
   'page_view_logs',
-  'pl_courses',
+  'courses',
   'plan_grants',
   'query_runs',
   'question_authors',

@@ -51,7 +51,7 @@ SELECT
     FALSE
   ) AS has_course_instance_permission_edit
 FROM
-  pl_courses AS c
+  courses AS c
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN institution_administrators AS ia ON (
     ia.institution_id = i.id

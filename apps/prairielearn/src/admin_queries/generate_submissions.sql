@@ -20,7 +20,7 @@ FROM
   JOIN instance_questions AS iq ON ai.id = iq.assessment_instance_id
   JOIN assessment_questions AS aq ON iq.assessment_question_id = aq.id
   JOIN questions AS q ON aq.question_id = q.id
-  JOIN pl_courses AS c ON q.course_id = c.id
+  JOIN courses AS c ON q.course_id = c.id
   LEFT JOIN random_user_per_group AS rug ON rug.group_id = ai.group_id
   JOIN users AS u ON u.user_id = COALESCE(ai.user_id, rug.user_id)
 WHERE

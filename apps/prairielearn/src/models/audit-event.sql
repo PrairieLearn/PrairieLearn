@@ -157,7 +157,7 @@ WITH
       id,
       institution_id
     FROM
-      pl_courses
+      courses
     WHERE
       id = coalesce(
         $course_id,
