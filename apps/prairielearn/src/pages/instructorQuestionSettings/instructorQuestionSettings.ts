@@ -38,6 +38,7 @@ import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
@@ -444,10 +445,10 @@ router.get(
 
     // Generate a CSRF token for the test route. We can't use `res.locals.__csrf_token`
     // here because this form will actually post to a different route, not `req.originalUrl`.
-    const questionTestCsrfToken = generateSignedToken(
-      { url: questionTestPath, authn_user_id: res.locals.authn_user.user_id },
-      config.secretKey,
-    );
+    const questionTestCsrfToken = generateCsrfToken({
+      url: questionTestPath,
+      authnUserId: res.locals.authn_user.user_id,
+    });
 
     const questionGHLink = courseRepoContentUrl(
       res.locals.course,
