@@ -597,7 +597,7 @@ export async function aiGrade({
 
         try {
           return await gradeInstanceQuestion(instance_question, logger);
-        } catch (err) {
+        } catch (err: any) {
           logger.error(err);
           return false;
         } finally {

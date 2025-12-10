@@ -36,7 +36,7 @@ router.get(
 
     // Look up the course instance by enrollment code
     const courseInstanceId = await selectOptionalCourseInstanceIdByEnrollmentCode({
-      enrollment_code: code,
+      enrollmentCode: code,
     });
     if (!courseInstanceId) {
       // User-facing terminology is to use "course" instead of "course instance"
@@ -75,8 +75,11 @@ router.get(
     if (existingEnrollment) {
       if (!['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status)) {
         throw new HttpStatusError(403, 'You are blocked from accessing this course');
-      } else {
-        // If the user had some other prior enrollment state, return the course instance ID.
+      }
+
+      // If the user was invited, joined, or removed, then they have access so we can return the course instance ID.
+      // This means that rejected users will fall through to the self-enrollment checks.
+      if (['invited', 'joined', 'removed'].includes(existingEnrollment.status)) {
         res.json({
           course_instance_id: courseInstance.id,
         });

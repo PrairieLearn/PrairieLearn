@@ -8,7 +8,6 @@ import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import {
   AI_GRADING_MODEL_IDS,
   type AiGradingModelId,
@@ -57,7 +56,9 @@ router.get(
   typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     const courseStaff = z.array(StaffUserSchema).parse(
       await selectCourseInstanceGraderStaff({
-        course_instance: res.locals.course_instance,
+        courseInstance: res.locals.course_instance,
+        authzData: res.locals.authz_data,
+        requiredRole: ['Student Data Viewer'],
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
@@ -123,13 +124,6 @@ router.get(
         },
         content: (
           <>
-            <AssessmentSyncErrorsAndWarnings
-              authzData={authz_data}
-              assessment={assessment}
-              courseInstance={course_instance}
-              course={course}
-              urlPrefix={urlPrefix}
-            />
             <AssessmentOpenInstancesAlert
               numOpenInstances={num_open_instances}
               assessmentId={assessment.id}
@@ -346,7 +340,9 @@ router.post(
           : [req.body.instance_question_id];
         if (action_data?.assigned_grader != null) {
           const courseStaff = await selectCourseInstanceGraderStaff({
-            course_instance: res.locals.course_instance,
+            courseInstance: res.locals.course_instance,
+            authzData: res.locals.authz_data,
+            requiredRole: ['Student Data Editor'],
           });
           if (!courseStaff.some((staff) => idsEqual(staff.user_id, action_data.assigned_grader))) {
             throw new error.HttpStatusError(
