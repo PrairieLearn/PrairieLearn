@@ -918,7 +918,7 @@ export function RubricRow({
           value={item.points}
           aria-label="Points"
           required
-          onInput={(e) => updateRubricItem({ points: e.currentTarget.value })}
+          onInput={(e) => updateRubricItem({ points: Number(e.currentTarget.value) })}
         />
       </td>
 
