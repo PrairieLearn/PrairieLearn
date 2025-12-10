@@ -12,9 +12,10 @@ import {
 } from '../instructorInstanceAdminPublishing.types.js';
 import { dateToPlainDateTime } from '../utils/dateUtils.js';
 
-import { ExtensionDeleteModal, type ExtensionDeleteModalState } from './ExtensionDeleteModal.js';
+import { ExtensionDeleteModal, type ExtensionDeleteModalData } from './ExtensionDeleteModal.js';
 import { ExtensionModifyModal, type ExtensionModifyModalState } from './ExtensionModifyModal.js';
 import { ExtensionTableRow } from './ExtensionTableRow.js';
+import { useModalState } from '@prairielearn/ui';
 
 export function PublishingExtensions({
   courseInstance,
@@ -53,7 +54,7 @@ export function PublishingExtensions({
   const [modifyModalState, setModifyModalState] = useState<ExtensionModifyModalState>(null);
 
   // State for deleting extensions
-  const [deleteModalState, setDeleteModalState] = useState<ExtensionDeleteModalState>(null);
+  const deleteModalState = useModalState<ExtensionDeleteModalData>(null);
 
   const currentInstanceEndDate = courseInstance.publishing_end_date
     ? formatDateFriendly(courseInstance.publishing_end_date, courseInstance.display_timezone)
@@ -146,7 +147,7 @@ export function PublishingExtensions({
                     })
                   }
                   onDelete={() =>
-                    setDeleteModalState({
+                    deleteModalState.open({
                       extensionId: extension.course_instance_publishing_extension.id,
                       extensionName: extension.course_instance_publishing_extension.name,
                       userData: extension.user_data,
@@ -173,12 +174,10 @@ export function PublishingExtensions({
       />
 
       <ExtensionDeleteModal
-        modalState={deleteModalState}
+        {...deleteModalState}
         csrfToken={csrfToken}
-        onHide={() => setDeleteModalState(null)}
         onSuccess={async () => {
           await queryClient.invalidateQueries({ queryKey: ['extensions'] });
-          setDeleteModalState(null);
         }}
       />
     </>
