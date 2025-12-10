@@ -741,7 +741,7 @@ describe('Assessment syncing', () => {
       groupAssessment;
     await util.writeAndSyncCourseData(courseData);
 
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.equal(syncedRoles.length, 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -795,7 +795,7 @@ describe('Assessment syncing', () => {
     assert.isDefined(secondAssessmentQuestion);
 
     // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -893,7 +893,7 @@ describe('Assessment syncing', () => {
     assert.isDefined(secondAssessmentQuestion);
 
     // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -991,7 +991,7 @@ describe('Assessment syncing', () => {
     assert.isDefined(secondAssessmentQuestion);
 
     // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -1079,7 +1079,7 @@ describe('Assessment syncing', () => {
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.equal(syncedRoles.length, 2);
     const foundRecorder = syncedRoles.find((role) => role.role_name === 'Recorder');
     const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
@@ -1116,7 +1116,7 @@ describe('Assessment syncing', () => {
     ];
 
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const newSyncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const newSyncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.equal(newSyncedRoles.length, 1);
     assert.notEqual(
       newSyncedRoles.find((role) => role.role_name === 'Recorder'),
@@ -1351,7 +1351,7 @@ describe('Assessment syncing', () => {
       groupAssessment;
 
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
 
     // Ensure both roles are present
     assert.equal(syncedRoles.length, 2);
@@ -1380,7 +1380,7 @@ describe('Assessment syncing', () => {
 
     // Overwrite and ensure that both roles are still present
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const newSyncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const newSyncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.equal(newSyncedRoles.length, 2);
 
     const syncedData = await getSyncedAssessmentData('groupAssessment');
