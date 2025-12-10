@@ -2,12 +2,7 @@
 WITH
   setup_user AS (
     INSERT INTO
-      users (
-        id,
-        uid,
-        lti_course_instance_id,
-        institution_id
-      )
+      users (id, uid, lti_course_instance_id, institution_id)
     VALUES
       (100, 'normaluser@host.com', NULL, 1),
       (101, 'ltiuserci1@host.com', 1, 2),

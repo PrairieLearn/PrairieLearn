@@ -38,8 +38,7 @@ WITH
   course_scores AS (
     -- For each user, select the instance with the highest score for each assessment
     SELECT DISTINCT
-      ON (cai.user_id, cai.assessment_id)
-      cai.id AS assessment_instance_id,
+      ON (cai.user_id, cai.assessment_id) cai.id AS assessment_instance_id,
       cai.user_id,
       cai.assessment_id,
       cai.score_perc,

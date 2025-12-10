@@ -147,8 +147,7 @@ ORDER BY
 WITH
   final_assessment_instances AS (
     SELECT DISTINCT
-      ON (g.id, u.id)
-      ai.id,
+      ON (g.id, u.id) ai.id,
       u.id AS user_id,
       g.id AS group_id,
       assessment_id,
