@@ -19,28 +19,14 @@ WITH
       ) AS num_instance_questions_unassigned,
       COUNT(*) AS num_instance_questions,
       JSONB_AGG(
-        DISTINCT jsonb_build_object(
-          'id',
-          agu.id,
-          'name',
-          agu.name,
-          'uid',
-          agu.uid
-        )
+        DISTINCT jsonb_build_object('id', agu.id, 'name', agu.name, 'uid', agu.uid)
       ) FILTER (
         WHERE
           iq.requires_manual_grading
           AND iq.assigned_grader IS NOT NULL
       ) AS assigned_graders,
       JSONB_AGG(
-        DISTINCT jsonb_build_object(
-          'id',
-          lgu.id,
-          'name',
-          lgu.name,
-          'uid',
-          lgu.uid
-        )
+        DISTINCT jsonb_build_object('id', lgu.id, 'name', lgu.name, 'uid', lgu.uid)
       ) FILTER (
         WHERE
           iq.last_grader IS NOT NULL

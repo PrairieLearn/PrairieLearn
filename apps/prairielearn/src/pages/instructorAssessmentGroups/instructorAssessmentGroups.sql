@@ -23,9 +23,7 @@ WITH
     SELECT
       g.id AS group_id,
       COUNT(u.uid)::integer AS size,
-      jsonb_agg(
-        jsonb_build_object('uid', u.uid, 'id', u.id)
-      ) AS users
+      jsonb_agg(jsonb_build_object('uid', u.uid, 'id', u.id)) AS users
     FROM
       assessment_groups AS g
       JOIN group_users AS gu ON (gu.group_id = g.id)
