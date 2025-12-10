@@ -14,7 +14,7 @@ FROM
   LEFT JOIN institutions AS i ON (i.id = fg.institution_id)
   LEFT JOIN pl_courses AS c ON (c.id = fg.course_id)
   LEFT JOIN course_instances AS ci ON (ci.id = fg.course_instance_id)
-  LEFT JOIN users AS u ON (u.user_id = fg.user_id)
+  LEFT JOIN users AS u ON (u.id = fg.user_id)
 WHERE
   fg.name = $name
 ORDER BY

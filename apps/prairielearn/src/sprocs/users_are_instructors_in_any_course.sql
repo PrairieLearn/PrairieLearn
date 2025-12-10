@@ -10,7 +10,7 @@ BEGIN
     -- the user is on the course staff of any course
     RETURN QUERY
         SELECT
-            u.user_id,
+            u.id,
             bool_or(
                 adm.id IS NOT NULL
                 OR (

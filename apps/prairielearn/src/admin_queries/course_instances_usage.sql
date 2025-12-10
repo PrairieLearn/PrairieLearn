@@ -61,7 +61,7 @@ WITH
     FROM
       active_course_instance_usages AS ciu
       JOIN institutions AS i ON (i.id = ciu.institution_id)
-      JOIN users AS u ON (u.user_id = ciu.user_id)
+      JOIN users AS u ON (u.id = ciu.user_id)
     WHERE
       ciu.include_in_statistics
     GROUP BY
@@ -96,7 +96,7 @@ WITH
     FROM
       term_course_instance_usages AS ciu
       JOIN institutions AS i ON (i.id = ciu.institution_id)
-      JOIN users AS u ON (u.user_id = ciu.user_id)
+      JOIN users AS u ON (u.id = ciu.user_id)
     WHERE
       ciu.include_in_statistics
     GROUP BY
@@ -115,7 +115,7 @@ WITH
     FROM
       total_course_instance_usages AS ciu
       JOIN institutions AS i ON (i.id = ciu.institution_id)
-      JOIN users AS u ON (u.user_id = ciu.user_id)
+      JOIN users AS u ON (u.id = ciu.user_id)
     WHERE
       ciu.include_in_statistics
     GROUP BY

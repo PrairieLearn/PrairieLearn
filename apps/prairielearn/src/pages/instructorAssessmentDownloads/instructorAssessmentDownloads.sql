@@ -12,11 +12,11 @@ WITH
           ELSE ai.id
         END
       ) (aset.name || ' ' || a.number) AS assessment_label,
-      u.user_id,
+      u.id,
       u.uid,
       u.uin,
       u.name,
-      users_get_displayed_role (u.user_id, ci.id) AS role,
+      users_get_displayed_role (u.id, ci.id) AS role,
       substring(
         u.uid
         FROM
@@ -91,7 +91,7 @@ SELECT
   u.uid,
   u.uin,
   u.name,
-  users_get_displayed_role (u.user_id, ci.id) AS role,
+  users_get_displayed_role (u.id, ci.id) AS role,
   (aset.name || ' ' || a.number) AS assessment_label,
   ai.number AS assessment_instance_number,
   z.number AS zone_number,
@@ -127,7 +127,7 @@ FROM
     g.id = ai.group_id
     AND g.group_config_id = gc.id
   )
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
   LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
   LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
   JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
@@ -147,7 +147,7 @@ ORDER BY
 WITH
   final_assessment_instances AS (
     SELECT DISTINCT
-      ON (g.id, u.user_id) u.user_id,
+      ON (g.id, u.user_id) u.id,
       g.id AS group_id,
       ai.id,
       assessment_id,
@@ -156,7 +156,7 @@ WITH
     FROM
       assessment_instances AS ai
       LEFT JOIN groups AS g ON (g.id = ai.group_id)
-      LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+      LEFT JOIN users AS u ON (u.id = ai.user_id)
     WHERE
       ai.assessment_id = $assessment_id
     ORDER BY
@@ -193,7 +193,7 @@ WITH
       JOIN variants AS v ON (v.id = s.variant_id)
       JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
       JOIN final_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-      LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+      LEFT JOIN users AS u ON (u.id = ai.user_id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN questions AS q ON (q.id = aq.question_id)
       JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
@@ -220,7 +220,7 @@ WITH
       u.uid,
       u.uin,
       u.name,
-      users_get_displayed_role (u.user_id, ci.id) AS role,
+      users_get_displayed_role (u.id, ci.id) AS role,
       (aset.name || ' ' || a.number) AS assessment_label,
       ai.number AS assessment_instance_number,
       z.number AS zone_number,
@@ -323,7 +323,7 @@ WITH
         g.id = ai.group_id
         AND g.group_config_id = gc.id
       )
-      LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+      LEFT JOIN users AS u ON (u.id = ai.user_id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN questions AS q ON (q.id = aq.question_id)

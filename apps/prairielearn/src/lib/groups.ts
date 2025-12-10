@@ -562,7 +562,7 @@ export function getGroupRoleReassignmentsAfterLeave(
       (m) =>
         !idsEqual(m.user_id, leavingUserId) &&
         !groupRoleAssignmentUpdates.some(
-          (u) => idsEqual(u.group_role_id, roleId) && idsEqual(u.user_id, m.user_id),
+          (u) => idsEqual(u.group_role_id, roleId) && idsEqual(u.id, m.user_id),
         ),
     )?.user_id;
     if (assigneeUserId !== undefined) {

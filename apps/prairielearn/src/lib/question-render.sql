@@ -36,7 +36,7 @@ FROM
   issues AS i
   LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
   JOIN pl_courses AS c ON (c.id = i.course_id)
-  LEFT JOIN users AS u ON (u.user_id = i.user_id)
+  LEFT JOIN users AS u ON (u.id = i.user_id)
 WHERE
   i.variant_id = $variant_id
   AND i.course_caused

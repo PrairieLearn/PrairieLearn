@@ -68,7 +68,7 @@ FROM
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
   JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
   LEFT JOIN groups AS g ON (g.id = ai.group_id)
   LEFT JOIN groups_uid_list (g.id) AS gul ON TRUE
   LEFT JOIN enrollments AS e ON (

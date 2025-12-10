@@ -21,7 +21,7 @@ WITH
       JSONB_AGG(
         DISTINCT jsonb_build_object(
           'user_id',
-          agu.user_id,
+          agu.id,
           'name',
           agu.name,
           'uid',
@@ -35,7 +35,7 @@ WITH
       JSONB_AGG(
         DISTINCT jsonb_build_object(
           'user_id',
-          lgu.user_id,
+          lgu.id,
           'name',
           lgu.name,
           'uid',

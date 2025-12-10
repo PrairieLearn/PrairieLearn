@@ -11,7 +11,7 @@ WITH
           'finish_date',
           js.finish_date,
           'authn_user_id',
-          u.user_id,
+          u.id,
           'authn_user_name',
           u.name,
           'status',

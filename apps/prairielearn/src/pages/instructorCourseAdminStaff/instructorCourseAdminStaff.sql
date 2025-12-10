@@ -39,7 +39,7 @@ SELECT
   ) AS other_course_instances
 FROM
   course_permissions AS cp
-  JOIN users AS u ON (u.user_id = cp.user_id)
+  JOIN users AS u ON (u.id = cp.user_id)
   FULL JOIN course_instances AS ci ON (
     ci.course_id = $course_id
     AND ci.deleted_at IS NULL
@@ -63,7 +63,7 @@ GROUP BY
   u.*,
   u.uid,
   u.name,
-  u.user_id,
+  u.id,
   cp.*
 ORDER BY
   u.uid,

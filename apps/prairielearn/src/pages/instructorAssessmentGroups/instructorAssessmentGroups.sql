@@ -29,7 +29,7 @@ WITH
     FROM
       assessment_groups AS g
       JOIN group_users AS gu ON (gu.group_id = g.id)
-      JOIN users AS u ON (u.user_id = gu.user_id)
+      JOIN users AS u ON (u.id = gu.user_id)
     GROUP BY
       g.id
   )

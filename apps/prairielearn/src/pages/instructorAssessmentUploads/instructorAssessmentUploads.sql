@@ -6,7 +6,7 @@ SELECT
 FROM
   job_sequences AS js
   JOIN pl_courses AS c ON (c.id = js.course_id)
-  JOIN users AS u ON (u.user_id = js.user_id)
+  JOIN users AS u ON (u.id = js.user_id)
 WHERE
   js.assessment_id = $assessment_id
   AND js.type IN (

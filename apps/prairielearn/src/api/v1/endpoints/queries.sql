@@ -52,11 +52,11 @@ WITH
       (aset.abbreviation || a.number) AS assessment_label,
       aset.abbreviation AS assessment_set_abbreviation,
       a.number AS assessment_number,
-      u.user_id,
+      u.id,
       u.uid AS user_uid,
       u.uin AS user_uin,
       u.name AS user_name,
-      users_get_displayed_role (u.user_id, ci.id) AS user_role,
+      users_get_displayed_role (u.id, ci.id) AS user_role,
       ai.max_points,
       ai.max_bonus_points,
       ai.points,
@@ -96,7 +96,7 @@ WITH
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
       LEFT JOIN group_info (a.id) AS gi ON (gi.id = ai.group_id)
-      LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+      LEFT JOIN users AS u ON (u.id = ai.user_id)
     WHERE
       ci.id = $course_instance_id
       AND (
@@ -276,11 +276,11 @@ WITH
   object_data AS (
     SELECT
       s.id AS submission_id,
-      u.user_id,
+      u.id,
       u.uid AS user_uid,
       u.uin AS user_uin,
       u.name AS user_name,
-      users_get_displayed_role (u.user_id, ci.id) AS user_role,
+      users_get_displayed_role (u.id, ci.id) AS user_role,
       gi.id AS group_id,
       gi.name AS group_name,
       gi.uid_list AS group_uids,
@@ -370,7 +370,7 @@ WITH
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
       LEFT JOIN group_info (a.id) AS gi ON (gi.id = ai.group_id)
-      LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+      LEFT JOIN users AS u ON (u.id = ai.user_id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN questions AS q ON (q.id = aq.question_id)

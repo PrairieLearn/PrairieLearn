@@ -178,7 +178,7 @@ function AssessmentQuestionRow({
     question.num_instance_questions_assigned + question.num_instance_questions_unassigned > 0;
   const currentUserName = resLocals.authz_data.user.name ?? resLocals.authz_data.user.uid;
   const otherAssignedGraders = (question.assigned_graders || [])
-    .filter((u) => !idsEqual(u.user_id, resLocals.authz_data.user.user_id))
+    .filter((u) => !idsEqual(u.id, resLocals.authz_data.user.user_id))
     .map((u) => u.name ?? u.uid);
   const gradingUrl = `${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading/assessment_question/${question.id}`;
 

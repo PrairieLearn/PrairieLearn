@@ -4,7 +4,7 @@ SELECT
   c.short_name || ', ' || ci.long_name AS short_label,
   ci.id AS course_instance_id,
   to_jsonb(e) AS enrollment,
-  users_is_instructor_in_course (u.user_id, c.id) AS instructor_access
+  users_is_instructor_in_course (u.id, c.id) AS instructor_access
 FROM
   users AS u
   CROSS JOIN (

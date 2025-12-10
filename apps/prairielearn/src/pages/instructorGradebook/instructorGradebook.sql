@@ -96,19 +96,19 @@ WITH
   course_users AS (
     -- Retrieve user data for each user
     SELECT
-      u.user_id,
+      u.id,
       u.uid,
       u.uin,
       u.name AS user_name,
-      users_get_displayed_role (u.user_id, $course_instance_id) AS role
+      users_get_displayed_role (u.id, $course_instance_id) AS role
     FROM
       user_ids
-      JOIN users AS u ON (u.user_id = user_ids.user_id)
+      JOIN users AS u ON (u.id = user_ids.user_id)
   ),
   user_scores AS (
     -- Aggregate scores for each user
     SELECT
-      u.user_id,
+      u.id,
       JSONB_OBJECT_AGG(
         s.assessment_id,
         json_build_object(
@@ -145,7 +145,7 @@ WITH
       u.user_id
   )
 SELECT
-  u.user_id,
+  u.id,
   u.uid,
   u.uin,
   u.user_name,

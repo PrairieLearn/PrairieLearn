@@ -77,18 +77,18 @@ WITH
   ),
   course_users AS (
     SELECT
-      u.user_id,
+      u.id,
       u.uid,
       u.uin,
       u.name,
-      users_get_displayed_role (u.user_id, $course_instance_id) AS role
+      users_get_displayed_role (u.id, $course_instance_id) AS role
     FROM
       user_ids
-      JOIN users AS u ON (u.user_id = user_ids.user_id)
+      JOIN users AS u ON (u.id = user_ids.user_id)
   ),
   scores AS (
     SELECT
-      u.user_id,
+      u.id,
       u.uid AS user_uid,
       u.uin AS user_uin,
       u.name AS user_name,

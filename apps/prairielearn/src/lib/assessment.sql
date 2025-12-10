@@ -405,7 +405,7 @@ FROM
     g.id = ai.group_id
     AND g.deleted_at IS NULL
   )
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id
   AND ai.open;
@@ -575,7 +575,7 @@ WITH
         AND g.deleted_at IS NULL
       )
       LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.user_id
         AND e.course_instance_id = a.course_instance_id
@@ -662,7 +662,7 @@ WITH
         AND g.deleted_at IS NULL
       )
       LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.user_id
         AND e.course_instance_id = a.course_instance_id
@@ -719,7 +719,7 @@ WITH
         AND g.deleted_at IS NULL
       )
       LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.user_id
         AND e.course_instance_id = a.course_instance_id
@@ -855,7 +855,7 @@ WITH
         NULL::jsonb AS data
       FROM
         assessment_instances AS ai
-        LEFT JOIN users AS u ON (u.user_id = ai.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = ai.auth_user_id)
       WHERE
         ai.id = $assessment_instance_id
     )
@@ -894,7 +894,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = v.authn_user_id)
+        LEFT JOIN users AS u ON (u.id = v.authn_user_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
     )
@@ -921,7 +921,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = v.broken_by)
+        LEFT JOIN users AS u ON (u.id = v.broken_by)
       WHERE
         v.broken_at IS NOT NULL
         AND iq.assessment_instance_id = $assessment_instance_id
@@ -971,7 +971,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = s.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = s.auth_user_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
     )
@@ -1000,7 +1000,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = s.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = s.auth_user_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND gj.grading_method = 'External'
@@ -1073,7 +1073,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = gj.auth_user_id)
         LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
@@ -1107,7 +1107,7 @@ WITH
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
         -- Show the user that actually deleted the grading job, if available.
-        LEFT JOIN users AS u ON (u.user_id = gj.deleted_by)
+        LEFT JOIN users AS u ON (u.id = gj.deleted_by)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND gj.grading_method IN ('AI')
@@ -1152,7 +1152,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = gj.auth_user_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND gj.grading_method = 'Internal'
@@ -1190,7 +1190,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = qsl.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = qsl.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = qsl.auth_user_id)
         LEFT JOIN grading_jobs AS gj ON (gj.id = qsl.grading_job_id)
         LEFT JOIN submissions AS s ON (s.id = gj.submission_id)
         LEFT JOIN variants AS v ON (v.id = s.variant_id)
@@ -1224,7 +1224,7 @@ WITH
         ) AS data
       FROM
         assessment_score_logs AS asl
-        LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = asl.auth_user_id)
       WHERE
         asl.assessment_instance_id = $assessment_instance_id
     )
@@ -1273,7 +1273,7 @@ WITH
         JOIN assessment_instances AS ai ON (ai.id = $assessment_instance_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-        LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = asl.auth_user_id)
       WHERE
         asl.assessment_instance_id = $assessment_instance_id
     )
@@ -1301,7 +1301,7 @@ WITH
       FROM
         assessment_state_logs AS asl
         JOIN assessment_instances AS ai ON (ai.id = $assessment_instance_id)
-        LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = asl.auth_user_id)
       WHERE
         asl.assessment_instance_id = $assessment_instance_id
         AND asl.open
@@ -1345,7 +1345,7 @@ WITH
         JOIN variants AS v ON (v.id = pvl.variant_id)
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN questions AS q ON (q.id = pvl.question_id)
-        JOIN users AS u ON (u.user_id = pvl.authn_user_id)
+        JOIN users AS u ON (u.id = pvl.authn_user_id)
         JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
       WHERE
         pvl.page_type = 'studentInstanceQuestion'
@@ -1370,7 +1370,7 @@ WITH
         NULL::jsonb AS data
       FROM
         user_page_view_logs AS pvl
-        JOIN users AS u ON (u.user_id = pvl.authn_user_id)
+        JOIN users AS u ON (u.id = pvl.authn_user_id)
         JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
       WHERE
         pvl.page_type = 'studentAssessmentInstance'
@@ -1398,7 +1398,7 @@ WITH
       FROM
         assessment_instances AS ai
         JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
-        JOIN users AS u ON (u.user_id = gl.authn_user_id)
+        JOIN users AS u ON (u.id = gl.authn_user_id)
         LEFT JOIN users AS gu ON (gu.user_id = gl.user_id)
       WHERE
         ai.id = $assessment_instance_id
