@@ -1,12 +1,12 @@
 columns
     after_complete_hide_questions: boolean
-    after_complete_hide_questions_hide_again_date: timestamp with time zone
-    after_complete_hide_questions_hide_again_date_overridden: boolean
-    after_complete_hide_questions_show_again_date: timestamp with time zone
-    after_complete_hide_questions_show_again_date_overridden: boolean
+    after_complete_hide_questions_again_date: timestamp with time zone
+    after_complete_hide_questions_again_date_overridden: boolean
     after_complete_hide_score: boolean
-    after_complete_hide_score_show_again_date: timestamp with time zone
-    after_complete_hide_score_show_again_date_overridden: boolean
+    after_complete_show_questions_again_date: timestamp with time zone
+    after_complete_show_questions_again_date_overridden: boolean
+    after_complete_show_score_again_date: timestamp with time zone
+    after_complete_show_score_again_date_overridden: boolean
     assessment_id: bigint not null
     block_access: boolean
     course_instance_id: bigint not null

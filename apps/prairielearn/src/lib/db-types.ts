@@ -1435,6 +1435,21 @@ export const StripeCheckoutSessionSchema = z.object({
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
 
+export const StudentGroupSchema = z.object({
+  course_instance_id: IdSchema,
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  name: z.string(),
+});
+export type StudentGroup = z.infer<typeof StudentGroupSchema>;
+
+export const StudentGroupEnrollmentSchema = z.object({
+  enrollment_id: IdSchema,
+  id: IdSchema,
+  student_group_id: IdSchema,
+});
+export type StudentGroupEnrollment = z.infer<typeof StudentGroupEnrollmentSchema>;
+
 export const SubmissionGradingContextEmbeddingSchema = z.object({
   assessment_question_id: IdSchema,
   created_at: DateFromISOString,
@@ -1733,6 +1748,8 @@ export const TableNames = [
   'sharing_set_questions',
   'sharing_sets',
   'stripe_checkout_sessions',
+  'student_groups',
+  'student_group_enrollments',
   'submission_grading_context_embeddings',
   'submissions',
   'tags',
