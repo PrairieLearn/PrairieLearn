@@ -79,6 +79,7 @@ describe('Instructor Students - Invite by UID', () => {
     assert.equal(data.counts.success, 1);
     assert.equal(data.counts.instructor, 0);
     assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyBlocked, 0);
     assert.equal(data.counts.alreadyInvited, 0);
   });
 
@@ -121,6 +122,7 @@ describe('Instructor Students - Invite by UID', () => {
     assert.equal(data.counts.success, 0);
     assert.equal(data.counts.instructor, 1);
     assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyBlocked, 0);
     assert.equal(data.counts.alreadyInvited, 0);
   });
 
@@ -167,6 +169,7 @@ describe('Instructor Students - Invite by UID', () => {
     assert.equal(data.counts.success, 1);
     assert.equal(data.counts.instructor, 0);
     assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyBlocked, 0);
     assert.equal(data.counts.alreadyInvited, 0);
   });
 
@@ -196,6 +199,7 @@ describe('Instructor Students - Invite by UID', () => {
     assert.equal(data.counts.success, 1);
     assert.equal(data.counts.instructor, 0);
     assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyBlocked, 0);
     assert.equal(data.counts.alreadyInvited, 0);
   });
 
@@ -231,6 +235,7 @@ describe('Instructor Students - Invite by UID', () => {
     assert.equal(data.counts.success, 2);
     assert.equal(data.counts.instructor, 0);
     assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyBlocked, 0);
     assert.equal(data.counts.alreadyInvited, 0);
   });
 });

@@ -119,6 +119,7 @@ router.post(
       success: 0,
       instructor: 0,
       alreadyEnrolled: 0,
+      alreadyBlocked: 0,
       alreadyInvited: 0,
     };
     await runInTransactionAsync(async () => {
@@ -151,6 +152,10 @@ router.post(
           }
           if (existingEnrollment.status === 'invited') {
             counts.alreadyInvited++;
+            return;
+          }
+          if (existingEnrollment.status === 'blocked') {
+            counts.alreadyBlocked++;
             return;
           }
         }

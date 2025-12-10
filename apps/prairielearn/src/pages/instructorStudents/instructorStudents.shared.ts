@@ -19,6 +19,7 @@ export const InviteResultSchema = z.object({
     success: z.number(),
     instructor: z.number(),
     alreadyEnrolled: z.number(),
+    alreadyBlocked: z.number(),
     alreadyInvited: z.number(),
   }),
 });

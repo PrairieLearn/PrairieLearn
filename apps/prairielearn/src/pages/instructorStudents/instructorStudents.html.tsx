@@ -415,11 +415,15 @@ function StudentsCard({
 
     // Group skipped by reason
     const enrolledSkipped = counts.alreadyEnrolled;
+    const blockedSkipped = counts.alreadyBlocked;
     const invitedSkipped = counts.alreadyInvited;
     const instructorSkipped = counts.instructor;
 
     if (enrolledSkipped > 0) {
       parts.push(`${enrolledSkipped} enrolled student${enrolledSkipped === 1 ? '' : 's'} skipped`);
+    }
+    if (blockedSkipped > 0) {
+      parts.push(`${blockedSkipped} blocked student${blockedSkipped === 1 ? '' : 's'} skipped`);
     }
     if (invitedSkipped > 0) {
       parts.push(`${invitedSkipped} invited student${invitedSkipped === 1 ? '' : 's'} skipped`);
