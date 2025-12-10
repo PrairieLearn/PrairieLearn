@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - 'master'
+      - "master"
 
 jobs:
   release:
@@ -12,6 +12,9 @@ jobs:
     permissions:
       # Needed for OIDC trusted publishing
       id-token: write
+      # Needed to be able to commit/push/PR the versioning PRs
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6
@@ -23,7 +26,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22.x
-          cache: 'yarn'
+          cache: "yarn"
 
       # We need to be running the latest version of `npm` to support OIDC trusted publishing
       - name: Upgrade npm
