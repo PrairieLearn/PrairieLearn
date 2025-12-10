@@ -54,7 +54,7 @@ import {
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
-const DEFAULT_SORT: SortingState = [];
+const DEFAULT_SORT: SortingState = [{ id: 'user_uid', desc: false }];
 
 const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
 
@@ -109,6 +109,7 @@ function CopyEnrollmentLinkButton({
     <DropdownButton
       as={ButtonGroup}
       title="Enrollment details"
+      size="sm"
       disabled={!courseInstance.self_enrollment_enabled}
       variant="light"
     >
@@ -476,6 +477,7 @@ function StudentsCard({
               <>
                 <Button
                   variant="light"
+                  size="sm"
                   disabled={!authzData.has_course_instance_permission_edit}
                   onClick={() => setShowInvite(true)}
                 >

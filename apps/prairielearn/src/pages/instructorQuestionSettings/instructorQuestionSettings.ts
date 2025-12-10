@@ -11,7 +11,6 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import { generateSignedToken } from '@prairielearn/signed-token';
 import {
   ArrayFromStringOrArraySchema,
   BooleanFromCheckboxSchema,
@@ -19,7 +18,6 @@ import {
 } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import {
@@ -38,6 +36,7 @@ import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
@@ -444,10 +443,10 @@ router.get(
 
     // Generate a CSRF token for the test route. We can't use `res.locals.__csrf_token`
     // here because this form will actually post to a different route, not `req.originalUrl`.
-    const questionTestCsrfToken = generateSignedToken(
-      { url: questionTestPath, authn_user_id: res.locals.authn_user.user_id },
-      config.secretKey,
-    );
+    const questionTestCsrfToken = generateCsrfToken({
+      url: questionTestPath,
+      authnUserId: res.locals.authn_user.user_id,
+    });
 
     const questionGHLink = courseRepoContentUrl(
       res.locals.course,

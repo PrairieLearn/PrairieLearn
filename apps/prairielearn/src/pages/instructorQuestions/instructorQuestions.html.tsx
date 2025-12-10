@@ -1,9 +1,5 @@
-import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
-
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type CourseInstance } from '../../lib/db-types.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { type QuestionsPageData } from '../../models/questions.js';
@@ -35,25 +31,16 @@ export const QuestionsPage = ({
       fullWidth: true,
     },
     headContent: QuestionsTableHead(),
-    content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
-      ${QuestionsTable({
-        questions,
-        templateQuestions,
-        course_instances,
-        showAddQuestionButton,
-        showAiGenerateQuestionButton,
-        showSharingSets: resLocals.question_sharing_enabled,
-        current_course_instance: resLocals.course_instance,
-        urlPrefix: resLocals.urlPrefix,
-        __csrf_token: resLocals.__csrf_token,
-      })}
-    `,
+    content: QuestionsTable({
+      questions,
+      templateQuestions,
+      course_instances,
+      showAddQuestionButton,
+      showAiGenerateQuestionButton,
+      showSharingSets: resLocals.question_sharing_enabled,
+      current_course_instance: resLocals.course_instance,
+      urlPrefix: resLocals.urlPrefix,
+      __csrf_token: resLocals.__csrf_token,
+    }),
   });
 };
