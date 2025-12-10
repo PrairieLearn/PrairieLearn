@@ -61,6 +61,7 @@ describe('audit-event', () => {
           "new_row": {
             "deleted_at": null,
             "email": "student@example.com",
+            "id": "1",
             "institution_id": "1",
             "lti_context_id": null,
             "lti_course_instance_id": null,
@@ -70,7 +71,6 @@ describe('audit-event', () => {
             "terms_accepted_at": null,
             "uid": "student@example.com",
             "uin": "student",
-            "user_id": "1",
           },
           "old_row": null,
           "row_id": "1",
