@@ -112,15 +112,15 @@ const SprocCheckAssessmentAccessSchema = z.object({
 export const SprocUsersGetDisplayedRoleSchema = z.enum(['Staff', 'Student', 'None']);
 export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRoleSchema>;
 
-// Result of group_info sproc
-export const SprocGroupInfoSchema = z.object({
+// Result of team_info sproc
+export const SprocTeamInfoSchema = z.object({
   id: IdSchema,
   name: z.string(),
   uid_list: z.array(z.string()),
   user_name_list: z.array(z.string()),
   user_roles_list: z.array(SprocUsersGetDisplayedRoleSchema),
 });
-export type SprocGroupInfo = z.infer<typeof SprocGroupInfoSchema>;
+export type SprocTeamInfo = z.infer<typeof SprocTeamInfoSchema>;
 
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
@@ -219,8 +219,8 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding
-// table name. For instance, `GroupSchema` should come before `GroupConfigSchema`
-// because `Group` comes before `GroupConfig` alphabetically.
+// table name. For instance, `TeamSchema` should come before `TeamConfigSchema`
+// because `Team` comes before `TeamConfig` alphabetically.
 // *******************************************************************************
 
 export const AccessLogSchema = null;
@@ -290,7 +290,7 @@ export const AssessmentSchema = z.object({
   duration_stat_median: IntervalSchema,
   duration_stat_min: IntervalSchema,
   duration_stat_thresholds: IntervalSchema.array(),
-  group_work: z.boolean().nullable(),
+  team_work: z.boolean().nullable(),
   honor_code: z.string().nullable(),
   id: IdSchema,
   json_allow_real_time_grading: z.boolean().nullable(),
@@ -362,7 +362,7 @@ export const AssessmentInstanceSchema = z.object({
   date_limit: DateFromISOString.nullable(),
   duration: IntervalSchema.nullable(),
   grading_needed: z.boolean(),
-  group_id: IdSchema.nullable(),
+  team_id: IdSchema.nullable(),
   id: IdSchema,
   include_in_statistics: z.boolean(),
   last_client_fingerprint_id: IdSchema.nullable(),
@@ -455,7 +455,7 @@ export const AssessmentQuestionRolePermissionSchema = z.object({
   assessment_question_id: IdSchema,
   can_submit: z.boolean().nullable(),
   can_view: z.boolean().nullable(),
-  group_role_id: IdSchema,
+  team_role_id: IdSchema,
 });
 export type AssessmentQuestionRolePermission = z.infer<
   typeof AssessmentQuestionRolePermissionSchema
@@ -487,7 +487,7 @@ export const AuditEventSchema = z.object({
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString,
   enrollment_id: IdSchema.nullable(),
-  group_id: IdSchema.nullable(),
+  team_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
   new_row: z.record(z.string(), z.any()).nullable(),
@@ -506,7 +506,7 @@ export const AuditLogSchema = z.object({
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString.nullable(),
-  group_id: IdSchema.nullable(),
+  team_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
   new_state: z.any(),
@@ -839,18 +839,18 @@ export const GradingJobSchema = z.object({
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
 
-export const GroupSchema = z.object({
+export const TeamSchema = z.object({
   course_instance_id: IdSchema,
   date: DateFromISOString.nullable(),
   deleted_at: DateFromISOString.nullable(),
-  group_config_id: IdSchema,
+  team_config_id: IdSchema,
   id: IdSchema,
   join_code: z.string(),
   name: z.string(),
 });
-export type Group = z.infer<typeof GroupSchema>;
+export type Team = z.infer<typeof TeamSchema>;
 
-export const GroupConfigSchema = z.object({
+export const TeamConfigSchema = z.object({
   assessment_id: IdSchema.nullable(),
   course_instance_id: IdSchema,
   date: DateFromISOString,
@@ -865,11 +865,11 @@ export const GroupConfigSchema = z.object({
   student_authz_join: z.boolean().nullable(),
   student_authz_leave: z.boolean().nullable(),
 });
-export type GroupConfig = z.infer<typeof GroupConfigSchema>;
+export type TeamConfig = z.infer<typeof TeamConfigSchema>;
 
-export const GroupLogSchema = null;
+export const TeamLogSchema = null;
 
-export const GroupRoleSchema = z.object({
+export const TeamRoleSchema = z.object({
   assessment_id: IdSchema.nullable(),
   can_assign_roles: z.boolean().nullable(),
   id: IdSchema,
@@ -877,22 +877,22 @@ export const GroupRoleSchema = z.object({
   minimum: z.number().nullable(),
   role_name: z.string(),
 });
-export type GroupRole = z.infer<typeof GroupRoleSchema>;
+export type TeamRole = z.infer<typeof TeamRoleSchema>;
 
-export const GroupUserSchema = z.object({
-  group_config_id: IdSchema,
-  group_id: IdSchema,
+export const TeamUserSchema = z.object({
+  team_config_id: IdSchema,
+  team_id: IdSchema,
   user_id: IdSchema,
 });
-export type GroupUser = z.infer<typeof GroupUserSchema>;
+export type TeamUser = z.infer<typeof TeamUserSchema>;
 
-export const GroupUserRoleSchema = z.object({
-  group_id: IdSchema,
-  group_role_id: IdSchema,
+export const TeamUserRoleSchema = z.object({
+  team_id: IdSchema,
+  team_role_id: IdSchema,
   id: IdSchema,
   user_id: IdSchema,
 });
-export type GroupUserRole = z.infer<typeof GroupUserRoleSchema>;
+export type TeamUserRole = z.infer<typeof TeamUserRoleSchema>;
 
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),
@@ -1459,7 +1459,7 @@ export const VariantSchema = z.object({
   date: DateFromISOString.nullable(),
   duration: IntervalSchema.nullable(),
   first_duration: IntervalSchema.nullable(),
-  group_id: IdSchema.nullable(),
+  team_id: IdSchema.nullable(),
   id: IdSchema,
   instance_question_id: IdSchema.nullable(),
   modified_at: DateFromISOString,
@@ -1596,12 +1596,12 @@ export const TableNames = [
   'files',
   'grader_loads',
   'grading_jobs',
-  'group_configs',
-  'group_logs',
-  'group_roles',
-  'group_user_roles',
-  'group_users',
-  'groups',
+  'team_configs',
+  'team_logs',
+  'team_roles',
+  'team_user_roles',
+  'team_users',
+  'teams',
   'instance_questions',
   'instance_question_groups',
   'institution_administrators',
