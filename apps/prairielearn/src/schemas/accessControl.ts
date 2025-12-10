@@ -88,10 +88,7 @@ const AfterCompleteJsonSchema = z
 
 export const AccessControlJsonSchema = z.object({
   name: z.string().optional().describe('Name for AccessControl rule'),
-  targets: z
-    .array(z.string())
-    .optional()
-    .describe('Array of (User, Access Control Group) ids this set targets'),
+  groups: z.array(z.string()).optional().describe('Array of student group names this set targets'),
   enabled: z.boolean().optional().describe('Whether this set of permissions is enabled'),
   blockAccess: z
     .boolean()

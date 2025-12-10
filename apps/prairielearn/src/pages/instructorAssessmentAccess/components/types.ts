@@ -68,7 +68,7 @@ export interface AccessControlRuleFormData {
   enabled: boolean;
   blockAccess?: boolean;
   listBeforeRelease?: boolean;
-  targets?: string[];
+  groups?: string[];
   dateControl: DateControlFormData;
   prairieTestControl: PrairieTestControlFormData;
   afterComplete: AfterCompleteFormData;
@@ -90,7 +90,7 @@ function transformRule(rule: AccessControlRuleFormData): AccessControlJson {
     enabled: rule.enabled,
     blockAccess: rule.blockAccess,
     listBeforeRelease: rule.listBeforeRelease || true,
-    targets: rule.targets,
+    groups: rule.groups,
   };
 
   // Handle dateControl
@@ -210,7 +210,7 @@ export function jsonToFormData(
     enabled: json.enabled ?? true,
     blockAccess: json.blockAccess ?? false,
     listBeforeRelease: json.listBeforeRelease ?? true,
-    targets: json.targets,
+    groups: json.groups,
     dateControl: {
       enabled: dc?.enabled ?? false,
       releaseDate: makeOverridable(
@@ -269,7 +269,7 @@ export function createDefaultOverrideFormData(): AccessControlRuleFormData {
     enabled: true,
     blockAccess: false,
     listBeforeRelease: true,
-    targets: [],
+    groups: [],
     dateControl: {
       enabled: false,
       releaseDate: { isOverridden: false, isEnabled: false, value: '' },

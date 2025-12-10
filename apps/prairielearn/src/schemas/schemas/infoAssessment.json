@@ -64,8 +64,8 @@
             "description": "Name for AccessControl rule",
             "type": "string"
           },
-          "targets": {
-            "description": "Array of (User, Access Control Group) ids this set targets",
+          "groups": {
+            "description": "Array of student group names this set targets",
             "type": "array",
             "items": {
               "type": "string"

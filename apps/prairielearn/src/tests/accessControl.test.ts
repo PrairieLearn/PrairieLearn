@@ -73,7 +73,7 @@ describe('Valid configs', () => {
     //   },
     //   {
     //     // Individual override
-    //     targets: ['student1'],
+    //     groups: ['student1'],
     //     prairieTestControl: {},
     //   },
     // ],
@@ -89,7 +89,7 @@ describe('Valid configs', () => {
     //   },
     //   {
     //     // Individual override
-    //     targets: ['student2'],
+    //     groups: ['student2'],
     //     prairieTestControl: {
     //       exams: [{ examUuid: '2' }],
     //     },
@@ -117,7 +117,7 @@ describe('Valid configs', () => {
       },
       {
         // Individual override
-        targets: ['student3'],
+        groups: ['student3'],
         dateControl: {
           durationMinutes: 90,
         },
@@ -192,13 +192,13 @@ describe('Assignment-level rule requirement', () => {
   it('should fail validation when no assignment-level rule exists', () => {
     const rulesWithoutAssignmentLevel: AccessControlJsonInput[] = [
       {
-        targets: ['student1'],
+        groups: ['student1'],
         dateControl: {
           durationMinutes: 90,
         },
       },
       {
-        targets: ['student2'],
+        groups: ['student2'],
         dateControl: {
           durationMinutes: 120,
         },

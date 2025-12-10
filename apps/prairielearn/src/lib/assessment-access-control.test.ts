@@ -264,7 +264,7 @@ describe('getAccessControlForAssessment', () => {
         dateControl: { durationMinutes: 60 },
       });
       const groupRule = makeAccessControlRule({
-        targets: [groupUuid],
+        groups: [groupUuid],
         dateControl: { durationMinutes: 90 },
       });
 
@@ -280,12 +280,12 @@ describe('getAccessControlForAssessment', () => {
 
       // First rule should be assignment-level (order 1)
       assert.equal(result[0].dateControl?.durationMinutes, 60);
-      assert.isUndefined(result[0].targets);
+      assert.isUndefined(result[0].groups);
 
       // Second rule should be group-level (order 2)
       assert.equal(result[1].dateControl?.durationMinutes, 90);
-      assert.isArray(result[1].targets);
-      assert.include(result[1].targets!, 'Test Group');
+      assert.isArray(result[1].groups);
+      assert.include(result[1].groups, 'Test Group');
     });
   });
 
@@ -307,7 +307,7 @@ describe('getAccessControlForAssessment', () => {
         dateControl: { durationMinutes: 60 },
       });
       const groupRule = makeAccessControlRule({
-        targets: [groupUuid1, groupUuid2],
+        groups: [groupUuid1, groupUuid2],
         dateControl: { durationMinutes: 90 },
       });
 
@@ -322,9 +322,9 @@ describe('getAccessControlForAssessment', () => {
       assert.lengthOf(result, 2);
 
       // Group rule should have target names
-      const targets = result[1].targets;
+      const targets = result[1].groups;
       assert.isArray(targets);
-      assert.lengthOf(targets!, 2);
+      assert.lengthOf(targets, 2);
       assert.include(targets!, 'Section A');
       assert.include(targets!, 'Section B');
     });
@@ -345,7 +345,7 @@ describe('getAccessControlForAssessment', () => {
       assert.lengthOf(result, 1);
 
       // Assignment-level rules should have undefined targets
-      assert.isUndefined(result[0].targets);
+      assert.isUndefined(result[0].groups);
     });
   });
 

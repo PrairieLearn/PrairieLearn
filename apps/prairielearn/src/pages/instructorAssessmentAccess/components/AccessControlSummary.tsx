@@ -11,7 +11,7 @@ interface AccessControlSummaryProps {
   onNavigate: (view: AccessControlView) => void;
   onAddOverride: () => void;
   onRemoveOverride: (index: number) => void;
-  onEditTargets: (index: number) => void;
+  onEditGroups: (index: number) => void;
 }
 
 export function AccessControlSummary({

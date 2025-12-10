@@ -128,10 +128,10 @@ export async function syncAccessControl(
       const order = i + 1;
 
       // Find valid group targets
-      const groupTargets: string[] = [];
-      (rule.targets ?? []).forEach((target) => {
-        if (validGroupIds.has(target)) {
-          groupTargets.push(target);
+      const studentGroups: string[] = [];
+      (rule.groups ?? []).forEach((group) => {
+        if (validGroupIds.has(group)) {
+          studentGroups.push(group);
         }
       });
 
@@ -236,17 +236,17 @@ export async function syncAccessControl(
       const accessControlId = insertedRule[0].id;
 
       // Insert targets
-      if (groupTargets.length > 0) {
+      if (studentGroups.length > 0) {
         // Target is group
         await execute(sql.insert_access_control_targets, {
-          targets: groupTargets.map((groupUuid) =>
+          groups: studentGroups.map((groupUuid) =>
             JSON.stringify([accessControlId, 'group', validGroupIds.get(groupUuid)]),
           ),
         });
       } else {
         // Target is assessment
         await execute(sql.insert_access_control_targets, {
-          targets: [JSON.stringify([accessControlId, 'assessment', assessmentId])],
+          groups: [JSON.stringify([accessControlId, 'assessment', assessmentId])],
         });
       }
 

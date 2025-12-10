@@ -172,7 +172,7 @@ export function generateRuleSummary(
 
   // Targets (only for overrides)
   if (!isMainRule && rule.targets && rule.targets.length > 0) {
-    lines.push(`Targets: ${rule.targets.join(', ')}`);
+    lines.push(`Groups: ${rule.targets.join(', ')}`);
   }
 
   // Enabled/disabled status

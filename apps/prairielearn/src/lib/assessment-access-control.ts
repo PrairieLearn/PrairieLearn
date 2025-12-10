@@ -18,7 +18,7 @@ const AccessControlWithChildrenSchema = AccessControlSchema.extend({
   early_deadlines: z.array(AccessControlEarlyDeadlineSchema),
   late_deadlines: z.array(AccessControlLateDeadlineSchema),
   prairietest_exams: z.array(AccessControlPrairietestExamSchema),
-  targets: z.array(z.string()),
+  groups: z.array(z.string()),
 });
 
 type AccessControlWithChildren = z.infer<typeof AccessControlWithChildrenSchema>;
@@ -35,7 +35,7 @@ function transformToJson(row: AccessControlWithChildren): AccessControlJson {
     enabled: row.enabled,
     blockAccess: row.block_access,
     listBeforeRelease: row.list_before_release,
-    targets: row.targets.length > 0 ? row.targets : undefined,
+    groups: row.targets.length > 0 ? row.targets : undefined,
 
     dateControl: {
       enabled: row.date_control_overridden === null ? undefined : !row.date_control_overridden,

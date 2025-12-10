@@ -53,7 +53,7 @@ const sampleAccessControl: AccessControlJson[] = [
     },
   },
   {
-    targets: ['sectionB'],
+    groups: ['sectionB'],
     enabled: true,
     blockAccess: false,
     listBeforeRelease: true,
