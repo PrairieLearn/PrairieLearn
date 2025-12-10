@@ -122,8 +122,8 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
-  LEFT JOIN groups AS g ON (
+  LEFT JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+  LEFT JOIN teams AS g ON (
     g.id = ai.team_id
     AND g.group_config_id = gc.id
   )
@@ -318,8 +318,8 @@ WITH
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
-      LEFT JOIN groups AS g ON (
+      LEFT JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+      LEFT JOIN teams AS g ON (
         g.id = ai.team_id
         AND g.group_config_id = gc.id
       )

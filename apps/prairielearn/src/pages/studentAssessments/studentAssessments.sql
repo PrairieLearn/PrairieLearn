@@ -101,7 +101,7 @@ WITH
       am.heading AS assessment_module_heading,
       am.number AS assessment_module_number
     FROM
-      -- join group_users first to find all group assessments
+      -- JOIN team_users first to find all group assessments
       team_configs AS gc
       JOIN teams AS g ON (
         g.team_config_id = gc.id

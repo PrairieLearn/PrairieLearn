@@ -4,7 +4,7 @@ SELECT
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN group_configs AS gc ON (gc.assessment_id = a.id)
+  JOIN team_configs AS gc ON (gc.assessment_id = a.id)
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
@@ -18,7 +18,7 @@ SELECT
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN group_configs AS gc ON (gc.assessment_id = a.id)
+  JOIN team_configs AS gc ON (gc.assessment_id = a.id)
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
@@ -39,8 +39,8 @@ SELECT
   gur.group_role_id
 FROM
   group_configs AS gc
-  JOIN groups AS g ON g.group_config_id = gc.id
-  JOIN group_user_roles AS gur ON gur.team_id = g.id
+  JOIN teams AS g ON g.group_config_id = gc.id
+  JOIN team_user_roles AS gur ON gur.team_id = g.id
 WHERE
   gc.assessment_id = $assessment_id
 ORDER BY

@@ -171,7 +171,7 @@ SELECT
   ai.id AS assessment_instance_id
 FROM
   assessment_instances AS ai
-  LEFT JOIN groups AS g ON (g.id = ai.team_id)
-  LEFT JOIN group_users AS gu ON (gu.team_id = g.id)
+  LEFT JOIN teams AS g ON (g.id = ai.team_id)
+  LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
 WHERE
   ai.id = $assessment_instance_id

@@ -6,7 +6,7 @@ WHERE
     FROM
       group_users gu
     WHERE
-      gu.team_id = gur.team_id
+      gu.group_id = gur.group_id
       AND gu.user_id = gur.user_id
   );
 

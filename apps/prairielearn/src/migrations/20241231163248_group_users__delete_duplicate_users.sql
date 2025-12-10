@@ -14,7 +14,7 @@ WITH
   ),
   group_memberships AS (
     SELECT
-      g.team_id,
+      g.group_id,
       COUNT(*) AS count
     FROM
       (
@@ -23,9 +23,9 @@ WITH
         FROM
           existing_duplicate_users
       ) AS g
-      JOIN group_users AS gu ON (g.team_id = gu.team_id)
+      JOIN group_users AS gu ON (g.group_id = gu.group_id)
     GROUP BY
-      g.team_id
+      g.group_id
   ),
   group_to_retain AS (
     SELECT
@@ -33,14 +33,14 @@ WITH
       edu.group_config_id,
       (
         SELECT
-          gu.team_id
+          gu.group_id
         FROM
           group_users AS gu
-          JOIN groups AS g ON (gu.team_id = g.id)
-          LEFT JOIN group_memberships AS gm ON (gu.team_id = gm.team_id)
+          JOIN groups AS g ON (gu.group_id = g.id)
+          LEFT JOIN group_memberships AS gm ON (gu.group_id = gm.group_id)
           LEFT JOIN assessment_instances AS ai ON (
             a.id = ai.assessment_id
-            AND ai.team_id = gu.team_id
+            AND ai.group_id = gu.group_id
           )
         WHERE
           edu.user_id = gu.user_id
@@ -57,7 +57,7 @@ WITH
           -- If there is an assessment instance, prefer the one created most recently (largest ID)
           ai.id DESC NULLS LAST,
           -- Prefer a group created most recently (largest ID)
-          gu.team_id DESC
+          gu.group_id DESC
         LIMIT
           1
       ) AS group_id
@@ -70,4 +70,4 @@ DELETE FROM group_users AS gu USING group_to_retain AS gtr
 WHERE
   gu.user_id = gtr.user_id
   AND gu.group_config_id = gtr.group_config_id
-  AND gu.team_id != gtr.team_id;
+  AND gu.group_id != gtr.group_id;

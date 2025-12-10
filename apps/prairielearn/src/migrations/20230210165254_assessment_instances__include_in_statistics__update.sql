@@ -11,10 +11,10 @@ WITH
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       LEFT JOIN groups AS g ON (
-        g.id = ai.team_id
+        g.id = ai.group_id
         AND g.deleted_at IS NULL
       )
-      LEFT JOIN group_users AS gu ON (gu.team_id = g.id)
+      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
   ),
   instructor_assessment_instances AS (
     -- For each of the previous assessment instances with users, select only the
