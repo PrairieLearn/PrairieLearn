@@ -47,7 +47,7 @@ FROM
   JOIN users AS u ON (u.user_id = lgu.user_id)
 WHERE
   a.id = $assessment_id
-  -- This query only works for assessments with group work enabled
+  -- This query only works for assessments with team work enabled
   AND a.team_work = TRUE
   AND g.deleted_at IS NULL
 ORDER BY

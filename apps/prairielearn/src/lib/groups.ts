@@ -682,9 +682,8 @@ export async function updateGroupRoles(
         throw new error.HttpStatusError(403, `Role ${roleId} does not exist for this assessment`);
       }
       return {
-        group_id: groupId, // SQL parameter name
         user_id: userId,
-        team_role_id: roleId, // JSON key name for SQL
+        team_role_id: roleId,
       };
     });
 
@@ -702,7 +701,6 @@ export async function updateGroupRoles(
         userId = groupInfo.groupMembers[0].user_id;
       }
       roleAssignments.push({
-        group_id: groupId, // SQL parameter name
         user_id: userId,
         team_role_id: assignerRoleIds[0], // JSON key name for SQL
       });

@@ -29,23 +29,23 @@ WHERE
 SELECT
   *
 FROM
-  group_roles
+  team_roles
 WHERE
   assessment_id = $assessment_id;
 
 -- BLOCK select_group_user_roles
 SELECT
   gur.user_id,
-  gur.group_role_id
+  gur.team_role_id
 FROM
-  group_configs AS gc
-  JOIN teams AS g ON g.group_config_id = gc.id
+  team_configs AS gc
+  JOIN teams AS g ON g.team_config_id = gc.id
   JOIN team_user_roles AS gur ON gur.team_id = g.id
 WHERE
   gc.assessment_id = $assessment_id
 ORDER BY
   gur.user_id,
-  gur.group_role_id;
+  gur.team_role_id;
 
 -- BLOCK select_assessment
 SELECT

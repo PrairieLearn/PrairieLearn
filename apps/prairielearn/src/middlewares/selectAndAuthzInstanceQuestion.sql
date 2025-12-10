@@ -75,7 +75,7 @@ SELECT
   to_jsonb(u) AS instance_user,
   users_get_displayed_role (u.user_id, ci.id) AS instance_role,
   to_jsonb(g) AS instance_group,
-  groups_uid_list (g.id) AS instance_group_uid_list,
+  teams_uid_list (g.id) AS instance_group_uid_list,
   to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
   jsonb_build_object(
     'id',

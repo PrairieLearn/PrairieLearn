@@ -48,7 +48,7 @@ INSERT INTO
     question_id,
     authn_user_id,
     user_id,
-    group_id,
+    team_id,
     variant_seed,
     params,
     true_answer,

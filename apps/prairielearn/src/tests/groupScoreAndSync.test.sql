@@ -13,8 +13,8 @@ WHERE
 SELECT
   *
 FROM
-  group_configs AS gc
-  LEFT JOIN teams AS g ON (g.group_config_id = gc.id)
+  team_configs AS gc
+  LEFT JOIN teams AS g ON (g.team_config_id = gc.id)
   LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
 WHERE
   gc.assessment_id = $assessment_id

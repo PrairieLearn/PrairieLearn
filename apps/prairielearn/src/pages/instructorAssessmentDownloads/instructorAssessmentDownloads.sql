@@ -44,7 +44,7 @@ WITH
       DATE_PART('epoch', ai.duration) AS duration_secs,
       DATE_PART('epoch', ai.duration) / 60 AS duration_mins,
       g.name AS group_name,
-      groups_uid_list (g.id) AS uid_list
+      teams_uid_list (g.id) AS uid_list
     FROM
       assessments AS a
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -111,7 +111,7 @@ SELECT
   iq.number_attempts,
   DATE_PART('epoch', iq.duration) AS duration_seconds,
   g.name AS group_name,
-  groups_uid_list (g.id) AS uid_list,
+  teams_uid_list (g.id) AS uid_list,
   agu.uid AS assigned_grader,
   lgu.uid AS last_grader
 FROM
@@ -152,7 +152,7 @@ WITH
       ai.id,
       assessment_id,
       g.name AS group_name,
-      groups_uid_list (g.id) AS uid_list
+      teams_uid_list (g.id) AS uid_list
     FROM
       assessment_instances AS ai
       LEFT JOIN teams AS g ON (g.id = ai.team_id)
@@ -309,7 +309,7 @@ WITH
         )
       ) = 1 AS best_submission_per_variant,
       g.name AS group_name,
-      groups_uid_list (g.id) AS uid_list,
+      teams_uid_list (g.id) AS uid_list,
       su.uid AS submission_user,
       agu.uid AS assigned_grader,
       lgu.uid AS last_grader

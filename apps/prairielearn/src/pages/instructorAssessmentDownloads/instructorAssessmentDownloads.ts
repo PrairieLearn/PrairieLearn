@@ -363,7 +363,7 @@ router.get(
         ['Role', 'role'],
       ]),
     );
-    if (res.locals.assessment.group_work) {
+    if (res.locals.assessment.team_work) {
       identityColumn = groupNameColumn;
     }
     const instancesColumns = identityColumn.concat(instanceColumn);

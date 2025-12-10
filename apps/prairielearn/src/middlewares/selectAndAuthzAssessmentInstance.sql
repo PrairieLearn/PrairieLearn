@@ -58,7 +58,7 @@ SELECT
   aset.abbreviation || a.number AS assessment_label,
   fl.list AS file_list,
   to_jsonb(g) AS instance_group,
-  groups_uid_list (g.id) AS instance_group_uid_list
+  teams_uid_list (g.id) AS instance_group_uid_list
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
