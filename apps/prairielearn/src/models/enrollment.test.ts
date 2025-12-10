@@ -423,7 +423,7 @@ describe('DB validation of enrollment', () => {
     const invalidStates = [
       // status is 'joined', first_joined_at is null
       {
-        user_id: invalidUser1.user_id,
+        user_id: invalidUser1.id,
         status: 'joined',
         created_at: '2025-01-01',
         first_joined_at: null,
@@ -431,7 +431,7 @@ describe('DB validation of enrollment', () => {
       },
       // status is 'removed', first_joined_at is null
       {
-        user_id: invalidUser2.user_id,
+        user_id: invalidUser2.id,
         status: 'removed',
         created_at: '2025-01-01',
         first_joined_at: null,

@@ -59,7 +59,7 @@ async function insertUser(user: AuthUser) {
 
   if (user.isAdministrator) {
     await execute('INSERT INTO administrators (user_id) VALUES ($user_id);', {
-      user_id: newUser.user_id,
+      user_id: newUser.id,
     });
   }
 }

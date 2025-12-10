@@ -31,7 +31,7 @@ export class PostgresSessionStore implements SessionStore {
       session_id,
       data: JSON.stringify(data),
       expires_at,
-      user_id: data?.user_id ?? null,
+      user_id: data?.id ?? null,
     });
   }
 

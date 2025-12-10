@@ -65,7 +65,7 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const gradebookRows = student.user?.user_id
+    const gradebookRows = student.user?.id
       ? await getGradebookRows({
           course_instance_id: courseInstance.id,
           user_id: student.user.id,

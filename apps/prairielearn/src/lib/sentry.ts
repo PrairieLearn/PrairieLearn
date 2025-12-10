@@ -20,7 +20,7 @@ export function enrichSentryEventMiddleware(req: Request, res: Response, next: N
         event.tags.error_id = res.locals.error_id;
       }
 
-      if (res.locals.authn_user?.user_id) {
+      if (res.locals.authn_user?.id) {
         event.user = {
           id: res.locals.authn_user.id.toString(),
           // To comply with GDPR and other data protection laws, you can

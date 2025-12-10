@@ -414,8 +414,7 @@ function StaffTable({
                     // Cannot change the course role of yourself (or of the
                     // user you are emulating) unless you are an administrator.
                     canChangeCourseRole:
-                      (courseUser.user.id !== authnUser.user_id &&
-                        courseUser.user.id !== user.id) ||
+                      (courseUser.user.id !== authnUser.id && courseUser.user.id !== user.id) ||
                       isAdministrator,
                     courseUser,
                     csrfToken,
