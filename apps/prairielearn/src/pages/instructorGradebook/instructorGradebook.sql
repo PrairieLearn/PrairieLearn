@@ -125,9 +125,9 @@ WITH
                 )
               FROM
                 group_users AS ogu
-                LEFT JOIN course_users AS ou ON (ou.user_id = ogu.user_id)
+                LEFT JOIN course_users AS ou ON (ou.id = ogu.user_id)
                 LEFT JOIN enrollments AS e ON (
-                  ou.user_id = e.user_id
+                  ou.id = e.user_id
                   AND e.course_instance_id = $course_instance_id
                 )
               WHERE
@@ -158,7 +158,7 @@ FROM
     e.user_id = u.id
     AND e.course_instance_id = $course_instance_id
   )
-  LEFT JOIN user_scores AS s ON (u.user_id = s.user_id)
+  LEFT JOIN user_scores AS s ON (u.id = s.user_id)
 ORDER BY
   role DESC,
   uid ASC;

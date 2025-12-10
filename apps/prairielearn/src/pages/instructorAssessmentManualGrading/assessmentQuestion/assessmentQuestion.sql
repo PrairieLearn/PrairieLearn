@@ -75,8 +75,8 @@ FROM
     e.user_id = ai.user_id
     AND e.course_instance_id = a.course_instance_id
   )
-  LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
-  LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
+  LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
+  LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
   LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)
   LEFT JOIN rubric_items_agg AS ri ON ri.instance_question_id = iq.id
 WHERE

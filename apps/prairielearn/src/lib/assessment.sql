@@ -1399,7 +1399,7 @@ WITH
         assessment_instances AS ai
         JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
         JOIN users AS u ON (u.id = gl.authn_user_id)
-        LEFT JOIN users AS gu ON (gu.user_id = gl.user_id)
+        LEFT JOIN users AS gu ON (gu.id = gl.user_id)
       WHERE
         ai.id = $assessment_instance_id
     )

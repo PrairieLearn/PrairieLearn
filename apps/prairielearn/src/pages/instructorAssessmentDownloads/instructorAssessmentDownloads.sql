@@ -82,7 +82,7 @@ ORDER BY
   uid,
   group_name,
   uin,
-  user_id,
+  id,
   number,
   assessment_instance_id;
 
@@ -128,8 +128,8 @@ FROM
     AND g.group_config_id = gc.id
   )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
-  LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
-  LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
+  LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
+  LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
   JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
   JOIN zones AS z ON (z.id = ag.zone_id)
 WHERE
@@ -149,7 +149,7 @@ WITH
     SELECT DISTINCT
       ON (g.id, u.id) u.id,
       g.id AS group_id,
-      ai.id,
+      ai.id AS assessment_instance_id,
       assessment_id,
       g.name AS group_name,
       groups_uid_list (g.id) AS uid_list
@@ -330,8 +330,8 @@ WITH
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
       LEFT JOIN users AS su ON (su.user_id = s.auth_user_id)
-      LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
-      LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
+      LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
+      LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
       LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)
       JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
       JOIN zones AS z ON (z.id = ag.zone_id)

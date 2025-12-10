@@ -148,7 +148,7 @@ WHERE
 
 -- BLOCK get_role_assignments
 SELECT
-  gu.id,
+  gu.user_id,
   u.uid,
   gr.role_name,
   gr.id AS group_role_id
@@ -279,7 +279,7 @@ WITH
     INSERT INTO
       group_user_roles (user_id, group_id, group_role_id)
     SELECT
-      iu.id,
+      iu.user_id,
       iu.group_id,
       $group_role_id
     FROM
@@ -301,7 +301,7 @@ INSERT INTO
   group_logs (authn_user_id, user_id, group_id, action, roles)
 SELECT
   $authn_user_id,
-  iu.id,
+  iu.user_id,
   iu.group_id,
   'join',
   CASE
@@ -345,7 +345,7 @@ VALUES
 WITH
   json_roles AS (
     SELECT
-      gu.id,
+      gu.user_id,
       gu.group_id,
       (role_assignment ->> 'group_role_id')::bigint AS group_role_id
     FROM
@@ -382,7 +382,7 @@ INSERT INTO
   group_logs (authn_user_id, user_id, group_id, action, roles)
 SELECT
   $authn_user_id,
-  gu.id,
+  gu.user_id,
   $group_id,
   'update roles',
   COALESCE(

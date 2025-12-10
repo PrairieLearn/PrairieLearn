@@ -48,7 +48,7 @@ SELECT
 FROM
   course_requests AS r
   INNER JOIN users AS u ON u.id = r.user_id
-  LEFT JOIN users AS ua ON ua.user_id = r.approved_by
+  LEFT JOIN users AS ua ON ua.id = r.approved_by
   LEFT JOIN select_course_request_jobs AS j ON j.id = r.id
 WHERE
   $show_all = 'true'
