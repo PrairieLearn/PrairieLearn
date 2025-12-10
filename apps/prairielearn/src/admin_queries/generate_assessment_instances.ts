@@ -33,7 +33,7 @@ export const specs: AdministratorQuerySpecs = {
 const sql = loadSqlEquiv(import.meta.url);
 
 const UserRowSchema = z.object({
-  user_id: UserSchema.shape.user_id,
+  user_id: UserSchema.shape.id,
   uid: UserSchema.shape.uid,
   name: UserSchema.shape.name,
   course_id: CourseSchema.shape.id,
