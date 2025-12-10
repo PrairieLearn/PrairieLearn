@@ -95,7 +95,7 @@ router.get(
     if ('lineitems' in req.query) {
       try {
         res.end(LineitemsInputs(await getLineitems(instance)));
-      } catch (error) {
+      } catch (error: any) {
         res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
         logger.error('LineitemsInputs error', error);
       }
@@ -296,7 +296,8 @@ router.post(
 
       serverJob.executeInBackground(async (job) => {
         await updateLti13Scores({
-          course_instance: res.locals.course_instance,
+          courseInstance: res.locals.course_instance,
+          authzData: res.locals.authz_data,
           unsafe_assessment_id: assessment.id,
           instance,
           job,

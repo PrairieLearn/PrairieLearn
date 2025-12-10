@@ -1,12 +1,10 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PublicLinkSharingHtml, StudentLinkSharingHtml } from '../../components/LinkSharing.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
@@ -44,15 +42,6 @@ export function InstructorAssessmentSettings({
     },
     headContent: html` ${compiledScriptTag('instructorAssessmentSettingsClient.ts')} `,
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       ${QRCodeModalHtml({
         id: 'studentLinkModal',
         title: 'Student Link QR Code',

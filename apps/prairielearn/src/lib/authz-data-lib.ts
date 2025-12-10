@@ -134,7 +134,10 @@ export type CourseOrInstanceContextData = z.infer<typeof CourseOrInstanceContext
 
 export type AuthzDataWithoutEffectiveUser = PlainAuthzData | DangerousSystemAuthzData;
 
-export type AuthzDataWithEffectiveUser = PageAuthzData | DangerousSystemAuthzData;
+export type AuthzDataWithEffectiveUser =
+  | RawPageAuthzData
+  | PageAuthzData
+  | DangerousSystemAuthzData;
 
 export type AuthzData = AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser;
 
