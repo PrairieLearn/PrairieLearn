@@ -86,7 +86,7 @@ describe('ensureUncheckedEnrollment', () => {
 
     await ensureUncheckedEnrollment({
       courseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
@@ -94,7 +94,7 @@ describe('ensureUncheckedEnrollment', () => {
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       courseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
     });
@@ -102,7 +102,7 @@ describe('ensureUncheckedEnrollment', () => {
     assert.equal(finalEnrollment.status, 'joined');
     assert.isNotNull(finalEnrollment.first_joined_at);
     assert.isNull(finalEnrollment.pending_uid);
-    assert.equal(finalEnrollment.user_id, user.user_id);
+    assert.equal(finalEnrollment.user_id, user.id);
 
     const invitedEnrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
@@ -122,14 +122,14 @@ describe('ensureUncheckedEnrollment', () => {
     });
 
     await createEnrollmentWithStatus({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       status: 'blocked',
       firstJoinedAt: new Date(),
     });
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -141,7 +141,7 @@ describe('ensureUncheckedEnrollment', () => {
     try {
       await ensureUncheckedEnrollment({
         courseInstance,
-        userId: user.user_id,
+        userId: user.id,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
@@ -153,7 +153,7 @@ describe('ensureUncheckedEnrollment', () => {
     }
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -172,7 +172,7 @@ describe('ensureUncheckedEnrollment', () => {
     });
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -181,14 +181,14 @@ describe('ensureUncheckedEnrollment', () => {
 
     await ensureUncheckedEnrollment({
       courseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -208,14 +208,14 @@ describe('ensureUncheckedEnrollment', () => {
 
     const originalJoinedAt = new Date('2023-01-01T00:00:00Z');
     await createEnrollmentWithStatus({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       status: 'joined',
       firstJoinedAt: originalJoinedAt,
     });
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -226,14 +226,14 @@ describe('ensureUncheckedEnrollment', () => {
 
     await ensureUncheckedEnrollment({
       courseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),

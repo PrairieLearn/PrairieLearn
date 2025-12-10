@@ -295,7 +295,7 @@ router.post(
           assessment: res.locals.assessment,
           assessment_question: res.locals.assessment_question,
           urlPrefix: res.locals.urlPrefix,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
           user_id: res.locals.user.id,
           model_id,
           mode: 'selected',
@@ -323,7 +323,7 @@ router.post(
           course_instance_id: res.locals.course_instance.id,
           assessment_question: res.locals.assessment_question,
           urlPrefix: res.locals.urlPrefix,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
           user_id: res.locals.user.id,
           instance_question_ids,
           closed_instance_questions_only: req.body.closed_instance_questions_only,
@@ -372,7 +372,7 @@ router.post(
           auto_points: req.body.auto_points,
           score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       if (result.modified_at_conflict) {
         res.send({
@@ -419,7 +419,7 @@ router.post(
         assessment: res.locals.assessment,
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         user_id: res.locals.user.id,
         model_id,
         mode: run(() => {
@@ -441,7 +441,7 @@ router.post(
         course_instance_id: res.locals.course_instance.id,
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         user_id: res.locals.user.id,
         closed_instance_questions_only: req.body.closed_instance_questions_only,
         ungrouped_instance_questions_only: false,
@@ -460,7 +460,7 @@ router.post(
         course_instance_id: res.locals.course_instance.id,
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         user_id: res.locals.user.id,
         closed_instance_questions_only: req.body.closed_instance_questions_only,
         ungrouped_instance_questions_only: true,
@@ -474,7 +474,7 @@ router.post(
 
       const iqs = await deleteAiGradingJobs({
         assessment_question_ids: [res.locals.assessment_question.id],
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
 
       res.json({ num_deleted: iqs.length });
@@ -501,7 +501,7 @@ router.post(
           req.body.max_extra_points,
           req.body.rubric_items,
           req.body.tag_for_manual_grading,
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
         res.redirect(req.originalUrl);
       } catch (err) {

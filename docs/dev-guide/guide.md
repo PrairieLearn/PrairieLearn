@@ -612,7 +612,7 @@ Alternatively, if you want to check if you _might_ be authorized to perform an a
       if (req.body.__action == 'enroll') {
         await execute(sql.enroll, {
           course_instance_id: req.body.course_instance_id,
-          user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.authn_user.id,
         });
         res.redirect(req.originalUrl);
       } else {

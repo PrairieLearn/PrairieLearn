@@ -85,7 +85,7 @@ async function processFileUpload(req: Request, res: Response) {
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: res.locals.instance_question.id,
     user_id: res.locals.user.id,
-    authn_user_id: res.locals.authn_user.user_id,
+    authn_user_id: res.locals.authn_user.id,
   });
 
   return variant.id;
@@ -122,7 +122,7 @@ async function processTextUpload(req: Request, res: Response) {
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: res.locals.instance_question.id,
     user_id: res.locals.user.id,
-    authn_user_id: res.locals.authn_user.user_id,
+    authn_user_id: res.locals.authn_user.id,
   });
 
   return variant.id;
@@ -163,7 +163,7 @@ async function processDeleteFile(req: Request, res: Response) {
     throw new HttpStatusError(403, `Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
-  await deleteFile(file.id, res.locals.authn_user.user_id);
+  await deleteFile(file.id, res.locals.authn_user.id);
 
   return variant.id;
 }
@@ -229,7 +229,7 @@ router.post(
       await gradeAssessmentInstance({
         assessment_instance_id: res.locals.assessment_instance.id,
         user_id: res.locals.user.id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         requireOpen: true,
         close: true,
         ignoreGradeRateLimit: false,

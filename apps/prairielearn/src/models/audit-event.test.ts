@@ -34,7 +34,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '1',
         actionDetail: null,
         newRow: await selectUserById('1'),
@@ -94,7 +94,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: null,
         agentUserId: null,
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         newRow: { test: 'default user data' },
       });
       expect(auditEvent).toMatchInlineSnapshot(`
@@ -140,7 +140,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         assessmentId: assessment.id,
         newRow: { title: 'Midterm 1' },
       });
@@ -167,7 +167,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         assessmentQuestionId: assessmentQuestion.id,
         newRow: { status: 'active' },
       });
@@ -218,7 +218,7 @@ describe('audit-event', () => {
       });
 
       const result = await selectAuditEvents({
-        subject_user_id: user.user_id,
+        subject_user_id: user.id,
         table_names: ['users'],
         course_instance_id: '1',
       });
@@ -241,7 +241,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '1',
         newRow: await selectUserById('1'),
         context: { test: 'data1' },
@@ -253,7 +253,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '1',
         actionDetail: 'TEST_VALUE' as any,
         oldRow: { test: 'old data' },
@@ -261,7 +261,7 @@ describe('audit-event', () => {
       });
 
       const result = await selectAuditEvents({
-        subject_user_id: user.user_id,
+        subject_user_id: user.id,
         table_names: ['users'],
         course_instance_id: '1',
       });
@@ -287,7 +287,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '1',
         newRow: { test: 'new user data' },
         context: { test: 'users' },
@@ -300,7 +300,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '1',
         newRow: { test: 'new enrollment data' },
         context: { test: 'enrollments' },
@@ -313,7 +313,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '1',
         assessmentId: '1',
         newRow: { test: 'new assessment data' },
@@ -321,7 +321,7 @@ describe('audit-event', () => {
       });
 
       const result = await selectAuditEvents({
-        subject_user_id: user.user_id,
+        subject_user_id: user.id,
         table_names: ['users', 'enrollments'],
         course_instance_id: '1',
       });
@@ -347,7 +347,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '1',
         newRow: { test: 'course1 user data' },
         context: { test: 'course1' },
@@ -359,14 +359,14 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '2',
         newRow: { test: 'course2 user data' },
         context: { test: 'course2' },
       });
 
       const result = await selectAuditEvents({
-        subject_user_id: user.user_id,
+        subject_user_id: user.id,
         table_names: ['users'],
         course_instance_id: '1',
       });
@@ -439,7 +439,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '1',
         newRow: { test: 'older user data' },
         context: { test: 'older' },
@@ -451,7 +451,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '1',
         actionDetail: 'TEST_VALUE' as any,
         oldRow: { test: 'old data' },
@@ -459,7 +459,7 @@ describe('audit-event', () => {
       });
 
       const result = await selectAuditEvents({
-        subject_user_id: user.user_id,
+        subject_user_id: user.id,
         table_names: ['users'],
         course_instance_id: '1',
       });
@@ -485,7 +485,7 @@ describe('audit-event', () => {
         rowId: '1',
         agentAuthnUserId: '1',
         agentUserId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '1',
         newRow: { test: 'new user data' },
         context: { test: 'null_user' },
@@ -512,7 +512,7 @@ describe('audit-event', () => {
         action: 'update',
         tableName: 'users',
         rowId: '1',
-        subjectUserId: user.user_id,
+        subjectUserId: user.id,
         courseInstanceId: '1',
         actionDetail: 'TEST_VALUE' as any,
         context: { test: 'full_fields' },
@@ -528,7 +528,7 @@ describe('audit-event', () => {
         groupId: '1',
       });
       const result = await selectAuditEvents({
-        subject_user_id: user.user_id,
+        subject_user_id: user.id,
         table_names: ['users'],
         course_instance_id: '1',
       });

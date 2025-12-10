@@ -48,7 +48,7 @@ router.post(
         res.locals.assessment,
         req.file,
         res.locals.user.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'upload_assessment_instance_scores') {
@@ -56,7 +56,7 @@ router.post(
         res.locals.assessment.id,
         req.file,
         res.locals.user.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'upload_submissions') {
@@ -68,7 +68,7 @@ router.post(
         res.locals.assessment,
         req.file,
         res.locals.user.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {

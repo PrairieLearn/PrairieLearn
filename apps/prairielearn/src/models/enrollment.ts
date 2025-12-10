@@ -341,7 +341,7 @@ export async function generateAndEnrollUsers({
     for (const user of users) {
       await ensureUncheckedEnrollment({
         courseInstance,
-        userId: user.user_id,
+        userId: user.id,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
@@ -461,7 +461,7 @@ async function _inviteExistingEnrollment({
     newRow: newEnrollment,
     subjectUserId: null,
     agentUserId: authzData.user.id,
-    agentAuthnUserId: authzData.authn_user.user_id,
+    agentAuthnUserId: authzData.authn_user.id,
   });
 
   return newEnrollment;
@@ -493,7 +493,7 @@ async function inviteNewEnrollment({
     newRow: newEnrollment,
     subjectUserId: null,
     agentUserId: authzData.user.id,
-    agentAuthnUserId: authzData.authn_user.user_id,
+    agentAuthnUserId: authzData.authn_user.id,
   });
 
   return newEnrollment;
@@ -637,8 +637,7 @@ export async function setEnrollmentStatus({
       oldRow: lockedEnrollment,
       newRow: newEnrollment,
       agentUserId: authzData.user.id,
-      agentAuthnUserId:
-        'authn_user' in authzData ? authzData.authn_user.user_id : authzData.user.id,
+      agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
     });
 
     return newEnrollment;
@@ -682,7 +681,7 @@ export async function deleteEnrollment({
       subjectUserId: null,
       courseInstanceId: lockedEnrollment.course_instance_id,
       agentUserId: authzData.user.id,
-      agentAuthnUserId: authzData.authn_user.user_id,
+      agentAuthnUserId: authzData.authn_user.id,
     });
 
     return deletedEnrollment;

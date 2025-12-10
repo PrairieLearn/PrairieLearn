@@ -34,7 +34,7 @@ async function getCopyTargets({
   urlSuffix: string;
 }): Promise<CopyTarget[] | null> {
   const editableCourses = await selectCoursesWithEditAccess({
-    user_id: user.user_id,
+    user_id: user.id,
     is_administrator,
   });
 
@@ -51,7 +51,7 @@ async function getCopyTargets({
       // we need to generate a corresponding CSRF token for each one.
       const csrfToken = generateCsrfToken({
         url: copyUrl,
-        authnUserId: authn_user.user_id,
+        authnUserId: authn_user.id,
       });
 
       return {

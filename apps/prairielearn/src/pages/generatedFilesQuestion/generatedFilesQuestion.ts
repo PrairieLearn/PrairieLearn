@@ -47,7 +47,7 @@ export default function (options = { publicEndpoint: false }) {
         res.locals.question,
         res.locals.course,
         res.locals.user.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.attachment(filename);
       res.send(fileData);

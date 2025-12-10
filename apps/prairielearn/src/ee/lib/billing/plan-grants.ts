@@ -119,7 +119,7 @@ export async function checkPlanGrantsForQuestion(res: Response) {
   const planGrants = await getPlanGrantsForPartialContexts({
     institution_id: institution.id,
     course_instance_id: course_instance.id,
-    user_id: user.user_id,
+    user_id: user.id,
   });
 
   return planGrantsMatchFeatures(planGrants, requiredFeatures);

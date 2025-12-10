@@ -71,7 +71,7 @@ router.get(
       const assessment_instance_id = await makeAssessmentInstance({
         assessment: res.locals.assessment,
         user_id: res.locals.user.id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         mode: res.locals.authz_data.mode,
         time_limit_min,
         date: res.locals.authz_data.date,
@@ -164,7 +164,7 @@ router.post(
       const assessment_instance_id = await makeAssessmentInstance({
         assessment: res.locals.assessment,
         user_id: res.locals.user.id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         mode: res.locals.authz_data.mode,
         time_limit_min,
         date: res.locals.req_date,
@@ -181,7 +181,7 @@ router.post(
         assessment: res.locals.assessment,
         fullJoinCode: req.body.join_code,
         uid: res.locals.user.uid,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         authzData: res.locals.authz_data,
       }).catch((err) => {
         if (err instanceof GroupOperationError) {
@@ -201,7 +201,7 @@ router.post(
         assessment: res.locals.assessment,
         group_name: groupConfig.student_authz_choose_name ? req.body.group_name : null,
         uids: [res.locals.user.uid],
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         authzData: res.locals.authz_data,
       }).catch((err) => {
         if (err instanceof GroupOperationError) {
@@ -223,7 +223,7 @@ router.post(
         groupId,
         res.locals.user.id,
         res.locals.authz_data.has_course_instance_permission_edit,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
@@ -231,7 +231,7 @@ router.post(
       if (!groupConfig.student_authz_leave) {
         throw new HttpStatusError(403, 'You are not authorized to leave your group.');
       }
-      await leaveGroup(res.locals.assessment.id, res.locals.user.id, res.locals.authn_user.user_id);
+      await leaveGroup(res.locals.assessment.id, res.locals.user.id, res.locals.authn_user.id);
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);

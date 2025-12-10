@@ -190,7 +190,7 @@ export async function selectAndAuthzVariant(options: {
   // debugging?
   if ((variant_course.example_course || publicQuestionPreview) && !is_administrator) {
     const userOwnsVariant = await selectUserOwnsVariant({
-      user_id: user.user_id,
+      user_id: user.id,
       variant_id: variant.id,
     });
     if (!userOwnsVariant) {
@@ -226,13 +226,13 @@ export async function selectAndAuthzVariant(options: {
     ) {
       const authnUserPermissions = await callRow(
         'authz_course_instance',
-        [authn_user.user_id, variant.course_instance_id, new Date()],
+        [authn_user.id, variant.course_instance_id, new Date()],
         z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 
       const userPermissions = await callRow(
         'authz_course_instance',
-        [user.user_id, variant.course_instance_id, new Date()],
+        [user.id, variant.course_instance_id, new Date()],
         z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 

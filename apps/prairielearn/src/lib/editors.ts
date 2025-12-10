@@ -284,7 +284,7 @@ export abstract class Editor {
     const serverJob = await createServerJob({
       courseId: this.course.id,
       userId: this.user.id,
-      authnUserId: this.authz_data.authn_user.user_id,
+      authnUserId: this.authz_data.authn_user.id,
       type: 'sync',
       description: this.description,
     });

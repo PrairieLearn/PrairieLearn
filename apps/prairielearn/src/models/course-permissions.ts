@@ -35,7 +35,7 @@ export async function insertCoursePermissionsByUserUid({
   return await runInTransactionAsync(async () => {
     const user = await selectOrInsertUserByUid(uid);
     await execute(sql.insert_course_permissions, {
-      user_id: user.user_id,
+      user_id: user.id,
       course_id,
       course_role,
       authn_user_id,
@@ -97,7 +97,7 @@ export async function deleteCoursePermissionsForNonOwners({
     );
     await deleteCoursePermissions({
       course_id,
-      user_id: nonOwners.map((user) => user.user_id),
+      user_id: nonOwners.map((user) => user.id),
       authn_user_id,
     });
   });
@@ -118,7 +118,7 @@ export async function deleteCoursePermissionsForUsersWithoutAccess({
     );
     await deleteCoursePermissions({
       course_id,
-      user_id: usersWithoutAccess.map((user) => user.user_id),
+      user_id: usersWithoutAccess.map((user) => user.id),
       authn_user_id,
     });
   });

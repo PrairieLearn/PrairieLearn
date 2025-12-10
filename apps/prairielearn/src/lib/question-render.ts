@@ -471,7 +471,7 @@ export async function getAndRenderVariant(
         locals.question.id,
         instance_question_id,
         locals.user.id,
-        locals.authn_user.user_id,
+        locals.authn_user.id,
         locals.course_instance ?? null,
         locals.course,
         question_course,
@@ -860,10 +860,10 @@ export async function renderPanelsForSubmission({
         nextQuestionGroupRolePermissions = await getQuestionGroupPermissions(
           next_instance_question.id,
           assessment_instance.group_id,
-          user.user_id,
+          user.id,
         );
         userGroupRoles =
-          (await getUserRoles(assessment_instance.group_id, user.user_id))
+          (await getUserRoles(assessment_instance.group_id, user.id))
             .map((role) => role.role_name)
             .join(', ') || 'None';
       }

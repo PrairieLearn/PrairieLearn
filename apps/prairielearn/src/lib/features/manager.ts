@@ -151,7 +151,7 @@ export class FeatureManager<FeatureName extends string> {
       authn_user?: { user_id: string };
     },
   ): Promise<boolean> {
-    const user_context = locals.authn_user && { user_id: locals.authn_user.user_id };
+    const user_context = locals.authn_user && { user_id: locals.authn_user.id };
     if (!locals.institution) {
       return this.enabled(name, user_context);
     } else if (!locals.course) {

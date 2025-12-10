@@ -157,7 +157,7 @@ export async function reportIssueFromForm(
     },
     systemData: {},
     userId: res.locals.user.id,
-    authnUserId: res.locals.authn_user.user_id,
+    authnUserId: res.locals.authn_user.id,
   });
   return variant.id;
 }

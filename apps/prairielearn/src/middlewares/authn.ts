@@ -62,7 +62,7 @@ export default asyncHandler(async (req, res, next) => {
     // Enroll the load test user in the example course.
     const enrollment = await sqldb.queryOptionalRow(
       sql.enroll_user_in_example_course,
-      { user_id: res.locals.authn_user.user_id },
+      { user_id: res.locals.authn_user.id },
       EnrollmentSchema,
     );
 
@@ -74,7 +74,7 @@ export default asyncHandler(async (req, res, next) => {
         rowId: enrollment.id,
         newRow: enrollment,
         agentUserId: res.locals.user.id,
-        agentAuthnUserId: res.locals.authn_user.user_id,
+        agentAuthnUserId: res.locals.authn_user.id,
       });
     }
 

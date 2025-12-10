@@ -253,7 +253,7 @@ router.post(
         });
 
         if (user && user.uid !== uid) {
-          await updateUserUid({ user_id: user.user_id, uid });
+          await updateUserUid({ user_id: user.id, uid });
         }
 
         // We still have a valid UID; pass it back.

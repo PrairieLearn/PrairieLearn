@@ -93,7 +93,7 @@ router.post(
         res.locals.course_instance,
         res.locals.course,
         res.locals.user.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'test_100') {
@@ -110,7 +110,7 @@ router.post(
           res.locals.course_instance,
           res.locals.course,
           res.locals.user.id,
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else {
@@ -445,7 +445,7 @@ router.get(
     // here because this form will actually post to a different route, not `req.originalUrl`.
     const questionTestCsrfToken = generateCsrfToken({
       url: questionTestPath,
-      authnUserId: res.locals.authn_user.user_id,
+      authnUserId: res.locals.authn_user.id,
     });
 
     const questionGHLink = courseRepoContentUrl(

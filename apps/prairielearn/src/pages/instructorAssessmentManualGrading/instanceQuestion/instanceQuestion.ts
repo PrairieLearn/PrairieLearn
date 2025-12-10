@@ -426,7 +426,7 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
 
       if (modified_at_conflict) {
@@ -437,7 +437,7 @@ router.post(
         await sqldb.execute(sql.close_issues_for_instance_question, {
           issue_ids: body.unsafe_issue_ids_close,
           instance_question_id: res.locals.instance_question.id,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
         });
       }
 
@@ -572,7 +572,7 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
 
         if (modified_at_conflict) {
@@ -609,7 +609,7 @@ router.post(
           body.max_extra_points,
           body.rubric_items,
           body.tag_for_manual_grading,
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {

@@ -26,7 +26,7 @@ export async function pullAndUpdate(locals: UntypedResLocals): Promise<string> {
   const { jobSequenceId } = await pullAndUpdateCourse({
     courseId: locals.course.id,
     userId: locals.user.id,
-    authnUserId: locals.authz_data.authn_user.user_id,
+    authnUserId: locals.authz_data.authn_user.id,
     ...locals.course,
   });
   return jobSequenceId;
@@ -40,7 +40,7 @@ export async function gitStatus(locals: UntypedResLocals): Promise<string> {
   const serverJob = await createServerJob({
     courseId: locals.course.id,
     userId: locals.user.id,
-    authnUserId: locals.authz_data.authn_user.user_id,
+    authnUserId: locals.authz_data.authn_user.id,
     type: 'git_status',
     description: 'Show server git status',
   });
@@ -215,7 +215,7 @@ export async function ecrUpdate(
   const serverJob = await createServerJob({
     courseId: locals.course.id,
     userId: locals.user.id,
-    authnUserId: locals.authz_data.authn_user.user_id,
+    authnUserId: locals.authz_data.authn_user.id,
     type: 'images_sync',
     description: 'Sync Docker images from Docker Hub to PL registry',
   });

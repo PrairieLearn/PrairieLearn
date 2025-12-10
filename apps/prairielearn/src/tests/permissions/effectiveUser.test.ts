@@ -588,7 +588,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       });
       await ensureUncheckedEnrollment({
         courseInstance,
-        userId: user.user_id,
+        userId: user.id,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',

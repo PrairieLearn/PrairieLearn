@@ -217,12 +217,12 @@ async function selectUserInCourseInstance({
   if (
     (await sqldb.callRow(
       'users_is_instructor_in_course_instance',
-      [user.user_id, courseInstance.id],
+      [user.id, courseInstance.id],
       z.boolean(),
     )) ||
     (await selectOptionalEnrollmentByUserId({
       courseInstance,
-      userId: user.user_id,
+      userId: user.id,
       // The function can be called by the system, a student, or an instructor
       requiredRole: ['Student', 'Student Data Viewer', 'System'],
       authzData,
@@ -234,7 +234,7 @@ async function selectUserInCourseInstance({
   // In the example course, any user with instructor access in any other
   // course should have access and thus be allowed to be added to a group.
   const course = await selectCourseById(courseInstance.course_id);
-  if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+  if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.id }))) {
     return user;
   }
 
@@ -280,10 +280,10 @@ export async function addUserToGroup({
 
     // This is technically susceptible to race conditions. That won't be an
     // issue once we have a unique constraint for group membership.
-    const existingGroupId = await getGroupId(assessment.id, user.user_id);
+    const existingGroupId = await getGroupId(assessment.id, user.id);
     if (existingGroupId != null) {
       // Otherwise, the user is in a different group, which is an error
-      if (idsEqual(user.user_id, authn_user_id)) {
+      if (idsEqual(user.id, authn_user_id)) {
         throw new GroupOperationError('You are already in another group.');
       } else {
         throw new GroupOperationError('User is already in another group.');
@@ -305,7 +305,7 @@ export async function addUserToGroup({
 
     await sqldb.execute(sql.insert_group_user, {
       group_id: group.id,
-      user_id: user.user_id,
+      user_id: user.id,
       group_config_id: group.group_config_id,
       assessment_id: assessment.id,
       authn_user_id,

@@ -115,7 +115,7 @@ export async function uploadSubmissions(
   const ensureAndEnrollUser = memoize(async (uid: string) => {
     const user = await selectOrInsertUserByUid(uid);
     await ensureUncheckedEnrollment({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance: course_instance,
       actionDetail: 'implicit_joined',
       authzData: dangerousFullSystemAuthz(),
@@ -208,7 +208,7 @@ export async function uploadSubmissions(
         const entity = await run(async () => {
           if ('UID' in row) {
             const user = await ensureAndEnrollUser(row.UID);
-            return { type: 'user' as const, user_id: user.user_id };
+            return { type: 'user' as const, user_id: user.id };
           } else {
             // Create users for all group members concurrently
             const users = await Promise.all(row.Usernames.map((uid) => ensureAndEnrollUser(uid)));

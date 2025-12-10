@@ -389,7 +389,7 @@ describe('LTI 1.3', () => {
     // The new user should have an entry in `lti13_users`.
     const ltiUser = await queryOptionalRow(
       'SELECT * FROM lti13_users WHERE user_id = $user_id',
-      { user_id: user.user_id },
+      { user_id: user.id },
       Lti13UserSchema,
     );
     assert.ok(ltiUser);
@@ -578,7 +578,7 @@ describe('LTI 1.3', () => {
       // The new user should have an entry in `lti13_users`.
       const ltiUser = await queryOptionalRow(
         'SELECT * FROM lti13_users WHERE user_id = $user_id',
-        { user_id: user.user_id },
+        { user_id: user.id },
         Lti13UserSchema,
       );
       assert.ok(ltiUser);

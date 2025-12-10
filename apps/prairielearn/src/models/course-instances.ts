@@ -109,7 +109,7 @@ export async function selectCourseInstancesWithStaffAccess({
     CourseInstanceAuthzSchema,
   );
 
-  if (idsEqual(authzData.user.id, authzData.authn_user.user_id)) {
+  if (idsEqual(authzData.user.id, authzData.authn_user.id)) {
     return authnCourseInstances;
   }
 
