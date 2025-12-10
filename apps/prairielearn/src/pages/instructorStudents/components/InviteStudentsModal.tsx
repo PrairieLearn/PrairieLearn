@@ -12,10 +12,12 @@ interface InviteStudentForm {
 
 export function InviteStudentsModal({
   show,
+  isUnpublished,
   onHide,
   onSubmit,
 }: {
   show: boolean;
+  isUnpublished: boolean;
   onHide: () => void;
   onSubmit: (uids: string[]) => Promise<InviteResult>;
 }) {
@@ -87,6 +89,12 @@ export function InviteStudentsModal({
 
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
+          {isUnpublished && (
+            <Alert variant="warning">
+              Students will not be able to accept the invitation until the course instance is
+              published.
+            </Alert>
+          )}
           {saveMutation.isError && (
             <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
               {saveMutation.error instanceof Error

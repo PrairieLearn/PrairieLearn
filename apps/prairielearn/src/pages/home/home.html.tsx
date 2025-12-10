@@ -62,9 +62,13 @@ export function Home({
   isDevMode: boolean;
   enrollmentManagementEnabled: boolean;
 }) {
-  const listedStudentCourses = studentCourses.filter(
-    (ci) => ci.enrollment.status === 'joined' || ci.enrollment.status === 'invited',
-  );
+  const listedStudentCourses = studentCourses.filter((ci) => {
+    if (ci.enrollment.status === 'joined') return true;
+    if (ci.enrollment.status === 'invited' && computeStatus(ci.course_instance) === 'published') {
+      return true;
+    }
+    return false;
+  });
 
   const hasCourses = listedStudentCourses.length > 0 || instructorCourses.length > 0;
 

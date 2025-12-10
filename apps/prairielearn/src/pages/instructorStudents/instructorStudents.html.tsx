@@ -524,6 +524,7 @@ function StudentsCard({
       />
       <InviteStudentsModal
         show={showInvite}
+        isUnpublished={computeStatus(courseInstance) === 'unpublished'}
         onHide={() => setShowInvite(false)}
         onSubmit={inviteStudents}
       />

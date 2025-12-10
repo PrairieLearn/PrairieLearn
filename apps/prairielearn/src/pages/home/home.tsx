@@ -199,6 +199,11 @@ router.post(
       throw new HttpStatusError(403, 'Access denied');
     }
 
+    if (computeStatus(courseInstance) !== 'published') {
+      flash('error', 'This course instance is not accessible to students');
+      return;
+    }
+
     switch (body.__action) {
       case 'accept_invitation': {
         const enrollment = await selectOptionalEnrollmentByUid({
