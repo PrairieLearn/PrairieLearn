@@ -193,7 +193,7 @@ export function ColumnManager<RowDataModel>({
     if (isPinned) {
       // Get the previous column that can be set to unpinned.
       // This is useful since we want to unpin/pin columns that are not shown in the view manager.
-      const previousFrozenColumnIndex = allLeafColumns.findLastIndex(
+      const previousFrozenColumnIndex = allLeafColumns.findIndex(
         (c, index) => c.getCanHide() && index < currentColumnIndex,
       );
       newLeft = allLeafColumns.slice(0, previousFrozenColumnIndex + 1).map((c) => c.id);

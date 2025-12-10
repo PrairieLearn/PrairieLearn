@@ -303,6 +303,7 @@ export default tseslint.config([
       'unicorn/no-array-callback-reference': 'off',
       'unicorn/no-array-method-this-argument': 'off',
       'unicorn/no-array-reduce': 'off', // Sometimes, an array reduce is more readable
+      'unicorn/no-array-reverse': 'off', // `Array.prototype.toReversed` is not yet supported by our TypeScript config
       'unicorn/no-array-sort': 'off', // Disabling for the time being to avoid unnecessary diffs
       'unicorn/no-hex-escape': 'off',
       'unicorn/no-lonely-if': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2252261293
