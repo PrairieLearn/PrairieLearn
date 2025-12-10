@@ -185,7 +185,8 @@ ${resLocals.assessment.text}</textarea
                 value="${resLocals.assessment.max_points}"
               />
               <small class="form-text text-muted">
-                The number of points that must be earned in this assessment to achieve a score of 100%.
+                The number of points that must be earned in this assessment to achieve a score of
+                100%.
               </small>
             </div>
             <div class="mb-3">

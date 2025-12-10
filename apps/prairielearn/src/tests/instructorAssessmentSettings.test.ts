@@ -84,7 +84,7 @@ describe('Editing assessment settings', () => {
           module: 'Module2',
           aid: 'HW2',
           text: 'Test Text',
-          max_points: '100'
+          max_points: '100',
         }),
       },
     );
