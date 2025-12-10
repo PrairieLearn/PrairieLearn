@@ -184,7 +184,13 @@ export function RubricSettings({
   const updateRubricItem = (idx: number, patch: Partial<RubricItem>) => {
     setRubricItems((prev) => {
       const next = prev.slice();
-      next[idx] = { ...next[idx], ...patch };
+      next[idx] = {
+        ...next[idx],
+        rubric_item: {
+          ...next[idx].rubric_item,
+          ...patch,
+        },
+      };
       return next;
     });
   };
@@ -845,7 +851,7 @@ export function RubricSettings({
   );
 }
 
-export function RubricRow({
+function RubricRow({
   item,
   showAiGradingStats,
   submissionCount,
