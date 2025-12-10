@@ -1,7 +1,7 @@
 -- BLOCK select_assessment_instances
 SELECT
   (aset.name || ' ' || a.number) AS assessment_label,
-  u.id,
+  u.id AS user_id,
   u.uid,
   u.name,
   users_get_displayed_role (u.id, ci.id) AS role,
