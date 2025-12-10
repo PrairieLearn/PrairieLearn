@@ -905,8 +905,6 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
             ),
           });
 
-          console.log('RESPONSE', response);
-
           assert.equal(response.ok, true);
         });
 

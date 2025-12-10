@@ -36,7 +36,6 @@ import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/que
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
-import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
@@ -217,8 +216,6 @@ router.get(
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
 
-    const { rubric } = await selectCompleteRubric(instance_question.assessment_question_id);
-
     res.send(
       InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
@@ -233,7 +230,6 @@ router.get(
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
-        grader_guidelines: rubric?.grader_guidelines,
         skipGradedSubmissions: req.session.skip_graded_submissions,
       }),
     );

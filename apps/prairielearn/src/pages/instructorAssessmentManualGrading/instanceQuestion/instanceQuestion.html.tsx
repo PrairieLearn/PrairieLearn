@@ -39,9 +39,7 @@ export function InstanceQuestion({
   aiGradingMode,
   aiGradingInfo,
   aiGradingStats,
-  grader_guidelines,
   instanceQuestionGroups,
-
   skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
@@ -60,7 +58,6 @@ export function InstanceQuestion({
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
   aiGradingStats: AiGradingGeneralStats | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
-  grader_guidelines?: string | null;
   skipGradedSubmissions: boolean;
 }) {
   const instanceQuestionGroupsExist = instanceQuestionGroups
@@ -200,7 +197,6 @@ export function InstanceQuestion({
             conflict_grading_job,
             graders,
             lastGrader,
-            grader_guidelines,
             skipGradedSubmissions,
           })
         : ''}
@@ -278,7 +274,6 @@ function ConflictGradingJobModal({
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
-  grader_guidelines?: string | null;
   skipGradedSubmissions: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
