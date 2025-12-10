@@ -575,7 +575,7 @@ describe('Self-enrollment institution restriction transitions', () => {
     });
 
     // Update user's institution to match course institution
-    await execute('UPDATE users SET institution_id = $institution_id WHERE user_id = $user_id', {
+    await execute('UPDATE users SET institution_id = $institution_id WHERE id = $user_id', {
       institution_id: '1',
       user_id: sameInstitutionUser.id,
     });
@@ -703,7 +703,7 @@ describe('Self-enrollment institution restriction transitions', () => {
     });
 
     // Update user's institution to be different from course institution
-    await execute('UPDATE users SET institution_id = $institution_id WHERE user_id = $user_id', {
+    await execute('UPDATE users SET institution_id = $institution_id WHERE id = $user_id', {
       institution_id: '2',
       user_id: differentInstitutionUser.id,
     });
@@ -756,7 +756,7 @@ describe('Self-enrollment institution restriction transitions', () => {
     });
 
     // Update user's institution to be different from course institution
-    await execute('UPDATE users SET institution_id = $institution_id WHERE user_id = $user_id', {
+    await execute('UPDATE users SET institution_id = $institution_id WHERE id = $user_id', {
       institution_id: '2',
       user_id: differentInstitutionUser.id,
     });
