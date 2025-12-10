@@ -1,7 +1,7 @@
 import { useRef, useState } from 'preact/hooks';
 
 import { type Question } from '../../../../lib/db-types.js';
-import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.types.js';
+import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
 import { FinalizeModal } from './FinalizeModal.js';

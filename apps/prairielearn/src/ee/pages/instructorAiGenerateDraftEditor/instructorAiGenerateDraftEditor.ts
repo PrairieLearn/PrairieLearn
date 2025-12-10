@@ -29,8 +29,11 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
-import { editQuestionWithAgent, getAgenticModel } from '../../lib/ai-question-generation/agent.js';
-import { type QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.types.js';
+import {
+  type QuestionGenerationUIMessage,
+  editQuestionWithAgent,
+  getAgenticModel,
+} from '../../lib/ai-question-generation/agent.js';
 import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-generation/redis.js';
 import { getIntervalUsage } from '../../lib/aiQuestionGeneration.js';
 import { selectAiQuestionGenerationMessages } from '../../models/ai-question-generation-message.js';

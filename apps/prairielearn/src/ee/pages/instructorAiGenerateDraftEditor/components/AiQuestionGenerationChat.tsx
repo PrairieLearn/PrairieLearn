@@ -19,7 +19,7 @@ import { assertNever } from '../../../../lib/types.js';
 import type {
   QuestionGenerationToolUIPart,
   QuestionGenerationUIMessage,
-} from '../../../lib/ai-question-generation/agent.types.js';
+} from '../../../lib/ai-question-generation/agent.js';
 
 import { PromptInput } from './PromptInput.js';
 

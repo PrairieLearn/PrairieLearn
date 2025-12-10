@@ -10,7 +10,7 @@ import {
 import { type Question } from '../../../lib/db-types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
-import type { QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.types.js';
+import type { QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationEditor } from './components/AiQuestionGenerationEditor.js';
 
