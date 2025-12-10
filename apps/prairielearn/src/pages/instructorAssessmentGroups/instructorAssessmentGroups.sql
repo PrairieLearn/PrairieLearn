@@ -21,7 +21,7 @@ WITH
   ),
   assessment_group_users AS (
     SELECT
-      g.id AS group_id,
+      g.id AS team_id,
       COUNT(u.uid)::integer AS size,
       jsonb_agg(
         jsonb_build_object('uid', u.uid, 'user_id', u.user_id)

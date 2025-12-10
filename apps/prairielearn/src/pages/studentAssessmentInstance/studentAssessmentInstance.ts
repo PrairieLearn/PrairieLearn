@@ -259,7 +259,7 @@ router.get(
 
     // Get the group config info
     const groupConfig = await getGroupConfig(res.locals.assessment.id);
-    const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
+    const groupInfo = await getGroupInfo(res.locals.assessment_instance.team_id, groupConfig);
     const userCanAssignRoles =
       groupConfig.has_roles &&
       (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
