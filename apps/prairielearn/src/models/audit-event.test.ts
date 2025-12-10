@@ -55,7 +55,7 @@ describe('audit-event', () => {
           "course_id": "1",
           "course_instance_id": "1",
           "enrollment_id": null,
-          "group_id": null,
+          "team_id": null,
           "id": "1",
           "institution_id": "1",
           "new_row": {
@@ -110,7 +110,7 @@ describe('audit-event', () => {
           "course_id": null,
           "course_instance_id": null,
           "enrollment_id": null,
-          "group_id": null,
+          "team_id": null,
           "id": "1",
           "institution_id": null,
           "new_row": {
@@ -549,7 +549,7 @@ describe('audit-event', () => {
           "course_id": "1",
           "course_instance_id": "1",
           "enrollment_id": null,
-          "group_id": null,
+          "team_id": null,
           "id": "1",
           "institution_id": "1",
           "new_row": {

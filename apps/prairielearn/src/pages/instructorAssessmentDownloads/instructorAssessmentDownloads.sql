@@ -125,7 +125,7 @@ FROM
   LEFT JOIN team_configs AS gc ON (gc.assessment_id = a.id)
   LEFT JOIN teams AS g ON (
     g.id = ai.team_id
-    AND g.group_config_id = gc.id
+    AND g.team_config_id = gc.id
   )
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
   LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
@@ -151,7 +151,7 @@ WITH
       g.id AS group_id,
       ai.id,
       assessment_id,
-      g.name AS group_name,
+      g.name AS team_name,
       teams_uid_list (g.id) AS uid_list
     FROM
       assessment_instances AS ai
@@ -186,7 +186,7 @@ WITH
         ELSE (s.submitted_answer - '_files')
       END AS submitted_answer,
       s.partial_scores AS old_partial_scores,
-      ai.team_name,
+      ai.team_name AS group_name,
       ai.uid_list
     FROM
       submissions AS s
@@ -321,7 +321,7 @@ WITH
       LEFT JOIN team_configs AS gc ON (gc.assessment_id = a.id)
       LEFT JOIN teams AS g ON (
         g.id = ai.team_id
-        AND g.group_config_id = gc.id
+        AND g.team_config_id = gc.id
       )
       LEFT JOIN users AS u ON (u.user_id = ai.user_id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
