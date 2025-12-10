@@ -165,7 +165,7 @@ export function PublishingExtensions({
         csrfToken={csrfToken}
         onSuccess={() => {
           void queryClient.invalidateQueries({ queryKey: ['extensions'] });
-          deleteModalState.hide();
+          modifyModalState.hide();
         }}
       />
 

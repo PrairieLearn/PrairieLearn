@@ -141,10 +141,7 @@ export function ExtensionModifyModal({
         throw new Error(body.error);
       }
     },
-    onSuccess: () => {
-      setStage({ type: 'editing' });
-      onSuccess();
-    },
+    onSuccess,
   });
 
   const onFormSubmit = async (data: ExtensionFormValues, event?: React.FormEvent) => {
