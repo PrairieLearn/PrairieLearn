@@ -1,12 +1,16 @@
 import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
+import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
+import { run } from '@prairielearn/run';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
+import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import { assertNever } from '../lib/types.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
@@ -100,6 +104,57 @@ function SyncErrorsAndWarningsForContext({
     default:
       return null;
   }
+}
+
+function UnpublishedBannerComponent({
+  navContext,
+  resLocals,
+}: {
+  navContext: NavContext;
+  resLocals: UntypedResLocals;
+}) {
+  if (navContext.type !== 'instructor') return null;
+  if (!navContext.page) return null;
+  if (!['instance_admin', 'assessment'].includes(navContext.page)) return null;
+  if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
+
+  const { course_instance: courseInstance, urlPrefix } = resLocals;
+
+  if (!courseInstance || !urlPrefix) return null;
+
+  // Only show banner if modern publishing is enabled
+  if (!courseInstance.modern_publishing) return null;
+
+  // Check if the course instance is unpublished
+  const status = computeStatus(
+    courseInstance.publishing_start_date,
+    courseInstance.publishing_end_date,
+  );
+
+  if (status !== 'unpublished' && status !== 'publish_scheduled') return null;
+
+  const message = run(() => {
+    switch (status) {
+      case 'unpublished':
+        if (courseInstance.publishing_end_date) {
+          return `This course instance is no longer accessible to students because it was unpublished at ${formatDateFriendly(courseInstance.publishing_end_date, courseInstance.display_timezone, { timeFirst: true })}.`;
+        }
+        return 'This course instance is not accessible to students because it is unpublished.';
+      case 'publish_scheduled':
+        return `This course instance will be accessible to students after the scheduled publish date of ${formatDateFriendly(courseInstance.publishing_start_date, courseInstance.display_timezone, { timeFirst: true })}.`;
+      default:
+        assertNever(status);
+    }
+  });
+
+  return (
+    <div class="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small" role="alert">
+      {message}{' '}
+      <a href={`${urlPrefix}/instance_admin/publishing`} class="alert-link">
+        Configure publishing settings
+      </a>
+    </div>
+  );
 }
 
 export function PageLayout({
@@ -278,6 +333,9 @@ export function PageLayout({
                 'd-flex flex-column',
               )}"
             >
+              ${renderHtml(
+                <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
+              )}
               ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
                 ? AssessmentNavigation({
                     courseInstanceId: resLocals.course_instance.id,
