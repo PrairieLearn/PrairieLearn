@@ -68,4 +68,4 @@ GROUP BY
 ORDER BY
   u.uid,
   u.name,
-  u.user_id;
+  u.id;

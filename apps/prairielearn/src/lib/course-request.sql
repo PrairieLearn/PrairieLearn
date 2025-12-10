@@ -25,7 +25,7 @@ WITH
     FROM
       course_requests AS cr
       JOIN job_sequences AS js ON cr.id = js.course_request_id
-      LEFT JOIN users AS u ON js.authn_user_id = u.user_id
+      LEFT JOIN users AS u ON js.authn_user_id = u.id
     GROUP BY
       cr.id
   )
@@ -47,7 +47,7 @@ SELECT
   coalesce(j.jobs, '[]'::jsonb) AS jobs
 FROM
   course_requests AS r
-  INNER JOIN users AS u ON u.user_id = r.user_id
+  INNER JOIN users AS u ON u.id = r.user_id
   LEFT JOIN users AS ua ON ua.user_id = r.approved_by
   LEFT JOIN select_course_request_jobs AS j ON j.id = r.id
 WHERE

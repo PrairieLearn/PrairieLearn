@@ -25,7 +25,7 @@ ORDER BY
   ci.long_name ASC NULLS FIRST,
   ci.id ASC NULLS FIRST,
   u.uid ASC NULLS FIRST,
-  u.user_id ASC NULLS FIRST;
+  u.id ASC NULLS FIRST;
 
 -- BLOCK select_institutions
 SELECT

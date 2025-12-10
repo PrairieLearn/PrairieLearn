@@ -6,7 +6,7 @@ FROM
   JOIN users AS u ON (u.id = administrators.user_id)
 ORDER BY
   u.uid,
-  u.user_id;
+  u.id;
 
 -- BLOCK delete_admin_by_user_id
 WITH

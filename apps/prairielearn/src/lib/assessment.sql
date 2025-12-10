@@ -577,14 +577,14 @@ WITH
       LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
       JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
-        e.user_id = u.user_id
+        e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
       )
     WHERE
       a.id = $assessment_id
       AND ai.include_in_statistics
     GROUP BY
-      u.user_id
+      u.id
   ),
   score_stats AS (
     SELECT
@@ -664,7 +664,7 @@ WITH
       LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
       JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
-        e.user_id = u.user_id
+        e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
       )
     WHERE
@@ -721,7 +721,7 @@ WITH
       LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
       JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
-        e.user_id = u.user_id
+        e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
       )
     WHERE
@@ -842,7 +842,7 @@ WITH
         'Begin'::text AS event_name,
         'gray3'::text AS event_color,
         ai.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,
@@ -866,7 +866,7 @@ WITH
         'New variant'::text AS event_name,
         'gray1'::text AS event_color,
         v.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -905,7 +905,7 @@ WITH
         'Broken variant'::text AS event_name,
         'red3'::text AS event_color,
         v.broken_at AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -933,7 +933,7 @@ WITH
         'Submission'::text AS event_name,
         'blue3'::text AS event_color,
         s.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -982,7 +982,7 @@ WITH
         'External grading results'::text AS event_name,
         'blue1'::text AS event_color,
         gj.graded_at AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1016,7 +1016,7 @@ WITH
         END AS event_name,
         'blue2'::text AS event_color,
         gj.graded_at AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1088,7 +1088,7 @@ WITH
         'AI grading results deleted'::text AS event_name,
         'red2'::text AS event_color,
         gj.deleted_at AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1120,7 +1120,7 @@ WITH
         'Grade submission'::text AS event_name,
         'orange3'::text AS event_color,
         gj.graded_at AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1165,7 +1165,7 @@ WITH
         'Score question'::text AS event_name,
         'brown1'::text AS event_color,
         qsl.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1204,7 +1204,7 @@ WITH
         'Score assessment'::text AS event_name,
         'brown3'::text AS event_color,
         asl.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,
@@ -1238,7 +1238,7 @@ WITH
         END AS event_name,
         'gray3'::text AS event_color,
         asl.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,
@@ -1284,7 +1284,7 @@ WITH
         'Time limit expiry'::text AS event_name,
         'red2'::text AS event_color,
         asl.date_limit AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,
@@ -1329,7 +1329,7 @@ WITH
         'View variant'::text AS event_name,
         'green3'::text AS event_color,
         pvl.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1357,7 +1357,7 @@ WITH
         'View assessment overview'::text AS event_name,
         'green1'::text AS event_color,
         pvl.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,
@@ -1382,7 +1382,7 @@ WITH
         ('Group ' || gl.action)::text AS event_name,
         'gray2'::text AS event_color,
         gl.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,

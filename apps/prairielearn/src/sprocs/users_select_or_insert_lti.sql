@@ -67,7 +67,7 @@ BEGIN
     END IF;
 
     -- verify user_id exists
-    user_id := u.user_id;
+    user_id := u.id;
     if user_id IS NULL THEN
         RAISE EXCEPTION 'computed NULL user_id';
     END IF;

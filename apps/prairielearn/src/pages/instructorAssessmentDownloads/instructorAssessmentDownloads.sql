@@ -5,7 +5,7 @@ WITH
       ON (
         CASE
           WHEN $group_work THEN ai.group_id
-          ELSE u.user_id
+          ELSE u.id
         END,
         CASE
           WHEN $highest_score THEN NULL
@@ -57,15 +57,15 @@ WITH
       )
       LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
       JOIN users AS u ON (
-        u.user_id = ai.user_id
-        OR u.user_id = gu.user_id
+        u.id = ai.user_id
+        OR u.id = gu.user_id
       )
     WHERE
       a.id = $assessment_id
     ORDER BY
       CASE
         WHEN $group_work THEN ai.group_id
-        ELSE u.user_id
+        ELSE u.id
       END,
       CASE
         WHEN $highest_score THEN NULL
@@ -147,7 +147,7 @@ ORDER BY
 WITH
   final_assessment_instances AS (
     SELECT DISTINCT
-      ON (g.id, u.user_id) u.id,
+      ON (g.id, u.id) u.id,
       g.id AS group_id,
       ai.id,
       assessment_id,
@@ -161,7 +161,7 @@ WITH
       ai.assessment_id = $assessment_id
     ORDER BY
       g.id ASC,
-      u.user_id ASC,
+      u.id ASC,
       ai.number DESC
   ),
   final_submissions AS (
@@ -378,10 +378,10 @@ FROM
   group_configs AS gc
   JOIN groups AS g ON gc.id = g.group_config_id
   JOIN group_users AS gu ON g.id = gu.group_id
-  JOIN users AS u ON gu.user_id = u.user_id
+  JOIN users AS u ON gu.user_id = u.id
   LEFT JOIN group_user_roles AS gur ON (
     gur.group_id = g.id
-    AND gur.user_id = u.user_id
+    AND gur.user_id = u.id
   )
   LEFT JOIN group_roles AS gr ON gur.group_role_id = gr.id
 WHERE

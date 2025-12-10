@@ -16,7 +16,7 @@ INSERT INTO
       course_instances AS ci
       JOIN pl_courses AS c ON (c.id = ci.course_id)
     WHERE
-      u.user_id = $user_id
+      u.id = $user_id
       AND c.example_course IS TRUE
   )
 ON CONFLICT DO NOTHING

@@ -12,7 +12,7 @@ FROM
     JOIN pl_courses AS c ON (c.id = ci.course_id)
   )
   LEFT JOIN enrollments AS e ON (
-    e.user_id = u.user_id
+    e.user_id = u.id
     AND e.course_instance_id = ci.id
   ),
   LATERAL (
@@ -25,7 +25,7 @@ FROM
       ar.course_instance_id = ci.id
   ) AS d
 WHERE
-  u.user_id = $user_id
+  u.id = $user_id
   AND ci.deleted_at IS NULL
   AND c.deleted_at IS NULL
   AND c.example_course IS FALSE

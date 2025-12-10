@@ -53,8 +53,8 @@ WITH
     SELECT
       ciu.course_id,
       ciu.course_instance_id,
-      count(DISTINCT u.user_id) AS total_students,
-      count(DISTINCT u.user_id) FILTER (
+      count(DISTINCT u.id) AS total_students,
+      count(DISTINCT u.id) FILTER (
         WHERE
           u.institution_id != i.id
       ) AS outside_students

@@ -77,7 +77,7 @@ SELECT
   (
     row_number() OVER (
       PARTITION BY
-        u.user_id
+        u.id
       ORDER BY
         score_perc DESC,
         ai.number DESC,

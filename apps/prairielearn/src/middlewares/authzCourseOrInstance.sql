@@ -6,7 +6,7 @@ SELECT
   users_is_instructor_in_course_instance (u.id, $course_instance_id) AS is_instructor_in_course_instance
 FROM
   users AS u
-  LEFT JOIN administrators AS adm ON (adm.user_id = u.user_id)
+  LEFT JOIN administrators AS adm ON (adm.user_id = u.id)
   JOIN institutions AS i ON (i.id = u.institution_id)
 WHERE
   u.uid = $uid;

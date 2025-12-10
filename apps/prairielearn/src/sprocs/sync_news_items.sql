@@ -58,7 +58,7 @@ BEGIN
         INSERT INTO news_item_notifications (news_item_id, user_id)
         SELECT
             ni.id,
-            u.user_id
+            u.id
         FROM
             new_news_items AS ni
             CROSS JOIN users_are_instructors_in_any_course() AS u

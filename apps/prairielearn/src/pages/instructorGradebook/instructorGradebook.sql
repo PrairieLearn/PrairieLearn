@@ -132,7 +132,7 @@ WITH
                 )
               WHERE
                 ogu.group_id = s.group_id
-                AND ogu.user_id != u.user_id
+                AND ogu.user_id != u.id
             ),
             '[]'::json
           )
@@ -140,9 +140,9 @@ WITH
       ) AS scores
     FROM
       course_users AS u
-      JOIN course_scores AS s ON (s.user_id = u.user_id)
+      JOIN course_scores AS s ON (s.user_id = u.id)
     GROUP BY
-      u.user_id
+      u.id
   )
 SELECT
   u.id,
@@ -155,7 +155,7 @@ SELECT
 FROM
   course_users AS u
   LEFT JOIN enrollments AS e ON (
-    e.user_id = u.user_id
+    e.user_id = u.id
     AND e.course_instance_id = $course_instance_id
   )
   LEFT JOIN user_scores AS s ON (u.user_id = s.user_id)

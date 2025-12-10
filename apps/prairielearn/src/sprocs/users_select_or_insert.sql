@@ -26,7 +26,7 @@ BEGIN
         AND (users_select_or_insert.institution_id IS NULL OR users.institution_id = users_select_or_insert.institution_id);
 
     -- if we couldn't match "uin", try "uid"
-    IF u.user_id IS NULL THEN
+    IF u.id IS NULL THEN
         SELECT *
         INTO u
         FROM users
@@ -99,7 +99,7 @@ BEGIN
     END IF;
 
     -- if we don't have the user already, make it
-    IF u.user_id IS NULL THEN
+    IF u.id IS NULL THEN
         INSERT INTO users (
             uid,
             name,
@@ -202,7 +202,7 @@ BEGIN
     END IF;
 
     -- return value
-    user_id := u.user_id;
+    user_id := u.id;
     if user_id IS NULL THEN
         RAISE EXCEPTION 'computed NULL user_id';
     END IF;

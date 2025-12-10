@@ -51,4 +51,4 @@ WHERE
   AND a.group_work = TRUE
   AND g.deleted_at IS NULL
 ORDER BY
-  u.user_id;
+  u.id;

@@ -110,7 +110,7 @@ WITH
       course_users AS u
       CROSS JOIN course_assessments AS a
       LEFT JOIN course_scores AS s ON (
-        s.user_id = u.user_id
+        s.user_id = u.id
         AND s.assessment_id = a.assessment_id
       )
   ),
