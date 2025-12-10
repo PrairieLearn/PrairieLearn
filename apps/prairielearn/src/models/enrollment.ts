@@ -664,7 +664,7 @@ export async function deleteEnrollment({
   return await runInTransactionAsync(async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
 
-    assertEnrollmentStatus(lockedEnrollment, 'invited');
+    assertEnrollmentStatus(lockedEnrollment, ['invited', 'rejected']);
 
     const deletedEnrollment = await queryRow(
       sql.delete_enrollment_by_id,

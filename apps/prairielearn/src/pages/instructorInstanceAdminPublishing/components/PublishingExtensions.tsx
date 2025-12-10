@@ -7,8 +7,8 @@ import { formatDateFriendly } from '@prairielearn/formatter';
 
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import {
-  type CourseInstancePublishingExtensionWithUsers,
-  CourseInstancePublishingExtensionWithUsersSchema,
+  type CourseInstancePublishingExtensionRow,
+  CourseInstancePublishingExtensionRowSchema,
 } from '../instructorInstanceAdminPublishing.types.js';
 import { dateToPlainDateTime } from '../utils/dateUtils.js';
 
@@ -23,13 +23,13 @@ export function PublishingExtensions({
   csrfToken,
 }: {
   courseInstance: StaffCourseInstance;
-  initialExtensions: CourseInstancePublishingExtensionWithUsers[];
+  initialExtensions: CourseInstancePublishingExtensionRow[];
   canEdit: boolean;
   csrfToken: string;
 }) {
   const queryClient = useQueryClient();
 
-  const extensionsQuery = useQuery<CourseInstancePublishingExtensionWithUsers[]>({
+  const extensionsQuery = useQuery<CourseInstancePublishingExtensionRow[]>({
     queryKey: ['extensions'],
     queryFn: async () => {
       const res = await fetch(window.location.pathname + '/extension/data.json');
@@ -37,7 +37,7 @@ export function PublishingExtensions({
       if (!res.ok) {
         throw new Error(data.message);
       }
-      const parsedData = z.array(CourseInstancePublishingExtensionWithUsersSchema).safeParse(data);
+      const parsedData = z.array(CourseInstancePublishingExtensionRowSchema).safeParse(data);
       if (!parsedData.success) throw new Error('Failed to parse extensions');
       return parsedData.data;
     },
@@ -126,7 +126,7 @@ export function PublishingExtensions({
             <tbody>
               {extensionsQuery.data.map((extension) => (
                 <ExtensionTableRow
-                  key={extension.id}
+                  key={extension.course_instance_publishing_extension.id}
                   extension={extension}
                   courseInstance={courseInstance}
                   canEdit={canEdit}
@@ -134,11 +134,11 @@ export function PublishingExtensions({
                     setModifyModalState({
                       type: 'edit',
                       endDate: dateToPlainDateTime(
-                        extension.end_date,
+                        extension.course_instance_publishing_extension.end_date,
                         courseInstance.display_timezone,
                       ).toString(),
-                      extensionId: extension.id,
-                      name: extension.name ?? '',
+                      extensionId: extension.course_instance_publishing_extension.id,
+                      name: extension.course_instance_publishing_extension.name ?? '',
                       uids: extension.user_data
                         .map((u) => u.uid)
                         .sort()
@@ -147,8 +147,8 @@ export function PublishingExtensions({
                   }
                   onDelete={() =>
                     setDeleteModalState({
-                      extensionId: extension.id,
-                      extensionName: extension.name,
+                      extensionId: extension.course_instance_publishing_extension.id,
+                      extensionName: extension.course_instance_publishing_extension.name,
                       userData: extension.user_data,
                     })
                   }

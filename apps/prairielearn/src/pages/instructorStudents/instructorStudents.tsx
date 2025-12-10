@@ -8,7 +8,6 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
@@ -155,12 +154,17 @@ router.get(
       pageType: 'courseInstance',
       accessType: 'instructor',
     });
-    const { authz_data, urlPrefix, __csrf_token: csrfToken } = pageContext;
-    const { course_instance: courseInstance, course, institution } = pageContext;
+    const {
+      authz_data,
+      __csrf_token: csrfToken,
+      course_instance: courseInstance,
+      course,
+      institution,
+    } = pageContext;
 
     const search = getUrl(req).search;
 
-    if (!pageContext.authz_data.has_course_instance_permission_view) {
+    if (!authz_data.has_course_instance_permission_view) {
       const courseOwners = await getCourseOwners(course.id);
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
@@ -205,30 +209,19 @@ router.get(
           fullHeight: true,
         },
         content: (
-          <>
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={{
-                has_course_instance_permission_edit:
-                  authz_data.has_course_instance_permission_edit ?? false,
-              }}
+          <Hydrate fullHeight>
+            <InstructorStudents
+              enrollmentManagementEnabled={enrollmentManagementEnabled}
+              isDevMode={config.devMode}
+              authzData={authz_data}
+              students={students}
+              search={search}
+              timezone={course.display_timezone}
               courseInstance={courseInstance}
               course={course}
-              urlPrefix={urlPrefix}
+              csrfToken={csrfToken}
             />
-            <Hydrate fullHeight>
-              <InstructorStudents
-                enrollmentManagementEnabled={enrollmentManagementEnabled}
-                isDevMode={config.devMode}
-                authzData={authz_data}
-                students={students}
-                search={search}
-                timezone={course.display_timezone}
-                courseInstance={courseInstance}
-                course={course}
-                csrfToken={csrfToken}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );

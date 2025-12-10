@@ -92,7 +92,7 @@ export async function uploadInstanceQuestionScores(
             skippedCount++;
             // NO OUTPUT
           }
-        } catch (err) {
+        } catch (err: any) {
           errorCount++;
           const msg = `Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`;
           if (output == null) {

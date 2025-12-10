@@ -5,7 +5,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
-import type { CourseInstancePublishingExtensionWithUsers } from '../instructorInstanceAdminPublishing.types.js';
+import type { CourseInstancePublishingExtensionRow } from '../instructorInstanceAdminPublishing.types.js';
 
 export function ExtensionTableRow({
   extension,
@@ -14,33 +14,39 @@ export function ExtensionTableRow({
   onDelete,
   onEdit,
 }: {
-  extension: CourseInstancePublishingExtensionWithUsers;
+  extension: CourseInstancePublishingExtensionRow;
   courseInstance: StaffCourseInstance;
   canEdit: boolean;
-  onDelete: (extension: CourseInstancePublishingExtensionWithUsers) => void;
-  onEdit: (extension: CourseInstancePublishingExtensionWithUsers) => void;
+  onDelete: (extension: CourseInstancePublishingExtensionRow) => void;
+  onEdit: (extension: CourseInstancePublishingExtensionRow) => void;
 }) {
   const [showAllStudents, setShowAllStudents] = useState(false);
   // Check if extension end date is before the course instance end date
   const isBeforeInstanceEndDate =
-    courseInstance.publishing_end_date && extension.end_date < courseInstance.publishing_end_date;
+    courseInstance.publishing_end_date &&
+    extension.course_instance_publishing_extension.end_date < courseInstance.publishing_end_date;
 
   return (
     <tr>
       <td class="col-1 align-middle">
-        {extension.name ? (
-          <strong>{extension.name}</strong>
+        {extension.course_instance_publishing_extension.name ? (
+          <strong>{extension.course_instance_publishing_extension.name}</strong>
         ) : (
           <span class="text-muted">Unnamed</span>
         )}
       </td>
       <td class="col-1 align-middle text-nowrap">
         <div class="d-flex align-items-center gap-1">
-          {formatDateFriendly(extension.end_date, courseInstance.display_timezone)}
+          {formatDateFriendly(
+            extension.course_instance_publishing_extension.end_date,
+            courseInstance.display_timezone,
+          )}
           {isBeforeInstanceEndDate && (
             <OverlayTrigger
               tooltip={{
-                props: { id: `extension-end-date-warning-${extension.id}` },
+                props: {
+                  id: `extension-end-date-warning-${extension.course_instance_publishing_extension.id}`,
+                },
                 body: 'This date is before the course instance end date and will be ignored',
               }}
             >
