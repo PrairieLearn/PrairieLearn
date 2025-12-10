@@ -624,7 +624,7 @@ router.post(
           authzData: res.locals.authz_data,
           requiredRole: ['Student Data Editor'],
         });
-        if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
+        if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
           throw new error.HttpStatusError(
             400,
             'Assigned grader does not have Student Data Editor permission',

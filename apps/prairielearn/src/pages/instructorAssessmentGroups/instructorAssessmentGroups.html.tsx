@@ -12,7 +12,7 @@ export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
   name: z.string(),
   size: z.number(),
-  users: z.array(UserSchema.pick({ user_id: true, uid: true })),
+  users: z.array(UserSchema.pick({ id: true, uid: true })),
 });
 type GroupUsersRow = z.infer<typeof GroupUsersRowSchema>;
 

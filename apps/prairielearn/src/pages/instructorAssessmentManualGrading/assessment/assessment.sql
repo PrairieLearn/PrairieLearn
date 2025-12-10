@@ -20,7 +20,7 @@ WITH
       COUNT(*) AS num_instance_questions,
       JSONB_AGG(
         DISTINCT jsonb_build_object(
-          'user_id',
+          'id',
           agu.id,
           'name',
           agu.name,
@@ -34,7 +34,7 @@ WITH
       ) AS assigned_graders,
       JSONB_AGG(
         DISTINCT jsonb_build_object(
-          'user_id',
+          'id',
           lgu.id,
           'name',
           lgu.name,

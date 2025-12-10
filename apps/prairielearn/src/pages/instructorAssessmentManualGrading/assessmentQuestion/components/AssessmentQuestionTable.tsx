@@ -823,9 +823,9 @@ export function AssessmentQuestionTable({
                     </Dropdown.Header>
                     {courseStaff.map((grader) => (
                       <Dropdown.Item
-                        key={grader.user_id}
+                        key={grader.id}
                         onClick={() =>
-                          handleBatchAction({ assigned_grader: grader.user_id }, selectedIds)
+                          handleBatchAction({ assigned_grader: grader.id }, selectedIds)
                         }
                       >
                         <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})

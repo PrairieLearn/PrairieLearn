@@ -675,7 +675,7 @@ describe('LTI 1.3', () => {
         // Add a UIN to the user. This doesn't matter for the login process, but
         // we'll use this later to validate that it's persisted after UID update.
         await execute('UPDATE users SET uin = $uin WHERE id = $user_id', {
-          user_id: initialUser.user_id,
+          user_id: initialUser.id,
           uin: testUin,
         });
 
@@ -706,7 +706,7 @@ describe('LTI 1.3', () => {
         const oldUser = await selectOptionalUserByUid(initialUid);
 
         assert.ok(updatedUser);
-        assert.equal(updatedUser.user_id, initialUser.user_id);
+        assert.equal(updatedUser.id, initialUser.id);
         assert.equal(updatedUser.uid, newUid);
         assert.equal(updatedUser.uin, testUin);
         assert.isNull(oldUser);

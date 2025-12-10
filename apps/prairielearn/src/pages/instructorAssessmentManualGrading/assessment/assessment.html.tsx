@@ -22,10 +22,10 @@ export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   num_instance_questions_assigned: z.coerce.number(),
   num_instance_questions_unassigned: z.coerce.number(),
   assigned_graders: z
-    .array(z.object({ user_id: z.number(), name: z.string().nullable(), uid: z.string() }))
+    .array(z.object({ id: z.number(), name: z.string().nullable(), uid: z.string() }))
     .nullable(),
   actual_graders: z
-    .array(z.object({ user_id: z.number(), name: z.string().nullable(), uid: z.string() }))
+    .array(z.object({ id: z.number(), name: z.string().nullable(), uid: z.string() }))
     .nullable(),
   num_open_instances: z.coerce.number(),
 });
@@ -291,15 +291,15 @@ function GraderAssignmentModal({
         <>
           <p>Assign instances to the following graders:</p>
           {courseStaff.map((staff) => (
-            <div key={staff.user_id} class="form-check">
+            <div key={staff.id} class="form-check">
               <input
                 type="checkbox"
-                id={`grader-assignment-${staff.user_id}`}
+                id={`grader-assignment-${staff.id}`}
                 name="assigned_grader"
-                value={staff.user_id}
+                value={staff.id}
                 class="form-check-input"
               />
-              <label class="form-check-label" for={`grader-assignment-${staff.user_id}`}>
+              <label class="form-check-label" for={`grader-assignment-${staff.id}`}>
                 {staff.name ? `${staff.name} (${staff.uid})` : staff.uid}
               </label>
             </div>
