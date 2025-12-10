@@ -290,7 +290,6 @@ export const AssessmentSchema = z.object({
   duration_stat_median: IntervalSchema,
   duration_stat_min: IntervalSchema,
   duration_stat_thresholds: IntervalSchema.array(),
-  team_work: z.boolean().nullable(),
   honor_code: z.string().nullable(),
   id: IdSchema,
   json_allow_real_time_grading: z.boolean().nullable(),
@@ -324,6 +323,7 @@ export const AssessmentSchema = z.object({
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
+  team_work: z.boolean().nullable(),
   text: z.string().nullable(),
   tid: z.string().nullable(),
   title: z.string().nullable(),
@@ -362,7 +362,6 @@ export const AssessmentInstanceSchema = z.object({
   date_limit: DateFromISOString.nullable(),
   duration: IntervalSchema.nullable(),
   grading_needed: z.boolean(),
-  team_id: IdSchema.nullable(),
   id: IdSchema,
   include_in_statistics: z.boolean(),
   last_client_fingerprint_id: IdSchema.nullable(),
@@ -374,6 +373,7 @@ export const AssessmentInstanceSchema = z.object({
   open: z.boolean().nullable(),
   points: z.number().nullable(),
   score_perc: z.number().nullable(),
+  team_id: IdSchema.nullable(),
   user_id: IdSchema.nullable(),
 });
 export type AssessmentInstance = z.infer<typeof AssessmentInstanceSchema>;
@@ -487,7 +487,6 @@ export const AuditEventSchema = z.object({
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString,
   enrollment_id: IdSchema.nullable(),
-  team_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
   new_row: z.record(z.string(), z.any()).nullable(),
@@ -495,6 +494,7 @@ export const AuditEventSchema = z.object({
   row_id: IdSchema,
   subject_user_id: IdSchema.nullable(),
   table_name: z.string(),
+  team_id: IdSchema.nullable(),
 });
 export type AuditEvent = z.infer<typeof AuditEventSchema>;
 
@@ -506,7 +506,6 @@ export const AuditLogSchema = z.object({
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString.nullable(),
-  team_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
   new_state: z.any(),
@@ -514,6 +513,7 @@ export const AuditLogSchema = z.object({
   parameters: z.any(),
   row_id: IdSchema.nullable(),
   table_name: z.string().nullable(),
+  team_id: IdSchema.nullable(),
   user_id: IdSchema.nullable(),
 });
 export type AuditLog = z.infer<typeof AuditLogSchema>;
@@ -843,10 +843,10 @@ export const TeamSchema = z.object({
   course_instance_id: IdSchema,
   date: DateFromISOString.nullable(),
   deleted_at: DateFromISOString.nullable(),
-  team_config_id: IdSchema,
   id: IdSchema,
   join_code: z.string(),
   name: z.string(),
+  team_config_id: IdSchema,
 });
 export type Team = z.infer<typeof TeamSchema>;
 
@@ -887,9 +887,9 @@ export const TeamUserSchema = z.object({
 export type TeamUser = z.infer<typeof TeamUserSchema>;
 
 export const TeamUserRoleSchema = z.object({
+  id: IdSchema,
   team_id: IdSchema,
   team_role_id: IdSchema,
-  id: IdSchema,
   user_id: IdSchema,
 });
 export type TeamUserRole = z.infer<typeof TeamUserRoleSchema>;
@@ -1472,7 +1472,6 @@ export const VariantSchema = z.object({
   date: DateFromISOString.nullable(),
   duration: IntervalSchema.nullable(),
   first_duration: IntervalSchema.nullable(),
-  team_id: IdSchema.nullable(),
   id: IdSchema,
   instance_question_id: IdSchema.nullable(),
   modified_at: DateFromISOString,
@@ -1482,6 +1481,7 @@ export const VariantSchema = z.object({
   options: z.record(z.string(), z.any()).nullable(),
   params: z.record(z.string(), z.any()).nullable(),
   question_id: IdSchema,
+  team_id: IdSchema.nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),
   user_id: IdSchema.nullable(),
   variant_seed: z.string(),

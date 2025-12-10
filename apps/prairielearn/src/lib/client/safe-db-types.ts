@@ -62,7 +62,6 @@ export const RawStudentAssessmentSchema = RawStaffAssessmentSchema.pick({
   constant_question_value: true,
   course_instance_id: true,
   deleted_at: true,
-  team_work: true,
   honor_code: true,
   id: true,
   max_bonus_points: true,
@@ -71,6 +70,7 @@ export const RawStudentAssessmentSchema = RawStaffAssessmentSchema.pick({
   number: true,
   require_honor_code: true,
   shuffle_questions: true,
+  team_work: true,
   text: true,
   tid: true,
   title: true,
@@ -104,7 +104,6 @@ export const RawStudentAssessmentInstanceSchema__UNSAFE = RawStaffAssessmentInst
   date_limit: true,
   duration: true,
   grading_needed: true,
-  team_id: true,
   id: true,
   max_bonus_points: true,
   max_points: true,
@@ -112,6 +111,7 @@ export const RawStudentAssessmentInstanceSchema__UNSAFE = RawStaffAssessmentInst
   modified_at: true,
   number: true,
   open: true,
+  team_id: true,
   // '__UNSAFE' indicates that this schema needs further transformations before being sent to the client.
   points: true, // potentially sensitive
   score_perc: true, // potentially sensitive

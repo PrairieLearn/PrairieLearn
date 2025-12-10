@@ -694,7 +694,7 @@ export async function updateGroupRoles(
         .filter((role) => role.can_assign_roles)
         .map((role) => role.id) ?? [];
     const assignerRoleFound = roleAssignments.some((roleAssignment) =>
-      assignerRoleIds.includes(roleAssignment.team_role_id as string),
+      assignerRoleIds.includes(roleAssignment.team_role_id),
     );
     if (!assignerRoleFound) {
       if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {

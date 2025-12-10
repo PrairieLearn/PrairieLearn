@@ -5,7 +5,7 @@ columns
     instance_id: text not null
     job_type: text not null
     max_jobs: double precision not null
-    team_name: text not null
+    group_name: text not null
 
 indexes
     server_loads_pkey: PRIMARY KEY (id) USING btree (id)
