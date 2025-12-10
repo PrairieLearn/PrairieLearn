@@ -118,7 +118,7 @@ router.get(
     };
 
     const draftEdit = await readDraftEdit({
-      user_id: res.locals.user.user_id,
+      user_id: res.locals.user.id,
       authn_user_id: res.locals.authn_user.user_id,
       course_id: res.locals.course.id,
       dir_name: path.dirname(relPath),
@@ -198,7 +198,7 @@ router.post(
 
     if (req.body.__action === 'save_and_sync') {
       const editID = await writeDraftEdit({
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.user_id,
         course_id: res.locals.course.id,
         dir_name: paths.workingDirectory,

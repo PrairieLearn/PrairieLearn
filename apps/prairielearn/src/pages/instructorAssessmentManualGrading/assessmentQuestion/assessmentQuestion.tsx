@@ -227,7 +227,7 @@ router.get(
         urlPrefix: res.locals.urlPrefix,
         assessment_id: res.locals.assessment.id,
         assessment_question_id: res.locals.assessment_question.id,
-        user_id: res.locals.authz_data.user.user_id,
+        user_id: res.locals.authz_data.user.id,
         prior_instance_question_id: req.query.prior_instance_question_id ?? null,
         skip_graded_submissions: true,
         use_instance_question_groups,
@@ -296,7 +296,7 @@ router.post(
           assessment_question: res.locals.assessment_question,
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
+          user_id: res.locals.user.id,
           model_id,
           mode: 'selected',
           instance_question_ids,
@@ -324,7 +324,7 @@ router.post(
           assessment_question: res.locals.assessment_question,
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
+          user_id: res.locals.user.id,
           instance_question_ids,
           closed_instance_questions_only: req.body.closed_instance_questions_only,
           ungrouped_instance_questions_only: false,
@@ -420,7 +420,7 @@ router.post(
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         model_id,
         mode: run(() => {
           if (req.body.__action === 'ai_grade_assessment_graded') return 'human_graded';
@@ -442,7 +442,7 @@ router.post(
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         closed_instance_questions_only: req.body.closed_instance_questions_only,
         ungrouped_instance_questions_only: false,
       });
@@ -461,7 +461,7 @@ router.post(
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         closed_instance_questions_only: req.body.closed_instance_questions_only,
         ungrouped_instance_questions_only: true,
       });

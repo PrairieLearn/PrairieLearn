@@ -92,7 +92,7 @@ router.post(
         res.locals.question,
         res.locals.course_instance,
         res.locals.course,
-        res.locals.user.user_id,
+        res.locals.user.id,
         res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -109,7 +109,7 @@ router.post(
           res.locals.question,
           res.locals.course_instance,
           res.locals.course,
-          res.locals.user.user_id,
+          res.locals.user.id,
           res.locals.authn_user.user_id,
         );
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -480,7 +480,7 @@ router.get(
       sharingSetsIn = result.filter((row) => row.in_set);
     }
     const editableCourses = await selectCoursesWithEditAccess({
-      user_id: res.locals.user.user_id,
+      user_id: res.locals.user.id,
       is_administrator: res.locals.is_administrator,
     });
     const infoPath = path.join('questions', res.locals.question.qid, 'info.json');

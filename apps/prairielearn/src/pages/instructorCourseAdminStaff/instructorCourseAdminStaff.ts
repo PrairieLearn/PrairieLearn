@@ -275,7 +275,7 @@ ${given_cp_and_cip.join(',\n')}
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_permissions_update_role') {
       if (
-        idsEqual(req.body.user_id, res.locals.user.user_id) &&
+        idsEqual(req.body.user_id, res.locals.user.id) &&
         !res.locals.authz_data.is_administrator
       ) {
         throw new error.HttpStatusError(
@@ -314,7 +314,7 @@ ${given_cp_and_cip.join(',\n')}
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_permissions_delete') {
       if (
-        idsEqual(req.body.user_id, res.locals.user.user_id) &&
+        idsEqual(req.body.user_id, res.locals.user.id) &&
         !res.locals.authz_data.is_administrator
       ) {
         throw new error.HttpStatusError(

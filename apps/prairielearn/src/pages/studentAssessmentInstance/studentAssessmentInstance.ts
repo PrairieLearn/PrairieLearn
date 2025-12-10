@@ -69,7 +69,7 @@ async function processFileUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: null,
-    user_id: res.locals.user.user_id,
+    user_id: res.locals.user.id,
     authn_user_id: res.locals.authn_user.user_id,
   });
 }
@@ -91,7 +91,7 @@ async function processTextUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: null,
-    user_id: res.locals.user.user_id,
+    user_id: res.locals.user.id,
     authn_user_id: res.locals.authn_user.user_id,
   });
 }
@@ -161,7 +161,7 @@ router.post(
       const isFinishing = ['finish', 'timeLimitFinish'].includes(req.body.__action);
       await assessment.gradeAssessmentInstance({
         assessment_instance_id: res.locals.assessment_instance.id,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.user_id,
         requireOpen: true,
         close: isFinishing,
@@ -179,11 +179,7 @@ router.post(
       if (!res.locals.authz_result.active) {
         throw new HttpStatusError(400, 'Unauthorized request.');
       }
-      await leaveGroup(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-      );
+      await leaveGroup(res.locals.assessment.id, res.locals.user.id, res.locals.authn_user.user_id);
       res.redirect(
         `/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
       );
@@ -192,7 +188,7 @@ router.post(
         req.body,
         res.locals.assessment.id,
         res.locals.assessment_instance.group_id,
-        res.locals.user.user_id,
+        res.locals.user.id,
         res.locals.authz_data.has_course_instance_permission_edit,
         res.locals.authn_user.user_id,
       );
@@ -262,7 +258,7 @@ router.get(
     const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
     const userCanAssignRoles =
       groupConfig.has_roles &&
-      (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
+      (canUserAssignGroupRoles(groupInfo, res.locals.user.id) ||
         res.locals.authz_data.has_course_instance_permission_edit);
 
     if (groupConfig.has_roles) {
@@ -273,7 +269,7 @@ router.get(
           question.group_role_permissions = await getQuestionGroupPermissions(
             question.id,
             res.locals.assessment_instance.group_id,
-            res.locals.authz_data.user.user_id,
+            res.locals.authz_data.user.id,
           );
         }
       }

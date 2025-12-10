@@ -175,7 +175,7 @@ export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
 export function isDangerousFullSystemAuthz(
   authzData: AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser,
 ): authzData is DangerousSystemAuthzData {
-  return authzData.user.user_id === null;
+  return authzData.user.id === null;
 }
 
 export function hasRole(authzData: AuthzData, requiredRole: Role[]): boolean {

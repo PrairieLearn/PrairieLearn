@@ -150,7 +150,7 @@ router.post(
     const serverJobOptions = {
       courseId: res.locals.course.id,
       courseInstanceId: res.locals.course_instance.id,
-      userId: res.locals.user.user_id,
+      userId: res.locals.user.id,
       authnUserId: res.locals.authn_user.user_id,
       type: 'lti13',
       description: 'Some LTI operation',

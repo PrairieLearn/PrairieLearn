@@ -98,7 +98,7 @@ router.post(
         course_instance: res.locals.course_instance,
         assessment: res.locals.assessment,
         csvFile: req.file,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.user_id,
         authzData: res.locals.authz_data,
       });
@@ -107,7 +107,7 @@ router.post(
       const job_sequence_id = await randomGroups({
         course_instance: res.locals.course_instance,
         assessment: res.locals.assessment,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.user_id,
         max_group_size: Number(req.body.max_group_size),
         min_group_size: Number(req.body.min_group_size),

@@ -130,7 +130,7 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
         res.locals.group_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question.id,
           res.locals.assessment_instance.group_id,
-          res.locals.authz_data.user.user_id,
+          res.locals.authz_data.user.id,
         );
         if (!res.locals.group_role_permissions.can_view) {
           throw new error.HttpStatusError(

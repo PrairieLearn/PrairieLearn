@@ -17,7 +17,7 @@ type PageType =
   | 'studentGradebook'
   | 'studentInstanceQuestion';
 export async function logPageView(pageType: PageType, req: Request, res: Response) {
-  const user_id = res.locals.user ? res.locals.user.user_id : res.locals.authn_user.user_id;
+  const user_id = res.locals.user ? res.locals.user.id : res.locals.authn_user.user_id;
 
   // Originally, we opted to only record page views for assessments if
   // the authn'ed user is also the owner of the assessment instance.

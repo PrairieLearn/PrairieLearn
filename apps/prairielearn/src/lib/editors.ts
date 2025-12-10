@@ -283,7 +283,7 @@ export abstract class Editor {
     this.assertCanEdit();
     const serverJob = await createServerJob({
       courseId: this.course.id,
-      userId: this.user.user_id,
+      userId: this.user.id,
       authnUserId: this.authz_data.authn_user.user_id,
       type: 'sync',
       description: this.description,

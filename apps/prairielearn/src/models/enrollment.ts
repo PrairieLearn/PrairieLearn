@@ -78,7 +78,7 @@ function assertEnrollmentBelongsToUser(enrollment: Enrollment | null, authzData:
     return;
   }
   // We only check this for enrollments that have a user_id (e.g. non-pending enrollments)
-  if (enrollment.user_id && enrollment.user_id !== authzData.user.user_id) {
+  if (enrollment.user_id && enrollment.user_id !== authzData.user.id) {
     throw new error.HttpStatusError(403, 'Access denied');
   }
   // Check for invitations
@@ -125,8 +125,8 @@ async function _enrollUserInCourseInstance({
     rowId: newEnrollment.id,
     oldRow: lockedEnrollment,
     newRow: newEnrollment,
-    agentAuthnUserId: authzData.user.user_id,
-    agentUserId: authzData.user.user_id,
+    agentAuthnUserId: authzData.user.id,
+    agentUserId: authzData.user.id,
   });
 
   return newEnrollment;
@@ -209,8 +209,8 @@ export async function ensureUncheckedEnrollment({
         actionDetail,
         rowId: inserted.id,
         newRow: inserted,
-        agentUserId: authzData.user.user_id,
-        agentAuthnUserId: authzData.user.user_id,
+        agentUserId: authzData.user.id,
+        agentAuthnUserId: authzData.user.id,
       });
     }
     return inserted;
@@ -269,7 +269,7 @@ export async function ensureEnrollment({
 
   await ensureUncheckedEnrollment({
     courseInstance,
-    userId: authzData.user.user_id,
+    userId: authzData.user.id,
     requiredRole,
     authzData,
     actionDetail,
@@ -460,7 +460,7 @@ async function _inviteExistingEnrollment({
     oldRow: lockedEnrollment,
     newRow: newEnrollment,
     subjectUserId: null,
-    agentUserId: authzData.user.user_id,
+    agentUserId: authzData.user.id,
     agentAuthnUserId: authzData.authn_user.user_id,
   });
 
@@ -492,7 +492,7 @@ async function inviteNewEnrollment({
     rowId: newEnrollment.id,
     newRow: newEnrollment,
     subjectUserId: null,
-    agentUserId: authzData.user.user_id,
+    agentUserId: authzData.user.id,
     agentAuthnUserId: authzData.authn_user.user_id,
   });
 
@@ -636,9 +636,9 @@ export async function setEnrollmentStatus({
       rowId: newEnrollment.id,
       oldRow: lockedEnrollment,
       newRow: newEnrollment,
-      agentUserId: authzData.user.user_id,
+      agentUserId: authzData.user.id,
       agentAuthnUserId:
-        'authn_user' in authzData ? authzData.authn_user.user_id : authzData.user.user_id,
+        'authn_user' in authzData ? authzData.authn_user.user_id : authzData.user.id,
     });
 
     return newEnrollment;
@@ -681,7 +681,7 @@ export async function deleteEnrollment({
       newRow: null,
       subjectUserId: null,
       courseInstanceId: lockedEnrollment.course_instance_id,
-      agentUserId: authzData.user.user_id,
+      agentUserId: authzData.user.id,
       agentAuthnUserId: authzData.authn_user.user_id,
     });
 

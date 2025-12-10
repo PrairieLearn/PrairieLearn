@@ -166,7 +166,7 @@ router.post(
 
       const result = await client.batchDeleteQuestions.mutate({
         course_id: res.locals.course.id,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.user_id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         question_ids: questions,

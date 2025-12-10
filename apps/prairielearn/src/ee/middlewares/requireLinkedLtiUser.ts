@@ -15,7 +15,7 @@ export default asyncHandler(async (req: Request, res: Response, next: NextFuncti
   //    escape hatch for instructors.
   // 2. If the user has any instructor permissions in the course or instance.
   if (
-    !idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) ||
+    !idsEqual(res.locals.user.id, res.locals.authn_user.user_id) ||
     res.locals.authz_data.has_course_permission_preview ||
     res.locals.authz_data.has_course_instance_permission_view
   ) {

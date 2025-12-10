@@ -84,7 +84,7 @@ async function processFileUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: res.locals.instance_question.id,
-    user_id: res.locals.user.user_id,
+    user_id: res.locals.user.id,
     authn_user_id: res.locals.authn_user.user_id,
   });
 
@@ -121,7 +121,7 @@ async function processTextUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: res.locals.instance_question.id,
-    user_id: res.locals.user.user_id,
+    user_id: res.locals.user.id,
     authn_user_id: res.locals.authn_user.user_id,
   });
 
@@ -228,7 +228,7 @@ router.post(
 
       await gradeAssessmentInstance({
         assessment_instance_id: res.locals.assessment_instance.id,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.user_id,
         requireOpen: true,
         close: true,
@@ -364,14 +364,14 @@ router.get(
         res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question_info.prev_instance_question.id,
           res.locals.assessment_instance.group_id,
-          res.locals.authz_data.user.user_id,
+          res.locals.authz_data.user.id,
         );
       }
       if (res.locals.instance_question_info.next_instance_question.id) {
         res.locals.next_instance_question_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question_info.next_instance_question.id,
           res.locals.assessment_instance.group_id,
-          res.locals.authz_data.user.user_id,
+          res.locals.authz_data.user.id,
         );
       }
     }

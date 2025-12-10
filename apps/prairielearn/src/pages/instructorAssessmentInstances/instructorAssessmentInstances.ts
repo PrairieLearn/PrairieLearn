@@ -60,7 +60,7 @@ router.post(
       await checkBelongs(assessment_instance_id, assessment_id);
       await gradeAssessmentInstance({
         assessment_instance_id,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.user_id,
         requireOpen: true,
         close: true,
@@ -82,7 +82,7 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const job_sequence_id = await gradeAllAssessmentInstances({
         assessment_id,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.user_id,
         close: req.body.__action === 'close_all',
         ignoreGradeRateLimit: true,
@@ -101,7 +101,7 @@ router.post(
       await checkBelongs(assessment_instance_id, assessment_id);
       const job_sequence_id = await regradeAssessmentInstance(
         assessment_instance_id,
-        res.locals.user.user_id,
+        res.locals.user.id,
         res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);

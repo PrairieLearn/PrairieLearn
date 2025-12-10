@@ -73,7 +73,7 @@ export default asyncHandler(async (req, res, next) => {
         actionDetail: 'implicit_joined',
         rowId: enrollment.id,
         newRow: enrollment,
-        agentUserId: res.locals.user.user_id,
+        agentUserId: res.locals.user.id,
         agentAuthnUserId: res.locals.authn_user.user_id,
       });
     }

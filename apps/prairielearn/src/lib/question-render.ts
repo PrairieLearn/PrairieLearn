@@ -470,7 +470,7 @@ export async function getAndRenderVariant(
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
-        locals.user.user_id,
+        locals.user.id,
         locals.authn_user.user_id,
         locals.course_instance ?? null,
         locals.course,

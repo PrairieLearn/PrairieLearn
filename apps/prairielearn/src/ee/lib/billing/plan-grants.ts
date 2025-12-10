@@ -76,7 +76,7 @@ export async function checkPlanGrants({
   const planGrants = await getPlanGrantsForPartialContexts({
     institution_id: institution.id,
     course_instance_id: courseInstance.id,
-    user_id: authzData.user.user_id,
+    user_id: authzData.user.id,
   });
   const planGrantNames = getPlanNamesFromPlanGrants(planGrants);
 

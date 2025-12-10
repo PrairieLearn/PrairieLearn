@@ -36,7 +36,7 @@ export async function processSubmission(
   }
   const submission = {
     variant_id,
-    user_id: res.locals.user.user_id,
+    user_id: res.locals.user.id,
     auth_user_id: res.locals.authn_user.user_id,
     submitted_answer,
     ...(options.studentSubmission

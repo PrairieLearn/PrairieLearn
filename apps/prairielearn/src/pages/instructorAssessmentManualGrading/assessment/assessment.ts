@@ -43,7 +43,7 @@ router.get(
       sql.select_questions_manual_grading,
       {
         assessment_id: res.locals.assessment.id,
-        user_id: res.locals.authz_data.user.user_id,
+        user_id: res.locals.authz_data.user.id,
       },
       ManualGradingQuestionSchema,
     );
@@ -183,7 +183,7 @@ router.post(
           assessment_question: row.assessment_question,
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
+          user_id: res.locals.user.id,
           model_id,
           mode: 'all',
         });

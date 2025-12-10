@@ -205,7 +205,7 @@ export async function copyQuestionBetweenCourses(
   const fromFolderPath = path.join(fromCourse.path, 'questions', question.qid);
 
   const fileTransferId = await initiateFileTransfer({
-    userId: res.locals.user.user_id,
+    userId: res.locals.user.id,
     fromCourse,
     toCourseId,
     transferType: 'CopyQuestion',
