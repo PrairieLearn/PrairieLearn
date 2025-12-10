@@ -16,8 +16,6 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import sympy
-from typing_extensions import assert_never
-
 from prairielearn.html_utils import escape_invalid_string
 from prairielearn.misc_utils import full_unidecode
 from prairielearn.sympy_utils import (
@@ -27,6 +25,7 @@ from prairielearn.sympy_utils import (
     sympy_to_json,
 )
 from prairielearn.to_precision import to_precision
+from typing_extensions import assert_never
 
 if TYPE_CHECKING:
     from numpy.core.arrayprint import _FormatDict
@@ -182,7 +181,7 @@ def to_json(
             "_value": str(v),
         }
 
-    if np.isscalar(v) and np.iscomplexobj(v):  # pyright:ignore[reportArgumentType]
+    if np.isscalar(v) and np.iscomplexobj(v):
         return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}  # pyright:ignore[reportAttributeAccessIssue]
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
