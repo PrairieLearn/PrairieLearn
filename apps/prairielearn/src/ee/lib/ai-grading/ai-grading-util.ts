@@ -125,10 +125,13 @@ export async function generatePrompt({
             'You must include an explanation on why you make these choices.',
             'Follow any special instructions given by the instructor in the question.',
           ],
-          'Here are the rubric items:',
         ]),
       },
       ...graderGuidelinesMessages,
+      {
+        role: 'system',
+        content: 'Here are the rubric items:',
+      },
       {
         role: 'user',
         content: rubric_items
