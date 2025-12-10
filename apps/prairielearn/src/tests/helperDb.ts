@@ -1,10 +1,10 @@
 import * as path from 'path';
 
-import { type Context } from 'mocha';
 import pg from 'pg';
 
 import {
   SCHEMA_MIGRATIONS_PATH,
+  extractTimestampFromFilename,
   initBatchedMigrations,
   init as initMigrations,
   stopBatchedMigrations,
@@ -21,7 +21,7 @@ const POSTGRES_INIT_CONNECTION_STRING = 'postgres://postgres@localhost/postgres'
 const POSTGRES_DATABASE = 'pltest';
 const POSTGRES_DATABASE_TEMPLATE = 'pltest_template';
 
-const postgresTestUtils = sqldb.makePostgresTestUtils({
+export const postgresTestUtils = sqldb.makePostgresTestUtils({
   user: POSTGRES_USER,
   host: POSTGRES_HOST,
   defaultDatabase: 'postgres',
@@ -46,7 +46,8 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
     idleTimeoutMillis: 30000,
     errorOnUnusedParameters: true,
   };
-  function idleErrorHandler(err) {
+
+  function idleErrorHandler(err: Error) {
     throw err;
   }
   await sqldb.initAsync(pgConfig, idleErrorHandler);
@@ -63,10 +64,10 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
   });
 
   if (runMigrations) {
-    await initMigrations(
-      [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
-      'prairielearn',
-    );
+    await initMigrations({
+      directories: [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
+      project: 'prairielearn',
+    });
   }
 
   await sqldb.setRandomSearchSchemaAsync('test');
@@ -77,16 +78,22 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
   await sqldb.closeAsync();
 }
 
-async function createFromTemplate(
-  dbName: string,
-  dbTemplateName: string,
-  dropFirst: boolean,
-): Promise<void> {
-  await postgresTestUtils.createDatabase({
+async function createFromTemplate({
+  dbName,
+  dbTemplateName,
+  dropFirst,
+  configurePool = true,
+}: {
+  dbName: string;
+  dbTemplateName: string;
+  dropFirst: boolean;
+  configurePool?: boolean;
+}) {
+  return await postgresTestUtils.createDatabase({
     dropExistingDatabase: dropFirst,
     database: dbName,
     templateDatabase: dbTemplateName,
-    configurePool: true,
+    configurePool,
     prepare: () => runMigrationsAndSprocs(dbName, false),
   });
 }
@@ -107,25 +114,71 @@ async function databaseExists(dbName: string): Promise<boolean> {
   return existsResult;
 }
 
-async function setupDatabases(): Promise<void> {
+export async function setupDatabases({ configurePool = true }: { configurePool?: boolean } = {}) {
   const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
   const dbName = getDatabaseNameForCurrentWorker();
   if (!templateExists) {
     await createTemplate();
   }
-  await createFromTemplate(dbName, POSTGRES_DATABASE_TEMPLATE, true);
 
-  // Ideally this would happen only over in `helperServer`, but we need to use
-  // the same database details, so this is a convenient place to do it.
-  await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
-    throw err;
+  const poolConfig = await createFromTemplate({
+    dbName,
+    dbTemplateName: POSTGRES_DATABASE_TEMPLATE,
+    dropFirst: true,
+    configurePool,
+  });
+
+  if (configurePool) {
+    // Ideally this would happen only over in `helperServer`, but we need to use
+    // the same database details, so this is a convenient place to do it.
+    await namedLocks.init(poolConfig, (err) => {
+      throw err;
+    });
+  }
+
+  return poolConfig;
+}
+
+async function runMigrations(
+  migrationFilters: Parameters<typeof initMigrations>[0]['migrationFilters'] = {},
+): Promise<void> {
+  await initMigrations({
+    directories: [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
+    project: 'prairielearn',
+    migrationFilters,
   });
 }
 
-export async function before(this: Context): Promise<void> {
-  // long timeout because DROP DATABASE might take a long time to error
-  // if other processes have an open connection to that database
-  this.timeout?.(20000);
+/**
+ * Runs all migrations with a timestamp before the given migration.
+ * @param migrationName The name of the migration to run all migrations before.
+ */
+async function runMigrationsBefore(migrationName: string): Promise<void> {
+  await runMigrations({
+    beforeTimestamp: extractTimestampFromFilename(migrationName),
+    inclusiveBefore: false,
+  });
+}
+
+/**
+ * Runs all migrations with a timestamp before the given migration, and including the given migration.
+ * @param migrationName The name of the migration to run all migrations including.
+ */
+async function runMigrationsThrough(migrationName: string): Promise<void> {
+  await runMigrations({
+    beforeTimestamp: extractTimestampFromFilename(migrationName),
+    inclusiveBefore: true,
+  });
+}
+
+/**
+ * Runs any migrations that have not yet been run.
+ */
+async function runRemainingMigrations(): Promise<void> {
+  await runMigrations();
+}
+
+export async function before(): Promise<void> {
   await setupDatabases();
 }
 
@@ -135,18 +188,12 @@ export async function before(this: Context): Promise<void> {
  * schema verification, where databaseDiff will set up a connection to the
  * desired database.
  */
-export async function beforeOnlyCreate(this: Context): Promise<void> {
-  // long timeout because DROP DATABASE might take a long time to error
-  // if other processes have an open connection to that database
-  this.timeout?.(20000);
+export async function beforeOnlyCreate(): Promise<void> {
   await setupDatabases();
   await closeSql();
 }
 
-export async function after(this: Context): Promise<void> {
-  // long timeout because DROP DATABASE might take a long time to error
-  // if other processes have an open connection to that database
-  this.timeout?.(20000);
+export async function after(): Promise<void> {
   await closeSql();
   await postgresTestUtils.dropDatabase();
 }
@@ -169,12 +216,74 @@ export async function dropTemplate(): Promise<void> {
   });
 }
 
+/**
+ * Helper function for testing migrations.
+ * @param params
+ * @param params.name The name of the migration to test.
+ * @param params.beforeMigration A function to run before the migration.
+ * @param params.afterMigration A function to run after the migration.
+ */
+export async function testMigration<T>({
+  name,
+  beforeMigration,
+  afterMigration,
+}: {
+  name: string;
+  beforeMigration?: () => Promise<T> | T;
+  afterMigration?: (beforeResult: T) => Promise<void> | void;
+}): Promise<void> {
+  const dbName = getDatabaseNameForCurrentWorker();
+
+  const poolConfig = await postgresTestUtils.createDatabase({
+    dropExistingDatabase: true,
+    database: dbName,
+    configurePool: true,
+  });
+
+  // We have to do this here so that `migrations.init` can successfully
+  // acquire a lock.
+  await namedLocks.init(poolConfig, (err) => {
+    throw err;
+  });
+
+  // Some migrations will call `enqueueBatchedMigration` and `finalizeBatchedMigration`,
+  // so we need to make sure the batched migration machinery is initialized.
+  initBatchedMigrations({
+    project: 'prairielearn',
+    directories: [path.resolve(import.meta.dirname, '..', 'batched-migrations')],
+  });
+
+  try {
+    await runMigrationsBefore(name);
+
+    // This is done to support tests that may need to use sprocs. This might fail
+    // if the migration creates tables that any sproc depends on. We'll cross that
+    // bridge if we come to it.
+    await sqldb.setRandomSearchSchemaAsync('test');
+    await sprocs.init();
+
+    const result = (await beforeMigration?.()) as T;
+
+    await runMigrationsThrough(name);
+
+    if (afterMigration) {
+      await afterMigration(result);
+    }
+
+    await runRemainingMigrations();
+  } finally {
+    await stopBatchedMigrations();
+    await closeSql();
+    await postgresTestUtils.dropDatabase();
+  }
+}
+
 export async function resetDatabase(): Promise<void> {
   await postgresTestUtils.resetDatabase();
 }
 
 export function getDatabaseNameForCurrentWorker(): string {
-  return postgresTestUtils.getDatabaseNameForCurrentMochaWorker();
+  return postgresTestUtils.getDatabaseNameForCurrentTestWorker();
 }
 
 class RollbackTransactionError extends Error {

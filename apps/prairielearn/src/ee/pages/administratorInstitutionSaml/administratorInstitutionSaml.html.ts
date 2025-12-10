@@ -1,8 +1,9 @@
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export function AdministratorInstitutionSaml({
   institution,
@@ -15,13 +16,13 @@ export function AdministratorInstitutionSaml({
   samlProvider: SamlProvider | null;
   institutionAuthenticationProviders: AuthnProvider[];
   host: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const hasSamlProvider = !!samlProvider;
   const hasEnabledSaml = institutionAuthenticationProviders.some((p) => p.name === 'SAML');
 
   const missingAttributeMappings =
-    !samlProvider?.uid_attribute || !samlProvider?.uin_attribute || !samlProvider?.name_attribute;
+    !samlProvider?.uid_attribute || !samlProvider.uin_attribute || !samlProvider.name_attribute;
 
   const issuer = `https://${host}/saml/institution/${institution.id}`;
   const metadataUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/metadata`;
@@ -40,7 +41,7 @@ export function AdministratorInstitutionSaml({
       page: 'administrator_institution',
       subPage: 'saml',
     },
-    preContent: [DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token })],
+    preContent: DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token }),
     content: html`
       ${hasSamlProvider && !hasEnabledSaml
         ? html`
@@ -251,10 +252,10 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
             aria-describedby="uidAttributeHelp"
           />
           <small id="uidAttributeHelp" class="form-text text-muted">
-            The UID is a user-facing identifier for the user. This should generally be an email-like
-            identifier, like "jwang@example.com". However, it doesn't have to be an email address;
-            PrairieLearn will never try to route email to it. This attribute may change, for
-            instance if a student changes their name with their university.
+            The UID is a user-facing identifier for the user. This must be an email-like identifier,
+            like "jwang@example.com". However, it doesn't have to be an email address; PrairieLearn
+            will never try to route email to it. This attribute may change, for instance if a
+            student changes their name with their university.
           </small>
         </div>
 
@@ -421,10 +422,10 @@ function DeleteSamlConfigurationModal({ csrfToken }: { csrfToken: string }) {
 
 export function DecodedAssertion({ xml, profile }: { xml: string; profile: string }) {
   return html`
-    <h3 class="h5 mt-3">Decoded XML</h2>
+    <h3 class="h5 mt-3">Decoded XML</h3>
     <pre class="bg-dark text-white rounded p-3 mt-3 mb-0">${xml}</pre>
 
-    <h3 class="h5 mt-3">Profile</h2>
+    <h3 class="h5 mt-3">Profile</h3>
     <pre class="bg-dark text-white rounded p-3 mt-3 mb-0">${profile}</pre>
   `.toString();
 }

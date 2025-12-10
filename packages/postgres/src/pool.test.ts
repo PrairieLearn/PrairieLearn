@@ -1,24 +1,21 @@
 import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import { assert, use as chaiUse } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 import { ZodError, z } from 'zod';
 
 import {
   callOptionalRow,
   callRow,
   callRows,
+  execute,
   queryAsync,
   queryCursor,
   queryOptionalRow,
   queryRow,
   queryRows,
-  queryValidatedCursor,
 } from './default-pool.js';
 import { makePostgresTestUtils } from './test-utils.js';
-
-chaiUse(chaiAsPromised);
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_postgres',
@@ -35,32 +32,27 @@ const SprocTwoColumnsSchema = z.object({
 });
 
 describe('@prairielearn/postgres', function () {
-  before(async () => {
+  beforeAll(async () => {
     await postgresTestUtils.createDatabase();
-    await queryAsync(
+    await execute(
       'CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY, created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP);',
-      {},
     );
-    await queryAsync('INSERT INTO workspaces (id) SELECT s FROM generate_series(1, 100) AS s', {});
-    await queryAsync(
+    await execute('INSERT INTO workspaces (id) SELECT s FROM generate_series(1, 100) AS s');
+    await execute(
       'CREATE FUNCTION test_sproc_one_column(num_entries INT) RETURNS TABLE (id BIGINT) AS $$ BEGIN RETURN QUERY SELECT s::BIGINT AS id FROM generate_series(1, num_entries) AS s; END; $$ LANGUAGE plpgsql;',
-      {},
     );
-    await queryAsync(
+    await execute(
       'CREATE FUNCTION test_sproc_two_columns(num_entries INT) RETURNS TABLE (id BIGINT, negative INT) AS $$ BEGIN RETURN QUERY SELECT s::BIGINT AS id, -s AS negative FROM generate_series(1, num_entries) AS s; END; $$ LANGUAGE plpgsql;',
-      {},
     );
-    await queryAsync(
+    await execute(
       'CREATE FUNCTION test_sproc_one_column_ten_rows() RETURNS TABLE (id BIGINT) AS $$ BEGIN RETURN QUERY SELECT s::BIGINT AS id FROM generate_series(1, 10) AS s; END; $$ LANGUAGE plpgsql;',
-      {},
     );
-    await queryAsync(
+    await execute(
       'CREATE FUNCTION test_sproc_one_column_one_row(OUT id BIGINT) AS $$ BEGIN id = 1; END; $$ LANGUAGE plpgsql;',
-      {},
     );
   });
 
-  after(async () => {
+  afterAll(async () => {
     await postgresTestUtils.dropDatabase();
   });
 
@@ -68,23 +60,23 @@ describe('@prairielearn/postgres', function () {
     it('enforces SQL must be a string', async () => {
       // @ts-expect-error SQL must be a string
       const rows = queryAsync({ invalid: true }, {});
-      await assert.isRejected(rows, 'SQL must be a string');
+      await expect(rows).rejects.toThrow('SQL must be a string');
     });
 
     it('enforces params must be array or object', async () => {
       // @ts-expect-error params must be an array or object
       const rows = queryAsync('SELECT 33;', 33);
-      await assert.isRejected(rows, 'params must be array or object');
+      await expect(rows).rejects.toThrow('params must be array or object');
     });
 
     it('rejects missing parameters', async () => {
       const rows = queryAsync('SELECT $missing;', {});
-      await assert.isRejected(rows, 'Missing parameter');
+      await expect(rows).rejects.toThrow('Missing parameter');
     });
 
     it('rejects unused parameters in testing', async () => {
       const rows = queryAsync('SELECT 33;', { unsed_parameter: true });
-      await assert.isRejected(rows, 'Unused parameter');
+      await expect(rows).rejects.toThrow('Unused parameter');
     });
   });
 
@@ -131,12 +123,12 @@ describe('@prairielearn/postgres', function () {
 
     it('rejects results with zero rows', async () => {
       const rows = queryRow('SELECT * FROM workspaces WHERE id = -1;', WorkspaceSchema);
-      await assert.isRejected(rows, 'Incorrect rowCount: 0');
+      await expect(rows).rejects.toThrow('Incorrect rowCount: 0');
     });
 
     it('rejects results with multiple rows', async () => {
       const rows = queryRow('SELECT * FROM workspaces', WorkspaceSchema);
-      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+      await expect(rows).rejects.toThrow('Incorrect rowCount: 100');
     });
   });
 
@@ -173,7 +165,7 @@ describe('@prairielearn/postgres', function () {
 
     it('rejects with multiple rows', async () => {
       const rows = queryOptionalRow('SELECT * FROM workspaces', WorkspaceSchema);
-      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+      await expect(rows).rejects.toThrow('Incorrect rowCount: 100');
     });
   });
 
@@ -219,12 +211,12 @@ describe('@prairielearn/postgres', function () {
 
     it('rejects results with zero rows', async () => {
       const row = callRow('test_sproc_two_columns', [0], SprocTwoColumnsSchema);
-      await assert.isRejected(row, 'Incorrect rowCount: 0');
+      await expect(row).rejects.toThrow('Incorrect rowCount: 0');
     });
 
     it('rejects results with multiple rows', async () => {
       const rows = callRow('test_sproc_two_columns', [100], SprocTwoColumnsSchema);
-      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+      await expect(rows).rejects.toThrow('Incorrect rowCount: 100');
     });
   });
 
@@ -253,13 +245,31 @@ describe('@prairielearn/postgres', function () {
 
     it('rejects results with multiple rows', async () => {
       const rows = callOptionalRow('test_sproc_two_columns', [100], SprocTwoColumnsSchema);
-      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+      await expect(rows).rejects.toThrow('Incorrect rowCount: 100');
     });
   });
 
   describe('queryCursor', () => {
+    it('handles single column', async () => {
+      const cursor = await queryCursor('SELECT id FROM workspaces WHERE id = 1;', z.string());
+      const allRows: string[] = [];
+      for await (const rows of cursor.iterate(10)) {
+        allRows.push(...rows);
+      }
+      assert.equal(allRows[0], '1');
+    });
+
+    it('handles multiple columns', async () => {
+      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 1;', WorkspaceSchema);
+      const allRows: z.infer<typeof WorkspaceSchema>[] = [];
+      for await (const rows of cursor.iterate(10)) {
+        allRows.push(...rows);
+      }
+      assert.equal(allRows[0].id, '1');
+      assert.isNotNull(allRows[0].created_at);
+    });
     it('returns zero rows', async () => {
-      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 10000;', {});
+      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 10000;', z.unknown());
       const rowBatches = [];
       for await (const rows of cursor.iterate(10)) {
         rowBatches.push(rows);
@@ -268,7 +278,7 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('returns one row at a time', async () => {
-      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id <= 2;', {});
+      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id <= 2;', z.unknown());
       const rowBatches = [];
       for await (const rows of cursor.iterate(1)) {
         rowBatches.push(rows);
@@ -279,7 +289,7 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('returns all rows at once', async () => {
-      const cursor = queryCursor('SELECT * FROM workspaces WHERE id <= 10;', {});
+      const cursor = queryCursor('SELECT * FROM workspaces WHERE id <= 10;', z.unknown());
       const rowBatches = [];
       for await (const rows of (await cursor).iterate(10)) {
         rowBatches.push(rows);
@@ -289,7 +299,7 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('handles errors', async () => {
-      const cursor = await queryCursor('NOT VALID SQL', {});
+      const cursor = await queryCursor('NOT VALID SQL', z.unknown());
 
       async function readAllRows() {
         const allRows = [];
@@ -310,7 +320,7 @@ describe('@prairielearn/postgres', function () {
     });
   });
 
-  describe('queryValidatedCursor', () => {
+  describe('queryCursor', () => {
     const WorkspaceSchema = z.object({
       id: z.string(),
     });
@@ -321,9 +331,8 @@ describe('@prairielearn/postgres', function () {
 
     describe('iterator', () => {
       it('validates with provided schema', async () => {
-        const cursor = await queryValidatedCursor(
+        const cursor = await queryCursor(
           'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
-          {},
           WorkspaceSchema,
         );
         const allRows = [];
@@ -337,9 +346,8 @@ describe('@prairielearn/postgres', function () {
       });
 
       it('throws error when validation fails', async () => {
-        const cursor = await queryValidatedCursor(
+        const cursor = await queryCursor(
           'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
-          {},
           BadWorkspaceSchema,
         );
 
@@ -359,9 +367,8 @@ describe('@prairielearn/postgres', function () {
 
     describe('stream', () => {
       it('validates with provided schema', async () => {
-        const cursor = await queryValidatedCursor(
+        const cursor = await queryCursor(
           'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
-          {},
           WorkspaceSchema,
         );
         const stream = cursor.stream(1);
@@ -374,9 +381,8 @@ describe('@prairielearn/postgres', function () {
       });
 
       it('emits an error when validation fails', async () => {
-        const cursor = await queryValidatedCursor(
+        const cursor = await queryCursor(
           'SELECT * FROM workspaces ORDER BY id ASC;',
-          {},
           BadWorkspaceSchema,
         );
         const stream = cursor.stream(1);
@@ -395,7 +401,7 @@ describe('@prairielearn/postgres', function () {
       });
 
       it('closes the cursor when the stream is closed', async () => {
-        const cursor = await queryValidatedCursor('SELECT * FROM workspaces;', {}, WorkspaceSchema);
+        const cursor = await queryCursor('SELECT * FROM workspaces;', WorkspaceSchema);
         const stream = cursor.stream(1);
 
         const rows: any[] = [];
@@ -413,7 +419,7 @@ describe('@prairielearn/postgres', function () {
           },
         });
 
-        await assert.isRejected(pipeline(stream, writable, { signal: ac.signal }));
+        await expect(pipeline(stream, writable, { signal: ac.signal })).rejects.toThrow();
         assert.lengthOf(rows, 1);
       });
     });

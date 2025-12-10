@@ -1,0 +1,33 @@
+{
+  "name": "@prairielearn/preact-cjs",
+  "version": "1.1.6",
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/preact-cjs"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./compat": "./dist/compat.js",
+    "./debug": "./dist/debug.js",
+    "./devtools": "./dist/devtools.js",
+    "./hooks": "./dist/hooks.js",
+    "./jsx-dev-runtime": "./dist/jsx-runtime.js",
+    "./jsx-runtime": "./dist/jsx-runtime.js"
+  },
+  "scripts": {
+    "build": "tsc && rm -rf dist && cp -r src dist"
+  },
+  "dependencies": {
+    "original-preact": "npm:preact@^10.27.2"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "typescript": "^5.9.3"
+  },
+  "sideEffects": [
+    "./dist/debug.js",
+    "./dist/devtools.js"
+  ]
+}

@@ -1,5 +1,10 @@
 #! /usr/bin/env python3
 
+# NOTE: as of #12471, you can use the `generate_submissions` admin query instead
+# of this script. That query is more flexible and allows you to generate
+# submissions that are either correct, incorrect, invalid or random. This script
+# is kept for historical purposes and may be deleted in a future version.
+
 # Generates blank submissions for all students in an assessment. This
 # can be used in local testing where having several submissions is
 # beneficial. It works by obtaining a list of all students and staff

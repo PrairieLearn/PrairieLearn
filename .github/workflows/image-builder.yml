@@ -24,6 +24,7 @@ env:
 
 jobs:
   build-images:
+    name: Build
     strategy:
       fail-fast: false
       matrix:
@@ -32,7 +33,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
@@ -55,7 +56,7 @@ jobs:
           ONLY_CHANGED: true
 
       - name: Upload metadata
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: image-metadata-${{ inputs.group }}-${{ matrix.os }}-${{ env.COMMIT_SHA }}
           path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
@@ -63,6 +64,7 @@ jobs:
           overwrite: true
 
   combine-images:
+    name: Combine
     needs: [build-images]
 
     runs-on: ubuntu-24.04
@@ -74,7 +76,7 @@ jobs:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Login to DockerHub
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
         uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
@@ -87,7 +89,7 @@ jobs:
 
       - name: Download metadata
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           pattern: image-metadata-${{ inputs.group }}-*-${{ env.COMMIT_SHA }}
           path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}

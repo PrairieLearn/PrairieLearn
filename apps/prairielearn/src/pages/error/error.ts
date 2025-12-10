@@ -30,9 +30,19 @@ export default (function (err, req, res, _next) {
     // trying to log the actual error.
     stack: formatErrorStackSafe(err),
     data: jsonStringifySafe(err.data),
+    url: req.url,
     referrer,
     response_id: res.locals.response_id,
   });
+
+  // Check if the client only accepts JSON
+  if (req.accepts('application/json') && !req.accepts('html')) {
+    res.send({
+      error: err.message,
+      errorId,
+    });
+    return;
+  }
 
   res.send(
     ErrorPage({

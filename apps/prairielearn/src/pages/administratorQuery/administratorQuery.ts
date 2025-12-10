@@ -1,36 +1,29 @@
-import * as path from 'node:path';
-
-import express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { stringify } from '@prairielearn/csv';
+import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import type { AdministratorQueryResult } from '../../admin_queries/util.js';
-import { IdSchema, type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
-import * as jsonLoad from '../../lib/json-load.js';
-
 import {
-  AdministratorQuery,
-  AdministratorQuerySchema,
-  QueryRunRowSchema,
-} from './administratorQuery.html.js';
+  type AdministratorQueryResult,
+  loadAdminQueryModule,
+} from '../../admin_queries/lib/util.js';
+import { IdSchema, type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 
-const router = express.Router();
+import { AdministratorQuery, QueryRunRowSchema } from './administratorQuery.html.js';
+
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const queriesDir = path.resolve(import.meta.dirname, '..', '..', 'admin_queries');
 
 router.get(
   '/:query',
   asyncHandler(async (req, res, next) => {
-    const jsonFilename = req.params.query + '.json';
-    const queryFilename = req.params.query + '.js';
-
-    const info = AdministratorQuerySchema.parse(
-      await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
-    );
+    const module = await loadAdminQueryModule(req.params.query);
+    if (module.specs.enabled === false) {
+      throw new HttpStatusError(403, 'Admin query is disabled in the current environment');
+    }
 
     let query_run_id: string | null = null;
     let query_run: QueryRun | null = null;
@@ -39,7 +32,7 @@ router.get(
       query_run = await sqldb.queryRow(sql.select_query_run, { query_run_id }, QueryRunSchema);
     }
 
-    if (!query_run && info.params == null) {
+    if (!query_run && module.specs.params == null) {
       // if we don't have any params, do an immediate POST to run the query
       req.method = 'POST';
       return next();
@@ -51,9 +44,9 @@ router.get(
     } else if (req.query.format === 'csv') {
       res.attachment(req.params.query + '.csv');
       if (query_run?.result != null) {
-        stringify(query_run.result?.rows, {
+        stringify(query_run.result.rows, {
           header: true,
-          columns: query_run.result?.columns,
+          columns: query_run.result.columns,
         }).pipe(res);
       } else {
         res.send('');
@@ -69,8 +62,8 @@ router.get(
           resLocals: res.locals,
           query_run_id,
           query_run,
-          queryFilename,
-          info,
+          queryFilename: req.params.query,
+          info: module.specs,
           recent_query_runs,
         }),
       );
@@ -81,24 +74,21 @@ router.get(
 router.post(
   '/:query',
   asyncHandler(async (req, res, _next) => {
-    const jsonFilename = req.params.query + '.json';
-    const queryFilename = req.params.query + '.js';
-
-    const info = AdministratorQuerySchema.parse(
-      await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
-    );
+    const module = await loadAdminQueryModule(req.params.query);
+    if (module.specs.enabled === false) {
+      throw new HttpStatusError(403, 'Admin query is disabled in the current environment');
+    }
 
     const queryParams: Record<string, string> = {};
-    info.params?.forEach((p) => {
+    module.specs.params?.forEach((p) => {
       queryParams[p.name] = req.body[p.name];
     });
 
     let error: string | null = null;
     let result: AdministratorQueryResult | null = null;
     try {
-      const module = await import(path.join(queriesDir, queryFilename));
-      result = (await module.default(queryParams)) as AdministratorQueryResult;
-    } catch (err) {
+      result = await module.default(queryParams);
+    } catch (err: any) {
       logger.error(err);
       error = err.toString();
     }
@@ -110,10 +100,7 @@ router.post(
         params: queryParams,
         authn_user_id: res.locals.authn_user.user_id,
         error,
-        // While rowCount is not used in the frontend, it used to be required,
-        // so it is included in the result object for backwards compatibility if
-        // a newer query run is viewed in an older version of this page.
-        result: result ? { ...result, rowCount: result.rows.length } : null,
+        result,
       },
       IdSchema,
     );

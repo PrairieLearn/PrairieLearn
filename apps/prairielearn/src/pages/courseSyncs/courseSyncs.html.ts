@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { JobStatus } from '../../components/JobStatus.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { JobStatus } from '../../components/JobStatus.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import {
   type Course,
@@ -14,6 +14,7 @@ import {
   QuestionSchema,
   UserSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const ImageRowSchema = z.object({
   image: z.string(),
@@ -37,7 +38,7 @@ export function CourseSyncs({
   images,
   jobSequences,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   images: ImageRow[];
   jobSequences: JobSequenceRow[];
 }) {
@@ -199,13 +200,17 @@ function ImageTable({
                 </td>
                 <td>${image.tag}</td>
                 <td>
-                  <code class="mb-0" title="${image.digest}">
-                    ${(image.digest?.length ?? 0) <= 24
-                      ? image.digest
-                      : `${image.digest?.substring(0, 24)}...`}
-                  </code>
+                  ${image.digest
+                    ? html`
+                        <code class="mb-0" title="${image.digest}">
+                          ${image.digest.length <= 24
+                            ? image.digest
+                            : `${image.digest.slice(0, 24)}...`}
+                        </code>
+                      `
+                    : html`&mdash;`}
                 </td>
-                <td>${image.size ? filesize(image.size) : ''}</td>
+                <td>${(image.size ?? 0) > 0 ? filesize(image.size ?? 0) : ''}</td>
                 <td>
                   ${image.imageSyncNeeded
                     ? html`<span class="text-warning">Not found in PL registry</span>`

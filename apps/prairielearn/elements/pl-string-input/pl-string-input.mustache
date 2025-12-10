@@ -39,8 +39,9 @@
                 autocomplete="off"
                 autocorrect="off"
                 {{^editable}}disabled{{/editable}}
-                aria-describedby="pl-string-input-{{uuid}}-suffix"
                 placeholder="{{placeholder}}"
+                {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             >{{raw_submitted_answer}}</textarea>
     {{/multiline}}
     {{^multiline}}
@@ -59,9 +60,10 @@
                 autocorrect="off"
                 {{^editable}}disabled{{/editable}}
                 {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-                aria-describedby="pl-string-input-{{uuid}}-suffix"
-                aria-labelledby="pl-string-input-{{uuid}}-label"
                 placeholder="{{placeholder}}"
+                {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
+                {{^aria_label}}{{#label}}aria-labelledby="pl-string-input-{{uuid}}-label"{{/label}}{{/aria_label}}
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             />
     {{/multiline}}
     {{^multiline}}
@@ -123,7 +125,7 @@
 {{#inline}}<span class="d-inline-block">{{/inline}}
 {{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    {{#a_sub}}<code class="user-output">{{a_sub}}</code>{{/a_sub}}
+    {{#a_sub}}<code>{{a_sub}}</code>{{/a_sub}}
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/multiline}}
 {{#multiline}}
@@ -141,10 +143,12 @@
             class="form-control pl-string-input-multiline"
             style="resize: none;"
             disabled
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             aria-describedby="pl-string-input-submission-{{uuid}}-suffix"
         >{{a_sub}}</textarea>
         {{#a_sub}}
         <button
+            type="button"
             class="btn btn-sm btn-secondary"
             data-bs-toggle="popover"
             data-bs-html="true"
@@ -185,7 +189,7 @@
 {{#missing_input}}
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-dark border">
-            Missing Input
+            Missing input 
             <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
         <a
@@ -214,7 +218,8 @@
 {{#a_sub}}
 {{! Show raw value submitted answer was parsed from }}
 <button
-    class="ml-1 btn btn-sm btn-secondary"
+    type="button"
+    class="ms-1 btn btn-sm btn-secondary"
     data-bs-toggle="popover"
     data-bs-html="true"
     data-bs-placement="auto"
@@ -244,7 +249,7 @@
 {{#answer}}
 {{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    <code class="user-output">{{a_tru}}</code>
+    <code>{{a_tru}}</code>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/multiline}}
 {{#multiline}}
@@ -262,10 +267,12 @@
             class="form-control pl-string-input-multiline"
             style="resize: none;"
             disabled
-            aria-describedby="pl-string-input-answer-{{uuid}}-suffix"
+            {{#suffix}}aria-describedby="pl-string-input-answer-{{uuid}}-suffix"{{/suffix}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
         >{{a_tru}}</textarea>
         {{! Show raw value correct answer was parsed from }}
         <button
+            type="button"
             class="btn btn-sm btn-secondary"
             data-bs-toggle="popover"
             data-bs-html="true"
@@ -286,7 +293,8 @@
 {{^multiline}}
 {{! Show raw value correct answer was parsed from }}
 <button
-    class="ml-1 btn btn-sm btn-secondary"
+    type="button"
+    class="ms-1 btn btn-sm btn-secondary"
     data-bs-toggle="popover"
     data-bs-html="true"
     data-bs-placement="auto"

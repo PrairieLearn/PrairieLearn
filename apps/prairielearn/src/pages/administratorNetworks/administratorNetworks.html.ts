@@ -1,13 +1,27 @@
+import z from 'zod';
+
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { ExamModeNetworkSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
-export function AdministratorNetworks({ resLocals }) {
+export const AdministratorNetworksRowSchema = z.object({
+  network: ExamModeNetworkSchema.shape.network,
+  start_date: z.string(),
+  end_date: z.string(),
+  location: ExamModeNetworkSchema.shape.location,
+  purpose: ExamModeNetworkSchema.shape.purpose,
+});
+
+export type AdministratorNetworksRow = z.infer<typeof AdministratorNetworksRowSchema>;
+
+export function AdministratorNetworks({ resLocals }: { resLocals: UntypedResLocals }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Exam-mode networks',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'networks',
     },
@@ -33,7 +47,7 @@ export function AdministratorNetworks({ resLocals }) {
 
             <tbody>
               ${resLocals.networks.map(
-                (network) => html`
+                (network: AdministratorNetworksRow) => html`
                   <tr>
                     <td>${network.network}</td>
                     <td>${network.start_date}</td>
@@ -49,7 +63,7 @@ export function AdministratorNetworks({ resLocals }) {
         <div class="card-footer">
           <small>
             To add new networks for exam-mode access, insert directly into the
-            <strong><tt>exam_mode_networks</tt></strong> table.
+            <strong><code>exam_mode_networks</code></strong> table.
           </small>
         </div>
       </div>

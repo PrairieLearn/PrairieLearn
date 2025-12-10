@@ -1,13 +1,14 @@
-import { AnsiUp } from 'ansi_up';
-
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import type { FileEdit } from '../../lib/db-types.js';
+import type { FileMetadata } from '../../lib/editorUtil.shared.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 
@@ -17,8 +18,7 @@ export interface FileEditorData {
   aceMode: string;
   diskContents: string;
   diskHash: string;
-  sync_errors: string | null;
-  sync_warnings: string | null;
+  fileMetadata?: FileMetadata;
 }
 
 export interface DraftEdit {
@@ -37,13 +37,12 @@ export function InstructorFileEditor({
   paths,
   draftEdit,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   editorData: FileEditorData;
   paths: InstructorFilePaths;
   draftEdit: DraftEdit | null;
 }) {
   const { course, __csrf_token } = resLocals;
-  const ansiUp = new AnsiUp();
 
   return PageLayout({
     resLocals,
@@ -61,10 +60,10 @@ export function InstructorFileEditor({
         name="ace-base-path"
         content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
       />
-      ${compiledScriptTag('instructorFileEditorClient.ts')}
+      ${compiledScriptTag('instructorFileEditorClient.tsx')}
     `,
     content: html`
-      ${editorData.sync_errors
+      ${editorData.fileMetadata?.syncErrors
         ? html`
             <div class="alert alert-danger" role="alert">
               <h2 class="h5 alert-heading">Sync error</h2>
@@ -76,11 +75,11 @@ export function InstructorFileEditor({
               <pre
                 class="text-white rounded p-3 mb-0"
                 style="background-color: black;"
-              ><code>${unsafeHtml(ansiUp.ansi_to_html(editorData.sync_errors))}</code></pre>
+              ><code>${unsafeHtml(ansiToHtml(editorData.fileMetadata.syncErrors))}</code></pre>
             </div>
           `
         : ''}
-      ${editorData.sync_warnings
+      ${editorData.fileMetadata?.syncWarnings
         ? html`
             <div class="alert alert-warning" role="alert">
               <h2 class="h5 alert-heading">Sync warning</h2>
@@ -92,7 +91,7 @@ export function InstructorFileEditor({
               <pre
                 class="text-white rounded p-3 mb-0"
                 style="background-color: black;"
-              ><code>${unsafeHtml(ansiUp.ansi_to_html(editorData.sync_warnings))}</code></pre>
+              ><code>${unsafeHtml(ansiToHtml(editorData.fileMetadata.syncWarnings))}</code></pre>
             </div>
           `
         : ''}
@@ -123,7 +122,12 @@ export function InstructorFileEditor({
                   )}
                 </span>
               </div>
-              <div class="col-auto collapse ${!draftEdit?.alertChoice ? 'show' : ''}" id="buttons">
+              <div
+                class="d-flex flex-wrap gap-2 col-auto collapse ${!draftEdit?.alertChoice
+                  ? 'show'
+                  : ''}"
+                id="buttons"
+              >
                 <button
                   type="button"
                   id="help-button"
@@ -168,7 +172,7 @@ export function InstructorFileEditor({
                   `
                 : html`
                     Doing so will write your changes to disk and will sync them to your local
-                    database. You will need to push these changes to the GitHub respository manually
+                    database. You will need to push these changes to the GitHub repository manually
                     (i.e., not in PrairieLearn), if desired.
                   `}
               If you reload or navigate away from this page, any unsaved changes will be lost.
@@ -261,6 +265,9 @@ export function InstructorFileEditor({
               data-contents="${draftEdit?.contents ?? editorData.diskContents}"
               data-ace-mode="${editorData.aceMode}"
               data-read-only="${!!draftEdit?.alertChoice}"
+              data-file-metadata="${editorData.fileMetadata
+                ? JSON.stringify(editorData.fileMetadata)
+                : ''}"
             >
               <div class="card p-0">
                 ${draftEdit?.alertChoice
@@ -313,6 +320,9 @@ export function InstructorFileEditor({
                     class="col js-version-choice-content"
                     data-contents="${editorData.diskContents}"
                     data-ace-mode="${editorData.aceMode}"
+                    data-file-metadata="${editorData.fileMetadata
+                      ? JSON.stringify(editorData.fileMetadata)
+                      : ''}"
                   >
                     <div class="card p-0">
                       <div class="card-header text-center">
@@ -320,7 +330,7 @@ export function InstructorFileEditor({
                         <button
                           class="btn btn-primary"
                           type="button"
-                          onClick="window.location.reload()"
+                          onclick="window.location.reload()"
                         >
                           Choose their version (discard my changes)
                         </button>
@@ -335,6 +345,50 @@ export function InstructorFileEditor({
           </div>
         </div>
       </form>
+
+      ${SaveConfirmationModal()}
     `,
   });
+}
+
+function SaveConfirmationModal() {
+  return html`
+    <div
+      class="modal fade"
+      tabindex="-1"
+      role="dialog"
+      id="save-confirmation-modal"
+      aria-labelledby="save-confirmation-modal-title"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h4" id="save-confirmation-modal-title">Confirm save</h2>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <!-- Content will be dynamically updated by JavaScript -->
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              id="cancel-save-button"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" id="confirm-save-button">
+              Confirm save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }

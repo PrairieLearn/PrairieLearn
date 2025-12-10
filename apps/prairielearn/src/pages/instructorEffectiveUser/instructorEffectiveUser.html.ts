@@ -3,12 +3,13 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import {
   CourseInstancePermissionSchema,
   CoursePermissionSchema,
   UserSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const CourseRolesSchema = z.object({
   available_course_roles: CoursePermissionSchema.shape.course_role.unwrap().array(),
@@ -24,8 +25,8 @@ export function InstructorEffectiveUser({
   ipAddress,
   courseRoles,
 }: {
-  resLocals: Record<string, any>;
-  ipAddress: string;
+  resLocals: UntypedResLocals;
+  ipAddress: string | undefined;
   courseRoles: CourseRoles;
 }) {
   const { authz_data, course_instance, __csrf_token, req_date, true_req_date, user } = resLocals;
@@ -90,7 +91,7 @@ export function InstructorEffectiveUser({
             </p>
           </form>
 
-          <p><strong>Connecting from IP:</strong> ${ipAddress}</p>
+          <p><strong>Connecting from IP:</strong> ${ipAddress ?? html`<em>unknown</em>`}</p>
         </div>
 
         <div class="card-footer">
@@ -122,8 +123,8 @@ export function InstructorEffectiveUser({
                 <input
                   list="userList"
                   type="text"
-                  class="form-control me-2"
-                  style="width: 20em;"
+                  class="form-control me-2 w-100"
+                  style="max-width: 20em;"
                   name="pl_requested_uid"
                   id="changeEffectiveUid"
                   placeholder="username@example.com"
@@ -171,7 +172,7 @@ export function InstructorEffectiveUser({
                   id="changeEffectiveCourseRole"
                   name="pl_requested_course_role"
                 >
-                  ${courseRoles.available_course_roles
+                  ${[...courseRoles.available_course_roles]
                     .reverse()
                     .map((available_course_role) =>
                       available_course_role === authz_data.course_role
@@ -228,7 +229,7 @@ export function InstructorEffectiveUser({
                         id="changeEffectiveCourseInstanceRole"
                         name="pl_requested_course_instance_role"
                       >
-                        ${courseRoles.available_course_instance_roles
+                        ${[...courseRoles.available_course_instance_roles]
                           .reverse()
                           .map((available_course_instance_role) =>
                             available_course_instance_role === authz_data.course_instance_role
@@ -280,8 +281,8 @@ export function InstructorEffectiveUser({
                 <label class="form-label" for="changeDate">Change effective date to:</label>
                 <input
                   type="text"
-                  class="form-control me-2"
-                  style="width:30em;"
+                  class="form-control me-2 w-100"
+                  style="max-width: 30em;"
                   id="changeDate"
                   name="pl_requested_date"
                   value="${formattedReqDate}"

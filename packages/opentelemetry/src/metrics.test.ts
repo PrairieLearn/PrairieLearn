@@ -6,12 +6,9 @@ import {
   MeterProvider,
   PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
-import { assert, use as chaiUse } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
 import { instrumentedWithMetrics } from './metrics.js';
-
-chaiUse(chaiAsPromised);
 
 async function waitForMetricsExport(exporter: InMemoryMetricExporter) {
   while (exporter.getMetrics().length === 0) {
@@ -21,23 +18,24 @@ async function waitForMetricsExport(exporter: InMemoryMetricExporter) {
 
 describe('instrumentedWithMetrics', () => {
   let exporter: InMemoryMetricExporter;
-  let metricReader: PeriodicExportingMetricReader;
+  let meterProvider: MeterProvider;
   let meter: Meter;
 
   beforeEach(async () => {
-    const meterProvider = new MeterProvider();
-    meter = meterProvider.getMeter('test');
     exporter = new InMemoryMetricExporter(AggregationTemporality.DELTA);
-    metricReader = new PeriodicExportingMetricReader({
-      exporter,
-      exportIntervalMillis: 50,
+    meterProvider = new MeterProvider({
+      readers: [
+        new PeriodicExportingMetricReader({
+          exporter,
+          exportIntervalMillis: 50,
+        }),
+      ],
     });
-    meterProvider.addMetricReader(metricReader);
+    meter = meterProvider.getMeter('test');
   });
 
   afterEach(async () => {
-    await exporter.shutdown();
-    await metricReader.shutdown();
+    await meterProvider.shutdown();
   });
 
   it('records a histogram for the function duration', async () => {
@@ -61,12 +59,11 @@ describe('instrumentedWithMetrics', () => {
   });
 
   it('records an error count', async () => {
-    await assert.isRejected(
+    await expect(
       instrumentedWithMetrics(meter, 'test', async () => {
         throw new Error('error for test');
       }),
-      'error for test',
-    );
+    ).rejects.toThrow('error for test');
 
     await waitForMetricsExport(exporter);
     const exportedMetrics = exporter.getMetrics();

@@ -14,7 +14,7 @@ def generate(data):
     # Generating the orthogonal matrix U
     # (numbers rounded with 2 decimal digits)
     X = np.random.rand(M, M)
-    Q, _ = sla.qr(X)
+    Q, _ = sla.qr(X)  # type: ignore
     U = np.around(Q, sf + 1)
 
     b = np.random.rand(M)

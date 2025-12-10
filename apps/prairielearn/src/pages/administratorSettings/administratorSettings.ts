@@ -1,10 +1,12 @@
-import * as express from 'express';
+import { createOpenAI } from '@ai-sdk/openai';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import OpenAI from 'openai';
 
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 
+import { QUESTION_BENCHMARKING_OPENAI_MODEL } from '../../ee/lib/ai-question-generation-benchmark.js';
+import { QUESTION_GENERATION_OPENAI_MODEL } from '../../ee/lib/aiQuestionGeneration.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
@@ -12,7 +14,7 @@ import { isEnterprise } from '../../lib/license.js';
 
 import { AdministratorSettings } from './administratorSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 
 router.get(
   '/',
@@ -45,36 +47,47 @@ router.post(
       const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
       res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'sync_context_documents' && isEnterprise()) {
-      if (!config.openAiApiKey || !config.openAiOrganization) {
+      if (
+        !config.aiQuestionGenerationOpenAiApiKey ||
+        !config.aiQuestionGenerationOpenAiOrganization
+      ) {
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
       }
 
-      const client = new OpenAI({
-        apiKey: config.openAiApiKey,
-        organization: config.openAiOrganization,
+      const openai = createOpenAI({
+        apiKey: config.aiQuestionGenerationOpenAiApiKey,
+        organization: config.aiQuestionGenerationOpenAiOrganization,
       });
 
       const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
-      const jobSequenceId = await syncContextDocuments(client, res.locals.authn_user.user_id);
+      const jobSequenceId = await syncContextDocuments(
+        openai.textEmbeddingModel('text-embedding-3-small'),
+        res.locals.authn_user.user_id,
+      );
       res.redirect('/pl/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'benchmark_question_generation') {
       // We intentionally only enable this in dev mode since it could pollute
       // the production database.
-      if (!config.openAiApiKey || !config.openAiOrganization || !config.devMode) {
+      if (
+        !config.aiQuestionGenerationOpenAiApiKey ||
+        !config.aiQuestionGenerationOpenAiOrganization ||
+        !config.devMode
+      ) {
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
       }
 
-      const client = new OpenAI({
-        apiKey: config.openAiApiKey,
-        organization: config.openAiOrganization,
+      const openai = createOpenAI({
+        apiKey: config.aiQuestionGenerationOpenAiApiKey,
+        organization: config.aiQuestionGenerationOpenAiOrganization,
       });
 
-      const { benchmarkAiQuestionGeneration } = await import(
-        '../../ee/lib/ai-question-generation-benchmark.js'
-      );
+      const { benchmarkAiQuestionGeneration } =
+        await import('../../ee/lib/ai-question-generation-benchmark.js');
       const jobSequenceId = await benchmarkAiQuestionGeneration({
-        client,
-        authnUserId: res.locals.authn_user.user_id,
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
+        generationModel: openai(QUESTION_GENERATION_OPENAI_MODEL),
+        evaluationModel: openai(QUESTION_BENCHMARKING_OPENAI_MODEL),
+        user: res.locals.authn_user,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
     } else {

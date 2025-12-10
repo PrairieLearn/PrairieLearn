@@ -9,11 +9,41 @@ WHERE
 
 -- BLOCK create_group
 WITH
+  next_group_number AS (
+    SELECT
+      SUBSTRING(
+        g.name
+        FROM
+          6
+      )::integer + 1 AS group_number
+    FROM
+      groups AS g
+      JOIN group_configs AS gc ON (gc.id = g.group_config_id)
+    WHERE
+      gc.assessment_id = $assessment_id
+      AND g.name ~ '^group[0-9]+$'
+      AND g.deleted_at IS NULL
+    ORDER BY
+      group_number DESC
+    LIMIT
+      1
+  ),
   create_group AS (
     INSERT INTO
       groups (name, group_config_id, course_instance_id) (
         SELECT
-          $group_name,
+          COALESCE(
+            NULLIF($group_name::text, ''),
+            -- If no name is provided, use the next group number.
+            (
+              SELECT
+                'group' || group_number
+              FROM
+                next_group_number
+            ),
+            -- If no name is provided and no groups exist, use 'group1'.
+            'group1'
+          ),
           gc.id,
           gc.course_instance_id
         FROM
@@ -23,19 +53,22 @@ WITH
           AND gc.deleted_at IS NULL
       )
     RETURNING
-      id,
-      group_config_id
+      *
+  ),
+  log_group AS (
+    INSERT INTO
+      group_logs (authn_user_id, group_id, action)
+    SELECT
+      $authn_user_id,
+      cg.id,
+      'create'
+    FROM
+      create_group AS cg
   )
-INSERT INTO
-  group_logs (authn_user_id, group_id, action)
 SELECT
-  $authn_user_id,
-  cg.id,
-  'create'
+  *
 FROM
-  create_group AS cg
-RETURNING
-  group_id;
+  create_group;
 
 -- BLOCK select_group
 SELECT
@@ -50,7 +83,7 @@ SELECT
   u.*
 FROM
   group_users AS gu
-  JOIN users as u ON (u.user_id = gu.user_id)
+  JOIN users AS u ON (u.user_id = gu.user_id)
 WHERE
   gu.group_id = $group_id;
 
@@ -78,7 +111,7 @@ WITH
   )
 SELECT
   gr.*,
-  COALESCE(gur.count, 0)::INT AS count
+  COALESCE(gur.count, 0)::int AS count
 FROM
   get_assessment_id
   JOIN group_roles AS gr ON (
@@ -118,7 +151,7 @@ SELECT
   gu.user_id,
   u.uid,
   gr.role_name,
-  gr.id as group_role_id
+  gr.id AS group_role_id
 FROM
   group_users AS gu
   JOIN users u ON (gu.user_id = u.user_id)
@@ -134,7 +167,7 @@ WHERE
 SELECT
   g.id
 FROM
-  groups as g
+  groups AS g
   JOIN group_configs AS gc ON g.group_config_id = gc.id
   JOIN group_users AS gu ON gu.group_id = g.id
 WHERE
@@ -153,7 +186,7 @@ WHERE
   AND gc.assessment_id = $assessment_id
   AND g.deleted_at IS NULL
   AND gc.deleted_at IS NULL
-FOR NO KEY UPDATE of
+FOR NO KEY UPDATE OF
   g;
 
 -- BLOCK select_and_lock_group
@@ -166,7 +199,7 @@ SELECT
       group_users AS gu
     WHERE
       gu.group_id = g.id
-  )::INT AS cur_size,
+  )::int AS cur_size,
   gc.maximum AS max_size,
   gc.has_roles
 FROM
@@ -177,7 +210,7 @@ WHERE
   AND gc.assessment_id = $assessment_id
   AND g.deleted_at IS NULL
   AND gc.deleted_at IS NULL
-FOR NO KEY UPDATE of
+FOR NO KEY UPDATE OF
   g;
 
 -- BLOCK select_suitable_group_role
@@ -198,7 +231,7 @@ WITH
       gr.id,
       (
         gr.can_assign_roles
-        AND COALESCE($cur_size::INT, 0) = 0
+        AND COALESCE($cur_size::int, 0) = 0
       ) AS assigner_role_needed,
       (
         upgr.user_count IS NULL
@@ -357,11 +390,11 @@ SELECT
       WHERE
         gr.id IS NOT NULL
     ),
-    array[]::text[]
+    ARRAY[]::text[]
   )
 FROM
   group_users AS gu
-  LEFT JOIN json_roles AS jr on jr.user_id = gu.user_id
+  LEFT JOIN json_roles AS jr ON jr.user_id = gu.user_id
   LEFT JOIN group_roles AS gr ON jr.group_role_id = gr.id
 WHERE
   gu.group_id = $group_id

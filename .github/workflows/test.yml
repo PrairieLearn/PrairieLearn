@@ -1,0 +1,253 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - master
+      # Build on all code freeze branches since we will deploy from them.
+      - '**-code-freeze'
+  pull_request:
+  merge_group:
+
+concurrency:
+  # Ensure that we only run one concurrent job for Pull Requests. This ensures
+  # that someone can't kill our throughput by pushing a bunch of commits to a
+  # single branch in rapid succession.
+  #
+  # However, for master builds, we allow maximum concurrency. This is achieved
+  # because `github.head_ref` isn't defined there, and `github.run_id` is
+  # globally unique in this repo.
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  test-prairielearn:
+    name: Docker
+    runs-on: ubuntu-latest
+
+    env:
+      # Secrets aren't accessible for PRs coming from forks, and we also can't
+      # check secrets in an `if` conditional, so we check for the presence of
+      # the secret here and use this value in conditionals below.
+      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # We need the whole history so we can diff against `master` to determine
+          # what images need to be built.
+          fetch-depth: 0
+
+      # We won't try to push in this job, but we still authenticate if the
+      # secrets are available so that we don't hit image pull rate limits.
+      - name: Login to DockerHub
+        if: ${{ env.CAN_PUSH_IMAGE == 'true'}}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build the prairielearn docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: prairielearn/prairielearn:${{ env.COMMIT_SHA }}
+          cache-from: type=registry,ref=prairielearn/prairielearn:buildcache-linux-amd64
+
+      # We run the following steps in this job instead of separately to avoid the
+      # overhead of pulling the image another time.
+
+      - name: Create a temporary directory for host files
+        run: mkdir -p /tmp/prairielearn
+      - name: Start the container
+        # We have tests for external grading code, which relies on the Docker
+        # socket being available, as well as a specific volume mount and
+        # environment variable. See the docs for more details:
+        # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
+        #
+        # We put the Postgres data on a tmpfs volume, which should be much faster.
+        run: |
+          docker run --tty --detach \
+          --volume /var/run/docker.sock:/var/run/docker.sock \
+          --volume /tmp/prairielearn:/jobs \
+          --tmpfs=/var/postgres \
+          --env HOST_JOBS_DIR=/tmp/prairielearn \
+          --name=test_container \
+          prairielearn/prairielearn:${{ env.COMMIT_SHA }} /bin/bash
+      - name: Run the JavaScript tests
+        run: docker exec --env GITHUB_ACTIONS=true test_container sh -c "make -s -C /PrairieLearn test-prairielearn-docker-smoke-tests"
+        # The JS tests hang relatively often when someone makes a mistake in a PR,
+        # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
+        # spinning until it eventually times out. This shorter timeout helps
+        # ensure that the tests fail more quickly so that people can fix them.
+        timeout-minutes: 30
+
+  test-prairielearn-native:
+    name: Native (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
+    steps:
+      - uses: actions/checkout@v6
+
+      # We uninstall `man-db` to speed up the installation of other packages
+      # by avoiding building man pages for them. As this is a non-interactive
+      # environment, we will never need man pages anyways.
+      #
+      # We don't install `texlive` since it's a huge package and the test suite
+      # doesn't require it.
+      - name: Install OS packages
+        run: |
+          sudo apt-get update
+          sudo apt-get purge -y man-db
+          sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-16-pgvector
+
+      # The two `sed` commands are here to handle the fact that the default
+      # configuration of Postgres on Ubuntu is to use `local` and `scram-sha-256`
+      # as the authentication mechanisms. However, our config defaults to not
+      # having any password at all, and we don't have an easy way to specify
+      # config overrides, which means we can't just create a new user with a
+      # password and have our code use that instead.
+      #
+      # We also update the configuration to try to speed up Postgres itself.
+      - name: Start Postgres
+        run: |
+          sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+
+          sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
+          fsync = off
+          full_page_writes = off
+          synchronous_commit = off
+          EOF
+
+          sudo systemctl restart postgresql.service
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'yarn'
+      - name: Preinstall node-gyp headers
+        run: yarn dlx node-gyp install
+      - name: Install Node dependencies
+        run: |
+          yarn install --immutable --inline-builds
+          yarn playwright install chromium --with-deps
+        env:
+          # Disable hardened mode to eke out a little more speed.
+          YARN_ENABLE_HARDENED_MODE: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'pyproject.toml'
+          cache-suffix: core
+      - name: Install core Python dependencies
+        run: make python-deps-core
+
+      - name: Set up Turborepo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+      - name: Build all code
+        run: make build
+
+      - name: Configure git
+        run: |
+          git config --global user.email "dev@example.com"
+          git config --global user.name "Dev User"
+          git config --global safe.directory '*'
+
+      - name: Vitest suite
+        run: |
+          make start-support
+          yarn test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        env:
+          SHARDED_TESTS: true
+
+      - name: Playwright suite
+        run: |
+          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+
+      - name: Upload Vitest blob report to GitHub Actions Artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: blob-report-${{ matrix.shardIndex }}
+          path: .vitest-reports/*
+          include-hidden-files: true
+          retention-days: 1
+      - name: Upload Playwright blob report to GitHub Actions Artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-blob-report-${{ matrix.shardIndex }}
+          path: apps/prairielearn/test-results/blob-report/*
+          include-hidden-files: true
+          retention-days: 1
+
+  merge-native-test-reports:
+    name: Native (merge test reports)
+    if: ${{ !cancelled() }}
+    needs: [test-prairielearn-native]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'yarn'
+      - name: Set up Yarn
+        # We only install the dependencies in the root workspace to avoid
+        # installing dependencies that won't be used.
+        # Note that this means playwright is installed in the root workspace, not the prairielearn workspace.
+        run: yarn workspaces focus prairielearn
+      - name: Download Vitest blob reports from GitHub Actions Artifacts
+        uses: actions/download-artifact@v6
+        with:
+          path: .vitest-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge Vitest reports
+        run: yarn vitest --watch=false --merge-reports --coverage
+      - name: Download Playwright blob reports from GitHub Actions Artifacts
+        uses: actions/download-artifact@v6
+        with:
+          path: apps/prairielearn/test-results/blob-report
+          pattern: playwright-blob-report-*
+          merge-multiple: true
+      - name: Merge Playwright reports
+        run: yarn playwright merge-reports --reporter html,github apps/prairielearn/test-results/blob-report
+      - name: Upload JavaScript coverage report to Codecov
+        uses: codecov/codecov-action@v5.5.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: javascript
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v5
+        with:
+          name: html-report--attempt-${{ github.run_attempt }}
+          path: playwright-report
+          retention-days: 7

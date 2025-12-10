@@ -4,7 +4,7 @@
 {{#inline}}
 <span>
 {{/inline}}
-    <span role="group" aria-label="Multiple choice options">
+    <span role="group" aria-label="{{aria_label}}">
     {{#answers}}
         <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1 gap-2">
             <input
@@ -73,7 +73,7 @@
         id="pl-multiple-choice-select-{{uuid}}"
         class="d-inline-flex"
         {{^editable}}disabled{{/editable}}
-        aria-label="Multiple choice options"
+        aria-label="{{aria_label}}"
     >
         <option value="" disabled selected data-content="{{placeholder}}"></option>
         {{#answers}}
@@ -109,19 +109,23 @@
 {{/question}}
 {{#submission}}
 {{#parse_error}}
-<span>
-    <button
-        type="button"
-        class="badge text-danger badge-invalid btn btn-sm btn-secondary small border"
-        data-bs-placement="auto"
-        data-bs-toggle="popover"
-        data-bs-html="true"
-        title="Format Error"
-        data-bs-content="{{parse_error}}"
-    >
-        Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-    </button>
-</span>
+    <span class="small" style="white-space: nowrap">
+        <span class="badge text-bg-danger">
+            Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+        </span>
+        <a
+            class="link-primary"
+            tabindex="0"
+            role="button"
+            data-bs-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            title="Format error"
+            data-bs-content="{{parse_error}}"
+        >
+            More info…
+        </a>
+    </span>
 {{/parse_error}}
 {{^parse_error}}
 

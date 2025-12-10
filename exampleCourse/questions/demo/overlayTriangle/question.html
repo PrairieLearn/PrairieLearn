@@ -1,17 +1,17 @@
 <pl-question-panel>
     <p>
         <i>
-            The element <code class="user-output">pl-overlay</code> allows the positioning of pre-existing elements in arbitrary positions on top of other elements.  This question combines the <code class="user-output">pl-drawing</code> element to serve as a static background (no drag and drop functionality enabled here), along with the number input element.
+            The element <code>pl-overlay</code> allows the positioning of pre-existing elements in arbitrary positions on top of other elements.  This question combines the <code>pl-drawing</code> element to serve as a static background (no drag and drop functionality enabled here), along with the number input element.
         </i>
     </p>
     <p>
         <i>
-            Each overlayed element is wrapped with a <code class="user-output">&lt;pl-location x=... y=...&gt;</code> tag, which specifies the location of the child relative to the parent overlay element.  The <code class="user-output">halign</code> and <code class="user-output">valign</code> attributes can be used to center contents about the specified location.
+            Each overlayed element is wrapped with a <code>&lt;pl-location x=... y=...&gt;</code> tag, which specifies the location of the child relative to the parent overlay element.  The <code>halign</code> and <code>valign</code> attributes can be used to center contents about the specified location.
         </i>
     </p>
     <p>
         <i>
-            The optional <code class="user-output">&lt;pl-background&gt;</code> tag can be used to wrap some contents as the "background", which will automatically resize the overlay to fit the background.
+            The optional <code>&lt;pl-background&gt;</code> tag can be used to wrap some contents as the "background", which will automatically resize the overlay to fit the background.
         </i>
     </p>
     <p>
@@ -32,7 +32,7 @@
         $${{params.a}}$$
         {{/params.display_a}}
         {{^params.display_a}}
-        <pl-number-input answers-name="a" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
+        <pl-number-input aria-label="Bottom edge of triangle" answers-name="a" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
         {{/params.display_a}}
     </pl-location>
     <pl-location left="{{params.b_x}}" top="{{params.b_y}}">
@@ -40,7 +40,7 @@
         $${{params.b}}$$
         {{/params.display_b}}
         {{^params.display_b}}
-        <pl-number-input answers-name="b" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
+        <pl-number-input aria-label="Right edge of triangle" answers-name="b" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
         {{/params.display_b}}
     </pl-location>
     <pl-location left="{{params.c_x}}" top="{{params.c_y}}">
@@ -48,7 +48,7 @@
         $${{params.c}}$$
         {{/params.display_c}}
         {{^params.display_c}}
-        <pl-number-input answers-name="c" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
+        <pl-number-input aria-label="Hypotenuse of triangle" answers-name="c" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
         {{/params.display_c}}
     </pl-location>
 </pl-overlay>

@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { createInterface } from 'node:readline';
 
 import {
@@ -37,7 +39,7 @@ async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<
   let request: ExecutorRequest;
   try {
     request = JSON.parse(line);
-  } catch (err) {
+  } catch (err: any) {
     // We shouldn't ever get malformed JSON from the caller - but if we do,
     // handle it gracefully.
     return {
@@ -52,7 +54,7 @@ async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<
 
     try {
       success = await codeCaller.restart();
-    } catch (err) {
+    } catch (err: any) {
       restartErr = err;
     }
 
@@ -83,7 +85,7 @@ async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<
       request.fcn,
       request.args,
     ));
-  } catch (err) {
+  } catch (err: any) {
     callErr = err;
   }
 
@@ -122,6 +124,9 @@ async function prepareCodeCaller() {
   });
 }
 
+process.once('SIGINT', () => process.exit(0));
+process.once('SIGTERM', () => process.exit(0));
+
 (async () => {
   let codeCaller = await prepareCodeCaller();
 
@@ -140,7 +145,7 @@ async function prepareCodeCaller() {
   for await (const line of rl) {
     const results = await handleInput(line, codeCaller);
     const { needsFullRestart, ...rest } = results;
-    console.log(JSON.stringify(rest));
+    process.stdout.write(JSON.stringify(rest) + '\n');
     if (needsFullRestart) {
       codeCaller.done();
       codeCaller = await prepareCodeCaller();

@@ -1,0 +1,120 @@
+<pl-question-panel>
+  <p>
+  The
+  <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-symbolic-input"><code>pl-symbolic-input</code></a>
+  has a new visual formula editor. Here we test a bunch of different configurations alongside the visual formula editor.
+  </p>
+  </pl-question-panel>
+
+<pl-card header="An example in which complex numbers are not allowed (&lt;code&gt;allow-complex=&quot;false&quot;&lt;/code&gt;)">
+  <pl-question-panel>
+      <p>Suppose $$y = a x + b.$$ Assuming that $a \neq 0$, solve for $x$.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" aria-label="Symbolic expression for x" answers-name="x" variables="a, b, y" label="$x=$"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example in which complex numbers are allowed (&lt;code&gt;allow-complex=&quot;true&quot;&lt;/code&gt;)">
+  <pl-question-panel>
+      <p>Write an expression for the complex number $z$ whose argument is $a$ (in radians) and whose modulus is $m$.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" answers-name="z" variables="a, m" allow-complex="true" label="$z=$"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example in which the correct answer is specified as a string in &lt;code&gt;server.py&lt;/code&gt;">
+  <pl-question-panel>
+      <p>Write an expression for the current $I$ in a resistor if the voltage is $V$ and the resistance is $R$.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" answers-name="I" variables="V, R" label="$I=$"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example in which we specify a different imaginary unit for display (&lt;code&gt;imaginary-unit-for-display=&quot;j&quot;&lt;/code&gt;)">
+  <pl-question-panel>
+      <p>Write an expression for the complex number $c$ whose real part is $a$ and whose imaginary part is $b$.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" answers-name="c" variables="a, b" allow-complex="true" imaginary-unit-for-display="j" label="$c=$"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example in which we specify the use of ln rather than log for display (&lt;code&gt;display-log-as-ln=&quot;true&quot;&lt;/code&gt;)">
+  <pl-question-panel>
+      <p>Write an expression for the derivative of $ln(x)*x$.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" answers-name="lnx" variables="x" display-log-as-ln="true" label="$\dfrac{d}{dx} ln(x)*x =$"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example in which we disable the display of simplified student submissions (&lt;code&gt;display-simplified-expression=&quot;false&quot;&lt;/code&gt;)">
+  <pl-question-panel>
+      <p>Write the expression $sin(atan(x))$.</p>
+      <p>Note that this expression will be simplified to $\frac{x}{\sqrt{x^2+1}}$ if <code>display-simplified-expression</code> is not disabled.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" answers-name="nosimplify" variables="x" display-simplified-expression="false" label="$y =$"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example in which we change display attributes">
+  <pl-question-panel>
+      <p>The size of the input box can be set with the attribute <code>size</code>, and the attribute <code>show-help-text=&quot;false&quot;</code> removes the button for the help popup.
+      The attribute <code>placeholder</code> can be used to set the placeholder text. This box below has <code>size=5</code> instead of the default <code>size=35</code>.
+      </p>
+      <p>Write an expression for the first derivative of $\frac{1}{2} x^2$.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" answers-name="dx" variables="x" size="5" show-help-text="false" placeholder="" label="$\dfrac{d}{dx} \frac{1}{2}x^2 =$"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example in which we allow a blank answer">
+  <pl-question-panel>
+      <p>The <code>allow-blank</code> attribute allows an expression to be left blank by the user and still be considered valid. By default a blank expression is equivalent to the expression <code>0</code>, unless the <code>blank-value</code> is used. The <code>placeholder</code> attribute allows setting custom placeholder text.</p>
+      <p>Simplify the expression $x^2+x+1$, or leave it blank if the expression cannot be simplified further.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" aria-label="Simplified expression for x" answers-name="simplify" variables="x" allow-blank="true" blank-value="x^2+x+1" placeholder="symbolic expression (blank is allowed)"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example where we use assumptions">
+  <pl-question-panel>
+      <p>Sometimes, certain expressions can only be treated as equivalent by sympy if additional assumptions are made. For example, consider that $\sqrt{B^2} = B$ is only true if $B \geq 0$. To use these, assumptions must be set in the <code>server.py</code> file when variables are declared.</p>
+      <p>Submit an expression equivalent to $\sqrt{B^2}$ when assuming $B > 0$.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" aria-label="Expression for B" answers-name="assumptions" variables="B"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="Another example where we use assumptions">
+  <pl-question-panel>
+      <p>Simplify $|C|$ assuming that $C \leq 0$.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" aria-label="Simplified expression for C" answers-name="assumptions_2" variables="C"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example in which trig functions are not allowed (&lt;code&gt;allow-trig-functions=&quot;false&quot;&lt;/code&gt;)">
+  <pl-question-panel>
+      <p>What is the value of $\cos(\pi) * x$?</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" answers-name="no_trig" allow-trig-functions="false" variables="x" correct-answer="-x" label="$\cos(\pi) * x = $"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="Example using custom functions">
+  <pl-question-panel>
+      <p>Submit $f(x) + beef(\alpha)$, where $\alpha$ should be spelled out as <code>alpha</code> in the submission.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" aria-label="Function expression" answers-name="custom_function" variables="x,alpha" custom-functions="f,beef" correct-answer="f(x) + beef(alpha)"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="Another example with custom functions">
+  <pl-question-panel>
+      <p>Submit $beef(y) + the(y)$. We set <code>show-score=&quot;false&quot;</code> to hide the score badge and <code>suffix=&quot;$= \text{where?}$&quot;</code> to set the suffix.</p>
+  </pl-question-panel>
+  <pl-symbolic-input formula-editor="true" aria-label="Function expression" answers-name="custom_function_2" variables="y" show-score="false" custom-functions="beef,the" suffix="$= \text{where?}$"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="Absolute value problem">
+  <pl-question-panel>
+    <p>This template also demonstrates handling of nested absolute value expressions.</p>
+    <p>Submit the expression $|x+|-x+1+2+3+4||$.</p>
+    <p>Note: This tests the symbolic input's ability to handle complex nested absolute value expressions with multiple terms.</p>
+  </pl-question-panel>
+
+  <pl-symbolic-input
+    formula-editor="true"
+    answers-name="nested_abs"
+    label="$y =$"
+    variables="x"
+    display="block"
+  ></pl-symbolic-input>
+</pl-card>

@@ -4,14 +4,17 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
+import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
 import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
 import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
 import * as syncAssessments from './fromDisk/assessments.js';
+import * as syncAuthors from './fromDisk/authors.js';
 import * as syncCourseInfo from './fromDisk/courseInfo.js';
 import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
@@ -21,6 +24,8 @@ import * as syncTopics from './fromDisk/topics.js';
 import {
   checkInvalidDraftQuestionSharing,
   checkInvalidPublicSharingRemovals,
+  checkInvalidSharedAssessments,
+  checkInvalidSharedCourseInstances,
   checkInvalidSharingSetAdditions,
   checkInvalidSharingSetDeletions,
   checkInvalidSharingSetRemovals,
@@ -48,9 +53,18 @@ export async function checkSharingConfigurationValid(
   courseData: courseDB.CourseData,
   logger: ServerJobLogger,
 ): Promise<boolean> {
-  if (!config.checkSharingOnSync) {
-    return true;
-  }
+  if (!config.checkSharingOnSync) return true;
+
+  const institution = await selectInstitutionForCourse({ course_id: courseId });
+  const sharingEnabled = await features.enabled('question-sharing', {
+    course_id: courseId,
+    institution_id: institution.id,
+  });
+
+  // If sharing is not enabled, we'll skip all of these sharing checks. Instead, we'll
+  // already have validated that sharing attributes are not used, and we'll have emitted
+  // sync errors if they are.
+  if (!sharingEnabled) return true;
 
   const sharedQuestions = await selectSharedQuestions(courseId);
   const existInvalidRenames = getInvalidRenames(sharedQuestions, courseData, logger);
@@ -70,6 +84,8 @@ export async function checkSharingConfigurationValid(
     courseData,
     logger,
   );
+  const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
+  const existInvalidSharedCourseInstance = checkInvalidSharedCourseInstances(courseData, logger);
   const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
   const sharingConfigurationValid =
@@ -78,6 +94,8 @@ export async function checkSharingConfigurationValid(
     !existInvalidSharingSetDeletions &&
     !existInvalidSharingSetAdditions &&
     !existInvalidSharingSetRemovals &&
+    !existInvalidSharedAssessment &&
+    !existInvalidSharedCourseInstance &&
     !existInvalidDraftQuestionSharing;
   return sharingConfigurationValid;
 }
@@ -129,6 +147,22 @@ export async function syncDiskToSqlWithLock(
       syncQuestions.sync(courseId, courseData),
     );
 
+    await timed('Synced authors', () => syncAuthors.sync(courseData.questions, questionIds));
+    // We need to perform sharing validation at exactly this moment. We can only
+    // do this once we have a dictionary of question IDs, as this process will also
+    // populate any shared questions in that dictionary. We also need to do it before
+    // syncing the assessment sets, as the presence of errors that this validation
+    // could produce influences whether the "Unknown" assessment set is created.
+    await timed('Check sharing validity', async () => {
+      await async.eachLimit(Object.values(courseData.courseInstances), 3, async (ci) => {
+        await syncAssessments.validateAssessmentSharedQuestions(
+          courseId,
+          ci.assessments,
+          questionIds,
+        );
+      });
+    });
+
     await timed('Synced sharing sets', () =>
       syncSharingSets.sync(courseId, courseData, questionIds),
     );
@@ -160,11 +194,9 @@ export async function syncDiskToSqlWithLock(
   const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
   const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
   if (courseDataHasErrors) {
-    logger.info(chalk.red('✖ Some JSON files contained errors and were unable to be synced'));
+    logger.error('✖ Some JSON files contained errors and were unable to be synced');
   } else if (courseDataHasErrorsOrWarnings) {
-    logger.info(
-      chalk.yellow('⚠ Some JSON files contained warnings but all were successfully synced'),
-    );
+    logger.info('⚠ Some JSON files contained warnings but all were successfully synced');
   } else {
     logger.info(chalk.green('✓ Course sync successful'));
   }
@@ -198,7 +230,7 @@ export async function syncDiskToSql(
     {
       timeout: 0,
       onNotAcquired: () => {
-        logger.verbose(chalk.red(`Did not acquire lock ${lockName}`));
+        logger.verbose(chalk.redBright(`Did not acquire lock ${lockName}`));
         throw new Error(`Another user is already syncing or modifying the course: ${courseDir}`);
       },
     },

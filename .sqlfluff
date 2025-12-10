@@ -1,0 +1,52 @@
+[sqlfluff]
+templater = placeholder
+dialect = postgres
+large_file_skip_byte_limit = 0
+sql_file_exts = .sql
+exclude_rules = aliasing.column,
+    aliasing.expression,
+    aliasing.table,
+    # False positives with to_jsonb(ALIAS). See https://github.com/sqlfluff/sqlfluff/issues/7235
+    aliasing.unused,
+    # TODO: Consider enabling this.
+    aliasing.unique.table,
+    # We are fine with using SELECT * in queries.
+    ambiguous.column_count,
+    ambiguous.join,
+    # TODO: Consider enabling this.
+    ambiguous.order_by_limit,
+    capitalisation.functions,
+    capitalisation.identifiers,
+    capitalisation.types,
+    convention.casting_style,
+    layout.cte_newline,
+    layout.functions,
+    layout.indent,
+    layout.long_lines,
+    layout.select_targets,
+    layout.spacing,
+    layout.start_of_file,
+    references.consistent,
+    references.from,
+    references.keywords,
+    references.qualification,
+    structure.column_order,
+    structure.distinct,
+    # While explicit, this provides clarity.
+    structure.else_null,
+    structure.join_condition_order,
+    # False positive -- see https://github.com/sqlfluff/sqlfluff/issues/7234
+    structure.unused_join,
+    structure.using
+
+[sqlfluff:templater:placeholder]
+param_style = dollar
+
+# $foo is replaced by foo in the templater (no quotes), so we'll set them to something reasonable,
+# like the name of the parameter in quotes, so that it can parse correctly.
+start = 'start'
+end = 'end'
+offset = 'offset'
+embedding = 'embedding'
+enabled_authn_provider_ids = []
+limit = 1000

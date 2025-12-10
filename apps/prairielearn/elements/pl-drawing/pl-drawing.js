@@ -1,4 +1,6 @@
-/* global window, _, $, fabric, mechanicsObjects */
+/* eslint-disable jsdoc/require-returns-type */
+/* eslint-disable jsdoc/require-param-type */
+/* global _, fabric, mechanicsObjects */
 
 /**
  * Base element class.
@@ -8,9 +10,9 @@ class PLDrawingBaseElement {
   /**
    * Generates a canvas representation of an element from given options.
    * This should set up all handlers for saving the element to the submittedAnswer.
-   * @param canvas Fabric canvas to create the object onto.
-   * @param options Element options
-   * @param submittedAnswer Answer state.
+   * @param _canvas Fabric canvas to create the object onto.
+   * @param _options Element options
+   * @param _submittedAnswer Answer state.
    */
   static generate(_canvas, _options, _submittedAnswer) {
     return null;
@@ -101,7 +103,7 @@ window.PLDrawingApi = {
    */
   createElement(canvas, options, submittedAnswer) {
     const name = options.type;
-    let added = null;
+    const added = null;
 
     if (name in this.elements) {
       const element = this.elements[name];
@@ -121,7 +123,7 @@ window.PLDrawingApi = {
   getElement(name) {
     let ret = PLDrawingBaseElement;
     if (name in this.elements) {
-      let elem = this.elements[name];
+      const elem = this.elements[name];
       if ('generate' in elem) {
         ret = elem;
       }
@@ -136,8 +138,8 @@ window.PLDrawingApi = {
    */
   restoreAnswer(canvas, submittedAnswer) {
     for (const [id, obj] of Object.entries(submittedAnswer._answerData)) {
-      this._idCounter = Math.max(parseInt(id) + 1, this._idCounter);
-      let newObj = JSON.parse(JSON.stringify(obj));
+      this._idCounter = Math.max(Number.parseInt(id) + 1, this._idCounter);
+      const newObj = structuredClone(obj);
       this.createElement(canvas, newObj, submittedAnswer);
     }
   },
@@ -150,18 +152,18 @@ window.PLDrawingApi = {
    * @param existing_answer_submission Existing submission to place on the canvas.
    */
   setupCanvas(root_elem, elem_options, existing_answer_submission) {
-    let canvas_elem = $(root_elem).find('canvas')[0];
-    let canvas_width = parseFloat(elem_options.width);
-    let canvas_height = parseFloat(elem_options.height);
-    let html_input = $(root_elem).find('input');
+    const canvas_elem = $(root_elem).find('canvas')[0];
+    const canvas_width = Number.parseFloat(elem_options.width);
+    const canvas_height = Number.parseFloat(elem_options.height);
+    const html_input = $(root_elem).find('input');
 
-    let parseElemOptions = function (elem) {
-      let opts = JSON.parse(elem.getAttribute('opts'));
+    const parseElemOptions = function (elem) {
+      const opts = JSON.parse(elem.getAttribute('opts'));
 
       // Parse any numerical options from string to floating point
-      for (let key in opts) {
-        let parsed = Number(opts[key]);
-        if (!isNaN(parsed)) {
+      for (const key in opts) {
+        const parsed = Number(opts[key]);
+        if (!Number.isNaN(parsed)) {
           opts[key] = parsed;
         }
       }
@@ -169,11 +171,11 @@ window.PLDrawingApi = {
     };
 
     // Set all button icons
-    let drawing_btns = $(root_elem).find('button');
+    const drawing_btns = $(root_elem).find('button');
     const element_base_url = elem_options['element_client_files'];
     const clientFilesBase = this.clientFilesBase;
     drawing_btns.each(function (i, btn) {
-      let img = btn.children[0];
+      const img = btn.children[0];
       const opts = parseElemOptions(img.parentNode);
       const elem = window.PLDrawingApi.getElement(opts.type);
       const elem_name = opts.type;
@@ -189,14 +191,14 @@ window.PLDrawingApi = {
           }
           img.setAttribute('src', base + image_filename);
         }
-        let image_tooltip = elem.get_button_tooltip(opts);
+        const image_tooltip = elem.get_button_tooltip(opts);
         if (image_tooltip !== null) {
           btn.setAttribute('title', image_tooltip);
         }
         if (!elem_options.editable) {
           btn.disabled = true;
         }
-        let cloned_opts = { ...opts };
+        const cloned_opts = { ...opts };
         $(btn).click(() => elem.button_press(canvas, cloned_opts, submittedAnswer));
       }
     });
@@ -239,12 +241,12 @@ window.PLDrawingApi = {
     // Restrict objects from being able to be dragged off-canvas
     // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
     canvas.on('object:moving', function (e) {
-      var obj = e.target;
+      const obj = e.target;
       // if object is too big ignore,
       if (obj.currentHeight > canvas_width || obj.currentWidth > canvas_height) {
         return;
       }
-      let rect = obj.getBoundingRect(true, true);
+      const rect = obj.getBoundingRect(true, true);
 
       // top-left  corner
       if (rect.top < 0 || rect.left < 0) {
@@ -299,7 +301,7 @@ class PLDrawingAnswerState {
 
   _updateAnswerInput() {
     // Correctly escape double back-slashes... (\\)
-    let temp = JSON.stringify(Object.values(this._answerData)).replaceAll('\\\\', '\\\\\\\\');
+    const temp = JSON.stringify(Object.values(this._answerData)).replaceAll('\\\\', '\\\\\\\\');
     this._htmlInput.val(temp);
   }
 
@@ -356,10 +358,10 @@ class PLDrawingAnswerState {
    * Any properties that should be saved should be copied from canvas_object into
    * submitted_object.  If this is omitted, all properties from the canvas object
    * are copied as-is.
-   * @removeHandler {optional} Function that is run whenever the canvas object is deleted.
+   * @param removeHandler {optional} Function that is run whenever the canvas object is deleted.
    */
   registerAnswerObject(options, object, modifyHandler, removeHandler) {
-    let submitted_object = { ...options };
+    const submitted_object = { ...options };
     if (!('id' in submitted_object)) {
       if (!('id' in object)) {
         submitted_object.id = window.PLDrawingApi.generateID();
@@ -414,16 +416,18 @@ class PLDrawingAnswerState {
     static get_button_icon() {
       return 'delete';
     }
+
     static get_button_tooltip() {
       return 'Delete selected object';
     }
+
     static button_press(canvas, _options, _submittedAnswer) {
       canvas.remove(canvas.getActiveObject());
     }
   }
   class DrawingHelpLineButton extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
-      let def = {
+      const def = {
         left: 40,
         top: 40,
         x1: 40,
@@ -437,12 +441,14 @@ class PLDrawingAnswerState {
         padding: 10,
         graded: false,
       };
-      let opts = { ...def, ...options, type: 'pl-line' };
+      const opts = { ...def, ...options, type: 'pl-line' };
       window.PLDrawingApi.createElement(canvas, opts, submittedAnswer);
     }
+
     static get_button_icon() {
       return 'help-line';
     }
+
     static get_button_tooltip() {
       return 'Add help line';
     }

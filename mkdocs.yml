@@ -65,7 +65,7 @@ plugins:
         - scripts/**
         - overrides/**
         - mkdocstrings/**
-        - requirements.txt
+        - pyproject.toml
   - gen-files:
       scripts:
         - docs/scripts/gen_python_nav.py
@@ -88,7 +88,7 @@ plugins:
             - graders/python/python_autograder
             - apps/prairielearn/python
           options:
-            show_root_heading: true
+            show_root_heading: false
             summary:
               attributes: false
               modules: true
@@ -110,10 +110,10 @@ plugins:
 
             show_symbol_type_toc: true
             show_root_full_path: true # prairielearn.core
-            show_root_toc_entry: true
+            show_root_toc_entry: false
             heading_level: 2
             group_by_category: false # e.g. 'classes', 'functions'
-            members_order: source # source, alphabetical
+            members_order: alphabetical # source, alphabetical
 
           inventories:
             - url: https://numpy.org/doc/stable/objects.inv
@@ -186,6 +186,8 @@ extra:
   additional_readmes:
     - src: './contrib'
       dest: 'dev-guide/contrib/'
+    - src: './apps/prairielearn/src/migrations/'
+      dest: 'dev-guide/migrations/'
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/PrairieLearn/PrairieLearn
@@ -207,25 +209,86 @@ nav:
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course/index.md'
-      - 'Course instance configuration': 'courseInstance.md'
-      - 'Assessment configuration': 'assessment/index.md'
-      - 'Question configuration': 'question.md'
-      - 'Question runtime environment': 'questionRuntime/index.md'
-      - 'Elements for writing questions': 'elements.md'
-      - 'Access control': 'accessControl/index.md'
+      - 'Course instances': 'courseInstance/index.md'
+      - 'Assessments':
+          - 'Overview': assessment/overview.md
+          - 'Configuration': assessment/configuration.md
+          - 'Access control': 'assessment/accessControl.md'
+      - 'Questions':
+          - 'Overview': question/overview.md
+          - '<code>question.html</code>': 'question/template.md'
+          - '<code>server.py</code>': 'question/server.md'
+          - 'Runtime environment': 'question/runtime.md'
+          - 'Accessibility': 'question/accessibility.md'
+      - 'Elements':
+          - elements/index.md
+          - '<span class="muted">pl-</span>answer-panel': 'elements/pl-answer-panel.md'
+          - '<span class="muted">pl-</span>big-o-input': 'elements/pl-big-o-input.md'
+          - '<span class="muted">pl-</span>card': 'elements/pl-card.md'
+          - '<span class="muted">pl-</span>checkbox': 'elements/pl-checkbox.md'
+          - '<span class="muted">pl-</span>code': 'elements/pl-code.md'
+          - '<span class="muted">pl-</span>dataframe': 'elements/pl-dataframe.md'
+          - '<span class="muted">pl-</span>drawing': 'pl-drawing/index.md'
+          - '<span class="muted">pl-</span>excalidraw': 'elements/pl-excalidraw.md'
+          - '<span class="muted">pl-</span>external-grader-results': 'elements/pl-external-grader-results.md'
+          - '<span class="muted">pl-</span>external-grader-variables': 'elements/pl-external-grader-variables.md'
+          - '<span class="muted">pl-</span>figure': 'elements/pl-figure.md'
+          - '<span class="muted">pl-</span>file-download': 'elements/pl-file-download.md'
+          - '<span class="muted">pl-</span>file-editor': 'elements/pl-file-editor.md'
+          - '<span class="muted">pl-</span>file-preview': 'elements/pl-file-preview.md'
+          - '<span class="muted">pl-</span>file-upload': 'elements/pl-file-upload.md'
+          - '<span class="muted">pl-</span>graph': 'elements/pl-graph.md'
+          - '<span class="muted">pl-</span>hidden-hints': 'elements/pl-hidden-hints.md'
+          - '<span class="muted">pl-</span>hide-in-manual-grading': 'elements/pl-hide-in-manual-grading.md'
+          - '<span class="muted">pl-</span>hide-in-panel': 'elements/pl-hide-in-panel.md'
+          - '<span class="muted">pl-</span>image-capture': 'elements/pl-image-capture.md'
+          - '<span class="muted">pl-</span>integer-input': 'elements/pl-integer-input.md'
+          - '<span class="muted">pl-</span>manual-grading-only': 'elements/pl-manual-grading-only.md'
+          - '<span class="muted">pl-</span>matching': 'elements/pl-matching.md'
+          - '<span class="muted">pl-</span>matrix-component-input': 'elements/pl-matrix-component-input.md'
+          - '<span class="muted">pl-</span>matrix-input': 'elements/pl-matrix-input.md'
+          - '<span class="muted">pl-</span>matrix-latex': 'elements/pl-matrix-latex.md'
+          - '<span class="muted">pl-</span>multiple-choice': 'elements/pl-multiple-choice.md'
+          - '<span class="muted">pl-</span>number-input': 'elements/pl-number-input.md'
+          - '<span class="muted">pl-</span>order-blocks': 'elements/pl-order-blocks.md'
+          - '<span class="muted">pl-</span>overlay': 'elements/pl-overlay.md'
+          - '<span class="muted">pl-</span>python-variable': 'elements/pl-python-variable.md'
+          - '<span class="muted">pl-</span>question-panel': 'elements/pl-question-panel.md'
+          - '<span class="muted">pl-</span>rich-text-editor': 'elements/pl-rich-text-editor.md'
+          - '<span class="muted">pl-</span>string-input': 'elements/pl-string-input.md'
+          - '<span class="muted">pl-</span>submission-panel': 'elements/pl-submission-panel.md'
+          - '<span class="muted">pl-</span>symbolic-input': 'elements/pl-symbolic-input.md'
+          - '<span class="muted">pl-</span>template': 'elements/pl-template.md'
+          - '<span class="muted">pl-</span>units-input': 'elements/pl-units-input.md'
+          - '<span class="muted">pl-</span>variable-output': 'elements/pl-variable-output.md'
+          - '<span class="muted">pl-</span>xss-safe': 'elements/pl-xss-safe.md'
+
       - 'Remote exams': 'remoteExams.md'
       - 'clientFiles and serverFiles': 'clientServerFiles.md'
       - 'UUIDs in JSON files': 'uuid.md'
       - 'Regrading assessments': 'regrading.md'
-      - 'Element for drawing': 'pl-drawing/index.md'
+      - 'Docker images': 'dockerImages.md'
       - 'External grading': 'externalGrading.md'
-      - 'Python autograder': 'python-grader/index.md'
+      - 'Python autograder':
+          - 'python-grader/index.md'
+          - 'API reference': python-grader/reference-docs.md
       - 'C/C++ autograder': 'c-grader/index.md'
       - 'Java autograder': 'java-grader/index.md'
-      - 'Python Reference': 'python-reference/'
+      - 'Python API reference':
+          - python-reference/index.md
+          - 'Colors': python-reference/prairielearn/colors.md
+          - 'Conversion': python-reference/prairielearn/conversion_utils.md
+          - 'HTML': python-reference/prairielearn/html_utils.md
+          - 'Element extensions': python-reference/prairielearn/extension_utils.md
+          - 'Grading': python-reference/prairielearn/grading_utils.md
+          - 'Questions': python-reference/prairielearn/question_utils.md
+          - 'Numerical precision': python-reference/prairielearn/to_precision.md
+          - 'Other': python-reference/prairielearn/misc_utils.md
+          - 'SymPy': python-reference/prairielearn/sympy_utils.md
+          - 'Timeouts': python-reference/prairielearn/timeout_utils.md
       - 'Workspaces': 'workspaces/index.md'
       - 'Manual grading': 'manualGrading/index.md'
-      - 'Question sharing': 'questionSharing.md'
+      - 'Content sharing': 'contentSharing.md'
       - 'What to tell students': 'whatToTellStudents.md'
       - 'FAQ': 'faq.md'
       - 'API': 'api.md'
@@ -238,12 +301,14 @@ nav:
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element': schemas/infoElementCore.md
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element (Course)': schemas/infoElementCourse.md
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element Extension': schemas/infoElementExtension.md
-  - Developer Guide:
-      - developer-guide/index.md
-      - 'Developer guide': 'dev-guide/index.md'
-      - 'Running in Docker with local source': 'installingLocal.md'
-      - 'Running natively': 'installingNative.md'
-      - 'Server configuration': 'configJson.md'
+  - 'Developer Guide':
+      - dev-guide/index.md
+      - 'Running in Docker': dev-guide/installingLocal.md
+      - dev-guide/installingNative.md
+      - 'Quickstart': dev-guide/quickstart.md
+      - dev-guide/guide.md
+      - 'Migrations': 'dev-guide/migrations/'
+      - 'Server configuration': 'dev-guide/configJson.md'
       - 'Building question elements': 'devElements.md'
       - 'Building element extensions': 'elementExtensions.md'
       - 'Code execution': 'codeExecution.md'
@@ -267,8 +332,6 @@ not_in_nav: |
   workshop/lesson3.md
   workshop/lesson4.md
   workshop/lesson5.md
-  python-grader/reference-docs.md
-  schemas/adminQuery.md
   schemas/infoNewsItem.md
   schemas/questionOptionsCalculation.md
   schemas/questionOptionsCheckbox.md
@@ -276,12 +339,20 @@ not_in_nav: |
   schemas/questionOptionsMultipleChoice.md
   schemas/questionOptionsMultipleTrueFalse.md
   schemas/questionOptionsv3.md
+  elements/pl-prairiedraw-figure.md
+  elements/pl-dropdown.md
+  elements/pl-threejs.md
+  elements/pl-variable-score.md
 
 validation:
   omitted_files: warn
   absolute_links: warn
   unrecognized_links: warn
   anchors: warn
+
+watch:
+  - apps/prairielearn/python
+
 hooks:
-  - docs/scripts/d2-svg-file.py
+  - docs/scripts/d2_svg_file.py
   - docs/scripts/jsonschema_details_fix.py

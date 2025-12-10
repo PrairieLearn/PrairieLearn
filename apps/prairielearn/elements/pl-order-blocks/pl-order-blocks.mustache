@@ -14,9 +14,9 @@ $(function() {
 
     <div class="d-flex flex-wrap pl-order-blocks-question-{{uuid}}">
         <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} ">
-            <div class="card-header pl-order-blocks-header list-group-item-primary">
+            <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">{{source-header}}</span>
-                <button type="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-bs-toggle="popover" data-bs-html="true" title="Order Blocks" data-bs-content="{{help_text}}">
+                <button type="button" class="btn btn-light btn-sm align-middle" data-bs-toggle="popover" data-bs-html="true" title="Order Blocks" data-bs-content="{{help_text}}">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </button>
             </div>
@@ -33,13 +33,13 @@ $(function() {
             </ul>
         </div>
         <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} ">
-            <div class="card-header pl-order-blocks-header list-group-item-primary">
+            <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">{{solution-header}}</span>
             </div>
             <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone">
                 {{#submission_dict}}
                     <li class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
-                        style='margin-left: {{indent}}px;'
+                        style="margin-left: {{indent}}px;"
                         uuid="{{uuid}}"
                         string="{{inner_html}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
@@ -72,7 +72,7 @@ $(function() {
         <ul class="card-body list-group list-unstyled">
             {{#student_submission}}
                 {{#distractor_feedback}}
-                <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
+                <li class="pl-order-blocks-pairing-indicator bg-warning-subtle">
                     <ul class="list-unstyled">
                         <li>
                             <div class="pl-order-blocks-correctness-badge-container">
@@ -90,14 +90,34 @@ $(function() {
                 </li>
                 {{/distractor_feedback}}
                 {{^distractor_feedback}}
-                <li>
-                    <div class="pl-order-blocks-correctness-badge-container">
-                        {{#allow_feedback_badges}}
-                        <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
-                        {{/allow_feedback_badges}}
-                        <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
-                    </div>
-                </li>
+                    {{#ordering_feedback}}
+                    <li class="pl-order-blocks-pairing-indicator bg-warning-subtle">
+                        <ul class="list-unstyled">
+                            <li>
+                                <div class="pl-order-blocks-correctness-badge-container">
+                                    {{#allow_feedback_badges}}
+                                    <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                                    {{/allow_feedback_badges}}
+                                    <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
+                                </div>
+                            </li>
+                        </ul>
+                        <div>
+                            <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                            {{ordering_feedback}}
+                        </div>
+                    </li>
+                    {{/ordering_feedback}}
+                    {{^ordering_feedback}}
+                    <li>
+                        <div class="pl-order-blocks-correctness-badge-container">
+                            {{#allow_feedback_badges}}
+                            <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                            {{/allow_feedback_badges}}
+                            <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
+                        </div>
+                    </li>
+                    {{/ordering_feedback}}
                 {{/distractor_feedback}}
             {{/student_submission}}
         </ul>
@@ -116,7 +136,7 @@ $(function() {
 
 {{#true_answer}}
     <div class="pl-order-blocks-answer-container {{block_layout}} {{dropzone_layout}}">
-        <div class="card-header list-group-item-success">Correct answer ({{ordering_message}}{{indentation_message}}):</div>
+        <div class="card-header bg-success-subtle">Correct answer ({{ordering_message}}{{indentation_message}}):</div>
         <ul class="card-body list-group">
         {{#question_solution}}
             <li class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px">{{{inner_html}}}</li>
@@ -127,11 +147,11 @@ $(function() {
     {{#show_distractors}}
     <br><br>
     <div class="pl-order-blocks-answer-container  {{block_layout}} {{dropzone_layout}}">
-        <div class="card-header list-group-item-danger">Incorrect Blocks (these blocks should not be included in your solution):</div>
+        <div class="card-header bg-danger-subtle">Incorrect Blocks (these blocks should not be included in your solution):</div>
         <ul class="card-body list-group list-unstyled">
         {{#distractors}}
             {{#distractor_feedback}}
-            <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
+            <li class="pl-order-blocks-pairing-indicator bg-warning-subtle">
                 <ul class="p-0">
                     <li class="{{block_formatting}} pl-order-block">{{{inner_html}}}</li>
                 </ul>

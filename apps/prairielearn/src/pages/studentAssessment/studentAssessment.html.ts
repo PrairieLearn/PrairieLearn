@@ -1,90 +1,108 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 
-import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
 import { type GroupInfo } from '../../lib/groups.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function StudentAssessment({
   resLocals,
   groupConfig,
   groupInfo,
   userCanAssignRoles,
+  customHonorCode,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   groupConfig?: GroupConfig;
   groupInfo?: GroupInfo | null;
   userCanAssignRoles?: boolean;
+  customHonorCode: string;
 }) {
   const { assessment_set, assessment, course, authz_result, user, __csrf_token } = resLocals;
 
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })} ${compiledScriptTag('studentAssessmentClient.ts')}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <h1>${assessment_set.abbreviation}${assessment.number}: ${assessment.title}</h1>
-              ${assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
-            </div>
+  return PageLayout({
+    resLocals,
+    pageTitle: `${assessment_set.abbreviation}${assessment.number}: ${assessment.title}`,
+    navContext: {
+      type: 'student',
+      page: 'assessment',
+    },
+    headContent: html`
+      ${compiledScriptTag('studentAssessmentClient.ts')}
+      <style>
+        .honor-code :last-child {
+          margin-bottom: 0;
+        }
+      </style>
+    `,
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h1>${assessment_set.abbreviation}${assessment.number}: ${assessment.title}</h1>
+          ${assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
+        </div>
 
-            <div class="card-body">
-              ${authz_result.mode === 'Exam' || authz_result.password != null
-                ? html`
-                    <p class="lead text-center">
-                      Please wait until instructed to start by a proctor
-                    </p>
-                  `
-                : ''}
+        <div class="card-body">
+          ${authz_result.mode === 'Exam' || authz_result.password != null
+            ? html`
+                <p class="lead text-center">Please wait until instructed to start by a proctor</p>
+              `
+            : ''}
 
-              <p class="lead text-center">
-                This is
-                <strong>${assessment_set.name} ${assessment.number}: ${assessment.title}</strong>
-                for <strong>${course.short_name}</strong>
-              </p>
+          <p class="lead text-center">
+            This is
+            <strong>${assessment_set.name} ${assessment.number}: ${assessment.title}</strong>
+            for <strong>${course.short_name}</strong>
+          </p>
 
-              ${authz_result.time_limit_min != null
-                ? html`
-                    <p class="lead text-center">
-                      The time limit for this assessment is
-                      <strong>
-                        ${authz_result.time_limit_min}
-                        ${authz_result.time_limit_min === 1 ? 'minute' : 'minutes'}
-                      </strong>
-                    </p>
-                  `
-                : ''}
-              ${assessment.group_work
-                ? StudentGroupControls({ groupConfig, groupInfo, userCanAssignRoles, resLocals })
-                : StartAssessmentForm({ assessment, user, __csrf_token, startAllowed: true })}
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+          ${authz_result.time_limit_min != null
+            ? html`
+                <p class="lead text-center">
+                  The time limit for this assessment is
+                  <strong>
+                    ${authz_result.time_limit_min}
+                    ${authz_result.time_limit_min === 1 ? 'minute' : 'minutes'}
+                  </strong>
+                </p>
+              `
+            : ''}
+          ${assessment.group_work
+            ? StudentGroupControls({ groupConfig, groupInfo, userCanAssignRoles, resLocals })
+            : StartAssessmentForm({
+                assessment,
+                user,
+                __csrf_token,
+                startAllowed: true,
+                customHonorCode,
+              })}
+        </div>
+      </div>
+    `,
+  });
 }
+
 function StartAssessmentForm({
   assessment,
   user,
   __csrf_token,
   startAllowed,
+  customHonorCode,
 }: {
   assessment: Assessment;
   user: User;
   __csrf_token: string;
   startAllowed: boolean;
+  customHonorCode?: string;
 }) {
   return html`
     ${startAllowed && assessment.type === 'Exam' && assessment.require_honor_code
-      ? HonorPledge({ user, groupWork: !!assessment.group_work })
+      ? HonorPledge({
+          user,
+          groupWork: !!assessment.group_work,
+          customHonorCode,
+        })
       : ''}
     <form
       id="confirm-form"
@@ -108,21 +126,30 @@ function StartAssessmentForm({
   `;
 }
 
-function HonorPledge({ user, groupWork }: { user: User; groupWork: boolean }) {
+function HonorPledge({
+  user,
+  groupWork,
+  customHonorCode,
+}: {
+  user: User;
+  groupWork: boolean;
+  customHonorCode?: string;
+}) {
   return html`
-    <div class="card card-secondary mb-4 test-class-honor-code">
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item py-2">
-          I certify that I am ${user.name} and ${groupWork ? 'our group is' : 'I am'} allowed to
-          take this assessment.
-        </li>
-        <li class="list-group-item py-2">
-          ${groupWork ? 'We' : 'I'} pledge on ${groupWork ? 'our' : 'my'} honor that
-          ${groupWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this
-          assessment and that all work will be ${groupWork ? 'our' : 'my'} own.
-        </li>
-      </ul>
-
+    <div class="card card-secondary mb-4" data-testid="honor-code">
+      ${customHonorCode
+        ? html`<div class="px-3 py-2 honor-code">${unsafeHtml(customHonorCode)}</div>`
+        : html`<ul class="list-group list-group-flush">
+            <li class="list-group-item py-2">
+              I certify that I am ${user.name} and ${groupWork ? 'our group is' : 'I am'} allowed to
+              take this assessment.
+            </li>
+            <li class="list-group-item py-2">
+              ${groupWork ? 'We' : 'I'} pledge on ${groupWork ? 'our' : 'my'} honor that
+              ${groupWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this
+              assessment and that all work will be ${groupWork ? 'our' : 'my'} own.
+            </li>
+          </ul>`}
       <div class="card-footer d-flex justify-content-center">
         <span class="form-check">
           <input type="checkbox" class="form-check-input" id="certify-pledge" />
@@ -141,7 +168,7 @@ function StudentGroupControls({
   userCanAssignRoles = false,
   resLocals,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   groupConfig?: GroupConfig;
   groupInfo?: GroupInfo | null;
   userCanAssignRoles?: boolean;
@@ -212,21 +239,27 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="create-form" name="create-form" method="POST">
-                  <label for="groupNameInput">Group name</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="groupNameInput"
-                    name="groupName"
-                    maxlength="30"
-                    placeholder="e.g. teamOne"
-                    aria-label="Group name"
-                    aria-describedby="groupNameHelp"
-                  />
-                  <small id="groupNameHelp" class="form-text text-muted">
-                    Group names can only contain letters and numbers, with maximum length of 30
-                    characters.
-                  </small>
+                  ${groupConfig.student_authz_choose_name
+                    ? html`
+                        <label for="group-name-input">Group name</label>
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="group-name-input"
+                          name="group_name"
+                          maxlength="30"
+                          pattern="[a-zA-Z0-9]+"
+                          placeholder="e.g. teamOne"
+                          aria-label="Group name"
+                          aria-describedby="group-name-help"
+                        />
+                        <small id="group-name-help" class="form-text text-muted">
+                          Group names can only contain letters and numbers, with maximum length of
+                          30 characters. If you leave this blank, a group name will be generated for
+                          you.
+                        </small>
+                      `
+                    : ''}
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="mb-3">
                       <input type="hidden" name="__action" value="create_group" />
@@ -242,13 +275,16 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="joingroup-form" name="joingroup-form" method="POST">
-                  <label for="joinCodeInput">Join code</label>
+                  <label for="join-code-input">Join code</label>
                   <input
                     type="text"
                     class="form-control"
-                    id="joinCodeInput"
+                    id="join-code-input"
                     name="join_code"
                     placeholder="abcd-1234"
+                    pattern="[a-zA-Z0-9]+-[0-9]{4}"
+                    maxlength="35"
+                    required
                   />
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="mb-3">

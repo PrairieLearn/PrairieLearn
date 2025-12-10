@@ -1,15 +1,18 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import * as chunksLib from '../lib/chunks.js';
 import { config } from '../lib/config.js';
+import { CourseSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
+import { selectCourseById } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
 import { makeInfoFile } from '../sync/infofile.js';
 import { syncDiskToSql } from '../sync/syncFromDisk.js';
@@ -43,12 +46,10 @@ const COURSE: courseDB.CourseData = {
   },
 };
 
-async function getAllChunksForCourse(course_id) {
+async function getAllChunksForCourse(course_id: string) {
   return await sqldb.queryRows(
     sql.select_all_chunks,
-    {
-      course_id,
-    },
+    { course_id },
     z.object({
       id: z.string(),
       uuid: z.string(),
@@ -110,8 +111,8 @@ describe('chunks', () => {
         ],
         COURSE,
       );
-      assert.isOk(
-        chunks.courseInstances['simple-course-instance'].assessments.has('simple-assessment'),
+      assert.isTrue(
+        chunks.courseInstances.get('simple-course-instance')?.assessments.has('simple-assessment'),
       );
     });
 
@@ -122,8 +123,8 @@ describe('chunks', () => {
         ],
         COURSE,
       );
-      assert.isOk(
-        chunks.courseInstances['simple-course-instance'].assessments.has('complex/assessment'),
+      assert.isTrue(
+        chunks.courseInstances.get('simple-course-instance')?.assessments.has('complex/assessment'),
       );
     });
 
@@ -134,20 +135,22 @@ describe('chunks', () => {
         ],
         COURSE,
       );
-      assert.isOk(
-        chunks.courseInstances['complex/course/instance'].assessments.has('simple-assessment'),
+      assert.isTrue(
+        chunks.courseInstances.get('complex/course/instance')?.assessments.has('simple-assessment'),
       );
     });
 
-    it('should identify complex assessment in simple course instance', () => {
+    it('should identify complex assessment in complex course instance', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         [
           'courseInstances/complex/course/instance/assessments/complex/assessment/clientFilesAssessment/file.txt',
         ],
         COURSE,
       );
-      assert.isOk(
-        chunks.courseInstances['complex/course/instance'].assessments.has('complex/assessment'),
+      assert.isTrue(
+        chunks.courseInstances
+          .get('complex/course/instance')
+          ?.assessments.has('complex/assessment'),
       );
     });
 
@@ -156,7 +159,9 @@ describe('chunks', () => {
         ['courseInstances/simple-course-instance/clientFilesCourseInstance/file.txt'],
         COURSE,
       );
-      assert.isOk(chunks.courseInstances['simple-course-instance'].clientFilesCourseInstance);
+      assert.isTrue(
+        chunks.courseInstances.get('simple-course-instance')?.clientFilesCourseInstance,
+      );
     });
 
     it('should identify clientFilesCourseInstance in complex course instance', () => {
@@ -164,7 +169,9 @@ describe('chunks', () => {
         ['courseInstances/complex/course/instance/clientFilesCourseInstance/file.txt'],
         COURSE,
       );
-      assert.isOk(chunks.courseInstances['complex/course/instance'].clientFilesCourseInstance);
+      assert.isTrue(
+        chunks.courseInstances.get('complex/course/instance')?.clientFilesCourseInstance,
+      );
     });
   });
 
@@ -260,19 +267,17 @@ describe('chunks', () => {
     });
   });
 
-  describe('ensureChunksForCourse', function () {
-    this.timeout(60000);
-
+  describe('ensureChunksForCourse', { timeout: 60_000 }, function () {
     let tempTestCourseDir: tmp.DirectoryResult;
     let tempChunksDir: tmp.DirectoryResult;
     const originalChunksConsumerDirectory = config.chunksConsumerDirectory;
-    let courseId;
-    let courseInstanceId;
-    let assessmentId;
-    let questionId;
-    let nestedQuestionId;
+    let courseId: string;
+    let courseInstanceId: string;
+    let assessmentId: string;
+    let questionId: string;
+    let nestedQuestionId: string;
 
-    beforeEach('set up testing server', async () => {
+    beforeEach(async () => {
       // We need to modify the test course - create a copy that we can
       // safely manipulate.
       tempTestCourseDir = await tmp.dir({ unsafeCleanup: true });
@@ -293,47 +298,49 @@ describe('chunks', () => {
       config.chunksConsumerDirectory = tempChunksDir.path;
       config.chunksConsumer = true;
 
-      await helperServer.before(tempTestCourseDir.path).call(this);
+      await helperServer.before(tempTestCourseDir.path)();
 
       // Find the ID of this course
-      const results = await sqldb.queryOneRowAsync(sql.select_course_by_path, {
-        course_path: tempTestCourseDir.path,
-      });
-      courseId = results.rows[0].id;
+      const results = await sqldb.queryRow(
+        sql.select_course_by_path,
+        { course_path: tempTestCourseDir.path },
+        CourseSchema,
+      );
+      courseId = results.id;
 
       // Find the ID of the course instance
-      const courseInstanceResults = await sqldb.queryOneRowAsync(sql.select_course_instance, {
-        long_name: 'Spring 2015',
-      });
-      courseInstanceId = courseInstanceResults.rows[0].id;
+      courseInstanceId = await sqldb.queryRow(
+        sql.select_course_instance,
+        { long_name: 'Spring 2015' },
+        IdSchema,
+      );
 
       // Find the ID of an assessment that has clientFilesAssessment
-      const assessmentResults = await sqldb.queryOneRowAsync(sql.select_assessment, {
-        tid: 'exam1-automaticTestSuite',
-      });
-      assessmentId = assessmentResults.rows[0].id;
+      assessmentId = await sqldb.queryRow(
+        sql.select_assessment,
+        { tid: 'exam1-automaticTestSuite' },
+        IdSchema,
+      );
 
       // Find the ID of a question.
-      const questionResults = await sqldb.queryOneRowAsync(sql.select_question, {
-        qid: 'addNumbers',
-      });
-      questionId = questionResults.rows[0].id;
+      questionId = await sqldb.queryRow(sql.select_question, { qid: 'addNumbers' }, IdSchema);
 
       // Find the ID of a nested question.
-      const nestedQuestionResults = await sqldb.queryOneRowAsync(sql.select_question, {
-        qid: 'subfolder/nestedQuestion',
-      });
-      nestedQuestionId = nestedQuestionResults.rows[0].id;
+      nestedQuestionId = await sqldb.queryRow(
+        sql.select_question,
+        { qid: 'subfolder/nestedQuestion' },
+        IdSchema,
+      );
     });
 
-    afterEach('shut down testing server', async () => {
+    afterEach(async () => {
       try {
         await tempTestCourseDir.cleanup();
         await tempChunksDir.cleanup();
       } catch (err) {
         console.error(err);
       }
-      await helperServer.after.call(this);
+      await helperServer.after();
 
       config.chunksConsumer = false;
       config.chunksConsumerDirectory = originalChunksConsumerDirectory;
@@ -663,6 +670,311 @@ describe('chunks', () => {
           (chunk) => chunk.type === 'question' && chunk.question_id === questionId,
         ),
       );
+    });
+
+    // See https://github.com/PrairieLearn/PrairieLearn/issues/12873
+    it('creates clientFilesCourseInstance chunk for new course instance id after UUID change', async () => {
+      const courseDir = tempTestCourseDir.path;
+
+      // Generate initial chunks for the test course.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Verify that an initial chunk exists for this course instance.
+      let databaseChunks = await getAllChunksForCourse(courseId);
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) =>
+            chunk.type === 'clientFilesCourseInstance' &&
+            chunk.course_instance_id === courseInstanceId,
+        ),
+      );
+
+      // Change only the UUID in infoCourseInstance.json for Sp15
+      const infoCourseInstancePath = path.join(
+        courseDir,
+        'courseInstances',
+        'Sp15',
+        'infoCourseInstance.json',
+      );
+      const infoCiJson = await fs.readJson(infoCourseInstancePath);
+      infoCiJson.uuid = '22222222-2222-4222-8222-222222222222';
+      await fs.writeJson(infoCourseInstancePath, infoCiJson, { spaces: 2 });
+
+      // Sync course to DB so that the course_instance row is replaced (soft-delete old, insert new)
+      const { logger } = makeMockLogger();
+      await syncDiskToSql(courseId, courseDir, logger);
+
+      // Fetch the (new) course instance ID by long_name; this should now differ from the previous id
+      const newCourseInstanceId = await sqldb.queryRow(
+        sql.select_course_instance,
+        { long_name: 'Spring 2015' },
+        IdSchema,
+      );
+      assert.notEqual(newCourseInstanceId, courseInstanceId);
+
+      // Regenerate chunks. After the fix, this should create a new chunk for newCourseInstanceId
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Re-read chunks from DB
+      databaseChunks = await getAllChunksForCourse(courseId);
+
+      // A chunk should exist for the new course instance id.
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) =>
+            chunk.type === 'clientFilesCourseInstance' &&
+            chunk.course_instance_id === newCourseInstanceId,
+        ),
+      );
+    });
+
+    // This tests a scenario where a new course instance is created with an invalid
+    // JSON file and a client file. We want to assert that we don't lose changes to
+    // client files as the course instance is fixed up.
+    it('correctly handles clientFilesCourseInstance chunk when initial course instance is invalid', async () => {
+      const courseDir = tempTestCourseDir.path;
+
+      const courseInstancePath = path.join(courseDir, 'courseInstances', 'new');
+
+      // Write an empty (invalid) JSON file for the new course instance.
+      const infoCourseInstancePath = path.join(courseInstancePath, 'infoCourseInstance.json');
+      await fs.outputFile(infoCourseInstancePath, '');
+
+      // Write a new course instance client file with known contents.
+      const clientFilePath = path.join(courseInstancePath, 'clientFilesCourseInstance', 'test.txt');
+      await fs.outputFile(clientFilePath, 'Original contents');
+
+      // Sync course to DB so that the new course instance is inserted.
+      const { logger } = makeMockLogger();
+      await syncDiskToSql(courseId, courseDir, logger);
+
+      // Get the new course instance.
+      const courseInstance = await selectCourseInstanceByShortName({
+        course: await selectCourseById(courseId),
+        shortName: 'new',
+      });
+
+      // Generate new chunks.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+        changedFiles: [
+          path.relative(courseDir, infoCourseInstancePath),
+          path.relative(courseDir, clientFilePath),
+        ],
+      });
+
+      // Verify that a chunk exists for this course instance.
+      const databaseChunks = await getAllChunksForCourse(courseId);
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) =>
+            chunk.type === 'clientFilesCourseInstance' &&
+            chunk.course_instance_id === courseInstance.id,
+        ),
+      );
+
+      // Load the chunk.
+      const chunksToLoad: chunksLib.Chunk[] = [
+        {
+          type: 'clientFilesCourseInstance',
+          courseInstanceId: courseInstance.id,
+        },
+      ];
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: courseId,
+        path: courseDir,
+      });
+
+      // Verify that the course instance client file exists and has the expected contents.
+      const runtimeClientFilePath = path.join(
+        courseRuntimeDir,
+        'courseInstances',
+        'new',
+        'clientFilesCourseInstance',
+        'test.txt',
+      );
+      assert.isOk(await fs.pathExists(runtimeClientFilePath));
+      let contents = await fs.readFile(runtimeClientFilePath, 'utf-8');
+      assert.equal(contents, 'Original contents');
+
+      // Change the contents of the client file.
+      await fs.outputFile(clientFilePath, 'Changed contents');
+
+      // Regenerate chunks.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+        changedFiles: [path.relative(courseDir, clientFilePath)],
+      });
+
+      // Load the chunk again.
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      // Verify that the course instance client file has the updated contents.
+      assert.isOk(await fs.pathExists(runtimeClientFilePath));
+      contents = await fs.readFile(runtimeClientFilePath, 'utf-8');
+      assert.equal(contents, 'Changed contents');
+
+      // Now fix up the infoCourseInstance.json file so that it's valid.
+      const infoCiJson = {
+        uuid: '33333333-3333-4333-8333-333333333333',
+        longName: 'New Course Instance',
+      };
+      await fs.writeJson(infoCourseInstancePath, infoCiJson, { spaces: 2 });
+
+      // Sync course to DB so that the course_instance row is updated.
+      await syncDiskToSql(courseId, courseDir, logger);
+
+      // Assert that we produced a course instance without sync errors/warnings.
+      const newCourseInstance = await selectCourseInstanceByShortName({
+        course: await selectCourseById(courseId),
+        shortName: 'new',
+      });
+      assert.equal(newCourseInstance.id, courseInstance.id);
+      expect(newCourseInstance.sync_errors).toBeFalsy();
+      expect(newCourseInstance.sync_warnings).toBeFalsy();
+
+      // Regenerate chunks.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+        changedFiles: [path.relative(courseDir, infoCourseInstancePath)],
+      });
+
+      // Load the chunk again.
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      // Verify that the course instance client file still exists and has the expected contents.
+      assert.isOk(await fs.pathExists(runtimeClientFilePath));
+      contents = await fs.readFile(runtimeClientFilePath, 'utf-8');
+      assert.equal(contents, 'Changed contents');
+    });
+
+    // See https://github.com/PrairieLearn/PrairieLearn/issues/12873
+    it('creates clientFilesAssessment chunk for new assessment id after UUID change', async () => {
+      const courseDir = tempTestCourseDir.path;
+
+      // Generate initial chunks for the test course.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Verify that an initial chunk exists for this assessment.
+      let databaseChunks = await getAllChunksForCourse(courseId);
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId,
+        ),
+      );
+
+      // Change only the UUID in infoAssessment.json for exam1-automaticTestSuite
+      const infoAssessmentPath = path.join(
+        courseDir,
+        'courseInstances',
+        'Sp15',
+        'assessments',
+        'exam1-automaticTestSuite',
+        'infoAssessment.json',
+      );
+      const infoJson = await fs.readJson(infoAssessmentPath);
+      // Set a new UUID value to simulate a UUID rotation
+      infoJson.uuid = '11111111-1111-4111-8111-111111111111';
+      await fs.writeJson(infoAssessmentPath, infoJson, { spaces: 2 });
+
+      // Sync course to DB so that the assessment row is replaced (soft-delete old, insert new)
+      const { logger } = makeMockLogger();
+      await syncDiskToSql(courseId, courseDir, logger);
+
+      // Fetch the (new) assessment ID by TID; this should now differ from the previous id
+      const newAssessmentId = await sqldb.queryRow(
+        sql.select_assessment,
+        { tid: 'exam1-automaticTestSuite' },
+        IdSchema,
+      );
+      assert.notEqual(newAssessmentId, assessmentId);
+
+      // Regenerate chunks. Current buggy behavior: this will NOT create a new chunk for newAssessmentId
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Re-read chunks from DB
+      databaseChunks = await getAllChunksForCourse(courseId);
+
+      // After the fix: a chunk should exist for the new assessment id.
+      // Today (pre-fix): this assertion will fail because we don't regenerate the chunk.
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) =>
+            chunk.type === 'clientFilesAssessment' && chunk.assessment_id === newAssessmentId,
+        ),
+      );
+    });
+
+    it('no-op update does not create duplicate chunks when IDs unchanged', async () => {
+      const courseDir = tempTestCourseDir.path;
+
+      // Generate initial chunks for the test course.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Capture baseline chunk set and counts
+      const initialChunks = await getAllChunksForCourse(courseId);
+      const initialCount = initialChunks.length;
+      const countBy = (pred: (c: any) => boolean) => initialChunks.filter(pred).length;
+
+      const initialCourseCount = countBy((c) => c.type === 'clientFilesCourse');
+      const initialCiCount = countBy(
+        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
+      );
+      const initialAssessCount = countBy(
+        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
+      );
+
+      // Run update again with no changes
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Fetch again and ensure counts are unchanged
+      const afterChunks = await getAllChunksForCourse(courseId);
+      const afterCount = afterChunks.length;
+      assert.equal(afterCount, initialCount);
+
+      const afterCourseCount = afterChunks.filter((c) => c.type === 'clientFilesCourse').length;
+      const afterCiCount = afterChunks.filter(
+        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
+      ).length;
+      const afterAssessCount = afterChunks.filter(
+        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
+      ).length;
+
+      assert.equal(afterCourseCount, initialCourseCount);
+      assert.equal(afterCiCount, initialCiCount);
+      assert.equal(afterAssessCount, initialAssessCount);
     });
   });
 });

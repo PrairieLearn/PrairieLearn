@@ -1,4 +1,4 @@
--- BLOCK select_lti13_instances
+-- BLOCK select_combined_lti13_instances
 SELECT
   to_jsonb(lci) AS lti13_course_instance,
   to_jsonb(li) AS lti13_instance
@@ -11,7 +11,7 @@ WHERE
 ORDER BY
   lci.id DESC;
 
--- BLOCK select_lti13_instance
+-- BLOCK select_combined_lti13_instance
 SELECT
   to_jsonb(lci) AS lti13_course_instance,
   to_jsonb(li) AS lti13_instance
@@ -22,6 +22,15 @@ WHERE
   course_instance_id = $course_instance_id
   AND lci.id = $lti13_course_instance_id
   AND li.deleted_at IS NULL;
+
+-- BLOCK select_lti13_instances
+SELECT
+  *
+FROM
+  lti13_instances
+WHERE
+  institution_id = $institution_id
+  AND deleted_at IS NULL;
 
 -- BLOCK delete_lti13_course_instance
 DELETE FROM lti13_course_instances AS lci
@@ -37,7 +46,7 @@ SELECT
   aset.abbreviation,
   aset.name,
   aset.color,
-  (aset.abbreviation || a.number) as label,
+  (aset.abbreviation || a.number) AS label,
   (
     LAG(
       CASE
@@ -68,12 +77,10 @@ FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
   LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
 WHERE
   ci.id = $course_instance_id
   AND a.deleted_at IS NULL
-  AND aa.authorized
 ORDER BY
   (
     CASE
@@ -102,7 +109,7 @@ ORDER BY
 -- BLOCK select_assessment_to_create
 SELECT
   a.*,
-  (aset.abbreviation || a.number) as label
+  (aset.abbreviation || a.number) AS label
 FROM
   assessments AS a
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
@@ -114,7 +121,7 @@ WHERE
 -- BLOCK select_assessments_to_create
 SELECT
   a.*,
-  (aset.abbreviation || a.number) as label
+  (aset.abbreviation || a.number) AS label
 FROM
   assessments AS a
   LEFT JOIN assessment_sets AS aset ON aset.id = a.assessment_set_id

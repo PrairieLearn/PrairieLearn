@@ -3,6 +3,12 @@ import random
 import chevron
 import lxml.html
 import prairielearn as pl
+from typing_extensions import assert_never
+
+FEEDBACK_INCORRECT = "You didn't click on the image the correct number of times"
+FEEDBACK_TOOSMALL = "Your number was one too small."
+FEEDBACK_TOOLARGE = "Your number was one too large."
+ERROR_NOSUBMISSION = "Answer not submitted"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -50,6 +56,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Grab the number of clicks in the hidden field and put it into submitted answers
     # Each "input" field is automatically saved into "raw_submitted_answers"
+    if name not in data["raw_submitted_answers"]:
+        data["submitted_answers"][name] = None
+        data["format_errors"][name] = ERROR_NOSUBMISSION
+        return
+
     data["submitted_answers"][name] = int(data["raw_submitted_answers"][name])
 
 
@@ -57,7 +68,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     # Get the name of the element and the weight for this answer
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    weight = pl.get_float_attrib(element, "weight", 1.0)
+    weight = pl.get_integer_attrib(element, "weight", 1)
 
     # Get the number of submitted clicks and the correct number of clicks
     submitted_answer = data["submitted_answers"][name]
@@ -70,13 +81,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         score = 1.0
     elif submitted_answer == correct_answer - 1:
         score = 0.75
-        feedback = "Your number was one too small."
+        feedback = FEEDBACK_TOOSMALL
     elif submitted_answer == correct_answer + 1:
         score = 0.5
-        feedback = "Your number was one too large."
+        feedback = FEEDBACK_TOOLARGE
     else:
         score = 0
-        feedback = "You didn't click on the image the correct number of times"
+        feedback = FEEDBACK_INCORRECT
 
     # Put the score, weight, and feedback into the data object
     data["partial_scores"][name] = {
@@ -84,3 +95,24 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         "weight": weight,
         "feedback": feedback,
     }
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, "answers-name")
+    weight = pl.get_integer_attrib(element, "weight", 1)
+    result = data["test_type"]
+
+    if result == "correct":
+        data["raw_submitted_answers"][name] = str(data["correct_answers"][name])
+    elif result == "incorrect":
+        data["raw_submitted_answers"][name] = str(data["correct_answers"][name] + 2)
+        data["partial_scores"][name] = {
+            "score": 0,
+            "weight": weight,
+            "feedback": FEEDBACK_INCORRECT,
+        }
+    elif result == "invalid":
+        data["format_errors"][name] = ERROR_NOSUBMISSION
+    else:
+        assert_never(result)

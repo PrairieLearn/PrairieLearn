@@ -1,5 +1,7 @@
 import { io } from 'socket.io-client';
 
+import { onDocumentReady } from '@prairielearn/browser-utils';
+
 function getNumericalAttribute(element: HTMLElement, name: string, defaultValue: number): number {
   const value = element.getAttribute(name);
   if (value === null) {
@@ -12,7 +14,7 @@ function getNumericalAttribute(element: HTMLElement, name: string, defaultValue:
   return parsedValue;
 }
 
-$(function () {
+onDocumentReady(function () {
   const socketToken = document.body.getAttribute('data-socket-token');
   const workspaceId = document.body.getAttribute('data-workspace-id');
   const heartbeatIntervalSec = getNumericalAttribute(
@@ -38,7 +40,7 @@ $(function () {
   const workspaceFrame = document.getElementById('workspace') as HTMLIFrameElement;
   const stateBadge = document.getElementById('state') as HTMLSpanElement;
   const messageBadge = document.getElementById('message') as HTMLSpanElement;
-  const failedMessage = document.getElementById('failed-message') as HTMLElement;
+  const failedMessage = document.getElementById('failed-message')!;
   const reloadButton = document.getElementById('reload') as HTMLButtonElement;
 
   const showStoppedFrame = () => {
@@ -63,17 +65,13 @@ $(function () {
   };
 
   function setMessage(message: string) {
-    console.log('message', message);
     messageBadge.textContent = message;
     failedMessage.textContent = message;
-    if (message) {
-      stateBadge.classList.add('badge-prepend');
-    } else {
-      stateBadge.classList.remove('badge-prepend');
-    }
+    stateBadge.classList.toggle('badge-prepend', !!message);
   }
 
   let previousState: null | string = null;
+
   function setState(state: string) {
     // Simplify the state machine by ignoring duplicate states.
     if (state === previousState) return;
@@ -92,16 +90,13 @@ $(function () {
       workspaceFrame.src = 'about:blank';
       if (previousState === 'running') {
         showStoppedFrame();
-      } else if (previousState !== 'uninitialized') {
+      } else if (previousState === 'launching') {
         // When the workspace is first created, it will be in the `uninitialized`
         // state. It then transitions to the `stopped` state, and then immediately
         // to `launching`.
         //
         // We don't want to consider the initial transition to `stopped` as a
-        // failure, so we specifically ignore transitions from `uninitialized`.
-        //
-        // Put differently: we'll really only show the failure message if we
-        // transition directly from `launching` to `stopped`.
+        // failure, so we specifically only consider transitions from `launching`.
         showFailedFrame();
       }
     }
@@ -111,21 +106,17 @@ $(function () {
   }
 
   socket.on('change:state', (msg) => {
-    console.log('change:state, msg =', msg);
     setState(msg.state);
     setMessage(msg.message);
   });
 
   socket.on('change:message', (msg) => {
-    console.log('change:message, msg =', msg);
     setMessage(msg.message);
   });
 
   // Whenever we establish or reestablish a connection, join the workspace room.
   socket.on('connect', () => {
-    // TODO: remove second argument once all servers no longer require it.
-    socket.emit('joinWorkspace', { workspace_id: workspaceId }, (msg: any) => {
-      console.log('joinWorkspace, msg =', msg);
+    socket.emit('joinWorkspace', (msg: any) => {
       if (msg.errorMessage) {
         setMessage('Error joining workspace: ' + msg.errorMessage);
       } else {
@@ -135,8 +126,7 @@ $(function () {
   });
 
   // Only start the workspace when the page is first loaded, not on reconnects.
-  // TODO: remove second argument once all servers no longer require it.
-  socket.emit('startWorkspace', { workspace_id: workspaceId });
+  socket.emit('startWorkspace');
 
   let lastVisibleTime = Date.now();
   setInterval(() => {
@@ -146,10 +136,7 @@ $(function () {
 
     // Only send a heartbeat if this page was recently visible.
     if (Date.now() < lastVisibleTime + visibilityTimeoutSec * 1000) {
-      // TODO: remove second argument once all servers no longer require it.
-      socket.emit('heartbeat', { workspace_id: workspaceId }, (msg: any) => {
-        console.log('heartbeat, msg =', msg);
-      });
+      socket.emit('heartbeat');
     }
   }, heartbeatIntervalSec * 1000);
 

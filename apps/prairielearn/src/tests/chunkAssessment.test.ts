@@ -1,23 +1,16 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import * as tmp from 'tmp-promise';
-
-import * as sqldb from '@prairielearn/postgres';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as chunks from '../lib/chunks.js';
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-describe('Generate chunks and use them for a student homework', function () {
-  this.timeout(60000);
-
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+describe('Generate chunks and use them for a student homework', { timeout: 60_000 }, function () {
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
   context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
@@ -25,33 +18,36 @@ describe('Generate chunks and use them for a student homework', function () {
   let tempChunksDir: tmp.DirectoryResult;
   const originalChunksConsumerDirectory = config.chunksConsumerDirectory;
 
-  before('set up testing server', async () => {
+  beforeAll(async () => {
     tempChunksDir = await tmp.dir({ unsafeCleanup: true });
 
     config.chunksConsumer = true;
     config.chunksConsumerDirectory = tempChunksDir.path;
 
-    await helperServer.before().call(this);
-    const results = await sqldb.queryOneRowAsync(sql.select_hw1, []);
-    context.assessmentId = results.rows[0].id;
+    await helperServer.before()();
+    const { id: assessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw1-automaticTestSuite',
+    });
+    context.assessmentId = assessmentId;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
 
-  after('shut down testing server', async () => {
-    await helperServer.after.call(this);
+  afterAll(async () => {
+    await helperServer.after();
     await tempChunksDir.cleanup();
     config.chunksConsumer = false;
     config.chunksConsumerDirectory = originalChunksConsumerDirectory;
   });
 
-  step('generate course chunks', async () => {
+  test.sequential('generate course chunks', async () => {
     const course_ids = ['1'];
     const authn_user_id = '1';
     const job_sequence_id = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
     await helperServer.waitForJobSequenceSuccess(job_sequence_id);
   });
 
-  step('start the homework', async () => {
+  test.sequential('start the homework', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl);
     assert.isTrue(response.ok);
 
@@ -65,7 +61,7 @@ describe('Generate chunks and use them for a student homework', function () {
     context.questionUrl = `${context.siteUrl}${questionUrl}`;
   });
 
-  step('visit the "Add two numbers" question', async () => {
+  test.sequential('visit the "Add two numbers" question', async () => {
     const response = await helperClient.fetchCheerio(context.questionUrl);
     assert.isTrue(response.ok);
 

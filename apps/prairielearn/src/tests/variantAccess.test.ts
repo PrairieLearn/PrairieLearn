@@ -1,17 +1,22 @@
-import { assert } from 'chai';
 import type { CheerioAPI } from 'cheerio';
-import { step } from 'mocha-steps';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { type Assessment, AssessmentSchema, type Question } from '../lib/db-types.js';
+import {
+  type Assessment,
+  AssessmentSchema,
+  type CourseInstance,
+  type Question,
+} from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
-import { updateCourseSharingName } from '../models/course.js';
+import { selectCourseById, updateCourseSharingName } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -63,11 +68,11 @@ function getVariantId(cheerio: CheerioAPI): string {
   return variantId;
 }
 
-function getWorkspaceUrl(cheerio: CheerioAPI): string {
-  const workspaceUrl = cheerio('a:contains("Open workspace")').attr('href');
-  assert(workspaceUrl);
-  assert.isString(workspaceUrl);
-  return workspaceUrl;
+function getWorkspaceId(cheerio: CheerioAPI): string {
+  const workspaceId = cheerio('.question-container').attr('data-workspace-id');
+  assert(workspaceId);
+  assert.isString(workspaceId);
+  return workspaceId;
 }
 
 /**
@@ -97,19 +102,21 @@ async function assertVariantAccess({
   questionBasePath,
   variantId,
   submissionId,
-  workspaceUrl,
+  workspaceId,
   expectedAccess,
+  workspaceBaseUrl = '/pl/workspace',
 }: {
   questionBasePath: string;
   variantId: string;
   submissionId: string;
-  workspaceUrl: string;
+  workspaceId: string;
   expectedAccess: boolean;
+  workspaceBaseUrl?: string;
 }) {
   // Remove trailing slash if present.
   questionBasePath = questionBasePath.replace(/\/$/, '');
 
-  const isStudentRoute = !!questionBasePath.match(/course_instance\/\d+\/instance_question\//);
+  const isStudentRoute = !!/course_instance\/\d+\/instance_question\//.test(questionBasePath);
 
   // Test access to the rendered variant.
   const variantUrl = `${siteUrl}${questionBasePath}${isStudentRoute ? '' : '/preview'}?variant_id=${variantId}`;
@@ -148,40 +155,41 @@ async function assertVariantAccess({
   }
 
   // Test access to the variant's workspace.
-  const workspaceRes = await fetchCheerio(siteUrl + workspaceUrl);
+  const workspaceRes = await fetchCheerio(siteUrl + workspaceBaseUrl + '/' + workspaceId);
   assert.equal(workspaceRes.status, expectedAccess ? 200 : 403);
 }
 
 describe('Variant access', () => {
-  before(helperServer.before());
-  after(helperServer.after);
+  beforeAll(helperServer.before());
+  afterAll(helperServer.after);
 
   let question: Question;
   let assessment: Assessment;
+  let courseInstance: CourseInstance;
   let publicVariantId: string;
-  let publicVariantWorkspaceUrl: string;
+  let publicVariantWorkspaceId: string;
   let publicVariantSubmissionId: string;
   let otherPublicVariantId: string;
-  let otherPublicVariantWorkspaceUrl: string;
+  let otherPublicVariantWorkspaceId: string;
   let otherPublicVariantSubmissionId: string;
   let studentInstanceQuestionPath: string;
   let studentVariantId: string;
-  let studentVariantWorkspaceUrl: string;
+  let studentVariantWorkspaceId: string;
   let studentVariantSubmissionId: string;
   let otherStudentInstanceQuestionPath: string;
   let otherStudentVariantId: string;
-  let otherStudentVariantWorkspaceUrl: string;
+  let otherStudentVariantWorkspaceId: string;
   let otherStudentVariantSubmissionId: string;
   let instructorVariantId: string;
-  let instructorVariantWorkspaceUrl: string;
+  let instructorVariantWorkspaceId: string;
   let instructorVariantSubmissionId: string;
 
-  step('select relevant entities', async () => {
-    question = await selectQuestionByQid({
-      course_id: '1',
-      qid: 'variantAccess',
+  test.sequential('get relevant entities', async () => {
+    courseInstance = await selectCourseInstanceByShortName({
+      course: await selectCourseById('1'),
+      shortName: 'Sp15',
     });
-
+    question = await selectQuestionByQid({ course_id: '1', qid: 'variantAccess' });
     assessment = await queryRow(
       'SELECT * FROM assessments WHERE tid = $tid',
       { tid: 'hw11-variantAccess' },
@@ -189,7 +197,7 @@ describe('Variant access', () => {
     );
   });
 
-  step('configure instructor permissions', async () => {
+  test.sequential('configure instructor permissions', async () => {
     const adminUser = await getConfiguredUser();
     const instructorUser = await getOrCreateUser(INSTRUCTOR_USER);
     await insertCoursePermissionsByUserUid({
@@ -207,7 +215,7 @@ describe('Variant access', () => {
     });
   });
 
-  step('configure course assistant permissions', async () => {
+  test.sequential('configure course assistant permissions', async () => {
     const adminUser = await getConfiguredUser();
     const courseAssistantUser = await getOrCreateUser(COURSE_ASSISTANT_USER);
     await insertCoursePermissionsByUserUid({
@@ -218,7 +226,7 @@ describe('Variant access', () => {
     });
   });
 
-  step('enable question sharing', async () => {
+  test.sequential('enable question sharing', async () => {
     await features.enable('question-sharing', { institution_id: '1', course_id: '1' });
     await updateCourseSharingName({
       course_id: '1',
@@ -226,42 +234,42 @@ describe('Variant access', () => {
     });
   });
 
-  step('create variant from public question preview', async () => {
+  test.sequential('create variant from public question preview', async () => {
     await withUser(PUBLIC_USER, async () => {
       const url = `${siteUrl}/pl/public/course/1/question/${question.id}/preview`;
       const res = await fetchCheerio(url);
       assert.equal(res.status, 200);
       publicVariantId = getVariantId(res.$);
-      publicVariantWorkspaceUrl = getWorkspaceUrl(res.$);
+      publicVariantWorkspaceId = getWorkspaceId(res.$);
       publicVariantSubmissionId = await makeSubmission(url, res.$);
     });
   });
 
-  step('create other variant from public question preview', async () => {
+  test.sequential('create other variant from public question preview', async () => {
     await withUser(OTHER_PUBLIC_USER, async () => {
       const url = `${siteUrl}/pl/public/course/1/question/${question.id}/preview`;
       const res = await fetchCheerio(url);
       assert.equal(res.status, 200);
       otherPublicVariantId = getVariantId(res.$);
-      otherPublicVariantWorkspaceUrl = getWorkspaceUrl(res.$);
+      otherPublicVariantWorkspaceId = getWorkspaceId(res.$);
       otherPublicVariantSubmissionId = await makeSubmission(url, res.$);
     });
   });
 
-  step('create variant from instructor question preview', async () => {
+  test.sequential('create variant from instructor question preview', async () => {
     await withUser(INSTRUCTOR_USER, async () => {
       const url = `${siteUrl}/pl/course/1/question/${question.id}/preview`;
       const res = await fetchCheerio(url);
       assert.equal(res.status, 200);
       instructorVariantId = getVariantId(res.$);
-      instructorVariantWorkspaceUrl = getWorkspaceUrl(res.$);
+      instructorVariantWorkspaceId = getWorkspaceId(res.$);
       instructorVariantSubmissionId = await makeSubmission(url, res.$);
     });
   });
 
-  step('create variant from student assessment instance', async () => {
+  test.sequential('create variant from student assessment instance', async () => {
     await withUser(STUDENT_USER, async () => {
-      const assessmentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}`;
+      const assessmentUrl = `${siteUrl}/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}`;
       const assessmentRes = await fetchCheerio(assessmentUrl);
       assert.equal(assessmentRes.status, 200);
 
@@ -276,7 +284,7 @@ describe('Variant access', () => {
       const addVectorsQuestionRes = await fetchCheerio(instanceQuestionUrl);
       assert.equal(addVectorsQuestionRes.status, 200);
       studentVariantId = getVariantId(addVectorsQuestionRes.$);
-      studentVariantWorkspaceUrl = getWorkspaceUrl(addVectorsQuestionRes.$);
+      studentVariantWorkspaceId = getWorkspaceId(addVectorsQuestionRes.$);
       studentVariantSubmissionId = await makeSubmission(
         instanceQuestionUrl,
         addVectorsQuestionRes.$,
@@ -284,9 +292,9 @@ describe('Variant access', () => {
     });
   });
 
-  step('create variant from other student assessment instance', async () => {
+  test.sequential('create variant from other student assessment instance', async () => {
     await withUser(OTHER_STUDENT_USER, async () => {
-      const assessmentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}`;
+      const assessmentUrl = `${siteUrl}/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}`;
       const assessmentRes = await fetchCheerio(assessmentUrl);
       assert.equal(assessmentRes.status, 200);
 
@@ -301,7 +309,7 @@ describe('Variant access', () => {
       const addVectorsQuestionRes = await fetchCheerio(instanceQuestionUrl);
       assert.equal(addVectorsQuestionRes.status, 200);
       otherStudentVariantId = getVariantId(addVectorsQuestionRes.$);
-      otherStudentVariantWorkspaceUrl = getWorkspaceUrl(addVectorsQuestionRes.$);
+      otherStudentVariantWorkspaceId = getWorkspaceId(addVectorsQuestionRes.$);
       otherStudentVariantSubmissionId = await makeSubmission(
         instanceQuestionUrl,
         addVectorsQuestionRes.$,
@@ -309,48 +317,64 @@ describe('Variant access', () => {
     });
   });
 
-  step('public preview does not show variant for different user', async () => {
+  test.sequential('public preview allows access to workspaces', async () => {
+    await withUser(PUBLIC_USER, async () => {
+      await assertVariantAccess({
+        questionBasePath: `/pl/public/course/1/question/${question.id}`,
+        variantId: publicVariantId,
+        workspaceId: publicVariantWorkspaceId,
+        submissionId: publicVariantSubmissionId,
+        expectedAccess: true,
+        workspaceBaseUrl: '/pl/public/workspace',
+      });
+    });
+  });
+
+  test.sequential('public preview does not show variant for different user', async () => {
     await withUser(PUBLIC_USER, async () => {
       await assertVariantAccess({
         questionBasePath: `/pl/public/course/1/question/${question.id}`,
         variantId: otherPublicVariantId,
-        workspaceUrl: otherPublicVariantWorkspaceUrl,
+        workspaceId: otherPublicVariantWorkspaceId,
         submissionId: otherPublicVariantSubmissionId,
         expectedAccess: false,
+        workspaceBaseUrl: '/pl/public/workspace',
       });
     });
   });
 
-  step('public preview does not show variant created by instructor', async () => {
+  test.sequential('public preview does not show variant created by instructor', async () => {
     await withUser(PUBLIC_USER, async () => {
       await assertVariantAccess({
         questionBasePath: `/pl/public/course/1/question/${question.id}`,
         variantId: instructorVariantId,
-        workspaceUrl: instructorVariantWorkspaceUrl,
+        workspaceId: instructorVariantWorkspaceId,
         submissionId: instructorVariantSubmissionId,
         expectedAccess: false,
+        workspaceBaseUrl: '/pl/public/workspace',
       });
     });
   });
 
-  step('public preview does not show variant created by student', async () => {
+  test.sequential('public preview does not show variant created by student', async () => {
     await withUser(PUBLIC_USER, async () => {
       await assertVariantAccess({
         questionBasePath: `/pl/public/course/1/question/${question.id}`,
         variantId: studentVariantId,
-        workspaceUrl: studentVariantWorkspaceUrl,
+        workspaceId: studentVariantWorkspaceId,
         submissionId: studentVariantSubmissionId,
         expectedAccess: false,
+        workspaceBaseUrl: '/pl/public/workspace',
       });
     });
   });
 
-  step('instructor preview shows variant created in public preview', async () => {
+  test.sequential('instructor preview shows variant created in public preview', async () => {
     await withUser(INSTRUCTOR_USER, async () => {
       await assertVariantAccess({
         questionBasePath: `/pl/course/1/question/${question.id}`,
         variantId: publicVariantId,
-        workspaceUrl: publicVariantWorkspaceUrl,
+        workspaceId: publicVariantWorkspaceId,
         submissionId: publicVariantSubmissionId,
         // TODO: Once we make the necessary changes, this should 403. We'll have to
         // update the name of this test too.
@@ -359,63 +383,100 @@ describe('Variant access', () => {
     });
   });
 
-  step('instructor preview shows variant created by student', async () => {
+  test.sequential('instructor preview shows variant created by student', async () => {
     await withUser(INSTRUCTOR_USER, async () => {
       await assertVariantAccess({
         questionBasePath: `/pl/course/1/question/${question.id}`,
         variantId: studentVariantId,
-        workspaceUrl: studentVariantWorkspaceUrl,
+        workspaceId: studentVariantWorkspaceId,
         submissionId: studentVariantSubmissionId,
         expectedAccess: true,
       });
     });
   });
 
-  step('course assistant preview does not show variant created by student', async () => {
+  test.sequential('course assistant preview does not show variant created by student', async () => {
     await withUser(COURSE_ASSISTANT_USER, async () => {
       await assertVariantAccess({
         questionBasePath: `/pl/course/1/question/${question.id}`,
         variantId: studentVariantId,
-        workspaceUrl: studentVariantWorkspaceUrl,
+        workspaceId: studentVariantWorkspaceId,
         submissionId: studentVariantSubmissionId,
         expectedAccess: false,
       });
     });
   });
 
-  step('student instance question does not show variant created by other student', async () => {
-    await withUser(STUDENT_USER, async () => {
-      await assertVariantAccess({
-        questionBasePath: studentInstanceQuestionPath,
-        variantId: otherStudentVariantId,
-        workspaceUrl: otherStudentVariantWorkspaceUrl,
-        submissionId: otherStudentVariantSubmissionId,
-        expectedAccess: false,
+  test.sequential(
+    'student instance question does not show variant created by other student',
+    async () => {
+      await withUser(STUDENT_USER, async () => {
+        await assertVariantAccess({
+          questionBasePath: studentInstanceQuestionPath,
+          variantId: otherStudentVariantId,
+          workspaceId: otherStudentVariantWorkspaceId,
+          submissionId: otherStudentVariantSubmissionId,
+          expectedAccess: false,
+        });
       });
-    });
-  });
+    },
+  );
 
-  step('student instance question does not show variant created by instructor', async () => {
-    await withUser(STUDENT_USER, async () => {
-      await assertVariantAccess({
-        questionBasePath: studentInstanceQuestionPath,
-        variantId: instructorVariantId,
-        workspaceUrl: instructorVariantWorkspaceUrl,
-        submissionId: instructorVariantSubmissionId,
-        expectedAccess: false,
+  test.sequential(
+    'student instance question does not show variant created by instructor',
+    async () => {
+      await withUser(STUDENT_USER, async () => {
+        await assertVariantAccess({
+          questionBasePath: studentInstanceQuestionPath,
+          variantId: instructorVariantId,
+          workspaceId: instructorVariantWorkspaceId,
+          submissionId: instructorVariantSubmissionId,
+          expectedAccess: false,
+        });
       });
-    });
-  });
+    },
+  );
 
-  step('student instance question does not show variant created in public preview', async () => {
+  test.sequential(
+    'student instance question does not show variant created in public preview',
+    async () => {
+      await withUser(STUDENT_USER, async () => {
+        await assertVariantAccess({
+          questionBasePath: studentInstanceQuestionPath,
+          variantId: publicVariantId,
+          workspaceId: publicVariantWorkspaceId,
+          submissionId: publicVariantSubmissionId,
+          expectedAccess: false,
+        });
+      });
+    },
+  );
+
+  test.sequential('student cannot access workspace created through public preview', async () => {
     await withUser(STUDENT_USER, async () => {
       await assertVariantAccess({
         questionBasePath: studentInstanceQuestionPath,
         variantId: publicVariantId,
-        workspaceUrl: publicVariantWorkspaceUrl,
+        workspaceId: publicVariantWorkspaceId,
         submissionId: publicVariantSubmissionId,
         expectedAccess: false,
       });
     });
   });
+
+  test.sequential(
+    'public user cannot access workspace created through student assessment',
+    async () => {
+      await withUser(PUBLIC_USER, async () => {
+        await assertVariantAccess({
+          questionBasePath: `/pl/public/course/1/question/${question.id}`,
+          variantId: studentVariantId,
+          workspaceId: studentVariantWorkspaceId,
+          submissionId: studentVariantSubmissionId,
+          expectedAccess: false,
+          workspaceBaseUrl: '/pl/public/workspace',
+        });
+      });
+    },
+  );
 });

@@ -127,10 +127,9 @@ WHERE
   iq.id = $instance_question_id
   AND ci.id = $course_instance_id
   AND (
-    $assessment_id::BIGINT IS NULL
+    $assessment_id::bigint IS NULL
     OR a.id = $assessment_id
   )
   AND q.deleted_at IS NULL
   AND a.deleted_at IS NULL
-  AND aai.authorized
   AND NOT iqi.sequence_locked;

@@ -34,7 +34,7 @@ exampleCourse
 
 ## Access control
 
-Each different `clientFiles*` directory is accessible under the same [access control rules](accessControl/index.md) for the course instances and assessments. That is, `clientFilesCourse` is accessible to any student who has access to some course instance, while `clientFilesQuestion`, `clientFilesCourseInstance`, and `clientFilesAssessment` are accessible to students with access to the corresponding question, course instance, or assessment.
+Each different `clientFiles*` directory is accessible under the same [access control rules](assessment/accessControl.md) for the course instances and assessments. That is, `clientFilesCourse` is accessible to any student who has access to some course instance, while `clientFilesQuestion`, `clientFilesCourseInstance`, and `clientFilesAssessment` are accessible to students with access to the corresponding question, course instance, or assessment.
 
 ## Accessing files from HTML templates
 
@@ -47,4 +47,4 @@ From within HTML, `clientFiles` directories can be templated with the following 
 
 ## Accessing files from `server.py` question code
 
-See the [accessing files on disk](question.md#accessing-files-on-disk) section for details.
+See the [accessing files on disk](question/server.md#accessing-files-on-disk) section for details.

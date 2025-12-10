@@ -1,13 +1,30 @@
-/* eslint-env browser */
 /* global TomSelect, MathJax */
+
+class PLMultipleChoiceTomSelect extends TomSelect {
+  // This class overrides the positionDropdown method to ensure that the dropdown moves up if the space below is too small.
+  positionDropdown() {
+    super.positionDropdown();
+
+    const controlRect = this.control.getBoundingClientRect();
+    const dropdownRect = this.dropdown.getBoundingClientRect();
+
+    if (dropdownRect.bottom > window.innerHeight) {
+      const newTop = Math.max(controlRect.top - this.dropdown.offsetHeight, 0) + window.scrollY;
+      this.dropdown.style.top = `${newTop}px`;
+    }
+  }
+}
 
 window.PLMultipleChoice = function (uuid) {
   const selectElement = document.getElementById('pl-multiple-choice-select-' + uuid);
   const container = selectElement.closest('.pl-multiple-choice-dropdown');
 
-  const select = new TomSelect(selectElement, {
+  const select = new PLMultipleChoiceTomSelect(selectElement, {
     plugins: ['no_backspace_delete', 'dropdown_input'],
     allowEmptyOption: true,
+
+    // Append dropdown to body to prevent overflow clipping by parent containers
+    dropdownParent: 'body',
 
     // Search based on the `content` field, which comes from the `data-content`
     // attribute on each option.
@@ -28,17 +45,30 @@ window.PLMultipleChoice = function (uuid) {
         return `<div class="${data.disabled ? 'text-muted' : ''}">${data.content}</div>`;
       },
     },
+
+    onDropdownOpen: (dropdown) => {
+      // The first time the dropdown is opened, this event is fired before the
+      // options are actually present in the DOM. We'll wait for the next tick
+      // to ensure that the options are present.
+      setTimeout(async () => {
+        await MathJax.typesetPromise([dropdown]);
+        select.positionDropdown();
+      }, 0);
+    },
+
+    onDropdownClose: () => {
+      // In case the dropdown items contain math, render it when the
+      // dropdown is opened or closed.
+      MathJax.typesetPromise([container]);
+    },
   });
 
-  // In case the dropdown items contain math, render it when the
-  // dropdown is opened or closed.
-  select.on('dropdown_open', () => {
-    // The first time the dropdown is opened, this even is fired before the
-    // options are actually present in the DOM. We'll wait for the next tick
-    // to ensure that the options are present.
-    setTimeout(() => MathJax.typesetPromise([container]), 0);
-  });
-  select.on('dropdown_close', () => MathJax.typesetPromise([container]));
+  // Reposition the dropdown when the main container is scrolled. This is only
+  // needed in instructor pages, since student pages scroll on body, which is
+  // already handled by TomSelect itself.
+  selectElement
+    .closest('.app-main-container')
+    ?.addEventListener('scroll', () => select.positionDropdown());
 
   // By default, `tom-select` will set the placeholder as the "active" option,
   // but this means that the active option can't be changed with the up/down keys

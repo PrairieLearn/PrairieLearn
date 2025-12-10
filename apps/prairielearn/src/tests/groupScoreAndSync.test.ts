@@ -1,11 +1,17 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import {
+  AssessmentInstanceSchema,
+  IdSchema,
+  SubmissionSchema,
+  VariantSchema,
+} from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -13,41 +19,41 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const locals: Record<string, any> = {};
-locals.siteUrl = 'http://localhost:' + config.serverPort;
+const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
 
-let page, elemList;
+let page: string;
+let elemList;
 
 const question = [{ qid: 'addNumbers', type: 'Freeform', maxPoints: 5 }];
 const questions = _.keyBy(question, 'qid');
 
 describe('assessment instance group synchronization test', function () {
-  this.timeout(10000);
-
   const storedConfig: Record<string, any> = {};
-  before('store authenticated user', () => {
+
+  beforeAll(() => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
   });
-  after('unset authenticated user', () => {
+
+  afterAll(() => {
     Object.assign(config, storedConfig);
   });
 
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-  after('shut down testing server', helperServer.after);
+  beforeAll(helperServer.before(TEST_COURSE_PATH));
+
+  afterAll(helperServer.after);
   describe('1. database initialization', function () {
     it('get group-based homework assessment id', async () => {
-      const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
-      assert.notEqual(result.rowCount, 0);
-      assert.notEqual(result.rows[0].id, undefined);
-      locals.assessment_id = result.rows[0].id;
+      const assessment_ids = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+      assert.notEqual(assessment_ids.length, 0);
+      locals.assessment_id = assessment_ids[0];
       locals.assessmentUrl = locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id;
       locals.instructorAssessmentsUrlGroupTab =
-        locals.courseInstanceBaseUrl + '/instructor/assessment/' + result.rows[0].id + '/groups';
+        locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/groups';
       locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
       locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
     });
@@ -93,11 +99,11 @@ describe('assessment instance group synchronization test', function () {
       assert.equal(res.status, 200);
     });
     it('should create the correct group configuration', async () => {
-      const result = await sqldb.queryAsync(sql.select_group_users, {
+      const rowCount = await sqldb.execute(sql.select_group_users, {
         assessment_id: locals.assessment_id,
         group_name: 'testgroup',
       });
-      assert.equal(result.rowCount, 3);
+      assert.equal(rowCount, 3);
     });
   });
 
@@ -135,13 +141,15 @@ describe('assessment instance group synchronization test', function () {
       page = await res.text();
     });
     it('should have 1 assessment instance in db', async () => {
-      const result = await sqldb.queryAsync(sql.select_all_assessment_instance, []);
-      assert.lengthOf(result.rows, 1);
-      locals.assessment_instance_id = result.rows[0].id;
-      locals.assessment_instance = result.rows[0];
+      const assessment_instance = await sqldb.queryRow(
+        sql.select_all_assessment_instance,
+        AssessmentInstanceSchema,
+      );
+      locals.assessment_instance_id = assessment_instance.id;
+      locals.assessment_instance = assessment_instance;
       locals.assessmentInstanceUrl =
         locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
-      assert.equal(result.rows[0].group_id, 1);
+      assert.equal(assessment_instance.group_id, '1');
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -172,10 +180,11 @@ describe('assessment instance group synchronization test', function () {
       locals.variant_id = Number.parseInt(locals.variant_id);
     });
     it('should have the variant in the DB if has grade or save button', async () => {
-      const result = await sqldb.queryAsync(sql.select_variant, {
-        variant_id: locals.variant_id,
-      });
-      locals.variant = result.rows[0];
+      locals.variant = await sqldb.queryRow(
+        sql.select_variant,
+        { variant_id: locals.variant_id },
+        VariantSchema,
+      );
     });
     it('should have a CSRF token if has grade or save button', function () {
       elemList = locals.$('.question-form input[name="__csrf_token"]');
@@ -195,7 +204,7 @@ describe('assessment instance group synchronization test', function () {
         assessment_instance_points: 1,
         assessment_instance_score_perc: (1 / 10) * 100,
       };
-      locals.getSubmittedAnswer = function (variant) {
+      locals.getSubmittedAnswer = function (variant: any) {
         return {
           F: variant.true_answer.F,
         };
@@ -221,10 +230,11 @@ describe('assessment instance group synchronization test', function () {
   });
   describe('6. check Score for current student', function () {
     it('should have the submission', async () => {
-      const result = await sqldb.queryAsync(sql.select_last_submission_for_variants, {
-        variant_id: locals.variant.id,
-      });
-      locals.submission = result.rows[0];
+      locals.submission = await sqldb.queryRow(
+        sql.select_last_submission_for_variants,
+        { variant_id: locals.variant.id },
+        SubmissionSchema,
+      );
     });
     it('should be graded with expected score', function () {
       assert.equal(locals.submission.score, locals.expectedResult.submission_score);
@@ -233,17 +243,18 @@ describe('assessment instance group synchronization test', function () {
       assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
     });
     it('should still have the assessment_instance', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_assessment_instance, {});
-      locals.assessment_instance = result.rows[0];
+      locals.assessment_instance = await sqldb.queryRow(
+        sql.select_assessment_instance,
+        AssessmentInstanceSchema,
+      );
     });
   });
   describe('7. check Score for another student', function () {
-    it('should be able to switch user we generated', function (callback) {
+    it('should be able to switch user we generated', function () {
       const student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const res = await fetch(locals.assessmentUrl);
@@ -260,10 +271,12 @@ describe('assessment instance group synchronization test', function () {
       assert.isString(locals.__csrf_token);
     });
     it('should still have the only assessment instance in db', async () => {
-      const result = await sqldb.queryAsync(sql.select_all_assessment_instance, []);
-      assert.lengthOf(result.rows, 1);
-      assert.equal(result.rows[0].id, locals.assessment_instance_id);
-      locals.assessment_instance = result.rows[0];
+      const result = await sqldb.queryRow(
+        sql.select_all_assessment_instance,
+        AssessmentInstanceSchema,
+      );
+      assert.equal(result.id, locals.assessment_instance_id);
+      locals.assessment_instance = result;
     });
   });
 });

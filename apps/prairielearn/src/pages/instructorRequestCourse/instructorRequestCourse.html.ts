@@ -1,30 +1,14 @@
-import { z } from 'zod';
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlValue, html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
+import { type CourseRequest } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { assertNever } from '../../lib/types.js';
 
-export const CourseRequestRowSchema = z.object({
-  course_request: CourseRequestSchema,
-  approved_by_user: UserSchema.nullable(),
-});
-type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
-
-export const Lti13CourseRequestInputSchema = z
-  .object({
-    'cr-firstname': z.string(),
-    'cr-lastname': z.string(),
-    'cr-email': z.string(),
-    'cr-shortname': z.string(),
-    'cr-title': z.string(),
-    'cr-institution': z.string(),
-  })
-  .nullable();
-export type Lti13CourseRequestInput = z.infer<typeof Lti13CourseRequestInputSchema>;
+import type { CourseRequestRow, Lti13CourseRequestInput } from './instructorRequestCourse.types.js';
 
 export function RequestCourse({
   rows,
@@ -33,7 +17,7 @@ export function RequestCourse({
 }: {
   rows: CourseRequestRow[];
   lti13Info: Lti13CourseRequestInput;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     pageTitle: 'Request a Course',
@@ -42,7 +26,7 @@ export function RequestCourse({
       type: 'plain',
       page: 'request_course',
     },
-    headContent: [compiledScriptTag('instructorRequestCourseClient.ts')],
+    headContent: compiledScriptTag('instructorRequestCourseClient.ts'),
     content: html`
       <h1 class="visually-hidden">Request a Course</h1>
       ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
@@ -224,8 +208,29 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             <label class="form-label" for="cr-ghuser">GitHub Username (optional)</label>
             <input type="text" class="form-control" name="cr-ghuser" id="cr-ghuser" />
             <small class="form-text text-muted">
-              Providing your GitHub username will allow you to edit course content offline. You do
-              not need to provide this if you would like to use the online web editor.
+              Providing your GitHub username will grant you access to your course's GitHub
+              repository. This access allows you to edit your code in a
+              <a
+                href="https://prairielearn.readthedocs.io/en/latest/installing/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >local installation of PrairieLearn</a
+              >, and to grant access to other instructors or TAs to do the same. You do not need to
+              provide this if you would like to exclusively use the online web editor. You are
+              encouraged to provide it if you are planning complex questions such as those using
+              <a
+                href="https://prairielearn.readthedocs.io/en/latest/externalGrading/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >code autograding</a
+              >
+              or
+              <a
+                href="https://prairielearn.readthedocs.io/en/latest/workspaces/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >workspaces</a
+              >, even if you don't yet have use for a local installation.
             </small>
           </div>
           <div class="mb-3">
@@ -286,21 +291,18 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               </li>
             </ul>
             <div
-              style="display: none;"
-              class="role-comment role-comment-ta role-comment-admin form-text card"
+              class="d-none role-comment role-comment-ta role-comment-admin alert alert-warning mt-3 mb-0"
+              role="alert"
             >
-              <p class="card-body">
-                <b>A new course instance must be requested by the instructor.</b> Please ask the
-                official course instructor to submit this form.
-              </p>
+              <strong>A new course instance must be requested by the instructor.</strong> Please ask
+              the official course instructor to submit this form.
             </div>
-            <div style="display: none;" class="role-comment role-comment-student form-text card">
-              <p class="card-body">
-                <b>This is the wrong form for you.</b> If you would like to enroll in an existing
-                course, please use the <a href="enroll">form to Enroll in a course</a>. If your
-                course is not listed there, contact your instructor for instructions on how to
-                access your assessments.
-              </p>
+            <div
+              class="d-none role-comment role-comment-student alert alert-warning mt-3 mb-0"
+              role="alert"
+            >
+              <strong>This is the wrong form for you.</strong> Contact your instructor for
+              instructions on how to access your assessments.
             </div>
           </div>
         </div>
@@ -314,11 +316,18 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
 }
 
 function ApprovalStatusIcon({ status }: { status: CourseRequest['approved_status'] }) {
-  if (status === 'pending' || status === 'creating' || status === 'failed') {
-    return html`<span class="badge text-bg-secondary"> <i class="fa fa-clock"></i> Pending</span>`;
-  } else if (status === 'approved') {
-    return html`<span class="badge text-bg-success"> <i class="fa fa-check"></i> Approved</span>`;
-  } else if (status === 'denied') {
-    return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
+  switch (status) {
+    case 'pending':
+    case 'creating':
+    case 'failed':
+      return html`<span class="badge text-bg-secondary">
+        <i class="fa fa-clock"></i> Pending</span
+      >`;
+    case 'approved':
+      return html`<span class="badge text-bg-success"> <i class="fa fa-check"></i> Approved</span>`;
+    case 'denied':
+      return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
+    default:
+      assertNever(status);
   }
 }

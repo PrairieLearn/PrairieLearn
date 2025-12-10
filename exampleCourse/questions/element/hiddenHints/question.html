@@ -1,19 +1,20 @@
 <pl-question-panel>
   <p>
     Questions below were designed to showcase the different features of
-    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-hidden-hints-element"><code>pl-hidden-hints</code></a>.
-    The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-hidden-hints-element"><code>pl-hidden-hints</code></a>
+    <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-hidden-hints"><code>pl-hidden-hints</code></a>.
+    The goal of <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-hidden-hints"><code>pl-hidden-hints</code></a>
     is to progressively show hints as students submit incorrect (but not invalid) answers. Submit incorrect answers to see more hints.
     Newly revealed hints are first shown as open.
+    Try 10 to get a special hint.
   </p>
 
 </pl-question-panel>
 
-<pl-integer-input answers-name="c_2" label="$1 + 1 = $" correct-answer=2></pl-integer-input>
+<pl-integer-input answers-name="c_2" label="$1 + 1 = $" correct-answer="2"></pl-integer-input>
 
 <pl-question-panel>
   <pl-hidden-hints>
-    <!-- Hints with the same show-after-submission appear in the order they're written -->
+    {{! Hints with the same show-after-submission appear in the order they're written. }}
     <pl-hint hint-name="Starting Hint">
       Beginning of the hints to be shown.
     </pl-hint>
@@ -22,15 +23,22 @@
       Another hint that will be shown immediately.
     </pl-hint>
 
-    <pl-hint show-after-submission=5 hint-name="Final Hint">
+    <pl-hint show-after-submission="5" hint-name="Final Hint">
       This is a hint that will be shown after <b>five</b> incorrect submissions for the current question.
     </pl-hint>
 
-    <!-- Comments are allowed inside the hints element -->
-
-    <pl-hint show-after-submission=3>
+    <pl-hint show-after-submission="3">
       This is a hint that will be shown after <b>three</b> incorrect submissions for the current question.
     </pl-hint>
+
+
+    {{! To show hints conditionally based on previous answers, you may use mustache conditionals. Note that this requires a related computation in server.py as well. }}
+
+    {{#feedback.show_hint_10}}
+    <pl-hint hint-name="Answer 10">10 would be right if you are thinking in binary, you should instead think in decimal.</pl-hint>
+    {{/feedback.show_hint_10}}
+
+
   </pl-hidden-hints>
 </pl-question-panel>
 

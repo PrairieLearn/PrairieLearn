@@ -56,7 +56,7 @@ if [ ${DEBUG} == "on" ]; then ls -ld ${MERGE_DIR} ${MERGE_DIR}/*; fi
 # RUN
 ##########################
 
-cd ${MERGE_DIR}
+cd ${MERGE_DIR} || exit
 
 echo "[run.sh] starting autograder"
 

@@ -18,6 +18,7 @@ export const createQuestion = privateProcedure
       // Question data.
       qid: z.string().optional(),
       title: z.string().optional(),
+      template_source: z.enum(['empty', 'example', 'course']).optional(),
       template_qid: z.string().optional(),
       files: z.record(z.string()).optional(),
       is_draft: z.boolean().optional(),
@@ -56,6 +57,7 @@ export const createQuestion = privateProcedure
       files: opts.input.files,
       qid: opts.input.qid,
       title: opts.input.title,
+      template_source: opts.input.template_source,
       template_qid: opts.input.template_qid,
       isDraft: opts.input.is_draft,
     });

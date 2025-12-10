@@ -1,6 +1,5 @@
-import { assert } from 'chai';
 import fetchCookie from 'fetch-cookie';
-import { step } from 'mocha-steps';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
@@ -19,8 +18,9 @@ import * as helperServer from './helperServer.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 describe('Instructor group controls', () => {
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  beforeAll(helperServer.before());
+
+  afterAll(helperServer.after);
 
   const siteUrl = 'http://localhost:' + config.serverPort;
   const baseUrl = siteUrl + '/pl';
@@ -32,16 +32,16 @@ describe('Instructor group controls', () => {
   let group1RowId: string | undefined;
   let group2RowId: string | undefined;
 
-  step('has group-based homework assessment', async () => {
-    assessment_id = await queryRow(sql.select_group_work_assessment, {}, IdSchema);
+  test.sequential('has group-based homework assessment', async () => {
+    assessment_id = await queryRow(sql.select_group_work_assessment, IdSchema);
     instructorAssessmentGroupsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment_id}/groups`;
   });
 
-  step('enroll random users', async () => {
+  test.sequential('enroll random users', async () => {
     users = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
   });
 
-  step('can create a new group', async () => {
+  test.sequential('can create a new group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
     const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
@@ -66,7 +66,7 @@ describe('Instructor group controls', () => {
     group1RowId = groupRow.attr('data-test-group-id');
   });
 
-  step('cannot create a group with a user already in another group', async () => {
+  test.sequential('cannot create a group with a user already in another group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
     const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
@@ -88,7 +88,7 @@ describe('Instructor group controls', () => {
     assert.lengthOf(response.$('#usersTable td:contains(TestGroup2)'), 0);
   });
 
-  step('can create a second group', async () => {
+  test.sequential('can create a second group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
     const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
@@ -113,7 +113,7 @@ describe('Instructor group controls', () => {
     group2RowId = groupRow.attr('data-test-group-id');
   });
 
-  step('can create a group with an instructor', async () => {
+  test.sequential('can create a group with an instructor', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
     const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
@@ -133,7 +133,7 @@ describe('Instructor group controls', () => {
     assert.ok(groupRow.is(':contains("dev@example.com")'));
   });
 
-  step('can add a user to an existing group', async () => {
+  test.sequential('can add a user to an existing group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
 
     // The add member form is dynamically rendered on the client, so we need to
@@ -156,7 +156,7 @@ describe('Instructor group controls', () => {
     assert.lengthOf(response.$(`#usersTable tr:contains(TestGroup):contains(${users[4].uid})`), 1);
   });
 
-  step('cannot add a user to a group if they are already in another group', async () => {
+  test.sequential('cannot add a user to a group if they are already in another group', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
 
     // The add member form is dynamically rendered on the client, so we need to

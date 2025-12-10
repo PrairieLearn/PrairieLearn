@@ -1,8 +1,8 @@
 <pl-question-panel>
   <p>Questions below were designed to showcase the different features of
-    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element"><code>pl-code</code></a>.
+    <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-code"><code>pl-code</code></a>.
     The goal of <a
-      href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element"><code>pl-code</code></a>
+      href="https://prairielearn.readthedocs.io/en/latest/elements/pl-code"><code>pl-code</code></a>
     is to display different programming languages with appropriate syntax highlighting and code line emphasis.
   </p>
 </pl-question-panel>
@@ -18,15 +18,20 @@
       def square(x):
           return x * x
     </pl-code>
+
+    You can disable selection of the code region using the <code>prevent-select="true"</code> attribute.
+    <pl-code language="python" prevent-select="true" normalize-whitespace="true">
+      def square(x):
+          return x * x
+    </pl-code>
   </pl-question-panel>
 </pl-card>
 
 <pl-card>
   <pl-question-panel>
     Another useful feature of <code>pl-code</code> is the ability to highlight specific lines. This is done by using
-    <code>highlight-lines="..." </code>attribute. Moreover, one can disable selecting the code region by
-    adding <code>prevent-select="true"</code>.
-    <pl-code language="python" highlight-lines="4-5" prevent-select="true" normalize-whitespace="true">
+    <code>highlight-lines="..." </code>attribute.
+    <pl-code language="python" highlight-lines="4-5" normalize-whitespace="true">
       def foo():
           return 'foo'
 
@@ -50,12 +55,12 @@
 
 <pl-card>
   <pl-question-panel>
-    To change the style in use for a particular code block, the attribute <code>style</code> can be used. Any of <a
-      href="https://pygments.org/styles/" target="_blank">the built-in pygments styles</a> may be used. The examples
+    To change the style in use for a particular code block, the attribute <code>style-name</code> can be used. Any of <a
+      href="https://pygments.org/styles/" target="_blank" rel="noreferrer">the built-in pygments styles</a> may be used. The examples
     below use the <code>sas</code>, <code>staroffice</code> and <code>github-dark</code> styles, respectively.
-    <pl-code language="python" style="sas" source-file-name="myCode.py"></pl-code>
-    <pl-code language="python" style="staroffice" source-file-name="myCode.py"></pl-code>
-    <pl-code language="python" style="github-dark" source-file-name="myCode.py"></pl-code>
+    <pl-code language="python" style-name="sas" source-file-name="myCode.py"></pl-code>
+    <pl-code language="python" style-name="staroffice" source-file-name="myCode.py"></pl-code>
+    <pl-code language="python" style-name="github-dark" source-file-name="myCode.py"></pl-code>
   </pl-question-panel>
 </pl-card>
 

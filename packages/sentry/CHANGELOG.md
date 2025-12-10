@@ -1,5 +1,87 @@
 # @prairielearn/sentry
 
+## 4.0.7
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 4.0.6
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 4.0.5
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 4.0.4
+
+### Patch Changes
+
+- 2f5ce1f: Upgrade all JavaScript dependencies
+
+## 4.0.3
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 4.0.2
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
+## 4.0.1
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 4.0.0
+
+### Major Changes
+
+- a7d1ad9: Switch to using `@sentry/node-core`. The consumer must now ensure that OpenTelemetry is configured correctly.
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
+## 3.0.7
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 3.0.6
+
+### Patch Changes
+
+- d97b97a: Upgrade all JavaScript dependencies
+
+## 3.0.5
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+
+## 3.0.3
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+
 ## 3.0.2
 
 ### Patch Changes

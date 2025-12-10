@@ -7,7 +7,8 @@ import { config } from '../lib/config.js';
 
 export default asyncHandler(async (req, res, next) => {
   const tokenData = {
-    url: req.originalUrl,
+    // We don't want to include the query params in the CSRF token checks.
+    url: req.originalUrl.split('?')[0],
     authn_user_id: res.locals.authn_user?.user_id,
   };
 
@@ -18,12 +19,26 @@ export default asyncHandler(async (req, res, next) => {
     // upload, you may have forgotten to special-case the file upload path.
     // Search for "upload.single('file')" in server.js, for example.
 
-    const __csrf_token = req.headers['x-csrf-token']
-      ? req.headers['x-csrf-token']
-      : req.body.__csrf_token;
+    const __csrf_token = req.headers['x-csrf-token'] ?? req.body.__csrf_token;
     if (!checkSignedToken(__csrf_token, tokenData, config.secretKey)) {
       throw new HttpStatusError(403, 'CSRF fail');
     }
   }
   next();
 });
+
+/**
+ * Generates a CSRF token for the given URL and authentication user ID.
+ * This is useful for interacting with routes which only have a POST handler,
+ * e.g. `instructorCopyPublicCourseInstance.ts`.
+ */
+export function generateCsrfToken({ url, authnUserId }: { url: string; authnUserId: string }) {
+  return generateSignedToken(
+    {
+      // We don't want to include the query params in the CSRF token checks.
+      url: url.split('?')[0],
+      authn_user_id: authnUserId,
+    },
+    config.secretKey,
+  );
+}

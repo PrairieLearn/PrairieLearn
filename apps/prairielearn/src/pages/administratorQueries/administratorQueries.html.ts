@@ -1,26 +1,11 @@
-import { z } from 'zod';
-
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import type { AdministratorQuerySpecs } from '../../admin_queries/lib/util.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
-export const AdministratorQueryJsonParamsSchema = z.object({
-  name: z.string(),
-  description: z.string(),
-  default: z.string().optional(),
-  comment: z.string().optional(),
-});
-export type AdministratorQueryJsonParams = z.infer<typeof AdministratorQueryJsonParamsSchema>;
-
-export const AdministratorQueryJsonSchema = z.object({
-  description: z.string(),
-  resultFormats: z.record(z.enum(['pre'])).optional(),
-  comment: z.string().optional(),
-  params: z.array(AdministratorQueryJsonParamsSchema).optional(),
-});
-type AdministratorQueryJson = z.infer<typeof AdministratorQueryJsonSchema>;
-
-export interface AdministratorQuery extends AdministratorQueryJson {
+export interface AdministratorQuery extends AdministratorQuerySpecs {
+  error?: any;
   filePrefix: string;
 }
 
@@ -29,13 +14,13 @@ export function AdministratorQueries({
   resLocals,
 }: {
   queries: AdministratorQuery[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Administrator Queries',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'queries',
     },
@@ -54,11 +39,26 @@ export function AdministratorQueries({
                 (query) => html`
                   <tr>
                     <td>
-                      <a href="${resLocals.urlPrefix}/administrator/query/${query.filePrefix}">
-                        <code>${query.filePrefix}</code>
-                      </a>
+                      ${query.error || query.enabled === false
+                        ? html`<code>${query.filePrefix}</code>`
+                        : html`
+                            <a
+                              href="${resLocals.urlPrefix}/administrator/query/${query.filePrefix}"
+                            >
+                              <code>${query.filePrefix}</code>
+                            </a>
+                          `}
                     </td>
-                    <td>${query.description}</td>
+                    <td>
+                      ${query.error
+                        ? html`<span class="text-danger">${query.error}</span>`
+                        : query.enabled === false
+                          ? html`
+                              <span class="text-muted">${query.description}</span>
+                              <span class="badge text-bg-info">Disabled</span>
+                            `
+                          : query.description}
+                    </td>
                   </tr>
                 `,
               )}

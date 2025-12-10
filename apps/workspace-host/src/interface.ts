@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as net from 'node:net';
@@ -15,10 +17,9 @@ import Docker from 'dockerode';
 import express, { type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { type Entry } from 'fast-glob';
+import minimist from 'minimist';
 import fetch from 'node-fetch';
 import * as shlex from 'shlex';
-import { v4 as uuidv4 } from 'uuid';
-import yargsParser from 'yargs-parser';
 import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
@@ -87,7 +88,7 @@ app.get(
 
     let db_status: string | null | undefined;
     try {
-      await sqldb.queryAsync(sql.update_load_count, {
+      await sqldb.execute(sql.update_load_count, {
         instance_id: workspace_server_settings.instance_id,
       });
       db_status = 'ok';
@@ -150,7 +151,7 @@ async
       // If a config file was specified on the command line, we'll use that
       // instead of the default locations.
 
-      const argv = yargsParser(process.argv.slice(2));
+      const argv = minimist(process.argv.slice(2));
       if ('config' in argv) {
         configPaths = [argv['config']];
       }
@@ -194,7 +195,7 @@ async
       logger.verbose(
         `Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`,
       );
-      const idleErrorHandler = function (err) {
+      const idleErrorHandler = function (err: Error) {
         logger.error('idle client error', err);
         // https://github.com/PrairieLearn/PrairieLearn/issues/2396
         process.exit(1);
@@ -210,17 +211,19 @@ async
     async () => socketServer.init(),
     async () => workspaceUtils.init(socketServer.io),
     async () => {
-      // Set up a periodic pruning of containers that shouldn't exist.
-      //
-      // Note that this updates the load count. The cron job that kills workspace
-      // hosts will only kill hosts that have a load count of 0. This should ensure
-      // that we never kill a host before its had a chance to spin down all its
-      // containers (and flush their logs and record their disk usage).
+      /**
+       * Set up a periodic pruning of containers that shouldn't exist.
+       *
+       *  Note that this updates the load count. The cron job that kills workspace
+       *  hosts will only kill hosts that have a load count of 0. This should ensure
+       *  that we never kill a host before its had a chance to spin down all its
+       * containers (and flush their logs and record their disk usage).
+       */
       async function pruneContainersTimeout() {
         try {
           await pruneStoppedContainers();
           await pruneRunawayContainers();
-          await sqldb.queryAsync(sql.update_load_count, {
+          await sqldb.execute(sql.update_load_count, {
             instance_id: workspace_server_settings.instance_id,
           });
         } catch (err) {
@@ -236,7 +239,7 @@ async
       // Add ourselves to the workspace hosts directory. After we
       // do this we will start receiving requests so everything else
       // must be initialized before this.
-      await sqldb.queryAsync(sql.insert_workspace_hosts, {
+      await sqldb.execute(sql.insert_workspace_hosts, {
         hostname: workspace_server_settings.hostname + ':' + workspace_server_settings.port,
         instance_id: workspace_server_settings.instance_id,
       });
@@ -252,7 +255,7 @@ async
           // We don't know what state the container is in, kill it and let the
           // user retry initializing it.
           await workspaceUtils.updateWorkspaceState(ws.id, 'stopped', 'Status unknown');
-          await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
+          await sqldb.execute(sql.clear_workspace_on_shutdown, {
             workspace_id: ws.id,
             instance_id: workspace_server_settings.instance_id,
           });
@@ -315,13 +318,13 @@ async function pruneStoppedContainers() {
       container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
     } catch {
       // No container
-      await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
+      await sqldb.execute(sql.clear_workspace_on_shutdown, {
         workspace_id: ws.id,
         instance_id: workspace_server_settings.instance_id,
       });
       return;
     }
-    await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
+    await sqldb.execute(sql.clear_workspace_on_shutdown, {
       workspace_id: ws.id,
       instance_id: workspace_server_settings.instance_id,
     });
@@ -352,7 +355,7 @@ async function pruneRunawayContainers() {
   await async.each(running_workspaces, async (container_info) => {
     if (container_info.Names.length !== 1) return;
     // Remove the preceding forward slash
-    const name = container_info.Names[0].substring(1);
+    const name = container_info.Names[0].slice(1);
     if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
     const container = docker.getContainer(container_info.Id);
     const containerWorkspaceId = container_info.Labels['prairielearn.workspace-id'];
@@ -440,7 +443,7 @@ async function markSelfUnhealthy(reason: Error | string) {
       instance_id: workspace_server_settings.instance_id,
       unhealthy_reason: reason,
     };
-    await sqldb.queryAsync(sql.mark_host_unhealthy, params);
+    await sqldb.execute(sql.mark_host_unhealthy, params);
     logger.warn('Marked self as unhealthy', reason);
   } catch (err) {
     // This could error if we don't even have a DB connection. In that case, we
@@ -455,7 +458,7 @@ async function markSelfUnhealthy(reason: Error | string) {
  * - local_name (container name)
  * - remote_name (subdirectory name on disk)
  * @param workspace_id Workspace ID to search by.
- * @return Workspace object, as described above.
+ * @returns Workspace object, as described above.
  */
 async function _getWorkspace(workspace_id: string | number): Promise<Workspace> {
   const result = await sqldb.queryOneRowAsync(sql.get_workspace, {
@@ -473,10 +476,10 @@ const _allocateContainerPortMutex = new Mutex();
 
 /**
  * Allocates and returns an unused port for a workspace.  This will insert the new port into the workspace table.
- * @return Port that was allocated to the workspace.
+ * @returns Port that was allocated to the workspace.
  */
 async function _allocateContainerPort(workspace_id: string | number): Promise<number> {
-  // Check if a port is considered free in the database
+  /** Check if a port is considered free in the database */
   async function check_port_db(port: number) {
     const params = {
       instance_id: workspace_server_settings.instance_id,
@@ -486,7 +489,7 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
     return !result.rows[0].port_used;
   }
 
-  // Spin up a server to check if a port is free
+  /** Spin up a server to check if a port is free */
   async function check_port_server(port: number) {
     return new Promise((res) => {
       const server = net.createServer();
@@ -524,7 +527,7 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
     if (!done || !port) {
       throw new Error(`Failed to allocate port after ${max_attempts} attempts!`);
     }
-    await sqldb.queryAsync(sql.set_workspace_launch_port, {
+    await sqldb.execute(sql.set_workspace_launch_port, {
       workspace_id,
       launch_port: port,
       instance_id: workspace_server_settings.instance_id,
@@ -553,6 +556,8 @@ function _checkServer(workspace: Workspace): Promise<void> {
           resolve();
         })
         .catch(() => {
+          // This includes cases where we couldn't connect to the docker container.
+
           // Do nothing, because errors are expected while the container is launching.
           const endTime = performance.now();
           if (endTime - startTime > startTimeout) {
@@ -574,7 +579,7 @@ function _checkServer(workspace: Workspace): Promise<void> {
 /**
  * Looks up all the question-specific workspace launch settings associated with a workspace id.
  * @param workspace_id Workspace ID to search by.
- * @return Workspace launch settings.
+ * @returns Workspace launch settings.
  */
 async function _getWorkspaceSettings(workspace_id: string | number): Promise<WorkspaceSettings> {
   const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {
@@ -671,7 +676,7 @@ async function _pullImage(workspace: Workspace) {
 
   const progressDetails = await _getCachedProgressDetails(workspace_image);
 
-  const progressDetailsInit = {};
+  const progressDetailsInit: ProgressDetails = {};
   let current = 0;
   let total = 0;
   let fraction = 0;
@@ -802,14 +807,8 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   try {
     await fs.access(workspaceJobPath);
   } catch (err) {
-    throw Error('Could not access workspace files.', { cause: err });
+    throw new Error('Could not access workspace files.', { cause: err });
   }
-
-  debug(`Creating directory ${workspaceJobPath}`);
-  await fs.mkdir(workspaceJobPath, { recursive: true }).catch((err) => {
-    // Ignore the directory if it already exists. Otherwise, rethrow the error.
-    if (err && err.code !== 'EEXIST') throw err;
-  });
 
   await fs.chown(
     workspaceJobPath,
@@ -859,7 +858,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     },
   });
 
-  await sqldb.queryAsync(sql.update_load_count, {
+  await sqldb.execute(sql.update_load_count, {
     instance_id: workspace_server_settings.instance_id,
   });
 
@@ -887,18 +886,18 @@ function safeUpdateWorkspaceState(
   });
 }
 
-// Called by the main server the first time a workspace is used by a user
+/** Called by the main server the first time a workspace is used by a user */
 async function initSequence(workspace_id: string | number, useInitialZip: boolean, res: Response) {
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
-  const uuid = uuidv4();
+  const uuid = crypto.randomUUID();
   const params = {
     workspace_id,
     launch_uuid: uuid,
     instance_id: workspace_server_settings.instance_id,
   };
-  await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
+  await sqldb.execute(sql.set_workspace_launch_uuid, params);
 
   const { version, course_id, institution_id } = (
     await sqldb.queryOneRowAsync(sql.select_workspace, { workspace_id })
@@ -968,10 +967,13 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
 
       // Before we transition this workspace to running, check that the container
       // we just launched is the same one that this workspace is still assigned to.
-      // To be more precise, we'll check that the container's launch_uuid matches
-      // the current launch_uuid for this workspace. If they don't match, then
-      // the workspace was relaunched while we were initializing it, and we should
-      // abandon it.
+      // We check both the launch_uuid and the version to catch race conditions:
+      //
+      // - launch_uuid changes when a workspace is rebooted
+      // - version changes when a workspace is reset
+      //
+      // If either has changed, the workspace was relaunched/reset while we were
+      // initializing it, and we should abandon this container.
       //
       // We don't have to explicitly kill the container here - our usual
       // background maintenance processes will soon notice that this container
@@ -980,16 +982,27 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
         const currentWorkspace = await sqldb.queryOneRowAsync(sql.select_and_lock_workspace, {
           workspace_id: workspace.id,
         });
-        const launch_uuid = currentWorkspace.rows[0].launch_uuid;
-        if (launch_uuid !== workspace.launch_uuid) {
+        const current_launch_uuid = currentWorkspace.rows[0].launch_uuid;
+        const current_version = currentWorkspace.rows[0].version;
+
+        // Check if the launch_uuid has changed (workspace was rebooted)
+        if (current_launch_uuid !== workspace.launch_uuid) {
           logger.info(
-            `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${launch_uuid}`,
+            `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${current_launch_uuid}`,
+          );
+          return null;
+        }
+
+        // Check if the version has changed (workspace was reset)
+        if (current_version !== workspace.version) {
+          logger.info(
+            `Abandoning container for workspace ${workspace.id}: version changed from ${workspace.version} to ${current_version}`,
           );
           return null;
         }
 
         const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
-        await sqldb.queryAsync(sql.update_workspace_hostname, {
+        await sqldb.execute(sql.update_workspace_hostname, {
           workspace_id: workspace.id,
           hostname,
         });
@@ -1020,7 +1033,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       // Don't set host to unhealthy.
       return;
     }
-  } catch (err) {
+  } catch (err: any) {
     logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);
     await markSelfUnhealthy(err);
   }
@@ -1029,7 +1042,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
 async function sendGradedFilesArchive(workspace_id: string | number, res: Response) {
   const workspace = await _getWorkspace(workspace_id);
   const workspaceSettings = await _getWorkspaceSettings(workspace_id);
-  const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
+  const timestamp = new Date().toISOString().replaceAll(/[-T:.]/g, '-');
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 
@@ -1043,7 +1056,7 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
         maxSize: config.workspaceMaxGradedFilesSize,
       },
     );
-  } catch (err) {
+  } catch (err: any) {
     res.status(500).send(err.message);
     return;
   }

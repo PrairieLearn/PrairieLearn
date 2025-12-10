@@ -1,13 +1,11 @@
-import { IssueBadge } from '../components/IssueBadge.html.js';
+import { IssueBadgeHtml } from '../components/IssueBadge.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
-import { ProgressCircle } from '../components/ProgressCircle.html.js';
 
 /**
  * Retrieves horizontal navigation tab info for ContextNavigation.
- * @param hasEnhancedNavigation - Flag indicating if the enhanced navigation feature is enabled
  * @returns Navigation page tabs and their configurations
  */
-export function getNavPageTabs(hasEnhancedNavigation: boolean) {
+export function getNavPageTabs() {
   const navPagesTabs = {
     public_question: [
       {
@@ -24,233 +22,82 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         tabLabel: 'Preview',
       },
     ],
-    instance_admin: hasEnhancedNavigation
-      ? [
-          {
-            activeSubPage: 'settings',
-            urlSuffix: '/instance_admin/settings',
-            iconClasses: 'fas fa-cog',
-            tabLabel: 'General',
-          },
+    instance_admin: [
+      {
+        activeSubPage: 'settings',
+        urlSuffix: '/instance_admin/settings',
+        iconClasses: 'fas fa-cog',
+        tabLabel: 'General',
+      },
 
-          {
-            activeSubPage: 'access',
-            urlSuffix: '/instance_admin/access',
-            iconClasses: 'far fa-calendar-alt',
-            tabLabel: 'Access',
-          },
+      {
+        activeSubPage: 'publishing',
+        urlSuffix: '/instance_admin/publishing',
+        iconClasses: 'far fa-calendar-alt',
+        tabLabel: 'Publishing',
+      },
 
-          {
-            activeSubPage: 'lti',
-            urlSuffix: '/instance_admin/lti',
-            iconClasses: 'fas fa-graduation-cap',
-            tabLabel: 'LTI',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
-          },
+      {
+        activeSubPage: 'lti',
+        urlSuffix: '/instance_admin/lti',
+        iconClasses: 'fas fa-graduation-cap',
+        tabLabel: 'LTI',
+        renderCondition: (resLocals) =>
+          resLocals.lti11_enabled && resLocals.authz_data.has_course_permission_edit,
+      },
 
-          {
-            activeSubPage: 'billing',
-            urlSuffix: '/instance_admin/billing',
-            iconClasses: 'fas fa-credit-card',
-            tabLabel: 'Billing',
-            renderCondition: (resLocals) => resLocals.billing_enabled,
-          },
-        ]
-      : [
-          {
-            activeSubPage: 'access',
-            urlSuffix: '/instance_admin/access',
-            iconClasses: 'far fa-calendar-alt',
-            tabLabel: 'Access',
-          },
-          {
-            activeSubPage: 'assessments',
-            urlSuffix: '/instance_admin/assessments',
-            iconClasses: 'fa fa-list',
-            tabLabel: 'Assessments',
-          },
-          {
-            activeSubPage: ['file_view', 'file_edit'],
-            urlSuffix: '/instance_admin/file_view',
-            iconClasses: 'fa fa-edit',
-            tabLabel: 'Files',
-          },
-          {
-            activeSubPage: 'gradebook',
-            urlSuffix: '/instance_admin/gradebook',
-            iconClasses: 'fas fa-balance-scale',
-            tabLabel: 'Gradebook',
-            renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
-          },
-          {
-            activeSubPage: 'lti',
-            urlSuffix: '/instance_admin/lti',
-            iconClasses: 'fas fa-graduation-cap',
-            tabLabel: 'LTI',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
-          },
-          {
-            activeSubPage: 'lti13',
-            urlSuffix: '/instance_admin/lti13_instance',
-            iconClasses: 'fas fa-school-flag',
-            tabLabel: 'LTI 1.3',
-            renderCondition: (resLocals) => resLocals.lti13_enabled,
-          },
-          {
-            activeSubPage: 'billing',
-            urlSuffix: '/instance_admin/billing',
-            iconClasses: 'fas fa-credit-card',
-            tabLabel: 'Billing',
-            renderCondition: (resLocals) => resLocals.billing_enabled,
-          },
-          {
-            activeSubPage: 'settings',
-            urlSuffix: '/instance_admin/settings',
-            iconClasses: 'fas fa-cog',
-            tabLabel: 'Settings',
-          },
-        ],
-    course_admin: hasEnhancedNavigation
-      ? [
-          {
-            activeSubPage: 'settings',
-            urlSuffix: '/course_admin/settings',
-            iconClasses: 'fas fa-cog',
-            tabLabel: 'General',
-          },
+      {
+        activeSubPage: 'billing',
+        urlSuffix: '/instance_admin/billing',
+        iconClasses: 'fas fa-credit-card',
+        tabLabel: 'Billing',
+        renderCondition: (resLocals) => resLocals.billing_enabled,
+      },
+    ],
+    course_admin: [
+      {
+        activeSubPage: 'settings',
+        urlSuffix: '/course_admin/settings',
+        iconClasses: 'fas fa-cog',
+        tabLabel: 'General',
+      },
 
-          {
-            activeSubPage: 'sets',
-            urlSuffix: '/course_admin/sets',
-            iconClasses: 'fa fa-list',
-            tabLabel: 'Assessment Sets',
-          },
+      {
+        activeSubPage: 'sets',
+        urlSuffix: '/course_admin/sets',
+        iconClasses: 'fa fa-list',
+        tabLabel: 'Assessment Sets',
+      },
 
-          {
-            activeSubPage: 'modules',
-            urlSuffix: '/course_admin/modules',
-            iconClasses: 'fa fa-layer-group',
-            tabLabel: 'Modules',
-          },
+      {
+        activeSubPage: 'modules',
+        urlSuffix: '/course_admin/modules',
+        iconClasses: 'fa fa-layer-group',
+        tabLabel: 'Modules',
+      },
 
-          {
-            activeSubPage: 'sharing',
-            urlSuffix: '/course_admin/sharing',
-            iconClasses: 'fas fa-share-nodes',
-            tabLabel: 'Sharing',
-            renderCondition: (resLocals) => resLocals.question_sharing_enabled,
-          },
+      {
+        activeSubPage: 'sharing',
+        urlSuffix: '/course_admin/sharing',
+        iconClasses: 'fas fa-share-nodes',
+        tabLabel: 'Sharing',
+        renderCondition: (resLocals) => resLocals.question_sharing_enabled,
+      },
 
-          {
-            activeSubPage: 'tags',
-            urlSuffix: '/course_admin/tags',
-            iconClasses: 'fas fa-hashtag',
-            tabLabel: 'Tags',
-          },
+      {
+        activeSubPage: 'tags',
+        urlSuffix: '/course_admin/tags',
+        iconClasses: 'fas fa-hashtag',
+        tabLabel: 'Tags',
+      },
 
-          {
-            activeSubPage: 'topics',
-            urlSuffix: '/course_admin/topics',
-            iconClasses: 'fas fa-quote-right',
-            tabLabel: 'Topics',
-          },
-        ]
-      : [
-          {
-            activeSubPage: 'getting_started',
-            urlSuffix: '/course_admin/getting_started',
-            iconClasses: 'fa fa-tasks',
-            tabLabel: 'Getting Started',
-            htmlSuffix: ({
-              navbarCompleteGettingStartedTasksCount,
-              navbarTotalGettingStartedTasksCount,
-            }) =>
-              ProgressCircle({
-                value: navbarCompleteGettingStartedTasksCount,
-                maxValue: navbarTotalGettingStartedTasksCount,
-                className: 'mx-1',
-              }),
-            renderCondition: ({ authz_data, course }) =>
-              authz_data.has_course_permission_edit && course.show_getting_started,
-          },
-          {
-            activeSubPage: 'sets',
-            urlSuffix: '/course_admin/sets',
-            iconClasses: 'fa fa-list',
-            tabLabel: 'Assessment Sets',
-          },
-          {
-            activeSubPage: 'instances',
-            urlSuffix: '/course_admin/instances',
-            iconClasses: 'fas fa-chalkboard-teacher',
-            tabLabel: 'Course Instances',
-          },
-          {
-            activeSubPage: ['file_view', 'file_edit'],
-            urlSuffix: '/course_admin/file_view',
-            iconClasses: 'fa fa-edit',
-            tabLabel: 'Files',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_view,
-          },
-          {
-            activeSubPage: 'issues',
-            urlSuffix: '/course_admin/issues',
-            iconClasses: 'fas fa-bug',
-            tabLabel: 'Issues',
-          },
-          {
-            activeSubPage: 'modules',
-            urlSuffix: '/course_admin/modules',
-            iconClasses: 'fa fa-layer-group',
-            tabLabel: 'Modules',
-          },
-          {
-            activeSubPage: 'questions',
-            urlSuffix: '/course_admin/questions',
-            iconClasses: 'fa fa-question',
-            tabLabel: 'Questions',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
-          },
-          {
-            activeSubPage: 'settings',
-            urlSuffix: '/course_admin/settings',
-            iconClasses: 'fas fa-cog',
-            tabLabel: 'Settings',
-          },
-          {
-            activeSubPage: 'sharing',
-            urlSuffix: '/course_admin/sharing',
-            iconClasses: 'fas fa-share-nodes',
-            tabLabel: 'Sharing',
-            renderCondition: (resLocals) => resLocals.question_sharing_enabled,
-          },
-          {
-            activeSubPage: 'staff',
-            urlSuffix: '/course_admin/staff',
-            iconClasses: 'fas fa-users',
-            tabLabel: 'Staff',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_own,
-          },
-          {
-            activeSubPage: 'syncs',
-            urlSuffix: '/course_admin/syncs',
-            iconClasses: 'fas fa-sync-alt',
-            tabLabel: 'Sync',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
-          },
-          {
-            activeSubPage: 'tags',
-            urlSuffix: '/course_admin/tags',
-            iconClasses: 'fas fa-hashtag',
-            tabLabel: 'Tags',
-          },
-          {
-            activeSubPage: 'topics',
-            urlSuffix: '/course_admin/topics',
-            iconClasses: 'fas fa-quote-right',
-            tabLabel: 'Topics',
-          },
-        ],
+      {
+        activeSubPage: 'topics',
+        urlSuffix: '/course_admin/topics',
+        iconClasses: 'fas fa-quote-right',
+        tabLabel: 'Topics',
+      },
+    ],
     assessment: [
       {
         activeSubPage: 'access',
@@ -368,7 +215,11 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         iconClasses: 'fas fa-bug',
         tabLabel: 'Issues',
         htmlSuffix: (resLocals) =>
-          IssueBadge({ count: resLocals.open_issue_count, suppressLink: true, className: 'ms-2' }),
+          IssueBadgeHtml({
+            count: resLocals.open_issue_count,
+            suppressLink: true,
+            class: 'ms-2',
+          }),
         renderCondition: ({ course, question }) => question.course_id === course.id,
       },
     ],
@@ -464,7 +315,6 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         urlSuffix: '/lti13',
         iconClasses: 'fa fa-school-flag',
         tabLabel: 'LTI 1.3',
-        renderCondition: (resLocals) => resLocals.lti13_enabled,
       },
     ],
     institution_admin: [

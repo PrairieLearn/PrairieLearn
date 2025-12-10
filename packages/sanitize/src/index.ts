@@ -4,7 +4,7 @@
  * provided object.
  *
  * @param value The object to be sanitized.
- * @return The sanitized object.
+ * @returns The sanitized object.
  */
 export function sanitizeObject<T>(value: T): T {
   if (value === null) {
@@ -31,10 +31,17 @@ export function sanitizeObject<T>(value: T): T {
  * Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#Using_special_characters
  *
  * @param str A literal string to act as a match for RegExp objects
- * @return A string literal ready to match
+ * @returns A string literal ready to match
  */
 export function escapeRegExp(str: string) {
-  return str.replace(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');
+  return str.replaceAll(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');
+}
+
+export function truncate(str: string, maxLength: number): string {
+  if (str.length <= maxLength) {
+    return str;
+  }
+  return str.slice(0, maxLength) + '...[truncated]';
 }
 
 /**
@@ -44,10 +51,7 @@ export function recursivelyTruncateStrings<T>(value: T, maxLength: number): T {
   if (value === null) {
     return null as T;
   } else if (typeof value === 'string') {
-    if (value.length <= maxLength) {
-      return value;
-    }
-    return (value.substring(0, maxLength) + '...[truncated]') as T;
+    return truncate(value, maxLength) as T;
   } else if (Array.isArray(value)) {
     return value.map((value) => recursivelyTruncateStrings(value, maxLength)) as T;
   } else if (typeof value === 'object') {

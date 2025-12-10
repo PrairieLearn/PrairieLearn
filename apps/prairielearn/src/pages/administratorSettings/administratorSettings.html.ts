@@ -1,17 +1,21 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
-export function AdministratorSettings({ resLocals }) {
-  const showAiSettings = isEnterprise() && config.openAiApiKey && config.openAiOrganization;
+export function AdministratorSettings({ resLocals }: { resLocals: UntypedResLocals }) {
+  const showAiSettings =
+    isEnterprise() &&
+    config.aiQuestionGenerationOpenAiApiKey &&
+    config.aiQuestionGenerationOpenAiOrganization;
 
   return PageLayout({
     resLocals,
     pageTitle: 'Administrator Settings',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'settings',
     },
@@ -69,7 +73,7 @@ export function AdministratorSettings({ resLocals }) {
               </button>
             </div>
           </form>
-          <script type="text/javascript">
+          <script>
             $(function () {
               var invalidateButton = $('#invalidate-render-cache');
               var confirmInvalidateContainer = $('#confirm-invalidate-cache-container');

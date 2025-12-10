@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { makeAwsClientConfig } from '../lib/aws.js';
@@ -67,7 +67,7 @@ async function checkDBConsistency() {
   const hostsNotInDatabase = setDifference(runningHosts, nonTerminatedHosts);
   if (hostsNotInDatabase.size > 0) {
     logger.info('Terminating hosts that are not in the database', Array.from(hostsNotInDatabase));
-    await queryAsync(sql.add_terminating_hosts, {
+    await execute(sql.add_terminating_hosts, {
       instances: Array.from(hostsNotInDatabase),
     });
     await ec2.terminateInstances({ InstanceIds: Array.from(hostsNotInDatabase) });

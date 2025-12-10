@@ -1,5 +1,81 @@
 # @prairielearn/opentelemetry
 
+## 3.1.0
+
+### Minor Changes
+
+- 28a9137: - Add support for an `incomingHttpRequestHook` function that can be used to add specific attributes to the root span of an incoming HTTP request
+  - Add `ForceSampleSampler`
+    - When using the `id-trace-ratio` sampler, if a span contains a `force_sample` attribute with value `true`, the span will be forcibly sampled
+
+## 3.0.5
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 3.0.3
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 3.0.2
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 3.0.1
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 3.0.0
+
+### Major Changes
+
+- a7d1ad9: Always configure `NodeTracerProvider`, even when `openTelemetryEnabled === false`.
+
+  This change is being made to ensure that Sentry's request isolation works correctly, as it relies on the `NodeTracerProvider` being set up.
+
+- 423ab32: Upgrade to v2 of the OpenTelemetry packages
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
+## 2.1.16
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 2.1.15
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
+## 2.1.14
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+
+## 2.1.13
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+
 ## 2.1.12
 
 ### Patch Changes
@@ -180,7 +256,6 @@
 ### Minor Changes
 
 - cfbab7a69: The following types are now exported:
-
   - `Meter`
   - `Counter`
   - `Histogram`

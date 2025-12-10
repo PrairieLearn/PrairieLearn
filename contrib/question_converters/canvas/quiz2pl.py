@@ -12,6 +12,7 @@ import requests
 
 
 def file_name_only(name: str) -> str:
+    """Remove all non-alphanumeric characters from a string."""
     return re.sub(r"[\W_]+", "", name)
 
 
@@ -91,11 +92,13 @@ pl_quiz_questions = []
 
 
 def clean_question_text(text: str) -> str:
-    # Some Canvas plugins like DesignPlus inject custom CSS and JavaScript into
-    # all questions. This code is not needed in PrairieLearn, and in fact can
-    # cause problems in CBTF environments since they'll be forbidden from loading
-    # by most firewalls/proxies. We just remove them.
-    #
+    """Remove external CSS and JavaScript from the question text.
+
+    Some Canvas plugins like DesignPlus inject custom CSS and JavaScript into
+    all questions. This code is not needed in PrairieLearn, and in fact can
+    cause problems in CBTF environments since they'll be forbidden from loading
+    by most firewalls/proxies. We just remove them.
+    """
     # We use regex instead of a proper HTML parser because we want to limit this
     # script to only using the Python standard library.
     text = re.sub(r"<link[^>]*>", "", text)
@@ -105,6 +108,7 @@ def clean_question_text(text: str) -> str:
 
 
 def image_file_extension(content_type: str) -> str:
+    """Determine the file extension for an image based on its `Content-Type` header."""
     match content_type:
         case "image/x-icon":
             return "ico"
@@ -114,10 +118,30 @@ def image_file_extension(content_type: str) -> str:
             return content_type.split("/")[1]
 
 
+# Canvas stores formulas as img tags that include a `data-equation-content`
+# attribute with the Latex version of the formula. It also includes attributes
+# that are not properly HTML-escaped (such as the mathml version of the
+# formula), so any `>` character found within an attribute must be ignored as
+# well.
+FORMULA_IMG_RE = re.compile(
+    r'<img[^>]*data-equation-content="([^"]+)"([^=">]*="([^"]*)")*[^>="]*>',
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def handle_formulas(text: str) -> str:
+    def replace_formula(match: re.Match[str]) -> str:
+        # PrairieLearn only needs the Latex version of the formula from
+        # `data-equation-content` attribute. All other attributes can be
+        # ignored.
+        formula = match.group(1).replace("$", r"\$")
+        return f"${formula}$"
+
+    return FORMULA_IMG_RE.sub(replace_formula, text)
+
+
 def handle_images(question_dir: str, text: str) -> str:
-    # Links to images will still point to Canvas. We need to download them and
-    # replace them with `pl-figure` elements.
-    #
+    """Download Canvas image links and replace them with `pl-figure` elements."""
     # We use regex instead of a proper HTML parser because we want to limit this
     # script to only using the Python standard library.
     image_count = count(1)
@@ -177,7 +201,10 @@ for question in questions.values():
     print(question_text)
     print()
     for answer in question.get("answers", []):
-        print(f" - {answer['text']}")
+        if not answer.get("html"):
+            answer["html"] = answer["text"]
+        answer["html"] = clean_question_text(answer["html"])
+        print(f" - {answer['html']}")
     question_title = input("\nQuestion title (or blank to skip): ")
     if not question_title:
         continue
@@ -222,8 +249,8 @@ for question in questions.values():
             obj["gradingMethod"] = "Manual"
         json.dump(obj, info, indent=2)
 
-    # Handle images.
-    question_text = handle_images(question_dir, question_text)
+    # Handle images and formulas.
+    question_text = handle_images(question_dir, handle_formulas(question_text))
 
     with open(os.path.join(question_dir, "question.html"), "w") as template:
         if question["question_type"] == "calculated_question":
@@ -260,7 +287,7 @@ for question in questions.values():
                     template.write('  <pl-answer correct="true">')
                 else:
                     template.write("  <pl-answer>")
-                template.write(answer["text"] + "</pl-answer>\n")
+                template.write(handle_formulas(answer["html"]) + "</pl-answer>\n")
             template.write("</pl-checkbox>\n")
 
         elif (
@@ -273,7 +300,7 @@ for question in questions.values():
                     template.write('  <pl-answer correct="true">')
                 else:
                     template.write("  <pl-answer>")
-                template.write(answer["text"] + "</pl-answer>\n")
+                template.write(handle_formulas(answer["html"]) + "</pl-answer>\n")
             template.write("</pl-multiple-choice>\n")
 
         elif question["question_type"] == "numerical_question":
@@ -327,7 +354,7 @@ for question in questions.values():
                     options[answer["blank_id"]] = []
                 options[answer["blank_id"]].append(answer)
             for answer_id, answers in options.items():
-                question_text.replace(
+                question_text = question_text.replace(
                     f"[{answer_id}]",
                     f'<pl-string-input answers-name="{answer_id}" correct-answer="{answers[0]["text"]}" remove-spaces="true" ignore-case="true" display="inline"></pl-string-input>',
                 )

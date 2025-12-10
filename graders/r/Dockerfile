@@ -2,7 +2,8 @@
 # as well as general support of STAT 477 Data Science Programming Methods
 # (which was formerly STAT 430 Topics - Data Science Programming Methods
 
-# Alton Barbehenn and Dirk Eddelbuettel, 2019-2025
+# Alton Barbehenn and Dirk Eddelbuettel, 2019-2023
+# Dirk Eddelbuettel, 2024-current
 
 # We initially based this container on the 'r-ubuntu:20.04' container of the
 # Rocker Project which offers us a well-understood and stable basis
@@ -19,9 +20,10 @@
 # the required security escalation so we just apt as previously but pointing
 # at a richer and larger repository with complete CRAN coverage.)
 # r2u is now part of rocker so the image is now also rocker/r2u.
+# r2u now supports arm64 binaries to this container can be built for multiple tags.
 
 FROM rocker/r2u:24.04
-ARG CACHEBUST=2025-04-04-17-34-59
+ARG CACHEBUST=2025-11-15-14-13-19
 
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -53,6 +55,7 @@ RUN apt-get update \
         git2r \
         igraph \
         lahman \
+        lobstr \
         lintr \
         magick \
         memoise \
@@ -76,7 +79,7 @@ RUN apt-get update \
         xts \
     && echo "options(diffobj.brightness=\"dark\")" >> /etc/R/Rprofile.site
 
-# Install visualTest from Mango
+# Install visualTest from Mango (for old questions, newer use tinysnapshot)
 RUN installGithub.r MangoTheCat/visualTest
 
 # Install plr (helper package for grading R code in PrairieLearn)

@@ -14,13 +14,12 @@ import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.j
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
-router.use(selectAndAuthzAssessmentInstance);
-router.use(studentAssessmentAccess);
-router.use(clientFingerprint);
-router.use(logPageView('studentAssessmentInstanceFile'));
-
 router.get(
   '/:unsafe_file_id(\\d+)/:unsafe_display_filename',
+  selectAndAuthzAssessmentInstance,
+  studentAssessmentAccess,
+  clientFingerprint,
+  logPageView('studentAssessmentInstanceFile'),
   asyncHandler(async (req, res, next) => {
     // Assert that the file belongs to this assessment, that the display
     // filename matches, and that the file is not deleted.

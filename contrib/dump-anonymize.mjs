@@ -2,16 +2,16 @@
 // $ node dump-anonymize.mjs <data-dump-folder> <anonymous-output-folder>
 
 import fs from 'node:fs';
-import async from 'async';
-import { v4 as uuidv4 } from 'uuid';
 import path from 'node:path';
+
+import async from 'async';
 
 const infolder = process.argv[2];
 const outfolder = process.argv[3];
 
 function getUUID(map, key) {
   if (!map[key]) {
-    map[key] = uuidv4();
+    map[key] = crypto.randomUUID();
   }
   return map[key];
 }
@@ -21,7 +21,7 @@ const newUserUids = {};
 const newUserNames = {};
 
 function anonymizeJSON(contents) {
-  for (let instance of contents) {
+  for (const instance of contents) {
     if (instance['user_id']) {
       instance.user_id = getUUID(newUserIds, instance.user_id);
     }
@@ -39,8 +39,8 @@ function anonymizeJSON(contents) {
     }
 
     if (instance['uids']) {
-      let newUids = [];
-      for (let uid of instance.uids) {
+      const newUids = [];
+      for (const uid of instance.uids) {
         newUids.push(getUUID(newUserUids, uid));
       }
       instance.uids = newUids;
@@ -67,7 +67,7 @@ function anonymizeFile(filename, contents) {
   } else if (filename === 'download_log.txt') {
     return contents;
   } else {
-    console.error('Unrecognized File Type: ', filename);
+    console.error('Unrecognized File Type:', filename);
   }
 }
 

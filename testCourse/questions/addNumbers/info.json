@@ -2,7 +2,11 @@
   "uuid": "8b4891d6-64d1-4e89-b72d-ad2133f25b2f",
   "title": "Add two numbers",
   "topic": "Algebra",
-  "tags": ["mwest", "fa17", "tpl101", "v3"],
+  "tags": ["mwest", "tpl101", "fa17", "v3"],
   "type": "v3",
-  "sharingSets": ["final-exam"]
+  "sharingSets": ["final-exam"],
+  "authors": [
+    { "name": "John Doe", "email": "doe@example.org", "orcid": "0000-0000-0000-0001" },
+    { "name": "Jane Smith", "email": "smith@example.org" }
+  ]
 }

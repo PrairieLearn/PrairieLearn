@@ -1,5 +1,116 @@
 # @prairielearn/postgres
 
+## 4.5.0
+
+### Minor Changes
+
+- 3a09ac8: Update function name for test utils
+- 3a09ac8: Return user/database/host from `createDatabase` in test utils
+
+## 4.4.3
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 4.4.2
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 4.4.1
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 4.4.0
+
+### Minor Changes
+
+- eb90b96: Add a `clearSchemasStartingWith` function
+
+## 4.3.0
+
+### Minor Changes
+
+- 4bb97ac: Throw an error when the database pool gets reinitialized
+
+## 4.2.0
+
+### Minor Changes
+
+- c6f661c: Make parameters optional, support single-columns schema for queryCursor
+
+## 4.1.1
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 4.1.0
+
+### Minor Changes
+
+- 56a813a: Add `execute` and `executeRow` helpers that don't return the actual values from a query.
+
+## 4.0.1
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 4.0.0
+
+### Major Changes
+
+- cd5ed49: `queryCursor` was removed, and now requires a Zod schema. `queryValidatedCursor` was renamed to `queryCursor`.
+- 2c19e43: - Remove callback-based query functions.
+  - Deprecate query functions with Zod-validated alternatives.
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
+## 3.0.0
+
+### Major Changes
+
+- b911b61: Remove deprecated validated query/call functions.
+
+  Users should replace `queryValidated*` (except for `queryValidatedCursor`) and `callValidated*` with the equivalent `query*` and `call*`, respectively. For queries returning multiple columns, these calls would be equivalent. For queries returning a single column, the schema needs to be updated to the column schema.
+
+## 2.1.15
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 2.1.14
+
+### Patch Changes
+
+- d97b97a: Upgrade all JavaScript dependencies
+
+## 2.1.13
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
+## 2.1.12
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+
+## 2.1.11
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+
 ## 2.1.10
 
 ### Patch Changes

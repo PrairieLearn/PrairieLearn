@@ -1,5 +1,7 @@
-import fs from 'fs-extra';
+#!/usr/bin/env node
+
 import glob from 'fast-glob';
+import fs from 'fs-extra';
 
 const URL_REGEX =
   /github\.com\/PrairieLearn\/PrairieLearn\/(?:tree|blob)\/master\/([-a-zA-Z0-9@:%_+.~#?&//=]*)/;

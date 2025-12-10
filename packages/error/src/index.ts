@@ -63,6 +63,7 @@ export function newMessage(err: any, newMsg: string): ErrorWithData {
  * and/or data. The existing error will be set as the `cause` of the new error.
  *
  * @param err An existing error.
+ * @param param
  * @param param.status Status code to set on the new error.
  * @param param.message Message to add to the new error.
  * @param param.data Data to set on the new error.

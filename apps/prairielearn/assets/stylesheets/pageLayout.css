@@ -3,13 +3,22 @@
   height: 100%;
 }
 
-body:has(div.app-container) {
-  overflow-y: unset !important;
+/**
+ * When the app’s main container exists, delegate all scrolling to it.
+ * Disable body scrolling to avoid overflow when tooltips or popovers are opened.
+ */
+body:has(div.app-main-container) {
+  overflow-y: hidden !important;
+}
+
+:root {
+  --navbar-height: 3.5rem;
 }
 
 /* Styles when the side nav is hidden */
 .app-container {
   display: block;
+  position: relative;
 }
 
 /* Styles when the side nav is enabled and expanded */
@@ -17,26 +26,16 @@ body:has(div.app-container) {
   display: grid;
   position: relative;
   height: 100%;
-  width: 100vw;
+  width: 100%;
   transition: 300ms;
+  /**
+   * The width of the sidebar is set to 25ch, which is dependent on the font size.
+   * This should ensure that the sidebar is wide enough to accommodate its content,
+   * while also being responsive to changes in font size.
+   */
   grid-template:
     'top-nav top-nav' auto
-    'side-nav content' 1fr / 300px 1fr;
-}
-
-/* Styles when the side nav is enabled and collapsed */
-.app-container.side-nav-enabled.collapsed {
-  grid-template:
-    'top-nav top-nav' auto
-    'side-nav content' 1fr / 50px 1fr;
-}
-
-.app-container.side-nav-enabled.collapsed #course-dropdown {
-  display: none;
-}
-
-.app-container.side-nav-enabled.collapsed #course-instance-dropdown {
-  display: none;
+    'side-nav content' 1fr / 25ch 1fr;
 }
 
 .app-top-nav {
@@ -45,17 +44,12 @@ body:has(div.app-container) {
 
 .app-side-nav {
   grid-area: side-nav;
-  padding: 0.5rem;
   overflow-y: auto;
-
-  /* This color is --bs-primary-bg-subtle from Bootstrap 5.3 */
-  /* TODO: Use the native CSS variable when we upgrade to 5.3 */
-  background-color: #cfe2ff;
-  transition: 300ms;
 }
 
-.app-container.side-nav-enabled.collapsed .app-side-nav {
-  padding: 0.5rem 0;
+.app-side-nav-scroll {
+  padding: 0.5rem;
+  padding-top: 0.3rem;
 }
 
 .app-main {
@@ -76,10 +70,6 @@ body:has(div.app-container) {
   margin-bottom: 1.5rem;
 }
 
-.app-container.side-nav-enabled.collapsed .side-nav-group {
-  margin-bottom: 0;
-}
-
 .side-nav-link {
   display: flex;
   flex-direction: row;
@@ -93,13 +83,9 @@ body:has(div.app-container) {
   white-space: nowrap;
 }
 
-.app-container.side-nav-enabled.collapsed .side-nav-link {
-  padding: 0.75rem;
-}
-
 .side-nav-link:hover,
 .side-nav-link-active {
-  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  background-color: rgba(var(--bs-secondary-rgb), 0.1);
 }
 
 .side-nav-link-active {
@@ -112,51 +98,28 @@ body:has(div.app-container) {
   height: 100%;
   width: 4px;
   position: absolute;
-  left: -0.75rem;
+  left: -0.5rem;
   background-color: var(--bs-primary);
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
 }
 
-/* Hide side nav link text when the side nav is collapsed */
-.app-container.side-nav-enabled.collapsed .side-nav-link .side-nav-link-text {
-  display: none;
-}
-
-/* Center the icons when the side nav is collapsed */
-.app-container.side-nav-enabled.collapsed .side-nav-link {
-  justify-content: center;
-}
-
 .side-nav-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: end;
   text-transform: uppercase;
   font-weight: bold;
   border-bottom: 1px solid var(--bs-body-color);
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.3rem;
   margin-bottom: 0.5rem;
   white-space: nowrap;
-}
-
-/* Center the side nav toggle button when the side nav is collapsed */
-.app-container.side-nav-enabled.collapsed .side-nav-header {
-  justify-content: center;
+  transition: border-bottom 300ms ease-in-out;
 }
 
 .app-container.side-nav-enabled .side-nav-header .header-text {
   font-size: 0.8rem;
   margin: 0;
-}
-
-/* .app-container.side-nav-enabled.collapsed .side-nav-header {
-  padding-bottom: 0.5rem;
-} */
-
-/* Hide the header text when the side nav is collapsed */
-.app-container.side-nav-enabled.collapsed .side-nav-header .header-text {
-  display: none;
 }
 
 .side-nav-link .suffix {
@@ -166,38 +129,249 @@ body:has(div.app-container) {
   flex: 1;
 }
 
-/* When the side nav is collapsed, hide side nav link suffixes
-  (e.g. for the getting started side nav link, hide the getting started progess circle) */
-.app-container.side-nav-enabled.collapsed .side-nav-link .suffix {
-  display: none;
-}
-
-/* When the side nav is collapsed, hide the expanded icon */
-.app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.expanded {
-  display: none;
-}
-
-/* When the side nav is expanded, hide the collapsed icon */
-.side-nav-toggler-icon.collapsed {
-  display: none;
-}
-
-/* When the side nav is collapsed, show the collapsed icon */
-.app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.collapsed {
-  display: block;
-}
-
 #side-nav-toggler {
   background-color: transparent;
   border: none;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
 }
 
 #side-nav-toggler:hover {
-  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  background-color: rgba(var(--bs-secondary-rgb), 0.1);
 }
 
-.app-container.side-nav-enabled.collapsed #side-nav-toggler {
-  padding: 0.5rem 1rem;
+#assessment-switcher-container .assessment-row {
+  display: grid;
+  /* Use minmax(0, 1fr) to prevent content overflow */
+  grid-template-columns: 75px minmax(0, 1fr) minmax(0, 1fr);
+}
+
+#assessment-switcher-container .assessment-row:not(.selected):is(:hover, :focus-within) {
+  background-color: rgba(var(--bs-secondary-rgb), 0.2);
+}
+
+/* Side nav collapsed styles are applied on wider viewports (768px and above).
+ * On narrower viewports (less than 768px), the side nav is not visible when collapsed. */
+@media (min-width: 768px) {
+  .app-container.side-nav-enabled.collapsed {
+    grid-template:
+      'top-nav top-nav' auto
+      'side-nav content' 1fr / 60px 1fr;
+  }
+
+  .app-container.side-nav-enabled.collapsed #course-dropdown {
+    display: none;
+  }
+
+  .app-container.side-nav-enabled.collapsed #course-instance-dropdown {
+    display: none;
+  }
+
+  .app-container.side-nav-enabled.collapsed .side-nav-group {
+    margin-bottom: 0;
+  }
+
+  .app-container.side-nav-enabled.collapsed .side-nav-link {
+    padding: 0.75rem;
+  }
+
+  /* Hide side nav link text when the side nav is collapsed */
+  .app-container.side-nav-enabled.collapsed .side-nav-link .side-nav-link-text {
+    display: none;
+  }
+
+  /* Center the icons when the side nav is collapsed */
+  .app-container.side-nav-enabled.collapsed .side-nav-link {
+    justify-content: center;
+  }
+
+  /* Center the side nav toggle button when the side nav is collapsed */
+  .app-container.side-nav-enabled.collapsed .side-nav-header {
+    justify-content: center;
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+
+  /* Hide the header text when the side nav is collapsed */
+  .app-container.side-nav-enabled.collapsed .side-nav-header .header-text {
+    display: none;
+  }
+
+  /* When the side nav is collapsed, hide side nav link suffixes
+  (e.g. for the getting started side nav link, hide the getting started progess circle) */
+  .app-container.side-nav-enabled.collapsed .side-nav-link .suffix {
+    display: none;
+  }
+
+  /* When the side nav is collapsed, hide the expanded icon */
+  .app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.expanded {
+    display: none;
+  }
+
+  /* When the side nav is expanded, hide the collapsed icon */
+  .side-nav-toggler-icon.collapsed {
+    display: none;
+  }
+
+  /* When the side nav is collapsed, show the collapsed icon */
+  .app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.collapsed {
+    display: block;
+  }
+
+  .app-container.side-nav-enabled.collapsed #side-nav-toggler {
+    padding: 0.5rem 0rem;
+    width: 100%;
+  }
+
+  .app-container.side-nav-enabled.mobile-collapsed .app-side-nav {
+    transition: none;
+  }
+}
+
+@media (max-width: 768px) {
+  #assessment-switcher-container .assessment-row {
+    /* The title takes up the entire first row. The label and TID take up the second row. */
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  #assessment-switcher-container .assessment-row .title {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+
+  #assessment-switcher-container .assessment-row .label {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #assessment-switcher-container .assessment-row div:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .app-container.side-nav-enabled {
+    /* Use flexbox to ensure that app-main fills the entire space of app-container. */
+    display: flex;
+    flex-direction: column;
+    transition: none;
+  }
+
+  .app-container.side-nav-enabled #side-nav-toggler {
+    display: none;
+  }
+
+  .app-container.side-nav-enabled.mobile-collapsed .app-side-nav {
+    transform: translateX(-100%);
+  }
+
+  .app-container.side-nav-enabled:not(.mobile-collapsed) .app-side-nav {
+    transform: translateX(0);
+  }
+
+  .app-container.side-nav-enabled .app-side-nav {
+    display: block;
+    position: absolute;
+    top: var(--navbar-height);
+    left: 0;
+    width: 100%;
+    z-index: 999;
+    transform: translateX(-100%); /* Start off-screen to the left */
+    height: calc(100% - var(--navbar-height));
+    will-change: transform; /* Performance optimization */
+  }
+
+  .app-container.side-nav-enabled .app-side-nav-scroll {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    padding-top: 1rem;
+  }
+
+  .app-container.side-nav-enabled.animate .app-side-nav {
+    transition: transform 300ms;
+  }
+
+  .app-container.side-nav-enabled #side-nav-mobile-toggler {
+    height: 2.5rem;
+  }
+
+  .app-container.side-nav-enabled .navbar {
+    height: var(--navbar-height);
+  }
+
+  .app-container.side-nav-enabled #course-nav {
+    display: block;
+    position: absolute;
+    top: calc(
+      var(--navbar-height) - 0.5rem
+    ); /* Subtract 0.5rem to account for the top padding of the parent div of course-nav. */
+    left: 0;
+    width: 100%;
+    height: fit-content;
+    min-height: calc(
+      100vh - var(--navbar-height)
+    ); /* Subtract from 100vh to account for the navbar */
+    z-index: 999;
+    background-color: rgba(var(--bs-dark-rgb));
+    padding: 1rem 0.5rem;
+    will-change: transform; /* Performance optimization */
+  }
+
+  .app-container.side-nav-enabled #course-nav-toggler {
+    height: 2.5rem;
+  }
+
+  .app-container.side-nav-enabled.animate #course-nav {
+    transition: transform 300ms;
+  }
+
+  .app-container.side-nav-enabled #course-nav.mobile-collapsed {
+    transform: translateX(100%);
+  }
+
+  .app-container.side-nav-enabled #course-nav:not(.mobile-collapsed) {
+    transform: translateX(0);
+  }
+
+  /* Prevent content under the course/side nav from being visible when
+  *  either nav is open. */
+  .app-container.side-nav-enabled:has(#course-nav:not(.mobile-collapsed)) .app-main,
+  .app-container.side-nav-enabled:not(.mobile-collapsed) .app-main {
+    height: calc(100vh - var(--navbar-height)); /* Subtract from 100vh to account for the navbar */
+    overflow-y: hidden;
+  }
+
+  /* Prevent content to the side of the course/side nav from being visible. */
+  .app-container.side-nav-enabled {
+    overflow-x: hidden;
+  }
+
+  /**
+   * On wider viewports, when the side nav is collapsed,
+   * tooltips appear next to the side nav link icons when hovered. 
+   *
+   * This rule hides those tooltips on narrow viewports.
+   */
+  body:has(.app-container.side-nav-enabled:not(.mobile-collapsed)) .tooltip {
+    display: none;
+  }
+
+  .app-container.side-nav-enabled .viewtype-dropdown-item {
+    display: flex;
+    align-items: center;
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion) {
+  .app-container.side-nav-enabled.animate .app-side-nav,
+  .app-container.side-nav-enabled.animate #course-nav,
+  .app-container.side-nav-enabled {
+    transition: none;
+  }
+}
+
+.page-footer-text {
+  /* https://github.com/PrairieLearn/marketing/blob/6dc08c6028c8a45e71fce846b308326469958a16/src/components/Header.module.scss#L4-L6 */
+  color: #052c65;
 }

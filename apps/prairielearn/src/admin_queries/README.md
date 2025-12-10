@@ -1,24 +1,28 @@
 # Administrator queries
 
-Each query must have the following files:
+Each query must have a JS or TS file that exports the following items:
 
-- A JSON file in the [`adminQuery` JSON Schema](../schemas/schemas/adminQuery.json).
-- A JS or TS file with a default function that performs the necessary actions and returns the resulting data.
-- Optionally, a SQL file with one or more queries used in the query.
+- a constant named `specs` of type `AdministratorQuerySpecs`.
+- a default function that receives an object corresponding to query parameters, performs the necessary actions, and returns the resulting data as an object of type `AdministratorQueryResults`.
 
-The JS/TS file must export a default function that returns an object of type `AdministratorQueryResult`. For example:
+For example:
 
 ```ts
-import type { AdministratorQueryResult } from './util.js';
+import type { AdministratorQuerySpecs, AdministratorQueryResult } from './util.js';
 
-export default async function (params: {
-  /* types */
-}): Promise<AdministratorQueryResult> {
-  // Perform some actions, including potentially running queries
-  // Return a array of column names and an array of row objects
+export const specs: AdministratorQuerySpecs = {
+  description: 'A brief description of the query',
+  // ...
+};
+
+export default async function (params: { /* types */ }): Promise<AdministratorQueryResult> {
+  // Perform some actions, including potentially running SQL queries
+  // Return an array of column names and an array of row objects
   return { columns, rows };
 }
 ```
+
+Queries may also refer to a SQL file with the same name but extension `.sql`, with one or more queries used in the query.
 
 To render columns as links, return column pairs like:
 

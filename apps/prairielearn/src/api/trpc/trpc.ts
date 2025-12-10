@@ -19,7 +19,7 @@ function getJWT(req: Request) {
   return token || null;
 }
 
-export async function createContext({ req }: CreateExpressContextOptions) {
+export function createContext({ req }: CreateExpressContextOptions) {
   return {
     jwt: getJWT(req),
     bypassJwt: false,

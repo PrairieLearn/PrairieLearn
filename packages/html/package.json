@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/html",
-  "version": "4.0.12",
+  "version": "4.0.22",
   "type": "module",
   "repository": {
     "type": "git",
@@ -11,27 +11,15 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "c8 mocha src/**/*.test.ts"
+    "test": "vitest run --coverage"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.17.30",
-    "c8": "^10.1.3",
-    "chai": "^5.2.0",
-    "mocha": "^11.1.0",
-    "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "@types/node": "^22.19.1",
+    "@vitest/coverage-v8": "^4.0.14",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14"
   },
-  "sideEffects": false,
-  "c8": {
-    "reporter": [
-      "html",
-      "text-summary",
-      "cobertura"
-    ],
-    "all": true,
-    "include": [
-      "src/**"
-    ]
-  }
+  "sideEffects": false
 }

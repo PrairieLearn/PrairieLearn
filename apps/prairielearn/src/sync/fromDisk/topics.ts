@@ -1,6 +1,7 @@
-import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { TopicSchema } from '../../lib/db-types.js';
+import type { CommentJson } from '../../schemas/comment.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
@@ -12,6 +13,7 @@ interface DesiredTopic {
   name: string;
   color: string;
   description?: string | null;
+  comment?: CommentJson;
 }
 
 export async function sync(courseId: string, courseData: CourseData) {
@@ -57,28 +59,28 @@ export async function sync(courseId: string, courseData: CourseData) {
     deleteUnused,
   });
 
-  if (topicsToCreate.length || topicsToUpdate.length || topicsToDelete.length) {
+  if (topicsToCreate.length > 0 || topicsToUpdate.length > 0 || topicsToDelete.length > 0) {
     await runInTransactionAsync(async () => {
       if (topicsToCreate.length > 0) {
-        await queryAsync(sql.insert_topics, {
+        await execute(sql.insert_topics, {
           course_id: courseId,
           topics: topicsToCreate.map((t) =>
-            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
           ),
         });
       }
 
       if (topicsToUpdate.length > 0) {
-        await queryAsync(sql.update_topics, {
+        await execute(sql.update_topics, {
           course_id: courseId,
           topics: topicsToUpdate.map((t) =>
-            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
           ),
         });
       }
 
       if (topicsToDelete.length > 0) {
-        await queryAsync(sql.delete_topics, { course_id: courseId, topics: topicsToDelete });
+        await execute(sql.delete_topics, { course_id: courseId, topics: topicsToDelete });
       }
     });
   }

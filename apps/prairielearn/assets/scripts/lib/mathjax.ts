@@ -1,3 +1,5 @@
+import { withResolvers } from '@prairielearn/utils';
+
 // Default to SVG, as lines were sometimes disappearing when using the CHTML renderer. Note that
 // some elements (e.g., pl-drawing) depend on an SVG output.
 const outputComponent = 'output/svg';
@@ -8,12 +10,27 @@ declare global {
   }
 }
 
-const mathjaxPromise = new Promise<void>((resolve, reject) => {
+const {
+  promise: mathjaxPromise,
+  resolve: mathjaxResolve,
+  reject: mathjaxReject,
+  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+} = withResolvers<void>();
+
+(() => {
+  if (window.MathJax) {
+    // Something else already loaded MathJax on this page. Just resolve the promise
+    // once MathJax reports that it is ready.
+    window.MathJax.startup.promise.then(mathjaxResolve, mathjaxReject);
+    return;
+  }
+
   window.MathJax = {
     options: {
       // We previously documented the `tex2jax_ignore` class, so we'll keep
       // supporting it for backwards compatibility.
       ignoreHtmlClass: 'mathjax_ignore|tex2jax_ignore',
+      processHtmlClass: 'mathjax_process',
     },
     tex: {
       inlineMath: [
@@ -38,7 +55,7 @@ const mathjaxPromise = new Promise<void>((resolve, reject) => {
     },
     // Kept for compatibility reasons.
     onReady: (cb: any) => {
-      mathjaxPromise.then(cb);
+      void mathjaxPromise.then(cb);
     },
     // Adds a custom function so that, regardless if Mathjax.typesetPromise() is accessed before or
     // after the page is loaded, it will be resolved when the page is ready.
@@ -60,8 +77,8 @@ const mathjaxPromise = new Promise<void>((resolve, reject) => {
       },
       pageReady: () => {
         return window.MathJax.startup.defaultPageReady().then(
-          () => resolve(),
-          (err: any) => reject(err),
+          () => mathjaxResolve(),
+          (err: any) => mathjaxReject(err),
         );
       },
     },
@@ -82,11 +99,11 @@ const mathjaxPromise = new Promise<void>((resolve, reject) => {
     configurable: true,
     enumerable: true,
   });
-});
+})();
 
-export async function mathjaxTypeset() {
+export async function mathjaxTypeset(elements?: Element[]) {
   await mathjaxPromise;
-  return window.MathJax.typesetPromise();
+  return window.MathJax.typesetPromise(elements);
 }
 
 export async function mathjaxConvert(value: string) {

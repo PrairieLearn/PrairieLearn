@@ -2,7 +2,9 @@ import { io } from 'socket.io-client';
 
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 
-import type { JobSequenceResultsData } from '../../../src/components/JobSequenceResults.html.js';
+import type { JobSequenceResultsData } from '../../../src/components/JobSequenceResults.js';
+
+import './verboseToggle.js';
 
 onDocumentReady(() => {
   const socket = io();

@@ -1,22 +1,24 @@
+import assert from 'node:assert';
 import * as url from 'node:url';
+import * as path from 'path';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
 
-import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
+import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
-import {
-  getAndRenderVariant,
-  renderPanelsForSubmission,
-  setRendererHeader,
-} from '../../lib/question-render.js';
+import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
+import { getQuestionCourse } from '../../lib/question-variant.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getSearchParams } from '../../lib/url.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
@@ -27,7 +29,7 @@ const router = Router();
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variant_id = await processSubmission(req, res);
       res.redirect(
@@ -46,7 +48,7 @@ router.post(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
     const aiGradingPreviewEnabled = aiGradingEnabled && req.query.ai_grading_preview === 'true';
@@ -61,10 +63,15 @@ router.get(
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
-    await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
+    await getAndRenderVariant(variant_id, variant_seed, res.locals);
     await logPageView('instructorQuestionPreview', req, res);
-    await setQuestionCopyTargets(res);
-
+    const questionCopyTargets = await getQuestionCopyTargets({
+      course: res.locals.course,
+      is_administrator: res.locals.is_administrator,
+      user: res.locals.user,
+      authn_user: res.locals.authn_user,
+      question: res.locals.question,
+    });
     const searchParams = getSearchParams(req);
 
     // Construct a URL to preview the question as it would appear in the manual
@@ -113,7 +120,27 @@ router.get(
       renderSubmissionSearchParams.set('ai_grading_preview', 'true');
     }
 
-    setRendererHeader(res);
+    // We must use the question's course, which is not necessarily the same as
+    // the current course in the case of shared questions.
+    const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
+
+    // We must read the README from the course's runtime directory to handle
+    // the case where this process is a chunk consumer.
+    const coursePath = getRuntimeDirectoryForCourse(question_course);
+    assert(res.locals.question.qid !== null, 'question.qid is null');
+    const questionReadmePath = path.join(
+      path.join(coursePath, 'questions', res.locals.question.qid, 'README.md'),
+    );
+
+    // We do not need an explicit `ensureChunks()` call here as the `getAndRenderVariant()` call
+    // above will have already done that.
+    const questionReadmeExists = await fs.pathExists(questionReadmePath);
+    let readmeHtml = '';
+    if (questionReadmeExists) {
+      const readme = await fs.readFile(questionReadmePath, 'utf8');
+      readmeHtml = markdownToHtml(readme, { allowHtml: false });
+    }
+
     res.send(
       InstructorQuestionPreview({
         normalPreviewUrl,
@@ -122,7 +149,9 @@ router.get(
         aiGradingPreviewEnabled,
         aiGradingPreviewUrl,
         renderSubmissionSearchParams,
+        readmeHtml,
         resLocals: res.locals,
+        questionCopyTargets,
       }),
     );
   }),
@@ -130,7 +159,7 @@ router.get(
 
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
     // As with the normal route, we need to respect the `manual_grading_preview`

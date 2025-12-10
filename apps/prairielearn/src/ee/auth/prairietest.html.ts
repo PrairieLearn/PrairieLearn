@@ -1,8 +1,17 @@
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
+import { HeadContents } from '../../components/HeadContents.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
-export const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
+export const AuthPrairieTest = ({
+  jwt,
+  prairieTestCallback,
+  resLocals,
+}: {
+  jwt: string;
+  prairieTestCallback: string;
+  resLocals: UntypedResLocals;
+}) => {
   return html`
     <!doctype html>
     <html lang="en">

@@ -1,5 +1,5 @@
 import parsePostgresInterval from 'postgres-interval';
-import { z } from 'zod';
+import { type ZodTypeAny, z } from 'zod';
 
 const INTERVAL_MS_PER_SECOND = 1000;
 const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
@@ -9,15 +9,36 @@ const INTERVAL_MS_PER_MONTH = 30 * INTERVAL_MS_PER_DAY;
 const INTERVAL_MS_PER_YEAR = 365.25 * INTERVAL_MS_PER_DAY;
 
 /**
+ * A schema type on which `.optional()` cannot be called.
+ */
+type NoOptional<S extends ZodTypeAny> = S & {
+  optional: never;
+};
+
+/**
+ * Wrap any Zod schema so that calling `.optional()` is illegal in TypeScript.
+ * Runtime behavior is untouched.
+ */
+function required<S extends ZodTypeAny>(schema: S): NoOptional<S> {
+  return schema as unknown as NoOptional<S>;
+}
+
+/**
  * A Zod schema for a boolean from a single checkbox input in the body
  * parameters from a form. This will return a boolean with a value of `true` if
  * the checkbox is checked (the input is present) and `false` if it is not
  * checked.
+ *
+ * Note that this will not behave sensibly if `.optional()` is called on the schema,
+ * as it will turn a missing checkbox into `undefined` instead of `false`. We use
+ * some TypeScript magic to ensure that `.optional()` cannot be called on this schema.
  */
-export const BooleanFromCheckboxSchema = z
-  .string()
-  .optional()
-  .transform((s) => !!s);
+export const BooleanFromCheckboxSchema = required(
+  z
+    .string()
+    .optional()
+    .transform((s) => !!s),
+);
 
 /**
  * A Zod schema for a PostgreSQL ID.
@@ -50,21 +71,27 @@ const PostgresIntervalSchema = z.object({
 /**
  * A Zod schema for a PostgreSQL interval.
  *
- * This handles two representations of an interval:
+ * This handles three representations of an interval:
  *
  * - A string like "1 year 2 days", which is how intervals will be represented
  *   if they go through `to_jsonb` in a query.
  * - A {@link PostgresIntervalSchema} object, which is what we'll get if a
  *   query directly returns an interval column. The interval will already be
  *   parsed by `postgres-interval` by way of `pg-types`.
+ * - A number of milliseconds, which is possible if you want to feed the output of IntervalSchema.parse()
+ *   back through this schema.
  *
- * In either case, we convert the interval to a number of milliseconds.
+ * In all cases, we convert the interval to a number of milliseconds.
  */
 export const IntervalSchema = z
-  .union([z.string(), PostgresIntervalSchema])
+  .union([z.string(), PostgresIntervalSchema, z.number()])
   .transform((interval) => {
     if (typeof interval === 'string') {
       interval = parsePostgresInterval(interval);
+    }
+
+    if (typeof interval === 'number') {
+      return interval;
     }
 
     // This calculation matches Postgres's behavior when computing the number of
@@ -102,3 +129,49 @@ export const DateFromISOString = z
     },
   )
   .transform((s) => new Date(s));
+
+/**
+ * A Zod schema that coerces a non-empty string to an integer or an empty string to null.
+ * This is useful for form number inputs that are not required but we do not want to
+ * use an empty string to compute values.
+ */
+export const IntegerFromStringOrEmptySchema = z.preprocess(
+  (value) => (value === '' ? null : value),
+  z.union([z.null(), z.coerce.number().int()]),
+);
+
+/**
+ * A Zod schema for an array of string values from either a string or an array of
+ * strings.
+ */
+export const ArrayFromStringOrArraySchema = z
+  .union([z.string(), z.array(z.string())])
+  .transform((s) => {
+    if (s === null) {
+      return [];
+    } else if (Array.isArray(s)) {
+      return s;
+    } else {
+      return [s];
+    }
+  });
+
+/**
+ * A Zod schema for an array of string values from a set of checkboxes in the
+ * body parameters from a form. The form should have checkboxes with the same
+ * name attribute, and the value of the checkboxes should be the string values
+ * to include in the array. If no checkboxes are checked, this will return an
+ * empty array. This behavior relies on the ExpressJS `bodyParser.urlencoded()`
+ * middleware that parses the submitted data into a string or array.
+ */
+export const ArrayFromCheckboxSchema = z
+  .union([z.undefined(), z.string(), z.array(z.string())])
+  .transform((s) => {
+    if (s == null) {
+      return [];
+    } else if (Array.isArray(s)) {
+      return s;
+    } else {
+      return [s];
+    }
+  });

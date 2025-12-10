@@ -22,5 +22,6 @@
         { "id": "positionTimeGraph", "points": [10] }
       ]
     }
-  ]
+  ],
+  "honorCode": "## Honor Code \nI, {{user_name}}, pledge that I am allowed to take the following assessment and will not receive any unauthorized assistance."
 }

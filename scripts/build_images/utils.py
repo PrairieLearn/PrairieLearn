@@ -8,6 +8,7 @@ from contextlib import contextmanager
 
 
 def get_env_or_exit(var: str) -> str:
+    """Get an environment variable or exit with an error message."""
     val = os.environ.get(var)
     if not val:
         print(f"{var} not specified!")
@@ -18,6 +19,10 @@ def get_env_or_exit(var: str) -> str:
 def print_and_run_command(
     command: list[str], *, capture_output: bool = False
 ) -> subprocess.CompletedProcess[str]:
+    """Run a command and print it to the console.
+
+    If running in GitHub Actions, the command is formatted for better output.
+    """
     is_actions = os.environ.get("GITHUB_ACTIONS")
     if is_actions:
         print(f"[command]{' '.join(command)}")
@@ -33,6 +38,7 @@ def print_and_run_command(
 
 
 def get_current_platform() -> str:
+    """Get the current platform using Docker CLI."""
     result = subprocess.run(
         ["docker", "version", "--format", "json"],
         capture_output=True,
@@ -44,6 +50,7 @@ def get_current_platform() -> str:
 
 @contextmanager
 def local_registry(name: str) -> Generator[None, None, None]:
+    """Create a local Docker registry."""
     # Stop any existing registry container.
     with contextlib.suppress(subprocess.CalledProcessError):
         print_and_run_command(["docker", "stop", name], capture_output=True)
@@ -76,6 +83,7 @@ def local_registry(name: str) -> Generator[None, None, None]:
 
 @contextmanager
 def buildx_builder(name: str) -> Generator[None, None, None]:
+    """Create a Docker buildx builder."""
     # Remove any existing builder with the same name.
     with contextlib.suppress(subprocess.CalledProcessError):
         print_and_run_command(["docker", "buildx", "rm", name], capture_output=True)

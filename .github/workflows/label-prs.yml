@@ -1,28 +1,28 @@
-name: 'Pull Request Labeler'
+name: 'Label PRs'
 on:
   - pull_request_target
 
 jobs:
-  labeler:
-    name: 'Tag PRs by code changes'
+  label-by-changes:
+    name: 'PR changes'
     permissions:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/labeler@v5
+      - uses: actions/labeler@v6
         with:
           sync-labels: false
   # labeler cannot label PRs by title: https://github.com/actions/labeler/issues/55
-  title_labeler:
+  label-by-title:
     # To prevent labeler from removing labels added by this job, it should run beforehand.
-    needs: [labeler]
-    name: 'Tag PRs by title'
+    needs: [label-by-changes]
+    name: 'PR title'
     permissions:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: fuxingloh/multi-labeler@a4807e972fed31b074807ed7f018883f81b79d46 # v4
+      - uses: fuxingloh/multi-labeler@83831224bfa0ebf09ee2d762cefca593173881f0 # v4
         with:
           config-path: .github/title-labeler.yml

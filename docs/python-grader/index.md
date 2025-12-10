@@ -1,6 +1,6 @@
 # Python Autograder
 
-This file documents the default Python autograder included in the `prairielearn/grader-python` Docker image. For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
+This file documents the default Python autograder included in the `prairielearn/grader-python` Docker image. For general information on how to set up an external grader, view the [external grading](../externalGrading.md) documentation.
 
 ## Setting up
 
@@ -26,31 +26,68 @@ A full `info.json` file should look something like:
 }
 ```
 
-### `server.py`
+### User variables
 
-The server code in the `generate()` function must define the list of variables or functions that will be passed to the autograded student code as `names_for_user`, and also those that will be passed from the student code to the test code as `names_from_user`. Only variables or functions listed in `names_for_user` will be accessible by the user from the setup code; only names listed in `names_from_user` will be accessible by the test cases from the user code.
+The question must specify the variables that will be read from student code for grading (`names_from_user`). Optionally, the question may also specify variables that will be made available to student code from the question's setup code (`names_for_user`). Only variables or functions listed in `names_for_user` will be accessible by the user from the setup code; only names listed in `names_from_user` will be accessible by the test cases from the user code.
 
-These are stored as a list of dictionary objects in the `data["params"]` dict. The above `names_for_user` and `names_from_user` lists are stored as separate keys in `params`. For example:
+Each variable must have the following:
 
-```python title="server.py"
-def generate(data):
-    data["params"]["names_for_user"] = [
-        {"name": "x", "description": "Description of the variable", "type": "float"},
-    ]
-    data["params"]["names_from_user"] = [
-        {"name": "x_sq", "description": "The square of $x$", "type": "float"},
-    ]
-```
+- `name`: The name of the variable in the student code.
+- `description`: A human-readable description of the variable.
+- `type`: A human-readable description of the type of the variable. This is used for display purposes only, and does not affect the grading.
 
-Each variable dictionary has entries `name` (the Python variable name in the code), `description` (human-readable), and `type` (human-readable). These variable lists are used for two purposes: (1) showing students which variables are used, and (2) making variables available to the student code and autograder code.
+There are two ways to do specify these variables.
+
+=== "`question.html`"
+
+    The `<pl-external-grader-variables>` element can be used to both specify and display a table of variables.
+
+    ```html title="question.html"
+    <pl-external-grader-variables params-name="names_for_user">
+      <pl-variable name="n" type="integer">
+        Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.
+      </pl-variable>
+      <pl-variable name="A" type="numpy array (shape $n \times n$)"> Matrix $\mathbf{A}$. </pl-variable>
+      <pl-variable name="b" type="numpy array (length $n$)"> Vector $\mathbf{b}$. </pl-variable>
+    </pl-external-grader-variables>
+
+    <pl-external-grader-variables params-name="names_from_user">
+      <pl-variable name="x" type="numpy array (length $n$)">
+        Solution to $\mathbf{Ax}=\mathbf{b}$.
+      </pl-variable>
+    </pl-external-grader-variables>
+    ```
+
+=== "`server.py`"
+
+    Using `<pl-external-grader-variables>` in `question.html` is the recommended way to specify user variables. However, if you need to dynamically generate the lists of variables or have more advanced needs, you can also do so directly in `server.py` by assigning to `data["params"]["names_for_user"]` and `data["params"]["names_from_user"]`. The following example is equivalent to the previous `question.html` example:
+
+    ```python title="server.py"
+    def generate(data):
+        data["params"]["names_for_user"] = [
+            {"name": "n", "description": r"Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.", "type": "integer"},
+            {"name": "A", "description": r"Matrix $\mathbf{A}$.", "type": "numpy array"},
+            {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"}
+        ]
+        data["params"]["names_from_user"] = [
+            {"name": "x", "description": r"Solution to $\mathbf{Ax}=\mathbf{b}$.", "type": "numpy array"}
+        ]
+    ```
+
+    You can still use `<pl-external-grader-variables>` to display the variables to students; just omit the nested `<pl-variable>` elements.
+
+    ```html title="question.html"
+    <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+    ```
 
 ### `question.html`
 
-At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grader-results` to show the status of grading jobs. These are placed in the question panel and submission panel, respectively. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
+The question should contain a way for students to submit files, such as `<pl-file-editor>`, `<pl-file-upload>`, or a workspace. The question should also contain a `<pl-external-grader-results>` element to show the grading results. These are placed in the question panel and submission panel, respectively. It is also recommended to place a `<pl-file-preview>` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 
 ```html title="question.html"
 <pl-question-panel>
-  <pl-file-editor file-name="user_code.py"></pl-file-editor>
+  <pl-file-editor file-name="user_code.py" ace-mode="ace/mode/python"></pl-file-editor>
 </pl-question-panel>
 
 <pl-submission-panel>
@@ -61,36 +98,7 @@ At a minimum, the question markup should contain a `pl-file-editor` element (or 
 
 By default, the grader will look for a gradable file named `user_code.py`, but this can be changed in the test suite.
 
-Expected variables can also be displayed to the user with the `<pl-external-grader-variables>` element. By setting the `variables-name` attribute to either `names_for_user` or `names_from_user`, both sets of variables can be shown.
-
-Full example:
-
-```html title="question.html"
-<pl-question-panel>
-  <p>... Question prompt ...</p>
-
-  <p>The setup code gives the following variables:</p>
-  <p>
-    <pl-external-grader-variables
-      variables-category="names_for_user"
-    ></pl-external-grader-variables>
-  </p>
-
-  <p>Your code snippet should define the following variables:</p>
-  <pl-external-grader-variables variables-category="names_from_user"></pl-external-grader-variables>
-  <pl-file-editor
-    file_name="user_code.py"
-    ace_mode="ace/mode/python"
-    source-file-name="tests/initial_code.py"
-  ></pl-file-editor>
-</pl-question-panel>
-
-<pl-submission-panel>
-  <pl-external-grader-results></pl-external-grader-results>
-</pl-submission-panel>
-```
-
-Note that the `<pl-external-grader-variables>` element is for purely decorative purposes only, `names_for_user` or `names_from_user` or both can be omitted without any negative results.
+Provided and/or expected variables can also be displayed to the user with the `<pl-external-grader-variables>` element. By setting the `params-name` attribute to either `names_for_user` or `names_from_user`, either set of variables can be shown.
 
 ### `tests/setup_code.py`
 
@@ -191,6 +199,8 @@ The code feedback library contains built-in functions for checking correctness o
   Checks that a numpy array has the same shape and datatype as the reference solution, also checks values to see if they are close using specified `rtol` and `atol`.
 - `check_list(name, ref, data, entry_type=None)`
   Checks that a list has the same length as the reference solution. If `entry_type` is not `None`, can optionally check if each element has that type. Does _not_ check values against the reference.
+- `check_dict(name, ref, data, target_keys=None)`
+  Checks that a student dict has all correct key-value mappings with respect to a reference dict.
 - `check_tuple(name, ref, data)`
   Checks that a tuple has the same length and values as the reference solution.
 - `check_scalar(name, ref, data, rtol=1e-5, atol=1e-8)`
@@ -272,13 +282,15 @@ Some courses may use libraries that are common across multiple questions. For su
 }
 ```
 
+The process above is suitable for small utility libraries that are specific to a particular course. For larger libraries, including those installed from the [Python package index](https://pypi.org/) (i.e., via `pip install` or equivalent), you are strongly encouraged to [create your own custom grader image](../dockerImages.md#custom-variations-of-maintained-images), as that will provide better performance and improve student experience.
+
 ### Example usage of `serverFilesCourse` for static data
 
 The Python autograder is able to retrieve information from `serverFilesCourse`. This can be used when there are files and other static data that can be shared across multiple questions. For example, assume there is a data file called `chem.json` used in multiple questions. The file can be saved in the `serverFilesCourse` directory within the course root directory, for example at `serverFilesCourse/compounds/chem.json`.
 
 To access `serverFilesCourse` from the autograder, specify the file or its containing directory in the question `info.json`. For example, to copy the `compounds` directory to the autograder, use:
 
-```json title="info.json" hl_lines="6"
+```json title="info.json" hl_lines="5"
 {
   "externalGradingOptions": {
     "enabled": true,

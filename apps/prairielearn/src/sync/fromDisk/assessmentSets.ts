@@ -1,6 +1,7 @@
-import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { AssessmentSetSchema } from '../../lib/db-types.js';
+import type { CommentJson } from '../../schemas/comment.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
@@ -13,6 +14,7 @@ interface DesiredAssessmentSet {
   abbreviation: string;
   heading: string;
   color: string;
+  comment?: CommentJson;
 }
 
 export async function sync(courseId: string, courseData: CourseData) {
@@ -78,13 +80,13 @@ export async function sync(courseId: string, courseData: CourseData) {
   });
 
   if (
-    assessmentSetsToCreate.length ||
-    assessmentSetsToUpdate.length ||
-    assessmentSetsToDelete.length
+    assessmentSetsToCreate.length > 0 ||
+    assessmentSetsToUpdate.length > 0 ||
+    assessmentSetsToDelete.length > 0
   ) {
     await runInTransactionAsync(async () => {
-      if (assessmentSetsToCreate.length) {
-        await queryAsync(sql.insert_assessment_sets, {
+      if (assessmentSetsToCreate.length > 0) {
+        await execute(sql.insert_assessment_sets, {
           course_id: courseId,
           sets: assessmentSetsToCreate.map((as) =>
             JSON.stringify([
@@ -94,13 +96,14 @@ export async function sync(courseId: string, courseData: CourseData) {
               as.color,
               as.number,
               as.implicit,
+              as.comment,
             ]),
           ),
         });
       }
 
-      if (assessmentSetsToUpdate.length) {
-        await queryAsync(sql.update_assessment_sets, {
+      if (assessmentSetsToUpdate.length > 0) {
+        await execute(sql.update_assessment_sets, {
           course_id: courseId,
           sets: assessmentSetsToUpdate.map((as) =>
             JSON.stringify([
@@ -110,13 +113,14 @@ export async function sync(courseId: string, courseData: CourseData) {
               as.color,
               as.number,
               as.implicit,
+              as.comment,
             ]),
           ),
         });
       }
 
-      if (assessmentSetsToDelete.length) {
-        await queryAsync(sql.delete_assessment_sets, {
+      if (assessmentSetsToDelete.length > 0) {
+        await execute(sql.delete_assessment_sets, {
           course_id: courseId,
           sets: assessmentSetsToDelete,
         });

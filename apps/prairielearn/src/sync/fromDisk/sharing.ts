@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '../../lib/db-types.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function sync(
@@ -16,7 +17,7 @@ export async function sync(
     return;
   }
 
-  await sqldb.queryAsync(sql.sync_course_sharing_sets, {
+  await sqldb.execute(sql.sync_course_sharing_sets, {
     course_id: courseId,
     new_course_sharing_sets: JSON.stringify(courseData.course.data?.sharingSets ?? []),
   });
@@ -29,7 +30,7 @@ export async function sync(
       name: z.string(),
     }),
   );
-  const sharingSetIdsByName = {};
+  const sharingSetIdsByName: Record<string, string> = {};
   for (const sharingSet of courseSharingSets) {
     sharingSetIdsByName[sharingSet.name] = sharingSet.id;
   }
@@ -37,7 +38,7 @@ export async function sync(
   const questionSharingSets: { question_id: string; sharing_set_id: string }[] = [];
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
-    const dedupedQuestionSharingSetNames = new Set(question.data?.sharingSets ?? []);
+    const dedupedQuestionSharingSetNames = new Set(question.data?.sharingSets);
     const questionSharingSetIds = [...dedupedQuestionSharingSetNames].map(
       (sharingSet) => sharingSetIdsByName[sharingSet],
     );
@@ -49,7 +50,7 @@ export async function sync(
     });
   });
 
-  await sqldb.queryAsync(sql.sync_question_sharing_sets, {
+  await sqldb.execute(sql.sync_question_sharing_sets, {
     new_question_sharing_sets: JSON.stringify(questionSharingSets),
   });
 }

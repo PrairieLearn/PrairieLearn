@@ -1,20 +1,21 @@
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { type User } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function AdministratorAdmins({
   admins,
   resLocals,
 }: {
   admins: User[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Administrators',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'administrators',
     },
@@ -115,7 +116,7 @@ function AdministratorInsertForm({ csrfToken }: { csrfToken: string }) {
           placeholder="username@example.com"
         />
       </div>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Add administrator</button>
       </div>
@@ -138,7 +139,7 @@ function AdministratorDeleteForm({
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="user_id" value="${userId}" />
       <div class="mb-3"><strong>UID:</strong> ${uid}</div>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Remove access</button>
       </div>

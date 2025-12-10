@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Course,
@@ -8,7 +8,8 @@ import {
   type Institution,
   type PlanGrant,
 } from '../../../lib/db-types.js';
-import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
 
 export function AdministratorInstitutionCourseInstance({
   institution,
@@ -21,12 +22,12 @@ export function AdministratorInstitutionCourseInstance({
   course: Course;
   course_instance: CourseInstance;
   planGrants: PlanGrant[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals: { ...resLocals, institution },
     pageTitle: `${course.short_name}, ${course_instance.short_name} - Institution Admin`,
-    headContent: [compiledScriptTag('administratorInstitutionCourseInstanceClient.ts')],
+    headContent: compiledScriptTag('administratorInstitutionCourseInstanceClient.ts'),
     navContext: {
       type: 'administrator_institution',
       page: 'administrator_institution',

@@ -1,10 +1,65 @@
+import mustache from 'mustache';
 import * as parse5 from 'parse5';
 
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
+const BOOLEAN_TRUE_VALUES = ['true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES'];
+const BOOLEAN_FALSE_VALUES = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'];
+const BOOLEAN_VALUES = [...BOOLEAN_TRUE_VALUES, ...BOOLEAN_FALSE_VALUES];
+
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
-const mustacheTemplateExtractorRegex = /\{\{((?:[^}]|\}[^}])*)\}\}/g;
+
+type MustacheTextToken = ['text', string, number, number];
+type MustacheNameToken = ['name', string, number, number];
+type MustacheSectionToken = ['#' | '^' | '&', string, number, number, MustacheToken[]];
+type MustacheToken = MustacheTextToken | MustacheNameToken | MustacheSectionToken;
+
+export function extractMustacheTemplateNames(str: string): Set<string> {
+  // We use a temporary writer to avoid any long-lived storage of the parsed
+  // template in Mustache's cache.
+  const writer = new mustache.Writer();
+  const tokens = writer.parse(str);
+
+  const names = new Set<string>();
+
+  /** Helper function to recursively collect names. */
+  function collectNames(tokensList: MustacheToken[]) {
+    for (const token of tokensList) {
+      const [type, value] = token;
+
+      if (type === 'name' || type === '&') {
+        // Handles {{variable}} and {{{variable}}} (unescaped)
+        names.add(value);
+      } else if (type === '#' || type === '^') {
+        // Handles {{#section}}...{{/section}} and {{^inverted-section}}...{{/section}}
+        // Record the section name itself.
+        names.add(value);
+
+        // Process any nested tokens.
+        const children = token[4];
+        if (Array.isArray(children)) {
+          collectNames(children);
+        }
+      } else {
+        // Other token types ('text', '!' for comments, '/' for closing tags) are implicitly ignored.
+      }
+    }
+  }
+
+  collectNames(tokens);
+
+  // We deliberately ignore `.` (the current context). It's not a useful name
+  // as it doesn't correspond to a variable in the template in isolation.
+  names.delete('.');
+
+  return names;
+}
+
+export function isValidMustacheTemplateName(name: string): boolean {
+  // Mustache template names must be alphanumeric and can contain dots and underscores.
+  return /^[a-zA-Z0-9_.]+$/.test(name);
+}
 
 interface ValidationResult {
   /** Array of errors that we'll instruct the LLM to fix. */
@@ -66,7 +121,7 @@ function assertInChoices(
 ) {
   if (!(choices.includes(val) || mustacheTemplateRegex.test(val))) {
     errors.push(
-      `${tag}: value for attribute ${key} must be in ${choices}, but value provided is ${val}`,
+      `${tag}: value for attribute ${key} must be in ${choices.join(', ')}, but value provided is ${val}`,
     );
   }
 }
@@ -76,49 +131,25 @@ function assertInChoices(
  * @param tag The name of the tag being checked.
  * @param key The attribute name.
  * @param val The attribute value.
- * @param choices The list of potential choices for the attribute.
  * @param errors The list of errors to add to.
  */
 function assertBool(tag: string, key: string, val: string, errors: string[]) {
-  assertInChoices(
-    tag,
-    key,
-    val,
-    [
-      'true',
-      't',
-      '1',
-      'True',
-      'T',
-      'TRUE',
-      'yes',
-      'y',
-      'Yes',
-      'Y',
-      'YES',
-      'false',
-      'f',
-      '0',
-      'False',
-      'F',
-      'FALSE',
-      'no',
-      'n',
-      'No',
-      'N',
-      'NO',
-    ],
-    errors,
-  );
+  assertInChoices(tag, key, val, BOOLEAN_VALUES, errors);
+}
+
+/**
+ * Checks if the given attribute value is a boolean `true` value.
+ */
+function isBooleanTrue(val: string): boolean {
+  return BOOLEAN_TRUE_VALUES.includes(val.trim());
 }
 
 /**
  * Checks that a tag has valid attributes.
  * @param ast The tree to consider, rooted at the tag.
- * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns The list of errors for the tag, if any.
  */
-function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): ValidationResult {
+function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
   if ('tagName' in ast) {
     switch (ast.tagName) {
       case 'pl-multiple-choice':
@@ -126,20 +157,22 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): Valid
       case 'pl-integer-input':
         return checkIntegerInput(ast);
       case 'pl-number-input':
-        return checkNumericalInput(ast);
+        return checkNumberInput(ast);
       case 'pl-string-input':
         return checkStringInput(ast);
       case 'pl-checkbox':
         return checkCheckbox(ast);
+      case 'pl-symbolic-input':
+        return checkSymbolicInput(ast);
       case 'pl-question-panel':
         return { errors: [] };
       case 'pl-answer':
         return { errors: [] }; // covered elsewhere
       default:
-        if (ast.tagName && ast.tagName.substring(0, 3) === 'pl-' && !optimistic) {
+        if (ast.tagName.startsWith('pl-')) {
           return {
             errors: [
-              `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\``,
+              `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\`, \`pl-symbolic-input\``,
             ],
           };
         }
@@ -266,6 +299,10 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResul
 function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
   let answersName: string | null = null;
+  let allowBlank = false;
+  let usedBlankValue = false;
+  let usedCorrectAnswer = false;
+
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
       const key = attr.name;
@@ -279,9 +316,10 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
         case 'size':
           assertInt('pl-integer-input', key, val, errors);
           break;
-        // string inputs are valid as strings, and these don't affect other tags, so no validation required
         case 'correct-answer':
-          if (val.match(mustacheTemplateExtractorRegex)) {
+          assertInt('pl-integer-input', key, val, errors);
+          usedCorrectAnswer = true;
+          if (mustacheTemplateRegex.test(val)) {
             errors.push(
               "pl-integer-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
             );
@@ -291,10 +329,13 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
         case 'suffix':
         case 'placeholder':
           break;
-        case 'allow-blank':
         case 'show-help-text':
         case 'show-score':
           assertBool('pl-integer-input', key, val, errors);
+          break;
+        case 'allow-blank':
+          assertBool('pl-integer-input', key, val, errors);
+          allowBlank = isBooleanTrue(val);
           break;
         case 'base':
           // TODO: validate that correct-answer is the right base
@@ -302,6 +343,9 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
           break;
         case 'display':
           assertInChoices('pl-integer-input', key, val, ['block', 'inline'], errors);
+          break;
+        case 'blank-value':
+          usedBlankValue = true;
           break;
         default:
           errors.push(`pl-integer-input: ${key} is not a valid attribute.`);
@@ -311,9 +355,93 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
   if (!answersName) {
     errors.push('pl-integer-input: answers-name is a required attribute.');
   }
+  if (usedBlankValue && !allowBlank) {
+    errors.push('pl-integer-input: you must set allow-blank to true to use blank-value.');
+  }
   return {
     errors,
-    mandatoryPythonCorrectAnswers: answersName ? new Set([answersName]) : undefined,
+    // If a correct answer was not specified with the `correct-answer` attribute,
+    // then the `answers-name` attribute must be generated in Python.
+    mandatoryPythonCorrectAnswers:
+      !usedCorrectAnswer && answersName ? new Set([answersName]) : undefined,
+  };
+}
+
+/**
+ * Checks that a `pl-symbolic-input` element has valid attributes.
+ * @param ast The tree to consider, rooted at the tag to consider.
+ * @returns The list of errors for the tag, if any.
+ */
+function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult {
+  const errors: string[] = [];
+  let answersName: string | null = null;
+  let allowBlank = false;
+  let usedBlankValue = false;
+  let usedCorrectAnswer = false;
+
+  if ('attrs' in ast) {
+    for (const attr of ast.attrs) {
+      const key = attr.name;
+      const val = attr.value;
+      switch (key) {
+        case 'answers-name':
+          answersName = val;
+          break;
+        case 'weight':
+        case 'size':
+          assertInt('pl-symbolic-input', key, val, errors);
+          break;
+        case 'correct-answer':
+          usedCorrectAnswer = true;
+          if (mustacheTemplateRegex.test(val)) {
+            errors.push(
+              "pl-symbolic-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
+            );
+          }
+          break;
+        case 'label':
+        case 'aria-label':
+        case 'variables':
+        case 'placeholder':
+        case 'custom-functions':
+        case 'suffix':
+          break;
+        case 'display':
+          assertInChoices('pl-symbolic-input', key, val, ['block', 'inline'], errors);
+          break;
+        case 'imaginary-unit-for-display':
+          assertInChoices('pl-symbolic-input', key, val, ['i', 'j'], errors);
+          break;
+        case 'allow-complex':
+        case 'allow-trig-functions':
+        case 'show-help-text':
+        case 'show-score':
+          assertBool('pl-symbolic-input', key, val, errors);
+          break;
+        case 'allow-blank':
+          assertBool('pl-symbolic-input', key, val, errors);
+          allowBlank = isBooleanTrue(val);
+          break;
+        case 'blank-value':
+          usedBlankValue = true;
+          break;
+        default:
+          errors.push(`pl-symbolic-input: ${key} is not a valid attribute.`);
+      }
+    }
+  }
+  if (!answersName) {
+    errors.push('pl-symbolic-input: answers-name is a required attribute.');
+  }
+  if (usedBlankValue && !allowBlank) {
+    errors.push('pl-symbolic-input: must set `allow-blank` to true if setting `blank-value`');
+  }
+  return {
+    errors,
+    // If a correct answer was not specified with the `correct-answer` attribute,
+    // then the `answers-name` attribute must be generated in Python.
+    mandatoryPythonCorrectAnswers:
+      !usedCorrectAnswer && answersName ? new Set([answersName]) : undefined,
   };
 }
 
@@ -322,15 +450,16 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResult {
+function checkNumberInput(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
   let answersName: string | null = null;
   let usedRelabs = true;
   let usedRtol = false;
   let usedAtol = false;
   let usedDigits = false;
-  let allowsBlank = false;
+  let allowBlank = false;
   let usedBlankValue = false;
+  let usedCorrectAnswer = false;
 
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
@@ -346,7 +475,8 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
           break;
         case 'correct-answer':
           assertFloat('pl-number-input', key, val, errors);
-          if (val.match(mustacheTemplateExtractorRegex)) {
+          usedCorrectAnswer = true;
+          if (mustacheTemplateRegex.test(val)) {
             errors.push(
               "pl-number-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
             );
@@ -386,9 +516,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
           break;
         case 'allow-blank':
           assertBool('pl-number-input', key, val, errors);
-          if (val !== 'false') {
-            allowsBlank = true;
-          }
+          allowBlank = isBooleanTrue(val);
           break;
         case 'blank-value':
           usedBlankValue = true;
@@ -409,12 +537,15 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
   if (usedDigits && usedRelabs) {
     errors.push('pl-number-input: comparison mode relabs uses rtol and atol, not digits.');
   }
-  if (usedBlankValue && !allowsBlank) {
+  if (usedBlankValue && !allowBlank) {
     errors.push('pl-number-input: you must set allow-blank to true to use blank-value.');
   }
   return {
     errors,
-    mandatoryPythonCorrectAnswers: answersName ? new Set([answersName]) : undefined,
+    // If a correct answer was not specified with the `correct-answer` attribute,
+    // then the `answers-name` attribute must be generated in Python.
+    mandatoryPythonCorrectAnswers:
+      !usedCorrectAnswer && answersName ? new Set([answersName]) : undefined,
   };
 }
 
@@ -531,7 +662,7 @@ function checkStringInput(ast: DocumentFragment | ChildNode): ValidationResult {
 function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
   let usedAnswersName = false;
-  let usedPartialCredit = true;
+  let usedPartialCredit = false;
   let usedPartialCreditMethod = false;
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
@@ -560,11 +691,7 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
 
         case 'partial-credit':
           assertBool('pl-checkbox', key, val, errors);
-          if (
-            ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'].includes(val)
-          ) {
-            usedPartialCredit = false;
-          }
+          usedPartialCredit = isBooleanTrue(val);
           break;
         case 'partial-credit-method':
           assertInChoices('pl-checkbox', key, val, ['COV', 'EDC', 'PC'], errors);
@@ -601,48 +728,52 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
 }
 
 /**
- * Optimistically checks the entire parse tree for errors in common PL tags recursively.
+ * Checks the entire parse tree for errors in common PL tags recursively.
  * @param ast The tree to consider.
- * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns A list of human-readable error messages, if any.
  */
-function dfsCheckParseTree(
-  ast: DocumentFragment | ChildNode,
-  optimistic: boolean,
-): ValidationResult {
-  let { errors, mandatoryPythonCorrectAnswers } = checkTag(ast, optimistic);
+function dfsCheckParseTree(ast: DocumentFragment | ChildNode) {
+  let { errors, mandatoryPythonCorrectAnswers = new Set<string>() } = checkTag(ast);
 
-  mandatoryPythonCorrectAnswers ??= new Set<string>();
-
-  if ('childNodes' in ast && ast.childNodes) {
+  if ('childNodes' in ast) {
     for (const child of ast.childNodes) {
-      const childResult = dfsCheckParseTree(child, optimistic);
+      const childResult = dfsCheckParseTree(child);
       errors = errors.concat(childResult.errors);
-      childResult.mandatoryPythonCorrectAnswers?.forEach((x) =>
+      childResult.mandatoryPythonCorrectAnswers.forEach((x) =>
         mandatoryPythonCorrectAnswers.add(x),
       );
     }
   }
 
-  return { errors, mandatoryPythonCorrectAnswers };
+  return { errors, mandatoryPythonCorrectAnswers } satisfies ValidationResult;
 }
 
 /**
  * Checks for errors in common PL elements in an index.html file.
  * @param file The raw text of the file to use.
- * @param optimistic True if tags outside the subset are allowed, else false.
+ * @param hasServerPy True if a server.py file is present, else false.
  * @returns A list of human-readable render error messages, if any.
  */
-export function validateHTML(file: string, optimistic: boolean, usesServerPy: boolean): string[] {
+export function validateHTML(file: string, hasServerPy: boolean): string[] {
   const tree = parse5.parseFragment(file);
-  const { errors, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree, optimistic);
+  const { errors, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree);
 
-  const templates = [...file.matchAll(mustacheTemplateExtractorRegex)]
-    .map((x) => x[1])
-    .concat([...(mandatoryPythonCorrectAnswers ?? [])].map((x) => `correct_answers.${x}`));
+  const usedTemplateNames = extractMustacheTemplateNames(file);
+  const templates = [
+    ...usedTemplateNames,
+    ...Array.from(mandatoryPythonCorrectAnswers).map((x) => `correct_answers.${x}`),
+  ];
 
-  if (!usesServerPy && templates.length > 0) {
+  if (!hasServerPy && templates.length > 0) {
     errors.push(`Create a server.py file to generate the following: ${templates.join(', ')}`);
+  }
+
+  for (const template of usedTemplateNames) {
+    if (!isValidMustacheTemplateName(template)) {
+      errors.push(
+        `Template of ${template} must be in mustache format. Please adjust so that any logic done in the template is instead done in server.py`,
+      );
+    }
   }
 
   return errors;

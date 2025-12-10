@@ -8,7 +8,7 @@ set -ex
 
 if [ "$#" -ne 2 ]; then
     echo "USAGE: $0 check_path env_var" >&2
-    echo "Example: $0 images/plbase plbase_modified" >&2
+    echo "Example: $0 images/executor executor_modified" >&2
     exit 1
 fi
 

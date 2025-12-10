@@ -2,14 +2,14 @@ CREATE FUNCTION
     authz_course_instance(
         user_id bigint,
         course_instance_id bigint,
-        is_administrator boolean,
-        req_date timestamptz,
-        req_course_instance_role enum_course_instance_role default NULL
-    ) returns jsonb
+        req_date timestamptz
+    ) RETURNS jsonb
 AS $$
 DECLARE
     course_instance_role enum_course_instance_role;
     permissions_course_instance jsonb;
+    -- These fields only consider the legacy access system.
+    -- Student access with the modern publishing system is handled separately with `calculateModernCourseInstanceStudentAccess`.
     has_student_access boolean;
     has_student_access_with_enrollment boolean;
 BEGIN
@@ -44,14 +44,6 @@ BEGIN
         course_instance_role := 'Student Data Editor';
     END IF;
 
-    IF is_administrator THEN
-        course_instance_role := 'Student Data Editor';
-    END IF;
-
-    IF req_course_instance_role IS NOT NULL THEN
-        course_instance_role := req_course_instance_role;
-    END IF;
-
     -- Check if the user has access to the course instance as a student
     SELECT
         check_course_instance_access(authz_course_instance.course_instance_id, u.uid, u.institution_id, req_date)
@@ -71,7 +63,8 @@ BEGIN
             enrollments AS e
         WHERE
             e.user_id = authz_course_instance.user_id
-            AND e.course_instance_id = authz_course_instance.course_instance_id;
+            AND e.course_instance_id = authz_course_instance.course_instance_id
+            AND e.status = 'joined';
 
         has_student_access_with_enrollment := FOUND;
 
@@ -90,8 +83,6 @@ BEGIN
 
     permissions_course_instance := jsonb_build_object(
         'course_instance_role', course_instance_role,
-        'has_course_instance_permission_view', course_instance_role >= 'Student Data Viewer',
-        'has_course_instance_permission_edit', course_instance_role >= 'Student Data Editor',
         'has_student_access', has_student_access,
         'has_student_access_with_enrollment', has_student_access_with_enrollment
     );

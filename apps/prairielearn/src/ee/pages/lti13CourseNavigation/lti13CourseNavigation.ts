@@ -3,11 +3,17 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString, html, joinHtml } from '@prairielearn/html';
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { CourseInstanceSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
+import { type PageAuthzData } from '../../../lib/authz-data-lib.js';
+import { extractPageContext } from '../../../lib/client/page-context.js';
+import {
+  type Course,
+  CourseInstanceSchema,
+  Lti13CourseInstanceSchema,
+} from '../../../lib/db-types.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
-import { selectCoursesWithEditAccess } from '../../../models/course.js';
+import { selectCourseById, selectCoursesWithEditAccess } from '../../../models/course.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
 import {
@@ -19,8 +25,12 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
-function prettyCourseName(ltiClaim) {
+function prettyCourseName(ltiClaim: Lti13Claim) {
   const context = ltiClaim.context;
+
+  if (!context) {
+    return '(no context)';
+  }
 
   if (context.label && context.title) {
     return `${context.label}: ${context.title}`;
@@ -34,24 +44,16 @@ function prettyCourseName(ltiClaim) {
 }
 
 async function courseInstancesAllowedToLink({
-  course_id,
-  user_id,
-  authn_user_id,
-  is_administrator,
-  authn_is_administrator,
+  course,
+  authzData,
 }: {
-  course_id: string;
-  user_id: string;
-  authn_user_id: string;
-  is_administrator: boolean;
-  authn_is_administrator: boolean;
+  course: Course;
+  authzData: PageAuthzData;
 }) {
   const course_instances = await selectCourseInstancesWithStaffAccess({
-    course_id,
-    user_id,
-    authn_user_id,
-    is_administrator,
-    authn_is_administrator,
+    course,
+    authzData,
+    requiredRole: ['Previewer', 'Student Data Viewer'],
   });
 
   return course_instances.filter((ci) => ci.has_course_instance_permission_edit);
@@ -80,17 +82,19 @@ router.get(
       is_administrator: res.locals.is_administrator,
     });
 
-    const course = courses.find((c) => c.id === req.query.unsafe_course_id);
+    const unsafe_course_id = req.query.unsafe_course_id?.toString();
+    if (!unsafe_course_id) {
+      throw new HttpStatusError(400, 'Missing required parameter: unsafe_course_id');
+    }
+
+    const course = courses.find((c) => c.id === unsafe_course_id);
     if (!course) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
     const course_instances = await courseInstancesAllowedToLink({
-      course_id: course.id,
-      user_id: res.locals.authn_user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authn_is_administrator,
+      course,
+      authzData: res.locals.authz_data,
     });
 
     let options: HtmlSafeString;
@@ -143,7 +147,7 @@ router.get(
       // Update lti13_course_instance on instructor login
       // helpful as LMS updates or we add features
       if (role_instructor) {
-        await queryAsync(sql.update_lti13_course_instance, {
+        await execute(sql.update_lti13_course_instance, {
           lti13_instance_id: req.params.lti13_instance_id,
           course_instance_id: lti13_course_instance.course_instance_id,
           deployment_id: ltiClaim.deployment_id,
@@ -199,6 +203,11 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    const { authz_data: authzData } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+    });
+
     const ltiClaim = new Lti13Claim(req);
 
     // Map passed and auth lti13_instance_id through institution to course instance, or fail
@@ -217,24 +226,21 @@ router.post(
     }
 
     const courseInstancesAllowed = await courseInstancesAllowedToLink({
-      course_id: course_instance.course_id,
-      user_id: res.locals.authn_user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authn_is_administrator,
+      course: await selectCourseById(course_instance.course_id),
+      authzData,
     });
     const hasCourseInstanceAllowed = courseInstancesAllowed.some(
       (ci) => ci.id === course_instance.id,
     );
 
     const coursesAllowed = await coursesAllowedToLink({
-      user_id: res.locals.authn_user.user_id,
+      user_id: authzData.authn_user.user_id,
       is_administrator: res.locals.is_administrator,
     });
     const hasCourseAllowed = coursesAllowed.some((c) => c.id === course_instance.course_id);
 
     if (ltiClaim.isRoleInstructor() && hasCourseAllowed && hasCourseInstanceAllowed) {
-      await queryAsync(sql.insert_lci, {
+      await execute(sql.insert_lci, {
         lti13_instance_id: req.params.lti13_instance_id,
         deployment_id: ltiClaim.deployment_id,
         context_id: ltiClaim.context?.id,

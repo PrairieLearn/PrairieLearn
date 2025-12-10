@@ -1,9 +1,13 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { AdministratorNetworks } from './administratorNetworks.html.js';
+import {
+  AdministratorNetworks,
+  AdministratorNetworksRowSchema,
+} from './administratorNetworks.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -11,8 +15,8 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryOneRowAsync(sql.select, []);
-    Object.assign(res.locals, result.rows[0]);
+    const result = await sqldb.queryRow(sql.select, z.array(AdministratorNetworksRowSchema));
+    res.locals.networks = result;
     res.send(AdministratorNetworks({ resLocals: res.locals }));
   }),
 );

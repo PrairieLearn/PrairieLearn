@@ -6,8 +6,8 @@ WITH
       a.id AS assessment_id,
       a.number AS assessment_number,
       a.order_by AS assessment_order_by,
-      a.title AS title,
-      a.group_work AS group_work,
+      a.title,
+      a.group_work,
       aset.id AS assessment_set_id,
       aset.name AS assessment_set_name,
       aset.heading AS assessment_set_heading,
@@ -16,7 +16,7 @@ WITH
       aset.abbreviation || a.number AS label,
       aa.authorized,
       aa.credit_date_string,
-      aa.active AS active,
+      aa.active,
       aa.access_rules,
       aa.show_closed_assessment_score,
       NULL::integer AS assessment_instance_id,
@@ -54,7 +54,7 @@ WITH
       mia.label || '#' || ai.number AS label,
       mia.authorized,
       mia.credit_date_string,
-      mia.active AS active,
+      mia.active,
       mia.access_rules,
       mia.show_closed_assessment_score,
       ai.id AS assessment_instance_id,
@@ -79,8 +79,8 @@ WITH
       a.id AS assessment_id,
       a.number AS assessment_number,
       a.order_by AS assessment_order_by,
-      a.title AS title,
-      a.group_work AS group_work,
+      a.title,
+      a.group_work,
       aset.id AS assessment_set_id,
       aset.name AS assessment_set_name,
       aset.heading AS assessment_set_heading,
@@ -89,7 +89,7 @@ WITH
       aset.abbreviation || a.number AS label,
       aa.authorized,
       aa.credit_date_string,
-      aa.active AS active,
+      aa.active,
       aa.access_rules,
       aa.show_closed_assessment_score,
       ai.id AS assessment_instance_id,
@@ -200,6 +200,7 @@ SELECT
 FROM
   all_rows
 WHERE
+  -- TODO: shift this check into typescript so that we are setup for evaluation of modern access control.
   authorized
 ORDER BY
   CASE

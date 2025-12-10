@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -38,11 +38,11 @@ async function checkAssessmentAccess(params: {
 }
 
 describe('sproc check_assessment_access* tests', function () {
-  before('set up testing server', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
+  afterAll(helperDb.after);
 
-  before('setup sample environment', async () => {
-    await sqldb.queryAsync(sql.setup_caa_scheduler_tests, {});
+  beforeAll(async () => {
+    await sqldb.execute(sql.setup_caa_scheduler_tests);
   });
 
   describe('without PrairieTest', () => {
@@ -179,11 +179,13 @@ describe('sproc check_assessment_access* tests', function () {
     });
 
     describe('with checked-in reservation', () => {
-      before('create checked-in reservation for student', async () => {
-        await sqldb.queryAsync(sql.insert_pt_reservation, { exam_id: 1 });
+      beforeAll(async () => {
+        // Create checked-in reservation for student
+        await sqldb.execute(sql.insert_pt_reservation, { exam_id: 1 });
       });
-      after('delete checked-in reservation for student', async () => {
-        await sqldb.queryAsync(sql.delete_pt_reservation, { exam_id: 1 });
+      afterAll(async () => {
+        // Delete checked-in reservation for student
+        await sqldb.execute(sql.delete_pt_reservation, { exam_id: 1 });
       });
 
       it('should not allow access to an exam without exam_uuid', async () => {

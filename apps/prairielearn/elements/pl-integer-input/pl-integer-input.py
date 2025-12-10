@@ -17,12 +17,13 @@ class DisplayType(Enum):
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
+ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
-BLANK_VALUE_DEFAULT = 0
+BLANK_VALUE_DEFAULT = "0"
 BASE_DEFAULT = 10
 SHOW_SCORE_DEFAULT = True
 
@@ -36,6 +37,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "weight",
         "correct-answer",
         "label",
+        "aria-label",
         "suffix",
         "display",
         "size",
@@ -66,8 +68,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     else:
         correct_answer = pl.from_json(data["correct_answers"].get(name, None))
 
-    # Test conversion, but leave as string so proper value is shown on answer panel
-    if correct_answer is not None and not isinstance(correct_answer, int):
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
+    if correct_answer == "":
+        if allow_blank and blank_value == "":
+            data["correct_answers"][name] = ""
+        else:
+            raise ValueError(
+                "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+            )
+    elif correct_answer is not None and not isinstance(correct_answer, int):
+        # Test conversion, but leave as string so proper value is shown on answer panel
         try:
             int(str(correct_answer), base)
         except Exception as exc:
@@ -80,6 +91,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
@@ -118,6 +130,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "aria_label": aria_label,
             "suffix": suffix,
             "editable": editable,
             "info": info,
@@ -220,6 +233,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name)
@@ -236,9 +250,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     if a_sub.strip() == "":
         if pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT):
-            a_sub = str(
-                pl.get_integer_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
-            )
+            a_sub = blank_value
         else:
             opts = {
                 "format_error": True,
@@ -247,10 +259,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 "default_base": base in (BASE_DEFAULT, 0),
                 "zero_base": base == 0,
             }
-
             data["format_errors"][name] = chevron.render(template, opts).strip()
             data["submitted_answers"][name] = None
             return
+
+    # Handle blank case
+    if a_sub.strip() == "":
+        data["submitted_answers"][name] = ""
+        return
 
     # Convert to integer
     a_sub_parsed = pl.string_to_integer(a_sub, base)
@@ -287,7 +303,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         return
 
     a_tru_parsed = (
-        pl.string_to_integer(a_tru, base) if isinstance(a_tru, str) else int(a_tru)
+        (pl.string_to_integer(a_tru, base) if isinstance(a_tru, str) else int(a_tru))
+        if a_tru != ""
+        else a_tru
     )
 
     def grade_function(a_sub: Any) -> tuple[bool, None]:
@@ -296,7 +314,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         a_sub = pl.from_json(a_sub)
         # The representation of the submitted_answer is always stored in base 10
         # by the parse function
-        a_sub_parsed = int(a_sub)
+        a_sub_parsed = int(a_sub) if a_sub != "" else a_sub
 
         return a_tru_parsed == a_sub_parsed, None
 
@@ -308,22 +326,29 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
-
-    # Get correct answer
-    a_tru = data["correct_answers"][name]
-
-    # If correct answer is in a format generated by pl.to_json, convert it
-    # back to a standard type (otherwise, do nothing)
-    a_tru_parsed = pl.from_json(a_tru)
-    if isinstance(a_tru_parsed, str):
-        a_tru_parsed = pl.string_to_integer(a_tru_parsed, base)
-
-    if a_tru_parsed is None:
-        raise ValueError(f"Could not parse correct answer: {a_tru}")
-
     result = data["test_type"]
+
+    a_tru_parsed = 0
+    if result in ["correct", "incorrect"]:
+        if name not in data["correct_answers"]:
+            # This element cannot test itself. Defer the generation of test inputs to server.py
+            return
+
+        # Get correct answer
+        a_tru = data["correct_answers"][name]
+        # If correct answer is in a format generated by pl.to_json, convert it
+        # back to a standard type (otherwise, do nothing)
+        a_tru_parsed = pl.from_json(a_tru)
+        if isinstance(a_tru_parsed, str) and a_tru_parsed.strip() != "":
+            a_tru_parsed = pl.string_to_integer(a_tru_parsed, base)
+
+        if a_tru_parsed is None:
+            raise ValueError(f"Could not parse correct answer: {a_tru}")
     if result == "correct":
-        if base > 0:
+        if isinstance(a_tru_parsed, str):
+            assert a_tru_parsed.strip() == ""
+            data["raw_submitted_answers"][name] = ""
+        elif base > 0:
             data["raw_submitted_answers"][name] = np.base_repr(a_tru_parsed, base)
         elif random.choice([True, False]):
             data["raw_submitted_answers"][name] = np.base_repr(a_tru_parsed, 10)
@@ -332,8 +357,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             data["raw_submitted_answers"][name] = f"{a_tru_parsed:#x}"
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
+        correct_answer = 0 if isinstance(a_tru_parsed, str) else a_tru_parsed
+
         data["raw_submitted_answers"][name] = np.base_repr(
-            a_tru_parsed + (random.randint(1, 11) * random.choice([-1, 1])),
+            correct_answer + (random.randint(1, 11) * random.choice([-1, 1])),
             base if base > 0 else 10,
         )
         data["partial_scores"][name] = {"score": 0, "weight": weight}

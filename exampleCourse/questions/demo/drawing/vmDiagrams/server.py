@@ -13,9 +13,7 @@ def create_dict_labels(axis, loc, lab, offsetx=None, offsety=None):
 
 
 def generate(data):
-    """
-    Parameters of the question. These are usually randomized.
-    """
+    """Parameters of the question. These are usually randomized."""
     a = 100  # spacing along the beam
     w = 1.5  # distributed load
     x1 = 80

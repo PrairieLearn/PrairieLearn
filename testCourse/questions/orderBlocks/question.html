@@ -1,7 +1,7 @@
 <pl-question-panel>
 <p>
 This
-<a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element"><code>pl-order-blocks</code></a>
+<a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-order-blocks"><code>pl-order-blocks</code></a>
 has become increasingly complex, with many different possible combinations of options. Here we test a bunch of these different configurations.
 </p>
 </pl-question-panel>
@@ -30,10 +30,10 @@ has become increasingly complex, with many different possible combinations of op
   solution-placement="bottom"
   partial-credit="none"
   feedback="none">
-  <pl-answer correct="true" tag="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
-  <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
-  <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
-  <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
+  <pl-answer correct="true" tag="1" depends=""> Assume $A \land B \land C$.</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1"> Then $A$ is true. </pl-answer>
+  <pl-answer correct="true" tag="3" depends="1"> Then $C$ is true. </pl-answer>
+  <pl-answer correct="true" tag="4" depends="2,3"> Since $A$ and $C$, we know $A \land C$</pl-answer>
 </pl-order-blocks>
 
 <pl-order-blocks answers-name="test4"
@@ -41,10 +41,10 @@ has become increasingly complex, with many different possible combinations of op
   grading-method="dag"
   partial-credit="none"
   feedback="first-wrong">
-  <pl-answer correct="true" tag="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
-  <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
-  <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
-  <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
+  <pl-answer correct="true" tag="1" depends=""> Assume $A \land B \land C$.</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1"> Then $A$ is true. </pl-answer>
+  <pl-answer correct="true" tag="3" depends="1"> Then $C$ is true. </pl-answer>
+  <pl-answer correct="true" tag="4" depends="2,3"> Since $A$ and $C$, we know $A \land C$</pl-answer>
 </pl-order-blocks>
 
 
@@ -62,6 +62,7 @@ has become increasingly complex, with many different possible combinations of op
 <pl-order-blocks answers-name="test-solving-2" source-blocks-order="random" grading-method="dag">
   <pl-answer correct="true" tag="1"> 1</pl-answer>
   <pl-block-group tag="g3" depends="1, g2">
+    <!-- Comments can be inside block group tags -->
     <pl-answer correct="true" tag="10">10</pl-answer>
   </pl-block-group>
   <pl-block-group tag="g1" depends="1">
@@ -84,11 +85,11 @@ has become increasingly complex, with many different possible combinations of op
   grading-method="dag"
   partial-credit="none"
   feedback="none">
-  <pl-answer correct="true"  tag="1" >A</pl-answer>
-  <pl-answer correct="true"  tag="2" depends="1">AA</pl-answer>
-  <pl-answer correct="false" tag="1" >B</pl-answer>
-  <pl-answer correct="false" tag="" >C</pl-answer>
-  <pl-answer correct="false" tag="" >D</pl-answer>
+  <pl-answer correct="true" tag="1">A</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1">AA</pl-answer>
+  <pl-answer correct="false" tag="1">B</pl-answer>
+  <pl-answer correct="false" tag="">C</pl-answer>
+  <pl-answer correct="false" tag="">D</pl-answer>
 </pl-order-blocks>
 
 <pl-order-blocks
@@ -116,3 +117,14 @@ has become increasingly complex, with many different possible combinations of op
   <pl-answer correct="true">second</pl-answer>
   <pl-answer correct="true">third</pl-answer>
 </pl-order-blocks>
+
+<pl-order-blocks answers-name="hw3_q1_c" source-blocks-order="random" grading-method="dag" feedback="first-wrong-verbose" partial-credit="lcs" solution-placement="bottom">
+  <pl-answer correct="true" tag="1" depends="">Let $a, b, c$ be arbitrary positive integers.</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" ordering-feedback="This step should come after introducing the variables and before applying the definition of divisibility.">Assume that $a|b$ and $b|c.$</pl-answer>
+  <pl-answer correct="true" tag="3" depends="2">By definition, there exists $q_1$ such that $b=a\cdot q_1$ and there exists $q_2$ such that $c = b\cdot q_2.$</pl-answer>
+  <pl-answer correct="true" tag="4" depends="3">We can see that $c = b\cdot q_2 = (a\cdot q_1)\cdot q_2 = a \cdot (q_1\cdot q_2).$</pl-answer>
+  <pl-answer correct="true" tag="5" depends="4">By definition $a|c.$</pl-answer>
+</pl-order-blocks>
+
+
+

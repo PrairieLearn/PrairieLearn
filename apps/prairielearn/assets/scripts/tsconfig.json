@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": ["ES2021", "DOM"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "noEmit": true,
     "rootDir": "../../",
     "outDir": "../../public/build/scripts",
@@ -11,9 +11,18 @@
     "allowSyntheticDefaultImports": true,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "jsx": "react",
-    "jsxFactory": "h",
-    "jsxFragmentFactory": "Fragment"
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "skipLibCheck": true,
+    "paths": {
+      "react": ["./node_modules/preact/compat/", "../../../node_modules/preact/compat/"],
+      "react/jsx-runtime": [
+        "./node_modules/preact/jsx-runtime",
+        "../../../node_modules/preact/jsx-runtime"
+      ],
+      "react-dom": ["./node_modules/preact/compat/", "../../../node_modules/preact/compat/"],
+      "react-dom/*": ["./node_modules/preact/compat/*", "../../../node_modules/preact/compat/*"]
+    }
   },
   "include": ["**/*"]
 }

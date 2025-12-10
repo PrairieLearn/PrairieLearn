@@ -1,7 +1,33 @@
-import { assert } from 'chai';
 import parsePostgresInterval from 'postgres-interval';
+import { assert, describe, it } from 'vitest';
 
-import { IdSchema, IntervalSchema } from './index.js';
+import {
+  ArrayFromCheckboxSchema,
+  ArrayFromStringOrArraySchema,
+  BooleanFromCheckboxSchema,
+  IdSchema,
+  IntegerFromStringOrEmptySchema,
+  IntervalSchema,
+} from './index.js';
+
+describe('BooleanFromCheckboxSchema', () => {
+  it('parses a checked checkbox', () => {
+    const result = BooleanFromCheckboxSchema.parse('on');
+    assert.isTrue(result);
+  });
+  it('parses an unchecked checkbox', () => {
+    const result = BooleanFromCheckboxSchema.parse(undefined);
+    assert.isFalse(result);
+  });
+  it('parses a checkbox with an empty string', () => {
+    const result = BooleanFromCheckboxSchema.parse('');
+    assert.isFalse(result);
+  });
+  it('parses a checkbox with a non-empty string', () => {
+    const result = BooleanFromCheckboxSchema.parse('checked');
+    assert.isTrue(result);
+  });
+});
 
 describe('IdSchema', () => {
   it('parses a valid id', () => {
@@ -74,5 +100,66 @@ describe('IntervalSchema', () => {
   it('parses a negative interval', () => {
     const interval = IntervalSchema.parse('-1 years -2 months -3 days -04:05:06.789');
     assert.equal(interval, -37015506789);
+  });
+});
+
+describe('IntegerFromStringOrEmptySchema', () => {
+  it('parses a valid integer string', () => {
+    const result = IntegerFromStringOrEmptySchema.parse('123');
+    assert.equal(result, 123);
+  });
+
+  it('parses an empty string as null', () => {
+    const result = IntegerFromStringOrEmptySchema.parse('');
+    assert.equal(result, null);
+  });
+
+  it('rejects a non-integer string', () => {
+    const result = IntegerFromStringOrEmptySchema.safeParse('abc');
+    assert.isFalse(result.success);
+  });
+
+  it('rejects a decimal string', () => {
+    const result = IntegerFromStringOrEmptySchema.safeParse('123.45');
+    assert.isFalse(result.success);
+  });
+});
+
+describe('ArrayFromStringOrArraySchema', () => {
+  it('parses a string to an array', () => {
+    const result = ArrayFromStringOrArraySchema.parse('a');
+    assert.deepEqual(result, ['a']);
+  });
+
+  it('parses an array to itself', () => {
+    const result = ArrayFromStringOrArraySchema.parse(['a', 'b', 'c']);
+    assert.deepEqual(result, ['a', 'b', 'c']);
+  });
+
+  it('rejects an integer', () => {
+    const result = ArrayFromStringOrArraySchema.safeParse(123);
+    assert.isFalse(result.success);
+  });
+
+  it('rejects an object', () => {
+    const result = ArrayFromStringOrArraySchema.safeParse({ a: 1 });
+    assert.isFalse(result.success);
+  });
+});
+
+describe('ArrayFromCheckboxSchema', () => {
+  it('parses a missing value', () => {
+    const result = ArrayFromCheckboxSchema.parse(undefined);
+    assert.deepEqual(result, []);
+  });
+
+  it('parses a single string value', () => {
+    const result = ArrayFromCheckboxSchema.parse('a');
+    assert.deepEqual(result, ['a']);
+  });
+
+  it('parses an array of strings', () => {
+    const result = ArrayFromCheckboxSchema.parse(['a', 'b', 'c']);
+    assert.deepEqual(result, ['a', 'b', 'c']);
   });
 });

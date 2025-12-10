@@ -1,17 +1,14 @@
 import path from 'path';
 
-import { assert, use as chaiUse } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
 import fs from 'fs-extra';
 import tmp from 'tmp-promise';
+import { assert, describe, expect, it } from 'vitest';
 
 import {
   parseAnnotations,
   readAndValidateMigrationsFromDirectory,
   sortMigrationFiles,
 } from './load-migrations.js';
-
-chaiUse(chaiAsPromised);
 
 async function withMigrationFiles(files: string[], fn: (tmpDir: string) => Promise<void>) {
   await tmp.withDir(
@@ -29,10 +26,8 @@ describe('load-migrations', () => {
   describe('readAndValidateMigrationsFromDirectory', () => {
     it('handles migrations without a timestamp', async () => {
       await withMigrationFiles(['001_testing.sql'], async (tmpDir) => {
-        await assert.isRejected(
-          readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']),
-          'Invalid migration filename: 001_testing.sql',
-        );
+        const promise = readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']);
+        await expect(promise).rejects.toThrow('Invalid migration filename: 001_testing.sql');
       });
     });
 
@@ -40,10 +35,8 @@ describe('load-migrations', () => {
       await withMigrationFiles(
         ['20220101010101_testing.sql', '20220101010101_testing_again.sql'],
         async (tmpDir) => {
-          await assert.isRejected(
-            readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']),
-            'Duplicate migration timestamp',
-          );
+          const promise = readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']);
+          await expect(promise).rejects.toThrow('Duplicate migration timestamp');
         },
       );
     });

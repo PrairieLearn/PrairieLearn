@@ -2,14 +2,15 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Institution,
   InstitutionAdministratorSchema,
   UserSchema,
 } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export const InstitutionAdminAdminsRowSchema = z.object({
   user: UserSchema,
@@ -26,7 +27,7 @@ export function InstitutionAdminAdmins({
   institution: Institution;
   rows: InstitutionAdminAdminsRow[];
   uidsLimit: number;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals: {
@@ -34,7 +35,7 @@ export function InstitutionAdminAdmins({
       institution,
     },
     pageTitle: `Admins — ${institution.short_name}`,
-    headContent: [compiledScriptTag('institutionAdminAdminsClient.ts')],
+    headContent: compiledScriptTag('institutionAdminAdminsClient.ts'),
     navContext: {
       type: 'institution',
       page: 'institution_admin',

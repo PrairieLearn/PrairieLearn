@@ -1,18 +1,25 @@
--- BLOCK short_names
+-- BLOCK select_names
 SELECT
-  ci.short_name
+  ci.short_name,
+  ci.long_name
 FROM
   course_instances AS ci
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
 
--- BLOCK select_course_instance_id_from_uuid
+-- BLOCK select_enrollment_count
 SELECT
-  ci.id AS course_instance_id
+  COUNT(e.user_id)::integer AS enrollment_count
 FROM
-  course_instances AS ci
+  enrollments AS e
 WHERE
-  ci.uuid = $uuid
-  AND ci.course_id = $course_id
-  AND ci.deleted_at IS NULL;
+  e.course_instance_id = $course_instance_id
+  AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id);
+
+-- BLOCK update_enrollment_code
+UPDATE course_instances
+SET
+  enrollment_code = $enrollment_code
+WHERE
+  id = $course_instance_id;

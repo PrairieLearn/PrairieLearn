@@ -1,16 +1,20 @@
 import * as path from 'path';
 
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
+import { type EmbeddingModel, embed } from 'ai';
 import fs from 'fs-extra';
 import klaw from 'klaw';
-import { type OpenAI } from 'openai';
 
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
-import { type DocumentChunk, buildContextForElementDocs } from './context-parsers/documentation.js';
+import {
+  type DocumentChunk,
+  buildContextForSingleElementDoc,
+} from './context-parsers/documentation.js';
 import { buildContextForQuestion } from './context-parsers/template-questions.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -38,33 +42,40 @@ export function openAiUserFromAuthn(authnUserId: string): string {
 /**
  * Converts text to a semantic embedding.
  *
- * @param client The OpenAI client to use.
+ * @param embeddingModel The embedding model to use.
  * @param text The document text to embed.
- * @param openAiUser The OpenAI userstring requesting the embeddng.
+ * @param openAiUser The OpenAI userstring requesting the embedding.
  * @returns The resultant document embedding.
  */
-export async function createEmbedding(client: OpenAI, text: string, openAiUser: string) {
-  const embedding = await client.embeddings.create({
-    input: text,
-    model: 'text-embedding-3-small',
-    encoding_format: 'float',
-    user: openAiUser,
+export async function createEmbedding(
+  embeddingModel: EmbeddingModel,
+  text: string,
+  openAiUser: string,
+): Promise<number[]> {
+  const { embedding } = await embed({
+    model: embeddingModel,
+    value: text,
+    providerOptions: {
+      openai: {
+        user: openAiUser,
+      } satisfies OpenAIResponsesProviderOptions,
+    },
   });
 
-  return embedding.data[0].embedding;
+  return embedding;
 }
 
 /**
- * Inserts a document chunk into the vectorstore.
+ * Inserts a document chunk into the vector store.
  *
- * @param client The OpenAI client to use.
+ * @param embeddingModel The embedding model to use.
  * @param filepath The filepath of the document to add.
  * @param doc The document chunk to add.
  * @param job The server job calling this function.
- * @param openAiUser The OpenAI userstring requesting the adding of the document chunk.
+ * @param openAiUser The OpenAI user string for the user requesting the adding of the document chunk.
  */
 async function insertDocumentChunk(
-  client: OpenAI,
+  embeddingModel: EmbeddingModel,
   filepath: string,
   doc: DocumentChunk,
   job: ServerJob,
@@ -77,32 +88,30 @@ async function insertDocumentChunk(
   );
 
   if (chunk && chunk.doc_text === doc.text) {
-    job.info(`Chunk for ${filepath} (${doc.chunkId}}) already exists in the database. Skipping.`);
+    job.info(
+      `Chunk for ${filepath} (${doc.chunkId || 'no chunk ID'}) already exists in the database. Skipping.`,
+    );
     return;
   }
 
-  job.info(`Inserting chunk for ${filepath} (${doc.chunkId}) into the database.`);
-  const embedding = await createEmbedding(client, doc.text, openAiUser);
-  await queryRows(
-    sql.insert_embedding,
-    {
-      doc_path: filepath,
-      doc_text: doc.text,
-      embedding: vectorToString(embedding),
-      chunk_id: doc.chunkId,
-    },
-    QuestionGenerationContextEmbeddingSchema,
-  );
+  job.info(`Inserting chunk for ${filepath} (${doc.chunkId || 'no chunk ID'}) into the database.`);
+  const embedding = await createEmbedding(embeddingModel, doc.text, openAiUser);
+  await execute(sql.insert_embedding, {
+    doc_path: filepath,
+    doc_text: doc.text,
+    embedding: vectorToString(embedding),
+    chunk_id: doc.chunkId,
+  });
 }
 
 /**
- * Creates a job to synchronize predefined context (consisting of example course questions + element docs) with the vectorstore.
+ * Creates a job to synchronize predefined context (consisting of example course questions + element docs) with the vector store.
  *
- * @param client The OpenAI client to use.
- * @param authnUserId The OpenAI userstring of the user requesting the sync.
+ * @param embeddingModel The embedding model to use.
+ * @param authnUserId The OpenAI user string of the user requesting the sync.
  * @returns The job ID of the synchronization job.
  */
-export async function syncContextDocuments(client: OpenAI, authnUserId: string) {
+export async function syncContextDocuments(embeddingModel: EmbeddingModel, authnUserId: string) {
   const serverJob = await createServerJob({
     type: 'sync_question_generation_context',
     description: 'Generate embeddings for context documents',
@@ -123,7 +132,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
       const fileText = await buildContextForQuestion(path.dirname(file.path));
       if (fileText) {
         await insertDocumentChunk(
-          client,
+          embeddingModel,
           path.relative(REPOSITORY_ROOT_PATH, file.path),
           { text: fileText, chunkId: '' },
           job,
@@ -133,28 +142,40 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
       }
     }
 
-    const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
-    allowedFilepaths.push(path.relative(REPOSITORY_ROOT_PATH, elementDocsPath));
-    const fileText = await fs.readFile(elementDocsPath, { encoding: 'utf-8' });
-    const files = await buildContextForElementDocs(fileText);
-    for (const doc of files) {
-      await insertDocumentChunk(
-        client,
-        path.relative(REPOSITORY_ROOT_PATH, elementDocsPath),
-        doc,
-        job,
-        openAiUserFromAuthn(authnUserId),
-      );
+    const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements');
+    const elementChunkIds: string[] = [];
+    for await (const file of klaw(elementDocsPath)) {
+      if (file.stats.isDirectory()) continue;
+
+      const filename = path.basename(file.path);
+      // Skip index.md and non-markdown files
+      if (filename === 'index.md' || !filename.endsWith('.md')) continue;
+
+      // Extract element name from filename (e.g., "pl-multiple-choice.md" -> "pl-multiple-choice")
+      const elementName = path.basename(file.path, '.md');
+
+      const fileText = await fs.readFile(file.path, { encoding: 'utf-8' });
+      const doc = buildContextForSingleElementDoc(fileText, elementName);
+
+      if (doc) {
+        const relativePath = path.relative(REPOSITORY_ROOT_PATH, file.path);
+        await insertDocumentChunk(
+          embeddingModel,
+          relativePath,
+          doc,
+          job,
+          openAiUserFromAuthn(authnUserId),
+        );
+        allowedFilepaths.push(relativePath);
+        elementChunkIds.push(doc.chunkId);
+      }
     }
 
-    await queryRows(
-      sql.delete_unused_doc_chunks,
-      {
-        doc_paths: allowedFilepaths,
-        chunk_ids: files.map((doc) => doc.chunkId).concat(['']),
-      },
-      QuestionGenerationContextEmbeddingSchema,
-    );
+    await execute(sql.delete_unused_doc_chunks, {
+      doc_paths: allowedFilepaths,
+      // The example course questions have no chunk IDs.
+      chunk_ids: elementChunkIds.concat(['']),
+    });
   });
   return serverJob.jobSequenceId;
 }

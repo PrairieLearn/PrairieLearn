@@ -1,20 +1,25 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
+import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import { generateSignedToken } from '@prairielearn/signed-token';
+import {
+  ArrayFromStringOrArraySchema,
+  BooleanFromCheckboxSchema,
+  IntegerFromStringOrEmptySchema,
+} from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { config } from '../../lib/config.js';
-import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
+import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
+import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import {
   FileModifyEditor,
   MultiEditor,
@@ -24,25 +29,46 @@ import {
   propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
-import { httpPrefixForCourseRepo } from '../../lib/github.js';
+import { courseRepoContentUrl } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
-import { selectTagsByCourseId } from '../../models/tags.js';
+import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
 
 import {
   InstructorQuestionSettings,
   SelectedAssessmentsSchema,
+  type SharingSetRow,
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+// This will not correctly handle any filenames that have a comma in them.
+// Currently, we do not have any such filenames in prod so we don't think that
+// escaping commas in individual filenames is necessary.
+const GradedFilesSchema = z
+  .string()
+  .transform((s) =>
+    s
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s !== ''),
+  )
+  .optional();
+
+const ArgumentsSchema = z
+  .string()
+  .transform((s) => shlex.split(s || ''))
+  .optional();
 
 router.post(
   '/test',
@@ -113,10 +139,35 @@ router.post(
         throw new error.HttpStatusError(400, 'Question info file does not exist');
       }
 
-      if (!req.body.qid) {
-        throw new error.HttpStatusError(400, `Invalid QID (was falsy): ${req.body.qid}`);
-      }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.qid)) {
+      const body = z
+        .object({
+          orig_hash: z.string(),
+          qid: z.string(),
+          title: z.string(),
+          topic: z.string().optional(),
+          tags: ArrayFromStringOrArraySchema.optional(),
+          grading_method: EnumGradingMethodSchema.optional(),
+          single_variant: BooleanFromCheckboxSchema,
+          show_correct_answer: BooleanFromCheckboxSchema,
+          workspace_image: z.string().optional(),
+          workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
+          workspace_home: z.string().optional(),
+          workspace_args: ArgumentsSchema,
+          workspace_rewrite_url: BooleanFromCheckboxSchema,
+          workspace_graded_files: GradedFilesSchema,
+          workspace_enable_networking: BooleanFromCheckboxSchema,
+          workspace_environment: z.string().optional(),
+          external_grading_enabled: BooleanFromCheckboxSchema,
+          external_grading_image: z.string().optional(),
+          external_grading_files: GradedFilesSchema,
+          external_grading_entrypoint: ArgumentsSchema,
+          external_grading_timeout: IntegerFromStringOrEmptySchema.optional(),
+          external_grading_enable_networking: BooleanFromCheckboxSchema,
+          external_grading_environment: z.string().optional(),
+        })
+        .parse(req.body);
+
+      if (!/^[-A-Za-z0-9_/]+$/.test(body.qid)) {
         throw new error.HttpStatusError(
           400,
           `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
@@ -127,35 +178,154 @@ router.post(
 
       const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
 
-      const origHash = req.body.orig_hash;
-      questionInfo.title = req.body.title;
-      questionInfo.topic = req.body.topic;
-      questionInfo.tags = run(() => {
-        // If no tags are provided, remove the entire property.
-        if (!req.body.tags) return undefined;
-
-        // Handle multiple and single tags.
-        if (Array.isArray(req.body.tags)) return req.body.tags;
-        return [req.body.tags];
-      });
+      const origHash = body.orig_hash;
+      questionInfo.title = body.title;
+      questionInfo.topic = body.topic;
+      questionInfo.tags = propertyValueWithDefault(
+        questionInfo.tags,
+        body.tags,
+        (val: any) => !val || val.length === 0,
+      );
 
       questionInfo.gradingMethod = propertyValueWithDefault(
         questionInfo.gradingMethod,
-        req.body.grading_method,
+        body.grading_method,
         'Internal',
       );
 
       questionInfo.singleVariant = propertyValueWithDefault(
         questionInfo.singleVariant,
-        req.body.single_variant === 'on',
+        body.single_variant,
         false,
       );
 
       questionInfo.showCorrectAnswer = propertyValueWithDefault(
         questionInfo.showCorrectAnswer,
-        req.body.show_correct_answer === 'on',
+        body.show_correct_answer,
         true,
       );
+
+      const workspaceOptions = {
+        comment: questionInfo.workspaceOptions?.comment ?? undefined,
+        image: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.image,
+          body.workspace_image?.trim(),
+          '',
+        ),
+        port: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.port,
+          body.workspace_port,
+          null,
+        ),
+        home: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.home,
+          body.workspace_home?.trim(),
+          '',
+        ),
+        args: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.args,
+          body.workspace_args,
+          (v: any) => !v || v.length === 0,
+        ),
+        rewriteUrl: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.rewriteUrl,
+          body.workspace_rewrite_url,
+          true,
+        ),
+        gradedFiles: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.gradedFiles,
+          body.workspace_graded_files,
+          (v: any) => !v || v.length === 0,
+        ),
+        enableNetworking: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.enableNetworking,
+          body.workspace_enable_networking,
+          false,
+        ),
+        environment: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.environment,
+          JSON.parse(body.workspace_environment?.replaceAll('\r\n', '\n') || '{}'),
+          (val: any) => !val || Object.keys(val).length === 0,
+        ),
+      };
+
+      // We'll only write the workspace options if the request contains the
+      // required fields. Client-side validation will ensure that these are
+      // present if a workspace is configured.
+      if (workspaceOptions.image && workspaceOptions.port && workspaceOptions.home) {
+        const filteredOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.workspaceOptions,
+              workspaceOptions,
+              (val: any) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
+        questionInfo.workspaceOptions =
+          Object.keys(filteredOptions).length > 0
+            ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
+            : undefined;
+      } else {
+        questionInfo.workspaceOptions = undefined;
+      }
+
+      const externalGradingOptions = {
+        comment: questionInfo.externalGradingOptions?.comment ?? undefined,
+        enabled: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.enabled,
+          body.external_grading_enabled,
+          false,
+        ),
+        image: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.image,
+          body.external_grading_image,
+          '',
+        ),
+        entrypoint: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.entrypoint,
+          body.external_grading_entrypoint,
+          (v: any) => v == null || v.length === 0,
+        ),
+        serverFilesCourse: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.serverFilesCourse,
+          body.external_grading_files,
+          (v: any) => !v || v.length === 0,
+        ),
+        timeout: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.timeout,
+          body.external_grading_timeout,
+          null,
+        ),
+        enableNetworking: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.enableNetworking,
+          body.external_grading_enable_networking,
+          false,
+        ),
+        environment: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.environment,
+          JSON.parse(body.external_grading_environment || '{}'),
+          (val: any) => !val || Object.keys(val).length === 0,
+        ),
+      };
+      if (externalGradingOptions.image) {
+        const filteredExternalGradingOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.externalGradingOptions,
+              externalGradingOptions,
+              (val: any) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
+
+        questionInfo.externalGradingOptions =
+          Object.keys(filteredExternalGradingOptions).length > 0
+            ? applyKeyOrder(questionInfo.externalGradingOptions, filteredExternalGradingOptions)
+            : undefined;
+      } else {
+        questionInfo.externalGradingOptions = undefined;
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
@@ -208,6 +378,10 @@ router.post(
         // In this case, we are making a duplicate of this question in the same course
         const editor = new QuestionCopyEditor({
           locals: res.locals as any,
+          from_qid: res.locals.question.qid,
+          from_course: res.locals.course,
+          from_path: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
+          is_transfer: false,
         });
         const serverJob = await editor.prepareServerJob();
         try {
@@ -269,21 +443,15 @@ router.get(
 
     // Generate a CSRF token for the test route. We can't use `res.locals.__csrf_token`
     // here because this form will actually post to a different route, not `req.originalUrl`.
-    const questionTestCsrfToken = generateSignedToken(
-      { url: questionTestPath, authn_user_id: res.locals.authn_user.user_id },
-      config.secretKey,
-    );
+    const questionTestCsrfToken = generateCsrfToken({
+      url: questionTestPath,
+      authnUserId: res.locals.authn_user.user_id,
+    });
 
-    let questionGHLink: string | null = null;
-    if (res.locals.course.example_course) {
-      // The example course is not found at the root of its repository, so its path is hardcoded
-      questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
-    } else if (res.locals.course.repository) {
-      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
-      if (githubPrefix) {
-        questionGHLink = `${githubPrefix}/tree/${res.locals.course.branch}/questions/${res.locals.question.qid}`;
-      }
-    }
+    const questionGHLink = courseRepoContentUrl(
+      res.locals.course,
+      `questions/${res.locals.question.qid}`,
+    );
 
     const qids = await sqldb.queryRows(sql.qids, { course_id: res.locals.course.id }, z.string());
 
@@ -295,10 +463,11 @@ router.get(
 
     const courseTopics = await selectTopicsByCourseId(res.locals.course.id);
     const courseTags = await selectTagsByCourseId(res.locals.course.id);
+    const questionTags = await selectTagsByQuestionId(res.locals.question.id);
 
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
-    let sharingSetsIn;
+    let sharingSetsIn: SharingSetRow[] | undefined;
     if (sharingEnabled) {
       const result = await sqldb.queryRows(
         sql.select_sharing_sets,
@@ -332,6 +501,7 @@ router.get(
         questionTestPath,
         questionTestCsrfToken,
         questionGHLink,
+        questionTags,
         qids,
         assessmentsWithQuestion,
         sharingEnabled,

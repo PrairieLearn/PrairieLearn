@@ -1,6 +1,8 @@
 # Course configuration
 
-**NOTE:** Any time you edit the `infoCourse.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
+!!! note
+
+    Any time you edit the `infoCourse.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
 
 ## Directory layout
 
@@ -28,14 +30,14 @@ exampleCourse
     `-- secret1.js
 ```
 
-1. See the [questions documentation](../question.md) for more information.
-2. See the [course instance documentation](../courseInstance.md) for more information.
+1. See the [questions documentation](../question/overview.md) for more information.
+2. See the [course instance documentation](../courseInstance/index.md) for more information.
 3. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
 4. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
 
 - See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
 
-- See [HTML element list](../elements.md) for a list of elements provided by PrairieLearn to all courses; PrairieLearn will use a course version of an element whenever it exists.
+- See [HTML element list](../elements/index.md) for a list of elements provided by PrairieLearn to all courses; PrairieLearn will use a course version of an element whenever it exists.
 
 - See [clientFiles and serverFiles](../clientServerFiles.md) for information on the `clientFilesCourse` and `serverFilesCourse` directories.
 
@@ -48,9 +50,6 @@ This file specifies basic information about the course:
   "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
   "name": "TAM 212",
   "title": "Introductory Dynamics",
-  "options": {
-    "useNewQuestionRenderer": true
-  },
   "assessmentSets": [],
   "assessmentModules": [],
   "topics": [],
@@ -66,9 +65,6 @@ This file specifies basic information about the course:
       "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
       "name": "TAM 212",
       "title": "Introductory Dynamics",
-      "options": {
-        "useNewQuestionRenderer": true
-      },
       "assessmentSets": [
         {
           "abbreviation": "HW",
@@ -131,14 +127,6 @@ This file specifies basic information about the course:
     ```
 
 See the [reference for `infoCourse.json`](../schemas/infoCourse.md) for more information about what can be added to this file.
-
-## Course-wide options
-
-These options, which apply to all instances of your course, can be set in the `infoCourse.json` file. The properties should be set within an object named `options` as shown in the example above.
-
-| Property                 | Default | Description                                                                                                                                                                                                                                                                                                                                                   |
-| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useNewQuestionRenderer` | `false` | This controls whether to use the legacy renderer or the "new" renderer, as described in the [question configuration documentation](../question.md#the-new-renderer). Although the default is `false` currently to avoid issues with longstanding courses on the platform, most courses will want to set this to `true`, especially if they are newly created. |
 
 ## Assessment sets
 
@@ -282,7 +270,7 @@ Properties for assessmentModules are as follows.
 | `name`    | Brief name for the module. Shorter is better.    |
 | `heading` | Longer title for the module, displayed to users. |
 
-The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`. See [Course Instance](../courseInstance.md#assessment-page-organization) for more details.
+The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`. See [Course Instance](../courseInstance/index.md#assessment-page-organization) for more details.
 
 ## Topics
 
@@ -381,7 +369,7 @@ The tag order in `infoCourse.json` is the order in which the tags will be listed
 
 ## Sharing Sets
 
-Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to uses, you should make them publicly shared as explained in the [question documentation](../question.md), or the [sharing documentation](../questionSharing.md).
+Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to use, you should make them publicly shared as explained in the [question documentation](../question/overview.md), or the [sharing documentation](../contentSharing.md).
 
 | Property      | Description                                                                                                                                                                                          |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

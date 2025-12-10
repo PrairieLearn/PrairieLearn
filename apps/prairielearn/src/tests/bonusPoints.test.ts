@@ -1,33 +1,36 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { AssessmentInstanceSchema } from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Exam assessment with bonus points', function () {
-  this.timeout(60000);
-
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
-  before('set up testing server', async function () {
-    await helperServer.before().call(this);
-    const results = await sqldb.queryOneRowAsync(sql.select_exam, []);
-    context.assessmentId = results.rows[0].id;
+  beforeAll(async function () {
+    await helperServer.before()();
+    const { id: assessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw7-bonusPoints',
+    });
+    context.assessmentId = assessmentId;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
-  after('shut down testing server', helperServer.after);
 
-  step('visit start exam page', async () => {
+  afterAll(helperServer.after);
+
+  test.sequential('visit start exam page', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl);
     assert.isTrue(response.ok);
 
@@ -42,7 +45,7 @@ describe('Exam assessment with bonus points', function () {
     context.question2Url = `${context.siteUrl}${question2Url}`;
   });
 
-  step('visit first question', async () => {
+  test.sequential('visit first question', async () => {
     const response = await helperClient.fetchCheerio(context.question1Url);
     assert.isTrue(response.ok);
 
@@ -50,7 +53,7 @@ describe('Exam assessment with bonus points', function () {
     helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
   });
 
-  step('submit an answer to the first question', async () => {
+  test.sequential('submit an answer to the first question', async () => {
     const response = await fetch(context.question1Url, {
       method: 'POST',
       body: new URLSearchParams({
@@ -63,17 +66,20 @@ describe('Exam assessment with bonus points', function () {
     assert.isTrue(response.ok);
   });
 
-  step('check assessment points', async () => {
-    const params = {
-      assessment_id: context.assessmentId,
-    };
-    const results = await sqldb.queryOneRowAsync(sql.read_assessment_instance_points, params);
-    assert.equal(results.rowCount, 1);
-    assert.equal(results.rows[0].points, 6);
-    assert.equal(results.rows[0].score_perc, 60);
+  test.sequential('check assessment points', async () => {
+    const result = await sqldb.queryRow(
+      sql.read_assessment_instance_points,
+      { assessment_id: context.assessmentId },
+      z.object({
+        points: AssessmentInstanceSchema.shape.points,
+        score_perc: AssessmentInstanceSchema.shape.score_perc,
+      }),
+    );
+    assert.equal(result.points, 6);
+    assert.equal(result.score_perc, 60);
   });
 
-  step('visit second question', async () => {
+  test.sequential('visit second question', async () => {
     const response = await helperClient.fetchCheerio(context.question2Url);
     assert.isTrue(response.ok);
 
@@ -81,7 +87,7 @@ describe('Exam assessment with bonus points', function () {
     helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
   });
 
-  step('submit an answer to the second question', async () => {
+  test.sequential('submit an answer to the second question', async () => {
     const response = await fetch(context.question2Url, {
       method: 'POST',
       body: new URLSearchParams({
@@ -95,14 +101,17 @@ describe('Exam assessment with bonus points', function () {
     assert.isTrue(response.ok);
   });
 
-  step('check assessment points', async () => {
-    const params = {
-      assessment_id: context.assessmentId,
-    };
-    const results = await sqldb.queryOneRowAsync(sql.read_assessment_instance_points, params);
-    assert.equal(results.rowCount, 1);
+  test.sequential('check assessment points', async () => {
+    const result = await sqldb.queryRow(
+      sql.read_assessment_instance_points,
+      { assessment_id: context.assessmentId },
+      z.object({
+        points: AssessmentInstanceSchema.shape.points,
+        score_perc: AssessmentInstanceSchema.shape.score_perc,
+      }),
+    );
     // 6+8 is 14, but limit should be 10+2 (max plus bonus)
-    assert.equal(results.rows[0].points, 12);
-    assert.equal(results.rows[0].score_perc, 120);
+    assert.equal(result.points, 12);
+    assert.equal(result.score_perc, 120);
   });
 });

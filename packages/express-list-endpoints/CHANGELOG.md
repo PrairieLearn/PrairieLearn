@@ -1,5 +1,65 @@
 # @prairielearn/express-list-endpoints
 
+## 1.0.17
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 1.0.16
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 1.0.15
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 1.0.14
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 1.0.13
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 1.0.12
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
+## 1.0.11
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 1.0.10
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
+## 1.0.9
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+
+## 1.0.8
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+
 ## 1.0.7
 
 ### Patch Changes

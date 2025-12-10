@@ -1,25 +1,48 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 
+import type { Lti13CourseRequestInput } from '../../src/pages/instructorRequestCourse/instructorRequestCourse.types.js';
+
 onDocumentReady(() => {
-  $('input[name=cr-role]').on('change', function () {
-    const role = (this as HTMLInputElement).value;
-    $('.question-form button').prop('disabled', role !== 'instructor');
-    $('.role-comment').hide();
-    $('.role-comment-' + role).show();
-  });
+  document.querySelectorAll<HTMLInputElement>('input[name=cr-role]').forEach((radio) =>
+    radio.addEventListener('change', () => {
+      const role = radio.value;
+      document
+        .querySelectorAll<HTMLButtonElement>('.question-form button[type=submit]')
+        .forEach((button) => (button.disabled = role !== 'instructor'));
+      document
+        .querySelectorAll<HTMLElement>('.role-comment')
+        .forEach((comment) => comment.classList.add('d-none'));
+      if (role) {
+        document.querySelector<HTMLElement>(`.role-comment-${role}`)?.classList.remove('d-none');
+      }
+    }),
+  );
 
   // Only show the "other" referral source input when "other" is selected.
-  $('#cr-referral-source').on('change', function () {
-    if ((this as HTMLInputElement).value === 'other') {
-      $('#cr-referral-source-other').removeClass('d-none').attr('required', 'required').focus();
-    } else {
-      $('#cr-referral-source-other').addClass('d-none').removeAttr('required');
-    }
-  });
+  document
+    .querySelector<HTMLInputElement>('#cr-referral-source')
+    ?.addEventListener('change', function () {
+      const referralSourceOther = document.querySelector<HTMLInputElement>(
+        '#cr-referral-source-other',
+      );
+      if (!referralSourceOther) return;
 
-  const courseRequestLti13Info = decodeData('course-request-lti13-info');
+      if (this.value === 'other') {
+        referralSourceOther.classList.remove('d-none');
+        referralSourceOther.required = true;
+        referralSourceOther.focus();
+      } else {
+        referralSourceOther.classList.add('d-none');
+        referralSourceOther.required = false;
+      }
+    });
+
+  const courseRequestLti13Info = decodeData<Lti13CourseRequestInput>('course-request-lti13-info');
   if (courseRequestLti13Info !== null) {
-    $('#fill-course-request-lti13-modal').modal('show');
+    const lti13Modal = window.bootstrap.Modal.getOrCreateInstance(
+      '#fill-course-request-lti13-modal',
+    );
+    lti13Modal.show();
 
     const autoFillLti13Button = document.getElementById('fill-course-request-lti13-info');
 
@@ -27,20 +50,17 @@ onDocumentReady(() => {
       const courseRequestForm = document.querySelector<HTMLFormElement>(
         'form[name="course-request"]',
       );
-
-      if (!courseRequestForm) {
-        return;
-      }
+      if (!courseRequestForm) return;
 
       const formElements = courseRequestForm.elements;
-      for (const elementName of Object.keys(courseRequestLti13Info)) {
-        const input = formElements.namedItem(elementName) as HTMLInputElement;
+      for (const [elementName, elementValue] of Object.entries(courseRequestLti13Info)) {
+        const input = formElements.namedItem(elementName);
         if (input) {
-          input.value = courseRequestLti13Info[elementName];
+          (input as HTMLInputElement).value = elementValue;
         }
       }
 
-      $('#fill-course-request-lti13-modal').modal('hide');
+      lti13Modal.hide();
     });
   }
 });

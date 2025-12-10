@@ -1,11 +1,12 @@
+import { afterAll, beforeAll, describe } from 'vitest';
+
 import { config } from '../lib/config.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 
-const locals: Record<string, any> = {};
+const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
 
-locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
 locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
@@ -22,11 +23,10 @@ const qidsTestCourse = [
   'orderBlocks',
 ];
 
-describe('Auto-test questions in testCourse', function () {
-  this.timeout(60000);
+describe('Auto-test questions in testCourse', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   qidsTestCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
 });

@@ -2,8 +2,7 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "esModuleInterop": true,
-    // Corresponds to Node 20.x, which we currently run on.
-    // To check compatibility in the future, see https://node.green/.
+    // This is a safe shared baseline between our Node version and reasonably modern browsers.
     "lib": ["ES2022"],
     "target": "ES2022",
     // Checking the types for *all* our dependencies is unnecessarily slow in

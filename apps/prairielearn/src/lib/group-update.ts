@@ -1,28 +1,18 @@
-import csvtojson from 'csvtojson';
 import _ from 'lodash';
 import * as streamifier from 'streamifier';
-import { z } from 'zod';
 
 import * as namedLocks from '@prairielearn/named-locks';
-import {
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { IdSchema, UserSchema } from './db-types.js';
+import { selectAssessmentInfoForJob } from '../models/assessment.js';
+
+import type { AuthzData } from './authz-data-lib.js';
+import { createCsvParser } from './csv.js';
+import { type Assessment, type CourseInstance, UserSchema } from './db-types.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-const AssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
 
 function groupUpdateLockName(assessment_id: string): string {
   return `assessment:${assessment_id}:groups`;
@@ -31,32 +21,40 @@ function groupUpdateLockName(assessment_id: string): string {
 /**
  * Update groups from a CSV file.
  *
- * @param assessment_id - The assessment to update.
- * @param csvFile - An object with keys {originalname, size, buffer}.
- * @param user_id - The current user performing the update.
- * @param authn_user_id - The current authenticated user.
+ * @param params
+ * @param params.course_instance - The course instance in which the assessment exists.
+ * @param params.assessment - The assessment to update.
+ * @param params.csvFile - An object with keys {originalname, size, buffer}.
+ * @param params.user_id - The current user performing the update.
+ * @param params.authn_user_id - The current authenticated user.
+ * @param params.authzData - The authorization data for the current user.
  * @returns The job sequence ID.
  */
-export async function uploadInstanceGroups(
-  assessment_id: string,
-  csvFile: Express.Multer.File | null | undefined,
-  user_id: string,
-  authn_user_id: string,
-): Promise<string> {
+export async function uploadInstanceGroups({
+  course_instance,
+  assessment,
+  csvFile,
+  user_id,
+  authn_user_id,
+  authzData,
+}: {
+  course_instance: CourseInstance;
+  assessment: Assessment;
+  csvFile: Express.Multer.File | null | undefined;
+  user_id: string;
+  authn_user_id: string;
+  authzData: AuthzData;
+}): Promise<string> {
   if (csvFile == null) {
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_id, course_instance_id } = await queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
-    courseId: course_id,
-    courseInstanceId: course_instance_id,
-    assessmentId: assessment_id,
+    courseId: course_instance.course_id,
+    courseInstanceId: course_instance.id,
+    assessmentId: assessment.id,
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'upload_groups',
@@ -64,7 +62,7 @@ export async function uploadInstanceGroups(
   });
 
   serverJob.executeInBackground(async (job) => {
-    const lockName = groupUpdateLockName(assessment_id);
+    const lockName = groupUpdateLockName(assessment.id);
     job.verbose(`Trying lock ${lockName}`);
     await namedLocks.doWithLock(
       lockName,
@@ -82,14 +80,22 @@ export async function uploadInstanceGroups(
         const csvStream = streamifier.createReadStream(csvFile.buffer, {
           encoding: 'utf8',
         });
-        const csvConverter = csvtojson({ checkType: false, maxRowLength: 10000 });
-        let successCount = 0;
-        const groupAssignments = (await csvConverter.fromStream(csvStream))
-          .map((row) => _.mapKeys(row, (_v, k) => k.toLowerCase()))
-          .filter((row) => row.uid && row.groupname);
+        const csvParser = createCsvParser(csvStream);
+        let successCount = 0,
+          totalCount = 0;
         await runInTransactionAsync(async () => {
-          for (const { uid, groupname } of groupAssignments) {
-            await createOrAddToGroup(groupname, assessment_id, [uid], authn_user_id).then(
+          for await (const { record } of csvParser) {
+            const { uid, groupname } = record;
+            if (!uid || !groupname) continue;
+            totalCount++;
+            await createOrAddToGroup({
+              course_instance,
+              assessment,
+              group_name: groupname,
+              uids: [uid],
+              authn_user_id,
+              authzData,
+            }).then(
               () => successCount++,
               (err) => {
                 if (err instanceof GroupOperationError) {
@@ -102,7 +108,7 @@ export async function uploadInstanceGroups(
           }
         });
 
-        const errorCount = groupAssignments.length - successCount;
+        const errorCount = totalCount - successCount;
         job.verbose('----------------------------------------');
         if (errorCount === 0) {
           job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);
@@ -120,34 +126,43 @@ export async function uploadInstanceGroups(
 /**
  * Randomly assign students to groups.
  *
- * @param assessment_id - The assessment to update.
- * @param user_id - The current user performing the update.
- * @param authn_user_id - The current authenticated user.
- * @param max_group_size - max size of the group
- * @param min_group_size - min size of the group
+ * @param params
+ * @param params.course_instance - The course instance in which the assessment exists.
+ * @param params.assessment - The assessment to update.
+ * @param params.user_id - The current user performing the update.
+ * @param params.authn_user_id - The current authenticated user.
+ * @param params.max_group_size - max size of the group
+ * @param params.min_group_size - min size of the group
+ * @param params.authzData - The authorization data for the current user.
  * @returns The job sequence ID.
  */
-export async function randomGroups(
-  assessment_id: string,
-  user_id: string,
-  authn_user_id: string,
-  max_group_size: number,
-  min_group_size: number,
-): Promise<string> {
+export async function randomGroups({
+  course_instance,
+  assessment,
+  user_id,
+  authn_user_id,
+  max_group_size,
+  min_group_size,
+  authzData,
+}: {
+  course_instance: CourseInstance;
+  assessment: Assessment;
+  user_id: string;
+  authn_user_id: string;
+  max_group_size: number;
+  min_group_size: number;
+  authzData: AuthzData;
+}): Promise<string> {
   if (max_group_size < 2 || min_group_size < 1 || max_group_size < min_group_size) {
     throw new Error('Group Setting Requirements: max > 1; min > 0; max >= min');
   }
 
-  const { assessment_label, course_id, course_instance_id } = await queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
-    courseId: course_id,
-    courseInstanceId: course_instance_id,
-    assessmentId: assessment_id,
+    courseId: course_instance.course_id,
+    courseInstanceId: course_instance.id,
+    assessmentId: assessment.id,
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'random_generate_groups',
@@ -155,7 +170,7 @@ export async function randomGroups(
   });
 
   serverJob.executeInBackground(async (job) => {
-    const lockName = groupUpdateLockName(assessment_id);
+    const lockName = groupUpdateLockName(assessment.id);
     job.verbose(`Trying lock ${lockName}`);
     await namedLocks.doWithLock(
       lockName,
@@ -172,7 +187,7 @@ export async function randomGroups(
         job.verbose('Fetching the enrollment lists...');
         const studentsToGroup = await queryRows(
           sql.select_enrolled_students_without_group,
-          { assessment_id },
+          { assessment_id: assessment.id },
           UserSchema,
         );
         _.shuffle(studentsToGroup);
@@ -186,13 +201,6 @@ export async function randomGroups(
         let groupsCreated = 0,
           studentsGrouped = 0;
         await runInTransactionAsync(async () => {
-          // Find a group name of the format `groupNNN` that is not used
-          const unusedGroupNameSuffix = await queryOptionalRow(
-            sql.select_unused_group_name_suffix,
-            { assessment_id },
-            z.number(),
-          );
-
           // Create groups using the groups of maximum size where possible
           const userGroups = _.chunk(
             studentsToGroup.map((user) => user.uid),
@@ -205,7 +213,7 @@ export async function randomGroups(
             const usersToMove = userGroups
               .filter((group) => group.length > min_group_size)
               .slice(smallGroup.length - min_group_size) // This will be negative (get the last n groups)
-              .map((group) => group.pop() as string);
+              .map((group) => group.pop()!);
             if (usersToMove.length === 0) {
               job.warn(
                 `Could not create groups with the desired sizes. One group will have a size of ${smallGroup.length}`,
@@ -215,11 +223,15 @@ export async function randomGroups(
             smallGroup.push(...usersToMove);
           }
 
-          let i = unusedGroupNameSuffix ?? 1;
           for (const users of userGroups) {
-            const groupName = `group${i}`;
-            i++;
-            await createGroup(groupName, assessment_id, users, authn_user_id).then(
+            await createGroup({
+              course_instance,
+              assessment,
+              group_name: null,
+              uids: users,
+              authn_user_id,
+              authzData,
+            }).then(
               () => {
                 groupsCreated++;
                 studentsGrouped += users.length;

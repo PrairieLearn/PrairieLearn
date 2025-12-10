@@ -25,9 +25,6 @@ updates:
       interval: monthly
     rebase-strategy: disabled
     ignore:
-      # We're still waiting for the following PR to be released:
-      # https://github.com/twbs/bootstrap/pull/38725
-      - dependency-name: 'bootstrap'
       # Recent versions of `bootstrap-table` broke behavior we rely on:
       # https://github.com/wenzhixin/bootstrap-table/issues/6745
       - dependency-name: 'bootstrap-table'
@@ -39,12 +36,24 @@ updates:
       # novnc 1.5.0+ no longer publishes ESM files:
       # https://github.com/novnc/noVNC/issues/1792
       - dependency-name: '@novnc/novnc'
+      # ua-parser-js 2.x changes its license to a less permissive license:
+      # https://github.com/faisalman/ua-parser-js/issues/680
+      - dependency-name: 'ua-parser-js'
+        versions: ['>=2']
+      # We use Yarn `resolutions` to point these to our Preact compat packages.
+      # We don't ever care about which version is actually listed in `package.json` files.
+      - dependency-name: 'preact' # https://github.com/PrairieLearn/PrairieLearn/pull/12763
+      - dependency-name: 'react'
+      - dependency-name: 'react-dom'
+
     groups:
       # Many OpenTelemetry packages are still pre-v1, so updates frequently won't
       # be considered patch/minor updates. We always want to bump these all
       # together, so we'll include a special group for them. Dependabot evaluates
       # groups in the order that they're listed, so this will take precedence over
       # the catch-all patch/minor group below.
+      #
+      # These upgrades are currently ignored, see the note above.
       opentelemetry:
         patterns:
           - '@opentelemetry/*'
@@ -55,10 +64,11 @@ updates:
 
   - package-ecosystem: pip
     directories:
+      - '/'
       - '/docs'
       - '/graders/c'
       - '/graders/python'
-      - '/images/plbase'
+      - '/workspaces/jupyterlab-base'
       - '/workspaces/jupyterlab-python'
       - '/workspaces/vscode-python'
     schedule:
@@ -68,9 +78,15 @@ updates:
       # We're not ready to jump to the latest version of `numpy` yet.
       - dependency-name: 'numpy'
         versions: ['>=2']
-      # The most recent versions no longer support Python 3.10.
-      - dependency-name: 'sphinx'
-        versions: ['>=8.2.0']
+      # The following dependencies have dropped support for Python 3.10 in their
+      # recent versions. Since PrairieLearn still uses Python 3.10 in the question
+      # runtime environment, we need to ignore these updates for now.
+      - dependency-name: 'networkx'
+        versions: ['>=3.5.0']
+      - dependency-name: 'Pint'
+        versions: ['>=0.25']
+      - dependency-name: 'scipy'
+        versions: ['>=1.16.0']
     groups:
       all-patch-minor:
         update-types:

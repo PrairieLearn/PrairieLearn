@@ -27,7 +27,9 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
+  "typescript.preferences.autoImportSpecifierExcludeRegexes": ["^react$"],
   "typescript.tsdk": "node_modules/typescript/lib",
+  "json.schemaDownload.enable": true,
   "json.schemas": [
     {
       "fileMatch": [
@@ -48,6 +50,22 @@
     {
       "fileMatch": ["{exampleCourse,testCourse,templateCourse}/questions/**/info.json"],
       "url": "/apps/prairielearn/src/schemas/schemas/infoQuestion.json"
+    },
+    {
+      "fileMatch": ["config.json"],
+      "url": "/docs/assets/config-unified.schema.json"
+    },
+    {
+      "fileMatch": ["apps/prairielearn/config.json"],
+      "url": "/docs/assets/config-prairielearn.schema.json"
+    },
+    {
+      "fileMatch": ["apps/grader-host/config.json"],
+      "url": "/docs/assets/config-grader-host.schema.json"
+    },
+    {
+      "fileMatch": ["apps/workspace-host/config.json"],
+      "url": "/docs/assets/config-workspace-host.schema.json"
     }
   ],
   "python.testing.pytestArgs": ["apps/prairielearn/elements", "apps/prairielearn/python/test"],
@@ -55,5 +73,7 @@
   "python.testing.pytestEnabled": true,
   "[json]": {
     "files.insertFinalNewline": true
-  }
+  },
+  "vitest.maximumConfigs": 100,
+  "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff"
 }

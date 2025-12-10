@@ -2,13 +2,13 @@
 SELECT
   to_jsonb(
     enum_range(
-      enum_first(null::enum_course_role),
+      enum_first(NULL::enum_course_role),
       $authn_course_role
     )
   ) AS available_course_roles,
   to_jsonb(
     enum_range(
-      enum_first(null::enum_course_instance_role),
+      enum_first(NULL::enum_course_instance_role),
       $authn_course_instance_role
     )
   ) AS available_course_instance_roles,

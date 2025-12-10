@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import {
   type AssessmentModule,
@@ -23,15 +23,19 @@ function checkAssessmentModule(
 ) {
   assert.isOk(syncedAssessmentModule);
   for (const key of Object.keys(assessmentModule)) {
-    assert.equal(syncedAssessmentModule[key], assessmentModule[key]);
+    assert.equal(
+      syncedAssessmentModule[key as keyof AssessmentModule],
+      assessmentModule[key as keyof AssessmentModule],
+    );
   }
 }
 
 describe('Assessment modules syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('adds a new assessment module', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
@@ -39,7 +43,7 @@ describe('Assessment modules syncing', () => {
       name: 'New Module',
       heading: 'This is a new module',
     };
-    courseData.course.assessmentModules?.push(newAssessmentModule);
+    courseData.course.assessmentModules.push(newAssessmentModule);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentModules = await util.dumpTableWithSchema(
       'assessment_modules',
@@ -57,9 +61,9 @@ describe('Assessment modules syncing', () => {
       name: 'New Module',
       heading: 'This is a new module',
     };
-    courseData.course.assessmentModules?.push(newAssessmentModule);
+    courseData.course.assessmentModules.push(newAssessmentModule);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    courseData.course.assessmentModules?.pop();
+    courseData.course.assessmentModules.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentModules = await util.dumpTableWithSchema(
       'assessment_modules',
@@ -81,8 +85,7 @@ describe('Assessment modules syncing', () => {
       name: 'new assessment set',
       heading: 'new assessment module 2',
     };
-    courseData.course.assessmentModules?.push(newAssessmentModule1);
-    courseData.course.assessmentModules?.push(newAssessmentModule2);
+    courseData.course.assessmentModules.push(newAssessmentModule1, newAssessmentModule2);
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessmentModules = await util.dumpTableWithSchema(
       'assessment_modules',
@@ -122,7 +125,7 @@ describe('Assessment modules syncing', () => {
 
     const syncedAssessment = syncedAssessments.find((a) => a.tid === 'test');
     assert.isOk(syncedAssessment);
-    assert.equal(syncedAssessment?.assessment_module_id, syncedAssessmentModule?.id);
+    assert.equal(syncedAssessment.assessment_module_id, syncedAssessmentModule?.id);
   });
 
   it('deletes all assessment modules when none are used', async () => {

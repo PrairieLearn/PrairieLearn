@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/postgres-tools",
-  "version": "2.0.14",
+  "version": "2.0.27",
   "type": "module",
   "repository": {
     "type": "git",
@@ -19,21 +19,19 @@
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",
     "async": "^3.2.6",
-    "chalk": "^5.4.1",
-    "diff": "^7.0.0",
-    "fs-extra": "^11.3.0",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "diff": "^8.0.2",
+    "fs-extra": "^11.3.2",
     "lodash": "^4.17.21",
-    "postgres-array": "^3.0.4",
-    "yargs": "^17.7.2"
+    "postgres-array": "^3.0.4"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/diff": "^7.0.2",
     "@types/fs-extra": "^11.0.4",
-    "@types/lodash": "^4.17.16",
-    "@types/node": "^20.17.30",
-    "@types/yargs": "^17.0.33",
-    "typescript": "^5.8.2",
+    "@types/lodash": "^4.17.21",
+    "@types/node": "^22.19.1",
+    "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9"
   }
 }

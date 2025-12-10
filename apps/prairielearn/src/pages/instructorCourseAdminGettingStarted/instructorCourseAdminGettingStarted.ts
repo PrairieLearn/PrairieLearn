@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -9,7 +9,7 @@ import { updateCourseShowGettingStarted } from '../../models/course.js';
 
 import { InstructorCourseAdminGettingStarted } from './instructorCourseAdminGettingStarted.html.js';
 
-const router = express.Router();
+const router = Router();
 
 router.get(
   '/',
@@ -17,7 +17,7 @@ router.get(
     res.send(
       InstructorCourseAdminGettingStarted({
         resLocals: res.locals,
-        tasks: await getGettingStartedTasks({ course_id: res.locals.course.id }),
+        tasks: await getGettingStartedTasks({ course: res.locals.course }),
       }),
     );
   }),

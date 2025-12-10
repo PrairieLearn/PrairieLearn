@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import * as path from 'path';
 
 import fs from 'fs-extra';
@@ -5,6 +6,7 @@ import fs from 'fs-extra';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { QuestionSchema } from './db-types.js';
 import { APP_ROOT_PATH } from './paths.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -61,15 +63,20 @@ export async function questionFilePath(
       course_id: question.course_id,
       directory: question.template_directory,
     };
-    const result = await sqldb.queryZeroOrOneRowAsync(sql.select_question, params);
-    if (result.rowCount === 0) {
+    const templateQuestion = await sqldb.queryOptionalRow(
+      sql.select_question,
+      params,
+      QuestionSchema,
+    );
+    if (templateQuestion === null) {
       throw new error.HttpStatusError(
         500,
         `Could not find template question "${question.template_directory}" from question "${question.directory}"`,
       );
     }
 
-    const templateQuestion = result.rows[0];
+    assert(templateQuestion.directory !== null, 'template question directory is required');
+
     return await questionFilePath(
       filename,
       templateQuestion.directory,
@@ -79,11 +86,13 @@ export async function questionFilePath(
     );
   } else {
     // No template, try default files
-    const filenameToSuffix = {
+    const filenameToSuffix: Record<string, string> = {
       'client.js': 'Client.js',
       'server.js': 'Server.js',
     };
-    if (filenameToSuffix[filename] === undefined) {
+    const suffix = filenameToSuffix[filename];
+
+    if (!suffix) {
       // no default for this file type, so try clientFilesCourse
       const rootPathCourse = path.join(coursePath, 'clientFilesCourse');
       const fullPathCourse = path.join(rootPathCourse, filename);
@@ -98,7 +107,7 @@ export async function questionFilePath(
         throw new Error(`File not found at "${fullPath}" or "${fullPathCourse}"`);
       }
     } else {
-      const defaultFilename = question.type + filenameToSuffix[filename];
+      const defaultFilename = question.type + suffix;
       const fullDefaultFilePath = path.join(QUESTION_DEFAULTS_PATH, defaultFilename);
 
       if (await fs.pathExists(fullDefaultFilePath)) {

@@ -4,7 +4,7 @@ This page documents the basic steps to use Docker Compose to run PrairieLearn. I
 
 ## Getting started
 
-Follow the steps to [install PrairieLearn with local source code](../installingLocal.md). Then run this command in the root folder:
+Follow the steps to [install PrairieLearn with local source code](../dev-guide/installingLocal.md). Then run this command in the root folder:
 
 ```sh
 docker compose -f docker-compose-production.yml up

@@ -21,17 +21,3 @@ def generate(data):
     data["params"]["initial_sw"] = random.choice([70, 75, 80, 85])
     data["params"]["initial_culture"] = 100 - data["params"]["initial_sw"]
     data["params"]["percent_composition"] = random.randint(10, 25)
-
-    data["params"]["names_for_user"] = []
-    data["params"]["names_from_user"] = [
-        {
-            "name": "hours",
-            "description": "The number of hours needed to accomplish what is requested in the problem statement ",
-            "type": "positive integer",
-        },
-        {
-            "name": "composition",
-            "description": "The composition of ingredients at 'hours'",
-            "type": "1d array",
-        },
-    ]

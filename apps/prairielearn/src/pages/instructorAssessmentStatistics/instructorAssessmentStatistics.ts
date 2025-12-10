@@ -1,5 +1,4 @@
-import * as express from 'express';
-import asyncHandler from 'express-async-handler';
+import { Router } from 'express';
 
 import { stringify } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
@@ -7,6 +6,8 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { updateAssessmentStatistics } from '../../lib/assessment.js';
 import { AssessmentSchema } from '../../lib/db-types.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {
@@ -17,10 +18,10 @@ import {
   UserScoreSchema,
 } from './instructorAssessmentStatistics.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function getFilenames(locals: Record<string, any>): Filenames {
+function getFilenames(locals: UntypedResLocals): Filenames {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
@@ -37,7 +38,7 @@ function getFilenames(locals: Record<string, any>): Filenames {
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     await updateAssessmentStatistics(res.locals.assessment.id);
 
     // re-fetch assessment to get updated statistics
@@ -86,16 +87,18 @@ router.get(
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     const filenames = getFilenames(res.locals);
 
     await updateAssessmentStatistics(res.locals.assessment.id);
 
     // re-fetch assessment to get updated statistics
-    const assessmentResult = await sqldb.queryOneRowAsync(sql.select_assessment, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.assessment = assessmentResult.rows[0].assessment;
+    const assessment = await sqldb.queryRow(
+      sql.select_assessment,
+      { assessment_id: res.locals.assessment.id },
+      AssessmentSchema,
+    );
+    res.locals.assessment = assessment;
 
     if (req.params.filename === filenames.scoreStatsCsvFilename) {
       const csvData = [
@@ -147,10 +150,11 @@ router.get(
       }).pipe(res);
     } else if (req.params.filename === filenames.durationStatsCsvFilename) {
       // get formatted duration statistics
-      const durationStatsResult = await sqldb.queryOneRowAsync(sql.select_duration_stats, {
-        assessment_id: res.locals.assessment.id,
-      });
-      const duration_stat = durationStatsResult.rows[0];
+      const duration_stat = await sqldb.queryRow(
+        sql.select_duration_stats,
+        { assessment_id: res.locals.assessment.id },
+        DurationStatSchema,
+      );
 
       const csvData = [
         [
@@ -161,11 +165,11 @@ router.get(
           res.locals.assessment_set.abbreviation + res.locals.assessment.number,
           res.locals.assessment.title,
           res.locals.assessment.tid,
-          duration_stat.mean_mins,
-          duration_stat.median_mins,
-          duration_stat.min_mins,
-          duration_stat.max_mins,
-          ...duration_stat.threshold_seconds,
+          duration_stat.mean_minutes,
+          duration_stat.median_minutes,
+          duration_stat.min_minutes,
+          duration_stat.max_minutes,
+          ...duration_stat.thresholds.map((durationMs) => Math.floor(durationMs / 1000)),
           ...duration_stat.hist,
         ],
       ];
@@ -185,22 +189,24 @@ router.get(
           'Median duration (min)',
           'Min duration (min)',
           'Max duration (min)',
-          ...duration_stat.threshold_seconds.map((_, i) => `Hist boundary ${i + 1} (s)`),
+          ...duration_stat.thresholds.map((_, i) => `Hist boundary ${i + 1} (s)`),
           ...duration_stat.hist.map((_, i) => `Hist ${i + 1}`),
         ],
       }).pipe(res);
     } else if (req.params.filename === filenames.statsByDateCsvFilename) {
-      const histByDateResult = await sqldb.queryAsync(sql.assessment_score_histogram_by_date, {
-        assessment_id: res.locals.assessment.id,
-      });
-      const scoresByDay = histByDateResult.rows;
+      const histByDateResult = await sqldb.queryRows(
+        sql.assessment_score_histogram_by_date,
+        { assessment_id: res.locals.assessment.id },
+        AssessmentScoreHistogramByDateSchema,
+      );
+      const scoresByDay = histByDateResult;
 
       const numDays = scoresByDay.length;
       const numGroups = scoresByDay[0].histogram.length;
 
       const csvData: (string | number)[][] = [];
 
-      let groupData = ['Number'];
+      let groupData: (string | number)[] = ['Number'];
       for (let day = 0; day < numDays; day++) {
         groupData.push(scoresByDay[day].number);
       }

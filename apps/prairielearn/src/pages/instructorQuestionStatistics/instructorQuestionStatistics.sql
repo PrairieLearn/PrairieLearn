@@ -2,7 +2,7 @@
 SELECT
   c.short_name AS course_short_name,
   ci.short_name AS course_instance_short_name,
-  (aset.abbreviation || a.number) as assessment_label,
+  (aset.abbreviation || a.number) AS assessment_label,
   aset.color AS assessment_color,
   a.id AS assessment_id,
   a.type AS assessment_type,
@@ -19,7 +19,7 @@ SELECT
     WHERE
       q.id = qt.question_id
   ) AS question_tags,
-  admin_assessment_question_number (aq.id) as assessment_question_number,
+  admin_assessment_question_number (aq.id) AS assessment_question_number,
   aq.*
 FROM
   assessment_questions AS aq
@@ -31,8 +31,8 @@ FROM
   JOIN pl_courses AS c ON (c.id = ci.course_id),
   LATERAL (
     SELECT
-      min(ar.start_date) AS start_date,
-      max(ar.end_date) AS end_date
+      COALESCE(ci.publishing_start_date, min(ar.start_date)) AS start_date,
+      COALESCE(ci.publishing_end_date, max(ar.end_date)) AS end_date
     FROM
       course_instance_access_rules AS ar
     WHERE
@@ -45,6 +45,6 @@ ORDER BY
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,
   ci.id DESC,
-  aset.number,
-  a.order_by,
-  a.id;
+  aset.number ASC,
+  a.order_by ASC,
+  a.id ASC;

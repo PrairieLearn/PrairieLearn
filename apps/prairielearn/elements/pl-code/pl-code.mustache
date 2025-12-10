@@ -10,10 +10,8 @@ $(function(){
     style="--pl-code-background-color: {{background_color}}; --pl-code-line-number-color: {{line_number_color}};">
     <div
         id="pl-code-{{uuid}}"
-        class="rounded"
+        class="rounded {{#prevent_select}}user-select-none{{/prevent_select}}"
         {{#prevent_select}}
-        style="-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none;"
-        unselectable="on"
         onselectstart="return false;"
         onmousedown="return false;"
         oncontextmenu="return false;"

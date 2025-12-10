@@ -125,9 +125,9 @@ INSERT INTO
 SELECT
   (chunk ->> 'type')::enum_chunk_type,
   $course_id,
-  q.id,
-  ci.id,
-  a.id,
+  q.id AS question_id,
+  ci.id AS course_instance_id,
+  a.id AS assessment_id,
   (chunk ->> 'uuid')::uuid
 FROM
   JSON_ARRAY_ELEMENTS($chunks) AS chunk (json)
@@ -254,3 +254,26 @@ WHERE
     FROM
       chunks_to_delete
   );
+
+-- BLOCK select_active_assessment_ids_by_tid
+SELECT
+  ci.short_name AS course_instance_name,
+  a.tid AS assessment_name,
+  a.id AS assessment_id
+FROM
+  assessments AS a
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL
+  AND a.deleted_at IS NULL;
+
+-- BLOCK select_active_course_instance_ids
+SELECT
+  ci.short_name AS course_instance_name,
+  ci.id AS course_instance_id
+FROM
+  course_instances AS ci
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;

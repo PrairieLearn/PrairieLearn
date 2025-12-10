@@ -6,7 +6,6 @@ import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -17,27 +16,33 @@ import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import { escapeRegExp } from '@prairielearn/sanitize';
 
+import { selectAssessments } from '../models/assessment.js';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
   updateCourseCommitHash,
 } from '../models/course.js';
+import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
-import * as b64Util from './base64-util.js';
+import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import type { StaffCourse } from './client/safe-db-types.js';
 import { config } from './config.js';
 import {
   type Assessment,
+  AssessmentSchema,
   type Course,
   type CourseInstance,
+  CourseInstanceSchema,
   type Question,
   type User,
 } from './db-types.js';
+import { getNamesForCopy } from './editorUtil.shared.js';
+import { idsEqual } from './id.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
 import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
@@ -131,7 +136,7 @@ export function getUniqueNames({
         shortNameCompare === oldShortNameCompare ||
         oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
       if (found) {
-        const foundNumber = shortNameCompare === oldShortNameCompare ? 1 : parseInt(found[1]);
+        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -151,7 +156,7 @@ export function getUniqueNames({
       const found =
         oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
       if (found) {
-        const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
+        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -162,7 +167,7 @@ export function getUniqueNames({
 
   const numberShortName = getNumberShortName(shortNames);
   const numberLongName = getNumberLongName(longNames);
-  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  const number = Math.max(numberShortName, numberLongName);
 
   if (number === 1 && shortName !== 'New' && longName !== 'New') {
     // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
@@ -183,14 +188,40 @@ export function getUniqueNames({
  * Returns the new value if it differs from the default value. Otherwise, returns undefined.
  * This is helpful for setting JSON properties that we only want to write to if they are different
  * than the default value.
+ *
+ * `defaultValue` may be either a value to compare directly with `===`, or a function
+ * that accepts a value and returns a boolean to indicate if it should be considered
+ * a default value.
+ *
+ * You should set `isUIBoolean` to true if the property is a UI boolean that controls whether another field is enabled.
+ * For example, `beforeDateEnabled` is a UI boolean that controls whether the `beforeDate` field is enabled.
  */
-export function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+export function propertyValueWithDefault(
+  existingValue: any,
+  newValue: any,
+  defaultValue: any,
+  { isUIBoolean = false }: { isUIBoolean?: boolean } = {},
+) {
+  const isExistingDefault =
+    typeof defaultValue === 'function'
+      ? defaultValue(existingValue)
+      : existingValue === defaultValue;
+  const isNewDefault =
+    typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
+
+  // If this is a UI boolean where the default value is false, we want to write that out as false, not as undefined.
+  const writeFalse = isUIBoolean && defaultValue === false && newValue === false;
+  if (writeFalse) {
+    return false;
+  }
+
   if (existingValue === undefined) {
-    if (newValue !== defaultValue) {
+    if (!isNewDefault) {
       return newValue;
     }
+    return undefined;
   } else {
-    if (existingValue !== defaultValue && newValue === defaultValue) {
+    if (!isExistingDefault && isNewDefault) {
       return undefined;
     } else {
       return newValue;
@@ -391,6 +422,12 @@ export abstract class Editor {
             await job.exec('git', ['push'], {
               cwd: this.course.path,
               env: gitEnv,
+              // During GitHub incidents, we've observed GitHub taking multiple
+              // minutes to handle a `git push`. To avoid the job sitting for
+              // an unreasonable amount of time and causing a 504 when we fail
+              // to respond to the request in time, we'll use a relatively short
+              // timeout to fail the push if it takes too long.
+              cancelSignal: AbortSignal.timeout(10_000),
             });
             job.data.saveSucceeded = true;
 
@@ -412,6 +449,9 @@ export abstract class Editor {
             await job.exec('git', ['fetch'], {
               cwd: this.course.path,
               env: gitEnv,
+              // As with `git push` above, we'll use a timeout here to avoid
+              // long delays during GitHub incidents resulting in 504 errors.
+              cancelSignal: AbortSignal.timeout(10_000),
             });
 
             // This will both discard the commit we made locally and also pull
@@ -425,6 +465,8 @@ export abstract class Editor {
               await job.exec('git', ['push'], {
                 cwd: this.course.path,
                 env: gitEnv,
+                // See above `git push` attempt for an explanation of this timeout.
+                cancelSignal: AbortSignal.timeout(10_000),
               });
               job.data.saveSucceeded = true;
             } finally {
@@ -490,112 +532,51 @@ export abstract class Editor {
       }
     }
   }
+}
 
-  /**
-   * Get all existing shortnames, recursing on nonempty directories that do not contain
-   * an ".info" file.
-   * @param rootDirectory Directory to start searching from.
-   * @param infoFile Name of the info file, will stop recursing once a directory contains this.
-   */
-  async getExistingShortNames(rootDirectory: string, infoFile: string) {
-    const files: string[] = [];
-    const walk = async (relativeDir) => {
-      const directories = await fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
-        // If the directory doesn't exist, then we have nothing to load
-        if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-          return [] as string[];
-        }
-        throw err;
-      });
-
-      // For each subdirectory, try to find an Info file
-      await async.each(directories, async (dir) => {
-        // Relative path to the current folder
-        const subdirPath = path.join(relativeDir, dir);
-        // Absolute path to the info file
-        const infoPath = path.join(rootDirectory, subdirPath, infoFile);
-        const hasInfoFile = await fs.pathExists(infoPath);
-        if (hasInfoFile) {
-          // Info file exists, we can use this directory
-          files.push(subdirPath);
-        } else {
-          // No info file, let's try recursing
-          await walk(subdirPath);
-        }
-      });
-    };
-
-    await walk('');
-    debug('getExistingShortNames() returning', files);
-    return files;
-  }
-
-  getNamesForCopy(
-    oldShortName: string,
-    shortNames: string[],
-    oldLongName: string | null,
-    longNames: string[],
-  ): { shortName: string; longName: string } {
-    function getBaseShortName(oldname: string): string {
-      const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
-      if (found) {
-        return found[1];
-      } else {
-        return oldname;
+/**
+ * Get all existing shortnames, recursing on nonempty directories that do not contain
+ * an "info" file.
+ *
+ * TODO: we might be able to get away with querying the database for this information instead.
+ * It's unclear why we're going to disk in the first place. Possibly it's to be extra cautious
+ * in case we're in a state where there are sync errors, but even in that case, sync errors
+ * should not have prevented us from persisting short names in the first place.
+ *
+ * @param rootDirectory Directory to start searching from.
+ * @param infoFile Name of the info file, will stop recursing once a directory contains this.
+ */
+async function getExistingShortNames(rootDirectory: string, infoFile: string) {
+  const files: string[] = [];
+  const walk = async (relativeDir: string) => {
+    const directories = await fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
+      // If the directory doesn't exist, then we have nothing to load
+      if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+        return [] as string[];
       }
-    }
+      throw err;
+    });
 
-    function getBaseLongName(oldname: string | null): string {
-      if (typeof oldname !== 'string') return 'Unknown';
-      debug(oldname);
-      const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
-      debug(found);
-      if (found) {
-        return found[1];
+    // For each subdirectory, try to find an Info file
+    await async.each(directories, async (dir) => {
+      // Relative path to the current folder
+      const subdirPath = path.join(relativeDir, dir);
+      // Absolute path to the info file
+      const infoPath = path.join(rootDirectory, subdirPath, infoFile);
+      const hasInfoFile = await fs.pathExists(infoPath);
+      if (hasInfoFile) {
+        // Info file exists, we can use this directory
+        files.push(subdirPath);
       } else {
-        return oldname;
+        // No info file, let's try recursing
+        await walk(subdirPath);
       }
-    }
+    });
+  };
 
-    function getNumberShortName(basename: string, oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
-        if (found) {
-          const foundNumber = parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    }
-
-    function getNumberLongName(basename: string, oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        if (typeof oldname !== 'string') return;
-        const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
-        if (found) {
-          const foundNumber = parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    }
-
-    const baseShortName = getBaseShortName(oldShortName);
-    const baseLongName = getBaseLongName(oldLongName);
-    const numberShortName = getNumberShortName(baseShortName, shortNames);
-    const numberLongName = getNumberLongName(baseLongName, longNames);
-    const number = numberShortName > numberLongName ? numberShortName : numberLongName;
-    return {
-      shortName: `${baseShortName}_copy${number}`,
-      longName: `${baseLongName} (copy ${number})`,
-    };
-  }
+  await walk('');
+  debug('getExistingShortNames() returning', files);
+  return files;
 }
 
 export class AssessmentCopyEditor extends Editor {
@@ -617,7 +598,7 @@ export class AssessmentCopyEditor extends Editor {
     this.assessment = assessment;
     this.course_instance = course_instance;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {
@@ -633,16 +614,14 @@ export class AssessmentCopyEditor extends Editor {
     );
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
-      course_instance_id: this.course_instance.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.title);
+    const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
+    const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
 
     debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
+    const oldNamesShort = await getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = this.getNamesForCopy(
+    const names = getNamesForCopy(
       this.assessment.tid,
       oldNamesShort,
       this.assessment.title,
@@ -655,11 +634,13 @@ export class AssessmentCopyEditor extends Editor {
     const fromPath = path.join(assessmentsPath, this.assessment.tid);
     const toPath = assessmentPath;
 
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+    debug(`Copy question from ${fromPath} to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoAssessment.json');
     const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
+
+    delete infoJson.shareSourcePublicly;
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -769,7 +750,7 @@ export class AssessmentRenameEditor extends Editor {
       });
     }
 
-    debug(`Move files\n from ${oldPath}\n to ${newPath}`);
+    debug(`Move files from ${oldPath} to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(assessmentsPath, this.assessment.tid);
 
@@ -808,7 +789,7 @@ export class AssessmentAddEditor extends Editor {
 
     this.course_instance = course_instance;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.aid = params.aid;
     this.title = params.title;
@@ -829,13 +810,19 @@ export class AssessmentAddEditor extends Editor {
     );
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
-      course_instance_id: this.course_instance.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.title);
+    const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
+    const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
+    const nextAssessmentNumber =
+      Math.max(
+        0,
+        ...assessments
+          .filter((assessment) => assessment.assessment_set.name === this.set)
+          .map((assessment) => Number(assessment.number))
+          .filter(Number.isInteger),
+      ) + 1;
 
     debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
+    const oldNamesShort = await getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
     const { shortName: tid, longName: assessmentTitle } = getUniqueNames({
@@ -871,7 +858,7 @@ export class AssessmentAddEditor extends Editor {
       title: assessmentTitle,
       set: this.set,
       module: this.module,
-      number: '1',
+      number: nextAssessmentNumber.toString(),
       allowAccess: [],
       zones: [],
     };
@@ -893,20 +880,33 @@ export class AssessmentAddEditor extends Editor {
 
 export class CourseInstanceCopyEditor extends Editor {
   private course_instance: CourseInstance;
+  private from_course: Course | StaffCourse;
+  private from_path: string;
+  private is_transfer: boolean;
+  private metadataOverrides?: Record<string, any>;
 
   public readonly uuid: string;
 
-  constructor(params: BaseEditorOptions<{ course_instance: CourseInstance }>) {
-    const { course_instance } = params.locals;
-
+  constructor(
+    params: BaseEditorOptions & {
+      from_course: Course | StaffCourse;
+      from_path: string;
+      course_instance: CourseInstance;
+      metadataOverrides?: Record<string, any>;
+    },
+  ) {
+    const is_transfer = !idsEqual(params.locals.course.id, params.from_course.id);
     super({
       ...params,
-      description: `Copy course instance ${course_instance.short_name}`,
+      description: `Copy course instance ${params.course_instance.short_name}${is_transfer ? ` from ${params.from_course.short_name}` : ''}`,
     });
+    this.course_instance = params.course_instance;
+    this.from_course = params.from_course;
+    this.from_path = params.from_path;
+    this.is_transfer = is_transfer;
+    this.metadataOverrides = params.metadataOverrides;
 
-    this.course_instance = course_instance;
-
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {
@@ -916,47 +916,213 @@ export class CourseInstanceCopyEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.long_name);
+    const oldNamesLong = await sqldb.queryRows(
+      sql.select_course_instances_with_course,
+      { course_id: this.course.id },
+      z.string(),
+    );
 
     debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(
+    const oldNamesShort = await getExistingShortNames(
       courseInstancesPath,
       'infoCourseInstance.json',
     );
 
+    // NOTE: The public course instance copy page currently does not support customizing these.
     debug('Generate short_name and long_name');
-    const names = this.getNamesForCopy(
-      this.course_instance.short_name,
-      oldNamesShort,
-      this.course_instance.long_name,
-      oldNamesLong,
-    );
-    const short_name = names.shortName;
-    const courseInstancePath = path.join(courseInstancesPath, short_name);
+    let shortName = this.course_instance.short_name;
+    let longName = this.course_instance.long_name;
+    if (oldNamesShort.includes(shortName) || (longName && oldNamesLong.includes(longName))) {
+      const names = getNamesForCopy(
+        this.course_instance.short_name,
+        oldNamesShort,
+        this.course_instance.long_name,
+        oldNamesLong,
+      );
+      shortName = names.shortName;
+      longName = names.longName;
+    }
+    const courseInstancePath = path.join(courseInstancesPath, shortName);
 
-    const fromPath = path.join(courseInstancesPath, this.course_instance.short_name);
     const toPath = courseInstancePath;
 
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+    debug(`Copy course instance from ${this.from_path} to ${toPath}`);
+    await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoCourseInstance.json');
-    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
+    let infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
+
+    // Clear access rules to avoid leaking student PII or unexpectedly
+    // making the copied course instance available to users.
+    // Note: this means that copied course instances will be switched to the modern publishing
+    // system.
+    infoJson.allowAccess = undefined;
+
+    const pathsToAdd: string[] = [];
+    if (this.is_transfer) {
+      if (!this.from_course.sharing_name) {
+        throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
+      }
+
+      const existingQuestionUuids = new Set(await selectQuestionUuidsForCourse(this.course));
+      const existingQuestionTitles = await selectQuestionTitlesForCourse(this.course);
+      const existingQuestionQids = await getExistingShortNames(
+        path.join(this.course.path, 'questions'),
+        'info.json',
+      );
+
+      const questionsForCopy = await selectQuestionsForCourseInstanceCopy(this.course_instance.id);
+      const questionsToLink = new Set(
+        questionsForCopy.filter((q) => !q.should_copy).map((q) => q.qid),
+      );
+      const questionsToCopy = new Set(questionsForCopy.filter((q) => q.should_copy));
+
+      // Map of QIDs in the original assessments to the new QIDs in the target course.
+      const newQids: Record<string, string> = {};
+
+      for (const question of questionsToCopy) {
+        // This shouldn't happen in practice; this is just to satisfy TypeScript.
+        assert(question.qid, 'question.qid is required');
+
+        const from_path = path.join(this.from_course.path, 'questions', question.qid);
+        const from_qid = path.join(this.from_course.sharing_name, question.qid);
+
+        // If we previously copied the same question from the same course, this
+        // will avoid QID/title collisions by appending things like `_copy1` and
+        // `(copy 1)` to QIDs and titles, respectively.
+        //
+        // TODO: Ideally, we'd want to deduplicate questions if possible. That is,
+        // if a question was previously copied via another course instance, we can
+        // just reuse it instead of copying it again. This will require some way
+        // to intelligently compare questions:
+        // - We'd need to compare the files (`question.html`, `server.py`, everything
+        //   but the JSON file).
+        // - We'd need to compare the JSON file, while ignoring things that don't
+        //   change the behavior of the question, such as UUID, title, tags, topics, etc.
+        // If questions are identical, we can just reuse the one that was copied before.
+
+        // We'll make a best-effort attempt to preserve the UUID when copying a question,
+        // as that will in theory allow us to track the usage of copied questions across
+        // different courses. This would also let us perform the deduplication proposed
+        // above even when questions have had their QIDs changed in the target course.
+        const uuid = run(() => {
+          // All non-deleted questions should have a UUID.
+          assert(question.uuid, 'question.uuid is required');
+
+          if (existingQuestionUuids.has(question.uuid)) return crypto.randomUUID();
+
+          return question.uuid;
+        });
+
+        // For reasons that are lost to time, the `file_transfers` machinery that course instance
+        // copying utilizes first copies files from the source course to a temporary directory,
+        // and then completes the copy by moving the files to the target course. However, we opted
+        // not to use this mechanism to copy questions, as we think it's largely unnecessary.
+        //
+        // TODO: in the future, update `file_transfers` to copy content directly from the source
+        // course to the target course. To avoid races, we'd want to store just the _intent_ to copy
+        // a question or course instance, and then when we want to complete the copy, we'd grab a
+        // lock on both the source and target courses, then perform the copy.
+        // To avoid deadlocks we'll need to take these locks in a universal order,
+        // such as ordering the two courses by `id` and locking in that order.
+        const { questionPath, qid } = await copyQuestion({
+          course: this.course,
+          from_course: this.from_course,
+          from_path,
+          from_qid,
+          uuid,
+          existingTitles: existingQuestionTitles,
+          existingQids: existingQuestionQids,
+        });
+
+        newQids[question.qid] = qid;
+        pathsToAdd.push(questionPath);
+      }
+
+      // Update the infoAssessment.json files to include the course sharing name for each question
+      // It's OK that we are writing these directly to disk because when copying to another course
+      // we are working from a temporary folder
+      await updateInfoAssessmentFilesForTargetCourse(
+        this.course_instance.id,
+        courseInstancePath,
+        this.from_course.sharing_name,
+        questionsToLink,
+        newQids,
+      );
+    }
 
     debug('Write infoCourseInstance.json with new longName and uuid');
-    infoJson.longName = names.longName;
+    infoJson.longName = longName;
     infoJson.uuid = this.uuid;
+
+    // We do not want to preserve sharing settings when copying a course instance
+    delete infoJson.shareSourcePublicly;
+
+    if (this.metadataOverrides) {
+      infoJson = { ...infoJson, ...this.metadataOverrides };
+    }
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
+    pathsToAdd.push(courseInstancePath);
     return {
-      pathsToAdd: [courseInstancePath],
-      commitMessage: `copy course instance ${this.course_instance.short_name} to ${short_name}`,
+      pathsToAdd,
+      commitMessage: `copy course instance ${this.course_instance.short_name}${this.is_transfer ? ` (from ${this.from_course.short_name})` : ''} to ${shortName}`,
     };
+  }
+}
+
+async function updateInfoAssessmentFilesForTargetCourse(
+  courseInstanceId: string,
+  courseInstancePath: string,
+  fromCourseSharingName: string,
+  questionsToImport: Set<string | null>,
+  newQids: Record<string, string>,
+) {
+  const assessments = await selectAssessments({ course_instance_id: courseInstanceId });
+  for (const assessment of assessments) {
+    // The column is technically nullable, but in practice all assessments have a TID
+    assert(assessment.tid !== null, 'assessment.tid is required');
+    const infoPath = path.join(
+      courseInstancePath,
+      'assessments',
+      assessment.tid,
+      'infoAssessment.json',
+    );
+
+    const infoJson = await fs.readJson(infoPath);
+
+    // We do not want to preserve certain settings when copying an assessment to another course
+    delete infoJson.shareSourcePublicly;
+    infoJson.allowAccess = [];
+
+    function shouldAddSharingPrefix(qid: string) {
+      return qid && !qid.startsWith('@') && questionsToImport.has(qid);
+    }
+
+    // Rewrite the question IDs to include the course sharing name,
+    // or to point to the new path if the question was copied
+    for (const zone of infoJson.zones) {
+      for (const question of zone.questions) {
+        if (question.id) {
+          if (question.id in newQids) {
+            question.id = newQids[question.id];
+          } else if (shouldAddSharingPrefix(question.id)) {
+            question.id = `@${fromCourseSharingName}/${question.id}`;
+          }
+        } else if (question.alternatives) {
+          for (const alternative of question.alternatives) {
+            if (alternative.id in newQids) {
+              alternative.id = newQids[alternative.id];
+            } else if (shouldAddSharingPrefix(alternative.id)) {
+              alternative.id = `@${fromCourseSharingName}/${alternative.id}`;
+            }
+          }
+        }
+      }
+    }
+    await fs.writeJson(infoPath, infoJson, { spaces: 4 });
   }
 }
 
@@ -1037,7 +1203,7 @@ export class CourseInstanceRenameEditor extends Editor {
       });
     }
 
-    debug(`Move files\n from ${oldPath}\n to ${newPath}`);
+    debug(`Move files from ${oldPath} to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(
       path.join(this.course.path, 'courseInstances'),
@@ -1071,7 +1237,7 @@ export class CourseInstanceAddEditor extends Editor {
       description: 'Add course instance',
     });
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.short_name = params.short_name;
     this.long_name = params.long_name;
@@ -1092,27 +1258,11 @@ export class CourseInstanceAddEditor extends Editor {
     debug('CourseInstanceAddEditor: write()');
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
-    debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.long_name);
+    // At this point, upstream code should have already validated
+    // the short name to match a regex like /^[-A-Za-z0-9_/]+$/.
 
-    debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(
-      courseInstancesPath,
-      'infoCourseInstance.json',
-    );
-
-    debug('Generate short_name and long_name');
-    const { shortName, longName } = getUniqueNames({
-      shortNames: oldNamesShort,
-      longNames: oldNamesLong,
-      shortName: this.short_name,
-      longName: this.long_name,
-    });
-
-    const courseInstancePath = path.join(courseInstancesPath, shortName);
+    // If upstream code has not done this, that could lead to a path traversal attack.
+    const courseInstancePath = path.join(courseInstancesPath, this.short_name);
 
     // Ensure that the new course instance folder path is fully contained in the course instances directory
     if (!contains(courseInstancesPath, courseInstancePath)) {
@@ -1132,36 +1282,35 @@ export class CourseInstanceAddEditor extends Editor {
 
     debug('Write infoCourseInstance.json');
 
-    let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
-
-    if (this.start_access_date || this.end_access_date) {
-      allowAccess = {
-        startDate: this.start_access_date
-          ? formatDate(
-              new Date(this.start_access_date.epochMilliseconds),
-              this.course.display_timezone,
-              {
-                includeTz: false,
-              },
-            )
-          : undefined,
-        endDate: this.end_access_date
-          ? formatDate(
-              new Date(this.end_access_date.epochMilliseconds),
-              this.course.display_timezone,
-              {
-                includeTz: false,
-              },
-            )
-          : undefined,
-      };
-    }
-
-    const infoJson = {
-      uuid: this.uuid,
-      longName,
-      allowAccess: allowAccess !== undefined ? [allowAccess] : [],
+    const publishing = {
+      startDate: this.start_access_date
+        ? formatDate(
+            new Date(this.start_access_date.epochMilliseconds),
+            this.course.display_timezone,
+            {
+              includeTz: false,
+            },
+          )
+        : undefined,
+      endDate: this.end_access_date
+        ? formatDate(
+            new Date(this.end_access_date.epochMilliseconds),
+            this.course.display_timezone,
+            {
+              includeTz: false,
+            },
+          )
+        : undefined,
     };
+
+    const infoJson: Record<string, any> = {
+      uuid: this.uuid,
+      longName: this.long_name,
+    };
+
+    if (publishing.startDate || publishing.endDate) {
+      infoJson.publishing = publishing;
+    }
 
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
@@ -1173,7 +1322,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `add course instance ${shortName}`,
+      commitMessage: `add course instance ${this.short_name}`,
     };
   }
 }
@@ -1183,6 +1332,7 @@ export class QuestionAddEditor extends Editor {
 
   private qid?: string;
   private title?: string;
+  private template_source?: 'empty' | 'example' | 'course';
   private template_qid?: string;
   private files?: Record<string, string>;
   private isDraft?: boolean;
@@ -1191,6 +1341,7 @@ export class QuestionAddEditor extends Editor {
     params: BaseEditorOptions & {
       qid?: string;
       title?: string;
+      template_source?: 'empty' | 'example' | 'course';
       template_qid?: string;
       files?: Record<string, string>;
       isDraft?: boolean;
@@ -1201,9 +1352,10 @@ export class QuestionAddEditor extends Editor {
       description: 'Add question',
     });
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
     this.qid = params.qid;
     this.title = params.title;
+    this.template_source = params.template_source;
     this.template_qid = params.template_qid;
     this.files = params.files;
     this.isDraft = params.isDraft;
@@ -1221,8 +1373,10 @@ export class QuestionAddEditor extends Editor {
           z.number(),
         );
 
-        while (fs.existsSync(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))) {
-          //increment and sync to postgres
+        while (
+          await fs.pathExists(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))
+        ) {
+          // increment and sync to postgres
           draftNumber = await sqldb.queryRow(
             sql.update_draft_number,
             { course_id: this.course.id },
@@ -1234,13 +1388,10 @@ export class QuestionAddEditor extends Editor {
       }
 
       debug('Get all existing long names');
-      const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-        course_id: this.course.id,
-      });
-      const oldNamesLong = result.rows.map((row) => row.title);
+      const oldNamesLong = await selectQuestionTitlesForCourse(this.course);
 
       debug('Get all existing short names');
-      const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
+      const oldNamesShort = await getExistingShortNames(questionsPath, 'info.json');
 
       debug('Generate qid and title');
       const { shortName, longName } = getUniqueNames({
@@ -1271,12 +1422,15 @@ export class QuestionAddEditor extends Editor {
       });
     }
 
-    if (this.template_qid) {
-      const exampleCourseQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
-      const fromPath = path.join(exampleCourseQuestionsPath, this.template_qid);
+    if (this.template_source !== 'empty' && this.template_qid) {
+      const sourceQuestionsPath =
+        this.template_source === 'course'
+          ? questionsPath
+          : path.join(EXAMPLE_COURSE_PATH, 'questions');
+      const fromPath = path.join(sourceQuestionsPath, this.template_qid);
 
-      // Ensure that the template_qid folder path is fully contained in the example course questions directory
-      if (!contains(exampleCourseQuestionsPath, fromPath)) {
+      // Ensure that the template_qid folder path is fully contained in the source course questions directory
+      if (!contains(sourceQuestionsPath, fromPath)) {
         throw new AugmentedError('Invalid folder path', {
           info: html`
             <p>The path of the template question folder</p>
@@ -1285,7 +1439,7 @@ export class QuestionAddEditor extends Editor {
             </div>
             <p>must be inside the root directory</p>
             <div class="container">
-              <pre class="bg-dark text-white rounded p-2">${exampleCourseQuestionsPath}</pre>
+              <pre class="bg-dark text-white rounded p-2">${sourceQuestionsPath}</pre>
             </div>
           `,
         });
@@ -1307,8 +1461,15 @@ export class QuestionAddEditor extends Editor {
         });
       }
 
-      debug(`Copy template\n from ${fromPath}\n to ${newQuestionPath}`);
-      await fs.copy(fromPath, newQuestionPath, { overwrite: false, errorOnExist: true });
+      debug(`Copy question from ${fromPath} to ${newQuestionPath}`);
+
+      await copyQuestionFiles({
+        fromPath,
+        toPath: newQuestionPath,
+        // When copying from example course templates, skip README.md files at the root.
+        // They are specific to the template and will quickly drift from the copied question.
+        skipReadme: this.template_source === 'example' && this.template_qid.startsWith('template/'),
+      });
 
       debug('Read info.json');
       const infoJson = await fs.readJson(path.join(newQuestionPath, 'info.json'));
@@ -1392,7 +1553,6 @@ export class QuestionAddEditor extends Editor {
 
 export class QuestionModifyEditor extends Editor {
   private question: Question;
-  private origHash: string;
   private files: Record<string, string | null>;
 
   constructor(
@@ -1437,7 +1597,7 @@ export class QuestionModifyEditor extends Editor {
       if (contents === null) {
         await fs.remove(resolvedPath);
       } else {
-        await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+        await fs.writeFile(resolvedPath, b64DecodeUnicode(contents));
       }
     }
 
@@ -1544,15 +1704,19 @@ export class QuestionRenameEditor extends Editor {
       });
     }
 
-    debug(`Move files\n from ${oldPath}\n to ${newPath}`);
+    debug(`Move files from ${oldPath} to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-    const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
-      question_id: this.question.id,
-    });
-    const assessments = result.rows;
+    const assessments = await sqldb.queryRows(
+      sql.select_assessments_with_question,
+      { question_id: this.question.id },
+      z.object({
+        course_instance_directory: CourseInstanceSchema.shape.short_name,
+        assessment_directory: AssessmentSchema.shape.tid,
+      }),
+    );
 
     const pathsToAdd = [oldPath, newPath];
 
@@ -1560,6 +1724,11 @@ export class QuestionRenameEditor extends Editor {
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
+      assert(
+        assessment.course_instance_directory !== null,
+        'course_instance_directory is required',
+      );
+      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
         'courseInstances',
@@ -1571,14 +1740,14 @@ export class QuestionRenameEditor extends Editor {
       pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
-      const infoJson = await fs.readJson(infoPath);
+      const infoJson: any = await fs.readJson(infoPath);
 
       debug(`Find/replace QID in ${infoPath}`);
-      let found = false;
-      infoJson.zones.forEach((zone) => {
-        zone.questions.forEach((question) => {
+      let found = false as boolean;
+      infoJson.zones?.forEach((zone: any) => {
+        zone.questions?.forEach((question: any) => {
           if (question.alternatives) {
-            question.alternatives.forEach((alternative) => {
+            question.alternatives?.forEach((alternative: any) => {
               if (alternative.id === this.question.qid) {
                 alternative.id = this.qid_new;
                 found = true;
@@ -1606,168 +1775,179 @@ export class QuestionRenameEditor extends Editor {
 }
 
 export class QuestionCopyEditor extends Editor {
-  private question: Question;
-
-  public readonly uuid: string;
-
-  constructor(params: BaseEditorOptions<{ question: Question }>) {
-    const {
-      locals: { question },
-    } = params;
-
-    super({
-      ...params,
-      description: `Copy question ${question.qid}`,
-    });
-
-    this.question = question;
-
-    this.uuid = uuidv4();
-  }
-
-  async write() {
-    assert(this.question.qid, 'question.qid is required');
-
-    debug('QuestionCopyEditor: write()');
-    const questionsPath = path.join(this.course.path, 'questions');
-
-    debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.title);
-
-    debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
-
-    debug('Generate qid and title');
-    const names = this.getNamesForCopy(
-      this.question.qid,
-      oldNamesShort,
-      this.question.title,
-      oldNamesLong,
-    );
-    const qid = names.shortName;
-    const questionPath = path.join(questionsPath, qid);
-
-    const fromPath = path.join(questionsPath, this.question.qid);
-    const toPath = questionPath;
-
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-
-    debug('Read info.json');
-    const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
-
-    debug('Write info.json with new title and uuid');
-    infoJson.title = names.longName;
-    infoJson.uuid = this.uuid;
-
-    // Even when copying a question within a course, we don't want to preserve
-    // sharing settings because they cannot be undone
-    delete infoJson['sharingSets'];
-    delete infoJson['sharePublicly'];
-    delete infoJson['shareSourcePublicly'];
-
-    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-    await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
-
-    return {
-      pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.question.qid} to ${qid}`,
-    };
-  }
-}
-
-export class QuestionTransferEditor extends Editor {
+  private from_course: Course;
+  private from_course_label: string;
   private from_qid: string;
-  private from_course: string;
   private from_path: string;
+  private is_transfer: boolean;
 
   public readonly uuid: string;
 
   constructor(
     params: BaseEditorOptions & {
+      from_course: Course;
       from_qid: string;
-      from_course_short_name: Course['short_name'];
       from_path: string;
+      is_transfer: boolean;
     },
   ) {
-    const { from_qid, from_course_short_name, from_path } = params;
+    const { from_qid, from_course, from_path, is_transfer } = params;
 
-    const from_course =
-      from_course_short_name == null ? 'unknown course' : `course ${from_course_short_name}`;
+    const from_course_label =
+      from_course.short_name == null ? 'unknown course' : `course ${from_course.short_name}`;
 
     super({
       ...params,
-      description: `Copy question ${from_qid} from ${from_course}`,
+      description: `Copy question ${from_qid}${is_transfer ? ` from ${from_course_label}` : ''}`,
     });
 
+    this.from_course = from_course;
+    this.from_course_label = from_course_label;
     this.from_qid = from_qid;
     this.from_path = from_path;
+    this.is_transfer = is_transfer;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {
-    debug('QuestionTransferEditor: write()');
-    const questionsPath = path.join(this.course.path, 'questions');
+    debug('QuestionCopyEditor: write()');
 
-    debug('Get title of question that is being copied');
-    const sourceInfoJson = await fs.readJson(path.join(this.from_path, 'info.json'));
-    const from_title = sourceInfoJson.title || 'Empty Title';
-
-    debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-      course_id: this.course.id,
+    const { questionPath, qid } = await copyQuestion({
+      course: this.course,
+      from_course: this.from_course,
+      from_path: this.from_path,
+      from_qid: this.from_qid,
+      uuid: this.uuid,
+      existingTitles: await selectQuestionTitlesForCourse(this.course),
+      existingQids: await getExistingShortNames(
+        path.join(this.course.path, 'questions'),
+        'info.json',
+      ),
     });
-    const oldNamesLong = result.rows.map((row) => row.title);
-
-    debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
-
-    debug('Generate qid and title');
-    let qid = this.from_qid;
-    let questionTitle = from_title;
-    if (oldNamesShort.includes(this.from_qid) || oldNamesLong.includes(from_title)) {
-      const names = this.getNamesForCopy(this.from_qid, oldNamesShort, from_title, oldNamesLong);
-      qid = names.shortName;
-      questionTitle = names.longName;
-    }
-    const questionPath = path.join(questionsPath, qid);
-
-    const fromPath = this.from_path;
-    const toPath = questionPath;
-
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-
-    debug('Read info.json');
-    const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
-
-    debug('Write info.json with new title and uuid');
-    infoJson.title = questionTitle;
-    infoJson.uuid = this.uuid;
-
-    // When transferring a question from an example/template course, drop the tags. They
-    // are likely undesirable in the template course.
-    if (this.course.example_course || this.course.template_course) {
-      delete infoJson.tags;
-    }
-
-    // We do not want to preserve sharing settings when copying a question to another course
-    delete infoJson['sharingSets'];
-    delete infoJson['sharePublicly'];
-    delete infoJson['shareSourcePublicly'];
-
-    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-    await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.from_qid} (from ${this.from_course}) to ${qid}`,
+      commitMessage: `copy question ${this.from_qid}${this.is_transfer ? ` (from ${this.from_course_label})` : ''} to ${qid}`,
     };
   }
+}
+
+async function selectQuestionTitlesForCourse(course: Course): Promise<string[]> {
+  return await sqldb.queryRows(
+    sql.select_question_titles_for_course,
+    { course_id: course.id },
+    z.string(),
+  );
+}
+
+async function selectQuestionUuidsForCourse(course: Course): Promise<string[]> {
+  return await sqldb.queryRows(
+    sql.select_question_uuids_for_course,
+    { course_id: course.id },
+    z.string(),
+  );
+}
+
+/**
+ * Copy question files from one location to another, optionally skipping README.md
+ * files at the root of example course template questions.
+ *
+ * @param options
+ * @param options.fromPath - Source directory path
+ * @param options.toPath - Destination directory path
+ * @param options.skipReadme - If true, skip copying README.md at the root of the source directory
+ */
+async function copyQuestionFiles({
+  fromPath,
+  toPath,
+  skipReadme,
+}: {
+  fromPath: string;
+  toPath: string;
+  skipReadme: boolean;
+}): Promise<void> {
+  await fs.copy(fromPath, toPath, {
+    overwrite: false,
+    errorOnExist: true,
+    filter: (src: string) => {
+      // When copying from example course templates, skip README.md files at the root.
+      // They are specific to the template and will quickly drift from the copied question.
+      if (skipReadme && src === path.join(fromPath, 'README.md')) {
+        return false;
+      }
+      return true;
+    },
+  });
+}
+
+async function copyQuestion({
+  course,
+  from_course,
+  from_path,
+  from_qid,
+  uuid,
+  existingTitles: oldLongNames,
+  existingQids: oldShortNames,
+}: {
+  course: Course | StaffCourse;
+  from_course: Course | StaffCourse;
+  from_path: string;
+  from_qid: string;
+  uuid: string;
+  existingTitles: string[];
+  existingQids: string[];
+}): Promise<{ questionPath: string; qid: string }> {
+  const questionsPath = path.join(course.path, 'questions');
+
+  debug('Get title of question that is being copied');
+  const sourceInfoJson = await fs.readJson(path.join(from_path, 'info.json'));
+  const from_title = sourceInfoJson.title || 'Empty Title';
+
+  debug('Generate qid and title');
+  let qid = from_qid;
+  let questionTitle = from_title;
+  if (oldShortNames.includes(from_qid) || oldLongNames.includes(from_title)) {
+    const names = getNamesForCopy(from_qid, oldShortNames, from_title, oldLongNames);
+    qid = names.shortName;
+    questionTitle = names.longName;
+  }
+  const questionPath = path.join(questionsPath, qid);
+
+  const fromPath = from_path;
+  const toPath = questionPath;
+
+  debug(`Copy question from ${fromPath} to ${toPath}`);
+
+  await copyQuestionFiles({
+    fromPath,
+    toPath,
+    // When copying from example course templates, skip README.md files at the root.
+    // They are specific to the template and will quickly drift from the copied question.
+    skipReadme: from_course.path === EXAMPLE_COURSE_PATH && from_qid.startsWith('template/'),
+  });
+
+  debug('Read info.json');
+  const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
+
+  debug('Write info.json with new title and uuid');
+  infoJson.title = questionTitle;
+  infoJson.uuid = uuid;
+
+  // When transferring a question from an example/template course, drop the tags. They
+  // are likely undesirable in the template course.
+  if (course.example_course || course.template_course) {
+    delete infoJson.tags;
+  }
+
+  // We do not want to preserve sharing settings when copying a question to another course
+  delete infoJson.sharingSets;
+  delete infoJson.sharePublicly;
+  delete infoJson.shareSourcePublicly;
+
+  const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+  await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
+  return { questionPath, qid };
 }
 
 export class FileDeleteEditor extends Editor {
@@ -2011,7 +2191,7 @@ export class FileUploadEditor extends Editor {
     let contents;
     try {
       contents = await fs.readFile(this.filePath);
-    } catch (err) {
+    } catch (err: any) {
       if (err.code === 'ENOENT') {
         debug('no old contents, so continue with upload');
         return true;
@@ -2142,7 +2322,7 @@ export class FileModifyEditor extends Editor {
     return sha256(contents).toString();
   }
 
-  async shouldEdit() {
+  shouldEdit() {
     debug('get hash of edit contents');
     const editHash = this.getHash(this.editContents);
     debug('editHash: ' + editHash);
@@ -2194,21 +2374,21 @@ export class FileModifyEditor extends Editor {
   async write() {
     debug('FileModifyEditor: write()');
 
-    if (!(await this.shouldEdit())) return null;
+    if (!this.shouldEdit()) return null;
 
     debug('ensure path exists');
     await fs.ensureDir(path.dirname(this.filePath));
 
     debug('verify disk hash matches orig hash');
     const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
-    const diskContents = b64Util.b64EncodeUnicode(diskContentsUTF);
+    const diskContents = b64EncodeUnicode(diskContentsUTF);
     const diskHash = this.getHash(diskContents);
     if (this.origHash !== diskHash) {
       throw new Error('Another user made changes to the file you were editing.');
     }
 
     debug('write file');
-    await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
+    await fs.writeFile(this.filePath, b64DecodeUnicode(this.editContents));
 
     return {
       pathsToAdd: [this.filePath],

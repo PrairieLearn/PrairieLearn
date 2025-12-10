@@ -1,7 +1,8 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course, type Institution } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export function AdministratorInstitutionCourses({
   institution,
@@ -10,7 +11,7 @@ export function AdministratorInstitutionCourses({
 }: {
   institution: Institution;
   courses: Course[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals: { ...resLocals, institution },
@@ -22,7 +23,7 @@ export function AdministratorInstitutionCourses({
     },
     content: html`
       <div class="table-responsive">
-        <table class="table table-hover table-striped table-bordered table" aria-label="Courses">
+        <table class="table table-hover table-striped table-bordered" aria-label="Courses">
           <thead>
             <tr>
               <th>Name</th>

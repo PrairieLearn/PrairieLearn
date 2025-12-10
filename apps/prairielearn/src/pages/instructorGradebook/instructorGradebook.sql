@@ -3,7 +3,9 @@ SELECT
   a.id AS assessment_id,
   a.number AS assessment_number,
   aset.number AS assessment_set_number,
+  aset.id AS assessment_set_id,
   aset.color,
+  aset.heading AS assessment_set_heading,
   (aset.abbreviation || a.number) AS label
 FROM
   assessments AS a
@@ -44,10 +46,10 @@ WITH
     FROM
       course_assessment_instances AS cai
     ORDER BY
-      cai.user_id,
-      cai.assessment_id,
+      cai.user_id ASC,
+      cai.assessment_id ASC,
       cai.score_perc DESC,
-      cai.id
+      cai.id DESC
   ),
   user_ids AS (
     -- Select all users that:
@@ -115,15 +117,24 @@ WITH
           'assessment_instance_id',
           s.assessment_instance_id,
           'uid_other_users_group',
-          ARRAY(
-            SELECT
-              ou.uid
-            FROM
-              group_users AS ogu
-              LEFT JOIN course_users AS ou ON (ou.user_id = ogu.user_id)
-            WHERE
-              ogu.group_id = s.group_id
-              AND ogu.user_id != u.user_id
+          COALESCE(
+            (
+              SELECT
+                json_agg(
+                  json_build_object('uid', ou.uid, 'enrollment_id', e.id)
+                )
+              FROM
+                group_users AS ogu
+                LEFT JOIN course_users AS ou ON (ou.user_id = ogu.user_id)
+                LEFT JOIN enrollments AS e ON (
+                  ou.user_id = e.user_id
+                  AND e.course_instance_id = $course_instance_id
+                )
+              WHERE
+                ogu.group_id = s.group_id
+                AND ogu.user_id != u.user_id
+            ),
+            '[]'::json
           )
         )
       ) AS scores
@@ -139,13 +150,18 @@ SELECT
   u.uin,
   u.user_name,
   u.role,
+  to_jsonb(e.*) AS enrollment,
   COALESCE(s.scores, '{}') AS scores
 FROM
   course_users AS u
+  LEFT JOIN enrollments AS e ON (
+    e.user_id = u.user_id
+    AND e.course_instance_id = $course_instance_id
+  )
   LEFT JOIN user_scores AS s ON (u.user_id = s.user_id)
 ORDER BY
   role DESC,
-  uid;
+  uid ASC;
 
 -- BLOCK assessment_instance_score
 SELECT

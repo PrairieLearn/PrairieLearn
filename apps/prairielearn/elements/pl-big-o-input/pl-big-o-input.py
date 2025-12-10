@@ -1,5 +1,6 @@
 import random
 from enum import Enum
+from sys import get_int_max_str_digits
 
 import big_o_utils as bou
 import chevron
@@ -7,6 +8,7 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
+from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
 from typing_extensions import assert_never
 
 
@@ -34,6 +36,7 @@ GRADE_FUNCTION_DICT: dict[BigOType, bou.BigOGradingFunctionT] = {
 VARIABLES_DEFAULT = ""
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
+ARIA_LABEL_DEFAULT = None
 WEIGHT_DEFAULT = 1
 DISPLAY_DEFAULT = DisplayType.INLINE
 BIG_O_TYPE_DEFAULT = BigOType.BIG_O
@@ -42,6 +45,9 @@ SHOW_SCORE_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "1"
 BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-big-o-input.mustache"
+# This timeout is chosen to allow multiple sympy-based elements to grade on one page,
+# while not exceeding the global timeout enforced for Python execution.
+SYMPY_TIMEOUT = 3
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -50,6 +56,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     optional_attribs = [
         "weight",
         "correct-answer",
+        "aria-label",
         "variable",
         "size",
         "display",
@@ -78,21 +85,30 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         a_true = pl.get_string_attrib(element, "correct-answer")
         # Validate that the answer can be parsed before storing
-        try:
-            psu.convert_string_to_sympy(
-                a_true, variables, allow_complex=False, allow_trig_functions=False
-            )
-        except psu.BaseSympyError as exc:
-            raise ValueError(
-                f'Parsing correct answer "{a_true}" for "{name}" failed.'
-            ) from exc
+        if len(a_true) > 0:
+            try:
+                psu.convert_string_to_sympy(
+                    a_true, variables, allow_complex=False, allow_trig_functions=False
+                )
+            except psu.BaseSympyError as exc:
+                raise ValueError(
+                    f'Parsing correct answer "{a_true}" for "{name}" failed.'
+                ) from exc
 
         data["correct_answers"][name] = a_true
+
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
+    if data["correct_answers"][name] == "" and (not allow_blank or blank_value != ""):
+        raise ValueError(
+            "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
@@ -132,14 +148,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     a_sub = None
 
     if parse_error is None and name in data["submitted_answers"]:
-        a_sub = sympy.latex(
-            psu.convert_string_to_sympy(
-                data["submitted_answers"][name],
-                variables,
-                allow_complex=False,
-                allow_trig_functions=False,
+        a_sub = data["submitted_answers"][name]
+        if a_sub != "":
+            a_sub = sympy.latex(
+                psu.convert_string_to_sympy(
+                    a_sub,
+                    variables,
+                    allow_complex=False,
+                    allow_trig_functions=False,
+                )
             )
-        )
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
@@ -165,6 +183,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_info": show_info,
             "uuid": pl.get_uuid(),
             display.value: True,
+            "aria_label": aria_label,
             "placeholder": placeholder,
             "raw_submitted_answer": raw_submitted_answer,
             "type": bigo_type,
@@ -208,9 +227,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
-        a_tru = psu.convert_string_to_sympy(
-            a_tru, variables, allow_complex=False, allow_trig_functions=False
-        )
+        if a_tru != "":
+            a_tru = psu.convert_string_to_sympy(
+                a_tru, variables, allow_complex=False, allow_trig_functions=False
+            )
         html_params = {
             "answer": True,
             "a_tru": sympy.latex(a_tru),
@@ -234,8 +254,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name)
     if allow_blank and a_sub is not None and a_sub.strip() == "":
-        a_sub = blank_value
-    if not a_sub:
+        a_sub = blank_value.strip()
+        if a_sub == "":
+            data["submitted_answers"][name] = a_sub
+            return
+    if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
         return
@@ -266,23 +289,44 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     big_o_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
 
-    pl.grade_answer_parameterized(
-        data,
-        name,
-        lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
-        weight=weight,
-    )
+    try:
+        with ThreadingTimeout(SYMPY_TIMEOUT) as ctx:
+            pl.grade_answer_parameterized(
+                data,
+                name,
+                lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
+                weight=weight,
+            )
+        if ctx.state == TimeoutState.TIMED_OUT:
+            # If sympy times out, it's because the comparison couldn't converge, so we return an error.
+            data["format_errors"][name] = (
+                "Your answer did not converge, so your expression may be too loose or tight."
+            )
+    except ValueError as e:
+        # See https://github.com/PrairieLearn/PrairieLearn/pull/13178 for more context as to why we catch this error.
+        if "integer string conversion" in str(e):
+            data["format_errors"][name] = (
+                f"Your expression expands integers longer than {get_int_max_str_digits()} digits, "
+                "try a simpler expression."
+            )
+        else:
+            raise
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-
-    # Get raw correct answer
-    a_tru = data["correct_answers"][name]
-
     result = data["test_type"]
+    a_tru = None
+
+    if result in ["correct", "incorrect"] and name not in data["correct_answers"]:
+        # This element cannot test itself. Defer the generation of test inputs to server.py
+        return
+    elif result in ["correct", "incorrect"]:
+        # Get raw correct answer
+        a_tru = data["correct_answers"][name]
+
     if result == "correct":
         data["raw_submitted_answers"][name] = a_tru
         data["partial_scores"][name] = {
@@ -291,6 +335,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             "feedback": bou.CORRECT_UNCONDITIONAL_FEEDBACK,
         }
 
+    elif result == "incorrect" and a_tru == "":
+        data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * 1"
+        data["partial_scores"][name] = {
+            "score": 0,
+            "weight": weight,
+            "feedback": bou.INCORRECT_FEEDBACK,
+        }
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * {a_tru}"
         bigo_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)

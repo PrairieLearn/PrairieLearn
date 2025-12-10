@@ -1,10 +1,10 @@
 <pl-question-panel>
   <p>
     Questions below were designed to showcase the different features of
-    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+    <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-integer-input"
       ><code>pl-integer-input</code></a
     >. The goal of
-    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+    <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-integer-input"
       ><code>pl-integer-input</code></a
     >
     is to allow users to enter only <b>integer values</b>. That is, users are only able to enter
@@ -17,7 +17,7 @@
   <pl-question-panel>
     <p>
       Within this question, you can observe the default behavior of the
-      <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+      <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-integer-input"
         ><code>pl-integer-input</code></a
       >
       element. In particular, the default input field has help text of "integer" as a placeholder
@@ -25,14 +25,14 @@
     </p>
     <p>Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$</p>
   </pl-question-panel>
-  <pl-integer-input answers-name="c_1"></pl-integer-input>
+  <pl-integer-input aria-label="c" answers-name="c_1"></pl-integer-input>
 </pl-card>
 
 <pl-card>
   <pl-question-panel>
     <p>
       Under this variant, we opt to provide a label for
-      <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+      <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-integer-input"
         ><code>pl-integer-input</code></a
       >
       In addition, we've opted to add a suffix or a unit classification to the input via
@@ -47,7 +47,7 @@
   <pl-question-panel>
     <p>
       Within this variant, the different display options for
-      <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+      <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-integer-input"
         ><code>pl-integer-input</code></a
       >
       on the page are displayed. Specifically, this question uses the block option
@@ -57,7 +57,7 @@
     </p>
     <p>Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$</p>
   </pl-question-panel>
-  <pl-integer-input answers-name="c_4" display="block" weight="4"></pl-integer-input>
+  <pl-integer-input aria-label="c" answers-name="c_4" display="block" weight="4"></pl-integer-input>
 </pl-card>
 
 <pl-card>
@@ -69,7 +69,7 @@
     </p>
     <p>Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$</p>
   </pl-question-panel>
-  <pl-integer-input answers-name="c_5" size="5" show-help-text="false"></pl-integer-input>
+  <pl-integer-input aria-label="c" answers-name="c_5" size="5" show-help-text="false"></pl-integer-input>
 </pl-card>
 
 <pl-card>
@@ -79,15 +79,35 @@
       leaves it blank.
     </p>
     <p>
-      Solve for the value of $c$ given $c = 0^n$ for $n = 1$ (leave the question blank if the
-      value is zero).
+      Solve for the value of $c$ given $c = 0^n$ for $n = 1$ (you can leave the question blank if the
+      value is 0).
     </p>
   </pl-question-panel>
   <pl-integer-input
+    aria-label="c"
     answers-name="c_6"
     allow-blank="true"
     blank-value="0"
     correct-answer="0"
+  ></pl-integer-input>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>
+      When <code>allow-blank="true"</code> is set, truly empty answers are also supported by setting <code>blank-value=""</code>  (and potentially <code>correct-answer=""</code>).
+    </p>
+    <p>
+      Solve for the value of $c$ given $c = 0^n$ for $n = 1$ (you <strong>must</strong> leave the question blank if the
+      value is 0).
+    </p>
+  </pl-question-panel>
+  <pl-integer-input
+    aria-label="c"
+    answers-name="c_6_blank"
+    allow-blank="true"
+    blank-value=""
+    correct-answer=""
   ></pl-integer-input>
 </pl-card>
 
@@ -99,8 +119,8 @@
       your answer in base $16$ and base $2$).
     </p>
   </pl-question-panel>
-  <pl-integer-input answers-name="c_7_b16" base="16"></pl-integer-input>
-  <pl-integer-input answers-name="c_7_b2" base="2"></pl-integer-input>
+  <pl-integer-input aria-label="c in base 16" answers-name="c_7_b16" base="16"></pl-integer-input>
+  <pl-integer-input aria-label="c in base 2" answers-name="c_7_b2" base="2"></pl-integer-input>
 </pl-card>
 
 <pl-card>
@@ -112,7 +132,7 @@
     </p>
     <p>Submit <code>{{correct_answers.c_large}}</code>.</p>
   </pl-question-panel>
-  <pl-integer-input answers-name="c_large" placeholder="very large integer" base="16"></pl-integer-input>
+  <pl-integer-input aria-label="c in base 16" answers-name="c_large" placeholder="very large integer" base="16"></pl-integer-input>
 </pl-card>
 
 <pl-card>
@@ -124,5 +144,5 @@
     </p>
     <p>Submit <code>{{params.d}}</code>.</p>
   </pl-question-panel>
-  <pl-integer-input answers-name="c_np" show-score="False"></pl-integer-input>
+  <pl-integer-input aria-label="c" answers-name="c_np" show-score="False"></pl-integer-input>
 </pl-card>

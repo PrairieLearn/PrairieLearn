@@ -2,8 +2,9 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course, CourseInstanceSchema, type Institution } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export const CourseInstanceRowSchema = z.object({
   course_instance: CourseInstanceSchema,
@@ -20,7 +21,7 @@ export function AdministratorInstitutionCourse({
   institution: Institution;
   course: Course;
   rows: CourseInstanceRow[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals: { ...resLocals, institution },
@@ -126,10 +127,7 @@ export function AdministratorInstitutionCourse({
 
       <h2 class="h4">Course instances</h2>
       <div class="table-responsive">
-        <table
-          class="table table-hover table-striped table-bordered table"
-          aria-label="Course instances"
-        >
+        <table class="table table-hover table-striped table-bordered" aria-label="Course instances">
           <thead>
             <tr>
               <th>Name</th>

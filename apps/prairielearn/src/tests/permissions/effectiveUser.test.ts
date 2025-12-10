@@ -1,35 +1,34 @@
-import { assert } from 'chai';
+import * as cheerio from 'cheerio';
 import fs from 'fs-extra';
-import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';
-import { z } from 'zod';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
+import type { CourseInstance } from '../../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
+import { getOrCreateUser } from '../utils/auth.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const UserWithIdSchema = z.object({
-  user_id: z.string(),
-});
+describe('effective user', { timeout: 60_000 }, function () {
+  let courseInstance: CourseInstance;
 
-describe('effective user', function () {
-  this.timeout(60000);
-
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.pageUrlTestCourse = `${context.baseUrl}/course/1`;
   context.pageUrlExampleCourse = `${context.baseUrl}/course/2`;
@@ -37,7 +36,7 @@ describe('effective user', function () {
   context.pageUrlExampleCourseInstance = `${context.baseUrl}/course_instance/2/instructor`;
   context.pageUrlStudent = `${context.baseUrl}/course_instance/1`;
 
-  before('set up testing server', async function () {
+  beforeAll(async function () {
     // We need two courses for this test so that we can validate behavior of
     // institution administrators, specifically what happens when an instructor
     // in one course tries to emulate an institution administrator and then
@@ -49,7 +48,7 @@ describe('effective user', function () {
     const secondCourseDir = await tmp.dir({ unsafeCleanup: true });
     await fs.copy(TEST_COURSE_PATH, secondCourseDir.path);
 
-    await helperServer.before([TEST_COURSE_PATH, secondCourseDir.path]).call(this);
+    await helperServer.before([TEST_COURSE_PATH, secondCourseDir.path])();
   });
 
   let institutionAdminId: string;
@@ -57,18 +56,13 @@ describe('effective user', function () {
   let staffId: string;
   let studentId: string;
 
-  before('insert users', async function () {
-    const institutionAdmin = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      [
-        'institution-admin@example.com',
-        'Institution Admin',
-        null,
-        'institution-admin@example.com',
-        'dev',
-      ],
-      UserWithIdSchema,
-    );
+  beforeAll(async function () {
+    const institutionAdmin = await getOrCreateUser({
+      uid: 'institution-admin@example.com',
+      name: 'Institution Admin',
+      uin: null,
+      email: 'institution-admin@example.com',
+    });
     institutionAdminId = institutionAdmin.user_id;
     await ensureInstitutionAdministrator({
       institution_id: '1',
@@ -76,11 +70,12 @@ describe('effective user', function () {
       authn_user_id: '1',
     });
 
-    const instructor = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['instructor@example.com', 'Instructor User', '100000000', 'instructor@example.com', 'dev'],
-      UserWithIdSchema,
-    );
+    const instructor = await getOrCreateUser({
+      uid: 'instructor@example.com',
+      name: 'Instructor User',
+      uin: '100000000',
+      email: 'instructor@example.com',
+    });
     instructorId = instructor.user_id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
@@ -89,11 +84,12 @@ describe('effective user', function () {
       authn_user_id: '1',
     });
 
-    const staff = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['staff@example.com', 'Staff Three', null, 'staff@example.com', 'dev'],
-      UserWithIdSchema,
-    );
+    const staff = await getOrCreateUser({
+      uid: 'staff@example.com',
+      name: 'Staff Three',
+      uin: null,
+      email: 'staff@example.com',
+    });
     staffId = staff.user_id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
@@ -102,27 +98,32 @@ describe('effective user', function () {
       authn_user_id: '2',
     });
 
-    const student = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['student@example.com', 'Student User', '000000001', 'student@example.com', 'dev'],
-      UserWithIdSchema,
-    );
+    const student = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Student User',
+      uin: '000000001',
+      email: 'student@example.com',
+    });
     studentId = student.user_id;
-    await ensureEnrollment({
-      user_id: studentId,
-      course_instance_id: '1',
+    courseInstance = await selectCourseInstanceById('1');
+    await ensureUncheckedEnrollment({
+      userId: studentId,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
     });
   });
 
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
-  step('student can access course instance', async () => {
+  test.sequential('student can access course instance', async () => {
     const headers = { cookie: 'pl_test_user=test_student' };
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 200);
   });
 
-  step('student cannot override date (ignore when on student page)', async () => {
+  test.sequential('student cannot override date (ignore when on student page)', async () => {
     const headers = {
       cookie: 'pl_test_user=test_student; pl2_requested_date=1700-01-19T00:00:01',
     };
@@ -130,7 +131,7 @@ describe('effective user', function () {
     assert.equal(res.status, 200);
   });
 
-  step('student cannot override date (error when on instructor page)', async () => {
+  test.sequential('student cannot override date (error when on instructor page)', async () => {
     const headers = {
       cookie: 'pl_test_user=test_student; pl2_requested_date=1700-01-19T00:00:01',
     };
@@ -138,39 +139,42 @@ describe('effective user', function () {
     assert.equal(res.status, 403);
   });
 
-  step('student cannot override date (error when on instructor page) - course route', async () => {
-    const headers = {
-      cookie: 'pl_test_user=test_student; pl2_requested_date=1700-01-19T00:00:01',
-    };
-    const res = await helperClient.fetchCheerio(context.pageUrlTestCourse, { headers });
-    assert.equal(res.status, 403);
-  });
+  test.sequential(
+    'student cannot override date (error when on instructor page) - course route',
+    async () => {
+      const headers = {
+        cookie: 'pl_test_user=test_student; pl2_requested_date=1700-01-19T00:00:01',
+      };
+      const res = await helperClient.fetchCheerio(context.pageUrlTestCourse, { headers });
+      assert.equal(res.status, 403);
+    },
+  );
 
-  step('instructor can override date and does not become enrolled', async () => {
-    let result = await sqldb.queryAsync(sql.select_enrollment, {
+  test.sequential('instructor can override date and does not become enrolled', async () => {
+    let rowCount = await sqldb.execute(sql.select_enrollment, {
       user_id: instructorId,
       course_instance_id: 1,
     });
-    assert.lengthOf(result.rows, 0);
+    assert.equal(rowCount, 0);
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_date=1700-01-19T00:00:01',
     };
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 200);
-    result = await sqldb.queryAsync(sql.select_enrollment, {
+    rowCount = await sqldb.execute(sql.select_enrollment, {
       user_id: instructorId,
       course_instance_id: 1,
     });
-    assert.lengthOf(result.rows, 0);
+    assert.equal(rowCount, 0);
   });
 
-  step('instructor can access course instance', async () => {
+  test.sequential('instructor can access course instance', async () => {
     const headers = { cookie: 'pl_test_user=test_instructor' };
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 200);
   });
 
-  step('instructor (no course instance role) cannot emulate student', async () => {
+  test.sequential('instructor (no course instance role) cannot emulate student', async () => {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
     };
@@ -178,11 +182,11 @@ describe('effective user', function () {
     assert.equal(res.status, 403);
   });
 
-  step('instructor (student data viewer) cannot emulate student', async () => {
+  test.sequential('instructor (student data viewer) cannot emulate student', async () => {
     await insertCourseInstancePermissions({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -193,11 +197,11 @@ describe('effective user', function () {
     assert.equal(res.status, 403);
   });
 
-  step('instructor (student data editor) can emulate student', async () => {
+  test.sequential('instructor (student data editor) can emulate student', async () => {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -208,28 +212,31 @@ describe('effective user', function () {
     assert.equal(res.status, 200);
   });
 
-  step('instructor can emulate student and override date in range (expect success)', async () => {
-    const headers = {
-      cookie:
-        'pl_test_user=test_instructor; pl2_requested_date=1900-01-19T00:00:01; pl2_requested_uid=student@example.com',
-    };
-    const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
-    assert.equal(res.status, 200);
-  });
+  test.sequential(
+    'instructor can emulate student and override date in range (expect success)',
+    async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl2_requested_date=1950-01-19T00:00:01; pl2_requested_uid=student@example.com',
+      };
+      const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
+      assert.equal(res.status, 200);
+    },
+  );
 
-  step(
+  test.sequential(
     'instructor can emulate student and override date out of range (expect failure)',
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_date=1700-01-19T00:00:01; pl2_requested_uid=student@example.com',
+          'pl_test_user=test_instructor; pl2_requested_date=1890-01-19T00:00:01; pl2_requested_uid=student@example.com',
       };
       const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
       assert.equal(res.status, 403);
     },
   );
 
-  step(
+  test.sequential(
     'instructor can emulate student and be denied access to instructor page (course instance route)',
     async () => {
       const headers = {
@@ -240,7 +247,7 @@ describe('effective user', function () {
     },
   );
 
-  step(
+  test.sequential(
     'instructor can emulate student and be denied access to instructor page (course route)',
     async () => {
       const headers = {
@@ -251,7 +258,7 @@ describe('effective user', function () {
     },
   );
 
-  step('cannot request invalid date', async () => {
+  test.sequential('cannot request invalid date', async () => {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_date=garbage',
     };
@@ -259,7 +266,7 @@ describe('effective user', function () {
     assert.equal(res.status, 403);
   });
 
-  step('cannot request invalid uid', async () => {
+  test.sequential('cannot request invalid uid', async () => {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=garbage',
     };
@@ -267,7 +274,7 @@ describe('effective user', function () {
     assert.equal(res.status, 403);
   });
 
-  step('cannot request uid of administrator when not administrator', async () => {
+  test.sequential('cannot request uid of administrator when not administrator', async () => {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=dev@example.com',
     };
@@ -275,8 +282,8 @@ describe('effective user', function () {
     assert.equal(res.status, 403);
   });
 
-  step('can request uid of administrator when administrator', async () => {
-    await sqldb.queryAsync(sql.insert_administrator, { user_id: instructorId });
+  test.sequential('can request uid of administrator when administrator', async () => {
+    await sqldb.execute(sql.insert_administrator, { user_id: instructorId });
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=dev@example.com',
     };
@@ -284,16 +291,19 @@ describe('effective user', function () {
     assert.equal(res.status, 200);
   });
 
-  step('cannot request uid of administrator when administrator access is inactive', async () => {
-    const headers = {
-      cookie:
-        'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_uid=dev@example.com',
-    };
-    const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
-    assert.equal(res.status, 403);
-  });
+  test.sequential(
+    'cannot request uid of administrator when administrator access is inactive',
+    async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_uid=dev@example.com',
+      };
+      const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
+      assert.equal(res.status, 403);
+    },
+  );
 
-  step('can request uid of course editor as course owner', async () => {
+  test.sequential('can request uid of course editor as course owner', async () => {
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_uid=staff@example.com',
@@ -302,7 +312,7 @@ describe('effective user', function () {
     assert.equal(res.status, 200);
   });
 
-  step('cannot request uid of course editor as course viewer', async () => {
+  test.sequential('cannot request uid of course editor as course viewer', async () => {
     await updateCoursePermissionsRole({
       course_id: '1',
       user_id: instructorId,
@@ -317,7 +327,7 @@ describe('effective user', function () {
     assert.equal(res.status, 403);
   });
 
-  step('can request uid of student data viewer as student data editor', async () => {
+  test.sequential('can request uid of student data viewer as student data editor', async () => {
     await updateCoursePermissionsRole({
       course_id: '1',
       user_id: instructorId,
@@ -327,7 +337,7 @@ describe('effective user', function () {
     await insertCourseInstancePermissions({
       course_id: '1',
       user_id: staffId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -339,18 +349,18 @@ describe('effective user', function () {
     assert.equal(res.status, 200);
   });
 
-  step('cannot request uid of student data editor as student data viewer', async () => {
+  test.sequential('cannot request uid of student data editor as student data viewer', async () => {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: staffId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -362,7 +372,7 @@ describe('effective user', function () {
     assert.equal(res.status, 403);
   });
 
-  step('instructor can request lower course role', async () => {
+  test.sequential('instructor can request lower course role', async () => {
     await updateCoursePermissionsRole({
       course_id: '1',
       user_id: instructorId,
@@ -377,7 +387,7 @@ describe('effective user', function () {
     assert.equal(res.status, 200);
   });
 
-  step('instructor cannot request higher course role', async () => {
+  test.sequential('instructor cannot request higher course role', async () => {
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=Editor',
@@ -386,11 +396,11 @@ describe('effective user', function () {
     assert.equal(res.status, 403);
   });
 
-  step('instructor can request lower course instance role', async () => {
+  test.sequential('instructor can request lower course instance role', async () => {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -402,11 +412,11 @@ describe('effective user', function () {
     assert.equal(res.status, 200);
   });
 
-  step('instructor cannot request higher course instance role', async () => {
-    updateCourseInstancePermissionsRole({
+  test.sequential('instructor cannot request higher course instance role', async () => {
+    await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -418,16 +428,19 @@ describe('effective user', function () {
     assert.equal(res.status, 403);
   });
 
-  step('instructor can request no role and be granted access to student page', async () => {
-    const headers = {
-      cookie:
-        'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=None; pl2_requested_course_instance_role=None',
-    };
-    const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
-    assert.equal(res.status, 200);
-  });
+  test.sequential(
+    'instructor can request no role and be granted access to student page',
+    async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=None; pl2_requested_course_instance_role=None',
+      };
+      const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
+      assert.equal(res.status, 200);
+    },
+  );
 
-  step(
+  test.sequential(
     'instructor can request no role and be denied access to instructor page (course instance route)',
     async () => {
       const headers = {
@@ -439,7 +452,7 @@ describe('effective user', function () {
     },
   );
 
-  step(
+  test.sequential(
     'instructor can request no course role and be denied access to instructor page (course route)',
     async () => {
       const headers = {
@@ -451,7 +464,7 @@ describe('effective user', function () {
     },
   );
 
-  step(
+  test.sequential(
     'instructor can request no course role and be granted access to instructor page (course instance route)',
     async () => {
       const headers = {
@@ -463,7 +476,7 @@ describe('effective user', function () {
     },
   );
 
-  step(
+  test.sequential(
     'less-privileged instructor cannot request access as institution administrator',
     async () => {
       const headers = {
@@ -475,7 +488,7 @@ describe('effective user', function () {
     },
   );
 
-  step('reset instructor course role to maximum permissions', async () => {
+  test.sequential('reset instructor course role to maximum permissions', async () => {
     await updateCoursePermissionsRole({
       course_id: '1',
       user_id: instructorId,
@@ -485,13 +498,13 @@ describe('effective user', function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
   });
 
-  step(
+  test.sequential(
     'instructor can access their own course when requesting access as institution administrator',
     async () => {
       const headers = {
@@ -503,7 +516,7 @@ describe('effective user', function () {
     },
   );
 
-  step(
+  test.sequential(
     'instructor can access their own course instance when requesting access as institution administrator',
     async () => {
       const headers = {
@@ -515,7 +528,7 @@ describe('effective user', function () {
     },
   );
 
-  step(
+  test.sequential(
     'instructor cannot access other courses when requesting access as institution administrator',
     async () => {
       const headers = {
@@ -527,7 +540,7 @@ describe('effective user', function () {
     },
   );
 
-  step(
+  test.sequential(
     'instructor cannot access other course instances when requesting access as institution administrator',
     async () => {
       const headers = {
@@ -538,6 +551,62 @@ describe('effective user', function () {
         headers,
       });
       assert.equal(res.status, 403);
+    },
+  );
+
+  test.sequential(
+    'instructor is denied access when emulating student, and no redirect is available',
+    async () => {
+      const headers = {
+        cookie: 'pl2_requested_uid=student@example.com; pl2_requested_data_changed=true',
+      };
+      // Test that instructor is denied access to instructor pages when emulating student
+      const instructorPageUrl = `${context.baseUrl}/course/1/course_admin/instance_admin`;
+      const response = await fetch(instructorPageUrl, {
+        headers,
+        redirect: 'manual',
+      });
+      // This should result in a fancy 403 error page
+      const body = await response.text();
+      const $ = cheerio.load(body);
+      const authzAccessMismatch = $('div[data-component="AuthzAccessMismatch"]');
+      assert.equal(authzAccessMismatch.length, 1);
+      assert.equal(response.status, 403);
+    },
+  );
+
+  test.sequential(
+    'instructor is allowed access when emulating student, and a redirect is available',
+    async () => {
+      const courseInstanceId = '1';
+      const studentUid = 'student@example.com';
+      const user = await getOrCreateUser({
+        uid: studentUid,
+        name: 'Example Student',
+        uin: 'student',
+        email: 'student@example.com',
+      });
+      await ensureUncheckedEnrollment({
+        courseInstance,
+        userId: user.user_id,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+        actionDetail: 'implicit_joined',
+      });
+
+      const headers = {
+        // We don't include the pl_test_user cookie since that will short-circuit the authzHelper middleware
+        cookie: `pl2_requested_uid=${studentUid}; pl2_requested_data_changed=true`,
+      };
+      const instructorPageUrl = `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/assessments`;
+      const studentPageUrl = `/pl/course_instance/${courseInstanceId}`;
+      const response = await fetch(context.siteUrl + instructorPageUrl, {
+        headers,
+        redirect: 'manual',
+      });
+
+      assert.equal(response.status, 302);
+      assert.equal(response.headers.get('Location'), studentPageUrl);
     },
   );
 });

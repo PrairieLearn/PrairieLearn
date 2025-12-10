@@ -1,12 +1,14 @@
 import { z } from 'zod';
 
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
+import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
+import { nodeModulesAssetPath } from '../../../lib/assets.js';
 import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 // We show all draft questions, even those without associated metadata, because we
 // won't have metadata for a draft question if it was created on and synced from
@@ -19,44 +21,11 @@ export const DraftMetadataWithQidSchema = z.object({
 });
 export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 
-const examplePrompts = [
-  {
-    id: 'Select median of 5 random numbers',
-    promptGeneral:
-      'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
-    promptUserInput:
-      'Each random number generated should be a potential answer to the multiple-choice question. Randomize the order of the numbers.',
-    promptGrading: 'The correct answer is the median of the numbers.',
-  },
-  {
-    id: 'Multiply random integers',
-    promptGeneral:
-      'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B.',
-    promptUserInput: 'Provide an integer input box for the user to enter the product.',
-    promptGrading: 'The correct answer is the product of A and B.',
-  },
-  {
-    id: 'Answer to Ultimate Question',
-    promptGeneral:
-      'Write a question asking "What Is The Answer to the Ultimate Question of Life, the Universe, and Everything?".',
-    promptUserInput: 'Provide an integer box for the user to answer.',
-    promptGrading: 'The correct answer is 42.',
-  },
-  {
-    id: 'Calculate Projectile Distance',
-    promptGeneral:
-      'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
-    promptUserInput: 'Provide a numerical input box for the user to enter an answer.',
-    promptGrading:
-      'The correct answer is the distance that the projectile will travel, using the corresponding formula.',
-  },
-];
-
 export function InstructorAIGenerateDrafts({
   resLocals,
   drafts,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   drafts: DraftMetadataWithQid[];
 }) {
   const hasDrafts = drafts.length > 0;
@@ -66,6 +35,9 @@ export function InstructorAIGenerateDrafts({
     pageTitle: resLocals.pageTitle,
     headContent: html`
       ${compiledScriptTag('instructorAiGenerateDraftsClient.ts')}
+      ${compiledScriptTag('instructorAiGenerateDraftsSampleQuestions.tsx')}
+      ${compiledStylesheetTag('instructorAiGenerateDrafts.css')}
+      <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
       <style>
         .reveal-fade {
           position: absolute;
@@ -93,11 +65,7 @@ export function InstructorAIGenerateDrafts({
           Back to all questions
         </a>
       </div>
-      <div
-        id="add-question-card"
-        class="card mb-5 mx-auto overflow-hidden"
-        style="max-width: 700px"
-      >
+      <div class="card mb-5 mx-auto" style="max-width: 700px">
         <div class="card-body position-relative">
           <h1 class="h3 text-center">Generate a new question with AI</h1>
           <form
@@ -113,8 +81,8 @@ export function InstructorAIGenerateDrafts({
 
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
-                Give a high-level overview of the question. What internal parameters need to be
-                generated and what information should be provided to students?
+                Give a high-level overview of the question, including what parameters should be
+                generated and how students should provide their response.
               </label>
               <textarea
                 name="prompt"
@@ -122,110 +90,25 @@ export function InstructorAIGenerateDrafts({
                 class="form-control js-textarea-autosize"
                 style="resize: none;"
               ></textarea>
-              <div class="form-text form-muted">
-                <em>
-                  Example: A toy car is pushed off a table with height h at speed v0. Assume
-                  acceleration due to gravity as 9.81 m/s^2. H is a number with 1 decimal digit
-                  selected at random between 1 and 2 meters. V0 is a an integer between 1 and 4 m/s.
-                  How long does it take for the car to reach the ground?
-                </em>
-              </div>
             </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <span
+                class="spinner-grow spinner-grow-sm d-none me-1"
+                role="status"
+                aria-hidden="true"
+                data-loading-class-remove="d-none"
+              >
+              </span>
+              Create question
+            </button>
 
-            <div class="js-hidden-inputs-container ${hasDrafts ? 'd-none' : ''}">
-              <div class="mb-3">
-                <label class="form-label" for="user-prompt-llm-user-input">
-                  How should students input their solution? What choices or input boxes are they
-                  given?
-                </label>
-                <textarea
-                  name="prompt_user_input"
-                  id="user-prompt-llm-user-input"
-                  class="form-control js-textarea-autosize"
-                  style="resize: none;"
-                ></textarea>
-                <div class="form-text form-muted">
-                  <em>
-                    Example: students should enter the solution using a decimal number. The answer
-                    should be in seconds.
-                  </em>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label" for="user-prompt-llm-grading">
-                  How is the correct answer determined?
-                </label>
-                <textarea
-                  name="prompt_grading"
-                  id="user-prompt-llm-grading"
-                  class="form-control js-textarea-autosize"
-                  style="resize: none;"
-                ></textarea>
-                <div class="form-text form-muted">
-                  <em> Example: the answer is computed as sqrt(2 * h / g) where g = 9.81 m/s^2 </em>
-                </div>
-              </div>
-
-              ${
-                // We think this will mostly be useful in local dev or for
-                // global admins who will want to iterate rapidly and don't
-                // want to retype a whole prompt each time. For actual users,
-                // we think this will mostly be confusing if we show it.
-                resLocals.is_administrator
-                  ? html`
-                      <hr />
-
-                      <div class="mb-3">
-                        <label for="user-prompt-example" class="form-label">
-                          Or choose an example prompt:
-                        </label>
-                        <select id="user-prompt-example" class="form-select">
-                          <option value=""></option>
-                          ${examplePrompts.map(
-                            (question) =>
-                              html`<option
-                                value="${question.id}"
-                                data-prompt-general="${question.promptGeneral}"
-                                data-prompt-user-input="${question.promptUserInput}"
-                                data-prompt-grading="${question.promptGrading}"
-                              >
-                                ${question.id}
-                              </option>`,
-                          )}
-                        </select>
-                      </div>
-                    `
-                  : ''
-              }
-
-              <button type="submit" class="btn btn-primary w-100">
-                <span
-                  class="spinner-grow spinner-grow-sm d-none me-1"
-                  role="status"
-                  aria-hidden="true"
-                  data-loading-class-remove="d-none"
-                >
-                </span>
-                Create question
-              </button>
-
-              <div class="text-muted small text-center mt-2">
-                AI can make mistakes. Review the generated question.
-              </div>
-
-              <div id="generation-results"></div>
+            <div class="text-muted small text-center mt-2">
+              AI can make mistakes. Review the generated question.
             </div>
+            <div id="generation-results"></div>
+            <div id="sample-questions" class="mt-2"></div>
           </form>
-          ${hasDrafts ? html`<div class="reveal-fade"></div>` : ''}
         </div>
-        ${hasDrafts
-          ? html`
-              <div class="p-2 d-flex justify-content-center bg-light js-expand-button-container">
-                <button type="button" class="btn btn-sm btn-link">Expand</button>
-              </div>
-            `
-          : ''}
       </div>
       ${hasDrafts
         ? html`
@@ -300,6 +183,25 @@ export function GenerationFailure({
 
       <p>The LLM did not generate any question file.</p>
       <a href="${urlPrefix + '/jobSequence/' + jobSequenceId}">See job logs</a>
+    </div>
+  `.toString();
+}
+
+export function RateLimitExceeded({
+  canShortenMessage = false,
+}: {
+  /**
+   * If true, shows that the user should shorten their message to stay under the rate limit.
+   */
+  canShortenMessage: boolean;
+}): string {
+  return html`
+    <div id="generation-results">
+      <div class="alert alert-danger mt-2 mb-0">
+        ${canShortenMessage
+          ? 'Your prompt is too long. Please shorten it and try again.'
+          : "You've reached the hourly usage cap for AI question generation. Please try again later."}
+      </div>
     </div>
   `.toString();
 }

@@ -4,7 +4,7 @@ SELECT
   to_jsonb(aset) AS assessment_set,
   to_jsonb(am) AS assessment_module,
   to_jsonb(aa) AS authz_result,
-  assessment_label (a, aset) AS assessment_label
+  aset.abbreviation || a.number AS assessment_label
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
@@ -14,5 +14,4 @@ FROM
 WHERE
   a.id = $assessment_id
   AND a.course_instance_id = $course_instance_id
-  AND a.deleted_at IS NULL
-  AND aa.authorized;
+  AND a.deleted_at IS NULL;

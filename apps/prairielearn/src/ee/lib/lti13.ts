@@ -2,30 +2,37 @@ import { setTimeout as sleep } from 'timers/promises';
 
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import type { Request } from 'express';
+import * as jose from 'jose';
 import _ from 'lodash';
 import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
-import { Issuer, type TokenSet } from 'openid-client';
+import * as client from 'openid-client';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryRow,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
+import type { AuthzData } from '../../lib/authz-data-lib.js';
+import { config } from '../../lib/config.js';
 import {
-  AssessmentInstanceSchema,
   AssessmentSchema,
+  type CourseInstance,
   DateFromISOString,
+  IdSchema,
   Lti13CourseInstanceSchema,
+  type Lti13Instance,
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
+import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';
@@ -70,16 +77,11 @@ export type Lineitems = z.infer<typeof LineitemsSchema>;
 
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-export const Lti13ClaimSchema = z.object({
-  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
+export const Lti13ClaimBaseSchema = z.object({
   'https://purl.imsglobal.org/spec/lti/claim/version': z.literal('1.3.0'),
   'https://purl.imsglobal.org/spec/lti/claim/deployment_id': z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
-  'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
-    id: z.string(),
-    description: z.string().nullish(),
-    title: z.string().nullish(),
-  }),
+
   // https://www.imsglobal.org/spec/security/v1p0/#tool-jwt
   // https://www.imsglobal.org/spec/security/v1p0/#id-token
   iss: z.string(),
@@ -137,10 +139,103 @@ export const Lti13ClaimSchema = z.object({
   // https://www.imsglobal.org/spec/lti/v1p3#vendor-specific-extension-claims
   // My development Canvas sends their own named extension as a top level property
   // "https://www.instructure.com/placement": "course_navigation"
+
+  // https://www.imsglobal.org/spec/lti-ags/v2p0#assignment-and-grade-service-claim
+  'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint': z
+    .object({
+      lineitems: z.string().optional(),
+      lineitem: z.string().optional(),
+      scope: z.string().array(),
+    })
+    .optional(),
+
+  // https://www.imsglobal.org/spec/lti-nrps/v2p0/#resource-link-membership-service
+  'https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice': z
+    .object({
+      context_memberships_url: z.string(),
+      service_versions: z.literal('2.0').array(),
+    })
+    .optional(),
 });
+
+// https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
+export const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
+  z.object({
+    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
+    'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
+      id: z.string(),
+      description: z.string().nullish(),
+      title: z.string().nullish(),
+    }),
+  }),
+);
+
+// https://www.imsglobal.org/spec/lti-dl/v2p0#message-claims
+export const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
+  z.object({
+    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiDeepLinkingRequest'),
+    'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({
+      deep_link_return_url: z.string(),
+      accept_types: z.string().array(),
+      accept_presentation_document_targets: z.enum(['embed', 'iframe', 'window']).array(),
+      accept_media_types: z.string().optional(),
+      accept_multiple: z.boolean().optional(),
+      accept_lineitem: z.boolean().optional(),
+      auto_create: z.boolean().optional(),
+      title: z.string().optional(),
+      text: z.string().optional(),
+      data: z.any().optional(),
+    }),
+  }),
+);
+
+export const Lti13ClaimSchema = z.discriminatedUnion(
+  'https://purl.imsglobal.org/spec/lti/claim/message_type',
+  [Lti13ResourceLinkRequestSchema, Lti13DeepLinkingRequestSchema],
+);
 export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
 export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
+
+export async function getOpenidClientConfig(
+  lti13_instance: Lti13Instance,
+  options?: client.ModifyAssertionOptions,
+): Promise<client.Configuration> {
+  const keystore = lti13_instance.keystore as jose.JSONWebKeySet | null | undefined;
+  if (!keystore || !Array.isArray(keystore.keys) || keystore.keys.length === 0) {
+    throw new Error('LTI 1.3 configuration error: no keys available in keystore');
+  }
+
+  const keyFromKeyStore = keystore.keys.at(-1);
+  if (!keyFromKeyStore) {
+    throw new Error('LTI 1.3 configuration error: unable to load key');
+  }
+
+  const cryptoKey = await jose.importJWK(keyFromKeyStore);
+  if (cryptoKey instanceof Uint8Array) {
+    throw new Error('LTI 1.3 configuration error: unsupported key type');
+  }
+
+  const openidClientConfig = new client.Configuration(
+    lti13_instance.issuer_params,
+    lti13_instance.client_params.client_id,
+    lti13_instance.client_params,
+    client.PrivateKeyJwt(
+      {
+        key: cryptoKey,
+        kid: keyFromKeyStore.kid,
+      },
+      options,
+    ),
+  );
+
+  // Only for testing
+  if (config.devMode) {
+    client.allowInsecureRequests(openidClientConfig);
+  }
+
+  return openidClientConfig;
+}
 
 export class Lti13Claim {
   private claims: Lti13ClaimType;
@@ -149,8 +244,8 @@ export class Lti13Claim {
 
   constructor(req: Request) {
     try {
-      this.claims = Lti13ClaimSchema.passthrough().parse(req.session.lti13_claims);
-    } catch (err) {
+      this.claims = Lti13ClaimSchema.parse(req.session.lti13_claims);
+    } catch (err: any) {
       throw new AugmentedError('LTI session invalid or timed out, please try logging in again.', {
         cause: err,
         status: 403,
@@ -201,7 +296,7 @@ export class Lti13Claim {
   private assertValid() {
     if (!this.valid || Math.floor(Date.now() / 1000) > this.claims.exp) {
       this.valid = false;
-      delete this.req.session['lti13_claims'];
+      delete this.req.session.lti13_claims;
       throw new HttpStatusError(
         403,
         'LTI session invalid or timed out, please try logging in again.',
@@ -276,25 +371,15 @@ export class Lti13Claim {
    */
   remove() {
     this.valid = false;
-    delete this.req.session['lti13_claims'];
-    delete this.req.session['authn_lti13_instance_id'];
+    delete this.req.session.lti13_claims;
+    delete this.req.session.authn_lti13_instance_id;
   }
 }
 
-export async function validateLti13CourseInstance(
-  resLocals: Record<string, any>,
-): Promise<boolean> {
-  const feature_enabled = await features.enabledFromLocals('lti13', resLocals);
-
-  if (!feature_enabled) {
-    return false;
-  }
-
+export async function validateLti13CourseInstance(resLocals: UntypedResLocals): Promise<boolean> {
   const hasLti13CourseInstance = await queryRow(
     sql.select_ci_validation,
-    {
-      course_instance_id: resLocals.course_instance.id,
-    },
+    { course_instance_id: resLocals.course_instance.id },
     z.boolean(),
   );
 
@@ -309,51 +394,57 @@ export async function validateLti13CourseInstance(
 export async function getAccessToken(lti13_instance_id: string) {
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
-  let tokenSet: TokenSet = lti13_instance.access_tokenset;
-
   const fiveMinutesInTheFuture = new Date(Date.now() + 5 * 60 * 1000);
 
   if (
+    lti13_instance.access_tokenset &&
     lti13_instance.access_token_expires_at &&
     lti13_instance.access_token_expires_at > fiveMinutesInTheFuture
   ) {
-    return tokenSet.access_token;
+    return lti13_instance.access_tokenset.access_token;
   }
 
-  // Fetch the token
-  const issuer = new Issuer(lti13_instance.issuer_params);
-  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
+  const modAssertion: client.ModifyAssertionOptions = {
+    [client.modifyAssertion]: (_header, payload) => {
+      // Canvas requires the `aud` claim the be (or contain) the token endpoint:
+      // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/client_credentials_provider.rb#L26-L29
+      // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/asymmetric_client_credentials_provider.rb#L24
+      //
+      // From what we can tell, the OIDC spec requires this as well, see "private key jwt"
+      // here: https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.9
+      //
+      // "The Audience SHOULD be the URL of the Authorization Server's Token Endpoint."
+      //
+      // However, `openid-client` changed their behavior in the following commit:
+      // https://github.com/panva/openid-client/commit/0b05217e7f283b75fd93c27c0f8c647f37501a33
+      //
+      // There wasn't a justification provided and this seems to deviate from the OIDC spec.
+      // See a discussion here: https://github.com/panva/openid-client/discussions/730
+      payload.aud = [
+        ...new Set(
+          [lti13_instance.issuer_params.issuer, lti13_instance.issuer_params.token_endpoint].filter(
+            Boolean,
+          ),
+        ),
+      ];
 
-  tokenSet = await client.grant(
-    {
-      grant_type: 'client_credentials',
-      scope: TOKEN_SCOPES.join(' '),
+      // FUTURE WORK: Tool SHOULD include the deployment ID as part of the JWT to request a token.
+      // https://www.imsglobal.org/spec/lti/v1p3/#deployment-id
+      // payload['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
     },
-    {
-      clientAssertionPayload: {
-        // Canvas requires the `aud` claim the be (or contain) the token endpoint:
-        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/client_credentials_provider.rb#L26-L29
-        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/asymmetric_client_credentials_provider.rb#L24
-        //
-        // From what we can tell, the OIDC spec requires this as well, see "private key jwt"
-        // here: https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.9
-        //
-        // "The Audience SHOULD be the URL of the Authorization Server's Token Endpoint."
-        //
-        // However, `openid-client` changed their behavior in the following commit:
-        // https://github.com/panva/openid-client/commit/0b05217e7f283b75fd93c27c0f8c647f37501a33
-        //
-        // There wasn't a justification provided and this seems to deviate from the OIDC spec.
-        // See a discussion here: https://github.com/panva/openid-client/discussions/730
-        aud: [...new Set([issuer.issuer, issuer.token_endpoint].filter(Boolean))],
-      },
-    },
-  );
+  };
+
+  const openidClientConfig = await getOpenidClientConfig(lti13_instance, modAssertion);
+
+  // Fetch the token
+  const tokenSet = await client.clientCredentialsGrant(openidClientConfig, {
+    scope: TOKEN_SCOPES.join(' '),
+  });
 
   // Store the token for reuse
-  const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
+  const expires_at = tokenSet.expires_in ? Date.now() + tokenSet.expires_in * 1000 : Date.now();
 
-  await queryAsync(sql.update_token, {
+  await execute(sql.update_token, {
     lti13_instance_id,
     access_tokenset: tokenSet,
     access_token_expires_at: new Date(expires_at),
@@ -470,19 +561,14 @@ export async function queryAndLinkLineitem(
   unsafe_assessment_id: string | number,
 ) {
   const item = await getLineitem(instance, lineitem_id_url);
-
-  if (item) {
-    await linkAssessment(instance.lti13_course_instance.id, unsafe_assessment_id, item);
-  } else {
-    throw new HttpStatusError(400, 'Lineitem not found');
-  }
+  await linkAssessment(instance.lti13_course_instance.id, unsafe_assessment_id, item);
 }
 
 export async function unlinkAssessment(
   lti13_course_instance_id: string,
   assessment_id: string | number,
 ) {
-  await queryAsync(sql.delete_lti13_assessment, {
+  await execute(sql.delete_lti13_assessment, {
     lti13_course_instance_id,
     assessment_id,
   });
@@ -502,11 +588,7 @@ export async function linkAssessment(
     AssessmentSchema,
   );
 
-  if (assessment === null) {
-    throw new HttpStatusError(403, 'Invalid assessment id');
-  }
-
-  await queryAsync(sql.upsert_lti13_assessment, {
+  await execute(sql.upsert_lti13_assessment, {
     lti13_course_instance_id,
     lineitem_id_url: lineitem.id,
     lineitem: JSON.stringify(lineitem),
@@ -514,12 +596,29 @@ export async function linkAssessment(
   });
 }
 
-/* Throttling notes
-// https://canvas.instructure.com/doc/api/file.throttling.html
-// 403 Forbidden (Rate Limit Exceeded)
-// X-Request-Cost
-// X-Rate-Limit-Remaining
-*/
+/**
+ * Recurse through nested object(s) to find the first instance of a key with a given name
+ * and return that key's value.
+ *
+ * @param obj Object to inspect
+ * @param targetKey Key to find
+ * @returns Contents of the targetKey variable
+ */
+export function findValueByKey(obj: unknown, targetKey: string): unknown {
+  if (typeof obj !== 'object' || obj === null) return undefined;
+  if (Object.hasOwn(obj, targetKey)) {
+    return (obj as Record<string, unknown>)[targetKey];
+  }
+  for (const key in obj) {
+    if (typeof (obj as Record<string, unknown>)[key] === 'object') {
+      const result = findValueByKey((obj as Record<string, unknown>)[key], targetKey);
+      if (result !== undefined) {
+        return result;
+      }
+    }
+  }
+  return undefined;
+}
 
 /**
  * Make HTTP fetch requests with retries
@@ -527,11 +626,13 @@ export async function linkAssessment(
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @param incomingfetchRetryOpts.retryLeft - Number of retries left
+ * @param incomingfetchRetryOpts.sleepMs - Time to sleep between retries
  * @returns Node fetch response object
  */
 export async function fetchRetry(
   input: RequestInfo | URL,
-  opts?: RequestInit | undefined,
+  opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;
@@ -545,46 +646,68 @@ export async function fetchRetry(
   try {
     const response = await fetch(input, opts);
 
-    switch (response.status) {
-      // 422 Unprocessable Entity, User not found in course or is not a student
-      case 422:
-        return response;
+    if (response.ok) {
+      return response;
     }
 
-    if (!response.ok) {
-      throw new AugmentedError('LTI 1.3 fetch error, please try again', {
-        data: {
-          status: response.status,
-          statusText: response.statusText,
-          body: await response.text(),
-        },
-      });
+    let errorMsg: string;
+    const resString = await response.text();
+
+    try {
+      // Try to pull the "message" property out of the error and highlight it.
+      // Fall back to showing the full error text.
+      //
+      // Examples of LMS error messages are in the lti13.test.ts file.
+      const resObject = JSON.parse(resString);
+
+      errorMsg = (findValueByKey(resObject, 'message') ?? resString).toString();
+    } catch {
+      errorMsg = resString;
     }
-    return response;
-  } catch (err) {
-    fetchRetryOpts.retryLeft -= 1;
-    if (fetchRetryOpts.retryLeft === 0) {
+
+    throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}: ${errorMsg}`, {
+      status: response.status,
+      data: {
+        statusText: response.statusText,
+        body: resString,
+      },
+    });
+  } catch (err: any) {
+    // https://canvas.instructure.com/doc/api/file.throttling.html
+    // 403 Forbidden (Rate Limit Exceeded)
+    if (
+      // Common retry codes
+      [403, 429, 502, 503, 504].includes(err.status) ||
+      // node-fetch transient errors
+      err.name === 'FetchError' ||
+      err.code === 'ECONNRESET'
+    ) {
+      // Retry logic
+      fetchRetryOpts.retryLeft -= 1;
+      if (fetchRetryOpts.retryLeft === 0) {
+        throw err;
+      }
+      await sleep(fetchRetryOpts.sleepMs);
+      return await fetchRetry(input, opts, fetchRetryOpts);
+    } else {
+      // Error immediately
       throw err;
     }
-    await sleep(fetchRetryOpts.sleepMs);
-    return await fetchRetry(input, opts, fetchRetryOpts);
   }
 }
 
 /**
  * Pagination wrapper around fetchRetry
- *
- * @param input
- * @param opts
- * @param incomingfetchRetryOpts
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @param incomingfetchRetryOpts.retryLeft - Number of retries left
+ * @param incomingfetchRetryOpts.sleepMs - Time to sleep between retries
  * @returns Array of JSON responses from fetch
  */
 export async function fetchRetryPaginated(
   input: RequestInfo | URL,
-  opts?: RequestInit | undefined,
+  opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;
@@ -592,7 +715,6 @@ export async function fetchRetryPaginated(
 ): Promise<unknown[]> {
   const output: unknown[] = [];
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const res = await fetchRetry(input, opts, incomingfetchRetryOpts);
     output.push(await res.json());
@@ -615,17 +737,20 @@ export const Lti13ScoreSchema = z.object({
   activityProgress: z.enum(['Initialized', 'Started', 'InProgress', 'Submitted', 'Completed']),
   gradingProgress: z.enum(['FullyGraded', 'Pending', 'PendingManual', 'Failed', 'NotReady']),
   timestamp: DateFromISOString,
-  submission: z.any().optional(),
-  startedAt: DateFromISOString.optional(),
-  submittedAt: DateFromISOString.optional(),
+  submission: z
+    .object({
+      startedAt: DateFromISOString.optional(),
+      submittedAt: DateFromISOString.optional(),
+    })
+    .optional(),
   comment: z.string().optional(),
 });
 export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 
-const UsersWithLti13SubSchema = UserSchema.extend({
+const UserWithLti13SubSchema = UserSchema.extend({
   lti13_sub: z.string().nullable(),
 });
-type UsersWithLti13Sub = z.infer<typeof UsersWithLti13SubSchema>;
+type UserWithLti13Sub = z.infer<typeof UserWithLti13SubSchema>;
 
 // https://www.imsglobal.org/spec/lti-nrps/v2p0/#sharing-of-personal-data
 const ContextMembershipSchema = z.object({
@@ -645,17 +770,20 @@ const ContextMembershipContainerSchema = z.object({
 });
 
 class Lti13ContextMembership {
-  #memberships: Record<string, ContextMembership[]> = {};
+  #membershipsByEmail: Record<string, ContextMembership[]> = {};
+  #membershipsBySub: Record<string, ContextMembership> = {};
 
   private constructor(memberships: ContextMembership[]) {
     // Turn array into an object for efficient lookups. We need to retain duplicates
     // so that we can detect and handle the case where two users have the same email.
     for (const member of memberships) {
+      this.#membershipsBySub[member.user_id] = member;
+
       if (member.email === undefined) {
         continue;
       }
-      this.#memberships[member.email] ??= [];
-      this.#memberships[member.email].push(member);
+      this.#membershipsByEmail[member.email] ??= [];
+      this.#membershipsByEmail[member.email].push(member);
     }
   }
 
@@ -700,36 +828,46 @@ class Lti13ContextMembership {
   }
 
   /**
-   * @param user The user to look up.
-   * @returns The LTI 1.3 sub (user_id) for the user, or null if not found.
+   * @param user The user to look up with optional lti13_sub
+   * @returns The LTI 1.3 record for the user, or null if not found.
    */
-  async lookup(user: UsersWithLti13Sub): Promise<string | null> {
+  lookup(user: UserWithLti13Sub): ContextMembership | null {
     if (user.lti13_sub !== null) {
-      return user.lti13_sub;
+      return this.#membershipsBySub[user.lti13_sub] ?? null;
     }
+    for (const match of ['uid', 'email'] as const) {
+      const key = user[match];
+      if (key == null) continue;
 
-    for (const match of ['uid', 'email']) {
-      const memberResults = this.#memberships[user[match]];
+      const memberResults = this.#membershipsByEmail[key];
 
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!memberResults) continue;
 
       // member.email cannot be duplicated in memberships
       if (memberResults.length > 1) return null;
 
-      // The `user_id` that we get from the membership API is what we call `lti13_sub`.
-      return memberResults[0].user_id;
+      return memberResults[0];
     }
 
-    // The user wan't found.
+    // The user wasn't found.
     return null;
   }
 }
 
-export async function updateLti13Scores(
-  unsafe_assessment_id: string | number,
-  instance: Lti13CombinedInstance,
-  job: ServerJob,
-) {
+export async function updateLti13Scores({
+  courseInstance,
+  authzData,
+  unsafe_assessment_id,
+  instance,
+  job,
+}: {
+  courseInstance: CourseInstance;
+  authzData: AuthzData;
+  unsafe_assessment_id: string | number;
+  instance: Lti13CombinedInstance;
+  job: ServerJob;
+}) {
   // Get the assessment metadata
   const assessment = await queryRow(
     sql.select_assessment_for_lti13_scores,
@@ -744,55 +882,91 @@ export async function updateLti13Scores(
     }),
   );
 
-  if (assessment === null) {
-    throw new HttpStatusError(403, 'Invalid assessment.id');
-  }
-
-  job.info(`Sending grade data for ${assessment.tid} ${assessment.title}`);
-
-  const token = await getAccessToken(instance.lti13_instance.id);
+  job.info(`Working on assessment ${assessment.title} (${assessment.tid})`);
 
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
-    {
-      assessment_id: assessment.id,
-    },
-    AssessmentInstanceSchema.extend({
-      score_perc: z.number(), // not .nullable() from SQL query
-      date: DateFromISOString, // not .nullable() from SQL query
-      users: UsersWithLti13SubSchema.array(),
+    { assessment_id: assessment.id },
+    z.object({
+      id: IdSchema,
+      score_perc: z.number(),
+      date: DateFromISOString,
+      open: z.boolean(),
+      user: UserWithLti13SubSchema,
     }),
   );
 
+  const courseStaff = await selectUsersWithCourseInstanceAccess({
+    courseInstance,
+    authzData,
+    requiredRole: ['Student Data Viewer'],
+    minimalRole: 'Student Data Viewer',
+  });
+  const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));
+
   const memberships = await Lti13ContextMembership.loadForInstance(instance);
+
   const timestamp = new Date();
+  const counts = {
+    success: 0,
+    error: 0,
+    not_sent: 0,
+  };
 
   for (const assessment_instance of assessment_instances) {
-    for (const user of assessment_instance.users) {
-      job.info(`ai=${assessment_instance.id}, ${assessment_instance.score_perc}% for ${user.name}`);
+    // Get/Refresh the token in the main loop in case it expires during the run.
+    const token = await getAccessToken(instance.lti13_instance.id);
 
-      const userId = await memberships.lookup(user);
-      if (userId === null) {
-        job.warn(`* Could not find LTI user information for ${user.name} ${user.uid}, skipping...`);
-        continue;
-      }
+    const user = assessment_instance.user;
+    const ltiUser = memberships.lookup(user);
+    const isCourseStaff = courseStaffUids.has(user.uid);
 
-      /*
+    // User not found in LTI, reporting only
+    if (ltiUser === null) {
+      job.info(
+        `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+          ` Could not find ${isCourseStaff ? 'course staff' : 'student'} ${user.uid}` +
+          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+      );
+      counts.not_sent++;
+      continue;
+    }
+
+    // User is not a student in LTI, reporting only
+    if (!ltiUser.roles.includes(STUDENT_ROLE)) {
+      job.info(
+        `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+          ` ${isCourseStaff ? 'Course staff' : 'Student'} ${user.uid} is not a student` +
+          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+      );
+      counts.not_sent++;
+      continue;
+    }
+
+    job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.`);
+
+    const submittedAt = await selectAssessmentInstanceLastSubmissionDate(assessment_instance.id);
+
+    /*
        https://www.imsglobal.org/spec/lti-ags/v2p0#score-service-media-type-and-schema
        Canvas has extensions we could use described at
        https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
       */
-      const score: Lti13Score = {
-        timestamp,
+    const score: Lti13Score = {
+      timestamp,
+      scoreGiven: assessment_instance.score_perc,
+      scoreMaximum: 100,
+      activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
+      gradingProgress: 'FullyGraded',
+      userId: ltiUser.user_id,
+      submission: {
         startedAt: assessment_instance.date,
-        scoreGiven: assessment_instance.score_perc,
-        scoreMaximum: 100,
-        activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
-        gradingProgress: 'FullyGraded',
-        userId,
-      };
+        submittedAt: submittedAt ?? undefined,
+      },
+    };
 
-      const res = await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
+    try {
+      await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -800,11 +974,23 @@ export async function updateLti13Scores(
         },
         body: JSON.stringify(score),
       });
-
-      job.info(`\t${res.statusText}`);
-      if (!res.ok) {
-        job.warn(`\t${await res.text()}`);
+      counts.success++;
+    } catch (error: any) {
+      counts.error++;
+      job.warn(`\t${error.message}`);
+      if (error instanceof AugmentedError && error.data.body) {
+        job.verbose(error.data.body);
       }
     }
   }
+  job.info('Done.\n\nSummary:');
+  job.info(`${counts.success} score${counts.success === 1 ? '' : 's'} successfully sent.`);
+  job.info(`${counts.error} score${counts.error === 1 ? '' : 's'} not sent due to errors.`);
+  if (counts.error > 0 && counts.success === 0) {
+    job.warn('\tNo scores successfully sent and errors are present.');
+    job.warn(
+      `\tIs the ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label} course published?`,
+    );
+  }
+  job.info(`${counts.not_sent} score${counts.not_sent === 1 ? '' : 's'} skipped (not sent).`);
 }

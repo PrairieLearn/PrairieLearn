@@ -1,12 +1,11 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 
@@ -26,7 +25,7 @@ const courseDevDir = path.join(baseDir, 'courseDev');
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
 describe('Updating a course instance ID', () => {
-  before(async () => {
+  beforeAll(async () => {
     // Clone the course template for testing
     await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
       cwd: '.',
@@ -48,12 +47,12 @@ describe('Updating a course instance ID', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
+    await execute(sql.update_course_repo, { repo: courseOriginDir });
   });
 
-  after(helperServer.after);
+  afterAll(helperServer.after);
 
-  step(
+  test.sequential(
     'should not be able to change course instance id to one that falls outside the correct root directory',
     async () => {
       const courseInstancePageResponse = await fetchCheerio(

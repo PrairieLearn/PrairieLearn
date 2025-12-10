@@ -18,8 +18,8 @@
 
     <p> Given the initial solution contains <strong>{{params.initial_sw}}% of sugar water and {{params.initial_culture}}% of culture</strong>,
       find how many hours it will take for the concentration of sugar water to decrease to <strong>{{params.percent_composition}}%</strong>,
-      and save this as <code class="user-output">hours</code>.
-      Save the composition of ingredients at this time as the 1d numpy array <code class="user-output">composition</code>, assuming the
+      and save this as <code>hours</code>.
+      Save the composition of ingredients at this time as the 1d numpy array <code>composition</code>, assuming the
       following ingredient's order:
     </p>
 
@@ -28,7 +28,14 @@
     </p>
 
     <p> Your code snippet should define the following variables: </p>
-    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+    <pl-external-grader-variables params-name="names_from_user">
+      <pl-variable name="hours" type="positive integer">
+        The number of hours needed to accomplish what is requested in the problem statement.
+      </pl-variable>
+      <pl-variable name="composition" type="1d array">
+        The composition of ingredients at 'hours'.
+      </pl-variable>
+    </pl-external-grader-variables>
     <pl-file-editor
         file_name="user_code.py"
         source-file-name="tests/initial_code.py"
@@ -48,7 +55,7 @@
   <!-- This is not part of the question, and is included for documentation purposes -->
   <div class="alert alert-info p-2" role="alert">
       <small>Note: this is an example of <i>fixed variant</i> question.
-        Read more <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md" target="_blank">here</a>.</small>
+        Read more <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md" target="_blank" rel="noreferrer">here</a>.</small>
         <pl-github-link></pl-github-link>
   </div>
 </pl-question-panel>

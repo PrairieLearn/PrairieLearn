@@ -8,7 +8,7 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -21,7 +21,8 @@
     },
     "shortName": {
       "description": "DEPRECATED -- do not use.",
-      "type": "string"
+      "type": "string",
+      "deprecated": true
     },
     "timezone": {
       "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.",
@@ -30,7 +31,32 @@
     "allowIssueReporting": {
       "description": "DEPRECATED -- do not use.",
       "type": "boolean",
-      "default": true
+      "deprecated": true
+    },
+    "selfEnrollment": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "If true, self-enrollment access is controlled by the beforeDate and useEnrollmentCode properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.",
+          "type": "boolean",
+          "default": true
+        },
+        "restrictToInstitution": {
+          "description": "If true, self-enrollment is restricted to users from the same institution as the course. If false, any user can self-enroll.",
+          "type": "boolean",
+          "default": true
+        },
+        "beforeDate": {
+          "description": "If specified, self-enrollment is allowed before this date and forbidden after this date. If not specified, self-enrollment depends on enabled property.",
+          "type": "string"
+        },
+        "useEnrollmentCode": {
+          "description": "If true, self-enrollment requires an enrollment code to enroll. If false, any link to the course instance will allow self-enrollment.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "default": {}
     },
     "hideInEnrollPage": {
       "description": "If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.",
@@ -39,12 +65,21 @@
     },
     "userRoles": {
       "description": "DEPRECATED -- do not use.",
-      "deprecated": true,
       "type": "object",
-      "patternProperties": {
-        ".+": {
-          "description": "The role for a given UID.",
-          "enum": ["Student", "TA", "Instructor"]
+      "additionalProperties": {},
+      "properties": {},
+      "deprecated": true
+    },
+    "publishing": {
+      "type": "object",
+      "properties": {
+        "startDate": {
+          "description": "When the course instance is published. If specified, endDate must also be specified.",
+          "type": "string"
+        },
+        "endDate": {
+          "description": "When the course instance is unpublished. If specified, startDate must also be specified.",
+          "type": "string"
         }
       }
     },
@@ -58,15 +93,16 @@
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "role": {
             "description": "DEPRECATED -- do not use.",
-            "deprecated": true,
-            "enum": ["Student", "TA", "Instructor", "Superuser"]
+            "type": "string",
+            "enum": ["Student", "TA", "Instructor", "Superuser"],
+            "deprecated": true
           },
           "uids": {
-            "description": "A list of UIDs, one of which is required for access",
+            "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
             "type": "array",
             "items": {
               "type": "string"
@@ -90,8 +126,31 @@
     "groupAssessmentsBy": {
       "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
       "type": "string",
-      "default": "Set",
-      "enum": ["Set", "Module"]
+      "enum": ["Set", "Module"],
+      "default": "Set"
+    },
+    "shareSourcePublicly": {
+      "description": "If true, the course instance's JSON configuration and all of its assessment's JSON configurations are available for others to view and copy.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     }
   }
 }

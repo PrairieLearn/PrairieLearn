@@ -8,13 +8,14 @@
 [data-md-color-scheme='full-width'] {
   --md-typeset-a-color: #127ac4; /* arbitrary blue */
 }
+
 /* Allow captioned code blocks to function */
 code {
   text-align: left;
 }
 
 /* Prevent wrapping attributes inside tables, but not mkdocstrings */
-td:not(.code) code {
+tr:not(.doc-section-item) > td:not(.code) > code {
   white-space: nowrap;
 }
 
@@ -28,6 +29,7 @@ td:not(.code) code {
   text-transform: uppercase;
   color: var(--md-primary-fg-color);
 }
+
 /* CSS for width selection */
 @media (max-width: 1220px) {
   .width-icon {
@@ -39,12 +41,6 @@ td:not(.code) code {
   .md-main__inner {
     max-width: 100%;
   }
-}
-
-/* Center all diagrams */
-a svg {
-  width: 100%;
-  max-height: 80vh;
 }
 
 /* mkdocs styles interferes with d2 code styles */
@@ -155,4 +151,13 @@ code.doc-symbol-json {
 
 code.doc-symbol-json::after {
   content: 'json';
+}
+
+/* Hide view source button in mkdocstrings tooltips (see mkdocstrings/python/material/*.jinja) */
+.md-tooltip2__inner.md-typeset > .md-content__button.md-icon {
+  display: none;
+}
+
+.muted {
+  color: var(--md-default-fg-color--light);
 }

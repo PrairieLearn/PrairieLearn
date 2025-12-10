@@ -1,12 +1,23 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import fetchCookie from 'fetch-cookie';
+import type { DataNode, Element } from 'domhandler';
+import fetchCookie, { type CookieJar } from 'fetch-cookie';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
-import { ensureEnrollment } from '../models/enrollment.js';
+import {
+  type InstanceQuestion,
+  InstanceQuestionSchema,
+  type User,
+  UserSchema,
+  type Variant,
+} from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
 
@@ -18,11 +29,10 @@ const courseInstanceBaseUrl = baseUrl + '/course_instance/1';
 const assessmentsUrl = courseInstanceBaseUrl + '/assessments';
 const assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
 
-describe('Access control', function () {
-  this.timeout(20000);
+describe('Access control', { timeout: 20000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   /*
       There are three nested time periods:
@@ -30,12 +40,12 @@ describe('Access control', function () {
 
       Times are:
 
-      1750 before course instance
-      1800 start course instance
-      1850 before assessment
-      1900 start assessment
-      1950 before reservation
-      2000 start reservation
+      1890 before course instance
+      1900 start course instance
+      1910 before assessment
+      1920 start assessment
+      1930 before reservation
+      1940 start reservation
 
       2200 end reservation
       2250 after reservation
@@ -47,48 +57,57 @@ describe('Access control', function () {
 
   function cookiesStudent() {
     const cookies = new fetchCookie.toughCookie.CookieJar();
-    cookies.setCookie('pl_test_user=test_student', siteUrl);
+    cookies.setCookieSync('pl_test_user=test_student', siteUrl);
+    cookies.setCookieSync('pl_test_date=2100-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExam() {
     const cookies = cookiesStudent();
-    cookies.setCookie('pl_test_mode=Exam', siteUrl);
+    cookies.setCookieSync('pl_test_mode=Exam', siteUrl);
+    cookies.setCookieSync('pl_test_date=2100-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExamBeforeCourseInstance() {
     const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=1750-06-13T13:12:00Z', siteUrl);
+    cookies.setCookieSync('pl_test_date=1750-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExamBeforeAssessment() {
     const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=1850-06-13T13:12:00Z', siteUrl);
+    cookies.setCookieSync('pl_test_date=1910-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExamAfterAssessment() {
     const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=2350-06-13T13:12:00Z', siteUrl);
+    cookies.setCookieSync('pl_test_date=2350-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExamAfterCourseInstance() {
     const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=2450-06-13T13:12:00Z', siteUrl);
+    cookies.setCookieSync('pl_test_date=2450-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
-  let user, page, $, elemList;
-  let assessment_id;
-  let __csrf_token;
-  let assessmentUrl, q1Url, questionData, variant, instance_question;
+  let user: User;
+  let page: string;
+  let $: cheerio.CheerioAPI;
+  let elemList: cheerio.Cheerio<Element>;
+  let assessment_id: string;
+  let __csrf_token: string;
+  let assessmentUrl: string;
+  let q1Url: string;
+  let questionData: any;
+  let variant: Variant;
+  let instance_question: InstanceQuestion;
 
   /**********************************************************************/
 
-  async function getPl(cookies, shouldContainQA101) {
+  async function getPl(cookies: CookieJar, shouldContainQA101: boolean) {
     const res = await fetchCookie(fetch, cookies)(siteUrl);
     assert.equal(res.status, 200);
     const page = await res.text();
@@ -105,14 +124,20 @@ describe('Access control', function () {
 
   describe('2. the student user', function () {
     it('should select from the DB', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_student_user, []);
-      user = result.rows[0];
+      user = await sqldb.queryRow(sql.select_student_user, UserSchema);
     });
   });
 
   describe('3. Enroll student user into testCourse', function () {
     it('should succeed', async () => {
-      await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+      const courseInstance = await selectCourseInstanceById('1');
+      await ensureUncheckedEnrollment({
+        userId: user.user_id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+        actionDetail: 'implicit_joined',
+      });
     });
   });
 
@@ -132,14 +157,17 @@ describe('Access control', function () {
 
   describe('5. database', function () {
     it('should contain E1', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_e1, []);
-      assessment_id = result.rows[0].id;
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'exam1-automaticTestSuite',
+      });
+      assessment_id = assessment.id;
     });
   });
 
   /**********************************************************************/
 
-  async function getAssessments(cookies, shouldContainE1) {
+  async function getAssessments(cookies: CookieJar, shouldContainE1: boolean) {
     const res = await fetchCookie(fetch, cookies)(assessmentsUrl);
     assert.equal(res.status, 200);
     const page = await res.text();
@@ -170,7 +198,7 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  async function getAssessment(cookies, expectedStatusCode) {
+  async function getAssessment(cookies: CookieJar, expectedStatusCode: number) {
     const res = await fetchCookie(fetch, cookies)(assessmentUrl);
     assert.equal(res.status, expectedStatusCode);
     page = await res.text();
@@ -203,7 +231,11 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  async function postAssessment(cookies, includePassword, expectedStatusCode) {
+  async function postAssessment(
+    cookies: CookieJar,
+    includePassword: boolean,
+    expectedStatusCode: number,
+  ) {
     const body = new URLSearchParams({
       __action: 'new_instance',
       __csrf_token,
@@ -235,7 +267,7 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  async function getAssessmentInstance(cookies, expectedStatusCode) {
+  async function getAssessmentInstance(cookies: CookieJar, expectedStatusCode: number) {
     const res = await fetchCookie(fetch, cookies)(assessmentInstanceUrl);
     assert.equal(res.status, expectedStatusCode);
     page = await res.text();
@@ -258,13 +290,16 @@ describe('Access control', function () {
       $ = cheerio.load(page);
     });
     it('should produce an addVectors instance_question in the DB', async () => {
-      const result = await sqldb.queryAsync(sql.select_instance_question_addVectors, []);
-      if (result.rowCount == null || result.rowCount === 0) {
+      const rows = await sqldb.queryRows(
+        sql.select_instance_question_addVectors,
+        InstanceQuestionSchema,
+      );
+      if (rows.length === 0) {
         throw new Error('did not find addVectors instance question in DB');
-      } else if (result.rowCount > 1) {
-        throw new Error('multiple rows found: ' + JSON.stringify(result.rows, null, '    '));
+      } else if (rows.length > 1) {
+        throw new Error('multiple rows found: ' + JSON.stringify(rows, null, '    '));
       }
-      instance_question = result.rows[0];
+      instance_question = rows[0];
     });
     it('should link to addVectors question', function () {
       const urlTail = '/pl/course_instance/1/instance_question/' + instance_question.id + '/';
@@ -276,7 +311,7 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  async function getInstanceQuestion(cookies, expectedStatusCode) {
+  async function getInstanceQuestion(cookies: CookieJar, expectedStatusCode: number) {
     const res = await fetchCookie(fetch, cookies)(q1Url);
     assert.equal(res.status, expectedStatusCode);
     page = await res.text();
@@ -309,7 +344,9 @@ describe('Access control', function () {
     });
     it('base64 data should parse to JSON', function () {
       questionData = JSON.parse(
-        decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()),
+        decodeURIComponent(
+          Buffer.from((elemList[0].children[0] as DataNode).data, 'base64').toString(),
+        ),
       );
     });
     it('should have a variant_id in the questionData', function () {
@@ -327,7 +364,7 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  async function postInstanceQuestion(cookies, expectedStatusCode) {
+  async function postInstanceQuestion(cookies: CookieJar, expectedStatusCode: number) {
     const submittedAnswer = {
       wx: 0,
       wy: 0,

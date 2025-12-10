@@ -1,6 +1,6 @@
-import * as express from 'express';
+import { createOpenAI } from '@ai-sdk/openai';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
@@ -8,18 +8,27 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
-import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
+import { features } from '../../../lib/features/index.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import {
+  QUESTION_GENERATION_OPENAI_MODEL,
+  addCompletionCostToIntervalUsage,
+  approximatePromptCost,
+  generateQuestion,
+  getIntervalUsage,
+} from '../../lib/aiQuestionGeneration.js';
 
 import {
   DraftMetadataWithQidSchema,
   GenerationFailure,
   InstructorAIGenerateDrafts,
+  RateLimitExceeded,
 } from './instructorAiGenerateDrafts.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-function assertCanCreateQuestion(resLocals: Record<string, any>) {
+function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   // Do not allow users to edit without permission
   if (!resLocals.authz_data.has_course_permission_edit) {
     throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
@@ -30,6 +39,15 @@ function assertCanCreateQuestion(resLocals: Record<string, any>) {
     throw new error.HttpStatusError(403, 'Access denied (cannot edit the example course)');
   }
 }
+
+router.use(
+  asyncHandler(async (req, res, next) => {
+    if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
+      throw new error.HttpStatusError(403, 'Feature not enabled');
+    }
+    next();
+  }),
+);
 
 router.get(
   '/',
@@ -42,7 +60,12 @@ router.get(
       DraftMetadataWithQidSchema,
     );
 
-    res.send(InstructorAIGenerateDrafts({ resLocals: res.locals, drafts }));
+    res.send(
+      InstructorAIGenerateDrafts({
+        resLocals: res.locals,
+        drafts,
+      }),
+    );
   }),
 );
 
@@ -67,25 +90,56 @@ router.post(
   asyncHandler(async (req, res) => {
     assertCanCreateQuestion(res.locals);
 
-    if (!config.openAiApiKey || !config.openAiOrganization) {
+    if (
+      !config.aiQuestionGenerationOpenAiApiKey ||
+      !config.aiQuestionGenerationOpenAiOrganization
+    ) {
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
-    const client = new OpenAI({
-      apiKey: config.openAiApiKey,
-      organization: config.openAiOrganization,
+    const openai = createOpenAI({
+      apiKey: config.aiQuestionGenerationOpenAiApiKey,
+      organization: config.aiQuestionGenerationOpenAiOrganization,
     });
 
     if (req.body.__action === 'generate_question') {
+      const intervalCost = await getIntervalUsage({
+        userId: res.locals.authn_user.user_id,
+      });
+
+      const approxPromptCost = approximatePromptCost({
+        model: QUESTION_GENERATION_OPENAI_MODEL,
+        prompt: req.body.prompt,
+      });
+
+      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
+
+        res.send(
+          RateLimitExceeded({
+            // If the user has more tokens than the threshold of 100 tokens,
+            // they can shorten their message to avoid exceeding the rate limit.
+            canShortenMessage:
+              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
+          }),
+        );
+        return;
+      }
+
       const result = await generateQuestion({
-        client,
+        model: openai(QUESTION_GENERATION_OPENAI_MODEL),
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
         courseId: res.locals.course.id,
         authnUserId: res.locals.authn_user.user_id,
-        promptGeneral: req.body.prompt,
-        promptUserInput: req.body.prompt_user_input,
-        promptGrading: req.body.prompt_grading,
+        prompt: req.body.prompt,
         userId: res.locals.authn_user.user_id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      });
+
+      await addCompletionCostToIntervalUsage({
+        userId: res.locals.authn_user.user_id,
+        usage: result.usage,
+        intervalCost,
       });
 
       if (result.htmlResult) {

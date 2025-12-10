@@ -1,6 +1,11 @@
 {{#question}}
     <span class="d-inline-block mb-3">
-        <select name="{{answers-name}}" class="form-select w-auto" {{^editable}}disabled{{/editable}}>
+        <select
+            name="{{answers-name}}"
+            class="form-select w-auto"
+            {{^editable}}disabled{{/editable}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+        >
             {{#options}}
                 <option value="{{value}}" {{#selected}}selected{{/selected}}>{{{value}}}</option>
             {{/options}}
@@ -20,7 +25,7 @@
     <span class="d-inline-block">
 
         {{^parse-error}}
-            <code class="user-output">{{{submitted-answer}}}</code>
+            <code>{{{submitted-answer}}}</code>
 
             {{#display-score-badge}}
                 {{#correct}}
@@ -31,21 +36,24 @@
                 {{/correct}}
             {{/display-score-badge}}
         {{/parse-error}}
-
         {{#parse-error}}
-            <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <button 
-                type="button"
-                class="btn btn-sm btn-secondary small border ms-1"
+        <span class="small" style="white-space: nowrap">
+            <span class="badge text-bg-danger">
+                Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            </span>
+            <a
+                class="link-primary"
+                tabindex="0"
+                role="button"
                 data-bs-placement="auto"
                 data-bs-toggle="popover"
                 data-bs-html="true"
-                title="Format Error"
-                data-bs-container="body"
+                title="Format error"
                 data-bs-content="{{parse-error}}"
             >
-                Why <i class="fa fa-question-circle" aria-hidden="true"></i>
-            </button>
+            More info…
+            </a>
+        </span>   
         {{/parse-error}}
     </span>
 {{/submission}}
@@ -53,6 +61,6 @@
 
 {{#answer}}
     <span class="d-inline-block">
-        <code class="user-output">{{{correct-answer}}}</code>
+        <code>{{{correct-answer}}}</code>
     </span>
 {{/answer}}

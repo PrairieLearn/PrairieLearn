@@ -5,7 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
-import { AssessmentInstanceSchema } from '../../lib/db-types.js';
+import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
   canUserAssignGroupRoles,
@@ -16,6 +16,7 @@ import {
   updateGroupRoles,
 } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
@@ -32,10 +33,8 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.use(selectAndAuthzAssessmentInstance);
 router.use(studentAssessmentAccess);
-router.use(clientFingerprint);
-router.use(logPageView('studentAssessmentInstance'));
 
-async function ensureUpToDate(locals: Record<string, any>) {
+async function ensureUpToDate(locals: UntypedResLocals) {
   const updated = await assessment.updateAssessmentInstance(
     locals.assessment_instance.id,
     locals.authn_user.user_id,
@@ -109,7 +108,7 @@ async function processDeleteFile(req: Request, res: Response) {
   }
 
   // Check the requested file belongs to the current assessment instance
-  const validFiles = (res.locals.file_list ?? []).filter((file) =>
+  const validFiles = (res.locals.file_list ?? []).filter((file: File) =>
     idsEqual(file.id, req.body.file_id),
   );
   if (validFiles.length === 0) {
@@ -152,34 +151,25 @@ router.post(
       await processDeleteFile(req, res);
       res.redirect(req.originalUrl);
     } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
-      const overrideGradeRate = false;
-      let closeExam: boolean;
-      if (req.body.__action === 'grade') {
-        if (!res.locals.assessment.allow_real_time_grading) {
-          throw new HttpStatusError(403, 'Real-time grading is not allowed for this assessment');
-        }
-        closeExam = false;
-      } else if (req.body.__action === 'finish') {
-        closeExam = true;
-      } else if (req.body.__action === 'timeLimitFinish') {
+      if (req.body.__action === 'timeLimitFinish') {
         // Only close if the timer expired due to time limit, not for access end
         if (!res.locals.assessment_instance_time_limit_expired) {
           return res.redirect(req.originalUrl);
         }
-        closeExam = true;
-      } else {
-        throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
       }
-      const requireOpen = true;
-      await assessment.gradeAssessmentInstance(
-        res.locals.assessment_instance.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        requireOpen,
-        closeExam,
-        overrideGradeRate,
-        res.locals.client_fingerprint_id,
-      );
+
+      const isFinishing = ['finish', 'timeLimitFinish'].includes(req.body.__action);
+      await assessment.gradeAssessmentInstance({
+        assessment_instance_id: res.locals.assessment_instance.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        requireOpen: true,
+        close: isFinishing,
+        ignoreGradeRateLimit: isFinishing,
+        ignoreRealTimeGradingDisabled: isFinishing,
+        client_fingerprint_id: res.locals.client_fingerprint_id,
+      });
+
       if (req.body.__action === 'timeLimitFinish') {
         res.redirect(req.originalUrl + '?timeLimitExpired=true');
       } else {
@@ -218,15 +208,18 @@ router.post(
 
 router.get(
   '/',
+  // We only handle fingerprints on the GET handler. The POST handler won't log
+  // page views, and we only want to track fingerprint changes when we'll also
+  // have a corresponding page view event to show in the logs.
+  clientFingerprint,
+  logPageView('studentAssessmentInstance'),
   asyncHandler(async (req, res, _next) => {
     if (res.locals.assessment.type === 'Homework') {
       await ensureUpToDate(res.locals);
     }
     const instance_question_rows = await queryRows(
       sql.select_instance_questions,
-      {
-        assessment_instance_id: res.locals.assessment_instance.id,
-      },
+      { assessment_instance_id: res.locals.assessment_instance.id },
       InstanceQuestionRowSchema,
     );
     const allPreviousVariants = await selectVariantsByInstanceQuestion({
@@ -238,10 +231,10 @@ router.get(
       );
     }
 
-    res.locals.has_manual_grading_question = instance_question_rows?.some(
+    res.locals.has_manual_grading_question = instance_question_rows.some(
       (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
     );
-    res.locals.has_auto_grading_question = instance_question_rows?.some(
+    res.locals.has_auto_grading_question = instance_question_rows.some(
       (q) => q.max_auto_points || q.auto_points || !q.max_points,
     );
     const assessment_text_templated = assessment.renderText(
@@ -268,7 +261,6 @@ router.get(
     const groupConfig = await getGroupConfig(res.locals.assessment.id);
     const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
     const userCanAssignRoles =
-      groupInfo != null &&
       groupConfig.has_roles &&
       (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
         res.locals.authz_data.has_course_instance_permission_edit);

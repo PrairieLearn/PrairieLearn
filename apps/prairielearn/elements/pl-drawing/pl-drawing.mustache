@@ -1,18 +1,38 @@
 {{#render_button}}
-<button type="button" name="{{button_class}}" class="btn btn-primary pl-drawing-button" opts="{{{ options }}}"><img /></button>
+<button type="button" name="{{button_class}}" class="btn btn-primary pl-drawing-button" opts="{{{ options }}}" title="{{button_class}}"><img src=""></button>
 {{/render_button}}
 
 {{#render_element}}
 {{#parse_error}}
-<span>
-    <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-    <button type="button" class="btn btn-sm btn-secondary small border ms-1" data-bs-placement="auto"data-bs-toggle="popover" data-bs-html="true" title="Format Error" data-bs-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
+<span class="small" style="white-space: nowrap">
+    <span class="badge text-bg-danger">
+        Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+    </span>
+    <a
+        class="link-primary"
+        tabindex="0"
+        role="button"
+        data-bs-placement="auto"
+        data-bs-toggle="popover"
+        data-bs-html="true"
+        title="Format error"
+        data-bs-content="{{parse_error}}"
+    >
+        More info…
+    </a>
 </span>
 {{/parse_error}}
 {{^parse_error}}
-<div id="pl-drawing-{{uuid}}" class="pl-drawing-container pl-requires-svg-mathjax">
+<div id="pl-drawing-{{uuid}}" class="pl-drawing-container pl-requires-svg-mathjax mb-3">
     <div>
-        <canvas width="{{width}}" height="{{height}}"> </canvas>
+        <canvas
+            width="{{width}}"
+            height="{{height}}"
+            {{#preview_mode}}role="img"{{/preview_mode}}
+            {{#aria_description}}aria-description="{{aria_description}}"{{/aria_description}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+        >
+        </canvas>
         {{#show_tolerance}}
             <div><small>({{{ tolerance }}})</small></div>
         {{/show_tolerance}}

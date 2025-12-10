@@ -1,5 +1,7 @@
-import { assert } from 'chai';
+import type * as cheerio from 'cheerio';
+import type { Element } from 'domhandler';
 import fetch from 'node-fetch';
+import { assert, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -27,7 +29,17 @@ export function testQuestionPreviews(
   addNumbers: QuestionInfo,
   addVectors: QuestionInfo,
 ) {
-  const locals: any = previewPageInfo;
+  const locals = previewPageInfo as QuestionPreviewPageInfo & {
+    question: QuestionInfo;
+    shouldHaveButtons: string[];
+    postAction: string;
+    expectedResult: {
+      submission_score: number | null;
+      submission_correct: boolean | null;
+    };
+    getSubmittedAnswer: (variant: any) => object;
+    $: cheerio.CheerioAPI;
+  };
   describe('1. submit correct answer to question addVectors', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
@@ -186,12 +198,12 @@ export function testFileDownloads(
     });
     helperQuestion.getInstanceQuestion(locals);
     describe('downloading course text file', function () {
-      let elemList;
+      let elemList: cheerio.Cheerio<Element>;
       it('should contain a link to clientFilesCourse/data.txt', function () {
         elemList = locals.$('a[href*="clientFilesCourse"]');
         assert.lengthOf(elemList, 1);
       });
-      let page;
+      let page: string;
       it('should download something with the link to clientFilesCourse/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
         const res = await fetch(fileUrl);
@@ -209,7 +221,8 @@ export function testFileDownloads(
       });
     });
     describe('downloading question text files', function () {
-      let elemList, page;
+      let elemList: cheerio.Cheerio<Element>;
+      let page: string;
       it('should contain a force-download link to clientFilesQuestion/data.txt', function () {
         elemList = locals.$('a[href*="clientFilesQuestion"][download]');
         assert.lengthOf(elemList, 1);
@@ -238,7 +251,8 @@ export function testFileDownloads(
       });
     });
     describe('downloading dynamic text file', function () {
-      let elemList, page;
+      let elemList: cheerio.Cheerio<Element>;
+      let page: string;
       it('should contain a link to generatedFilesQuestion/data.txt', function () {
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="data.txt"]');
         assert.lengthOf(elemList, 1);
@@ -254,7 +268,8 @@ export function testFileDownloads(
       });
     });
     describe('downloading dynamic image file', function () {
-      let elemList, page;
+      let elemList: cheerio.Cheerio<Element>;
+      let page: ArrayBuffer;
       it('should contain a link to generatedFilesQuestion/figure.png', function () {
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="figure.png"]');
         assert.lengthOf(elemList, 1);
@@ -269,9 +284,9 @@ export function testFileDownloads(
         assert.equal(Buffer.from(page.slice(0, 8)).toString('hex'), '89504e470d0a1a0a');
       });
       it('should produce no issues', async function () {
-        const result = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
-        if (result.rowCount != null && result.rowCount > 0) {
-          throw new Error(`found ${result.rowCount} issues (expected zero issues)`);
+        const rowCount = await sqldb.execute(sql.select_issues_for_last_variant);
+        if (rowCount > 0) {
+          throw new Error(`found ${rowCount} issues (expected zero issues)`);
         }
       });
     });

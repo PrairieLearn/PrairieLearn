@@ -24,9 +24,10 @@ BUILDER_NAME = "prairielearn-builder"
 # A mapping from images to their base images. We use this to know to rebuild images when their base image has changed.
 BASE_IMAGE_MAPPING = {
     # Core images.
-    "prairielearn/prairielearn": "prairielearn/plbase",
     "prairielearn/executor": "prairielearn/prairielearn",
     # Workspace images.
+    "prairielearn/workspace-jupyterlab-python": "prairielearn/workspace-jupyterlab-base",
+    "prairielearn/workspace-jupyterlab-r": "prairielearn/workspace-jupyterlab-base",
     "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-java": "prairielearn/workspace-vscode-base",
@@ -38,6 +39,7 @@ CacheStrategy = Literal["none", "pull", "update"]
 
 
 def get_image_path(image: str) -> str:
+    """Get the path to the Docker context for the given image."""
     if not image.startswith("prairielearn/"):
         raise ValueError(f"Cannot build non-PrairieLearn image: {image}")
 
@@ -51,9 +53,6 @@ def get_image_path(image: str) -> str:
         image = image[len("grader-") :]
         return f"graders/{image}"
 
-    if image == "plbase":
-        return "images/plbase"
-
     if image == "executor":
         return "images/executor"
 
@@ -65,6 +64,10 @@ def get_image_path(image: str) -> str:
 
 @functools.cache
 def check_path_modified(path: str) -> bool:
+    """Check if the given path has been modified since the last commit.
+
+    This is used to determine if we need to rebuild the image.
+    """
     branch = (
         subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
@@ -209,7 +212,7 @@ def build_image(
 
         # We need a unique name for the metadata file. We'll use the part of the
         # image name after the last slash, and a hash of the build ref.
-        name_without_scope = image.split("/")[-1]
+        name_without_scope = image.rsplit("/", maxsplit=1)[-1]
         hashed_build_ref = hashlib.sha256(build_ref.encode()).hexdigest()
         metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
         with open(os.path.join(metadata_dir, metadata_filename), "w") as f:
@@ -229,6 +232,7 @@ def build_images(
     cache_strategy: CacheStrategy = "none",
     cache_only: list[str] | None = None,
 ) -> None:
+    """Builds a list of Docker images in the order they are given."""
     validate_image_order(images)
 
     image_digests: dict[str, str] = {}

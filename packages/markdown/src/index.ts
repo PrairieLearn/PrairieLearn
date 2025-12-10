@@ -1,98 +1,110 @@
-import type { Element, Root as HastRoot } from 'hast';
-import type { Root as MdastRoot, Text } from 'mdast';
-import type { InlineMath, Math } from 'mdast-util-math';
-import rehypeRaw from 'rehype-raw';
-import rehypeSanitize from 'rehype-sanitize';
-import rehypeStringify from 'rehype-stringify';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import remarkParse from 'remark-parse';
-import remark2rehype from 'remark-rehype';
-import { type Processor, type TransformCallback, type Transformer, unified } from 'unified';
-import type { Node } from 'unist';
-import { visit } from 'unist-util-visit';
-import type { VFile } from 'vfile';
+import { Marked, type MarkedExtension } from 'marked';
+// @ts-expect-error MathJax does not include types
+import mathjax from 'mathjax';
 
-/**
- * This visitor is used for inline markdown processing, particularly for cases where the result is
- * expected to be shown in a single line without a block. In essence, if the result of the
- * conversion contains a single paragraph (`p`) with some content, it replaces the paragraph itself
- * with the content of the paragraph.
- */
-function visitCheckSingleParagraph(ast: HastRoot) {
-  return visit(ast, 'root', (node) => {
-    if (node.children.length === 1) {
-      const child = node.children[0] as Element;
-      if (child.tagName === 'p') {
-        node.children = child.children;
-      }
-    }
-  });
-}
+import { addMathjaxExtension } from '@prairielearn/marked-mathjax';
 
-/**
- * By default, `remark-math` installs compilers to transform the AST back into
- * HTML, which ends up wrapping the math in unwanted spans and divs. Since all
- * math will be rendered on the client, we have our own visitor that will replace
- * any `math` or `inlineMath` nodes with raw text values wrapped in the appropriate
- * fences.
- */
-function visitMathBlock(ast: MdastRoot) {
-  return visit(ast, ['math', 'inlineMath'], (node, index, parent) => {
-    const startFence = node.type === 'math' ? '$$\n' : '$';
-    const endFence = node.type === 'math' ? '\n$$' : '$';
-    const text: Text = {
-      type: 'text',
-      value: startFence + (node as Math | InlineMath).value + endFence,
-    };
-    parent?.children.splice(index ?? 0, 1, text);
-  });
-}
+import { sanitizeHtml } from './sanitize.js';
 
-function makeHandler<R extends Node>(visitor: (ast: R) => undefined): () => Transformer<R, R> {
-  return () => (ast: R, vFile: VFile, callback?: TransformCallback<R>) => {
-    visitor(ast);
+// We can safely do this at the top level, as this only takes ~10ms to load.
+const MathJax = await mathjax.init({
+  options: { ignoreHtmlClass: 'mathjax_ignore|tex2jax_ignore' },
+  tex: {
+    inlineMath: [
+      ['$', '$'],
+      ['\\(', '\\)'],
+    ],
+  },
+  loader: { load: ['input/tex'] },
+});
 
-    if (typeof callback === 'function') {
-      return callback(undefined, ast, vFile);
-    }
-    return ast;
-  };
-}
-
-export function createProcessor({
-  mdastVisitors,
-  hastVisitors,
+export function createMarkedInstance({
   sanitize = true,
+  allowHtml = true,
+  interpretMath = true,
+  extensions,
 }: {
-  mdastVisitors?: ((ast: MdastRoot) => undefined)[];
-  hastVisitors?: ((ast: HastRoot) => undefined)[];
   sanitize?: boolean;
+  /**
+   * If allowHtml is false, this will remove the tags themselves for inline HTML but will remove the full block for block HTML.
+   * See https://spec.commonmark.org/0.31.2/#raw-html for more details on inline vs block HTML in Markdown.
+   * For example, if the input is `<h1>Block HTML</h1>` the entire block will be removed. If the input is `<em>Inline HTML</em>`,
+   * the `<em>` tags will be removed the output will be just the text content without any HTML tags (`Inline HTML`).
+   */
+  allowHtml?: boolean;
+  interpretMath?: boolean;
+  extensions?: MarkedExtension[];
 } = {}) {
-  const htmlConversion = (mdastVisitors ?? [])
-    .reduce<Processor<MdastRoot, MdastRoot, MdastRoot | undefined>>(
-      (processor, visitor) => processor.use(makeHandler(visitor)),
-      unified().use(remarkParse).use(remarkMath),
-    )
-    .use(makeHandler(visitMathBlock))
-    .use(remarkGfm)
-    .use(remark2rehype, { allowDangerousHtml: true })
-    .use(rehypeRaw);
-  return (hastVisitors ?? [])
-    .reduce(
-      (processor, visitor) => processor.use(makeHandler(visitor)),
-      sanitize ? htmlConversion.use(rehypeSanitize) : htmlConversion,
-    )
-    .use(rehypeStringify);
+  const marked = new Marked();
+
+  if (interpretMath) {
+    addMathjaxExtension(marked, MathJax);
+  }
+
+  if (!allowHtml) {
+    marked.use({ renderer: { html: (_token) => '' } });
+  }
+
+  if (extensions) {
+    marked.use(...extensions);
+  }
+
+  if (sanitize) {
+    marked.use({ hooks: { postprocess: (html) => sanitizeHtml(html) } });
+  }
+
+  return marked;
 }
 
-const defaultProcessor = createProcessor();
-const inlineProcessor = createProcessor({ hastVisitors: [visitCheckSingleParagraph] });
+const markedInstanceCache = new Map<string, Marked>();
 
 /**
- * Converts markdown to HTML. If `inline` is true, and the result fits a single
- * paragraph, the content is returned inline without the paragraph tag.
+ * Returns a cached instance of Marked with the specified options. Does not
+ * handle extensions, callers that rely on extensions should perform their own
+ * caching.
  */
-export async function markdownToHtml(original: string, { inline }: { inline?: boolean } = {}) {
-  return (await (inline ? inlineProcessor : defaultProcessor).process(original)).value.toString();
+function getMarkedInstance(options: {
+  sanitize: boolean;
+  allowHtml: boolean;
+  interpretMath: boolean;
+}): Marked {
+  const key = `${options.sanitize}:${options.allowHtml}:${options.interpretMath}`;
+  let instance = markedInstanceCache.get(key);
+  if (!instance) {
+    instance = createMarkedInstance({
+      sanitize: options.sanitize,
+      allowHtml: options.allowHtml,
+      interpretMath: options.interpretMath,
+    });
+    markedInstanceCache.set(key, instance);
+  }
+  return instance;
+}
+
+/**
+ * Converts markdown to HTML.
+ *
+ * @param original The markdown string to convert.
+ * @param options Options for the conversion.
+ * @param options.sanitize If true, sanitizes the HTML output to prevent XSS
+ * attacks.
+ * @param options.inline If true, parses the markdown as inline content,
+ * otherwise as block content.
+ * @param options.allowHtml If true, allows HTML tags in the markdown. If false,
+ * HTML tags will be removed from the output.
+ * @param options.interpretMath If true, prepares and escapes LaTeX strings to
+ * be parsed by MathJax (assumes MathJax is available client-side).
+ * @returns The HTML string resulting from the conversion.
+ */
+export function markdownToHtml(
+  original: string,
+  {
+    sanitize = true,
+    inline = false,
+    allowHtml = true,
+    interpretMath = true,
+  }: { sanitize?: boolean; inline?: boolean; allowHtml?: boolean; interpretMath?: boolean } = {},
+): string {
+  const marked = getMarkedInstance({ sanitize, allowHtml, interpretMath });
+  return (inline ? marked.parseInline : marked.parse)(original, { async: false });
 }

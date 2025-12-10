@@ -7,13 +7,14 @@ CREATE FUNCTION
         question_id bigint,
         course_instance_id bigint,
         skip_assessment_id bigint DEFAULT NULL
-    ) RETURNS JSONB
+    ) RETURNS jsonb
 AS $$
 SELECT
     JSONB_AGG(JSONB_BUILD_OBJECT(
         'label', aset.abbreviation || a.number,
         'assessment_id', a.id,
         'course_instance_id', a.course_instance_id,
+        'share_source_publicly', a.share_source_publicly,
         'color', aset.color
     ) ORDER BY (aset.number, aset.id, a.number, a.id))
 FROM

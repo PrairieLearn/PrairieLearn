@@ -3,21 +3,16 @@ import { z } from 'zod';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import {
   AssessmentSchema,
   AssessmentSetSchema,
-  type Lti13Assessments,
-  type Lti13CourseInstance,
+  type Lti13Assessment,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
-import { type Lineitems } from '../../lib/lti13.js';
-
-interface Lti13FullInstance {
-  lti13_course_instance: Lti13CourseInstance;
-  lti13_instance: Lti13Instance;
-}
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
 export const AssessmentRowSchema = AssessmentSchema.merge(
   AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
@@ -28,6 +23,74 @@ export const AssessmentRowSchema = AssessmentSchema.merge(
 });
 type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
+export function InstructorInstanceAdminLti13NoInstances({
+  resLocals,
+  lti13_instances,
+}: {
+  resLocals: UntypedResLocals;
+  lti13_instances: Lti13Instance[];
+}): string {
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Integrations',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'integrations',
+    },
+    options: {
+      fullWidth: true,
+    },
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h1>Integrations with other learning systems</h1>
+        </div>
+        <div class="card-body">
+          ${lti13_instances.length === 0
+            ? html`
+                <p>
+                  No learning management systems (LMSes) at your institution are available for
+                  integration with PrairieLearn. Please contact your IT administrators to set up an
+                  integration. You can refer them to the
+                  <a
+                    target="_blank"
+                    href="https://prairielearn.readthedocs.io/en/latest/lti13/"
+                    rel="noreferrer"
+                    >documentation</a
+                  >.
+                </p>
+              `
+            : html`
+                <p>
+                  The following learning management systems (LMSes) at your institution are
+                  available for integration with PrairieLearn:
+                </p>
+
+                <ul>
+                  ${lti13_instances.map((i) => {
+                    return html`<li>${i.name}</li>`;
+                  })}
+                </ul>
+                <p>
+                  <a
+                    target="_blank"
+                    href="https://prairielearn.readthedocs.io/en/latest/lmsIntegrationInstructor/"
+                    rel="noreferrer"
+                  >
+                    How can I integrate my course with an LMS?
+                  </a>
+                </p>
+              `}
+          <p class="mb-0">
+            Integrating will allow you to push assessment scores from PrairieLearn to the LMS.
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
 export function InstructorInstanceAdminLti13({
   resLocals,
   instance,
@@ -35,25 +98,24 @@ export function InstructorInstanceAdminLti13({
   assessments,
   lineitems,
 }: {
-  resLocals: Record<string, any>;
-  instance: Lti13FullInstance;
-  instances: Lti13FullInstance[];
+  resLocals: UntypedResLocals;
+  instance: Lti13CombinedInstance;
+  instances: Lti13CombinedInstance[];
   assessments: AssessmentRow[];
-  lineitems: Lti13Assessments[];
+  lineitems: Lti13Assessment[];
 }): string {
   const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
   return PageLayout({
     resLocals,
-    pageTitle: 'LTI 1.3',
+    pageTitle: 'Integrations',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
-      subPage: 'lti13',
+      subPage: 'integrations',
     },
     options: {
       fullWidth: true,
-      marginBottom: true,
     },
     content: html`
       <div class="card mb-4">
@@ -66,13 +128,15 @@ export function InstructorInstanceAdminLti13({
               <div class="dropdown mb-2">
                 <button
                   type="button"
-                  class="btn dropdown-toggle border border-gray"
+                  class="btn dropdown-toggle border w-100 text-start pe-4"
                   data-bs-toggle="dropdown"
                   aria-haspopup="true"
                   aria-expanded="false"
                   data-bs-boundary="window"
                 >
-                  ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
+                  <span class="d-inline-block text-wrap w-100">
+                    ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
+                  </span>
                 </button>
                 <div class="dropdown-menu">
                   ${instances.map((i) => {
@@ -154,10 +218,10 @@ function LinkedAssessments({
   assessments,
   lineitems,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   lms_name: string;
   assessments: AssessmentRow[];
-  lineitems: Lti13Assessments[];
+  lineitems: Lti13Assessment[];
 }): HtmlSafeString {
   const { urlPrefix } = resLocals;
   const { assessments_group_by } = resLocals.course_instance;
@@ -219,7 +283,7 @@ function LinkedAssessments({
                                 class="btn btn-success"
                                 name="__action"
                                 value="bulk_create_assessments"
-                                onClick="return confirm('Are you sure?');"
+                                onclick="return confirm('Are you sure?');"
                               >
                                 Create and link assignments in ${lms_name}
                               </button>
@@ -229,7 +293,7 @@ function LinkedAssessments({
                                 class="btn btn-med-light"
                                 name="__action"
                                 value="bulk_unlink_assessments"
-                                onClick="return confirm('Are you sure?');"
+                                onclick="return confirm('Are you sure?');"
                               >
                                 Unlink assessments
                               </button>
@@ -298,7 +362,7 @@ function LinkedAssessments({
                           class="btn btn-primary"
                           hx-get="?lineitems"
                           hx-target="next .line-items-inputs"
-                          onClick="this.querySelector('.refresh-button').classList.remove('d-none');"
+                          onclick="this.querySelector('.refresh-button').classList.remove('d-none');"
                         >
                           Pick from existing ${lms_name} assignments
                           <span class="refresh-button d-none"><i class="fa fa-refresh"></i></span>
@@ -341,9 +405,8 @@ function LinkedAssessments({
                               class="btn btn-info dropdown-toggle dropdown-toggle-split"
                               data-bs-toggle="dropdown"
                               aria-expanded="false"
-                            >
-                              <span class="visually-hidden">Toggle Dropdown</span>
-                            </button>
+                              aria-label="Toggle dropdown"
+                            ></button>
                             <ul class="dropdown-menu">
                               <li>
                                 <button
@@ -373,7 +436,7 @@ function LinkedAssessments({
   `;
 }
 
-function LineItem(item: Lti13Assessments, timezone: string) {
+function LineItem(item: Lti13Assessment, timezone: string) {
   return html`
     <span title="${item.lineitem_id_url}">${item.lineitem.label}</span>
     <p>

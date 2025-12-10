@@ -1,6 +1,8 @@
-import { assert } from 'chai';
+/* eslint-disable @typescript-eslint/dot-notation */
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { type AssessmentSet, AssessmentSetSchema, CourseSchema } from '../../lib/db-types.js';
+import { type AssessmentJsonInput, type AssessmentSetJsonInput } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -18,27 +20,31 @@ function checkAssessmentSet(
 ) {
   assert.isOk(syncedAssessmentSet);
   for (const key of Object.keys(assessmentSet)) {
-    assert.equal(syncedAssessmentSet[key], assessmentSet[key]);
+    assert.equal(
+      syncedAssessmentSet[key as keyof AssessmentSet],
+      assessmentSet[key as keyof AssessmentSet],
+    );
   }
 }
 
 /**
  * Makes a new assessment.
  */
-function makeAssessmentSet(): util.AssessmentSet {
+function makeAssessmentSet() {
   return {
     name: 'new assessment set',
     abbreviation: 'new',
     heading: 'a new assessment set to sync',
     color: 'red1',
-  };
+  } satisfies AssessmentSetJsonInput;
 }
 
 describe('Assessment set syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('adds a new assessment set', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
@@ -96,15 +102,14 @@ describe('Assessment set syncing', () => {
       abbreviation: 'new1',
       heading: 'a new assessment set 1 to sync',
       color: 'red1',
-    };
+    } satisfies AssessmentSetJsonInput;
     const newAssessmentSet2 = {
       name: 'new assessment set',
       abbreviation: 'new2',
       heading: 'a new assessment set 2 to sync',
       color: 'red2',
-    };
-    courseData.course.assessmentSets.push(newAssessmentSet1);
-    courseData.course.assessmentSets.push(newAssessmentSet2);
+    } satisfies AssessmentSetJsonInput;
+    courseData.course.assessmentSets.push(newAssessmentSet1, newAssessmentSet2);
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessmentSets = await util.dumpTableWithSchema(
       'assessment_sets',
@@ -126,13 +131,13 @@ describe('Assessment set syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[util.ASSESSMENT_ID]['set'] =
       'Machine Problem';
 
-    const newAssessment: util.Assessment = {
+    const newAssessment = {
       uuid: '03f3b4d2-0264-48b7-bf42-107732142c01',
       title: 'Test assessment 2',
       type: 'Exam',
       set: 'Worksheet', // The Worksheet set is in DEFAULT_ASSESSMENT_SETS but not in courseData
       number: '101',
-    };
+    } satisfies AssessmentJsonInput;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['test1'] = newAssessment;
 
     await util.writeAndSyncCourseData(courseData);
@@ -227,6 +232,57 @@ describe('Assessment set syncing', () => {
       heading: 'X',
       color: 'gray1',
       number: 1,
+    });
+  });
+
+  it('syncs JSON comments correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessmentSetStringComment = {
+      name: 'assessment set with comment',
+      abbreviation: 'com',
+      heading: 'assessment set with comment',
+      color: 'red2',
+      comment: 'assessment set comment',
+    } satisfies AssessmentSetJsonInput;
+    const assessmentSetArrayComment = {
+      name: 'assessment set with an array comment',
+      abbreviation: 'com',
+      heading: 'assessment set with comment',
+      color: 'red2',
+      comment: ['comment 1', 'comment 2'],
+    } satisfies AssessmentSetJsonInput;
+    const assessmentSetObjectComment = {
+      name: 'assessment set with an object comment',
+      abbreviation: 'com',
+      heading: 'assessment set with comment',
+      color: 'red2',
+      comment: { comment1: 'value1', comment2: 'value2' },
+    } satisfies AssessmentSetJsonInput;
+    courseData.course.assessmentSets.push(
+      assessmentSetStringComment,
+      assessmentSetArrayComment,
+      assessmentSetObjectComment,
+    );
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedAssessmentSets = await util.dumpTableWithSchema(
+      'assessment_sets',
+      AssessmentSetSchema,
+    );
+    const syncedAssessmentSetStringComment = syncedAssessmentSets.find(
+      (as) => as.name === assessmentSetStringComment.name,
+    );
+    assert.equal(syncedAssessmentSetStringComment?.json_comment, 'assessment set comment');
+    const syncedAssessmentSetArrayComment = syncedAssessmentSets.find(
+      (as) => as.name === assessmentSetArrayComment.name,
+    );
+    assert.deepEqual(syncedAssessmentSetArrayComment?.json_comment, ['comment 1', 'comment 2']);
+    const syncedAssessmentSetObjectComment = syncedAssessmentSets.find(
+      (as) => as.name === assessmentSetObjectComment.name,
+    );
+    assert.deepEqual(syncedAssessmentSetObjectComment?.json_comment, {
+      comment1: 'value1',
+      comment2: 'value2',
     });
   });
 });

@@ -8,13 +8,13 @@
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "dev:no-watch": "tsx src/interface.js",
     "start": "node dist/interface.js",
-    "test": "c8 mocha src/**/*.test.{js,ts}"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.777.0",
-    "@aws-sdk/client-s3": "^3.779.0",
-    "@aws-sdk/credential-providers": "^3.778.0",
-    "@aws-sdk/lib-storage": "^3.779.0",
+    "@aws-sdk/client-ecr": "^3.940.0",
+    "@aws-sdk/client-s3": "^3.940.0",
+    "@aws-sdk/credential-providers": "^3.940.0",
+    "@aws-sdk/lib-storage": "^3.940.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
@@ -31,41 +31,30 @@
     "async": "^3.2.6",
     "async-mutex": "^0.5.0",
     "body-parser": "^1.20.3",
-    "debug": "^4.4.0",
-    "dockerode": "^4.0.5",
-    "express": "^4.21.2",
+    "debug": "^4.4.3",
+    "dockerode": "^4.0.9",
+    "express": "^4.22.0",
     "express-async-handler": "^1.2.0",
-    "ioredis": "^5.6.0",
+    "ioredis": "^5.8.2",
     "lodash": "^4.17.21",
+    "minimist": "^1.2.8",
     "node-fetch": "3.3.2",
-    "shlex": "^2.1.2",
-    "uuid": "^11.1.0",
-    "yargs-parser": "^21.1.1",
-    "zod": "^3.24.2"
+    "shlex": "^3.0.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/node": "^20.17.30",
-    "c8": "^10.1.3",
-    "chai": "^5.2.0",
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^22.19.1",
+    "@vitest/coverage-v8": "^4.0.14",
     "fast-glob": "^3.3.3",
-    "mocha": "^11.1.0",
-    "nodemon": "^3.1.9",
-    "tsx": "^4.19.3",
-    "typescript": "^5.8.2",
-    "typescript-cp": "^0.1.9"
-  },
-  "c8": {
-    "reporter": [
-      "html",
-      "text-summary",
-      "cobertura"
-    ],
-    "all": true,
-    "include": [
-      "src/**"
-    ]
+    "nodemon": "^3.1.11",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-cp": "^0.1.9",
+    "vitest": "^4.0.14"
   },
   "nodemonConfig": {
-    "ext": "js,jsx,ts,tsx,json,sql"
+    "ext": "js,jsx,ts,tsx,json,sql",
+    "delay": 100
   }
 }

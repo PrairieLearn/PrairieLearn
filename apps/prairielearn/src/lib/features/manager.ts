@@ -2,14 +2,21 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { selectCourseById } from '../../models/course.js';
 import { config } from '../config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'];
+interface UnvalidatedFeatureContext {
+  institution_id?: string | null;
+  course_id?: string | null;
+  course_instance_id?: string | null;
+  user_id?: string | null;
+}
+
+const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'] as const;
 const DEFAULT_CONTEXT = {
   institution_id: null,
   course_id: null,
@@ -45,13 +52,13 @@ type FeatureContext =
   | CourseInstanceContext;
 
 export class FeatureManager<FeatureName extends string> {
-  features: Set<string>;
+  features: Set<FeatureName>;
   als: AsyncLocalStorage<FeatureOverrides>;
   globalOverrides: FeatureOverrides = {};
 
   constructor(features: readonly FeatureName[]) {
     features.forEach((feature) => {
-      if (!feature.match(/^[a-z0-9:_-]+$/)) {
+      if (!/^[a-z0-9:_-]+$/.test(feature)) {
         throw new Error(`Invalid feature name: ${feature}`);
       }
     });
@@ -59,7 +66,7 @@ export class FeatureManager<FeatureName extends string> {
     this.als = new AsyncLocalStorage<FeatureOverrides>();
   }
 
-  private validateFeature(name: FeatureName, context: FeatureContext) {
+  private validateFeature(name: FeatureName, context: UnvalidatedFeatureContext) {
     if (!this.features.has(name)) {
       throw new Error(`Unknown feature: ${name}`);
     }
@@ -67,11 +74,11 @@ export class FeatureManager<FeatureName extends string> {
   }
 
   hasFeature(feature: string): feature is FeatureName {
-    return this.features.has(feature);
+    return this.features.has(feature as FeatureName);
   }
 
   allFeatures() {
-    return [...this.features] as FeatureName[];
+    return [...this.features];
   }
 
   /**
@@ -81,7 +88,7 @@ export class FeatureManager<FeatureName extends string> {
    * @param context A context to use when evaluating the feature.
    * @returns Whether or not the feature is enabled
    */
-  async enabled(name: FeatureName, context: FeatureContext = {}): Promise<boolean> {
+  async enabled(name: FeatureName, context: UnvalidatedFeatureContext = {}): Promise<boolean> {
     this.validateFeature(name, context);
 
     // Allow features to be overridden by `runWithOverrides`.
@@ -108,9 +115,9 @@ export class FeatureManager<FeatureName extends string> {
 
     // Allow features to be enabled in dev mode via `options.devModeFeatures`
     // in `infoCourse.json`.
-    if (config.devMode && 'course_id' in context) {
+    if (config.devMode && context.course_id != null) {
       const course = await selectCourseById(context.course_id);
-      const devModeFeatures = course?.options?.devModeFeatures;
+      const devModeFeatures = course.options?.devModeFeatures;
 
       if (Array.isArray(devModeFeatures)) {
         // Legacy support: `devModeFeatures` used to be an array, not an object.
@@ -172,12 +179,11 @@ export class FeatureManager<FeatureName extends string> {
    * Enables the feature for the given context.
    *
    * @param name The name of the feature.
-   * @param type The type of grant that is being applied.
    * @param context The context for which the feature should be enabled.
    */
   async enable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.update_feature_grant_enabled, {
+    await execute(sql.update_feature_grant_enabled, {
       name,
       enabled: true,
       ...DEFAULT_CONTEXT,
@@ -193,7 +199,7 @@ export class FeatureManager<FeatureName extends string> {
    */
   async disable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.update_feature_grant_enabled, {
+    await execute(sql.update_feature_grant_enabled, {
       name,
       enabled: false,
       ...DEFAULT_CONTEXT,
@@ -209,7 +215,7 @@ export class FeatureManager<FeatureName extends string> {
    */
   async delete(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.delete_feature, { name, ...DEFAULT_CONTEXT, ...context });
+    await execute(sql.delete_feature, { name, ...DEFAULT_CONTEXT, ...context });
   }
 
   /**
@@ -239,7 +245,7 @@ export class FeatureManager<FeatureName extends string> {
     }
   }
 
-  validateContext(context: object): FeatureContext {
+  validateContext(context: UnvalidatedFeatureContext): FeatureContext {
     let hasAllParents = true;
     CONTEXT_HIERARCHY.forEach((key, index) => {
       const hasKey = !!context[key];

@@ -1,9 +1,9 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 
@@ -16,11 +16,10 @@ const baseUrl = siteUrl + '/pl';
 const courseInstanceIssuesUrl = baseUrl + '/course_instance/1/instructor/course_admin/issues';
 const courseIssuesUrl = baseUrl + '/course/1/course_admin/issues';
 
-describe('Issues', function () {
-  this.timeout(10000);
+describe('Issues', { timeout: 15_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   doTest(courseInstanceIssuesUrl, 'course');
   doTest(courseIssuesUrl, 'course instance');
@@ -30,8 +29,8 @@ function doTest(issuesUrl: string, label: string) {
   describe(`Report issue with question and close all issues in ${label}`, () => {
     let questionUrl;
 
-    step('should report issues to a question', async () => {
-      const questionId = (await sqldb.queryOneRowAsync(sql.select_question_id, [])).rows[0].id;
+    test.sequential('should report issues to a question', async () => {
+      const questionId = await sqldb.queryRow(sql.select_question_id, IdSchema);
       questionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
       let res = await fetch(questionUrl);
       const $ = cheerio.load(await res.text());
@@ -82,11 +81,11 @@ function doTest(issuesUrl: string, label: string) {
       });
       assert.equal(res.status, 200);
 
-      const result = await sqldb.queryAsync(sql.select_open_issues, []);
-      assert.equal(result.rowCount, 3, 'Expected three open issues');
+      const rowCount = await sqldb.execute(sql.select_open_issues);
+      assert.equal(rowCount, 3, 'Expected three open issues');
     });
 
-    step('should close issues matching a query', async () => {
+    test.sequential('should close issues matching a query', async () => {
       const issuesUrlWithQuery = `${issuesUrl}?q=is%3Aopen+mountain`;
       let res = await fetch(issuesUrlWithQuery);
       const $ = cheerio.load(await res.text());
@@ -111,11 +110,11 @@ function doTest(issuesUrl: string, label: string) {
       });
       assert.equal(res.status, 200);
 
-      const result = await sqldb.queryAsync(sql.select_open_issues, []);
-      assert.equal(result.rowCount, 2, 'Expected two open issues');
+      const rowCount = await sqldb.execute(sql.select_open_issues);
+      assert.equal(rowCount, 2, 'Expected two open issues');
     });
 
-    step('should close all open issues', async () => {
+    test.sequential('should close all open issues', async () => {
       let res = await fetch(issuesUrl);
       const $ = cheerio.load(await res.text());
 
@@ -139,8 +138,8 @@ function doTest(issuesUrl: string, label: string) {
       });
       assert.equal(res.status, 200);
 
-      const result = await sqldb.queryAsync(sql.select_open_issues, []);
-      assert.equal(result.rowCount, 0, 'Expected zero open issues');
+      const rowCount = await sqldb.execute(sql.select_open_issues);
+      assert.equal(rowCount, 0, 'Expected zero open issues');
     });
   });
 }

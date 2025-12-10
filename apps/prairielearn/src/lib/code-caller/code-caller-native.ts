@@ -6,12 +6,12 @@ import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 
 import { run } from '@prairielearn/run';
+import { withResolvers } from '@prairielearn/utils';
 
-import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
+import { assertNever } from '../types.js';
 
 import {
   type CallType,
@@ -69,30 +69,29 @@ export interface ErrorData {
 
 export type CodeCallerError = Error & { data?: ErrorData };
 
-/**
-  Internal state machine
-  ======================
+/*
+Internal state machine
+======================
 
-  The list of internal states and the possible transitions are:
+The list of internal states and the possible transitions are:
 
-  CREATED: Child process is not yet started.
-    -> WAITING, EXITED
+CREATED: Child process is not yet started.
+  -> WAITING, EXITED
 
-  WAITING: Child process is running but no call is active, everything is healthy.
-    -> IN_CALL, RESTARTING, EXITING, EXITED
+WAITING: Child process is running but no call is active, everything is healthy.
+  -> IN_CALL, RESTARTING, EXITING, EXITED
 
-  IN_CALL: A call is currently running.
-    -> WAITING, EXITING, EXITED
+IN_CALL: A call is currently running.
+  -> WAITING, EXITING, EXITED
 
-  RESTARTING: The worker is restarting; waiting for confirmation of successful restart.
-    -> WAITING, EXITING
+RESTARTING: The worker is restarting; waiting for confirmation of successful restart.
+  -> WAITING, EXITING
 
-  EXITING: The child process is being terminated.
-    -> EXITED
+EXITING: The child process is being terminated.
+  -> EXITED
 
-  EXITED: The child process has exited.
-    -> none
-
+EXITED: The child process has exited.
+  -> none
 */
 
 export class CodeCallerNative implements CodeCaller {
@@ -140,7 +139,7 @@ export class CodeCallerNative implements CodeCaller {
    */
   private constructor(options: CodeCallerNativeOptionsInternal) {
     this.state = CREATED;
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.debug('enter constructor()');
 
@@ -208,38 +207,45 @@ export class CodeCallerNative implements CodeCaller {
 
     let cwd: string | undefined;
     const paths = [path.join(APP_ROOT_PATH, 'python')];
-    if (type === 'question') {
-      if (!directory) throw new Error('Missing directory');
-      if (!this.coursePath) throw new Error('Missing course path');
-      cwd = path.join(this.coursePath, 'questions', directory);
-      paths.push(path.join(this.coursePath, 'serverFilesCourse'));
-    } else if (type === 'v2-question') {
-      // v2 questions always use the root of the PrairieLearn repository as their
-      // working directory.
-      cwd = REPOSITORY_ROOT_PATH;
-    } else if (type === 'course-element') {
-      if (!directory) throw new Error('Missing directory');
-      if (!this.coursePath) throw new Error('Missing course path');
-      cwd = path.join(this.coursePath, 'elements', directory);
-      paths.push(path.join(this.coursePath, 'serverFilesCourse'));
-    } else if (type === 'core-element') {
-      if (!directory) throw new Error('Missing directory');
-      cwd = path.join(APP_ROOT_PATH, 'elements', directory);
-    } else if (type === 'restart' || type === 'ping') {
-      // Doesn't need a working directory
-    } else {
-      throw new Error(`Unknown function call type: ${type}`);
+    switch (type) {
+      case 'question':
+        if (!directory) throw new Error('Missing directory');
+        if (!this.coursePath) throw new Error('Missing course path');
+        cwd = path.join(this.coursePath, 'questions', directory);
+        paths.push(path.join(this.coursePath, 'serverFilesCourse'));
+        break;
+      case 'v2-question':
+        // v2 questions always use the root of the PrairieLearn repository as their
+        // working directory.
+        cwd = REPOSITORY_ROOT_PATH;
+        break;
+      case 'course-element':
+        if (!directory) throw new Error('Missing directory');
+        if (!this.coursePath) throw new Error('Missing course path');
+        cwd = path.join(this.coursePath, 'elements', directory);
+        paths.push(path.join(this.coursePath, 'serverFilesCourse'));
+        break;
+      case 'core-element':
+        if (!directory) throw new Error('Missing directory');
+        cwd = path.join(APP_ROOT_PATH, 'elements', directory);
+        break;
+      case 'restart':
+      case 'ping':
+        // Doesn't need a working directory
+        break;
+      default:
+        assertNever(type);
     }
 
     const callData = { file, fcn, args, cwd, paths, forbidden_modules: this.forbiddenModules };
     const callDataString = JSON.stringify(callData);
 
-    const deferred = deferredPromise<CodeCallerResult>();
+    const promise = withResolvers<CodeCallerResult>();
     this.callback = (err, data, output) => {
       if (err) {
-        deferred.reject(err);
+        promise.reject(err);
       } else {
-        deferred.resolve({ result: data, output: output ?? '' });
+        promise.resolve({ result: data, output: output ?? '' });
       }
     };
 
@@ -265,7 +271,7 @@ export class CodeCallerNative implements CodeCaller {
     this._checkState();
     this.debug('exit call()');
 
-    return deferred.promise;
+    return promise.promise;
   }
 
   /**
@@ -425,7 +431,7 @@ export class CodeCallerNative implements CodeCaller {
       this.outputData.push(data);
       // If `data` contains a newline, then `outputData` must contain a newline as well.
       // We avoid looking in `outputData` because it's a potentially very large string.
-      if (data.indexOf('\n') >= 0) {
+      if (data.includes('\n')) {
         this._callIsFinished();
       }
     }
@@ -450,6 +456,14 @@ export class CodeCallerNative implements CodeCaller {
   _handleChildExit(code: number, signal: number) {
     this.debug('enter _handleChildExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
+
+    // Eagerly destroy all streams. While this typically happens automatically,
+    // we've observed situations where the streams are sometimes not closed,
+    // which can leak memory and keep the process alive longer than expected.
+    for (const stream of this.child?.stdio ?? []) {
+      stream.destroy();
+    }
+
     if (this.state === WAITING) {
       this._logError(
         'CodeCallerNative child process exited while in state = WAITING, code = ' +
@@ -565,7 +579,7 @@ export class CodeCallerNative implements CodeCaller {
     let err: Error | null = null;
     try {
       data = JSON.parse(this.outputData.join(''));
-    } catch (e) {
+    } catch (e: any) {
       err = new Error('Error decoding CodeCallerNative JSON: ' + e.message);
     }
     if (err) {
@@ -596,7 +610,7 @@ export class CodeCallerNative implements CodeCaller {
    * code.
    */
   _restartWasSuccessful() {
-    if (this.outputRestart.indexOf('\n') === -1) {
+    if (!this.outputRestart.includes('\n')) {
       // We haven't yet gotten enough output to know if the restart
       // was successful.
       return false;
@@ -657,70 +671,45 @@ export class CodeCallerNative implements CodeCaller {
       );
     }
 
-    let childNull: boolean, callbackNull: boolean, timeoutIDNull: boolean;
-    if (this.state === CREATED) {
-      childNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === WAITING) {
-      childNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === IN_CALL) {
-      childNull = false;
-      callbackNull = false;
-      timeoutIDNull = false;
-    } else if (this.state === RESTARTING) {
-      childNull = false;
-      callbackNull = false;
-      timeoutIDNull = false;
-    } else if (this.state === EXITING) {
-      childNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === EXITED) {
-      childNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else {
+    if (![CREATED, WAITING, IN_CALL, RESTARTING, EXITING, EXITED].includes(this.state)) {
       return this._logError('Invalid CodeCallerNative state: ' + String(this.state));
     }
 
-    if (childNull != null) {
-      if (childNull && this.child != null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": child should be null',
-        );
-      }
-      if (!childNull && this.child == null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": child should not be null',
-        );
-      }
+    const childNull = [CREATED, EXITED].includes(this.state);
+    const callbackNull = ![IN_CALL, RESTARTING].includes(this.state);
+    const timeoutIDNull = ![IN_CALL, RESTARTING].includes(this.state);
+
+    if (childNull && this.child != null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": child should be null',
+      );
     }
-    if (callbackNull != null) {
-      if (callbackNull && this.callback != null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": callback should be null',
-        );
-      }
-      if (!callbackNull && this.callback == null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": callback should not be null',
-        );
-      }
+    if (!childNull && this.child == null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": child should not be null',
+      );
     }
-    if (timeoutIDNull != null) {
-      if (timeoutIDNull && this.timeoutID != null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": timeoutID should be null',
-        );
-      }
-      if (!timeoutIDNull && this.timeoutID == null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": timeoutID should not be null',
-        );
-      }
+
+    if (callbackNull && this.callback != null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": callback should be null',
+      );
+    }
+    if (!callbackNull && this.callback == null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": callback should not be null',
+      );
+    }
+
+    if (timeoutIDNull && this.timeoutID != null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": timeoutID should be null',
+      );
+    }
+    if (!timeoutIDNull && this.timeoutID == null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": timeoutID should not be null',
+      );
     }
 
     return true;

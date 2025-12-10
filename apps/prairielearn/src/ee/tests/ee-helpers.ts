@@ -1,14 +1,16 @@
+import { afterAll, beforeAll } from 'vitest';
+
 import { config } from '../../lib/config.js';
 
 export function enableEnterpriseEdition() {
-  let originalIsEnterprise;
+  let originalIsEnterprise: boolean;
 
-  before(() => {
+  beforeAll(() => {
     originalIsEnterprise = config.isEnterprise;
     config.isEnterprise = true;
   });
 
-  after(() => {
+  afterAll(() => {
     config.isEnterprise = originalIsEnterprise;
   });
 }

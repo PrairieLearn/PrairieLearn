@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import fetch from 'node-fetch';
+import { assert } from 'vitest';
 import { z } from 'zod';
 
 import { queryRow } from '@prairielearn/postgres';
@@ -30,13 +30,13 @@ export async function enrollUser(courseInstanceId: string, user: AuthUser) {
 
 export async function unenrollUser(courseInstanceId: string, user: AuthUser) {
   return await withUser(user, async () => {
-    const url = baseUrl + '/enroll';
-    return await fetch(url, {
+    const homeUrl = siteUrl;
+    return await fetch(homeUrl, {
       method: 'POST',
       body: new URLSearchParams({
         course_instance_id: courseInstanceId,
         __action: 'unenroll',
-        __csrf_token: await getCsrfToken(url),
+        __csrf_token: await getCsrfToken(homeUrl),
       }),
     });
   });

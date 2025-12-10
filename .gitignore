@@ -1,3 +1,6 @@
+# Ignore test course draft questions to make local testing of AI question generation easier.
+/testCourse/questions/__drafts__
+
 # Development
 
 ## Custom scripts
@@ -73,6 +76,7 @@ yarn-error.log
 ### Python
 .venv/
 __pycache__/
+*.egg-info
 *.py[cod]
 *$py.class
 .coverage
@@ -102,6 +106,14 @@ coverage/
 apps/*/coverage
 packages/*/coverage
 coverage.xml
+
+## Vitest
+.vitest-reports
+
+## Playwright
+test-results/
+apps/prairielearn/test-results/
+apps/prairielearn/playwright/.cache/
 
 ## TypeScript cache
 *.tsbuildinfo

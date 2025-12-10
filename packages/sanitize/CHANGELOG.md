@@ -1,5 +1,71 @@
 # @prairielearn/sanitize
 
+## 2.1.0
+
+### Minor Changes
+
+- 789fdfa: Add `truncate()` function
+
+## 2.0.22
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 2.0.21
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 2.0.20
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 2.0.19
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 2.0.18
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 2.0.17
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
+## 2.0.16
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 2.0.15
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
+## 2.0.14
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+
+## 2.0.13
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+
 ## 2.0.12
 
 ### Patch Changes

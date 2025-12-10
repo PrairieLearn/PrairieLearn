@@ -3,5 +3,6 @@
   "title": "Partial credit 1",
   "topic": "Algebra",
   "tags": ["mwest", "fa17", "tpl101", "v3"],
-  "type": "v3"
+  "type": "v3",
+  "shareSourcePublicly": true
 }

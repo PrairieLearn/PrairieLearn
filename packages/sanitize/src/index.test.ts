@@ -1,6 +1,6 @@
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
-import { recursivelyTruncateStrings, sanitizeObject } from './index.js';
+import { recursivelyTruncateStrings, sanitizeObject, truncate } from './index.js';
 
 describe('sanitizeObject', () => {
   it('sanitizes an empty object', () => {
@@ -83,6 +83,20 @@ describe('sanitizeObject', () => {
       a: null,
     };
     assert.deepEqual(expected, sanitizeObject(input));
+  });
+});
+
+describe('truncate', () => {
+  it('does not truncate empty string', () => {
+    assert.equal(truncate('', 10), '');
+  });
+
+  it('does not truncate short string', () => {
+    assert.equal(truncate('test', 10), 'test');
+  });
+
+  it('truncates long string', () => {
+    assert.equal(truncate('testtest', 4), 'test...[truncated]');
   });
 });
 

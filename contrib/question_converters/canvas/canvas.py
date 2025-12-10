@@ -1,3 +1,5 @@
+"""Convert Canvas quizzes to other formats."""
+
 import argparse
 import json
 import os

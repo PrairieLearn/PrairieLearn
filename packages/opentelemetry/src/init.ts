@@ -1,5 +1,12 @@
 import { Metadata, credentials } from '@grpc/grpc-js';
-import { type ContextManager, metrics } from '@opentelemetry/api';
+import {
+  type Attributes,
+  type Context,
+  type ContextManager,
+  type Link,
+  type SpanKind,
+  metrics,
+} from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
@@ -8,16 +15,19 @@ import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
 import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
 import { ExpressInstrumentation, ExpressLayerType } from '@opentelemetry/instrumentation-express';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import {
+  HttpInstrumentation,
+  type StartIncomingSpanCustomAttributeFunction,
+} from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
 import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
 import {
-  Resource,
-  detectResourcesSync,
+  detectResources,
   envDetector,
   processDetector,
+  resourceFromAttributes,
 } from '@opentelemetry/resources';
 import {
   AggregationTemporality,
@@ -31,16 +41,53 @@ import {
   AlwaysOnSampler,
   BatchSpanProcessor,
   ConsoleSpanExporter,
+  NoopSpanProcessor,
   ParentBasedSampler,
   type ReadableSpan,
   type Sampler,
+  SamplingDecision,
   SimpleSpanProcessor,
   type SpanExporter,
   type SpanProcessor,
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-base';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+
+/**
+ * Allows applications to force sampling of specific spans/traces by setting
+ * a `force_sample` attribute to `true`. When that attribute is set, the span
+ * will be sampled regardless of the underlying sampler's decision.
+ *
+ * This is most useful when that attribute is added to the root span of a trace,
+ * and when using a `ParentBasedSampler`, as that will cause all spans in the trace
+ * to be sampled.
+ */
+class ForceSampleSampler implements Sampler {
+  private sampler: Sampler;
+  constructor(sampler: Sampler) {
+    this.sampler = sampler;
+  }
+
+  shouldSample(
+    context: Context,
+    traceId: string,
+    spanName: string,
+    spanKind: SpanKind,
+    attributes: Attributes,
+    links: Link[],
+  ) {
+    if (attributes['force_sample'] === true) {
+      return { decision: SamplingDecision.RECORD_AND_SAMPLED };
+    }
+
+    return this.sampler.shouldSample(context, traceId, spanName, spanKind, attributes, links);
+  }
+
+  toString() {
+    return `ForceSampleSampler{${this.sampler.toString()}}`;
+  }
+}
 
 /**
  * Extends `BatchSpanProcessor` to give it the ability to filter out spans
@@ -87,6 +134,8 @@ function filter(span: ReadableSpan) {
   return true;
 }
 
+let incomingHttpRequestHook: StartIncomingSpanCustomAttributeFunction | undefined = undefined;
+
 // When adding new instrumentation here, add the corresponding packages to
 // `commonjs-preloads.ts` so that we can ensure that they're loaded via CJS
 // before anything tries to load them via CJS. This is necessary because the
@@ -117,6 +166,9 @@ const instrumentations = [
         /\/pl\/webhooks\/ping/,
       ].some((re) => re.test(req.url ?? '/'));
     },
+    startIncomingSpanHook(req) {
+      return incomingHttpRequestHook?.(req) ?? {};
+    },
   }),
   new IORedisInstrumentation(),
   new PgInstrumentation(),
@@ -143,6 +195,7 @@ interface OpenTelemetryConfigEnabled {
   honeycombApiKey?: string | null;
   honeycombDataset?: string | null;
   serviceName?: string;
+  incomingHttpRequestHook?: StartIncomingSpanCustomAttributeFunction;
 }
 
 // When we know for sure that OpenTelemetry is disabled, we won't require
@@ -166,7 +219,7 @@ function getHoneycombMetadata(config: OpenTelemetryConfig, datasetSuffix = ''): 
 }
 
 function getTraceExporter(config: OpenTelemetryConfig): SpanExporter | null {
-  if (!config.openTelemetryExporter) return null;
+  if (!config.openTelemetryEnabled || !config.openTelemetryExporter) return null;
 
   if (typeof config.openTelemetryExporter === 'object') {
     return config.openTelemetryExporter;
@@ -189,7 +242,7 @@ function getTraceExporter(config: OpenTelemetryConfig): SpanExporter | null {
 }
 
 function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | null {
-  if (!config.openTelemetryMetricExporter) return null;
+  if (!config.openTelemetryEnabled || !config.openTelemetryMetricExporter) return null;
 
   if (typeof config.openTelemetryMetricExporter === 'object') {
     return config.openTelemetryMetricExporter;
@@ -218,12 +271,14 @@ function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | nu
 }
 
 function getSpanProcessor(config: OpenTelemetryConfig): SpanProcessor | null {
+  if (!config.openTelemetryEnabled) return new NoopSpanProcessor();
+
   if (typeof config.openTelemetrySpanProcessor === 'object') {
     return config.openTelemetrySpanProcessor;
   }
 
   const traceExporter = getTraceExporter(config);
-  if (!traceExporter) return null;
+  if (!traceExporter) return new NoopSpanProcessor();
 
   switch (config.openTelemetrySpanProcessor ?? 'batch') {
     case 'batch': {
@@ -238,45 +293,43 @@ function getSpanProcessor(config: OpenTelemetryConfig): SpanProcessor | null {
   }
 }
 
-/**
- * Should be called once we've loaded our config; this will allow us to set up
- * the correct metadata for the Honeycomb exporter. We don't actually have that
- * information available until we've loaded our config.
- */
-export async function init(config: OpenTelemetryConfig) {
-  if (!config.openTelemetryEnabled) {
-    // If not enabled, do nothing. We used to disable the instrumentations, but
-    // per maintainers, that can actually be problematic. See the comments on
-    // https://github.com/open-telemetry/opentelemetry-js-contrib/issues/970
-    // The Express instrumentation also logs a benign error, which can be
-    // confusing to users. There's a fix in progress if we want to switch back
-    // to disabling instrumentations in the future:
-    // https://github.com/open-telemetry/opentelemetry-js-contrib/pull/972
-    return;
-  }
+function getSampler(config: OpenTelemetryConfig): Sampler {
+  if (!config.openTelemetryEnabled) return new AlwaysOffSampler();
 
-  const metricExporter = getMetricExporter(config);
-  const spanProcessor = getSpanProcessor(config);
-
-  let sampler: Sampler;
   switch (config.openTelemetrySamplerType ?? 'always-on') {
     case 'always-on': {
-      sampler = new AlwaysOnSampler();
-      break;
+      return new AlwaysOnSampler();
     }
     case 'always-off': {
-      sampler = new AlwaysOffSampler();
-      break;
+      return new AlwaysOffSampler();
     }
     case 'trace-id-ratio': {
-      sampler = new ParentBasedSampler({
-        root: new TraceIdRatioBasedSampler(config.openTelemetrySampleRate),
-      });
-      break;
+      return new ForceSampleSampler(
+        new ParentBasedSampler({
+          root: new TraceIdRatioBasedSampler(config.openTelemetrySampleRate),
+        }),
+      );
     }
     default:
       throw new Error(`Unknown OpenTelemetry sampler type: ${config.openTelemetrySamplerType}`);
   }
+}
+
+/**
+ * Should be called once we've loaded our config; this will allow us to set up
+ * the correct metadata for the Honeycomb exporter. We don't actually have that
+ * information available until we've loaded our config.
+ *
+ * Note that even when `openTelemetryEnabled` is `false`, we'll still configure
+ * the `NodeTraceProvider` and instrumentations, as Sentry relies on that for
+ * scope isolation. However, we won't actually set up any exporters.
+ */
+export async function init(config: OpenTelemetryConfig) {
+  incomingHttpRequestHook = config.incomingHttpRequestHook;
+
+  const metricExporter = getMetricExporter(config);
+  const spanProcessor = getSpanProcessor(config);
+  const sampler = getSampler(config);
 
   // Much of this functionality is copied from `@opentelemetry/sdk-node`, but
   // we can't use the SDK directly because of the fact that we load our config
@@ -284,7 +337,7 @@ export async function init(config: OpenTelemetryConfig) {
   // then can we actually start requiring all of our code that loads our config
   // and ultimately tells us how to configure OpenTelemetry.
 
-  let resource = detectResourcesSync({
+  let resource = detectResources({
     // The AWS resource detector always tries to reach out to the EC2 metadata
     // service endpoint. When running locally, or otherwise in a non-AWS environment,
     // this will typically fail immediately wih `EHOSTDOWN`, but will sometimes wait
@@ -304,19 +357,15 @@ export async function init(config: OpenTelemetryConfig) {
   });
 
   if (config.serviceName) {
-    resource = resource.merge(
-      new Resource({ [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName }),
-    );
+    resource = resource.merge(resourceFromAttributes({ [ATTR_SERVICE_NAME]: config.serviceName }));
   }
 
   // Set up tracing instrumentation.
   const nodeTracerProvider = new NodeTracerProvider({
     sampler,
     resource,
+    spanProcessors: [spanProcessor].filter((p) => !!p),
   });
-  if (spanProcessor) {
-    nodeTracerProvider.addSpanProcessor(spanProcessor);
-  }
   nodeTracerProvider.register({
     contextManager: config.contextManager,
   });

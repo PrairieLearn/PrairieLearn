@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { formatDateYMD } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { NewsItemSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const NewsItemRowSchema = NewsItemSchema.extend({
   unread: z.boolean(),
@@ -16,7 +17,7 @@ export function NewsItems({
   newsItems,
   userIsInstructor,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   newsItems: NewsItemRow[];
   userIsInstructor: boolean;
 }) {
@@ -35,7 +36,7 @@ export function NewsItems({
     },
     options: {
       pageNote:
-        (newsItemNotificationCount ?? 0 > 0) ? `${newsItemNotificationCount} Unread` : undefined,
+        (newsItemNotificationCount ?? 0) > 0 ? `${newsItemNotificationCount} Unread` : undefined,
     },
     content: html`
       <div class="card mb-4">

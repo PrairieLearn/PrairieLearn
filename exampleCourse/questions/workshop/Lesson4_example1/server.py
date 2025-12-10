@@ -4,6 +4,7 @@ import prairielearn as pl
 
 def generate(data):
     A = np.zeros((2, 2))
+    A[0, 1] = 1
     data["correct_answers"]["A"] = pl.to_json(A)
 
 
@@ -16,4 +17,5 @@ def grade(data):
         data["partial_scores"]["A"] = {"score": 1, "weight": 1}
         data["score"] = 1.0
     else:
+        data["partial_scores"]["A"] = {"score": 0, "weight": 1}
         data["score"] = 0

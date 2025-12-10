@@ -1,53 +1,108 @@
--- BLOCK select_next_ungraded_instance_question
-WITH
-  prior_instance_question AS (
-    SELECT
-      iq.*,
-      COALESCE(g.name, u.name) AS prior_user_or_group_name
-    FROM
-      instance_questions AS iq
-      LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-      LEFT JOIN users AS u ON (u.user_id = ai.user_id)
-      LEFT JOIN groups AS g ON (g.id = ai.group_id)
-    WHERE
-      iq.id = $prior_instance_question_id
-  )
+-- BLOCK select_next_instance_question_group_id
 SELECT
-  iq.id
+  iqg.id AS instance_question_group_id
+FROM
+  instance_question_groups AS iqg
+WHERE
+  iqg.assessment_question_id = $assessment_question_id
+  AND iqg.id > $prior_instance_question_group_id
+ORDER BY
+  iqg.id
+LIMIT
+  1;
+
+-- BLOCK instance_question_group_id_for_instance_question
+SELECT
+  COALESCE(
+    manual_instance_question_group_id,
+    ai_instance_question_group_id
+  )
 FROM
   instance_questions AS iq
-  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
-  LEFT JOIN groups AS g ON (g.id = ai.group_id)
-  LEFT JOIN prior_instance_question AS piq ON (TRUE)
 WHERE
-  iq.assessment_question_id = $assessment_question_id
-  AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
-  AND (
-    $prior_instance_question_id::BIGINT IS NULL
-    OR iq.id != $prior_instance_question_id
-  )
-  AND iq.requires_manual_grading
-  AND (
-    iq.assigned_grader = $user_id
-    OR iq.assigned_grader IS NULL
-  )
-  AND EXISTS (
+  id = $instance_question_id;
+
+-- BLOCK select_next_instance_question
+WITH
+  instance_questions_to_grade AS (
     SELECT
-      1
+      iq.id,
+      iq.assigned_grader,
+      ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
+      (($prior_instance_question_id % 21317) * 45989) % 3767 AS prior_iq_stable_order
     FROM
-      variants AS v
-      JOIN submissions AS s ON (s.variant_id = v.id)
+      instance_questions AS iq
+      JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE
-      v.instance_question_id = iq.id
+      iq.assessment_question_id = $assessment_question_id
+      AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
+      AND (
+        -- When using instance question groups:
+        -- If the previous instance question belongs to an instance question group, the next instance question must be in the same group.
+        -- If the previous instance question has no group, the next must not be in a group as well.
+        -- Otherwise, this filter has no effect.
+        NOT $use_instance_question_groups
+        OR (
+          COALESCE(
+            iq.manual_instance_question_group_id,
+            iq.ai_instance_question_group_id
+          ) = $prior_instance_question_group_id
+          OR (
+            COALESCE(
+              iq.manual_instance_question_group_id,
+              iq.ai_instance_question_group_id
+            ) IS NULL
+            AND $prior_instance_question_group_id IS NULL
+          )
+        )
+      )
+      AND (
+        $prior_instance_question_id::bigint IS NULL
+        OR iq.id != $prior_instance_question_id
+      )
+      AND (
+        -- If skip graded submissions is selected, the next submission must require manual grading.
+        -- Otherwise, the next submission doesn't have to.
+        NOT ($skip_graded_submissions)
+        OR iq.requires_manual_grading
+      )
+      AND (
+        iq.assigned_grader = $user_id
+        OR iq.assigned_grader IS NULL
+      )
+      AND EXISTS (
+        SELECT
+          1
+        FROM
+          variants AS v
+          JOIN submissions AS s ON (s.variant_id = v.id)
+        WHERE
+          v.instance_question_id = iq.id
+      )
+  )
+SELECT
+  id
+FROM
+  instance_questions_to_grade
+WHERE
+  (
+    -- If skipping graded submissions, the next submission does not necessarily need a higher stable order,
+    -- since the next ungraded submission might have a lower stable order.
+    -- Otherwise, the next submission must have a higher stable order. This prevents users from being redirected
+    -- to the same submission twice.
+    $skip_graded_submissions
+    OR prior_iq_stable_order IS NULL
+    OR iq_stable_order > prior_iq_stable_order
   )
 ORDER BY
   -- Choose one assigned to current user if one exists, unassigned if not
-  iq.assigned_grader NULLS LAST,
-  -- Choose question that list after the prior if one exists (follow the order in the instance list)
-  (COALESCE(g.name, u.name), iq.id) > (piq.prior_user_or_group_name, piq.id) DESC,
-  COALESCE(g.name, u.name),
-  iq.id
+  assigned_grader ASC NULLS LAST,
+  -- Choose question that list after the prior if one exists. Follow the same
+  -- default pseudo-random deterministic stable order used in the instance
+  -- questions page.
+  iq_stable_order > prior_iq_stable_order DESC,
+  iq_stable_order ASC,
+  id ASC
 LIMIT
   1;
 
@@ -74,7 +129,9 @@ WITH
   rubric_items_data AS (
     SELECT
       JSONB_AGG(
-        TO_JSONB(ri) || JSONB_BUILD_OBJECT(
+        JSONB_BUILD_OBJECT(
+          'rubric_item',
+          to_jsonb(ri),
           'num_submissions',
           COALESCE(scpri.num_submissions, 0)
         )
@@ -90,7 +147,7 @@ WITH
       AND ri.deleted_at IS NULL
   )
 SELECT
-  r.*,
+  to_jsonb(r.*) AS rubric,
   rid.items_data AS rubric_items
 FROM
   rubrics r
@@ -127,12 +184,12 @@ WITH
       rubric_items AS ri
     WHERE
       ri.rubric_id = $rubric_id
-      AND ri.id = ANY ($rubric_items::BIGINT[])
+      AND ri.id = ANY ($rubric_items::bigint[])
       AND ri.deleted_at IS NULL
   )
 SELECT
   TO_JSONB(r) AS rubric_data,
-  COALESCE(rid.items, '[]'::JSONB) AS rubric_item_data
+  COALESCE(rid.items, '[]'::jsonb) AS rubric_item_data
 FROM
   rubrics r
   LEFT JOIN rubric_items_data rid ON (TRUE)
@@ -192,7 +249,7 @@ SET
 WHERE
   rubric_id = $rubric_id
   AND deleted_at IS NULL
-  AND NOT (id = ANY ($active_rubric_items::BIGINT[]));
+  AND NOT (id = ANY ($active_rubric_items::bigint[]));
 
 -- BLOCK update_rubric_item
 UPDATE rubric_items
@@ -264,7 +321,7 @@ WITH
     WHERE
       iq.assessment_question_id = $assessment_question_id
     ORDER BY
-      iq.id,
+      iq.id ASC,
       s.date DESC,
       s.id DESC
   ),
@@ -289,7 +346,8 @@ WITH
 SELECT
   rgr.*,
   gir.applied_rubric_items,
-  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed
+  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed,
+  iq.is_ai_graded
 FROM
   rubric_gradings_to_review AS rgr
   JOIN instance_questions AS iq ON (iq.id = rgr.instance_question_id)
@@ -350,7 +408,7 @@ WITH
       ri.description
     FROM
       inserted_rubric_grading AS irg
-      JOIN JSONB_TO_RECORDSET($rubric_items::JSONB) AS ari (rubric_item_id BIGINT, score DOUBLE PRECISION) ON (TRUE)
+      JOIN JSONB_TO_RECORDSET($rubric_items::jsonb) AS ari (rubric_item_id bigint, score double precision) ON (TRUE)
       JOIN rubric_items AS ri ON (
         ri.id = ari.rubric_item_id
         AND ri.rubric_id = $rubric_id
@@ -362,7 +420,7 @@ SELECT
   irg.id
 FROM
   inserted_rubric_grading AS irg
-  LEFT JOIN inserted_rubric_grading_items AS irgi ON (TRUE)
+  LEFT JOIN inserted_rubric_grading_items ON (TRUE)
 LIMIT
   1;
 
@@ -379,12 +437,15 @@ SELECT
   iq.auto_points,
   iq.manual_points,
   s.manual_rubric_grading_id,
-  $check_modified_at::TIMESTAMPTZ IS NOT NULL
-  AND $check_modified_at != iq.modified_at AS modified_at_conflict
+  $check_modified_at::timestamptz IS NOT NULL
+  -- We are comparing a database timestamp (microseconds precision) to a time
+  -- that comes from the client (milliseconds precision). This avoids a precision
+  -- mismatch that would cause the comparison to fail.
+  AND date_trunc('milliseconds', $check_modified_at) != date_trunc('milliseconds', iq.modified_at) AS modified_at_conflict
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-  JOIN questions AS q on (q.id = aq.question_id)
+  JOIN questions AS q ON (q.id = aq.question_id)
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
@@ -403,8 +464,9 @@ ORDER BY
   s.id DESC NULLS LAST
 LIMIT
   1
+  -- The assessment instance must be locked as a convention for any operation that updates scores.
 FOR NO KEY UPDATE OF
-  iq;
+  ai;
 
 -- BLOCK insert_grading_job
 INSERT INTO
@@ -444,15 +506,16 @@ RETURNING
 UPDATE submissions AS s
 SET
   feedback = CASE
-    WHEN feedback IS NULL THEN $feedback::JSONB
-    WHEN $feedback::JSONB IS NULL THEN feedback
+    WHEN feedback IS NULL THEN $feedback::jsonb
+    WHEN $feedback::jsonb IS NULL THEN feedback
     WHEN jsonb_typeof(feedback) = 'object'
-    AND jsonb_typeof($feedback::JSONB) = 'object' THEN feedback || $feedback::JSONB
-    ELSE $feedback::JSONB
+    AND jsonb_typeof($feedback::jsonb) = 'object' THEN feedback || $feedback::jsonb
+    ELSE $feedback::jsonb
   END,
-  partial_scores = COALESCE($partial_scores::JSONB, partial_scores),
+  partial_scores = COALESCE($partial_scores::jsonb, partial_scores),
   manual_rubric_grading_id = $manual_rubric_grading_id,
   graded_at = now(),
+  modified_at = now(),
   override_score = COALESCE($score, override_score),
   score = COALESCE($score, score),
   correct = COALESCE($correct, correct),
@@ -473,8 +536,14 @@ WITH
       score_perc = $score_perc,
       auto_points = COALESCE($auto_points, auto_points),
       manual_points = COALESCE($manual_points, manual_points),
-      status = 'complete',
+      -- If the question was unanswered, the status remains unanswered. Otherwise, it becomes complete.
+      status = CASE
+        WHEN iq.status = 'unanswered' THEN 'unanswered'::enum_instance_question_status
+        ELSE 'complete'::enum_instance_question_status
+      END,
       modified_at = now(),
+      -- TODO: this might not be correct. Matt suggested that we might want to
+      -- refactor `highest_submission_score` to track only auto points.
       highest_submission_score = COALESCE($score, highest_submission_score),
       requires_manual_grading = FALSE,
       last_grader = $authn_user_id,

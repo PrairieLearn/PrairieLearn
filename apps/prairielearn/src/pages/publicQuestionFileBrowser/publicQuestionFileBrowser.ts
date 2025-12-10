@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
-import { createFileBrowser } from '../../components/FileBrowser.html.js';
+import { createFileBrowser } from '../../components/FileBrowser.js';
 import { UserSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -13,7 +13,7 @@ import { selectQuestionById } from '../../models/question.js';
 
 const router = Router({ mergeParams: true });
 
-async function setLocals(req, res) {
+async function setLocals(req: Request, res: Response) {
   res.locals.user = UserSchema.parse(res.locals.authn_user);
   res.locals.authz_data = { user: res.locals.user };
   res.locals.course = await selectCourseById(req.params.course_id);
@@ -41,7 +41,7 @@ router.get(
         isReadOnly: true,
       });
       res.send(fileBrowser);
-    } catch (err) {
+    } catch (err: any) {
       if (err.code === 'ENOENT' && paths.branch.length > 1) {
         res.redirect(`${req.baseUrl}/${encodePath(paths.branch.slice(-2)[0].path)}`);
         return;

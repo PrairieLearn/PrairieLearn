@@ -1,8 +1,8 @@
 CREATE FUNCTION
     sync_questions(
-        IN disk_questions_data JSONB[],
+        IN disk_questions_data jsonb[],
         IN syncing_course_id bigint,
-        OUT name_to_id_map JSONB
+        OUT name_to_id_map jsonb
     )
 AS $$
 DECLARE
@@ -149,6 +149,7 @@ BEGIN
         topic_id = aggregates.topic_id,
         share_publicly = (src.data->>'share_publicly')::boolean,
         share_source_publicly = (src.data->>'share_source_publicly')::boolean,
+        json_comment = (src.data->'comment'),
         external_grading_enabled = (src.data->>'external_grading_enabled')::boolean,
         external_grading_image = src.data->>'external_grading_image',
         external_grading_files = jsonb_array_to_text_array(src.data->'external_grading_files'),
@@ -156,6 +157,7 @@ BEGIN
         external_grading_timeout = (src.data->>'external_grading_timeout')::integer,
         external_grading_enable_networking = (src.data->>'external_grading_enable_networking')::boolean,
         external_grading_environment = (src.data->>'external_grading_environment')::jsonb,
+        json_external_grading_comment = (src.data->'external_grading_comment'),
         dependencies = (src.data->>'dependencies')::jsonb,
         workspace_image = src.data->>'workspace_image',
         workspace_port = (src.data->>'workspace_port')::integer,
@@ -165,6 +167,7 @@ BEGIN
         workspace_url_rewrite = (src.data->>'workspace_url_rewrite')::boolean,
         workspace_enable_networking = (src.data->>'workspace_enable_networking')::boolean,
         workspace_environment = (src.data->>'workspace_environment')::jsonb,
+        json_workspace_comment = (src.data->'workspace_comment'),
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM

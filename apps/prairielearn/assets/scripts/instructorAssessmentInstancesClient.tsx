@@ -1,13 +1,14 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
-import { h, render, Fragment } from 'preact';
+import { render } from 'preact';
 import React, { useState } from 'preact/hooks';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { Scorebar } from '../../src/components/Scorebar.html.js';
+import { ScorebarHtml } from '../../src/components/Scorebar.js';
+import { assertNever } from '../../src/lib/types.js';
 import { type AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import { getPopoverTriggerForContainer } from './lib/popover.js';
@@ -103,15 +104,13 @@ onDocumentReady(() => {
           : (!filter?.role || row.role === filter.role) &&
               (row.uid?.toLowerCase().includes(search) ||
                 row.name?.toLowerCase().includes(search) ||
-                row.role?.toLowerCase().includes(search));
+                row.role.toLowerCase().includes(search));
       });
     },
     columns: tableColumns(assessmentGroupWork),
   });
 
   on('submit', 'form.js-popover-form', (event) => {
-    if (!event.currentTarget) return;
-
     event.preventDefault();
     $.post(
       window.location.pathname,
@@ -149,18 +148,21 @@ onDocumentReady(() => {
   $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
     const modal = $(this);
 
-    modal.find('form').on('submit', (e) => {
-      e.preventDefault();
-      $.post(
-        $(e.target).attr('action') ?? '',
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      modal.modal('hide');
-    });
+    modal
+      .parents('form')
+      .off('submit')
+      .on('submit', (e) => {
+        e.preventDefault();
+        $.post(
+          $(e.target).attr('action') ?? '',
+          $(e.target).serialize(),
+          function () {
+            refreshTable();
+          },
+          'json',
+        );
+        modal.modal('hide');
+      });
 
     // @ts-expect-error -- The BS5 types don't include the `relatedTarget` property on jQuery events.
     const { relatedTarget } = event;
@@ -182,18 +184,21 @@ onDocumentReady(() => {
   $('#deleteAllAssessmentInstancesModal').on('show.bs.modal', function () {
     const modal = $(this);
 
-    modal.find('form').on('submit', (e) => {
-      e.preventDefault();
-      $.post(
-        $(e.target).attr('action') ?? '',
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      modal.modal('hide');
-    });
+    modal
+      .parents('form')
+      .off('submit')
+      .on('submit', (e) => {
+        e.preventDefault();
+        $.post(
+          $(e.target).attr('action') ?? '',
+          $(e.target).serialize(),
+          function () {
+            refreshTable();
+          },
+          'json',
+        );
+        modal.modal('hide');
+      });
   });
 
   $('[data-bs-toggle="modal"]').on('click', function (e) {
@@ -407,23 +412,33 @@ onDocumentReady(() => {
 
   function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
     let explanation = '';
-    if (action === 'set_total') {
-      explanation =
-        'Updating the total time limit will set the given amount of time for the assessment based on when the assessment was started.';
-    } else if (action === 'set_rem') {
-      explanation =
-        'Updating the time remaining will set the given amount of time for the assessment based on the current time.';
-    } else if (action === 'set_exact') {
-      explanation = 'This will set the exact closing time for the assessment.';
-    } else if (action === 'add') {
-      explanation = 'This will add the given amount of time to the remaining time limit.';
-    } else if (action === 'subtract') {
-      explanation = 'This will subtract the given amount of time from the remaining time limit.';
-    } else if (action === 'remove') {
-      explanation = 'This will remove the time limit and the assessment will remain open.';
-    } else if (action === 'expire') {
-      explanation =
-        'This will expire the time limit and students will be unable to submit any further answers.';
+    switch (action) {
+      case 'set_total':
+        explanation =
+          'Updating the total time limit will set the given amount of time for the assessment based on when the assessment was started.';
+        break;
+      case 'set_rem':
+        explanation =
+          'Updating the time remaining will set the given amount of time for the assessment based on the current time.';
+        break;
+      case 'set_exact':
+        explanation = 'This will set the exact closing time for the assessment.';
+        break;
+      case 'add':
+        explanation = 'This will add the given amount of time to the remaining time limit.';
+        break;
+      case 'subtract':
+        explanation = 'This will subtract the given amount of time from the remaining time limit.';
+        break;
+      case 'remove':
+        explanation = 'This will remove the time limit and the assessment will remain open.';
+        break;
+      case 'expire':
+        explanation =
+          'This will expire the time limit and students will be unable to submit any further answers.';
+        break;
+      default:
+        assertNever(action);
     }
     return <small class="form-text text-muted">{explanation}</small>;
   }
@@ -432,7 +447,7 @@ onDocumentReady(() => {
     row,
   }: {
     row: {
-      action: string;
+      action: string | null;
       assessment_instance_id: number;
       date: string;
       has_closed_instance: boolean;
@@ -440,17 +455,23 @@ onDocumentReady(() => {
       total_time: string;
       total_time_sec: number;
       time_remaining: string;
-      time_remaining_sec: number;
+      time_remaining_sec: number | null;
       open: boolean;
     };
   }) {
-    const [form, setForm] = useState({
-      action: 'add' as TimeLimitAction,
+    const [form, setForm] = useState<{
+      action: TimeLimitAction;
+      time_add: number;
+      date: string;
+      reopen_closed: boolean;
+      reopen_without_limit: boolean;
+    }>(() => ({
+      action: row.time_remaining_sec !== null ? 'add' : 'set_total',
       time_add: 5,
       date: Temporal.Now.zonedDateTimeISO(timezone).toPlainDateTime().toString().slice(0, 16),
       reopen_closed: false,
       reopen_without_limit: true,
-    });
+    }));
     const showTimeLimitOptions =
       row.action === 'set_time_limit_all' || row.open || !form.reopen_without_limit;
 
@@ -528,6 +549,7 @@ onDocumentReady(() => {
               class="form-select select-time-limit"
               name="action"
               aria-label="Time limit options"
+              value={form.action}
               onChange={(e) => updateFormState('action', e.currentTarget.value as TimeLimitAction)}
             >
               {row.time_remaining_sec !== null ? (
@@ -568,7 +590,9 @@ onDocumentReady(() => {
               name="time_add"
               aria-label="Time value"
               value={form.time_add}
-              onChange={(e) => updateFormState('time_add', parseFloat(e.currentTarget.value))}
+              onChange={(e) =>
+                updateFormState('time_add', Number.parseFloat(e.currentTarget.value))
+              }
             />
             <span class="input-group-text time-limit-field">minutes</span>
           </div>
@@ -631,16 +655,16 @@ onDocumentReady(() => {
   }
 
   function scorebarFormatter(score: number | null) {
-    return Scorebar(score).toString();
+    return ScorebarHtml(score).toString();
   }
 
-  function listFormatter(list: string[]) {
-    if (!list || !list[0]) list = ['(empty)'];
+  function listFormatter(list: string[] | null) {
+    if (!list?.[0]) list = ['(empty)'];
     return html`<small>${list.join(', ')}</small>`;
   }
 
-  function uniqueListFormatter(list: string[]) {
-    if (!list || !list[0]) list = ['(empty)'];
+  function uniqueListFormatter(list: string[] | null) {
+    if (!list?.[0]) list = ['(empty)'];
     const uniq = Array.from(new Set(list));
     return html`<small>${uniq.join(', ')}</small>`;
   }
@@ -657,7 +681,7 @@ onDocumentReady(() => {
           data-bs-placement="bottom"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
-        </a>
+        </button>
       </span>
     `.toString();
   }
@@ -693,7 +717,7 @@ onDocumentReady(() => {
     // Compare first by UID/group name, then user/group ID, then
     // instance number, then by instance ID.
     let compare = nameA?.localeCompare(nameB ?? '');
-    if (!compare) compare = (parseInt(idA) ?? 0) - (parseInt(idB) ?? 0);
+    if (!compare) compare = Number.parseInt(idA) - Number.parseInt(idB);
     if (!compare) compare = (rowA.number ?? 0) - (rowB.number ?? 0);
     if (!compare) compare = valueA - valueB;
     return compare;
@@ -707,11 +731,11 @@ onDocumentReady(() => {
   ) {
     // Closed assessments are listed first, followed by time limits
     // ascending, followed by open without a time limit
-    return Number(rowA.open) - Number(rowB.open) || (valueA ?? Infinity) - (valueB ?? Infinity);
+    return Number(rowA.open) - Number(rowB.open) || valueA - valueB;
   }
 
   function actionButtonFormatter(_value: string, row: AssessmentInstanceRow) {
-    const ai_id = parseInt(row.assessment_instance_id);
+    const ai_id = Number.parseInt(row.assessment_instance_id);
     if (!csrfToken) {
       throw new Error('CSRF token not found');
     }
@@ -787,7 +811,7 @@ onDocumentReady(() => {
   }
 
   function updateTotals(data: AssessmentInstanceRow[]) {
-    let time_limit_list: Record<string, any> = new Object();
+    let time_limit_list: Record<string, any> = {};
     let remaining_time_min = 0;
     let remaining_time_max = 0;
     let has_open_instance = false;
@@ -826,7 +850,7 @@ onDocumentReady(() => {
       action: 'set_time_limit_all',
       time_remaining: '',
     };
-    if (remaining_time_min === null) {
+    if (time_limit_list.length === 0) {
       time_limit_totals.time_remaining = 'No time limits';
     } else if (remaining_time_max < 60) {
       time_limit_totals.time_remaining = 'Less than a minute';

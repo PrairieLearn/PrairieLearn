@@ -4,13 +4,20 @@
 {{#statements}}
     <div class="pl-matching-statement">
         <div class="pl-matching-statement-select">
-            <select name="{{name}}" class="form-select" {{^editable}}disabled{{/editable}}>
+            <select name="{{name}}" class="form-select" {{^editable}}disabled{{/editable}} aria-labelledby="statement-label-{{statement_id}}">
                 {{#options}}
-                    <option {{selected}} value="{{index}}">{{value}}</option>
+                    <option 
+                       {{selected}}
+                       value="{{index}}"
+                       {{#blank}}aria-label="Blank"{{/blank}}
+                       {{^no_counters}}{{^blank}}aria-labelledby="pl-matching-{{uuid}}-option-{{value}}-content"{{/blank}}{{/no_counters}}
+                    >
+                      {{value}}
+                    </option>
                 {{/options}}
             </select>
         </div>
-        <div class="pl-matching-statement-text">
+        <div class="pl-matching-statement-text" id="statement-label-{{statement_id}}">
             {{{html}}}
         </div>
         {{#display_score_badge}}
@@ -30,19 +37,21 @@
 <div class="pl-matching-options">
 <ol>
 {{#options}}
-    <li class="pl-matching-option" style="--pl-matching-counter-type: {{counter_type}}">{{{html}}}</li>
+    <li class="pl-matching-option" style="--pl-matching-counter-type: {{counter_type}}">
+        <span id="pl-matching-{{uuid}}-option-{{counter}}-content">{{{html}}}</span>
+    </li>
 {{/options}}
 </ol>
 </div>
 {{/no_counters}}
 </div>
-{{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-{{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{#correct}}<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/question}}
 
 {{#submission}}
-<div style="display: flex;">
+<div class="d-flex">
 <div class="pl-matching-statements">
 {{#statements}}
     <div class="pl-matching-statement">
@@ -53,8 +62,23 @@
             {{{statement}}}
         </div>
         {{#parse_error}}
-            <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto"  data-bs-toggle="popover" data-bs-html="true" style="margin-left: 5px" title="Format Error" data-bs-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
+        <span class="small" style="white-space: nowrap">
+            <span class="badge text-bg-danger">
+                Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            </span>
+            <a
+                class="link-primary"
+                tabindex="0"
+                role="button"
+                data-bs-placement="auto"
+                data-bs-toggle="popover"
+                data-bs-html="true"
+                title="Format error"
+                data-bs-content="{{parse_error}}"
+            >
+            More info…
+            </a>
+        </span>
         {{/parse_error}}
         {{#display_score_badge}}
         <div>
@@ -73,7 +97,7 @@
 {{/submission}}
 
 {{#answer}}
-<div style="display: flex;">
+<div class="d-flex">
 <div class="pl-matching-statements">
 {{#statements}}
     <div class="pl-matching-statement">

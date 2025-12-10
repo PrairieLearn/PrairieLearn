@@ -1,8 +1,8 @@
 CREATE FUNCTION
     sync_course_instances(
-        IN disk_course_instances_data JSONB[],
+        IN disk_course_instances_data jsonb[],
         IN syncing_course_id bigint,
-        OUT name_to_id_map JSONB
+        OUT name_to_id_map jsonb
     )
 AS $$
 DECLARE
@@ -23,6 +23,7 @@ BEGIN
     CREATE TEMPORARY TABLE disk_course_instances (
         short_name TEXT NOT NULL,
         uuid uuid,
+        enrollment_code VARCHAR(255),
         errors TEXT,
         warnings TEXT,
         data JSONB
@@ -31,6 +32,7 @@ BEGIN
     INSERT INTO disk_course_instances (
         short_name,
         uuid,
+        enrollment_code,
         errors,
         warnings,
         data
@@ -39,7 +41,8 @@ BEGIN
         (entries->>1)::uuid,
         entries->>2,
         entries->>3,
-        (entries->4)::JSONB
+        entries->>4,
+        (entries->5)::JSONB
     FROM UNNEST(disk_course_instances_data) AS entries;
 
     -- Synchronize the dest (course_instances) with the src
@@ -54,6 +57,8 @@ BEGIN
         SELECT DISTINCT ON (src_short_name)
             src.short_name AS src_short_name,
             src.uuid AS src_uuid,
+            -- This enrollment code is only used for inserts, and not used on updates
+            src.enrollment_code AS src_enrollment_code,
             dest.id AS dest_id
         FROM disk_course_instances AS src LEFT JOIN course_instances AS dest ON (
             dest.course_id = syncing_course_id
@@ -83,10 +88,23 @@ BEGIN
     insert_unmatched_src_rows AS (
         -- UTC is used as a temporary timezone, which will be updated in following statements
         INSERT INTO course_instances AS dest
-            (course_id, short_name, uuid, display_timezone, deleted_at)
-        SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL
+            (course_id, short_name, uuid, display_timezone, deleted_at, enrollment_code)
+        SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL, src_enrollment_code
         FROM matched_rows
         WHERE dest_id IS NULL
+        -- This is a total hack, but the test suite hardcoded course instance ID 1
+        -- for the test course in a lot of places. To avoid having to change tons
+        -- of tests after adding a new course instance to the test course, we'll
+        -- alphabetically sort the course instances by name to ensure that `Sp15`
+        -- will have ID 1. This assumes that it is in fact that first course instance,
+        -- which is currently true.
+        --
+        -- Mainly, this ensures that the tests are deterministic. So even if we do
+        -- add a new course instance, the tests will fail if a new course instance
+        -- would be assigned ID 1.
+        --
+        -- We specifically use C collation to ensure that "Sp15" ends up before "public".
+        ORDER BY src_short_name COLLATE "C" ASC
         RETURNING dest.short_name AS src_short_name, dest.id AS inserted_dest_id
     )
     -- Make a map from CIID to ID to return to the caller
@@ -133,6 +151,14 @@ BEGIN
         assessments_group_by = (src.data->>'assessments_group_by')::enum_assessment_grouping,
         display_timezone = COALESCE(src.data->>'display_timezone', c.display_timezone),
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
+        json_comment = (src.data->>'comment')::jsonb,
+        modern_publishing = (src.data->>'modern_publishing')::boolean,
+        publishing_start_date = input_date(src.data->>'publishing_start_date', COALESCE(src.data->>'display_timezone', c.display_timezone)),
+        publishing_end_date = input_date(src.data->>'publishing_end_date', COALESCE(src.data->>'display_timezone', c.display_timezone)),
+        self_enrollment_enabled = (src.data->>'self_enrollment_enabled')::boolean,
+        self_enrollment_enabled_before_date = input_date(src.data->>'self_enrollment_enabled_before_date', COALESCE(src.data->>'display_timezone', c.display_timezone)),
+        self_enrollment_use_enrollment_code = (src.data->>'self_enrollment_use_enrollment_code')::boolean,
+        share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM
@@ -166,7 +192,8 @@ BEGIN
             uids,
             start_date,
             end_date,
-            institution
+            institution,
+            json_comment
         )
         SELECT
             ci.id,
@@ -177,7 +204,8 @@ BEGIN
             END,
             input_date(access_rule->>'start_date', ci.display_timezone),
             input_date(access_rule->>'end_date', ci.display_timezone),
-            access_rule->>'institution'
+            access_rule->>'institution',
+            access_rule->'comment'
         FROM
             synced_course_instances AS ci,
             JSONB_ARRAY_ELEMENTS(ci.data->'access_rules') WITH ORDINALITY AS t(access_rule, number)
@@ -186,7 +214,8 @@ BEGIN
             uids = EXCLUDED.uids,
             start_date = EXCLUDED.start_date,
             end_date = EXCLUDED.end_date,
-            institution = EXCLUDED.institution
+            institution = EXCLUDED.institution,
+            json_comment = EXCLUDED.json_comment
     )
     DELETE FROM course_instance_access_rules AS ciar
     USING

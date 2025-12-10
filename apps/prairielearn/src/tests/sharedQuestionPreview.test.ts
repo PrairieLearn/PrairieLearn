@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -45,29 +45,27 @@ const customElement = {
 };
 const testQuestions = [addNumbers, addVectors, downloadFile, customElement];
 
-describe('Shared Question Preview', function () {
-  this.timeout(60000);
+describe('Shared Question Preview', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
-  before('ensure course has question sharing enabled', async () => {
+  beforeAll(async () => {
     await features.enable('question-sharing');
   });
 
-  before('Get question IDs from database', async () => {
+  beforeAll(async () => {
     for (const testQuestion of testQuestions) {
       testQuestion.id = await sqldb.queryRow(
         sql.select_question_id,
-        {
-          qid: testQuestion.qid,
-        },
+        { qid: testQuestion.qid },
         z.string(),
       );
     }
   });
 
-  before('set up another course to consume shared questions from ', async () => {
+  beforeAll(async () => {
+    // Set up another course to consume shared questions from.
     const consumingCourseData = syncUtil.getCourseData();
     consumingCourseData.course.name = 'CONSUMING 101';
     await syncUtil.writeAndSyncCourseData(consumingCourseData);
@@ -83,16 +81,13 @@ describe('Shared Question Preview', function () {
     };
 
     describe('When questions are share_source_publicly but not share_publicly', () => {
-      before(
-        'Make sure questions have share_source_publicly set but not share_publicly',
-        async () => {
-          for (const testQuestion of testQuestions) {
-            await sqldb.queryAsync(sql.update_share_source_publicly, {
-              question_id: testQuestion.id,
-            });
-          }
-        },
-      );
+      beforeAll(async () => {
+        for (const testQuestion of testQuestions) {
+          await sqldb.execute(sql.update_share_source_publicly, {
+            question_id: testQuestion.id,
+          });
+        }
+      });
       testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
       testFileDownloads(previewPageInfo, downloadFile, false);
       testElementClientFiles(previewPageInfo, customElement);
@@ -108,11 +103,13 @@ describe('Shared Question Preview', function () {
     });
 
     describe('When questions are share_publicly', () => {
-      before('Make sure questions have share_publicly set', async () => {
+      beforeAll(async () => {
+        // Publicly share all questions.
         for (const testQuestion of testQuestions) {
-          await sqldb.queryAsync(sql.update_share_publicly, { question_id: testQuestion.id });
+          await sqldb.execute(sql.update_share_publicly, { question_id: testQuestion.id });
         }
       });
+
       testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
       testFileDownloads(previewPageInfo, downloadFile, false);
       testElementClientFiles(previewPageInfo, customElement);
@@ -148,7 +145,7 @@ describe('Shared Question Preview', function () {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
-      questionBaseUrl: baseUrl + '/course_instance/2/instructor/question',
+      questionBaseUrl: baseUrl + '/course_instance/3/instructor/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,
     };

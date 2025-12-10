@@ -1,14 +1,13 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
@@ -33,7 +32,7 @@ let assessmentDevInfoPath = path.join(assessmentDevDir, 'HW1', 'infoAssessment.j
 const siteUrl = `http://localhost:${config.serverPort}`;
 
 describe('Editing assessment settings', () => {
-  before(async () => {
+  beforeAll(async () => {
     await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
       cwd: '.',
       env: process.env,
@@ -54,17 +53,17 @@ describe('Editing assessment settings', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
+    await execute(sql.update_course_repo, { repo: courseOriginDir });
   });
 
-  after(helperServer.after);
+  afterAll(helperServer.after);
 
-  step('access the test assessment info file', async () => {
+  test.sequential('access the test assessment info file', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.title, 'Homework for file editor test');
   });
 
-  step('change assessment info', async () => {
+  test.sequential('change assessment info', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
     );
@@ -92,7 +91,7 @@ describe('Editing assessment settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`);
   });
 
-  step('verify assessment info change', async () => {
+  test.sequential('verify assessment info change', async () => {
     assessmentLiveInfoPath = path.join(assessmentLiveDir, 'HW2', 'infoAssessment.json');
     const assessmentLiveInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentLiveInfo.title, 'Test Title');
@@ -102,7 +101,7 @@ describe('Editing assessment settings', () => {
     assert.equal(assessmentLiveInfo.module, 'Module2');
   });
 
-  step('verify nesting an assessment id', async () => {
+  test.sequential('verify nesting an assessment id', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
     );
@@ -130,12 +129,12 @@ describe('Editing assessment settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`);
   });
 
-  step('verify changing aid did not leave empty directories', async () => {
+  test.sequential('verify changing aid did not leave empty directories', async () => {
     const assessmentDir = path.join(assessmentLiveDir, 'HW2');
     assert.notOk(await fs.pathExists(assessmentDir));
   });
 
-  step('verify reverting a nested assessment id works correctly', async () => {
+  test.sequential('verify reverting a nested assessment id works correctly', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
     );
@@ -163,7 +162,7 @@ describe('Editing assessment settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`);
   });
 
-  step('pull and verify changes', async () => {
+  test.sequential('pull and verify changes', async () => {
     await execa('git', ['pull'], { cwd: courseDevDir, env: process.env });
     assessmentDevInfoPath = path.join(assessmentDevDir, 'HW2', 'infoAssessment.json');
     const assessmentDevInfo = JSON.parse(await fs.readFile(assessmentDevInfoPath, 'utf8'));
@@ -174,7 +173,7 @@ describe('Editing assessment settings', () => {
     assert.equal(assessmentDevInfo.module, 'Module2');
   });
 
-  step('verify assessment info change in db', async () => {
+  test.sequential('verify assessment info change in db', async () => {
     const assessment = await queryRow(
       sql.select_assessment_by_id,
       { id: 1 },
@@ -191,7 +190,7 @@ describe('Editing assessment settings', () => {
     assert.equal(assessment.tid, 'HW2');
   });
 
-  step('should not be able to submit without being an authorized user', async () => {
+  test.sequential('should not be able to submit without being an authorized user', async () => {
     const user = await getOrCreateUser({
       uid: 'viewer@example.com',
       name: 'Viewer User',
@@ -231,7 +230,7 @@ describe('Editing assessment settings', () => {
     });
   });
 
-  step('should not be able to submit without assessment info file', async () => {
+  test.sequential('should not be able to submit without assessment info file', async () => {
     await fs.move(assessmentLiveInfoPath, `${assessmentLiveInfoPath}.bak`);
     try {
       const settingsPageResponse = await fetchCheerio(
@@ -262,7 +261,7 @@ describe('Editing assessment settings', () => {
     }
   });
 
-  step('should be able to submit without any changes', async () => {
+  test.sequential('should be able to submit without any changes', async () => {
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
@@ -288,43 +287,46 @@ describe('Editing assessment settings', () => {
     assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/assessment\/1\/settings$/);
   });
 
-  step('should not be able to submit if repo course info file has been changed', async () => {
-    const settingsPageResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-    );
+  test.sequential(
+    'should not be able to submit if repo course info file has been changed',
+    async () => {
+      const settingsPageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+      );
 
-    const assessmentInfo = JSON.parse(await fs.readFile(assessmentDevInfoPath, 'utf8'));
-    const newAssessmentInfo = { ...assessmentInfo, title: 'Test Title - Changed' };
-    await fs.writeFile(assessmentDevInfoPath, JSON.stringify(newAssessmentInfo, null, 2));
-    await execa('git', ['add', '-A'], { cwd: courseDevDir, env: process.env });
-    await execa('git', ['commit', '-m', 'Change assessment info'], {
-      cwd: courseDevDir,
-      env: process.env,
-    });
-    await execa('git', ['push', 'origin', 'master'], { cwd: courseDevDir, env: process.env });
+      const assessmentInfo = JSON.parse(await fs.readFile(assessmentDevInfoPath, 'utf8'));
+      const newAssessmentInfo = { ...assessmentInfo, title: 'Test Title - Changed' };
+      await fs.writeFile(assessmentDevInfoPath, JSON.stringify(newAssessmentInfo, null, 2));
+      await execa('git', ['add', '-A'], { cwd: courseDevDir, env: process.env });
+      await execa('git', ['commit', '-m', 'Change assessment info'], {
+        cwd: courseDevDir,
+        env: process.env,
+      });
+      await execa('git', ['push', 'origin', 'master'], { cwd: courseDevDir, env: process.env });
 
-    const response = await fetch(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_assessment',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-          title: 'Test Title2',
-          type: 'Homework',
-          set: 'Homework',
-          number: '1',
-          module: 'Module1',
-          aid: 'HW1',
-        }),
-      },
-    );
-    assert.equal(response.status, 200);
-    assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
-  });
+      const response = await fetch(
+        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'update_assessment',
+            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
+            title: 'Test Title2',
+            type: 'Homework',
+            set: 'Homework',
+            number: '1',
+            module: 'Module1',
+            aid: 'HW1',
+          }),
+        },
+      );
+      assert.equal(response.status, 200);
+      assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
+    },
+  );
 
-  step('change assessment id', async () => {
+  test.sequential('change assessment id', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
     );
@@ -352,12 +354,12 @@ describe('Editing assessment settings', () => {
     assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/assessment\/1\/settings$/);
   });
 
-  step('verify change assessment id', async () => {
+  test.sequential('verify change assessment id', async () => {
     const assessmentDir = path.join(assessmentLiveDir, 'A1');
     assert.ok(await fs.pathExists(assessmentDir));
   });
 
-  step(
+  test.sequential(
     'should not be able to submit if provided assessment id falls outside the correct root directory',
     async () => {
       const settingsPageResponse = await fetchCheerio(

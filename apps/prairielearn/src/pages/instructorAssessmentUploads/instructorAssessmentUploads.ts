@@ -1,28 +1,32 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { config } from '../../lib/config.js';
 import {
   uploadAssessmentInstanceScores,
   uploadInstanceQuestionScores,
 } from '../../lib/score-upload.js';
+import { uploadSubmissions } from '../../lib/submissions-upload.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
   InstructorAssessmentUploads,
   UploadJobSequenceSchema,
 } from './instructorAssessmentUploads.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     const uploadJobSequences = await sqldb.queryRows(
       sql.select_upload_job_sequences,
       { assessment_id: res.locals.assessment.id },
@@ -41,7 +45,7 @@ router.post(
 
     if (req.body.__action === 'upload_instance_question_scores') {
       const jobSequenceId = await uploadInstanceQuestionScores(
-        res.locals.assessment.id,
+        res.locals.assessment,
         req.file,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
@@ -50,6 +54,18 @@ router.post(
     } else if (req.body.__action === 'upload_assessment_instance_scores') {
       const jobSequenceId = await uploadAssessmentInstanceScores(
         res.locals.assessment.id,
+        req.file,
+        res.locals.user.user_id,
+        res.locals.authn_user.user_id,
+      );
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'upload_submissions') {
+      if (!config.devMode) {
+        throw new error.HttpStatusError(400, 'Submission uploads are only allowed in dev mode');
+      }
+
+      const jobSequenceId = await uploadSubmissions(
+        res.locals.assessment,
         req.file,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,

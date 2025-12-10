@@ -5,7 +5,7 @@ interface NamedEntity {
 }
 
 type ExistingEntity<Entity> = Entity & {
-  // TODO: make non-nullable once we make this non-null in the database schemas.
+  /** TODO: make non-nullable once we make this non-null in the database schemas. */
   number: number | null;
   implicit: boolean;
 };
@@ -61,7 +61,13 @@ export function determineOperationsForEntities<Entity extends NamedEntity>({
   entitiesToUpdate: DesiredEntity<Entity>[];
   entitiesToDelete: string[];
 } {
-  const fullComparisonProperties = ['name', 'number', 'implicit', ...comparisonProperties];
+  const fullComparisonProperties = [
+    'name',
+    'number',
+    'implicit',
+    'comment',
+    ...comparisonProperties,
+  ];
 
   const existingEntitiesMap = new Map(existingEntities.map((entity) => [entity.name, entity]));
   const desiredEntities = new Map<string, DesiredEntity<Entity>>();

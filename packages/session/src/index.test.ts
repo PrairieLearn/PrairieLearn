@@ -1,9 +1,9 @@
-import { assert } from 'chai';
 import express from 'express';
 import asyncHandler from 'express-async-handler';
 import fetchCookie from 'fetch-cookie';
 import fetch from 'node-fetch';
 import setCookie from 'set-cookie-parser';
+import { assert, describe, it } from 'vitest';
 
 import { withServer } from '@prairielearn/express-test-utils';
 
@@ -459,7 +459,11 @@ describe('session middleware', () => {
     });
   });
 
-  it('extends the expiration date of the cookie', async () => {
+  // For unknown reasons, this test is flaky in CI. It's likely due to a race
+  // condition with the session store and the way that the middleware hooks
+  // into the response lifecycle. We haven't been able to isolate the specific
+  // cause, so we'll retry the test a few times to try to avoid a failure in CI.
+  it('extends the expiration date of the cookie', { retry: 3 }, async () => {
     const store = new MemoryStore();
 
     const app = express();

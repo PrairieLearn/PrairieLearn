@@ -108,16 +108,21 @@ class LoadEstimator {
       average_jobs: this._getAndResetLoadEstimate(),
       max_jobs: this.maxJobCount,
     };
-    sqldb.query(sql.insert_load, params, (err) => {
-      if (err) logger.error('Error reporting load', { err });
-      if (!this.active) return;
-      debug(
-        `LoadEstimator._reportLoad(): jobType = ${this.jobType}, scheduling next call for ${
-          config.reportIntervalSec * 1000
-        } ms`,
-      );
-      this.timeoutID = setTimeout(this._reportLoad.bind(this), config.reportIntervalSec * 1000);
-    });
+    sqldb
+      .execute(sql.insert_load, params)
+      .catch((err) => {
+        logger.error('Error reporting load', { err });
+      })
+      .finally(() => {
+        if (!this.active) return;
+        debug(
+          `LoadEstimator._reportLoad(): jobType = ${this.jobType}, scheduling next call for ${
+            config.reportIntervalSec * 1000
+          } ms`,
+        );
+        // Report load again in the future
+        this.timeoutID = setTimeout(this._reportLoad.bind(this), config.reportIntervalSec * 1000);
+      });
   }
 
   _warnOldJobs() {

@@ -1,11 +1,3 @@
--- BLOCK select_institution
-SELECT
-  *
-FROM
-  institutions
-WHERE
-  id = $id;
-
 -- BLOCK insert_institution_saml_provider
 WITH
   existing_saml_provider AS (

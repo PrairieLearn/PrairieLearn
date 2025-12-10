@@ -80,6 +80,9 @@ def traverse_and_replace(
     The count_stack tracks how many children each unclosed tag (contained in the tail_stack) has.
     The top entry in count_stack is decremented every time something is moved onto result,
     and when an entry hits zero, the corresponding tag from tail_stack is moved onto result as well.
+
+    Raises:
+        TypeError: If the HTML contains an invalid tag.
     """
     # Initialize result and work data structures
     result: deque[str] = deque()
@@ -107,21 +110,19 @@ def traverse_and_replace(
                 new_elements = fragments
 
             if isinstance(new_elements, list):
-                # Modify count stack for new elements and decrement for element that was replaced
-                count_stack[-1] += len(new_elements) - 1
-
                 # Add element tail before processing replaced element
                 if element.tail is not None:
                     count_stack[-1] += 1
                     work_stack.append(element.tail)
 
-                # Extend and go to the next iteration
-                if new_elements:
+                # If there are new elements, extend and go to the next iteration
+                if len(new_elements) > 0:
+                    # Modify count stack for new elements and decrement for element that was replaced
+                    count_stack[-1] += len(new_elements) - 1
                     work_stack.extend(reversed(new_elements))
+                    continue
 
-                continue
-
-            if isinstance(new_elements, lxml.html.HtmlComment):
+            elif isinstance(new_elements, lxml.html.HtmlComment):
                 result.append(lxml.html.tostring(new_elements, encoding="unicode"))
             elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):
                 # Handling processing instructions is necessary for elements like `<pl-graph>`

@@ -76,7 +76,6 @@ async function startHeartbeat(sqs: SQSClient, queueUrl: string, receiptHandle: s
 }
 
 async function receiveMessageFromQueue(sqs: SQSClient, queueUrl: string) {
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const data = await sqs.send(
       new ReceiveMessageCommand({

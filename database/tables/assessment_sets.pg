@@ -5,6 +5,7 @@ columns
     heading: text not null
     id: bigint not null default nextval('assessment_sets_id_seq'::regclass)
     implicit: boolean not null default false
+    json_comment: jsonb
     name: text not null
     number: integer not null
 

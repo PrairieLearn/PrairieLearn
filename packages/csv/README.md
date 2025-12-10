@@ -11,17 +11,29 @@ import { stringifyStream } from '@prairielearn/csv';
 import { queryCursor } from '@prairielearn/postgres';
 import { pipeline } from 'node:stream/promises';
 import { createWriteStream } from 'node:fs';
+import { IdSchema } from '@prairielearn/zod';
+import { z } from 'zod';
 
-const cursor = await queryCursor('SELECT id FROM workspaces;', {});
+const WorkspaceSchema = z.object({
+  id: IdSchema,
+  hostname: z.string(),
+});
+type Workspace = z.infer<typeof WorkspaceSchema>;
+
+const cursor = await queryCursor('SELECT id, hostname FROM workspaces;', WorkspaceSchema);
 const output = createWriteStream('workspaces.csv');
 
-const stringifier = stringifyStream({
+const stringifier = stringifyStream<Workspace>({
   header: true,
-  columns: [{ key: 'id', header: 'ID' }],
+  columns: [
+    { key: 'id', header: 'ID' },
+    { key: 'hostname', header: 'Hostname' },
+  ],
   // Optionally provide a function to transform each item in the stream.
   transform(record) {
     return {
-      id: `workspace-${id}`,
+      id: `workspace-${record.id}`,
+      hostname: record.hostname,
     };
   },
 });
@@ -37,7 +49,7 @@ import { createWriteStream } from 'node:fs';
 
 const data = Array.from(new Array(100_000), (_, i) => ({ id: i }));
 const output = createWriteStream('numbers.csv');
-stringifyNonblocking(data, {
+stringifyNonblocking<{ id: number }>(data, {
   header: true,
   columns: [{ key: 'id', header: 'ID' }],
 }).pipe(output);

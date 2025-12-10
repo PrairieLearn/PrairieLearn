@@ -1,217 +1,47 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { assert } from 'vitest';
 import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  AlternativeGroupSchema,
+  AssessmentAccessRuleSchema,
+  AssessmentQuestionSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  CourseInstanceAccessRuleSchema,
+  CourseInstanceSchema,
+  EnrollmentSchema,
+  QuestionSchema,
+  QuestionTagSchema,
+  TagSchema,
+  TopicSchema,
+  UserSchema,
+  ZoneSchema,
+} from '../../lib/db-types.js';
+import type {
+  AssessmentJsonInput,
+  CourseInstanceJsonInput,
+  CourseJsonInput,
+  QuestionJsonInput,
+  TagJsonInput,
+  TopicJsonInput,
+} from '../../schemas/index.js';
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
-interface CourseOptions {
-  useNewQuestionRenderer: boolean;
-  devModeFeatures: Record<string, boolean> | string[];
-}
-
-export interface Tag {
-  name: string;
-  color: string;
-  description?: string;
-}
-
-export interface Topic {
-  name: string;
-  color: string;
-  description?: string;
-}
-
-interface SharingSet {
-  name: string;
-  description: string;
-}
-
-export interface AssessmentSet {
-  abbreviation: string;
-  name: string;
-  heading: string;
-  color: string;
-}
-
-interface Module {
-  name: string;
-  heading: string;
-}
-
-interface Course {
-  uuid: string;
-  name: string;
-  title: string;
-  timezone?: string;
-  options?: CourseOptions;
-  tags: Tag[];
-  topics: Topic[];
-  sharingSets?: SharingSet[];
-  assessmentSets: AssessmentSet[];
-  assessmentModules?: Module[];
-}
-
-interface CourseInstanceAllowAccess {
-  uids?: string[];
-  startDate?: string;
-  endDate?: string;
-  institution?: string;
-}
-
-interface CourseInstance {
-  uuid: string;
-  longName: string;
-  number?: number;
-  timezone?: string;
-  allowAccess?: CourseInstanceAllowAccess[];
-  groupAssessmentsBy?: 'Set' | 'Module';
-}
-
-export interface GroupRole {
-  name: string;
-  minimum?: number;
-  maximum?: number;
-  canAssignRoles?: boolean;
-}
-
-interface AssessmentAllowAccess {
-  mode?: 'Public' | 'Exam';
-  examUuid?: string;
-  uids?: string[];
-  credit?: number;
-  startDate?: string;
-  endDate?: string;
-  timeLimitMin?: number;
-  password?: string;
-  active?: boolean;
-}
-
-interface QuestionAlternative {
-  points?: number | number[];
-  autoPoints?: number | number[];
-  maxPoints?: number;
-  maxAutoPoints?: number;
-  manualPoints?: number;
-  id?: string;
-  forceMaxPoints?: boolean;
-  triesPerVariant?: number;
-  gradeRateMinutes?: number;
-}
-
-interface ZoneQuestion {
-  points?: number | number[];
-  autoPoints?: number | number[];
-  maxPoints?: number;
-  maxAutoPoints?: number;
-  manualPoints?: number;
-  id?: string;
-  forceMaxPoints?: boolean;
-  alternatives?: QuestionAlternative[];
-  numberChoose?: number;
-  triesPerVariant?: number;
-  canSubmit?: string[];
-  canView?: string[];
-  gradeRateMinutes?: number;
-}
-
-interface Zone {
-  title?: string;
-  maxPoints?: number;
-  maxChoose?: number;
-  bestQuestions?: number;
-  questions?: ZoneQuestion[];
-  canSubmit?: string[];
-  canView?: string[];
-  gradeRateMinutes?: number;
-}
-
-export interface Assessment {
-  uuid: string;
-  type: 'Homework' | 'Exam';
-  title: string;
-  set: string;
-  module?: string;
-  number: string;
-  groupRoles?: GroupRole[];
-  allowIssueReporting?: boolean;
-  allowRealTimeGrading?: boolean;
-  requireHonorCode?: boolean;
-  multipleInstance?: boolean;
-  shuffleQuestions?: boolean;
-  allowAccess?: AssessmentAllowAccess[];
-  text?: string;
-  maxPoints?: number;
-  autoClose?: boolean;
-  zones?: Zone[];
-  constantQuestionValue?: boolean;
-  groupWork?: boolean;
-  groupMaxSize?: number;
-  groupMinSize?: number;
-  studentGroupCreate?: boolean;
-  studentGroupJoin?: boolean;
-  studentGroupLeave?: boolean;
-  hasRoles?: boolean;
-  canSubmit?: string[];
-  canView?: string[];
-  gradeRateMinutes?: number;
-}
-
-interface QuestionExternalGradingOptions {
-  enabled?: boolean;
-  image: string;
-  entrypoint?: string | string[];
-  serverFilesCourse?: string[];
-  timeout?: number;
-  enableNetworking?: boolean;
-  environment?: Record<string, string | null>;
-}
-
-interface QuestionWorkspaceOptions {
-  image: string;
-  port: number;
-  home: string;
-  args?: string | string[];
-  gradedFiles?: string[];
-  rewriteUrl?: string;
-  enableNetworking?: boolean;
-  environment?: Record<string, string | null>;
-}
-
-export interface Question {
-  uuid: string;
-  type: 'Calculation' | 'MultipleChoice' | 'Checkbox' | 'File' | 'MultipleTrueFalse' | 'v3';
-  title: string;
-  topic: string;
-  tags?: string[];
-  sharingSets?: string[];
-  sharePublicly?: boolean;
-  shareSourcePublicly?: boolean;
-  clientFiles?: string[];
-  clientTemplates?: string[];
-  template?: string;
-  gradingMethod?: 'Internal' | 'External' | 'Manual';
-  singleVariant?: boolean;
-  showCorrectAnswer?: boolean;
-  partialCredit?: boolean;
-  options?: Record<string, unknown>;
-  externalGradingOptions?: QuestionExternalGradingOptions;
-  workspaceOptions?: QuestionWorkspaceOptions;
-}
-
 export interface CourseInstanceData {
-  assessments: Record<string, Assessment>;
-  courseInstance: CourseInstance;
+  assessments: Record<string, AssessmentJsonInput>;
+  courseInstance: CourseInstanceJsonInput;
 }
 
 export interface CourseData {
-  course: Course;
-  questions: Record<string, Question>;
+  course: CourseJsonInput;
+  questions: Record<string, QuestionJsonInput>;
   courseInstances: Record<string, CourseInstanceData>;
 }
 
@@ -288,7 +118,7 @@ export const WORKSPACE_QUESTION_ID = 'workspace';
 export const COURSE_INSTANCE_ID = 'Fa19';
 export const ASSESSMENT_ID = 'test';
 
-const course: Course = {
+const course = {
   uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
@@ -329,7 +159,7 @@ const course: Course = {
       color: 'gray2',
       description: 'Another test topic',
     },
-  ],
+  ] as TopicJsonInput[],
   tags: [
     {
       name: 'test',
@@ -341,10 +171,13 @@ const course: Course = {
       color: 'blue2',
       description: 'Another test tag',
     },
-  ],
-};
+  ] as TagJsonInput[],
+  sharingSets: undefined as CourseJsonInput['sharingSets'],
+  options: undefined as CourseJsonInput['options'],
+  comment: undefined as CourseJsonInput['comment'],
+} satisfies CourseJsonInput;
 
-const questions: Record<string, Question> = {
+const questions: Record<string, QuestionJsonInput> = {
   private: {
     uuid: 'aff9236d-4f40-41fb-8c34-f97aed016535',
     title: 'Test question',
@@ -432,7 +265,7 @@ const courseInstances: Record<string, CourseInstanceData> = {
 /**
  * @returns The base course data for syncing testing
  */
-export function getCourseData(): CourseData {
+export function getCourseData() {
   // Copy all data with `structuredClone` to ensure that mutations to nested
   // objects aren't reflected in the original objects.
   return structuredClone({
@@ -506,13 +339,9 @@ export async function overwriteAndSyncCourseData(courseData: CourseData, courseD
  * Returns an array of all records in a particular database table.
  *
  * @param tableName - The name of the table to query
- * @return The rows of the given table
+ * @param schema - The schema of the table to query
+ * @returns The rows of the given table
  */
-export async function dumpTable(tableName: string): Promise<Record<string, any>[]> {
-  const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
-  return res.rows;
-}
-
 export async function dumpTableWithSchema<Schema extends z.ZodTypeAny>(
   tableName: string,
   schema: Schema,
@@ -522,20 +351,29 @@ export async function dumpTableWithSchema<Schema extends z.ZodTypeAny>(
 
 export async function captureDatabaseSnapshot() {
   return {
-    courseInstances: await dumpTable('course_instances'),
-    assessments: await dumpTable('assessments'),
-    assessmentSets: await dumpTable('assessment_sets'),
-    topics: await dumpTable('topics'),
-    tags: await dumpTable('tags'),
-    courseInstanceAccessRules: await dumpTable('course_instance_access_rules'),
-    assessmentAccessRules: await dumpTable('assessment_access_rules'),
-    zones: await dumpTable('zones'),
-    alternativeGroups: await dumpTable('alternative_groups'),
-    assessmentQuestions: await dumpTable('assessment_questions'),
-    questions: await dumpTable('questions'),
-    questionTags: await dumpTable('question_tags'),
-    users: await dumpTable('users'),
-    enrollments: await dumpTable('enrollments'),
+    courseInstances: await dumpTableWithSchema('course_instances', CourseInstanceSchema),
+    assessments: await dumpTableWithSchema('assessments', AssessmentSchema),
+    assessmentSets: await dumpTableWithSchema('assessment_sets', AssessmentSetSchema),
+    topics: await dumpTableWithSchema('topics', TopicSchema),
+    tags: await dumpTableWithSchema('tags', TagSchema),
+    courseInstanceAccessRules: await dumpTableWithSchema(
+      'course_instance_access_rules',
+      CourseInstanceAccessRuleSchema,
+    ),
+    assessmentAccessRules: await dumpTableWithSchema(
+      'assessment_access_rules',
+      AssessmentAccessRuleSchema,
+    ),
+    zones: await dumpTableWithSchema('zones', ZoneSchema),
+    alternativeGroups: await dumpTableWithSchema('alternative_groups', AlternativeGroupSchema),
+    assessmentQuestions: await dumpTableWithSchema(
+      'assessment_questions',
+      AssessmentQuestionSchema,
+    ),
+    questions: await dumpTableWithSchema('questions', QuestionSchema),
+    questionTags: await dumpTableWithSchema('question_tags', QuestionTagSchema),
+    users: await dumpTableWithSchema('users', UserSchema),
+    enrollments: await dumpTableWithSchema('enrollments', EnrollmentSchema),
   };
 }
 
@@ -579,7 +417,7 @@ export function assertSnapshotsMatch(
     'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
-    if (ignoredKeys.indexOf(key) !== -1) continue;
+    if (ignoredKeys.includes(key)) continue;
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map((s) => stringify(s)));
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));
@@ -597,7 +435,7 @@ export function assertSnapshotsMatch(
  */
 export function assertSnapshotSubset(
   snapshotA: Record<string, any[]>,
-  snapshotB: Record<string, any>,
+  snapshotB: Record<string, any[]>,
   ignoredKeys: string[] = [],
 ) {
   // Sanity check - make sure both snapshots have the same keys
@@ -606,7 +444,7 @@ export function assertSnapshotSubset(
     'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
-    if (ignoredKeys.indexOf(key) !== -1) continue;
+    if (ignoredKeys.includes(key)) continue;
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map((s) => stringify(s)));
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));

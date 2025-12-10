@@ -19,7 +19,7 @@ from pygments.token import Token, _TokenType
 from pygments_ansi_color import color_tokens
 
 LANGUAGE_DEFAULT = None
-STYLE_DEFAULT = "friendly"
+STYLE_NAME_DEFAULT = "friendly"
 NO_HIGHLIGHT_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
 PREVENT_SELECT_DEFAULT = False
@@ -55,6 +55,9 @@ def parse_highlight_lines(highlight_lines: str) -> list[int] | None:
     """
     Parse a string like "1", "1-4", "1-3,5,7-8" into a list of lines like
     [1], [1,2,3,4], and [1,2,3,5,7,8]
+
+    Returns:
+        A list of line numbers
     """
     lines = []
     components = highlight_lines.split(",")
@@ -137,7 +140,9 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter[str]):
 def get_lexer_by_name(name: str) -> pygments.lexer.Lexer | None:
     """
     Find a lexer by both its proper name and any aliases it has.
-    Returns None if no lexer is found.
+
+    Returns:
+        A lexer or None if no lexer is found.
     """
     # Search by proper class/language names
     # This returns None if not found, and a class if found.
@@ -199,6 +204,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "highlight-lines-color",
         "copy-code-button",
         "style",
+        "style-name",
         "show-line-numbers",
         "normalize-whitespace",
     ]
@@ -212,11 +218,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f'Unknown language: "{language}". Must be one of the aliases listed in https://pygments.org/languages/, or the special language "ansi-color".'
             )
 
-    style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
+    # The `style` attribute is deprecated, but we still support it for backwards compatibility.
+    if pl.has_attrib(element, "style") and pl.has_attrib(element, "style-name"):
+        raise ValueError(
+            'Cannot use both "style" and "style-name" attributes at the same time.'
+        )
+    style_name = pl.get_string_attrib(
+        element,
+        "style-name",
+        pl.get_string_attrib(element, "style", STYLE_NAME_DEFAULT),
+    )
     allowed_styles = STYLE_MAP.keys()
-    if style not in allowed_styles:
+    if style_name not in allowed_styles:
         raise KeyError(
-            f'Unknown style: "{style}". Must be one of {", ".join(allowed_styles)}'
+            f'Unknown style name: "{style_name}". Must be one of {", ".join(allowed_styles)}'
         )
 
     source_file_name = pl.get_string_attrib(
@@ -241,7 +256,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     language = pl.get_string_attrib(element, "language", LANGUAGE_DEFAULT)
-    style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
+    style_name = pl.get_string_attrib(
+        element,
+        "style-name",
+        pl.get_string_attrib(element, "style", STYLE_NAME_DEFAULT),
+    )
     source_file_name = pl.get_string_attrib(
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
@@ -299,9 +318,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if normalize_whitespace:
         code = dedent(code).rstrip()
 
+    if data["ai_grading"]:
+        # Return just the raw code for AI grading.
+        #
+        # As we're never actually rendering this as HTML, we don't have to think
+        # carefully about escaping. We can also introduce leading/trailing newlines
+        # to make it easier for a human to read.
+        return f"<pre><code>\n{code.strip()}\n</code></pre>"
+
     lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
 
-    pygments_style = get_style_by_name(style)
+    pygments_style = get_style_by_name(style_name)
 
     background_color = pygments_style.background_color or "transparent"
     line_number_color = pygments_style.line_number_color

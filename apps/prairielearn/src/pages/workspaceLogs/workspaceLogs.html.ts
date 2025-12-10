@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { WorkspaceLogSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
   date_formatted: z.string(),
@@ -16,7 +16,7 @@ export function WorkspaceLogs({
   resLocals,
 }: {
   workspaceLogs: WorkspaceLogRow[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   // Get the list of unique versions and the date at which they were created.
   // These are ordered by date, so we can use the date of the first log for
@@ -33,49 +33,46 @@ export function WorkspaceLogs({
     }
   });
 
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Workspace logs' })}
-      </head>
-      <body>
-        ${Navbar({ resLocals, navbarType: 'plain' })}
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Workspace logs',
+    navContext: {
+      page: 'workspace',
+      type: 'plain',
+    },
+    content: html`
+      <h1 class="mb-4">Workspace logs</h1>
+      <h2>Versions</h2>
+      <div class="table-responsive">
+        <table class="table table-sm" aria-label="Workspace versions">
+          <thead>
+            <tr>
+              <th>Version</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${uniqueVersions.map((version) => {
+              const logsUrl = `${resLocals.urlPrefix}/workspace/${resLocals.workspace_id}/logs/version/${version.version}`;
+              return html`
+                <tr>
+                  <td>${version.version}</td>
+                  <td>${version.date_formatted}</td>
+                  <td>
+                    <a href="${logsUrl}"> View detailed logs </a>
+                  </td>
+                </tr>
+              `;
+            })}
+          </tbody>
+        </table>
+      </div>
 
-        <main id="content" class="container">
-          <h1 class="mb-4">Workspace logs</h1>
-
-          <h2>Versions</h2>
-          <div class="table-responsive">
-            <table class="table table-sm" aria-label="Workspace versions">
-              <thead>
-                <th>Version</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </thead>
-              <tbody>
-                ${uniqueVersions.map((version) => {
-                  const logsUrl = `${resLocals.urlPrefix}/workspace/${resLocals.workspace_id}/logs/version/${version.version}`;
-                  return html`
-                    <tr>
-                      <td>${version.version}</td>
-                      <td>${version.date_formatted}</td>
-                      <td>
-                        <a href="${logsUrl}"> View detailed logs </a>
-                      </td>
-                    </tr>
-                  `;
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <h2>History</h2>
-          ${WorkspaceLogsTable({ workspaceLogs })}
-        </main>
-      </body>
-    </html>
-  `.toString();
+      <h2>History</h2>
+      ${WorkspaceLogsTable({ workspaceLogs })}
+    `,
+  });
 }
 
 export function WorkspaceVersionLogs({
@@ -89,49 +86,45 @@ export function WorkspaceVersionLogs({
   containerLogs: string | null;
   containerLogsEnabled: boolean;
   containerLogsExpired: boolean;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Workspace version logs' })}
-      </head>
-      <body>
-        ${Navbar({ resLocals, navbarType: 'plain' })}
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Workspace version logs',
+    navContext: {
+      page: 'workspace',
+      type: 'plain',
+    },
+    content: html`
+      <h1 class="mb-4">Workspace version logs</h1>
 
-        <main id="content" class="container mb-4">
-          <h1 class="mb-4">Workspace version logs</h1>
+      <h2>Container logs</h2>
+      ${containerLogs !== null && containerLogsEnabled && !containerLogsExpired
+        ? html`
+            <pre class="bg-dark rounded text-white p-3 mb-3"><code>${containerLogs}</code></pre>
+          `
+        : html`
+            <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center font-monospace">
+              <div class="mb-2">
+                <i
+                  class="fa ${containerLogsEnabled && containerLogsExpired
+                    ? 'fa-calendar'
+                    : 'fa-ban'} fa-2xl"
+                  aria-hidden="true"
+                ></i>
+              </div>
+              <div>
+                ${containerLogsEnabled
+                  ? 'The container logs for this workspace have expired and are no longer available.'
+                  : 'Container logs are not available for this workspace.'}
+              </div>
+            </div>
+          `}
 
-          <h2>Container logs</h2>
-          ${containerLogs !== null && containerLogsEnabled && !containerLogsExpired
-            ? html`
-                <pre class="bg-dark rounded text-white p-3 mb-3"><code>${containerLogs}</code></pre>
-              `
-            : html`
-                <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center font-monospace">
-                  <div class="mb-2">
-                    <i
-                      class="fa ${containerLogsEnabled && containerLogsExpired
-                        ? 'fa-calendar'
-                        : 'fa-ban'} fa-2xl"
-                      aria-hidden="true"
-                    ></i>
-                  </div>
-                  <div>
-                    ${containerLogsEnabled
-                      ? 'The container logs for this workspace have expired and are no longer available.'
-                      : 'Container logs are not available for this workspace.'}
-                  </div>
-                </div>
-              `}
-
-          <h2>History</h2>
-          ${WorkspaceLogsTable({ workspaceLogs, includeVersion: false })}
-        </main>
-      </body>
-    </html>
-  `.toString();
+      <h2>History</h2>
+      ${WorkspaceLogsTable({ workspaceLogs, includeVersion: false })}
+    `,
+  });
 }
 
 export function WorkspaceLogsTable({

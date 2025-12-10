@@ -2,7 +2,7 @@ import * as async from 'async';
 import { type Request, type Response } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
+import { executeRow, loadSqlEquiv } from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
 
 import { selectAndAuthzVariant } from '../models/variant.js';
@@ -28,6 +28,8 @@ interface ErrorMaybeWithData extends Error {
   data?: any;
 }
 
+const sql = loadSqlEquiv(import.meta.url);
+
 /**
  * Inserts an issue.
  */
@@ -52,17 +54,17 @@ export async function insertIssue({
   // Allow for a higher limit on the system data. This object contains output
   // from the Python subprocess, which can be especially useful for debugging.
   const truncatedSystemData = recursivelyTruncateStrings(systemData, 10000);
-  await sqldb.callAsync('issues_insert_for_variant', [
-    variantId,
-    studentMessage,
-    instructorMessage,
-    manuallyReported,
-    courseCaused,
-    truncatedCourseData,
-    truncatedSystemData,
-    userId,
-    authnUserId,
-  ]);
+  await executeRow(sql.insert_issue, {
+    variant_id: variantId,
+    student_message: studentMessage,
+    instructor_message: instructorMessage,
+    manually_reported: manuallyReported,
+    course_caused: courseCaused,
+    course_data: truncatedCourseData,
+    system_data: truncatedSystemData,
+    user_id: userId,
+    authn_user_id: authnUserId,
+  });
 }
 
 /**
@@ -109,6 +111,7 @@ export async function writeCourseIssues(
     });
   });
 }
+
 export async function reportIssueFromForm(
   req: Request,
   res: Response,

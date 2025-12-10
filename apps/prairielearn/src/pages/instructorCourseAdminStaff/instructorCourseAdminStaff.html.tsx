@@ -1,0 +1,855 @@
+import { z } from 'zod';
+
+import { escapeHtml, html } from '@prairielearn/html';
+
+import { PageLayout } from '../../components/PageLayout.js';
+import {
+  type CourseInstance,
+  CourseInstancePermissionSchema,
+  CourseInstanceSchema,
+  CoursePermissionSchema,
+  type User,
+  UserSchema,
+} from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+
+const CourseInstanceRoleRowSchema = z.object({
+  id: CourseInstanceSchema.shape.id,
+  short_name: CourseInstanceSchema.shape.short_name,
+  course_instance_permission_id: CourseInstancePermissionSchema.shape.id,
+  course_instance_role: CourseInstancePermissionSchema.shape.course_instance_role,
+  course_instance_role_formatted: z.string(),
+});
+type CourseInstanceRoleRow = z.infer<typeof CourseInstanceRoleRowSchema>;
+
+export const CourseUsersRowSchema = z.object({
+  user: UserSchema,
+  course_permission: CoursePermissionSchema,
+  course_instance_roles: CourseInstanceRoleRowSchema.array().nullable(),
+  other_course_instances: z
+    .array(
+      z.object({
+        id: CourseInstanceSchema.shape.id,
+        short_name: CourseInstanceSchema.shape.short_name,
+      }),
+    )
+    .nullable(),
+});
+type CourseUsersRow = z.infer<typeof CourseUsersRowSchema>;
+
+function hasUnknownUsers(courseUsers: CourseUsersRow[]) {
+  return courseUsers.some((courseUser) => courseUser.user.name == null);
+}
+
+export function InstructorCourseAdminStaff({
+  resLocals,
+  courseInstances,
+  courseUsers,
+  uidsLimit,
+  githubAccessLink,
+}: {
+  resLocals: UntypedResLocals;
+  courseInstances: CourseInstance[];
+  courseUsers: CourseUsersRow[];
+  uidsLimit: number;
+  githubAccessLink: string | null;
+}) {
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Staff',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'staff',
+    },
+    options: {
+      fullWidth: true,
+    },
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex flex-wrap align-items-center">
+          <h1 class="me-2">Staff</h1>
+          <div class="ms-auto">
+            <button
+              type="button"
+              class="btn btn-light btn-sm"
+              aria-label="Remove all student data access"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-placement="auto"
+              data-bs-title="Remove all student data access"
+              data-bs-content="${escapeHtml(
+                CoursePermissionsRemoveStudentDataAccessForm({
+                  csrfToken: resLocals.__csrf_token,
+                }),
+              )}"
+              data-bs-custom-class="popover-wide"
+              data-testid="remove-all-student-data-access-button"
+            >
+              <i class="fas fa-eye-slash" aria-hidden="true"></i>
+              <span class="d-none d-sm-inline">Remove all student data access</span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-light btn-sm"
+              aria-label="Delete users with no access"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-placement="auto"
+              data-bs-title="Delete users with no access"
+              data-bs-content="${escapeHtml(
+                CoursePermissionsDeleteNoAccessForm({
+                  csrfToken: resLocals.__csrf_token,
+                }),
+              )}"
+              data-bs-custom-class="popover-wide"
+              data-testid="delete-users-with-no-access-button"
+            >
+              <i class="fas fa-recycle" aria-hidden="true"></i>
+              <span class="d-none d-sm-inline">Delete users with no access</span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-light btn-sm"
+              aria-label="Delete non-owners"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-placement="auto"
+              data-bs-title="Delete non-owners"
+              data-bs-content="${escapeHtml(
+                CoursePermissionsDeleteNonOwnersForm({
+                  csrfToken: resLocals.__csrf_token,
+                }),
+              )}"
+              data-bs-custom-class="popover-wide"
+              data-testid="delete-non-owners-button"
+            >
+              <i class="fas fa-users-slash" aria-hidden="true"></i>
+              <span class="d-none d-sm-inline">Delete non-owners</span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-light btn-sm"
+              aria-label="Add users"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-placement="auto"
+              data-bs-title="Add users"
+              data-bs-content="${escapeHtml(
+                CoursePermissionsInsertForm({
+                  csrfToken: resLocals.__csrf_token,
+                  uidsLimit,
+                  courseInstances,
+                }),
+              )}"
+              data-bs-custom-class="popover-wide"
+              data-testid="add-users-button"
+            >
+              <i class="fas fa-users" aria-hidden="true"></i>
+              <span class="d-none d-sm-inline">Add users</span>
+            </button>
+          </div>
+        </div>
+        ${StaffTable({
+          csrfToken: resLocals.__csrf_token,
+          courseUsers,
+          authnUser: resLocals.authn_user,
+          user: resLocals.user,
+          isAdministrator: resLocals.is_administrator,
+        })}
+        <div class="card-footer small">
+          ${hasUnknownUsers(courseUsers)
+            ? html`
+                <p class="alert alert-warning">
+                  Users with name "<span class="text-danger">Unknown user</span>" either have never
+                  logged in or have an incorrect UID.
+                </p>
+              `
+            : ''}
+          <details>
+            <summary>Recommended access levels</summary>
+            ${AccessLevelsTable()}
+          </details>
+          ${githubAccessLink
+            ? html`
+                <div class="alert alert-info mt-3">
+                  The settings above do not affect access to the course's Git repository. To change
+                  repository permissions, go to the
+                  <a class="alert-link" href="${githubAccessLink}" target="_blank">
+                    GitHub access settings page</a
+                  >.
+                </div>
+              `
+            : ''}
+        </div>
+      </div>
+    `,
+  });
+}
+
+function CoursePermissionsRemoveStudentDataAccessForm({ csrfToken }: { csrfToken: string }) {
+  return html`
+    <form name="remove-student-data-access" method="POST">
+      <input type="hidden" name="__action" value="remove_all_student_data_access" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+
+      <div class="mb-3">
+        <p class="form-text">
+          Taking this action will remove all student data access from all users (but will leave
+          these users on the course staff).
+        </p>
+      </div>
+
+      <div class="text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-danger">Remove all student data access</button>
+      </div>
+    </form>
+  `;
+}
+
+function CoursePermissionsDeleteNoAccessForm({ csrfToken }: { csrfToken: string }) {
+  return html`
+    <form name="delete-no-access" method="POST">
+      <input type="hidden" name="__action" value="delete_no_access" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+
+      <div class="mb-3">
+        <p class="form-text">
+          Taking this action will remove every user from course staff who has neither course content
+          access nor student data access.
+        </p>
+      </div>
+
+      <div class="text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-danger">Delete users with no access</button>
+      </div>
+    </form>
+  `;
+}
+
+function CoursePermissionsInsertForm({
+  csrfToken,
+  uidsLimit,
+  courseInstances,
+}: {
+  csrfToken: string;
+  uidsLimit: number;
+  courseInstances: CourseInstance[];
+}) {
+  return html`
+    <form name="add-users-form" method="POST">
+      <input type="hidden" name="__action" value="course_permissions_insert_by_user_uids" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+
+      <div class="mb-3">
+        <p class="form-text">
+          Use this form to add users to the course staff. Any UIDs of users who are already on the
+          course staff will have their permissions updated only if the new permissions are higher
+          than their existing permissions. All new users will be given the same access to course
+          content and to student data.
+        </p>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="addUsersInputUid">UIDs:</label>
+        <textarea
+          class="form-control"
+          id="addUsersInputUid"
+          name="uid"
+          placeholder="staff1@example.com, staff2@example.com"
+          required
+          aria-describedby="addUsersInputUidHelp"
+        ></textarea>
+        <small id="addUsersInputUidHelp" class="form-text text-muted">
+          Enter up to ${uidsLimit} UIDs separated by commas, semicolons, or whitespace.
+        </small>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="addUsersInputCourseRole">
+          Course content access for all new users:
+        </label>
+        <select
+          class="form-select form-select-sm"
+          id="addUsersInputCourseRole"
+          name="course_role"
+          required
+        >
+          <option value="None" selected>None</option>
+          <option value="Previewer">Previewer</option>
+          <option value="Viewer">Viewer</option>
+          <option value="Editor">Editor</option>
+          <option value="Owner">Owner</option>
+        </select>
+      </div>
+
+      ${courseInstances.length > 0
+        ? html`
+            <div class="mb-3">
+              <label class="form-label" for="addUsersInputCourseInstance">
+                Student data access for all new users:
+              </label>
+              <div class="input-group">
+                <select
+                  class="form-select form-select-sm"
+                  id="addUsersInputCourseInstance"
+                  name="course_instance_id"
+                >
+                  <option selected value>None</option>
+                  ${courseInstances.map(
+                    (ci) => html` <option value="${ci.id}">${ci.short_name}</option>`,
+                  )}
+                </select>
+                <select
+                  class="form-select form-select-sm"
+                  id="addUsersInputCourseInstanceRole"
+                  name="course_instance_role"
+                >
+                  <option value="Student Data Viewer" selected>Viewer</option>
+                  <option value="Student Data Editor">Editor</option>
+                </select>
+              </div>
+            </div>
+          `
+        : ''}
+
+      <div class="text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add users</button>
+      </div>
+    </form>
+  `;
+}
+
+function CoursePermissionsDeleteNonOwnersForm({ csrfToken }: { csrfToken: string }) {
+  return html`
+    <form name="delete-non-owners" method="POST">
+      <input type="hidden" name="__action" value="delete_non_owners" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+
+      <div class="mb-3">
+        <p class="form-text">
+          Taking this action will remove every user from course staff who is not a course content
+          Owner.
+        </p>
+      </div>
+
+      <div class="text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-danger">Delete non-owners</button>
+      </div>
+    </form>
+  `;
+}
+
+function CoursePermissionsRemoveStaffForm({
+  courseUser,
+  csrfToken,
+}: {
+  courseUser: CourseUsersRow;
+  csrfToken: string;
+}) {
+  return html`
+    <form method="POST">
+      <input type="hidden" name="__action" value="course_permissions_delete" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+
+      <div class="mb-3">
+        <p class="form-text">
+          Taking this action will remove ${courseUser.user.name ?? courseUser.user.uid} from course
+          staff.
+        </p>
+      </div>
+
+      <div class="text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-danger">Remove</button>
+      </div>
+    </form>
+  `;
+}
+
+function StaffTable({
+  csrfToken,
+  courseUsers,
+  authnUser,
+  user,
+  isAdministrator,
+}: {
+  csrfToken: string;
+  courseUsers: CourseUsersRow[];
+  authnUser: User;
+  user: User;
+  isAdministrator: boolean;
+}) {
+  return html`
+    <div class="table-responsive">
+      <table class="table table-sm table-hover table-striped" aria-label="Course staff members">
+        <thead>
+          <tr>
+            <th>UID</th>
+            <th>Name</th>
+            <th>Course content access</th>
+            <th>Student data access</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${courseUsers.map((courseUser) => {
+            return html`
+              <tr>
+                <td class="align-middle">${courseUser.user.uid}</td>
+                <td class="align-middle">
+                  ${courseUser.user.name ?? html`<span class="text-danger">Unknown user</span>`}
+                </td>
+                <td class="align-middle">
+                  ${CoursePermissionButton({
+                    // Cannot change the course role of yourself (or of the
+                    // user you are emulating) unless you are an administrator.
+                    canChangeCourseRole:
+                      (courseUser.user.user_id !== authnUser.user_id &&
+                        courseUser.user.user_id !== user.user_id) ||
+                      isAdministrator,
+                    courseUser,
+                    csrfToken,
+                  })}
+                </td>
+                <td class="align-middle">
+                  ${courseUser.course_instance_roles?.map((cir) =>
+                    CourseInstancePermissionButton({ courseUser, cir, csrfToken }),
+                  )}
+                  ${courseUser.other_course_instances?.length
+                    ? html`
+                        <form
+                          name="student-data-access-add-${courseUser.user.user_id}"
+                          method="POST"
+                          class="d-inline"
+                        >
+                          <input
+                            type="hidden"
+                            name="__action"
+                            value="course_instance_permissions_insert"
+                          />
+                          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                          <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+                          <div class="btn-group btn-group-sm" role="group">
+                            <button
+                              id="addCIPDrop-${courseUser.user.user_id}"
+                              type="button"
+                              class="btn btn-sm btn-outline-dark dropdown-toggle"
+                              data-bs-toggle="dropdown"
+                              data-bs-boundary="body"
+                              aria-haspopup="true"
+                              aria-expanded="false"
+                            >
+                              Add...
+                            </button>
+                            <div
+                              class="dropdown-menu"
+                              aria-labelledby="addCIPDrop-${courseUser.user.user_id}"
+                            >
+                              ${courseUser.other_course_instances.map((ci) => {
+                                return html`
+                                  <button
+                                    class="dropdown-item"
+                                    type="submit"
+                                    name="course_instance_id"
+                                    value="${ci.id}"
+                                  >
+                                    ${ci.short_name}
+                                  </button>
+                                `;
+                              })}
+                            </div>
+                          </div>
+                        </form>
+                      `
+                    : ''}
+                </td>
+                <td class="align-middle">
+                  ${courseUser.course_permission.course_role !== 'Owner' || isAdministrator
+                    ? html`
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-dark"
+                          aria-label="Remove ${courseUser.user.name ?? courseUser.user.uid}"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Remove ${courseUser.user.name ?? courseUser.user.uid}"
+                          data-bs-content="${escapeHtml(
+                            CoursePermissionsRemoveStaffForm({
+                              csrfToken,
+                              courseUser,
+                            }),
+                          )}"
+                          data-bs-custom-class="popover-wide"
+                          data-testid="remove-staff-button"
+                        >
+                          <i class="fa fa-times"></i> Remove
+                        </button>
+                      `
+                    : ''}
+                </td>
+              </tr>
+            `;
+          })}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function CoursePermissionButton({
+  canChangeCourseRole,
+  courseUser,
+  csrfToken,
+}: {
+  canChangeCourseRole: boolean;
+  courseUser: CourseUsersRow;
+  csrfToken: string;
+}) {
+  const currentRole = courseUser.course_permission.course_role;
+  if (!canChangeCourseRole) {
+    return html`
+      <button
+        id="course-permission-button-${courseUser.user.user_id}"
+        type="button"
+        class="btn btn-sm btn-outline-primary disabled"
+        disabled
+      >
+        ${currentRole}
+      </button>
+    `;
+  }
+
+  const popoverContent = html`
+    <form name="course-content-access-form-${courseUser.user.user_id}" method="POST">
+      <input type="hidden" name="__action" value="course_permissions_update_role" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <p class="d-none d-sm-block">
+        Users with course content access can see aggregate student data (e.g., mean scores), but
+        cannot see the names or scores of individual students without also having student data
+        access to a particular course instance.
+      </p>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_role"
+          value="None"
+          id="course-permission-input-${courseUser.user.user_id}-None"
+          ${currentRole === 'None' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-permission-input-${courseUser.user.user_id}-None"
+        >
+          <h6>None</h6>
+          <p class="small text-muted d-none d-sm-block">Cannot see any course content.</p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_role"
+          value="Previewer"
+          id="course-permission-input-${courseUser.user.user_id}-Previewer"
+          ${currentRole === 'Previewer' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-permission-input-${courseUser.user.user_id}-Previewer"
+        >
+          <h6>Previewer</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see all questions, course instances, and assessments. Can see but not close issues.
+            Cannot see any code or configuration files.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_role"
+          value="Viewer"
+          id="course-permission-input-${courseUser.user.user_id}-Viewer"
+          ${currentRole === 'Viewer' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-permission-input-${courseUser.user.user_id}-Viewer"
+        >
+          <h6>Viewer</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see all questions, course instances, and assessments. Can see but not close issues.
+            Can see and download but not edit all code and configuration files.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_role"
+          value="Editor"
+          id="course-permission-input-${courseUser.user.user_id}-Editor"
+          ${currentRole === 'Editor' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-permission-input-${courseUser.user.user_id}-Editor"
+        >
+          <h6>Editor</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see all questions, course instances, and assessments. Can see and close issues. Can
+            see, download, and edit all code and configuration files. Can sync course files to and
+            from the GitHub repository.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_role"
+          value="Owner"
+          id="course-permission-input-${courseUser.user.user_id}-Owner"
+          ${currentRole === 'Owner' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-permission-input-${courseUser.user.user_id}-Owner"
+        >
+          <h6>Owner</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see all questions, course instances, and assessments. Can see and close issues. Can
+            see, download, and edit all code and configuration files. Can sync course files to and
+            from the GitHub repository. Can add and remove course staff and can change access roles.
+          </p>
+        </label>
+      </div>
+      <div class="mt-3 text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-primary">Change access</button>
+      </div>
+    </form>
+  `;
+
+  return html`
+    <button
+      id="course-permission-button-${courseUser.user.user_id}"
+      type="button"
+      class="btn btn-sm btn-outline-primary dropdown-toggle"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Change course content access"
+      data-bs-content="${escapeHtml(popoverContent)}"
+      data-bs-custom-class="popover-wide popover-scrollable"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      ${courseUser.course_permission.course_role}
+    </button>
+  `;
+}
+
+function CourseInstancePermissionButton({
+  courseUser,
+  cir,
+  csrfToken,
+}: {
+  courseUser: CourseUsersRow;
+  cir: CourseInstanceRoleRow;
+  csrfToken: string;
+}) {
+  const popoverContent = html`
+    <form name="course-instance-access-form-${courseUser.user.user_id}-${cir.id}" method="POST">
+      <input
+        type="hidden"
+        name="__action"
+        value="course_instance_permissions_update_role_or_delete"
+      />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <input type="hidden" name="course_instance_id" value="${cir.id}" />
+      <p class="d-none d-sm-block">
+        Users with student data access can see all assessments in the course instance
+        <code>${cir.short_name}</code>, can see all questions, and can see issues. They cannot see
+        any code or configuration files, or close issues, without also having course content access.
+      </p>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_instance_role"
+          value="None"
+          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-None"
+        />
+        <label
+          class="form-check-label"
+          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-None"
+        >
+          <h6>None</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Remove permissions for the course instance <code>${cir.short_name}</code>.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_instance_role"
+          value="Student Data Viewer"
+          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Viewer"
+          ${cir.course_instance_role === 'Student Data Viewer' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Viewer"
+        >
+          <h6>Viewer</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see but not edit scores of individual students for the course instance
+            <code>${cir.short_name}</code>.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_instance_role"
+          value="Student Data Editor"
+          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Editor"
+          ${cir.course_instance_role === 'Student Data Editor' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Editor"
+        >
+          <h6>Editor</h6>
+          <p class="small text-muted d-none d-sm-block">
+            Can see and edit scores of individual students for the course instance
+            <code>${cir.short_name}</code>.
+          </p>
+        </label>
+      </div>
+      <div class="mt-3 text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-primary">Change access</button>
+      </div>
+    </form>
+  `;
+
+  return html`
+    <form
+      name="course-instance-access-form-${courseUser.user.user_id}-${cir.id}-delete"
+      method="POST"
+    >
+      <input
+        type="hidden"
+        name="__action"
+        value="course_instance_permissions_update_role_or_delete"
+      />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <input type="hidden" name="course_instance_id" value="${cir.id}" />
+      <div class="btn-group btn-group-sm" role="group">
+        <div class="btn-group btn-group-sm">
+          <button
+            id="course-instance-permission-button-${courseUser.user.user_id}-${cir.id}"
+            type="button"
+            class="btn btn-sm btn-outline-primary dropdown-toggle"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Change student data access for ${cir.short_name}"
+            data-bs-content="${escapeHtml(popoverContent)}"
+            data-bs-custom-class="popover-wide popover-scrollable"
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            ${cir.short_name} (${cir.course_instance_role_formatted})
+          </button>
+        </div>
+        <button
+          type="submit"
+          class="btn btn-sm btn-outline-primary"
+          aria-label="Remove access"
+          name="course_instance_role"
+          value="None"
+        >
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+    </form>
+  `;
+}
+
+function AccessLevelsTable() {
+  return html`
+    <div class="table-responsive">
+      <table
+        class="table table-striped table-sm border mb-0"
+        style="max-width: 45em"
+        aria-label="Recommended access levels"
+      >
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th class="text-center">Course content access</th>
+            <th class="text-center">Student data access</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Instructor</td>
+            <td class="text-center">Course content owner</td>
+            <td class="text-center">Student data editor</td>
+          </tr>
+          <tr>
+            <td>TAs developing course content</td>
+            <td class="text-center">Course content editor</td>
+            <td class="text-center">Student data editor</td>
+          </tr>
+          <tr>
+            <td>Student content developers (not TAs)</td>
+            <td class="text-center">Course content editor</td>
+            <td class="text-center">None</td>
+          </tr>
+          <tr>
+            <td>TAs involved in grading</td>
+            <td class="text-center">None</td>
+            <td class="text-center">Student data editor</td>
+          </tr>
+          <tr>
+            <td>Other TAs</td>
+            <td class="text-center">None</td>
+            <td class="text-center">Student data viewer</td>
+          </tr>
+          <tr>
+            <td>Instructors from other classes</td>
+            <td class="text-center">Course content viewer</td>
+            <td class="text-center">None</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}

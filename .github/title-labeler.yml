@@ -5,7 +5,7 @@ labels:
     sync: false
     matcher:
       # no case-insensitive flag (https://github.com/fuxingloh/multi-labeler/issues/341)
-      title: '.*(fix|Fix|bug|Bug|correctly|Correctly|use correct|Use correct).*'
+      title: '.*(fix|Fix|bug |Bug |correctly|Correctly|use correct|Use correct).*'
   - label: 'chore'
     sync: false
     matcher:
@@ -14,3 +14,15 @@ labels:
     sync: false
     matcher:
       title: '.*(improve|Improve|enhance|Enhance|refine|Refine|add support|Add support).*'
+  - label: 'feature: LTI 1.3'
+    sync: false
+    matcher:
+      title: '.*(LTI 1.3|lti 1.3).*'
+  - label: 'preact'
+    sync: false
+    matcher:
+      title: '.*(Preact|preact).*'
+  - label: 'documentation'
+    sync: false
+    matcher:
+      title: '.*(document |Document |documentation |Documentation ).*'

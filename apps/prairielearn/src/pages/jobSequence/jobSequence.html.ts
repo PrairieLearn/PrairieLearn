@@ -1,15 +1,16 @@
 import { html } from '@prairielearn/html';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function JobSequence({
   resLocals,
   job_sequence,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   job_sequence: JobSequenceWithTokens;
 }) {
   return PageLayout({
@@ -22,7 +23,7 @@ export function JobSequence({
     options: {
       fullWidth: true,
     },
-    headContent: [compiledScriptTag('jobSequenceClient.ts')],
+    headContent: compiledScriptTag('jobSequenceClient.ts'),
     content: html`
       <h1 class="visually-hidden">Job Sequence</h1>
       <div class="row">

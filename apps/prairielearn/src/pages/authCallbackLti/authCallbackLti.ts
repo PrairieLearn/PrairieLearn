@@ -1,14 +1,23 @@
+import assert from 'node:assert';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import oauthSignature from 'oauth-signature';
-import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';
-import { IdSchema, LtiCredentialsSchema } from '../../lib/db-types.js';
+import {
+  IdSchema,
+  LtiCredentialSchema,
+  LtiLinkSchema,
+  SprocUsersIsInstructorInCourseInstanceSchema,
+} from '../../lib/db-types.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
+import { selectUserById } from '../../models/user.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -49,16 +58,18 @@ router.post(
     const ltiResult = await sqldb.queryOptionalRow(
       sql.lookup_credential,
       { consumer_key: parameters.oauth_consumer_key },
-      LtiCredentialsSchema,
+      LtiCredentialSchema,
     );
     if (!ltiResult) throw new HttpStatusError(403, 'Unknown consumer_key');
+
+    assert(ltiResult.secret !== null);
 
     const genSignature = oauthSignature.generate(
       'POST',
       ltiRedirectUrl,
       parameters,
       // TODO: column should be `NOT NULL`
-      ltiResult.secret as string,
+      ltiResult.secret,
       undefined,
       { encodeSignature: false },
     );
@@ -105,8 +116,8 @@ router.post(
     }
     const authName = parameters.lis_person_name_full || fallbackName;
 
-    const userResult = await sqldb.callOptionalRow(
-      'users_select_or_insert_and_enroll_lti',
+    const userId = await sqldb.callRow(
+      'users_select_or_insert_lti',
       [
         authUid,
         authName,
@@ -115,34 +126,63 @@ router.post(
         parameters.context_id,
         res.locals.req_date,
       ],
-      z.object({
-        user_id: IdSchema,
-        has_access: z.boolean(),
-      }),
+      IdSchema,
     );
-    if (!userResult?.has_access) {
+
+    // Persist the user's authentication data in the session. We do this before
+    // checking authorization so that user information is available for any
+    // subsequent requests or redirects (e.g. if `ensureCheckedEnrollment`
+    // redirects to a payment page).
+    req.session.user_id = userId;
+    req.session.authn_provider_name = 'LTI';
+
+    // Check if the user would have access to the course instance.
+    const user = await selectUserById(userId);
+    const { authzData, institution, course, courseInstance } =
+      await constructCourseOrInstanceContext({
+        user,
+        course_id: null,
+        course_instance_id: ltiResult.course_instance_id,
+        ip: req.ip || null,
+        req_date: res.locals.req_date,
+        is_administrator: res.locals.is_administrator,
+      });
+
+    if (!authzData?.has_student_access) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    // Persist the user's authentication data in the session.
-    req.session.user_id = userResult.user_id;
-    req.session.authn_provider_name = 'LTI';
+    if (!authzData.has_student_access_with_enrollment) {
+      assert(courseInstance);
+      await ensureEnrollment({
+        institution,
+        course,
+        courseInstance,
+        actionDetail: 'implicit_joined',
+        authzData,
+        requiredRole: ['Student'],
+      });
+    }
 
-    const linkResult = await sqldb.queryOneRowAsync(sql.upsert_current_link, {
-      course_instance_id: ltiResult.course_instance_id,
-      context_id: parameters.context_id,
-      resource_link_id: parameters.resource_link_id,
-      resource_link_title: parameters.resource_link_title || '',
-      resource_link_description: parameters.resource_link_description || '',
-    });
+    const linkResult = await sqldb.queryRow(
+      sql.upsert_current_link,
+      {
+        course_instance_id: ltiResult.course_instance_id,
+        context_id: parameters.context_id,
+        resource_link_id: parameters.resource_link_id,
+        resource_link_title: parameters.resource_link_title || '',
+        resource_link_description: parameters.resource_link_description || '',
+      },
+      LtiLinkSchema,
+    );
 
     // Do we have an assessment linked to this resource_link_id?
-    if (linkResult.rows[0].assessment_id) {
+    if (linkResult.assessment_id !== null) {
       if ('lis_result_sourcedid' in parameters) {
         // Save outcomes here
-        await sqldb.queryAsync(sql.upsert_outcome, {
-          user_id: userResult.user_id,
-          assessment_id: linkResult.rows[0].assessment_id,
+        await sqldb.execute(sql.upsert_outcome, {
+          user_id: userId,
+          assessment_id: linkResult.assessment_id,
           lis_result_sourcedid: parameters.lis_result_sourcedid,
           lis_outcome_service_url: parameters.lis_outcome_service_url,
           lti_credential_id: ltiResult.id,
@@ -150,21 +190,18 @@ router.post(
       }
 
       res.redirect(
-        `${res.locals.urlPrefix}/course_instance/${ltiResult.course_instance_id}/assessment/${linkResult.rows[0].assessment_id}/`,
+        `${res.locals.urlPrefix}/course_instance/${ltiResult.course_instance_id}/assessment/${linkResult.assessment_id}/`,
       );
     } else {
       // No linked assessment
 
-      const instructorResult = await sqldb.callAsync('users_is_instructor_in_course_instance', [
-        userResult.user_id,
-        ltiResult.course_instance_id,
-      ]);
+      const isInstructor = await sqldb.callRow(
+        'users_is_instructor_in_course_instance',
+        [userId, ltiResult.course_instance_id],
+        SprocUsersIsInstructorInCourseInstanceSchema,
+      );
 
-      if (instructorResult.rowCount === 0) {
-        throw new HttpStatusError(403, 'Access denied (could not determine if user is instructor)');
-      }
-
-      if (!instructorResult.rows[0].is_instructor) {
+      if (!isInstructor) {
         // Show an error that the assignment is unavailable
         throw new HttpStatusError(403, 'Assignment not available yet');
       }

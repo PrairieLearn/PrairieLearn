@@ -5,7 +5,9 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { Course } from '../../lib/db-types.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { updateCourseSharingName } from '../../models/course.js';
 
 import {
@@ -16,14 +18,12 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function selectCanChooseSharingName(course) {
+async function selectCanChooseSharingName(course: Course) {
   return (
     course.sharing_name === null ||
     !(await sqldb.queryOptionalRow(
       sql.select_shared_question_exists,
-      {
-        course_id: course.id,
-      },
+      { course_id: course.id },
       z.boolean().nullable(),
     ))
   );
@@ -31,6 +31,10 @@ async function selectCanChooseSharingName(course) {
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_own'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
     if (!res.locals.question_sharing_enabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
@@ -43,10 +47,8 @@ router.get(
     );
 
     const host = getCanonicalHost(req);
-    const publicSharingLink = new URL(
-      `${res.locals.plainUrlPrefix}/public/course/${res.locals.course.id}/questions`,
-      host,
-    ).href;
+    const publicSharingLink = new URL(`/pl/public/course/${res.locals.course.id}/questions`, host)
+      .href;
 
     const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
 
@@ -66,17 +68,17 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_own) {
-      throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
-    }
     if (!res.locals.question_sharing_enabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
 
     if (req.body.__action === 'sharing_token_regenerate') {
-      await sqldb.queryZeroOrOneRowAsync(sql.update_sharing_token, {
+      const rowCount = await sqldb.execute(sql.update_sharing_token, {
         course_id: res.locals.course.id,
       });
+      if (rowCount > 1) {
+        throw new error.HttpStatusError(400, 'Failed to regenerate sharing token.');
+      }
     } else if (req.body.__action === 'course_sharing_set_add') {
       const consuming_course_id = await sqldb.queryOptionalRow(
         sql.course_sharing_set_add,

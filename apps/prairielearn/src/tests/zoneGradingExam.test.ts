@@ -1,11 +1,18 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import {
+  AssessmentInstanceSchema,
+  InstanceQuestionSchema,
+  QuestionSchema,
+} from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
@@ -61,11 +68,10 @@ const zoneGradingTests: TestZone[][] = [
   ],
 ];
 
-describe('Zone grading exam assessment', function () {
-  this.timeout(60000);
+describe('Zone grading exam assessment', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   function startAssessment() {
     describe('startExam-1. the locals object', function () {
@@ -93,7 +99,7 @@ describe('Zone grading exam assessment', function () {
         questionsArray.forEach(function (question) {
           for (const prop in question) {
             if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
-              delete question[prop];
+              delete question[prop as keyof TestQuestion];
             }
           }
           question.points = 0;
@@ -103,8 +109,11 @@ describe('Zone grading exam assessment', function () {
 
     describe('startExam-3. the database', function () {
       it('should contain E5', async () => {
-        const result = await sqldb.queryOneRowAsync(sql.select_e5, []);
-        locals.assessment_id = result.rows[0].id;
+        const { id: assessmentId } = await selectAssessmentByTid({
+          course_instance_id: '1',
+          tid: 'exam5-perZoneGrading',
+        });
+        locals.assessment_id = assessmentId;
       });
     });
 
@@ -174,23 +183,28 @@ describe('Zone grading exam assessment', function () {
         locals.postStartTime = Date.now();
       });
       it('should create one assessment_instance', async () => {
-        const result = await sqldb.queryAsync(sql.select_assessment_instances, []);
-        if (result.rowCount !== 1) {
-          throw new Error('expected one assessment_instance, got: ' + result.rowCount);
-        }
-        locals.assessment_instance = result.rows[0];
+        locals.assessment_instance = await sqldb.queryRow(
+          sql.select_assessment_instances,
+          AssessmentInstanceSchema,
+        );
       });
       it('should have the correct assessment_instance.assessment_id', function () {
         assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
       });
       it(`should create ${questionsArray.length} instance_questions`, async () => {
-        const result = await sqldb.queryAsync(sql.select_instance_questions, []);
-        if (result.rowCount !== questionsArray.length) {
+        const result = await sqldb.queryRows(
+          sql.select_instance_questions,
+          z.object({
+            ...InstanceQuestionSchema.shape,
+            qid: QuestionSchema.shape.qid,
+          }),
+        );
+        if (result.length !== questionsArray.length) {
           throw new Error(
-            `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
+            `expected ${questionsArray.length} instance_questions, got: ` + result.length,
           );
         }
-        locals.instance_questions = result.rows;
+        locals.instance_questions = result;
       });
       questionsArray.forEach(function (question, i) {
         it(`should have question #${i + 1} as QID ${question.qid}`, function () {
@@ -222,12 +236,10 @@ describe('Zone grading exam assessment', function () {
     describe(`zone grading test #${iZoneGradingTest + 1}`, function () {
       describe('server', function () {
         it('should shut down', async function () {
-          // pass "this" explicitly to enable this.timeout() calls
-          await helperServer.after.call(this);
+          await helperServer.after();
         });
         it('should start up', async function () {
-          // pass "this" explicitly to enable this.timeout() calls
-          await helperServer.before().call(this);
+          await helperServer.before()();
         });
       });
 
@@ -259,7 +271,7 @@ describe('Zone grading exam assessment', function () {
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };
-              locals.getSubmittedAnswer = function (_variant) {
+              locals.getSubmittedAnswer = function (_variant: any) {
                 return {
                   s: String(questionTest.score),
                 };

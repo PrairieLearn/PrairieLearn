@@ -16,6 +16,7 @@ let time = process.hrtime.bigint();
 interface NodeMetricsOptions {
   awsConfig: CloudWatchClientConfig;
   intervalSeconds: number;
+  namespace: string;
   dimensions: Dimension[];
   onError: (err: Error) => void;
 }
@@ -29,7 +30,7 @@ async function emit(options: NodeMetricsOptions) {
     const elapsedTime = process.hrtime.bigint() - time;
     // This conversion should be safe, as `Number.MAX_SAFE_INTEGER` microseconds
     // corresponds to about 258 years.
-    const elapsedMicroseconds = Number(elapsedTime / BigInt(1000));
+    const elapsedMicroseconds = Number(elapsedTime / 1000n);
 
     const userCpuPercent = (100 * elapsedCpuUsage.user) / elapsedMicroseconds;
     const systemCpuPercent = (100 * elapsedCpuUsage.system) / elapsedMicroseconds;
@@ -85,7 +86,7 @@ async function emit(options: NodeMetricsOptions) {
     // eslint-disable-next-line @prairielearn/aws-client-shared-config
     const cloudwatch = new CloudWatch(options.awsConfig);
     await cloudwatch.putMetricData({
-      Namespace: 'PrairieLearn',
+      Namespace: options.namespace,
       MetricData: metrics.map((m) => ({
         ...m,
         StorageResolution: 1,
