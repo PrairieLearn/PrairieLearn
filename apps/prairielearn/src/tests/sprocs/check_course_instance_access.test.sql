@@ -3,7 +3,7 @@ WITH
   setup_user AS (
     INSERT INTO
       users (
-        user_id,
+        id,
         uid,
         lti_course_instance_id,
         institution_id

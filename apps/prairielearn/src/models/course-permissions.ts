@@ -118,7 +118,7 @@ export async function deleteCoursePermissionsForUsersWithoutAccess({
     );
     await deleteCoursePermissions({
       course_id,
-      user_id: usersWithoutAccess.map((user) => user.id),
+      user_id: usersWithoutAccess.map((user) => user.user_id),
       authn_user_id,
     });
   });
