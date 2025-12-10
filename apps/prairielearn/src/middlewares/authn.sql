@@ -7,7 +7,7 @@ INSERT INTO
     first_joined_at
   ) (
     SELECT
-      u.id,
+      u.id AS user_id,
       ci.id,
       'joined',
       now()
