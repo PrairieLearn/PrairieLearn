@@ -220,7 +220,7 @@ FROM
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
   LEFT JOIN users AS u ON (s.auth_user_id = u.user_id)
   LEFT JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
-  LEFT JOIN group_configs AS gc ON (
+  LEFT JOIN team_configs AS gc ON (
     gc.assessment_id = a.id
     AND gc.deleted_at IS NULL
   )

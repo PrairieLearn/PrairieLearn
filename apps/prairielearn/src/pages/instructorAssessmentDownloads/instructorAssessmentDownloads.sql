@@ -50,12 +50,12 @@ WITH
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
-      LEFT JOIN groups AS g ON (
-        g.id = ai.group_id
-        AND g.group_config_id = gc.id
+      LEFT JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+      LEFT JOIN teams AS g ON (
+        g.id = ai.team_id
+        AND g.team_config_id = gc.id
       )
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
       JOIN users AS u ON (
         u.user_id = ai.user_id
         OR u.user_id = gu.user_id
@@ -155,7 +155,7 @@ WITH
       groups_uid_list (g.id) AS uid_list
     FROM
       assessment_instances AS ai
-      LEFT JOIN groups AS g ON (g.id = ai.group_id)
+      LEFT JOIN teams AS g ON (g.id = ai.team_id)
       LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     WHERE
       ai.assessment_id = $assessment_id
@@ -375,15 +375,15 @@ SELECT
     '{}'::text[]
   ) AS roles
 FROM
-  group_configs AS gc
-  JOIN groups AS g ON gc.id = g.group_config_id
-  JOIN group_users AS gu ON g.id = gu.group_id
+  team_configs AS gc
+  JOIN teams AS g ON gc.id = g.team_config_id
+  JOIN team_users AS gu ON g.id = gu.team_id
   JOIN users AS u ON gu.user_id = u.user_id
-  LEFT JOIN group_user_roles AS gur ON (
-    gur.group_id = g.id
+  LEFT JOIN team_user_roles AS gur ON (
+    gur.team_id = g.id
     AND gur.user_id = u.user_id
   )
-  LEFT JOIN group_roles AS gr ON gur.group_role_id = gr.id
+  LEFT JOIN team_roles AS gr ON gur.team_role_id = gr.id
 WHERE
   gc.assessment_id = $assessment_id
   AND gc.deleted_at IS NULL

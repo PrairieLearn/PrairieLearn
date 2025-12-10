@@ -1,7 +1,7 @@
 -- BLOCK select_instance_question_data
 SELECT
   aq.question_id,
-  ai.group_id,
+  ai.team_id,
   ai.user_id,
   iq.assessment_instance_id,
   a.course_instance_id,
@@ -39,7 +39,7 @@ WITH
         question_id,
         course_instance_id,
         user_id,
-        group_id,
+        team_id,
         number,
         variant_seed,
         params,

@@ -9,7 +9,7 @@ WHERE
 
 -- BLOCK insert_assessment_instance
 INSERT INTO
-  assessment_instances (assessment_id, user_id, group_id, number, open)
+  assessment_instances (assessment_id, user_id, team_id, number, open)
 VALUES
   (
     $assessment_id,

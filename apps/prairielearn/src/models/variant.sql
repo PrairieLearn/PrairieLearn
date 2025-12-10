@@ -128,9 +128,9 @@ SELECT
         SELECT
           1
         FROM
-          group_users AS gu
+          team_users AS gu
         WHERE
-          gu.group_id = ai.group_id
+          gu.team_id = ai.team_id
           AND gu.user_id = $user_id
       )
       ELSE (v.user_id = $user_id)

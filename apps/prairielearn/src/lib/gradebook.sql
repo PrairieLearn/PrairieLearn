@@ -18,8 +18,8 @@ WHERE
       SELECT
         g.id
       FROM
-        groups g
-        JOIN group_users AS gu ON g.id = gu.group_id
+        teams g
+        JOIN team_users AS gu ON g.id = gu.team_id
       WHERE
         g.deleted_at IS NULL
         AND gu.user_id = $user_id

@@ -19,7 +19,7 @@ WITH
       ai.assessment_id = $assessment_id
       AND (
         CASE
-          WHEN $group_id::bigint IS NOT NULL THEN ai.group_id = $group_id
+          WHEN $group_id::bigint IS NOT NULL THEN ai.team_id = $group_id
           ELSE ai.user_id = $user_id
         END
       )
@@ -34,7 +34,7 @@ WITH
         auth_user_id,
         assessment_id,
         user_id,
-        group_id,
+        team_id,
         mode,
         auto_close,
         date_limit,
@@ -92,13 +92,13 @@ WITH
   -- these CTEs will actually insert a row.
   inserted_last_access_group AS (
     INSERT INTO
-      last_accesses (group_id, last_access)
+      last_accesses (team_id, last_access)
     SELECT
       $group_id,
       current_timestamp
     WHERE
       $group_id::bigint IS NOT NULL
-    ON CONFLICT (group_id) DO UPDATE
+    ON CONFLICT (team_id) DO UPDATE
     SET
       last_access = EXCLUDED.last_access
   ),
@@ -275,7 +275,7 @@ WITH
         authn_user_id,
         course_id,
         user_id,
-        group_id,
+        team_id,
         table_name,
         row_id,
         action,
@@ -285,7 +285,7 @@ WITH
       $authn_user_id,
       ci.course_id,
       ai.user_id,
-      ai.group_id,
+      ai.team_id,
       'instance_questions',
       iq.id,
       'insert',
@@ -353,7 +353,7 @@ WITH
         authn_user_id,
         course_id,
         user_id,
-        group_id,
+        team_id,
         table_name,
         column_name,
         row_id,
@@ -365,7 +365,7 @@ WITH
       $authn_user_id,
       ci.course_id,
       ai.user_id,
-      ai.group_id,
+      ai.team_id,
       'assessment_instances',
       'max_points',
       ai.id,
@@ -401,8 +401,8 @@ SELECT
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN groups AS g ON (
-    g.id = ai.group_id
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
     AND g.deleted_at IS NULL
   )
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
@@ -570,11 +570,11 @@ WITH
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       -- Only select groups that are not soft-deleted
-      LEFT JOIN groups AS g ON (
-        g.id = ai.group_id
+      LEFT JOIN teams AS g ON (
+        g.id = ai.team_id
         AND g.deleted_at IS NULL
       )
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
       JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.user_id
@@ -657,11 +657,11 @@ WITH
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       -- Only select groups that are not soft-deleted
-      LEFT JOIN groups AS g ON (
-        g.id = ai.group_id
+      LEFT JOIN teams AS g ON (
+        g.id = ai.team_id
         AND g.deleted_at IS NULL
       )
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
       JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.user_id
@@ -714,11 +714,11 @@ WITH
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       -- Only select groups that are not soft-deleted
-      LEFT JOIN groups AS g ON (
-        g.id = ai.group_id
+      LEFT JOIN teams AS g ON (
+        g.id = ai.team_id
         AND g.deleted_at IS NULL
       )
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
       JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.user_id
@@ -809,7 +809,7 @@ WITH
       gl.user_id
     FROM
       assessment_instances AS ai
-      JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
+      JOIN team_logs AS gl ON (gl.team_id = ai.team_id)
     WHERE
       ai.id = $assessment_instance_id
       AND gl.action = 'join'
@@ -1397,7 +1397,7 @@ WITH
         ) AS data
       FROM
         assessment_instances AS ai
-        JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
+        JOIN team_logs AS gl ON (gl.team_id = ai.team_id)
         JOIN users AS u ON (u.user_id = gl.authn_user_id)
         LEFT JOIN users AS gu ON (gu.user_id = gl.user_id)
       WHERE
@@ -1469,7 +1469,7 @@ WITH
       -- Determine a unique ID for each user or group by making group IDs
       -- negative. Exactly one of user_id or group_id will be NULL, so this
       -- results in a unqiue non-NULL ID for each assessment instance.
-      coalesce(ai.user_id, - ai.group_id) AS u_gr_id
+      coalesce(ai.user_id, - ai.team_id) AS u_gr_id
     FROM
       instance_questions AS iq
       JOIN relevant_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -1478,7 +1478,7 @@ WITH
   ),
   assessment_scores_by_user_or_group AS (
     SELECT
-      coalesce(ai.user_id, - ai.group_id) AS u_gr_id,
+      coalesce(ai.user_id, - ai.team_id) AS u_gr_id,
       max(ai.score_perc) AS score_perc
     FROM
       relevant_assessment_instances AS ai
@@ -1747,7 +1747,7 @@ WITH
       ci.course_id,
       a.course_instance_id,
       ai.user_id,
-      ai.group_id,
+      ai.team_id,
       'assessment_instances',
       ai.id,
       'delete',

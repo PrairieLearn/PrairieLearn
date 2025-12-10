@@ -109,8 +109,8 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  LEFT JOIN groups AS g ON (
-    g.id = ai.group_id
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
     AND g.deleted_at IS NULL
   )
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)

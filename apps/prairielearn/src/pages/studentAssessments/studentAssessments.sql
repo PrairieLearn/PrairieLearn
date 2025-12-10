@@ -102,13 +102,13 @@ WITH
       am.number AS assessment_module_number
     FROM
       -- join group_users first to find all group assessments
-      group_configs AS gc
-      JOIN groups AS g ON (
-        g.group_config_id = gc.id
+      team_configs AS gc
+      JOIN teams AS g ON (
+        g.team_config_id = gc.id
         AND g.deleted_at IS NULL
       )
-      JOIN group_users AS gu ON (
-        gu.group_id = g.id
+      JOIN team_users AS gu ON (
+        gu.team_id = g.id
         AND gu.user_id = $user_id
       )
       FULL JOIN assessments AS a ON (gc.assessment_id = a.id)

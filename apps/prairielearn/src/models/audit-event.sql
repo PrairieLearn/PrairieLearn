@@ -63,9 +63,9 @@ WITH
         SELECT
           assessment_id
         FROM
-          group_configs
+          team_configs
         WHERE
-          id = g.group_config_id
+          id = g.team_config_id
       ) AS assessment_id,
       course_instance_id
     FROM

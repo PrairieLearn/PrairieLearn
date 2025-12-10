@@ -107,8 +107,8 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      LEFT JOIN groups AS g ON (g.id = ai.group_id)
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      LEFT JOIN teams AS g ON (g.id = ai.team_id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
     WHERE
       ai.assessment_id = $assessment_id
       AND g.deleted_at IS NULL

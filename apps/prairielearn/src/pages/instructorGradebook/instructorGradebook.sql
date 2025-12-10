@@ -29,8 +29,8 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      LEFT JOIN groups AS g ON (g.id = ai.group_id)
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      LEFT JOIN teams AS g ON (g.id = ai.team_id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
     WHERE
       a.course_instance_id = $course_instance_id
       AND g.deleted_at IS NULL
@@ -124,7 +124,7 @@ WITH
                   json_build_object('uid', ou.uid, 'enrollment_id', e.id)
                 )
               FROM
-                group_users AS ogu
+                team_users AS ogu
                 LEFT JOIN course_users AS ou ON (ou.user_id = ogu.user_id)
                 LEFT JOIN enrollments AS e ON (
                   ou.user_id = e.user_id

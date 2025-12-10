@@ -32,15 +32,15 @@ FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN pl_courses AS c ON (c.id = ci.course_id)
-  JOIN group_configs AS gc ON (gc.assessment_id = a.id)
-  JOIN groups AS g ON (g.group_config_id = gc.id)
+  JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+  JOIN teams AS g ON (g.team_config_id = gc.id)
   JOIN LATERAL (
     SELECT
       *
     FROM
-      group_users AS gu
+      team_users AS gu
     WHERE
-      gu.group_id = g.id
+      gu.team_id = g.id
     LIMIT
       1
   ) AS lgu ON (TRUE)

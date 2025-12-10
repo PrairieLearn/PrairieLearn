@@ -194,7 +194,7 @@ BEGIN
 
         -- if it is a group work try to insert a group_config
         IF (valid_assessment.data->>'group_work')::boolean THEN
-            INSERT INTO group_configs (
+            INSERT INTO team_configs (
                 course_instance_id,
                 assessment_id,
                 maximum,
@@ -228,7 +228,7 @@ BEGIN
 
             -- Insert all group roles
             FOR group_role IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'groupRoles') LOOP
-                INSERT INTO group_roles (
+                INSERT INTO team_roles (
                     role_name,
                     assessment_id,
                     minimum,
@@ -248,18 +248,18 @@ BEGIN
                     minimum = EXCLUDED.minimum,
                     maximum = EXCLUDED.maximum,
                     can_assign_roles = EXCLUDED.can_assign_roles
-                RETURNING group_roles.role_name INTO new_group_role_name;
+                RETURNING team_roles.role_name INTO new_group_role_name;
                 new_group_role_names := array_append(new_group_role_names, new_group_role_name);
             END LOOP;
 
             -- Delete excess group roles
-            DELETE FROM group_roles
+            DELETE FROM team_roles
             WHERE
                 assessment_id = new_assessment_id
                 AND role_name != ALL (new_group_role_names);
 
         ELSE
-            UPDATE group_configs
+            UPDATE team_configs
             SET deleted_at = now()
             WHERE assessment_id = new_assessment_id;
         END IF;
@@ -554,7 +554,7 @@ BEGIN
                     IF (valid_assessment.data->>'group_work')::boolean THEN
                         INSERT INTO assessment_question_role_permissions (
                             assessment_question_id,
-                            group_role_id,
+                            team_role_id,
                             can_view,
                             can_submit
                         ) SELECT
@@ -562,9 +562,9 @@ BEGIN
                             gr.id,
                             (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view'))),
                             (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
-                        FROM group_roles AS gr
+                        FROM team_roles AS gr
                         WHERE gr.assessment_id = new_assessment_id
-                        ON CONFLICT (assessment_question_id, group_role_id)
+                        ON CONFLICT (assessment_question_id, team_role_id)
                         DO UPDATE
                         SET
                             can_view = EXCLUDED.can_view,
