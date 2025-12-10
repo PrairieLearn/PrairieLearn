@@ -10,8 +10,7 @@ import { run } from '@prairielearn/run';
 
 import { plainDateTimeStringToDate } from '../utils/dateUtils.js';
 
-export type ExtensionModifyModalState =
-  | null
+export type ExtensionModifyModalData =
   | { type: 'add'; endDate: string }
   | { type: 'edit'; endDate: string; extensionId: string; name: string; uids: string };
 
@@ -22,20 +21,24 @@ interface ExtensionFormValues {
 }
 
 export function ExtensionModifyModal({
-  modalState,
+  data,
   currentUnpublishText,
-  onHide,
   courseInstanceEndDate,
   courseInstanceTimezone,
   csrfToken,
+  show,
+  onHide,
+  onExited,
   onSuccess,
 }: {
-  modalState: ExtensionModifyModalState;
+  data: ExtensionModifyModalData | null;
   currentUnpublishText: string;
-  onHide: () => void;
   courseInstanceEndDate: Date | null;
   courseInstanceTimezone: string;
   csrfToken: string;
+  show: boolean;
+  onHide: () => void;
+  onExited: () => void;
   onSuccess: () => void;
 }) {
   const [stage, setStage] = useState<
@@ -43,9 +46,9 @@ export function ExtensionModifyModal({
   >({ type: 'editing' });
 
   const defaultValues = run(() => {
-    if (modalState === null) return { end_date: '', name: '', uids: '' };
-    if (modalState.type === 'add') return { end_date: modalState.endDate, name: '', uids: '' };
-    return { end_date: modalState.endDate, name: modalState.name, uids: modalState.uids };
+    if (data === null) return { end_date: '', name: '', uids: '' };
+    if (data.type === 'add') return { end_date: data.endDate, name: '', uids: '' };
+    return { end_date: data.endDate, name: data.name, uids: data.uids };
   });
 
   const {
@@ -119,14 +122,14 @@ export function ExtensionModifyModal({
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (data: ExtensionFormValues) => {
+    mutationFn: async (formData: ExtensionFormValues) => {
       const body = {
         __csrf_token: csrfToken,
-        __action: modalState?.type === 'edit' ? 'edit_extension' : 'add_extension',
-        name: data.name.trim(),
-        end_date: data.end_date,
-        extension_id: modalState?.type === 'edit' ? modalState.extensionId : undefined,
-        uids: data.uids.trim(),
+        __action: data?.type === 'edit' ? 'edit_extension' : 'add_extension',
+        name: formData.name.trim(),
+        end_date: formData.end_date,
+        extension_id: data?.type === 'edit' ? data.extensionId : undefined,
+        uids: formData.uids.trim(),
       };
       const resp = await fetch(window.location.pathname, {
         method: 'POST',
@@ -151,11 +154,7 @@ export function ExtensionModifyModal({
 
   if (stage.type === 'confirming') {
     return (
-      <Modal
-        show={modalState !== null}
-        backdrop="static"
-        onHide={() => setStage({ type: 'editing' })}
-      >
+      <Modal show={data !== null} backdrop="static" onHide={() => setStage({ type: 'editing' })}>
         <Modal.Header closeButton>
           <Modal.Title>Confirm unenrolled students</Modal.Title>
         </Modal.Header>
@@ -198,16 +197,17 @@ export function ExtensionModifyModal({
 
   return (
     <Modal
-      show={modalState !== null}
+      show={show}
       backdrop="static"
-      onHide={() => {
+      onHide={onHide}
+      onExited={() => {
         setStage({ type: 'editing' });
         saveMutation.reset();
-        onHide();
+        onExited();
       }}
     >
       <Modal.Header closeButton>
-        <Modal.Title>{modalState?.type === 'add' ? 'Add extension' : 'Edit extension'}</Modal.Title>
+        <Modal.Title>{data?.type === 'add' ? 'Add extension' : 'Edit extension'}</Modal.Title>
       </Modal.Header>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
@@ -242,7 +242,7 @@ export function ExtensionModifyModal({
                   const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
                   // edit mode has no validation on the end date
                   return (
-                    modalState?.type === 'edit' ||
+                    data?.type === 'edit' ||
                     enteredDate > courseInstanceEndDate ||
                     'End date must be after the course end date'
                   );

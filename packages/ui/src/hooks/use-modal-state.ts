@@ -14,10 +14,11 @@ export function useModalState<T>(initialData: T | null = null) {
   return {
     show,
     data,
-    open: (state: T) => {
-      setData(state);
+    showWithData: (data: T) => {
+      setData(data);
       setShow(true);
     },
+    hide: () => setShow(false),
     onHide: () => setShow(false),
     onExited: () => setData(null),
   };

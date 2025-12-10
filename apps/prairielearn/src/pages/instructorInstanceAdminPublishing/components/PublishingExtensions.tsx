@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
 import { Alert } from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
+import { useModalState } from '@prairielearn/ui';
 
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import {
@@ -13,9 +13,8 @@ import {
 import { dateToPlainDateTime } from '../utils/dateUtils.js';
 
 import { ExtensionDeleteModal, type ExtensionDeleteModalData } from './ExtensionDeleteModal.js';
-import { ExtensionModifyModal, type ExtensionModifyModalState } from './ExtensionModifyModal.js';
+import { ExtensionModifyModal, type ExtensionModifyModalData } from './ExtensionModifyModal.js';
 import { ExtensionTableRow } from './ExtensionTableRow.js';
-import { useModalState } from '@prairielearn/ui';
 
 export function PublishingExtensions({
   courseInstance,
@@ -50,10 +49,8 @@ export function PublishingExtensions({
   const hasExtensionsWithoutPublishDate =
     extensionsQuery.data.length > 0 && !courseInstance.publishing_end_date;
 
-  // State for editing/adding extensions
-  const [modifyModalState, setModifyModalState] = useState<ExtensionModifyModalState>(null);
-
   // State for deleting extensions
+  const modifyModalState = useModalState<ExtensionModifyModalData>(null);
   const deleteModalState = useModalState<ExtensionDeleteModalData>(null);
 
   const currentInstanceEndDate = courseInstance.publishing_end_date
@@ -76,7 +73,7 @@ export function PublishingExtensions({
               type="button"
               class="btn btn-outline-primary btn-sm text-nowrap"
               onClick={() =>
-                setModifyModalState({
+                modifyModalState.showWithData({
                   type: 'add',
                   endDate: courseInstance.publishing_end_date
                     ? dateToPlainDateTime(
@@ -132,7 +129,7 @@ export function PublishingExtensions({
                   courseInstance={courseInstance}
                   canEdit={canEdit}
                   onEdit={() =>
-                    setModifyModalState({
+                    modifyModalState.showWithData({
                       type: 'edit',
                       endDate: dateToPlainDateTime(
                         extension.course_instance_publishing_extension.end_date,
@@ -147,7 +144,7 @@ export function PublishingExtensions({
                     })
                   }
                   onDelete={() =>
-                    deleteModalState.open({
+                    deleteModalState.showWithData({
                       extensionId: extension.course_instance_publishing_extension.id,
                       extensionName: extension.course_instance_publishing_extension.name,
                       userData: extension.user_data,
@@ -161,15 +158,14 @@ export function PublishingExtensions({
       )}
 
       <ExtensionModifyModal
-        modalState={modifyModalState}
+        {...modifyModalState}
         currentUnpublishText={currentInstanceEndDate}
         courseInstanceEndDate={courseInstance.publishing_end_date}
         courseInstanceTimezone={courseInstance.display_timezone}
         csrfToken={csrfToken}
-        onHide={() => setModifyModalState(null)}
         onSuccess={() => {
           void queryClient.invalidateQueries({ queryKey: ['extensions'] });
-          setModifyModalState(null);
+          deleteModalState.hide();
         }}
       />
 
@@ -178,6 +174,7 @@ export function PublishingExtensions({
         csrfToken={csrfToken}
         onSuccess={async () => {
           await queryClient.invalidateQueries({ queryKey: ['extensions'] });
+          deleteModalState.hide();
         }}
       />
     </>

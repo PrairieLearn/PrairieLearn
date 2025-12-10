@@ -1,11 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
 import { Alert, Modal } from 'react-bootstrap';
 
-export type ExtensionDeleteModalData = {
+export interface ExtensionDeleteModalData {
   extensionId: string;
   extensionName: string | null;
   userData: { uid: string; name: string | null; enrollment_id: string }[];
-};
+}
 
 export function ExtensionDeleteModal({
   data,
