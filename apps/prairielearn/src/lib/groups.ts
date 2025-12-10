@@ -421,7 +421,7 @@ export async function createGroup({
         .catch((err) => {
           // 23505 is the Postgres error code for unique constraint violation
           // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
-          if (err.code === '23505' && err.constraint === 'unique_group_name') {
+          if (err.code === '23505' && err.constraint === 'unique_team_name') {
             throw new GroupOperationError('Group name is already taken.');
           }
           // Any other error is unexpected and should be handled by the main processes

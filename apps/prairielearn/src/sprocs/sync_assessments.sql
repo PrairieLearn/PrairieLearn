@@ -192,7 +192,7 @@ BEGIN
         RETURNING id INTO new_assessment_id;
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
-        -- if it is a group work try to insert a group_config
+        -- if it is a team work try to insert a team_config
         IF (valid_assessment.data->>'team_work')::boolean THEN
             INSERT INTO team_configs (
                 course_instance_id,
@@ -550,7 +550,7 @@ BEGIN
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 
-                    -- If the assessment is configured as group work, sync the role permissions.
+                    -- If the assessment is configured as team work, sync the role permissions.
                     IF (valid_assessment.data->>'team_work')::boolean THEN
                         INSERT INTO assessment_question_role_permissions (
                             assessment_question_id,
