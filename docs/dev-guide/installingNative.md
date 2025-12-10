@@ -8,7 +8,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
   - [Git](https://git-scm.com)
   - [Node.js 22](https://nodejs.org)
   - [Yarn](https://yarnpkg.com)
-  - [Python 3.12](https://www.python.org)
+  - [Python 3.13](https://www.python.org)
   - [PostgreSQL 16](https://www.postgresql.org)
   - [Redis 6](https://redis.io)
   - [Graphviz](https://graphviz.org)
@@ -39,12 +39,12 @@ Most of these prerequisites can be installed using the package manager of your O
     > sudo service postgresql start
     > ```
 
-    Python 3.12 is not available in the default Ubuntu repositories -- you can install it through the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
+    Python 3.13 is not available in the default Ubuntu repositories -- you can install it through the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
 
     ```sh
     sudo add-apt-repository ppa:deadsnakes/ppa
     sudo apt update
-    sudo apt install python3.12 python3.12-dev
+    sudo apt install python3.13 python3.13-dev
     ```
 
     Install `uv`:
@@ -94,7 +94,7 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql@16 redis uv d2 node pgvector python@3.12
+    brew install git graphviz postgresql@16 redis uv d2 node pgvector python@3.13
 
     # Optional; needed only for some example questions that use LaTeX
     brew install texlive
@@ -129,14 +129,14 @@ Most of these prerequisites can be installed using the package manager of your O
   === "uv"
 
         ```sh
-        uv venv --python-preference only-system --python 3.12 --seed
+        uv venv --python-preference only-system --python 3.13 --seed
         source .venv/bin/activate
         ```
 
   === "Native"
 
         ```sh
-        python3.12 -m venv .venv
+        python3.13 -m venv .venv
         source .venv/bin/activate
         ```
 

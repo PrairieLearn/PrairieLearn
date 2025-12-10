@@ -7,7 +7,7 @@ build-sequential:
 
 venv-setup:
 	@[ -f .venv/bin/python3 ] || \
-		uv venv --python-preference only-managed --python 3.12 --seed .venv || \
+		uv venv --python-preference only-managed --python 3.13 --seed .venv || \
 		python3 -m venv --upgrade-deps .venv
 
 # Note the `--compile-bytecode` flag, which is needed to ensure fast
