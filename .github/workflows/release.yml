@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - "master"
+      - 'master'
 
 jobs:
   release:
@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22.x
-          cache: "yarn"
+          cache: 'yarn'
 
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
